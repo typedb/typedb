@@ -10,14 +10,15 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -43,10 +44,10 @@ import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
  * @author Sheldon Hall
  */
 
-public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
+public class ClusterMemberMapReduce extends GraknMapReduce<Set<ConceptId>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
-    private static final String CLUSTER_SIZE = "clusterMemberMapReduce.clusterSize";
+    private static final String CLUSTER_SIZE = "clusterMemberMapReduce.size";
 
     // Needed internally for OLAP tasks
     public ClusterMemberMapReduce() {
@@ -62,27 +63,31 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     }
 
     @Override
-    public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
+    public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<ConceptId>> emitter) {
         if (vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
-            emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
-                    Collections.singleton(vertex.value(Schema.VertexProperty.ID.name())));
+            String clusterPropertyKey = (String) persistentProperties.get(CLUSTER_LABEL);
+            String clusterId = vertex.value(clusterPropertyKey);
+            ConceptId conceptId = ConceptId.of(vertex.value(Schema.VertexProperty.ID.name()));
+            Set<ConceptId> cluster = Collections.singleton(conceptId);
+
+            emitter.emit(clusterId, cluster);
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());
         }
     }
 
     @Override
-    Set<String> reduceValues(Iterator<Set<String>> values) {
+    Set<ConceptId> reduceValues(Iterator<Set<ConceptId>> values) {
         return reduceSet(values);
     }
 
     @Override
-    public Map<Serializable, Set<String>> generateFinalResult(Iterator<KeyValue<Serializable, Set<String>>> keyValues) {
+    public Map<Serializable, Set<ConceptId>> generateFinalResult(Iterator<KeyValue<Serializable, Set<ConceptId>>> keyValues) {
         if (this.persistentProperties.containsKey(CLUSTER_SIZE)) {
             long clusterSize = (long) persistentProperties.get(CLUSTER_SIZE);
             keyValues = IteratorUtils.filter(keyValues, pair -> Long.valueOf(pair.getValue().size()).equals(clusterSize));
         }
-        final Map<Serializable, Set<String>> clusterPopulation = Utility.keyValuesToMap(keyValues);
+        final Map<Serializable, Set<ConceptId>> clusterPopulation = Utility.keyValuesToMap(keyValues);
         clusterPopulation.remove(NullObject.instance());
         return clusterPopulation;
     }

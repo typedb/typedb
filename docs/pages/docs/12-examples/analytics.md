@@ -181,10 +181,10 @@ compute min of gear; # 3
 compute max of carb; # 8
 
 # Mean MPG for an automatic car
-compute mean of mpg in automatic-car; # 17.15
+compute mean of mpg, in automatic-car; # 17.15
 
 # Mean MPG for a manual car
-compute mean of mpg in manual-car; # 24.39
+compute mean of mpg, in manual-car; # 24.39
 
 # Median number of cylinders (all Japanese cars)
 

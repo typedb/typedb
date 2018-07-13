@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql;
@@ -158,14 +158,14 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern directIsa(String type);
+    VarPattern isaExplicit(String type);
 
     /**
      * @param type a concept type that this variable must be an instance of directly
      * @return this
      */
     @CheckReturnValue
-    VarPattern directIsa(VarPattern type);
+    VarPattern isaExplicit(VarPattern type);
 
     /**
      * @param type a concept type id that this variable must be a kind of

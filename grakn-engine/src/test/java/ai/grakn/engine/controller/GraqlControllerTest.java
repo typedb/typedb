@@ -10,17 +10,17 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknKeyspaceStoreFake;
+import ai.grakn.engine.KeyspaceStoreFake;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
@@ -103,7 +103,7 @@ public class GraqlControllerTest {
 
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         EngineGraknTxFactory factory = EngineGraknTxFactory
-                .create(mockLockProvider, GraknConfig.create(), GraknKeyspaceStoreFake.of());
+                .create(mockLockProvider, GraknConfig.create(), KeyspaceStoreFake.of());
         factory.keyspaceStore().loadSystemSchema();
         new GraqlController(factory, mock(PostProcessor.class), printer, new MetricRegistry()).start(spark);
     });
@@ -176,7 +176,7 @@ public class GraqlControllerTest {
         Response resp = sendQuery(queryString, APPLICATION_JSON, true, sampleKB.tx().keyspace().getValue(), true);
         resp.then().statusCode(200);
         Stream<Query<?>> query = sampleKB.tx().graql().parser().parseList(queryString);
-        String graqlResult = printer.graqlString(query.map(Query::execute).collect(
+        String graqlResult = printer.toString(query.map(Query::execute).collect(
                 Collectors.toList()));
         Json expected = Json.read(graqlResult);
         assertEquals(expected, Json.read(resp.body().asString()));
@@ -190,6 +190,9 @@ public class GraqlControllerTest {
         String id = resp.jsonPath().getList("x.id").get(0).toString();
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
+
+        System.out.println(Json.nil());
+        System.out.println(resp.asString());
         assertEquals(Json.nil(), Json.read(resp.asString()));
     }
 
@@ -227,7 +230,7 @@ public class GraqlControllerTest {
         sampleKB.rollback();
         Query<?> query = sampleKB.tx().graql().parse(queryString);
 
-        String expectedObject = printer.graqlString(query.execute());
+        String expectedObject = printer.toString(query.execute());
 
         Object expected = Json.read(expectedObject);
 

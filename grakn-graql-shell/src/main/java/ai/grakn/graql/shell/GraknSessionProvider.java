@@ -10,20 +10,19 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.shell;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.remote.RemoteGrakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.util.SimpleURI;
 import jline.console.ConsoleReader;
 
@@ -45,12 +44,12 @@ public class GraknSessionProvider implements SessionProvider{
     @Override
     public GraknSession getSession(GraqlShellOptions options, ConsoleReader console) {
         int defaultGrpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        SimpleURI defaultGrpcUri = new SimpleURI(Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
+        SimpleURI defaultGrpcUri = new SimpleURI(ai.grakn.Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
         SimpleURI location = options.getUri();
 
         SimpleURI uri = location != null ? location : defaultGrpcUri;
         Keyspace keyspace = options.getKeyspace();
 
-        return RemoteGrakn.session(uri, keyspace);
+        return Grakn.session(uri, keyspace);
     }
 }

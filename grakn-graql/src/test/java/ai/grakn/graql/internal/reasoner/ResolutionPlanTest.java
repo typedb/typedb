@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -213,11 +213,11 @@ public class ResolutionPlanTest {
                 "$y has anotherResource 'that';";
 
         String xPatternString = "{" +
-                "$x id '" + concept.getId() + "';" +
+                "$x id '" + concept.id() + "';" +
                 basePatternString +
                 "}";
         String yPatternString = "{" +
-                "$y id '" + concept.getId() + "';" +
+                "$y id '" + concept.id() + "';" +
                 basePatternString +
                 "}";
         ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString, testTx), testTx);
@@ -440,7 +440,7 @@ public class ResolutionPlanTest {
 
     private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, GraknTx tx){
         Type type = tx.getType(Label.of(typeString));
-        return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.getId())).findFirst().orElse(null);
+        return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }
 
     private void checkPlanSanity(ReasonerQueryImpl query){

@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn-test</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>1.2.0</version>
+        <version>1.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -35,20 +35,12 @@
             <artifactId>grakn-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-bootup</artifactId>
-        </dependency>
-        <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql</artifactId>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-client</artifactId>
+            <artifactId>client-java</artifactId>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -59,34 +51,6 @@
             <artifactId>grakn-graql-shell</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.google.auto.value</groupId>
-            <artifactId>auto-value</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jayway.restassured</groupId>
-            <artifactId>rest-assured</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.lingala.zip4j</groupId>
-            <artifactId>zip4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- migration -->
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-sql</artifactId>
@@ -123,9 +87,39 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>net.sourceforge.owlapi</groupId>
-            <artifactId>org.semanticweb.hermit</artifactId>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-factory</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jayway.restassured</groupId>
+            <artifactId>rest-assured</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
@@ -139,11 +133,6 @@
         <dependency>
             <groupId>com.github.stefanbirkner</groupId>
             <artifactId>system-rules</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-factory</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

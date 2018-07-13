@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.gremlin.fragment;
@@ -39,14 +39,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
- * <p>
+ *
  * A fragment is composed of four things:
  * <ul>
  * <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
@@ -54,17 +53,17 @@ import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighte
  * <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
  * <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
  * </ul>
- * <p>
+ *
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
- * <p>
+ *
  * A {@code Fragment} is usually contained in a {@code EquivalentFragmentSet}, which contains multiple fragments describing
  * the different directions the traversal can be followed in, with different starts and ends.
- * <p>
+ *
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public abstract class Fragment {
 
@@ -101,7 +100,7 @@ public abstract class Fragment {
     // By default we assume the latest shard is 25% full
     public static final double SHARD_LOAD_FACTOR = 0.25;
 
-    private Optional<Double> accurateFragmentCost = Optional.empty();
+    private Double accurateFragmentCost = null;
 
     /*
      * This is the memoized result of {@link #vars()}
@@ -231,11 +230,13 @@ public abstract class Fragment {
      * Get the cost for executing the fragment.
      */
     public double fragmentCost() {
-        return accurateFragmentCost.orElse(internalFragmentCost());
+        if (accurateFragmentCost != null) return accurateFragmentCost;
+
+        return internalFragmentCost();
     }
 
     public void setAccurateFragmentCost(double fragmentCost) {
-        accurateFragmentCost = Optional.of(fragmentCost);
+        accurateFragmentCost = fragmentCost;
     }
 
     public abstract double internalFragmentCost();
@@ -252,8 +253,8 @@ public abstract class Fragment {
         return this;
     }
 
-    public Optional<Long> getShardCount(EmbeddedGraknTx<?> tx) {
-        return Optional.empty();
+    public Long getShardCount(EmbeddedGraknTx<?> tx) {
+        return 0L;
     }
 
     /**
@@ -281,7 +282,10 @@ public abstract class Fragment {
 
     @Override
     public final String toString() {
-        return start() + name() + Optional.ofNullable(end()).map(Object::toString).orElse("");
+        String str = start() + name();
+        if (end() != null) str += end().toString();
+
+        return str;
     }
 
     final Set<Weighted<DirectedEdge<Node>>> directedEdges(NodeId.NodeType nodeType,

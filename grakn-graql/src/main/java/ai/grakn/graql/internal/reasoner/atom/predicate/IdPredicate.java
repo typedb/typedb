@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
@@ -59,7 +59,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
         return create(createIdVar(varName.asUserDefined(), id), parent);
     }
     public static IdPredicate create(Var varName, Concept con, ReasonerQuery parent) {
-        return create(createIdVar(varName.asUserDefined(), con.getId()), parent);
+        return create(createIdVar(varName.asUserDefined(), con.id()), parent);
     }
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {
         return create(a.getPattern(), parent);
@@ -76,7 +76,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     private static VarPattern createIdVar(Var varName, Label label, GraknTx graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
-        return varName.id(schemaConcept.getId());
+        return varName.id(schemaConcept.id());
     }
 
     @Override

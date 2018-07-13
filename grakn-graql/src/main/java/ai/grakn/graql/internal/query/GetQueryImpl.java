@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -26,9 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,7 +35,7 @@ import static java.util.stream.Collectors.joining;
 /**
  * Default implementation of {@link GetQuery}
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
@@ -55,7 +53,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 
@@ -66,7 +64,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
 
     @Override
     public final Stream<Answer> stream() {
-        return queryRunner().run(this);
+        return executor().run(this);
     }
 
     @Override
@@ -79,7 +77,6 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
         return stream().collect(Collectors.toList());
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

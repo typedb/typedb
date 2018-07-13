@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.query;
@@ -45,8 +45,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.Cache;
-import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
@@ -63,7 +61,6 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,9 +80,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 
 /**
  *
@@ -129,7 +123,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeisRuleResolvableddedGraknTx
+        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeeddedGraknTx
         this(Collections.singletonList(atom), (EmbeddedGraknTx<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
     }
 
@@ -248,10 +242,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return selectAtoms().stream().anyMatch(Atom::isRuleResolvable);
     }
 
-    private boolean isTransitive() {
-        return getAtoms(Atom.class).filter(at -> ReasonerQueryEquivalence.containsEquivalentAtom(this, at, Atomic::isAlphaEquivalent)).count() == 2;
-    }
-
     /**
      * @return true if this query contains disconnected atoms that are unbounded
      */
@@ -281,7 +271,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
-        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return getAtoms(RelationshipAtom.class)
@@ -289,9 +279,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .noneMatch(ra -> ra.getRoleVarMap().entries().stream()
                         //get roles this type needs to play
                         .filter(e -> e.getValue().equals(typedVar))
-                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().label()))
                         //check if it can play it
-                        .anyMatch(e -> e.getKey().playedByTypes().noneMatch(parentTypes::contains)));
+                        .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
     }
 
     @Override
@@ -480,71 +470,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
-    private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
-                                    Cache<ReasonerAtomicQuery, ?> cache,
-                                    Cache<ReasonerAtomicQuery, ?> dCache){
-        List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
-        Iterator<ReasonerAtomicQuery> qit = queries.iterator();
-        ReasonerAtomicQuery childAtomicQuery = qit.next();
-        Stream<Answer> join = childAtomicQuery.answerStream(subGoals, cache, dCache, false);
-        Set<Var> joinedVars = childAtomicQuery.getVarNames();
-        while(qit.hasNext()){
-            childAtomicQuery = qit.next();
-            Set<Var> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
-            Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, false);
-            join = join(join, localSubs, ImmutableSet.copyOf(joinVars));
-            joinedVars.addAll(childAtomicQuery.getVarNames());
-        }
-        return join;
-    }
-
-    private Stream<Answer> differentialJoin(Set<ReasonerAtomicQuery> subGoals,
-                                            Cache<ReasonerAtomicQuery, ?> cache,
-                                            Cache<ReasonerAtomicQuery, ?> dCache){
-        Stream<Answer> join = Stream.empty();
-        List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
-        Set<ReasonerAtomicQuery> uniqueQueries = new HashSet<>(queries);
-        //only do one join for transitive queries
-        List<ReasonerAtomicQuery> queriesToJoin  = isTransitive()? Lists.newArrayList(uniqueQueries) : queries;
-
-        for(ReasonerAtomicQuery qi : queriesToJoin){
-            Stream<Answer> subs = qi.answerStream(subGoals, cache, dCache, true);
-            Set<Var> joinedVars = qi.getVarNames();
-            for(ReasonerAtomicQuery qj : queries){
-                if ( qj != qi ){
-                    Set<Var> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = joinWithInverse(
-                            subs,
-                            cache.getAnswerStream(qj),
-                            cache.getInverseAnswerMap(qj, joinVars),
-                            ImmutableSet.copyOf(joinVars));
-                    joinedVars.addAll(qj.getVarNames());
-                }
-            }
-            join = Stream.concat(join, subs);
-        }
-        return join;
-    }
-
-    Stream<Answer> computeJoin(Set<ReasonerAtomicQuery> subGoals,
-                               Cache<ReasonerAtomicQuery, ?> cache,
-                               Cache<ReasonerAtomicQuery, ?> dCache,
-                               boolean differentialJoin) {
-
-        //handling neq predicates by using complement
-        Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
-
-        Stream<Answer> join = differentialJoin?
-                positive.differentialJoin(subGoals, cache, dCache) :
-                positive.fullJoin(subGoals, cache, dCache);
-
-        return join.filter(a -> nonEqualsFilter(a, neqPredicates));
-    }
-
     /**
-     * //TODO
-     * @return
+     * @return rewritten (decomposed) version of the query
      */
     public ReasonerQueryImpl rewrite(){
         return new ReasonerQueryImpl(
@@ -556,42 +483,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public Stream<Answer> resolve(boolean materialise) {
-        if (materialise) {
-            return resolveAndMaterialise(new LazyQueryCache<>(), new LazyQueryCache<>());
-        } else {
-            return new ResolutionIterator(this).hasStream();
-        }
-    }
-
-    /**
-     * resolves the query and materialises answers, explanations are not provided
-     * @return stream of answers
-     */
-    Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache,
-                                         LazyQueryCache<ReasonerAtomicQuery> dCache) {
-
-        //handling neq predicates by using complement
-        Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
-
-        Iterator<Atom> atIt = positive.selectAtoms().iterator();
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
-        Stream<Answer> answerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
-        Set<Var> joinedVars = atomicQuery.getVarNames();
-
-        while (atIt.hasNext()) {
-            atomicQuery = new ReasonerAtomicQuery(atIt.next());
-            Stream<Answer> subAnswerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
-            Set<Var> joinVars = Sets.intersection(joinedVars, atomicQuery.getVarNames());
-            answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars));
-            joinedVars.addAll(atomicQuery.getVarNames());
-        }
-
-        Set<Var> vars = this.getVarNames();
-        return answerStream
-                .filter(a -> nonEqualsFilter(a, neqPredicates))
-                .map(a -> a.project(vars));
+    public Stream<Answer> resolve() {
+        return new ResolutionIterator(this).hasStream();
     }
 
     /**

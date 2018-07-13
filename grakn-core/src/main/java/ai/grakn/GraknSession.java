@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn;
@@ -46,7 +46,7 @@ public interface GraknSession extends AutoCloseable {
      * @see GraknTx
      */
     @CheckReturnValue
-    GraknTx open(GraknTxType transactionType);
+    GraknTx transaction(GraknTxType transactionType);
 
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.

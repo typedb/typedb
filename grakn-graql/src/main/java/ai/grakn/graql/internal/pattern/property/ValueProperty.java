@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.pattern.property;
@@ -47,7 +47,7 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {
 
-    public static final String NAME = "val";
+    public static final String NAME = "";
 
     public static ValueProperty of(ValuePredicate predicate) {
         return new AutoValue_ValueProperty(predicate);
@@ -63,6 +63,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     @Override
     public String getProperty() {
         return predicate().toString();
+    }
+
+    @Override
+    public void buildString(StringBuilder builder) {
+        builder.append(getProperty());
     }
 
     @Override

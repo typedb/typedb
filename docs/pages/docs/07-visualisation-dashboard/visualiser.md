@@ -159,7 +159,7 @@ match $x isa person has firstname "Susan" has surname "Dudley"; $y isa person ha
 
 <!-- Ignoring because uses made-up IDs -->
 ```graql-test-ignore
-compute path from "102432" to "192584"; # (The ID values in the strings will be different for each knowledge graph)
+compute path from "102432", to "192584"; # (The ID values in the strings will be different for each knowledge graph)
 ```
 
 Submit the query as usual by clicking '>' (or *Enter*) and the knowledge graph will display the relationships and nodes that connect the two by the shortest path. For Susan Dudley and Barbara Herchelroth, you should discover that Barbara is the great-grandmother of Susan’s husband.

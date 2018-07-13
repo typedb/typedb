@@ -152,7 +152,7 @@ match (parent: $p, child: $c) isa parentship; $p has identifier $pi; $c has iden
 Find all the people who are named 'Elizabeth':
 
 ```graql
-match $x isa person, has identifier $y; $y val contains "Elizabeth"; get;
+match $x isa person, has identifier $y; $y contains "Elizabeth"; get;
 ```
 
 Querying the knowledge graph is more fully described in the [Graql documentation](../querying-data/overview).
@@ -307,7 +307,7 @@ Turning to [Graql analytics](../distributed-analytics/overview), we can illustra
 The mean age at death can be calculated using `compute mean` as follows, entering it into the visualiser's query form:
 
 ```graql
-compute mean of age in person; # returns 77.0 (rounded to 2 decimal places)
+compute mean of age, in person; # returns 77.0 (rounded to 2 decimal places)
 ```
 
 Other statistical values can be calculated similarly, e.g. values for `count`:
@@ -320,7 +320,7 @@ A full list of statistics that can be explored is documented in the [Compute Que
 
 ### Shortest Path
 
-It is also possible to find the shortest path between two nodes in the knowledge graph. The documentation for the Grakn
+It is also possible to find the shortest path(s) between two nodes in the knowledge graph. The documentation for the Grakn
 visualiser describes how to use the [query builder tool](../visualisation-dashboard/visualiser#shortest-path), and includes
 a video.
 
@@ -334,8 +334,8 @@ and then search for relationships joining two of them using:
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore
-compute path from "id1" to "id2"; # Use the actual values of identifier for each person
-# e.g. compute path from "114848" to "348264";
+compute path from "id1", to "id2"; # Use the actual values of identifier for each person
+# e.g. compute path from "114848", to "348264";
 ```
 
 You can see below that the two people selected are married.
@@ -344,11 +344,11 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
-To narrow the path to specific relationships between specific entities:
+To scope the specific types of entities an relationships to be considered in the shortest path computation, you can provide a list of types to the query.
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore
-compute path from "id1" to "id2" in person, parentship;
+compute path from "id1", to "id2", in [person, parentship];
 ```
 
 The above limits the path to blood relationships (parent/child relationships) thus excludes marriage. As a result, the shortest path between the two people is now longer: Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, with *their* father being Jacob Young).

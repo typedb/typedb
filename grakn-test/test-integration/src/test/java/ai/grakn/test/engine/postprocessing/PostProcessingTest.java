@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.engine.postprocessing;
@@ -102,12 +102,12 @@ public class PostProcessingTest {
         String sample = "Sample";
 
         //Create GraknTx With Duplicate Resources
-        EmbeddedGraknTx<?> tx = session.open(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> tx = session.transaction(GraknTxType.WRITE);
         AttributeType<String> attributeType = tx.putAttributeType(sample, AttributeType.DataType.STRING);
 
-        Attribute<String> attribute = attributeType.putAttribute(value);
+        Attribute<String> attribute = attributeType.create(value);
         tx.commitSubmitNoLogs();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());
         //Check duplicates have been created
@@ -144,7 +144,7 @@ public class PostProcessingTest {
 
         Thread.sleep(2000);
 
-        tx = session.open(GraknTxType.READ);
+        tx = session.transaction(GraknTxType.READ);
 
         //Check it's fixed
         assertEquals(1, tx.getAttributeType(sample).instances().count());
@@ -190,7 +190,7 @@ public class PostProcessingTest {
         EntityType et2;
 
         //Create Simple GraknTx
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
             graknTx.commitSubmitNoLogs();
@@ -200,24 +200,24 @@ public class PostProcessingTest {
         checkShardCount(keyspace, et2, 1);
 
         //Add new counts
-        createAndUploadCountCommitLog(keyspace, et1.getId(), 99_999L);
-        createAndUploadCountCommitLog(keyspace, et2.getId(), 99_999L);
+        createAndUploadCountCommitLog(keyspace, et1.id(), 99_999L);
+        createAndUploadCountCommitLog(keyspace, et2.id(), 99_999L);
 
         checkShardCount(keyspace, et1, 1);
         checkShardCount(keyspace, et2, 1);
 
         //Add new counts
-        createAndUploadCountCommitLog(keyspace, et1.getId(), 2L);
-        createAndUploadCountCommitLog(keyspace, et2.getId(), 1L);
+        createAndUploadCountCommitLog(keyspace, et1.id(), 2L);
+        createAndUploadCountCommitLog(keyspace, et2.id(), 1L);
 
         checkShardCount(keyspace, et1, 2);
         checkShardCount(keyspace, et2, 1);
     }
 
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).open(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
             int shards = graknTx.getTinkerTraversal().V().
-                    has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
+                    has(Schema.VertexProperty.ID.name(), concept.id().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 
             assertEquals(expectedValue, shards);

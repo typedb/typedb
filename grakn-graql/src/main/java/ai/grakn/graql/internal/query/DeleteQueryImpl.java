@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -26,14 +26,14 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
 abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {
@@ -48,7 +48,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public final Void execute() {
-        queryRunner().run(this);
+        executor().run(this);
         return null;
     }
 
@@ -58,7 +58,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 
@@ -83,7 +83,6 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
         return Stream.empty();
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal;
@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.QueryRunner;
+import ai.grakn.QueryExecutor;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -95,22 +95,17 @@ import static ai.grakn.util.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * <p>
- * The {@link GraknTx} Base Implementation
- * </p>
- * <p>
- * <p>
+ * The {@link GraknTx} Base Implementation.
  * This defines how a grakn graph sits on top of a Tinkerpop {@link Graph}.
  * It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
- * </p>
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
- * @author fppt
+ * @author Grakn Warriors
  */
 public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
-    private static final String QUERY_RUNNER_CLASS_NAME = "ai.grakn.graql.internal.query.runner.TinkerQueryRunner";
+    private static final String QUERY_EXECUTOR_CLASS_NAME = "ai.grakn.graql.internal.query.executor.TinkerQueryExecutor";
 
     //----------------------------- Shared Variables
     private final EmbeddedGraknSession session;
@@ -118,9 +113,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static final @Nullable Constructor<?> queryConstructor = getQueryConstructor();
+    private static final @Nullable Constructor<?> queryBuilderConstructor = getQueryBuilderConstructor();
 
-    private static final @Nullable Method queryRunnerFactory = getQueryRunnerFactory();
+    private static final @Nullable Method queryExecutorFactory = getQueryExecutorFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
@@ -306,8 +301,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {
-            getGlobalCache().cacheLabel(concept.getLabel(), concept.getLabelId());
-            getGlobalCache().cacheType(concept.getLabel(), concept);
+            getGlobalCache().cacheLabel(concept.label(), concept.labelId());
+            getGlobalCache().cacheType(concept.label(), concept);
         });
     }
 
@@ -334,11 +329,11 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     @Override
     public QueryBuilder graql() {
-        if (queryConstructor == null) {
-            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query runner", QUERY_RUNNER_CLASS_NAME));
+        if (queryBuilderConstructor == null) {
+            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query executor", QUERY_EXECUTOR_CLASS_NAME));
         }
         try {
-            return (QueryBuilder) queryConstructor.newInstance(this);
+            return (QueryBuilder) queryBuilderConstructor.newInstance(this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -482,8 +477,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
     private GraknTxOperationException labelTaken(SchemaConcept schemaConcept){
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel())) return GraknTxOperationException.reservedLabel(schemaConcept.getLabel());
-        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.getLabel());
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) return GraknTxOperationException.reservedLabel(schemaConcept.label());
+        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
 
     private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
@@ -542,8 +537,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
             throw GraknTxOperationException.metaTypeImmutable(label);
-        } else if (!dataType.equals(attributeType.getDataType())) {
-            throw GraknTxOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+        } else if (!dataType.equals(attributeType.dataType())) {
+            throw GraknTxOperationException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return attributeType;
@@ -682,16 +677,29 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
+    /**
+     * Close the transaction without committing
+     */
     @Override
     public void close() {
         close(false, false);
     }
 
+    /**
+     * Commits and close the transaction
+     * @throws InvalidKBException
+     */
     @Override
     public void commit() throws InvalidKBException {
         close(true, true);
     }
 
+    /**
+     * Close the transaction
+     * @param commitRequired indicates whether to commit the transaction
+     * @param trackLogs
+     * @return the {@link CommitLog}, if
+     */
     private Optional<CommitLog> close(boolean commitRequired, boolean trackLogs) {
         Optional<CommitLog> logs = Optional.empty();
         if (isClosed()) {
@@ -724,10 +732,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Commits to the graph without submitting any commit logs.
-         * @return the commit log that would have been submitted if it is needed.
-         * @throws InvalidKBException when the graph does not conform to the object concept
-         */
+     * Commits to the graph without submitting any commit logs.
+     * @return the commit log that would have been submitted if it is needed.
+     * @throws InvalidKBException when the graph does not conform to the object concept
+     */
     public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
@@ -775,15 +783,16 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    private Optional<URI> getDeleteKeyspaceEndpoint() {
+    @Nullable
+    private URI getDeleteKeyspaceEndpoint() {
         if (Grakn.IN_MEMORY.equals(session().uri())) {
-            return Optional.empty();
+            return null;
         }
 
         URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
                 .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
                 .build();
-        return Optional.of(uri);
+        return uri;
     }
 
     public boolean isValidElement(Element element) {
@@ -885,7 +894,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      */
     private void copyRelationshipReified(Attribute main, Attribute other, Relationship otherRelationship) {
         //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-        otherRelationship.allRolePlayers().forEach((role, instances) -> {
+        otherRelationship.rolePlayersMap().forEach((role, instances) -> {
             Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
             if (instances.contains(other) && relationReified.isPresent()) {
                 relationReified.get().putRolePlayerEdge(role, main);
@@ -937,18 +946,18 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     @Override
-    public final QueryRunner queryRunner() {
-        if (queryRunnerFactory == null) {
+    public final QueryExecutor queryExecutor() {
+        if (queryExecutorFactory == null) {
             throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
         }
         try {
-            return (QueryRunner) queryRunnerFactory.invoke(null, this);
+            return (QueryExecutor) queryExecutorFactory.invoke(null, this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static @Nullable Constructor<?> getQueryConstructor() {
+    private static @Nullable Constructor<?> getQueryBuilderConstructor() {
         try {
             return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
@@ -956,9 +965,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    private static @Nullable Method getQueryRunnerFactory() {
+    private static @Nullable Method getQueryExecutorFactory() {
         try {
-            return Class.forName(QUERY_RUNNER_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
+            return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             return null;
         }

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.kbs;
@@ -70,7 +70,7 @@ public class DiagonalKB extends TestKB {
         long inserts = 0;
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                instanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, entity1, key).getId();
+                instanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, entity1, key).id();
                 inserts++;
                 if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
 
@@ -80,15 +80,15 @@ public class DiagonalKB extends TestKB {
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m; j++) {
                 if ( i < n - 1 ) {
-                    vertical.addRelationship()
-                            .addRolePlayer(relFrom, tx.getConcept(instanceIds[i][j]))
-                            .addRolePlayer(relTo, tx.getConcept(instanceIds[i+1][j]));
+                    vertical.create()
+                            .assign(relFrom, tx.getConcept(instanceIds[i][j]))
+                            .assign(relTo, tx.getConcept(instanceIds[i+1][j]));
                     inserts++;
                 }
                 if ( j < m - 1){
-                    horizontal.addRelationship()
-                            .addRolePlayer(relFrom, tx.getConcept(instanceIds[i][j]))
-                            .addRolePlayer(relTo, tx.getConcept(instanceIds[i][j+1]));
+                    horizontal.create()
+                            .assign(relFrom, tx.getConcept(instanceIds[i][j]))
+                            .assign(relTo, tx.getConcept(instanceIds[i][j+1]));
                     inserts++;
                 }
                 if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);

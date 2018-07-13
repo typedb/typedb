@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -140,7 +140,7 @@ public class DefineQueryTest {
         ).execute();
 
         Match match = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -153,7 +153,7 @@ public class DefineQueryTest {
         ).execute();
 
         Match match = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().dataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
@@ -202,7 +202,7 @@ public class DefineQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").stream().map(ans -> ans.get("n")).findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().anyMatch(role -> role.equals(movies.tx().getRole(roleTypeLabel))));
+        assertTrue(newType.playing().anyMatch(role -> role.equals(movies.tx().getRole(roleTypeLabel))));
 
         assertExists(qb, var().isa("new-type"));
     }
@@ -272,7 +272,7 @@ public class DefineQueryTest {
 
         Match match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x")
-                .stream().map(ans -> ans.get("x")).findFirst().get().asAttributeType().getRegex());
+                .stream().map(ans -> ans.get("x")).findFirst().get().asAttributeType().regex());
     }
 
     @Test
@@ -421,7 +421,7 @@ public class DefineQueryTest {
 
     @Test
     public void whenModifyingAThingInADefineQuery_Throw() {
-        ConceptId id = movies.tx().getEntityType("movie").instances().iterator().next().getId();
+        ConceptId id = movies.tx().getEntityType("movie").instances().iterator().next().id();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(anyOf(
@@ -439,9 +439,9 @@ public class DefineQueryTest {
         EntityType type = movies.tx().getEntityType("a-new-type");
         Label newLabel = Label.of("a-new-new-type");
 
-        qb.define(label(newLabel).id(type.getId())).execute();
+        qb.define(label(newLabel).id(type.id())).execute();
 
-        assertEquals(newLabel, type.getLabel());
+        assertEquals(newLabel, type.label());
     }
 
     @Test
@@ -458,7 +458,7 @@ public class DefineQueryTest {
         RelationshipType marriage = movies.tx().getRelationshipType("marriage");
         Role husband = movies.tx().getRole("husband");
         Role wife = movies.tx().getRole("wife");
-        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
     }
 
     @Test
@@ -473,7 +473,7 @@ public class DefineQueryTest {
         RelationshipType marriage = movies.tx().getRelationshipType("fatherhood");
         Role father = movies.tx().getRole("father");
         Role son = movies.tx().getRole("son");
-        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(father, son));
+        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(father, son));
         assertEquals(movies.tx().getRole("parent"), father.sup());
         assertEquals(movies.tx().getRole("child"), son.sup());
     }
@@ -499,9 +499,9 @@ public class DefineQueryTest {
         EntityType person = movies.tx().getEntityType("person");
         Role husband = movies.tx().getRole("husband");
         Role wife = movies.tx().getRole("wife");
-        assertThat(marriage.relates().toArray(), arrayContainingInAnyOrder(husband, wife));
-        assertThat(person.plays().toArray(), hasItemInArray(wife));
-        assertThat(person.plays().toArray(), hasItemInArray(husband));
+        assertThat(marriage.roles().toArray(), arrayContainingInAnyOrder(husband, wife));
+        assertThat(person.playing().toArray(), hasItemInArray(wife));
+        assertThat(person.playing().toArray(), hasItemInArray(husband));
     }
 
     @Test

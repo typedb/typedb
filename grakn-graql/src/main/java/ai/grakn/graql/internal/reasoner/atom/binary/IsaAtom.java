@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.DirectIsaProperty;
+import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -82,7 +82,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         return create(var.isa(predicateVar).admin(), predicateVar, predicateId, parent);
     }
     public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
-        return create(var, predicateVar, type.getId(), parent);
+        return create(var, predicateVar, type.id(), parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
         IsaAtom atom = create(a.getPattern(), a.getPredicateVariable(), a.getTypeId(), parent);
@@ -96,7 +96,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? DirectIsaProperty.class : IsaProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? IsaExplicitProperty.class : IsaProperty.class;}
 
     //NB: overriding as these require a derived property
     @Override
@@ -120,7 +120,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     @Override
     public String toString(){
-        String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
+        String typeString = (getSchemaConcept() != null? getSchemaConcept().label() : "") + "(" + getVarName() + ")";
         return typeString +
                 (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
@@ -133,8 +133,8 @@ public abstract class IsaAtom extends IsaAtomBase {
         return getSchemaConcept() == null?
                 getVarName().isa(getPredicateVariable()) :
                 isDirect()?
-                        getVarName().directIsa(getSchemaConcept().getLabel().getValue()) :
-                        getVarName().isa(getSchemaConcept().getLabel().getValue()) ;
+                        getVarName().isaExplicit(getSchemaConcept().label().getValue()) :
+                        getVarName().isa(getSchemaConcept().label().getValue()) ;
     }
 
     @Override
@@ -160,7 +160,7 @@ public abstract class IsaAtom extends IsaAtomBase {
                 .flatMap(r -> r.getRoleVarMap().entries().stream()
                         .filter(e -> e.getValue().equals(getVarName()))
                         .map(Map.Entry::getKey))
-                .map(role -> role.playedByTypes().collect(Collectors.toSet()))
+                .map(role -> role.players().collect(Collectors.toSet()))
                 .reduce(Sets::intersection)
                 .orElse(Sets.newHashSet());
 

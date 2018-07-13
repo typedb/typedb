@@ -19,7 +19,7 @@
 package ai.grakn.test.docs
 
 import ai.grakn.*
-import ai.grakn.client.BatchExecutorClient
+import ai.grakn.batch.BatchExecutorClient
 import ai.grakn.concept.*
 import ai.grakn.engine.TaskId
 import ai.grakn.graql.*
@@ -58,9 +58,9 @@ uri = JavaDocsTest.engine.uri()
 host = uri.host
 port = uri.port
 
-tx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
+tx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).transaction(GraknTxType.WRITE)
 
-_otherTx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).open(GraknTxType.WRITE)
+_otherTx = DocTestUtil.getTestGraph(uri, JavaDocsTest.knowledgeBaseName).transaction(GraknTxType.WRITE)
 keyspace = _otherTx.keyspace()
 _otherTx.close()
 

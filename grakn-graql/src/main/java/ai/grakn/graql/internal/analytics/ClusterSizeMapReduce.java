@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.analytics;
@@ -40,7 +40,7 @@ import java.util.Map;
 public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
     private static final String CLUSTER_LABEL = "clusterSizeMapReduce.clusterLabel";
-    private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
+    private static final String CLUSTER_SIZE = "clusterSizeMapReduce.size";
 
     // Needed internally for OLAP tasks
     public ClusterSizeMapReduce() {

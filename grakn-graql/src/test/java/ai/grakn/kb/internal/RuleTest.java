@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.kb.internal;
@@ -58,7 +58,7 @@ public class RuleTest {
     @Before
     public void setupRules(){
         session = Grakn.session(Grakn.IN_MEMORY, "absd");
-        graknTx = Grakn.session(Grakn.IN_MEMORY, "absd").open(GraknTxType.WRITE);
+        graknTx = Grakn.session(Grakn.IN_MEMORY, "absd").transaction(GraknTxType.WRITE);
     }
 
     @After
@@ -83,7 +83,7 @@ public class RuleTest {
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.getLabel(), "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.label(), "Your-Type"));
 
         graknTx.commit();
     }
@@ -196,7 +196,7 @@ public class RuleTest {
     public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithAmbiguousPredicates_Throw() throws InvalidKBException {
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parser().parsePattern("{$x has res1 $r; $r val =10; $r val =20;}"),
+                graknTx.graql().parser().parsePattern("{$x has res1 $r; $r == 10; $r == 20;}"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES
         );
     }
@@ -281,7 +281,7 @@ public class RuleTest {
 
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidKBException {
-        ConceptId randomId = graknTx.admin().getMetaConcept().getId();
+        ConceptId randomId = graknTx.admin().getMetaConcept().id();
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parser().parsePattern("$x id '" + randomId.getValue() + "'"),
@@ -294,7 +294,7 @@ public class RuleTest {
         );
         validateIllegalHead(
                 graknTx.graql().parser().parsePattern("($x, $y); $x isa res1;"),
-                graknTx.graql().parser().parsePattern("$x val '100'"),
+                graknTx.graql().parser().parsePattern("$x == '100'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
@@ -304,7 +304,7 @@ public class RuleTest {
         );
         validateIllegalRule(
                 graknTx.graql().parser().parsePattern("($x, $y); $x isa res1;"),
-                graknTx.graql().parser().parsePattern("$x val '100'"),
+                graknTx.graql().parser().parsePattern("$x == '100'"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalRule(
@@ -371,17 +371,17 @@ public class RuleTest {
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("$x isa relation1"),
                 graknTx.graql().parser().parsePattern("$x has res1 'value'"),
-                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "relation1")
         );
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("{$x isa relation1, has res1 'value';}"),
                 graknTx.graql().parser().parsePattern("$x isa relation2"),
-                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "relation1")
         );
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("$x isa relation2"),
                 graknTx.graql().parser().parsePattern("{$x isa relation1, has res1 'value';"),
-                ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage("res1", "relation1")
+                ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE.getMessage("res1", "relation1")
         );
     }
 
@@ -404,12 +404,12 @@ public class RuleTest {
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("$x has relation1 'value'"),
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage("relation1")
+                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage("relation1")
         );
         validateOntologicallyIllegalRule(
                 graknTx.graql().parser().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parser().parsePattern("$x has relation1 'value'"),
-                ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage("relation1")
+                ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE.getMessage("relation1")
         );
     }
 
@@ -437,7 +437,7 @@ public class RuleTest {
         Rule rule = graknTx.putRule(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message.getMessage(rule.getLabel()));
+        expectedException.expectMessage(message.getMessage(rule.label()));
         graknTx.commit();
     }
 
@@ -446,7 +446,7 @@ public class RuleTest {
         Rule rule = graknTx.putRule(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
-        expectedException.expectMessage(message.getMessage(then.toString(), rule.getLabel()));
+        expectedException.expectMessage(message.getMessage(then.toString(), rule.label()));
         graknTx.commit();
     }
 
@@ -464,8 +464,8 @@ public class RuleTest {
         Role role3 = graph.putRole("role3");
 
         graph.putEntityType("entity1")
-                .attribute(res1)
-                .attribute(res2)
+                .has(res1)
+                .has(res2)
                 .plays(role1)
                 .plays(role2);
 
@@ -488,13 +488,13 @@ public class RuleTest {
         then = graknTx.graql().parser().parsePattern("$x isa type2");
 
         Rule rule = graknTx.putRule("My-Happy-Rule", when, then);
-        assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), empty());
-        assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), empty());
+        assertThat(rule.whenTypes().collect(Collectors.toSet()), empty());
+        assertThat(rule.thenTypes().collect(Collectors.toSet()), empty());
 
         graknTx.commit();
 
-        assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
-        assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
+        assertThat(rule.whenTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
+        assertThat(rule.thenTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
     }
 
     @Test

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.template.macro;
@@ -95,8 +95,8 @@ public class LongMacroTest {
 
     @Test
     public void whenUsingLongMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $x val @long(<value>);";
-        String expected = "insert $x0 val 4;";
+        String template = "insert $x == @long(<value>);";
+        String expected = "insert $x0 == 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);

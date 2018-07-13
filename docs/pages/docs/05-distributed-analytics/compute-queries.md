@@ -8,7 +8,7 @@ permalink: /docs/distributed-analytics/compute-queries
 folder: docs
 ---
 
-A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) 
+A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel)
 to determine information about the knowledge graph in parallel.
 Called within the Graql shell or dashboard, the general syntax is:
 
@@ -16,7 +16,7 @@ Called within the Graql shell or dashboard, the general syntax is:
 compute [goal] [subgraph]; (using [strategy] where [modifiers];)
 ```
 
-* `goal` can be any of the available [statistics](#available-statistics-methods) 
+* `goal` can be any of the available [statistics](#available-statistics-methods)
 or [graph queries](#available-graph-queries).
 * `subgraph` is a comma separated list of types to be visited by the Pregel algorithm.
 
@@ -30,11 +30,11 @@ The simplest query `count` can be executed using the following:
 ```graql-skip-test
 compute count;
 ```
-The following query compute the clusters, in the subgraph containing only person and marriage, 
+The following query compute the clusters, in the subgraph containing only person and marriage,
 using connected component, and return the members of each cluster.
 
 ```graql-test-ignore
-compute cluster in person, marriage; using connected-component where members = true;
+compute cluster in [person, marriage], using connected-component, where members=true;
 ```
 
 ## Subgraph
@@ -56,7 +56,7 @@ The specific compute queries fall into two main categories and more information 
 
 ## Available Statistics Methods
 
-The following methods are available to perform simple statistics computations. 
+The following methods are available to perform simple statistics computations.
 A summary of the statistics algorithms is given in the table below.
 
 | Algorithm | Description                                   |
@@ -84,4 +84,3 @@ A summary of the graph algorithms is given in the table below.
 
 
 For further information see the individual sections.
-

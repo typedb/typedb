@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.matcher;
@@ -110,7 +110,7 @@ public class GraknMatchers {
 
             @Override
             public Object transform(MatchableConcept item) {
-                return item.get().asAttribute().getValue();
+                return item.get().asAttribute().value();
             }
         };
     }
@@ -188,7 +188,7 @@ public class GraknMatchers {
             @Override
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
-                return concept.isType() ? concept.asType().getLabel() : null;
+                return concept.isType() ? concept.asType().label() : null;
             }
         };
     }
@@ -214,7 +214,7 @@ public class GraknMatchers {
             @Override
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
-                return concept.isRole() ? concept.asRole().getLabel() : null;
+                return concept.isRole() ? concept.asRole().label() : null;
             }
         };
     }
@@ -240,7 +240,7 @@ public class GraknMatchers {
             @Override
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
-                return concept.isRule() ? concept.asRule().getLabel() : null;
+                return concept.isRule() ? concept.asRule().label() : null;
             }
         };
     }
@@ -268,7 +268,7 @@ public class GraknMatchers {
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
                 return item.get().asThing().attributes()
-                        .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().getLabel()))
+                        .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().label()))
                         .map(MatchableConcept::of)
                         .collect(toSet());
             }

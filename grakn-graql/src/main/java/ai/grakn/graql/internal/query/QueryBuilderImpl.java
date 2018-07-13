@@ -10,16 +10,16 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
@@ -34,17 +34,17 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.parser.QueryParserImpl;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
 import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>
@@ -53,33 +53,27 @@ import java.util.Optional;
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class QueryBuilderImpl implements QueryBuilder {
 
-    private final Optional<GraknTx> tx;
+    @Nullable
+    private final GraknTx tx;
     private final QueryParser queryParser = QueryParserImpl.create(this);
     private boolean infer = true;
-    private boolean materialise = false;
 
     public QueryBuilderImpl() {
-        this.tx = Optional.empty();
+        this.tx = null;
     }
 
     @SuppressWarnings("unused") /** used by {@link EmbeddedGraknTx#graql()}*/
     public QueryBuilderImpl(GraknTx tx) {
-        this.tx = Optional.of(tx);
+        this.tx = tx;
     }
 
     @Override
     public QueryBuilder infer(boolean infer) {
         this.infer = infer;
-        return this;
-    }
-
-    @Override
-    public QueryBuilder materialise(boolean materialise) {
-        this.materialise = materialise;
         return this;
     }
 
@@ -100,8 +94,8 @@ public class QueryBuilderImpl implements QueryBuilder {
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
-        Match match = infer ? base.infer(materialise).admin() : base;
-        return tx.map(match::withTx).orElse(match);
+        Match match = infer ? base.infer().admin() : base;
+        return (tx != null) ? match.withTx(tx) : match;
     }
 
     /**
@@ -131,7 +125,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return DefineQueryImpl.of(admins, tx.orElse(null));
+        return DefineQueryImpl.of(admins, tx);
     }
 
     @Override
@@ -142,15 +136,11 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return UndefineQueryImpl.of(admins, tx.orElse(null));
+        return UndefineQueryImpl.of(admins, tx);
     }
 
-    /**
-     * @return a compute query builder for building analytics query
-     */
-    @Override
-    public ComputeQueryBuilder compute(){
-        return new ComputeQueryBuilderImpl(tx);
+    public ComputeQuery compute(Method method) {
+        return new ComputeQueryImpl(tx, method);
     }
 
     @Override

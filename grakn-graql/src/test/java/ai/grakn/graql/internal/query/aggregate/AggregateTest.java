@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query.aggregate;
@@ -102,7 +102,7 @@ public class AggregateTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
+        Thing godfather = rule.tx().getAttributeType("title").attribute("Godfather").owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

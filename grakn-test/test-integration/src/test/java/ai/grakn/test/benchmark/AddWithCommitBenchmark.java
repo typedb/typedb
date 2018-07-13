@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.benchmark;
@@ -48,7 +48,7 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
     @Setup
     public void setup() throws Throwable {
         session = sessionContext.newSession();
-        try(GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try(GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             role1 = tx.putRole("benchmark_role1");
             role2 = tx.putRole("benchmark_role2");
             entityType = tx.putEntityType("benchmark_Entitytype").plays(role1).plays(role2);
@@ -59,18 +59,18 @@ public class AddWithCommitBenchmark extends BenchmarkTest {
 
     @Benchmark
     public void addEntity() {
-        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
-            entityType.addEntity();
+        try(GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            entityType.create();
             graph.commit();
         }
     }
 
     @Benchmark
     public void addRelation() {
-        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Entity entity1 = entityType.addEntity();
-            Entity entity2 = entityType.addEntity();
-            relationshipType.addRelationship().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
+        try(GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            Entity entity1 = entityType.create();
+            Entity entity2 = entityType.create();
+            relationshipType.create().assign(role1, entity1).assign(role2, entity2);
             graph.commit();
         }
     }

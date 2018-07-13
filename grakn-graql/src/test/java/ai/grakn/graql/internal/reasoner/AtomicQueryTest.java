@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -146,12 +146,12 @@ public class AtomicQueryTest {
         Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
         Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").execute()).get("x");
 
-        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r val 'inferred';$x id " + firstEntity.getId().getValue() + ";}", graph), graph);
+        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r 'inferred';$x id " + firstEntity.id().getValue() + ";}", graph), graph);
         String reuseResourcePatternString =
                 "{" +
                         "$x has resource $r;" +
-                        "$x id " + secondEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + secondEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "}";
 
         ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString, graph), graph);
@@ -162,14 +162,14 @@ public class AtomicQueryTest {
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
-                        "$x id " + secondEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + secondEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "get;").execute()).get("rel").asRelationship().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
-                        "$x id " + firstEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + firstEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "get;").execute()).get("rel").asRelationship().isInferred(), false);
     }
 
@@ -183,8 +183,8 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
                         "$r (role1: $x, role2: $y);" +
-                        "$x id " + firstEntity.getId().getValue() + ";" +
-                        "$y id " + secondEntity.getId().getValue() + ";" +
+                        "$x id " + firstEntity.id().getValue() + ";" +
+                        "$y id " + secondEntity.id().getValue() + ";" +
                         "}"
                 , graph),
                 graph
@@ -893,7 +893,7 @@ public class AtomicQueryTest {
     public void testEquivalence_DifferentResourceVariants(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$x has resource 'value';}";
-        String query2 = "{$y has resource $r;$r val 'value';}";
+        String query2 = "{$y has resource $r;$r 'value';}";
         String query3 = "{$y has resource $r;}";
         String query4 = "{$y has resource 'value2';}";
 
@@ -940,15 +940,15 @@ public class AtomicQueryTest {
     @Test //tests alpha-equivalence of queries with resources with multi predicate
     public void testEquivalence_MultiPredicateResources(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String query = "{$z has resource $u;$a val >23; $a val <27;}";
-        String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a val >23; $a val <27;}";
+        String query = "{$z has resource $u;$a >23; $a <27;}";
+        String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
         String query3 = "{$e isa baseRoleEntity;$e has resource > 23;}";
-        String query4 = "{$p isa baseRoleEntity;$p has resource $a;$a val >23;}";
-        String query5 = "{$x isa baseRoleEntity;$x has resource $y;$y val >27;$y val <23;}";
-        String query6 = "{$a isa baseRoleEntity;$a has resource $p;$p val <27;$p val >23;}";
-        String query7 = "{$x isa baseRoleEntity, has resource $a;$a val >23; $a val <27;}";
-        String query8 = "{$x isa baseRoleEntity, has resource $z1;$z1 val >23; $z2 val <27;}";
-        String query9 = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a val >23; $a val <27;}";
+        String query4 = "{$p isa baseRoleEntity;$p has resource $a;$a >23;}";
+        String query5 = "{$x isa baseRoleEntity;$x has resource $y;$y >27;$y <23;}";
+        String query6 = "{$a isa baseRoleEntity;$a has resource $p;$p <27;$p >23;}";
+        String query7 = "{$x isa baseRoleEntity, has resource $a;$a >23; $a <27;}";
+        String query8 = "{$x isa baseRoleEntity, has resource $z1;$z1 >23; $z2 <27;}";
+        String query9 = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
 
         queryEquivalence(query, query2, false, graph);
         queryEquivalence(query, query3, false, graph);
@@ -996,11 +996,11 @@ public class AtomicQueryTest {
     @Test //tests alpha-equivalence of resource atoms with different predicates
     public void testEquivalence_resourcesWithDifferentPredicates() {
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String query = "{$x has resource $r;$r val > 1099;}";
-        String query2 = "{$x has resource $r;$r val < 1099;}";
-        String query3 = "{$x has resource $r;$r val = 1099;}";
-        String query4 = "{$x has resource $r;$r val '1099';}";
-        String query5 = "{$x has resource $r;$r val > $var;}";
+        String query = "{$x has resource $r;$r > 1099;}";
+        String query2 = "{$x has resource $r;$r < 1099;}";
+        String query3 = "{$x has resource $r;$r == 1099;}";
+        String query4 = "{$x has resource $r;$r '1099';}";
+        String query5 = "{$x has resource $r;$r > $var;}";
 
         queryEquivalence(query, query2, false, graph);
         queryEquivalence(query, query3, false, graph);
@@ -1172,7 +1172,7 @@ public class AtomicQueryTest {
 
     private Concept getConceptByResourceValue(EmbeddedGraknTx<?> graph, String id){
         Set<Concept> instances = graph.getAttributesByValue(id)
-                .stream().flatMap(Attribute::ownerInstances).collect(Collectors.toSet());
+                .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         return instances.iterator().next();

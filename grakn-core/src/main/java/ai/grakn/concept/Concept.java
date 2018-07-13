@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.concept;
@@ -50,7 +50,7 @@ public interface Concept {
      * @return A value the concept's unique id.
      */
     @CheckReturnValue
-    ConceptId getId();
+    ConceptId id();
 
     /**
      * Used for determining which {@link Keyspace} a {@link Concept} was created in and is bound to.
@@ -121,9 +121,9 @@ public interface Concept {
     }
 
     /**
-     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * Return as a {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      *
-     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
+     * @return A {@link AttributeType} if the {@link Concept} is a {@link AttributeType}
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType(){

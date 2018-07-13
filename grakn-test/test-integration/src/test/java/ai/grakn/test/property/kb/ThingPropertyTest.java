@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.property.kb;
@@ -47,6 +47,6 @@ public class ThingPropertyTest {
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(@WithResource Thing thing, long seed) {
         Attribute<?> attribute = PropertyUtil.choose(thing.attributes(), seed);
-        assertTrue("[" + thing + "] is connected to attribute [" + attribute + "] but is not in it's owner set", attribute.ownerInstances().collect(toSet()).contains(thing));
+        assertTrue("[" + thing + "] is connected to attribute [" + attribute + "] but is not in it's owner set", attribute.owners().collect(toSet()).contains(thing));
     }
 }

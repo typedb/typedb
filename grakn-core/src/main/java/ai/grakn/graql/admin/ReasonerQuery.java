@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.admin;
@@ -105,11 +105,10 @@ public interface ReasonerQuery{
 
     /**
      * resolves the query
-     * @param materialise materialisation flag
      * @return stream of answers
      */
     @CheckReturnValue
-    Stream<Answer> resolve(boolean materialise);
+    Stream<Answer> resolve();
 
     /**
      * Returns a var-type map local to this query. Map is cached.

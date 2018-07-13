@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.admin;
@@ -24,14 +24,12 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * Admin class for inspecting and manipulating a {@link Match}
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public interface MatchAdmin extends Match {
 
@@ -58,7 +56,7 @@ public interface MatchAdmin extends Match {
      * @return the graph the query operates on, if one was provided
      */
     @CheckReturnValue
-    Optional<GraknTx> tx();
+    GraknTx tx();
 
     /**
      * @return all selected variable names in the query
@@ -66,6 +64,8 @@ public interface MatchAdmin extends Match {
     @CheckReturnValue
     Set<Var> getSelectedNames();
 
-    @Nullable
+    /**
+     * @return true if query will involve / set to performing inference
+     */
     Boolean inferring();
 }

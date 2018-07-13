@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.concept;
@@ -46,7 +46,7 @@ public interface Rule extends SchemaConcept {
      */
     @CheckReturnValue
     @Nullable
-    Pattern getWhen();
+    Pattern when();
 
     /**
      * Retrieves the then part of the {@link Rule}.
@@ -56,7 +56,7 @@ public interface Rule extends SchemaConcept {
      */
     @CheckReturnValue
     @Nullable
-    Pattern getThen();
+    Pattern then();
 
     /**
      * Retrieve a set of {@link Type}s that constitute a part of the hypothesis of this {@link Rule}.
@@ -64,7 +64,7 @@ public interface Rule extends SchemaConcept {
      * @return A collection of Concept {@link Type}s that constitute a part of the hypothesis of the {@link Rule}
      */
     @CheckReturnValue
-    Stream<Type> getHypothesisTypes();
+    Stream<Type> whenTypes();
 
     /**
      * Retrieve a set of {@link Type}s that constitue a part of the conclusion of the {@link Rule}.
@@ -72,7 +72,7 @@ public interface Rule extends SchemaConcept {
      * @return A collection of {@link Type}s that constitute a part of the conclusion of the {@link Rule}
      */
     @CheckReturnValue
-    Stream<Type> getConclusionTypes();
+    Stream<Type> thenTypes();
 
     //------------------------------------- Modifiers ----------------------------------
     /**
@@ -80,7 +80,7 @@ public interface Rule extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    Rule setLabel(Label label);
+    Rule label(Label label);
 
     /**
      *

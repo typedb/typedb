@@ -1,0 +1,192 @@
+syntax = "proto3";
+
+option java_package = "ai.grakn.rpc.proto";
+option java_outer_classname = "SessionProto";
+
+import "Concept.proto";
+import "Answer.proto";
+
+package session;
+
+service Session {
+    // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
+    // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
+    rpc transaction (stream Transaction.Req) returns (stream Transaction.Res);
+}
+
+message Transaction {
+    message Req {
+        oneof req {
+            Open.Req open_req = 1;
+            Commit.Req commit_req = 2;
+            Query.Req query_req = 3;
+            Iter.Req iterate_req = 4;
+            GetSchemaConcept.Req getSchemaConcept_req = 5;
+            GetConcept.Req getConcept_req = 6;
+            GetAttributes.Req getAttributes_req = 7;
+            PutEntityType.Req putEntityType_req = 8;
+            PutAttributeType.Req putAttributeType_req = 9;
+            PutRelationshipType.Req putRelationshipType_req = 10;
+            PutRole.Req putRole_req = 11;
+            PutRule.Req putRule_req = 12;
+            ConceptMethod.Req conceptMethod_req = 13;
+        }
+    }
+    message Res {
+        oneof res {
+            Open.Res open_res = 1;
+            Commit.Res commit_res = 2;
+            Query.Iter query_iter = 3;
+            Iter.Res iterate_res = 4;
+            GetSchemaConcept.Res getSchemaConcept_res = 5;
+            GetConcept.Res getConcept_res = 6;
+            GetAttributes.Iter getAttributes_iter = 7;
+            PutEntityType.Res putEntityType_res = 8;
+            PutAttributeType.Res putAttributeType_res = 9;
+            PutRelationshipType.Res putRelationshipType_res = 10;
+            PutRole.Res putRole_res = 11;
+            PutRule.Res putRule_res = 12;
+            ConceptMethod.Res conceptMethod_res = 13;
+        }
+    }
+
+    message Iter {
+        message Req {
+            int32 id = 1;
+        }
+        message Res {
+            oneof res {
+                bool done = 1;
+                Query.Iter.Res query_iter_res = 2;
+                GetAttributes.Iter.Res getAttributes_iter_res = 3;
+                Method.Iter.Res conceptMethod_iter_res = 4;
+            }
+        }
+    }
+
+    message Open {
+        message Req {
+            string keyspace = 1;
+            int32 txType = 2;
+            /* Fields ignored in the open-source version. */
+            string username = 3;
+            string password = 4;
+        }
+        message Res {}
+    }
+
+    message Commit {
+        message Req {}
+        message Res {}
+    }
+
+    message Query {
+        message Req {
+            string query = 1;
+            bool infer = 2; // If this is not present, leave at server default.
+        }
+        message Iter {
+            oneof iter {
+                int32 id = 1;
+                Null null = 2;
+            }
+            message Res {
+                Answer answer = 1;
+            }
+        }
+    }
+
+    message GetSchemaConcept {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            oneof res {
+                Concept concept = 1;
+                Null null = 2;
+            }
+        }
+    }
+
+    message GetConcept {
+        message Req {
+            string id = 1;
+        }
+        message Res {
+            oneof res {
+                Concept concept = 1;
+                Null null = 2;
+            }
+        }
+    }
+
+    message GetAttributes {
+        message Req {
+            ValueObject value = 1;
+        }
+        message Iter {
+            int32 id = 1;
+            message Res {
+                Concept concept = 1;
+            }
+        }
+    }
+
+    message PutEntityType {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            Concept concept = 1;
+        }
+    }
+
+    message PutAttributeType {
+        message Req {
+            string label = 1;
+            AttributeType.DATA_TYPE dataType = 2;
+        }
+        message Res {
+            Concept concept = 1;
+        }
+    }
+
+    message PutRelationshipType {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            Concept concept = 1;
+        }
+    }
+
+    message PutRole {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            Concept concept = 1;
+        }
+    }
+
+    message PutRule {
+        message Req {
+            string label = 1;
+            string when = 2;
+            string then = 3;
+        }
+        message Res {
+            Concept concept = 1;
+        }
+    }
+
+    message ConceptMethod {
+        message Req {
+            string id = 1;
+            Method.Req method = 2;
+        }
+        message Res {
+            Method.Res response = 1;
+        }
+    }
+}

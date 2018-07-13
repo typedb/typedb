@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.kbs;
@@ -74,13 +74,13 @@ public class TailRecursionKB extends TestKB {
         }
 
         for (int j = 1; j <= n; j++) {
-            q.addRelationship()
-                    .addRolePlayer(qfrom, getInstance(graph, "a0"))
-                    .addRolePlayer(qto, getInstance(graph, "b1" + "," + j));
+            q.create()
+                    .assign(qfrom, getInstance(graph, "a0"))
+                    .assign(qto, getInstance(graph, "b1" + "," + j));
             for(int i = 1 ; i <= m ;i++) {
-                q.addRelationship()
-                        .addRolePlayer(qfrom, getInstance(graph, "b" + i + "," + j))
-                        .addRolePlayer(qto, getInstance(graph, "b" + (i + 1) + "," + j));
+                q.create()
+                        .assign(qfrom, getInstance(graph, "b" + i + "," + j))
+                        .assign(qto, getInstance(graph, "b" + (i + 1) + "," + j));
             }
         }
     }

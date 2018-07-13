@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine.controller;
@@ -26,7 +26,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -84,14 +84,14 @@ public class GraqlControllerInsertTest {
     public void setupMock() {
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
         when(tx.keyspace()).thenReturn(keyspace);
-        when(printer.graqlString(any())).thenReturn(Json.object().toString());
+        when(printer.toString(any())).thenReturn(Json.object().toString());
 
         // Describe expected response to a typical query
         Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
         Concept person = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(person.getId()).thenReturn(ConceptId.of("V123"));
+        when(person.id()).thenReturn(ConceptId.of("V123"));
         when(person.isThing()).thenReturn(true);
-        when(person.asThing().type().getLabel()).thenReturn(Label.of("person"));
+        when(person.asThing().type().label()).thenReturn(Label.of("person"));
 
         when(query.execute()).thenReturn(ImmutableList.of(
                 new QueryAnswer(ImmutableMap.of(var("x"), person))
@@ -185,7 +185,7 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson() {
-        when(printer.graqlString(any())).thenReturn(Json.array().toString());
+        when(printer.toString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("insert $x isa person;");
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(0));
     }

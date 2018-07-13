@@ -30,7 +30,7 @@ resource-relation sub relationship
 rule-1 sub rule
 when {
     $x isa entity1;
-    $y isa res-string val 'value';
+    $y isa res-string 'value';
 }
 then {
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -39,7 +39,7 @@ then {
 rule-2 sub rule
 when {
     $x isa entity1;
-    $y isa res-double val 3.14;
+    $y isa res-double 3.14;
 }
 then {
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -48,7 +48,7 @@ then {
 rule-3 sub rule
 when {
     $x isa entity1;
-    $y isa res-long val 123;
+    $y isa res-long 123;
 }
 then {
     (resource-owner: $x, resource-value: $y) isa resource-relation;
@@ -57,7 +57,7 @@ then {
 rule-4 sub rule
 when {
     $x isa entity1;
-    $y isa res-boolean val 'true';
+    $y isa res-boolean 'true';
 }
 then {
     (resource-owner: $x, resource-value: $y) isa resource-relation;

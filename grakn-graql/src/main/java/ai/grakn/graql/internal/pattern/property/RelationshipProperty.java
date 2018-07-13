@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.pattern.property;
@@ -37,7 +37,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.runner.QueryOperationExecutor;
+import ai.grakn.graql.internal.query.executor.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
@@ -198,7 +198,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
 
         Role role = executor.get(roleVar.var()).asRole();
         Thing roleplayer = executor.get(relationPlayer.getRolePlayer().var()).asThing();
-        relationship.addRolePlayer(role, roleplayer);
+        relationship.assign(role, roleplayer);
     }
 
     private Set<Var> requiredVars(Var var) {
@@ -233,7 +233,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
                     Concept concept = parent.tx().getConcept(roleId.getPredicate());
                     if(concept != null) {
                         if (concept.isRole()) {
-                            Label roleLabel = concept.asSchemaConcept().getLabel();
+                            Label roleLabel = concept.asSchemaConcept().label();
                             rolePattern = roleVar.label(roleLabel);
                         } else {
                             throw GraqlQueryException.nonRoleIdAssignedToRoleVariable(var);
@@ -264,8 +264,8 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             }
         }
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
-        relVar = isaProp instanceof DirectIsaProperty?
-                relVar.directIsa(typeVariable.asUserDefined()) :
+        relVar = isaProp instanceof IsaExplicitProperty ?
+                relVar.isaExplicit(typeVariable.asUserDefined()) :
                 relVar.isa(typeVariable.asUserDefined());
         return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);
     }

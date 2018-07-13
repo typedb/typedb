@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.graql.internal.query.aggregate;
@@ -37,7 +37,7 @@ class SumAggregate extends AbstractAggregate<Answer, Number> {
 
     @Override
     public Number apply(Stream<? extends Answer> stream) {
-        return stream.map(result -> (Number) result.get(varName).asAttribute().getValue()).reduce(0, this::add);
+        return stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(0, this::add);
     }
 
     private Number add(Number x, Number y) {

@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 package ai.grakn.migration.export;
 
@@ -77,11 +77,11 @@ public class SchemaConceptMapper {
      * @return {@link VarPattern} containing basic information about the given type
      */
     private static VarPattern formatBase(SchemaConcept schemaConcept) {
-        VarPattern var = var().label(schemaConcept.getLabel());
+        VarPattern var = var().label(schemaConcept.label());
 
         SchemaConcept superType = schemaConcept.sup();
         if (schemaConcept.sup() != null) {
-            var = var.sub(Graql.label(superType.getLabel()));
+            var = var.sub(Graql.label(superType.label()));
         }
 
         if(schemaConcept.isType()) {
@@ -109,8 +109,8 @@ public class SchemaConceptMapper {
      * @return var with appropriate plays edges
      */
     private static VarPattern plays(VarPattern var, Type type) {
-        for(Role role:type.plays().collect(Collectors.toSet())){
-            var = var.plays(Graql.label(role.getLabel()));
+        for(Role role:type.playing().collect(Collectors.toSet())){
+            var = var.plays(Graql.label(role.label()));
         }
         return var;
     }
@@ -122,8 +122,8 @@ public class SchemaConceptMapper {
      * @return var with appropriate relates edges
      */
     private static VarPattern relates(VarPattern var, RelationshipType type){
-        for(Role role:type.relates().collect(Collectors.toSet())){
-            var = var.relates(Graql.label(role.getLabel()));
+        for(Role role:type.roles().collect(Collectors.toSet())){
+            var = var.relates(Graql.label(role.label()));
         }
         return var;
     }
@@ -135,7 +135,7 @@ public class SchemaConceptMapper {
      * @return var with appropriate datatype
      */
     private static VarPattern datatype(VarPattern var, AttributeType type) {
-        AttributeType.DataType dataType = type.getDataType();
+        AttributeType.DataType dataType = type.dataType();
         if (dataType != null) {
             return var.datatype(dataType);
         } else {

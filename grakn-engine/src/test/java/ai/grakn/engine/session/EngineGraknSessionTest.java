@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine.session;
@@ -25,9 +25,9 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.GraknKeyspaceStore;
-import ai.grakn.engine.GraknKeyspaceStoreFake;
+import ai.grakn.engine.KeyspaceStore;
+import ai.grakn.engine.KeyspaceStoreFake;
+import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -56,9 +56,9 @@ import static org.mockito.Mockito.mock;
 
 public class EngineGraknSessionTest {
     private static final GraknConfig config = GraknConfig.create();
-    private static final GraknEngineStatus status = mock(GraknEngineStatus.class);
+    private static final ServerStatus status = mock(ServerStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
-    private static final GraknKeyspaceStoreFake systemKeyspace = GraknKeyspaceStoreFake.of();
+    private static final KeyspaceStoreFake systemKeyspace = KeyspaceStoreFake.of();
 
     private static EngineGraknTxFactory graknFactory;
 
@@ -79,48 +79,49 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
-        GraknKeyspaceStore keyspaceStore = GraknKeyspaceStoreFake.of();
+        KeyspaceStore keyspaceStore = KeyspaceStoreFake.of();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         graknFactory.keyspaceStore().loadSystemSchema();
     }
 
     @Test
-    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame(){
+    public void whenOpeningTransactionsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureTransactionsAreTheSame(){
         String keyspace = "mykeyspace";
 
-        GraknTx graph1 = Grakn.session(sparkContext.uri(), keyspace).open(GraknTxType.WRITE);
-        graph1.close();
-        GraknTx graph2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
+        GraknTx tx1 = Grakn.session(sparkContext.uri(), keyspace).transaction(GraknTxType.WRITE);
+        tx1.close();
+        GraknTx tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 
-        assertEquals(graph1, graph2);
-        graph2.close();
+        assertEquals(tx1, tx2);
+        tx2.close();
     }
 
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        EmbeddedGraknTx<?> graph1 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
-        graph1.close();
-        EmbeddedGraknTx<?> graph2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.BATCH);
 
-        assertFalse(graph1.isBatchTx());
-        assertTrue(graph2.isBatchTx());
+        EmbeddedGraknTx<?> tx1 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
+        tx1.close();
+        EmbeddedGraknTx<?> tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.BATCH);
 
-        graph1.close();
-        graph2.close();
+        assertFalse(tx1.isBatchTx());
+        assertTrue(tx2.isBatchTx());
+
+        tx1.close();
+        tx2.close();
     }
 
     @Test
-    public void closeGraphWhenOnlyOneTransactionIsOpen(){
+    public void whenInsertingAfterSessionHasBeenClosed_shouldThrowTxException(){
         assumeFalse(GraknTestUtil.usingTinker()); //Tinker does not have any connections to close
 
-        GraknSession factory = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
-        GraknTx graph = factory.open(GraknTxType.WRITE);
-        factory.close();
+        GraknSession session = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
+        GraknTx tx = session.transaction(GraknTxType.WRITE);
+        session.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(graph.keyspace()));
+        expectedException.expectMessage(ErrorMessage.SESSION_CLOSED.getMessage(tx.keyspace()));
 
-        graph.putEntityType("A thingy");
+        tx.putEntityType("A thingy");
     }
 }

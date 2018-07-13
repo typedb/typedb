@@ -22,6 +22,9 @@
         <div class="green-link">
             <a target="_blank" href="https://github.com/graknlabs/grakn" class="noselect">Star on GitHub</a>
         </div>
+        <div class="green-link noselect" id="cmdBtn">
+            Commands
+        </div>
     </aside>
 </transition>
 </template>
@@ -96,11 +99,6 @@ export default {
   mounted() {
     this.$nextTick(() => {
     });
-  },
-  methods: {
-    openSignUp() {
-      $('.modal-wrapper').toggleClass('open');
-    },
   },
 };
 </script>

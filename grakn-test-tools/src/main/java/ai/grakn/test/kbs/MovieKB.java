@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.kbs;
@@ -93,13 +93,13 @@ public class MovieKB extends TestKB {
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = tx.putAttributeType("title", AttributeType.DataType.STRING);
-        title.attribute(title);
+        title.has(title);
 
         tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
         tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
         releaseDate = tx.putAttributeType("release-date", AttributeType.DataType.DATE);
         runtime = tx.putAttributeType("runtime", AttributeType.DataType.LONG);
-        gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
+        gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).regex("(fe)?male");
         realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
         name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
@@ -108,11 +108,11 @@ public class MovieKB extends TestKB {
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
                 .plays(productionWithGenre);
 
-        production.attribute(title);
-        production.attribute(tmdbVoteCount);
-        production.attribute(tmdbVoteAverage);
-        production.attribute(releaseDate);
-        production.attribute(runtime);
+        production.has(title);
+        production.has(tmdbVoteCount);
+        production.has(tmdbVoteAverage);
+        production.has(releaseDate);
+        production.has(runtime);
 
         movie = tx.putEntityType("movie").sup(production);
 
@@ -121,9 +121,9 @@ public class MovieKB extends TestKB {
         person = tx.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed);
 
-        person.attribute(gender);
-        person.attribute(name);
-        person.attribute(realName);
+        person.has(gender);
+        person.has(name);
+        person.has(realName);
 
         genre = tx.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
@@ -131,127 +131,127 @@ public class MovieKB extends TestKB {
         character = tx.putEntityType("character")
                 .plays(characterBeingPlayed);
 
-        character.attribute(name);
+        character.has(name);
 
         tx.putEntityType("award");
         language = tx.putEntityType("language");
 
-        language.attribute(name);
+        language.has(name);
 
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
-        cluster.attribute(name);
+        cluster.has(name);
 
-        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).attribute(provenance);
+        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).has(provenance);
     }
 
     @Override
     protected void buildInstances(GraknTx tx) {
-        godfather = movie.addEntity();
+        godfather = movie.create();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
         putResource(godfather, tmdbVoteAverage, 8.6);
         putResource(godfather, releaseDate, LocalDate.of(1984, 1, 1).atStartOfDay());
 
-        theMuppets = movie.addEntity();
+        theMuppets = movie.create();
         putResource(theMuppets, title, "The Muppets");
         putResource(theMuppets, tmdbVoteCount, 100L);
         putResource(theMuppets, tmdbVoteAverage, 7.6);
         putResource(theMuppets, releaseDate, LocalDate.of(1985, 2, 2).atStartOfDay());
 
-        apocalypseNow = movie.addEntity();
+        apocalypseNow = movie.create();
         putResource(apocalypseNow, title, "Apocalypse Now");
         putResource(apocalypseNow, tmdbVoteCount, 400L);
         putResource(apocalypseNow, tmdbVoteAverage, 8.4);
 
-        heat = movie.addEntity();
+        heat = movie.create();
         putResource(heat, title, "Heat");
 
-        hocusPocus = movie.addEntity();
+        hocusPocus = movie.create();
         putResource(hocusPocus, title, "Hocus Pocus");
         putResource(hocusPocus, tmdbVoteCount, 435L);
 
-        spy = movie.addEntity();
+        spy = movie.create();
         putResource(spy, title, "Spy");
         putResource(spy, releaseDate, LocalDate.of(1986, 3, 3).atStartOfDay());
 
-        chineseCoffee = movie.addEntity();
+        chineseCoffee = movie.create();
         putResource(chineseCoffee, title, "Chinese Coffee");
         putResource(chineseCoffee, tmdbVoteCount, 5L);
         putResource(chineseCoffee, tmdbVoteAverage, 3.1d);
         putResource(chineseCoffee, releaseDate, LocalDate.of(2000, 9, 2).atStartOfDay());
 
-        marlonBrando = person.addEntity();
+        marlonBrando = person.create();
         putResource(marlonBrando, name, "Marlon Brando");
-        alPacino = person.addEntity();
+        alPacino = person.create();
         putResource(alPacino, name, "Al Pacino");
-        missPiggy = person.addEntity();
+        missPiggy = person.create();
         putResource(missPiggy, name, "Miss Piggy");
-        kermitTheFrog = person.addEntity();
+        kermitTheFrog = person.create();
         putResource(kermitTheFrog, name, "Kermit The Frog");
-        martinSheen = person.addEntity();
+        martinSheen = person.create();
         putResource(martinSheen, name, "Martin Sheen");
-        robertDeNiro = person.addEntity();
+        robertDeNiro = person.create();
         putResource(robertDeNiro, name, "Robert de Niro");
-        judeLaw = person.addEntity();
+        judeLaw = person.create();
         putResource(judeLaw, name, "Jude Law");
-        mirandaHeart = person.addEntity();
+        mirandaHeart = person.create();
         putResource(mirandaHeart, name, "Miranda Heart");
-        betteMidler = person.addEntity();
+        betteMidler = person.create();
         putResource(betteMidler, name, "Bette Midler");
-        sarahJessicaParker = person.addEntity();
+        sarahJessicaParker = person.create();
         putResource(sarahJessicaParker, name, "Sarah Jessica Parker");
 
-        crime = genre.addEntity();
+        crime = genre.create();
         putResource(crime, name, "crime");
-        drama = genre.addEntity();
+        drama = genre.create();
         putResource(drama, name, "drama");
-        war = genre.addEntity();
+        war = genre.create();
         putResource(war, name, "war");
-        action = genre.addEntity();
+        action = genre.create();
         putResource(action, name, "action");
-        comedy = genre.addEntity();
+        comedy = genre.create();
         putResource(comedy, name, "comedy");
-        family = genre.addEntity();
+        family = genre.create();
         putResource(family, name, "family");
-        musical = genre.addEntity();
+        musical = genre.create();
         putResource(musical, name, "musical");
-        fantasy = genre.addEntity();
+        fantasy = genre.create();
         putResource(fantasy, name, "fantasy");
 
-        donVitoCorleone = character.addEntity();
+        donVitoCorleone = character.create();
         putResource(donVitoCorleone, name, "Don Vito Corleone");
-        michaelCorleone = character.addEntity();
+        michaelCorleone = character.create();
         putResource(michaelCorleone, name, "Michael Corleone");
-        colonelWalterEKurtz = character.addEntity();
+        colonelWalterEKurtz = character.create();
         putResource(colonelWalterEKurtz, name, "Colonel Walter E. Kurtz");
-        benjaminLWillard = character.addEntity();
+        benjaminLWillard = character.create();
         putResource(benjaminLWillard, name, "Benjamin L. Willard");
-        ltVincentHanna = character.addEntity();
+        ltVincentHanna = character.create();
         putResource(ltVincentHanna, name, "Lt Vincent Hanna");
-        neilMcCauley = character.addEntity();
+        neilMcCauley = character.create();
         putResource(neilMcCauley, name, "Neil McCauley");
-        bradleyFine = character.addEntity();
+        bradleyFine = character.create();
         putResource(bradleyFine, name, "Bradley Fine");
-        nancyBArtingstall = character.addEntity();
+        nancyBArtingstall = character.create();
         putResource(nancyBArtingstall, name, "Nancy B Artingstall");
-        winifred = character.addEntity();
+        winifred = character.create();
         putResource(winifred, name, "Winifred");
-        sarah = character.addEntity();
+        sarah = character.create();
         putResource(sarah, name, "Sarah");
-        harry = character.addEntity();
+        harry = character.create();
         putResource(harry, name, "Harry");
 
-        cluster0 = cluster.addEntity();
-        cluster1 = cluster.addEntity();
+        cluster0 = cluster.create();
+        cluster1 = cluster.create();
         putResource(cluster0, name, "0");
         putResource(cluster1, name, "1");
     }
 
     @Override
     protected void buildRelations() {
-        directedBy.addRelationship()
-                .addRolePlayer(productionBeingDirected, chineseCoffee)
-                .addRolePlayer(director, alPacino);
+        directedBy.create()
+                .assign(productionBeingDirected, chineseCoffee)
+                .assign(director, alPacino);
 
         hasCast(godfather, marlonBrando, donVitoCorleone);
         hasCast(godfather, alPacino, michaelCorleone);
@@ -303,22 +303,22 @@ public class MovieKB extends TestKB {
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {
-        hasCast.addRelationship()
-                .addRolePlayer(productionWithCast, movie)
-                .addRolePlayer(actor, person)
-                .addRolePlayer(characterBeingPlayed, character);
+        hasCast.create()
+                .assign(productionWithCast, movie)
+                .assign(actor, person)
+                .assign(characterBeingPlayed, character);
     }
 
     private static void hasGenre(Thing movie, Thing genre) {
-        hasGenre.addRelationship()
-                .addRolePlayer(productionWithGenre, movie)
-                .addRolePlayer(genreOfProduction, genre);
+        hasGenre.create()
+                .assign(productionWithGenre, movie)
+                .assign(genreOfProduction, genre);
     }
 
     private static void hasCluster(Thing cluster, Thing... movies) {
-        Relationship relationship = hasCluster.addRelationship().addRolePlayer(clusterOfProduction, cluster);
+        Relationship relationship = hasCluster.create().assign(clusterOfProduction, cluster);
         for (Thing movie : movies) {
-            relationship.addRolePlayer(productionWithCluster, movie);
+            relationship.assign(productionWithCluster, movie);
         }
     }
 }

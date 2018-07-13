@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.engine.controller;
@@ -24,7 +24,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
@@ -67,7 +67,7 @@ public class GraqlControllerDeleteTest {
     @Before
     public void setupMock(){
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
-        when(printer.graqlString(any())).thenReturn(Json.object().toString());
+        when(printer.toString(any())).thenReturn(Json.object().toString());
     }
 
     @Test

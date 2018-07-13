@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.migration.export;
@@ -52,7 +52,7 @@ public class KBWriterMainTest {
     @BeforeClass
     public static void loadMovieKB() {
         keyspace = SampleKBLoader.randomKeyspace();
-        try(GraknTx graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
+        try(GraknTx graph = Grakn.session(engine.uri(), keyspace).transaction(GraknTxType.WRITE)){
             MovieKB.get().accept(graph);
             graph.commit();
         }

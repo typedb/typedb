@@ -10,10 +10,10 @@
  * Grakn is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
 package ai.grakn.test.property.kb;
@@ -55,39 +55,39 @@ public class EntityTypePropertyTest {
             @Open GraknTx graph, @FromTx @NonMeta EntityType type) {
         assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(toSet()), contains(type));
-        assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
-        assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
+        assumeThat(type.whenRules().collect(toSet()), empty());
+        assumeThat(type.thenRules().collect(toSet()), empty());
 
         type.delete();
 
-        assertNull(graph.getSchemaConcept(type.getLabel()));
+        assertNull(graph.getSchemaConcept(type.label()));
     }
 
     @Property
     public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.addEntity();
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.label()).getMessage());
+        type.create();
     }
 
     @Property
     public void whenAddingAnEntity_TheDirectTypeOfTheEntityIsTheTypeItWasCreatedFrom(
             @NonMeta @NonAbstract EntityType type) {
-        Entity entity = type.addEntity();
+        Entity entity = type.create();
 
         assertEquals(type, entity.type());
     }
 
     @Property
     public void whenAddingAnEntity_TheEntityIsInNoRelations(@NonMeta @NonAbstract EntityType type) {
-        Entity entity = type.addEntity();
+        Entity entity = type.create();
 
         assertThat(entity.relationships().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingAnEntity_TheEntityHasNoResources(@NonMeta @NonAbstract EntityType type) {
-        Entity entity = type.addEntity();
+        Entity entity = type.create();
 
         assertThat(entity.attributes().collect(toSet()), empty());
     }
