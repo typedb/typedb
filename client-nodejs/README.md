@@ -52,11 +52,12 @@ on the Grakn object the following methods are available:
 
 **Grakn**
 
-| Method                                   | Return type       | Description                                               |
-| ---------------------------------------- | ----------------- | --------------------------------------------------------- |
-| `session(String keyspace)`               | *GraknSession*    | Return a new GraknSession bound to the specified keyspace |
-| async `keyspace.delete(String keyspace)` | *void*            | Deletes the specified keyspace                            |
-| async `keyspace.retrieve()`              | Array of *String* | Retrieves all available keyspaces                         |
+| Method                                   | Return type                                                                                                        | Description                                               |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `session(String keyspace)`               | *GraknSession*                                                                                                     | Return a new GraknSession bound to the specified keyspace |
+| async `keyspace.delete(String keyspace)` | *void*                                                                                                             | Deletes the specified keyspace                            |
+| async `keyspace.retrieve()`              | Array of *String*                                                                                                  | Retrieves all available keyspaces                         |
+| `close()`                                | Closes all the connections and services. This must be used in order to gracefully close communication with server. |
 
 
 

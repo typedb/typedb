@@ -260,6 +260,9 @@ jobs:
         - restore_cache:
             name: Restore maven m2 cache
             key: grakn-cache-m2-version-8
+        - run:
+            name: Install yarn
+            command: sudo apt-get -y install yarn
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
         - run: cd client-nodejs && yarn install && yarn run test
 
