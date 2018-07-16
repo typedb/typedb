@@ -41,7 +41,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,6 +53,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.apache.commons.collections.CollectionUtils;
 
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
@@ -299,6 +303,51 @@ public class ReasonerUtils {
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
         return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
     }
+
+    public static <T> boolean isEquivalentCollection(Collection<T> a, Collection<T> b, BiFunction<T, T, Boolean> comparison) {
+        return a.size() == b.size()
+                && a.stream().allMatch(e -> b.stream().anyMatch(e2 -> comparison.apply(e, e2)))
+                && b.stream().allMatch(e -> a.stream().anyMatch(e2 -> comparison.apply(e, e2)));
+    }
+
+
+    private static int getFreq(Object obj, Map freqMap) {
+        Integer count = (Integer)freqMap.get(obj);
+        return count != null ? count : 0;
+    }
+
+    public static <T> Map<T, Integer> getCardinalityMap(Collection<T> coll) {
+        Map<T, Integer> count = new HashMap<>();
+
+        for (T obj : coll) {
+            count.merge(obj, 1, (a, b) -> a + b);
+        }
+        return count;
+    }
+
+    public static <T> boolean isEquivalentCollection2(Collection a, Collection b,  BiFunction<T, T, Boolean> comparison) {
+        if (a.size() != b.size()) {
+            return false;
+        } else {
+            Map mapa = CollectionUtils.getCardinalityMap(a);
+            Map mapb = CollectionUtils.getCardinalityMap(b);
+            if (mapa.size() != mapb.size()) {
+                return false;
+            } else {
+                Iterator it = mapa.keySet().iterator();
+
+                Object obj;
+                do {
+                    if (!it.hasNext()) {
+                        return true;
+                    }
+
+                    obj = it.next();
+                } while(getFreq(obj, mapa) == getFreq(obj, mapb));
+
+                return false;
+            }
+        }
 
     /**
      * @param a subtraction left operand

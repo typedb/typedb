@@ -63,10 +63,41 @@ public abstract class NeqPredicate extends Predicate<Var> {
     }
 
     @Override
+    public boolean isAlphaEquivalent(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        NeqPredicate that = (NeqPredicate) obj;
+
+        //check bindings
+        IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
+        IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
+        IdPredicate thatRefPredicate = that.getIdPredicate(that.getPredicate());
+        return ( (thisPredicate == null) ? (thisPredicate == thatPredicate) : thisPredicate.isAlphaEquivalent(thatPredicate) )
+                && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : thisRefPredicate.isAlphaEquivalent(thatRefPredicate) );
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = 1;
+        IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
+        hashCode = hashCode * 37 + (idPredicate != null? idPredicate.alphaEquivalenceHashCode() : 0);
+        hashCode = hashCode * 37 + (refIdPredicate != null? refIdPredicate.alphaEquivalenceHashCode() : 0);
+        return hashCode;
+    }
+
+    @Override
     public Atomic copy(ReasonerQuery parent) { return create(this, parent);}
 
     @Override
-    public String toString(){ return "[" + getVarName() + "!=" + getReferenceVarName() + "]";}
+    public String toString(){
+        IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
+        return "[" + getVarName() + "!=" + getPredicate() + "]" +
+                (idPredicate != null? idPredicate : "" ) +
+                (refIdPredicate != null? refIdPredicate : "");
+    }
 
     @Override
     public String getPredicateValue() {
@@ -76,7 +107,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
     @Override
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
-        vars.add(getReferenceVarName());
+        vars.add(getPredicate());
         return vars;
     }
 
@@ -86,11 +117,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
      */
     public boolean isSatisfied(Answer sub) {
         return !sub.containsVar(getVarName())
-                || !sub.containsVar(getReferenceVarName())
-                || !sub.get(getVarName()).equals(sub.get(getReferenceVarName()));
-    }
-
-    private Var getReferenceVarName(){
-        return getPredicate();
+                || !sub.containsVar(getPredicate())
+                || !sub.get(getVarName()).equals(sub.get(getPredicate()));
     }
 }
