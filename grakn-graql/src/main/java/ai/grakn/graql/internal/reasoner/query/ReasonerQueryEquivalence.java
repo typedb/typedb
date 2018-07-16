@@ -21,15 +21,14 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.base.Equivalence;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 
 /**
  *
@@ -47,14 +46,14 @@ import java.util.stream.Collectors;
  */
 public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery> {
 
-    private static <T extends Atomic> boolean equivalence(ReasonerQuery q1, ReasonerQuery q2, Class<T> atomType, BiFunction<T, T, Boolean> equivalenceFunction) {
+    private static <B extends Atomic, S extends B> boolean equivalence(ReasonerQuery q1, ReasonerQuery q2, Class<S> atomType, Equivalence<B> equiv) {
         //NB: this check is too simple for general queries - variable binding patterns are not recognised
-        Set<T> atoms = q1.getAtoms(atomType).collect(Collectors.toSet());
-        Set<T> otherAtoms = q2.getAtoms(atomType).collect(Collectors.toSet());
-        return ReasonerUtils.isEquivalentCollection(atoms, otherAtoms, equivalenceFunction);
+        Set<S> atoms = q1.getAtoms(atomType).collect(Collectors.toSet());
+        Set<S> otherAtoms = q2.getAtoms(atomType).collect(Collectors.toSet());
+        return ReasonerUtils.isEquivalentCollection(atoms, otherAtoms, equiv);
     }
 
-    private static <T extends Atomic> int equivalenceHash(ReasonerQuery q, Class<T> atomType, Function<T, Integer> hashFunction) {
+    private static <B extends Atomic, S extends B> int equivalenceHash(ReasonerQuery q, Class<S> atomType, Function<B, Integer> hashFunction) {
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
         q.getAtoms(atomType).forEach(atom -> hashes.add(hashFunction.apply(atom)));
@@ -66,7 +65,7 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
 
         @Override
         protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
-            return equivalence(q1, q2, Atomic.class, Atomic::equals);
+            return equivalence(q1, q2, Atomic.class, AtomicEquivalence.Equality);
         }
 
         @Override
@@ -79,7 +78,7 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
 
         @Override
         protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
-            return equivalence(q1, q2, Atomic.class, Atomic::isAlphaEquivalent);
+            return equivalence(q1, q2, Atomic.class, AtomicEquivalence.AlphaEquivalence);
         }
 
         @Override
@@ -92,7 +91,7 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
 
         @Override
         protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
-            return equivalence(q1, q2, Atom.class, Atomic::isStructurallyEquivalent);
+            return equivalence(q1, q2, Atom.class, AtomicEquivalence.StructuralEquivalence);
         }
 
         @Override

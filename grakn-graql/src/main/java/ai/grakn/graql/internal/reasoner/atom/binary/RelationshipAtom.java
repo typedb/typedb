@@ -49,6 +49,7 @@ import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -64,13 +65,13 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -309,7 +310,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     private boolean predicateBindingsEquivalent(RelationshipAtom atom,
                                                 BiFunction<String, String, Boolean> conceptComparison,
-                                                BiFunction<NeqPredicate, NeqPredicate, Boolean> neqComparison) {
+                                                Equivalence<Atomic> equiv) {
         Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
         Multimap<Role, String> thatIdMap = atom.getRoleConceptIdMap();
 
@@ -318,15 +319,15 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return thisIdMap.keySet().equals(thatIdMap.keySet())
                 && thisIdMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisIdMap.get(k), thatIdMap.get(k), conceptComparison))
                 && thisNeqMap.keySet().equals(thatNeqMap.keySet())
-                && thisNeqMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisNeqMap.get(k), thatNeqMap.get(k), neqComparison));
+                && thisNeqMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisNeqMap.get(k), thatNeqMap.get(k), equiv));
     }
 
     private boolean predicateBindingsAlphaEquivalent(RelationshipAtom atom) {
-        return predicateBindingsEquivalent(atom, String::equals, Atomic::isAlphaEquivalent);
+        return predicateBindingsEquivalent(atom, String::equals, AtomicEquivalence.AlphaEquivalence);
     }
 
     private boolean predicateBindingsStructurallyEquivalent(RelationshipAtom atom) {
-        return predicateBindingsEquivalent(atom, (a, b) -> true, Atomic::isStructurallyEquivalent);
+        return predicateBindingsEquivalent(atom, (a, b) -> true, AtomicEquivalence.StructuralEquivalence);
     }
 
     @Override

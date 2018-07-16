@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.Schema;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -53,7 +54,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.commons.collections.CollectionUtils;
 
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
@@ -304,50 +304,66 @@ public class ReasonerUtils {
         return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
     }
 
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param comparison function on the basis of which the collections shall be compared
+     * @param <T> collection type
+     * @return true iff the given collections contain equivalent elements with exactly the same cardinalities.
+     */
     public static <T> boolean isEquivalentCollection(Collection<T> a, Collection<T> b, BiFunction<T, T, Boolean> comparison) {
         return a.size() == b.size()
                 && a.stream().allMatch(e -> b.stream().anyMatch(e2 -> comparison.apply(e, e2)))
                 && b.stream().allMatch(e -> a.stream().anyMatch(e2 -> comparison.apply(e, e2)));
     }
 
+    private static <B, S extends B> Map<Equivalence.Wrapper<B>, Integer> getCardinalityMap(Collection<S> coll, Equivalence<B> equiv) {
+        Map<Equivalence.Wrapper<B>, Integer> count = new HashMap<>();
 
-    private static int getFreq(Object obj, Map freqMap) {
-        Integer count = (Integer)freqMap.get(obj);
-        return count != null ? count : 0;
-    }
-
-    public static <T> Map<T, Integer> getCardinalityMap(Collection<T> coll) {
-        Map<T, Integer> count = new HashMap<>();
-
-        for (T obj : coll) {
-            count.merge(obj, 1, (a, b) -> a + b);
+        for (S obj : coll) {
+            count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
         }
         return count;
     }
 
-    public static <T> boolean isEquivalentCollection2(Collection a, Collection b,  BiFunction<T, T, Boolean> comparison) {
+    private static <T> int getFreq(T obj, Map<T, Integer> freqMap) {
+        Integer count = freqMap.get(obj);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param equiv equivalence on the basis of which the collections shall be compared
+     * @param <B> collection base type
+     * @param <S> collection super type
+     * @return true iff the given Collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <B, S extends B> boolean isEquivalentCollection(Collection<S> a, Collection<S> b,  Equivalence<B> equiv) {
         if (a.size() != b.size()) {
             return false;
         } else {
-            Map mapa = CollectionUtils.getCardinalityMap(a);
-            Map mapb = CollectionUtils.getCardinalityMap(b);
+            Map<Equivalence.Wrapper<B>, Integer> mapa = getCardinalityMap(a, equiv);
+            Map<Equivalence.Wrapper<B>, Integer>  mapb = getCardinalityMap(b, equiv);
             if (mapa.size() != mapb.size()) {
                 return false;
             } else {
-                Iterator it = mapa.keySet().iterator();
+                Iterator<Equivalence.Wrapper<B>> it = mapa.keySet().iterator();
 
-                Object obj;
+                Equivalence.Wrapper<B> obj;
                 do {
                     if (!it.hasNext()) {
                         return true;
                     }
 
                     obj = it.next();
-                } while(getFreq(obj, mapa) == getFreq(obj, mapb));
+                } while (getFreq(obj, mapa) == getFreq(obj, mapb));
 
                 return false;
             }
         }
+    }
 
     /**
      * @param a subtraction left operand
