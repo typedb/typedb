@@ -19,6 +19,12 @@ message Answer {
 
 message QueryAnswer {
     map<string, Concept> queryAnswer = 1;
+    Explanation explanation = 2;
+}
+
+message Explanation {
+    string queryPattern = 1;
+    repeated QueryAnswer queryAnswer = 2;
 }
 
 message ComputeAnswer {

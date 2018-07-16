@@ -57,7 +57,7 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
                 .setAttributeOwnersReq(ConceptProto.Attribute.Owners.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getAttributeOwnersIter().getId();
-        return conceptStream(iteratorId, res -> res.getAttributeOwnersIterRes().getConcept()).map(Concept::asThing);
+        return conceptStream(iteratorId, res -> res.getAttributeOwnersIterRes().getThing()).map(Concept::asThing);
     }
 
     @Override

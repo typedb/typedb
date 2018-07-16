@@ -45,7 +45,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeCreateReq(ConceptProto.RelationType.Create.Req.getDefaultInstance()).build();
 
-        Concept concept = ConceptReader.concept(runMethod(method).getRelationTypeCreateRes().getConcept(), tx());
+        Concept concept = RemoteConcept.of(runMethod(method).getRelationTypeCreateRes().getRelation(), tx());
 
         return asInstance(concept);
     }
@@ -56,14 +56,14 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
                 .setRelationTypeRolesReq(ConceptProto.RelationType.Roles.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getRelationTypeRolesIter().getId();
-        return conceptStream(iteratorId, res -> res.getRelationTypeRolesIterRes().getConcept()).map(Concept::asRole);
+        return conceptStream(iteratorId, res -> res.getRelationTypeRolesIterRes().getRole()).map(Concept::asRole);
     }
 
     @Override
     public final RelationshipType relates(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeRelatesReq(ConceptProto.RelationType.Relates.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(role))).build();
+                        .setRole(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -73,7 +73,7 @@ public abstract class RemoteRelationshipType extends RemoteType<RelationshipType
     public final RelationshipType unrelate(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationTypeUnrelateReq(ConceptProto.RelationType.Unrelate.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(role))).build();
+                        .setRole(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

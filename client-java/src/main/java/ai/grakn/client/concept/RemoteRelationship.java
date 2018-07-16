@@ -58,8 +58,8 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();
         for (ConceptProto.Relation.RolePlayersMap.Iter.Res rolePlayer : rolePlayers) {
-            Role role = ConceptReader.concept(rolePlayer.getRole(), tx()).asRole();
-            Thing player = ConceptReader.concept(rolePlayer.getPlayer(), tx()).asThing();
+            Role role = RemoteConcept.of(rolePlayer.getRole(), tx()).asRole();
+            Thing player = RemoteConcept.of(rolePlayer.getPlayer(), tx()).asThing();
             if (rolePlayerMap.containsKey(role)) {
                 rolePlayerMap.get(role).add(player);
             } else {
@@ -74,10 +74,10 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
     public final Stream<Thing> rolePlayers(Role... roles) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setRelationRolePlayersReq(ConceptProto.Relation.RolePlayers.Req.newBuilder()
-                        .addAllConcepts(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
+                        .addAllRoles(RequestBuilder.Concept.concepts(Arrays.asList(roles)))).build();
 
         int iteratorId = runMethod(method).getRelationRolePlayersIter().getId();
-        return conceptStream(iteratorId, res -> res.getRelationRolePlayersIterRes().getConcept()).map(Concept::asThing);
+        return conceptStream(iteratorId, res -> res.getRelationRolePlayersIterRes().getThing()).map(Concept::asThing);
     }
 
     @Override

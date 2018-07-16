@@ -20,7 +20,7 @@ package ai.grakn.client.rpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Grakn;
-import ai.grakn.client.concept.ConceptReader;
+import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -67,7 +67,7 @@ public class RequestBuilder {
         public static SessionProto.Transaction.Req open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setKeyspace(keyspace.getValue())
-                    .setTxType(txType.getId())
+                    .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
                     .build();
 
             return SessionProto.Transaction.Req.newBuilder().setOpenReq(openRequest).build();
@@ -127,10 +127,10 @@ public class RequestBuilder {
         }
 
         public static SessionProto.Transaction.Req putRelationshipType(Label label) {
-            SessionProto.Transaction.PutRelationshipType.Req request = SessionProto.Transaction.PutRelationshipType.Req.newBuilder()
+            SessionProto.Transaction.PutRelationType.Req request = SessionProto.Transaction.PutRelationType.Req.newBuilder()
                     .setLabel(label.getValue())
                     .build();
-            return SessionProto.Transaction.Req.newBuilder().setPutRelationshipTypeReq(request).build();
+            return SessionProto.Transaction.Req.newBuilder().setPutRelationTypeReq(request).build();
         }
 
         public static SessionProto.Transaction.Req putRole(Label label) {
@@ -172,13 +172,13 @@ public class RequestBuilder {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
             } else if (concept.isRelationshipType()) {
-                return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE;
+                return ConceptProto.Concept.BASE_TYPE.RELATION_TYPE;
             } else if (concept.isAttributeType()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
             } else if (concept.isEntity()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY;
             } else if (concept.isRelationship()) {
-                return ConceptProto.Concept.BASE_TYPE.RELATIONSHIP;
+                return ConceptProto.Concept.BASE_TYPE.RELATION;
             } else if (concept.isAttribute()) {
                 return ConceptProto.Concept.BASE_TYPE.ATTRIBUTE;
             } else if (concept.isRole()) {
@@ -221,19 +221,19 @@ public class RequestBuilder {
 
         public static AttributeType.DataType<?> dataType(ConceptProto.AttributeType.DATA_TYPE dataType) {
             switch (dataType) {
-                case String:
+                case STRING:
                     return AttributeType.DataType.STRING;
-                case Boolean:
+                case BOOLEAN:
                     return AttributeType.DataType.BOOLEAN;
-                case Integer:
+                case INTEGER:
                     return AttributeType.DataType.INTEGER;
-                case Long:
+                case LONG:
                     return AttributeType.DataType.LONG;
-                case Float:
+                case FLOAT:
                     return AttributeType.DataType.FLOAT;
-                case Double:
+                case DOUBLE:
                     return AttributeType.DataType.DOUBLE;
-                case Date:
+                case DATE:
                     return AttributeType.DataType.DATE;
                 default:
                 case UNRECOGNIZED:
@@ -243,19 +243,19 @@ public class RequestBuilder {
 
         static ConceptProto.AttributeType.DATA_TYPE dataType(AttributeType.DataType<?> dataType) {
             if (dataType.equals(AttributeType.DataType.STRING)) {
-                return ConceptProto.AttributeType.DATA_TYPE.String;
+                return ConceptProto.AttributeType.DATA_TYPE.STRING;
             } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Boolean;
+                return ConceptProto.AttributeType.DATA_TYPE.BOOLEAN;
             } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Integer;
+                return ConceptProto.AttributeType.DATA_TYPE.INTEGER;
             } else if (dataType.equals(AttributeType.DataType.LONG)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Long;
+                return ConceptProto.AttributeType.DATA_TYPE.LONG;
             } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Float;
+                return ConceptProto.AttributeType.DATA_TYPE.FLOAT;
             } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Double;
+                return ConceptProto.AttributeType.DATA_TYPE.DOUBLE;
             } else if (dataType.equals(AttributeType.DataType.DATE)) {
-                return ConceptProto.AttributeType.DATA_TYPE.Date;
+                return ConceptProto.AttributeType.DATA_TYPE.DATE;
             } else {
                 throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
             }
@@ -285,7 +285,7 @@ public class RequestBuilder {
             ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
 
             queryAnswer.getQueryAnswerMap().forEach((grpcVar, AnswerProto) -> {
-                map.put(Graql.var(grpcVar), ConceptReader.concept(AnswerProto, tx));
+                map.put(Graql.var(grpcVar), RemoteConcept.of(AnswerProto, tx));
             });
 
             return new QueryAnswer(map.build());

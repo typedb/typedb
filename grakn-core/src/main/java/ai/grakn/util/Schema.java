@@ -128,10 +128,10 @@ public final class Schema {
         //Schema Concepts
         SCHEMA_CONCEPT(SchemaConcept.class),
         TYPE(Type.class),
-        ROLE(Role.class),
+        ENTITY_TYPE(EntityType.class),
         RELATIONSHIP_TYPE(RelationshipType.class),
         ATTRIBUTE_TYPE(AttributeType.class),
-        ENTITY_TYPE(EntityType.class),
+        ROLE(Role.class),
         RULE(Rule.class),
 
         //Instances

@@ -45,7 +45,7 @@ message Method {
             // EntityType method requests
             EntityType.Create.Req entityType_create_req = 600;
 
-            // RelationshipType method requests
+            // RelationType method requests
             RelationType.Create.Req relationType_create_req = 700;
             RelationType.Roles.Req relationType_roles_req = 701;
             RelationType.Relates.Req relationType_relates_req = 702;
@@ -68,7 +68,7 @@ message Method {
             Thing.Relhas.Req thing_relhas_req = 906;
             Thing.Unhas.Req thing_unhas_req = 907;
 
-            // Relationship method requests
+            // Relation method requests
             Relation.RolePlayersMap.Req relation_rolePlayersMap_req = 1000;
             Relation.RolePlayers.Req relation_rolePlayers_req = 1001;
             Relation.Assign.Req relation_assign_req = 1002;
@@ -118,7 +118,7 @@ message Method {
             // EntityType method responses
             EntityType.Create.Res entityType_create_res = 600;
 
-            // RelationshipType method responses
+            // RelationType method responses
             RelationType.Create.Res relationType_create_res = 700;
             RelationType.Roles.Iter relationType_roles_iter = 701;
             RelationType.Relates.Res relationType_relates_res = 702;
@@ -141,7 +141,7 @@ message Method {
             Thing.Relhas.Res thing_relhas_res = 906;
             Thing.Unhas.Res thing_unhas_res = 907;
 
-            // Relationship method responses
+            // Relation method responses
             Relation.RolePlayersMap.Iter relation_rolePlayersMap_iter = 1000;
             Relation.RolePlayers.Iter relation_rolePlayers_iter = 1001;
             Relation.Assign.Res relation_assign_res = 1002;
@@ -188,7 +188,7 @@ message Method {
     }
 }
 
-message Null {} // Indicates that a request does not yield any result
+message Null {}
 
 // Concept methods
 
@@ -197,15 +197,15 @@ message Concept {
     BASE_TYPE baseType = 2;
 
     enum BASE_TYPE {
-        META_TYPE = 0; // This represents the top-level meta type only
+        META_TYPE = 0;
         ENTITY_TYPE = 1;
-        RELATIONSHIP_TYPE = 3;
-        ATTRIBUTE_TYPE = 4;
-        ENTITY = 5;
-        RELATIONSHIP = 6;
-        ATTRIBUTE = 7;
-        ROLE = 8;
-        RULE = 9;
+        RELATION_TYPE = 2;
+        ATTRIBUTE_TYPE = 3;
+        ROLE = 4;
+        RULE = 5;
+        ENTITY = 6;
+        RELATION = 7;
+        ATTRIBUTE = 8;
     }
 
     message Delete {
@@ -243,7 +243,7 @@ message SchemaConcept {
         message Req {}
         message Res {
             oneof res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
                 Null null = 2;
             }
         }
@@ -251,7 +251,7 @@ message SchemaConcept {
 
     message SetSup {
         message Req {
-            Concept concept = 1;
+            Concept schemaConcept = 1;
         }
         message Res {}
     }
@@ -261,7 +261,7 @@ message SchemaConcept {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
             }
         }
     }
@@ -271,7 +271,7 @@ message SchemaConcept {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
             }
         }
     }
@@ -313,7 +313,7 @@ message Role {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept relationType = 1;
             }
         }
     }
@@ -323,7 +323,7 @@ message Role {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept type = 1;
             }
         }
     }
@@ -353,7 +353,7 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept thing = 1;
             }
         }
     }
@@ -363,7 +363,7 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attributeType = 1;
             }
         }
     }
@@ -373,7 +373,7 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attributeType = 1;
             }
         }
     }
@@ -383,49 +383,49 @@ message Type {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept role = 1;
             }
         }
     }
 
-    message Has {
-        message Req {
-            Concept concept = 1;
-        }
-        message Res {}
-    }
-
-    message Unhas {
-        message Req {
-            Concept concept = 1;
-        }
-        message Res {}
-    }
-
     message Key {
         message Req {
-            Concept concept = 1;
+            Concept attributeType = 1;
         }
         message Res {}
     }
 
-    message Unkey {
+    message Has {
         message Req {
-            Concept concept = 1;
+            Concept attributeType = 1;
         }
         message Res {}
     }
 
     message Plays {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
+        }
+        message Res {}
+    }
+
+    message Unkey {
+        message Req {
+            Concept attributeType = 1;
+        }
+        message Res {}
+    }
+
+    message Unhas {
+        message Req {
+            Concept attributeType = 1;
         }
         message Res {}
     }
 
     message Unplay {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
         }
         message Res {}
     }
@@ -439,20 +439,20 @@ message EntityType {
     message Create {
         message Req {}
         message Res {
-            Concept concept = 1;
+            Concept entity = 1;
         }
     }
 }
 
 
-// RelationshipType methods
+// RelationType methods
 
 message RelationType {
 
     message Create {
         message Req {}
         message Res {
-            Concept concept = 1;
+            Concept relation = 1;
         }
     }
 
@@ -461,21 +461,21 @@ message RelationType {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept role = 1;
             }
         }
     }
 
     message Relates {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
         }
         message Res {}
     }
 
     message Unrelate {
         message Req {
-            Concept concept = 1;
+            Concept role = 1;
         }
         message Res {}
     }
@@ -487,13 +487,13 @@ message RelationType {
 message AttributeType {
 
     enum DATA_TYPE {
-        String = 0;
-        Boolean = 1;
-        Integer = 2;
-        Long = 3;
-        Float = 4;
-        Double = 5;
-        Date = 6;
+        STRING = 0;
+        BOOLEAN = 1;
+        INTEGER = 2;
+        LONG = 3;
+        FLOAT = 4;
+        DOUBLE = 5;
+        DATE = 6;
     }
 
     message Create {
@@ -501,7 +501,7 @@ message AttributeType {
             ValueObject value = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept attribute = 1;
         }
     }
 
@@ -511,7 +511,7 @@ message AttributeType {
         }
         message Res {
             oneof res {
-                Concept concept = 1;
+                Concept attribute = 1;
                 Null null = 2;
             }
         }
@@ -557,42 +557,42 @@ message Thing {
     message Type {
         message Req {}
         message Res {
-            Concept concept = 1;
+            Concept type = 1;
         }
     }
 
     message Keys {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept attributeTypes = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attribute = 1;
             }
         }
     }
 
     message Attributes {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept attributeTypes = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attribute = 1;
             }
         }
     }
 
     message Relations {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept roles = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept relation = 1;
             }
         }
     }
@@ -602,30 +602,30 @@ message Thing {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept role = 1;
             }
         }
     }
 
     message Relhas {
         message Req {
-            Concept concept = 1;
+            Concept attribute = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept relation = 1;
         }
     }
 
     message Unhas {
         message Req {
-            Concept concept = 1;
+            Concept attribute = 1;
         }
         message Res {}
     }
 }
 
 
-// Relationship methods
+// Relation methods
 
 message Relation {
 
@@ -642,12 +642,12 @@ message Relation {
 
     message RolePlayers {
         message Req {
-            repeated Concept concepts = 1;
+            repeated Concept roles = 1;
         }
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept thing = 1;
             }
         }
     }
@@ -685,7 +685,7 @@ message Attribute {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept thing = 1;
             }
         }
     }

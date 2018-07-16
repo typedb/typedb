@@ -27,6 +27,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
@@ -46,10 +47,11 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
+import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.rpc.proto.SessionProto.Transaction.Open;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -65,7 +67,10 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -75,8 +80,10 @@ import static ai.grakn.client.rpc.RequestBuilder.Transaction.iterate;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.query;
 import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -106,17 +113,16 @@ public class ServerRPCTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    //private final GrpcClient client = mock(GrpcClient.class);
     private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
+    private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
 
     private ServerRPC rpcServerRPC;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    // TODO: usePlainText is not secure
     private final ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", PORT).usePlaintext(true).build();
-    private final SessionGrpc.SessionStub stub = SessionGrpc.newStub(channel);
+    private final SessionServiceGrpc.SessionServiceStub stub = SessionServiceGrpc.newStub(channel);
     private final KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
 
     @Before
@@ -126,7 +132,7 @@ public class ServerRPCTest {
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .addService(new SessionService(requestOpener, mockedPostProcessor))
-                .addService(new KeyspaceService(requestOpener))
+                .addService(new KeyspaceService(requestOpener, mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);
         rpcServerRPC.start();
@@ -140,6 +146,9 @@ public class ServerRPCTest {
         when(qb.infer(anyBoolean())).thenReturn(qb);
 
         when(query.execute()).thenAnswer(params -> Stream.of(new QueryAnswer()));
+
+        Set<Keyspace> keyspaceSet = new HashSet<>(Arrays.asList(Keyspace.of("testkeyspace1"), Keyspace.of("testkeyspace2")));
+        when(mockedKeyspaceStore.keyspaces()).thenReturn(keyspaceSet);
     }
 
     @After
@@ -233,7 +242,10 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningATransactionRemotelyWithAnInvalidKeyspace_Throw() throws Throwable {
         String keyspace = "not!@akeyspace";
-        Open.Req openRequest = Open.Req.newBuilder().setKeyspace(keyspace).setTxType(GraknTxType.WRITE.getId()).build();
+        Open.Req openRequest = Open.Req.newBuilder()
+                .setKeyspace(keyspace)
+                .setType(Transaction.Type.valueOf(GraknTxType.WRITE.getId()))
+                .build();
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(Transaction.Req.newBuilder().setOpenReq(openRequest).build());
@@ -306,7 +318,7 @@ public class ServerRPCTest {
             Transaction.Res response1 = tx.receive().ok();
 
             ConceptProto.Concept rpcX =
-                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP).build();
+                    ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION).build();
             AnswerProto.QueryAnswer.Builder answerX = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
             AnswerProto.Answer.Builder resultX = AnswerProto.Answer.newBuilder().setQueryAnswer(answerX);
             Transaction.Res resX = Transaction.Res.newBuilder()
@@ -590,7 +602,7 @@ public class ServerRPCTest {
             ConceptProto.Concept response = tx.receive().ok().getGetConceptRes().getConcept();
 
             assertEquals(id.getValue(), response.getId());
-            assertEquals(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP, response.getBaseType());
+            assertEquals(ConceptProto.Concept.BASE_TYPE.RELATION, response.getBaseType());
         }
     }
 
@@ -756,6 +768,12 @@ public class ServerRPCTest {
         String keyspace = "not!@akeyspace";
         exception.expect(hasStatus(Status.INVALID_ARGUMENT));
         keyspaceBlockingStub.delete(RequestBuilder.Keyspace.delete(keyspace));
+    }
+
+    @Test
+    public void whenSendingRetrieveKeyspacesReq_ReturnListOfExistingKeyspaces(){
+        KeyspaceProto.Keyspace.Retrieve.Res response = keyspaceBlockingStub.retrieve(KeyspaceProto.Keyspace.Retrieve.Req.getDefaultInstance());
+        assertThat(new ArrayList<>(response.getNamesList()), containsInAnyOrder("testkeyspace1", "testkeyspace2"));
     }
 }
 
