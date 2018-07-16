@@ -126,14 +126,14 @@ const methods = {
   },
 
   // Role
-  relations: function (conceptId) {
+  getRelationshipTypesThatRelateRole: function (conceptId) {
     const relationsReq = new messages.Role.Relations.Req();
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRoleRelationsReq(relationsReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
 
-  players: function (conceptId) {
+  getTypesThatPlayRole: function (conceptId) {
     const playersReq = new messages.Role.Players.Req();
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRolePlayersReq(playersReq);

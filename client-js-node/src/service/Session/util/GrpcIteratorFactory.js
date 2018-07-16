@@ -5,8 +5,11 @@ function GrpcIteratorFactory(conceptFactory, communicator) {
   this.conceptFactory = conceptFactory;
 }
 
-GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId, method) {
-  return new GrpcQueryIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
+GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
+  return new GrpcQueryIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId));
+};
+GrpcIteratorFactory.prototype.createAttributesIterator = function (iteratorId) {
+  return new AttributesIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId));
 };
 GrpcIteratorFactory.prototype.createConceptIterator = function (iteratorId, method) {
   return new GrpcConceptIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
@@ -17,22 +20,47 @@ GrpcIteratorFactory.prototype.createRolePlayerIterator = function (iteratorId, m
 
 // -- Query Iterator -- // 
 
-function GrpcQueryIterator(communicator, nextRequest) {
-  this.nextRequest = nextRequest;
-  this.communicator = communicator;
-};
+function GrpcQueryIterator(conceptFactory, communicator, nextRequest) {
 
-GrpcQueryIterator.prototype.next = function () {
-  return this.communicator.send(this.nextRequest)
-    .then(handleQueryResponse)
-    .catch(e => { throw e; });
-};
+  function mapQueryAnswer(queryAnswer) {
+    const answerMap = new Map();
+    queryAnswer.getQueryanswerMap()
+      .forEach((grpcConcept, key) => {
+        answerMap.set(key, conceptFactory.createConcept(grpcConcept));
+      });
+    return answerMap;
+  }
 
-function handleQueryResponse(response) {
-  if (response.hasDone()) return null;
-  if (response.hasQueryresult()) return response.getQueryresult();
-  throw "Unexpected response from server.";
+  function mapComputeAnswer(computeAnswer) {
+
+  }
+
+  mapResponse = (response) => {
+    const iterRes = response.getIterateRes();
+    if (iterRes.getDone()) return null;
+    const answer = iterRes.getQueryIterRes().getAnswer();
+    if (answer.hasQueryanswer()) return mapQueryAnswer(answer.getQueryanswer());
+    if (answer.hasComputeanswer()) return mapComputeAnswer(answer.getComputeAnswer());
+    // add aggregate answer
+  }
+
+  this.next = () => {
+    return communicator.send(nextRequest)
+      .then(mapResponse)
+      .catch(e => { throw e; });
+  }
+
+  this.collectAll = async () => {
+    const results = [];
+    let result = await this.next();
+    while (result) {
+      results.push(result);
+      result = await this.next();
+    }
+    return results;
+  }
 }
+
 
 // -- Concept Iterator -- //
 
@@ -74,6 +102,34 @@ function GrpcRolePlayerIterator(conceptFactory, communicator, nextRequest, gette
       role: conceptFactory.createConcept(resContent.getRole()),
       player: conceptFactory.createConcept(resContent.getPlayer())
     };
+  }
+
+  this.next = () => {
+    return communicator.send(nextRequest)
+      .then(mapResponse)
+      .catch(e => { throw e; });
+  }
+
+  this.collectAll = async () => {
+    const results = [];
+    let result = await this.next();
+    while (result) {
+      results.push(result);
+      result = await this.next();
+    }
+    return results;
+  }
+}
+
+// -- Attributes Iterator -- //
+
+function AttributesIterator(conceptFactory, communicator, nextRequest) {
+
+  mapResponse = (response) => {
+    const iterRes = response.getIterateRes();
+    if (iterRes.getDone()) return null;
+    const grpcConcept = iterRes.getGetattributesIterRes().getConcept();
+    return conceptFactory.createConcept(grpcConcept);
   }
 
   this.next = () => {

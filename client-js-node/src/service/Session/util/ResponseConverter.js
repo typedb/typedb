@@ -17,41 +17,30 @@ function dataTypeToString(dataType) {
     }
 }
 
-function parseQueryResult(queryResult, factory) {
-    if (queryResult.hasOtherresult()) {
-        // compute or aggregate query
-        return JSON.parse(queryResult.getOtherresult());
-    } else {
-        const answerMap = new Map();
-        queryResult
-            .getAnswer()
-            .getAnswerMap()
-            .forEach((grpcConcept, key) => {
-                answerMap.set(key, factory.createConcept(grpcConcept));
-            });
-        return answerMap;
-    }
-};
+// SchemaConcept
+ResponseConverter.prototype.getLabel = function (resp) {
+    return resp.getConceptmethodRes().getResponse().getSchemaconceptGetlabelRes().getLabel();
+}
+ResponseConverter.prototype.isImplicit = function (resp) {
+    return resp.getConceptmethodRes().getResponse().getSchemaconceptIsimplicitRes().getImplicit();
+}
+ResponseConverter.prototype.subs = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getSchemaconceptSubsIter().getId();
+    const getterMethod = "getSchemaconceptSubsIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
+ResponseConverter.prototype.sups = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getSchemaconceptSupsIter().getId();
+    const getterMethod = "getSchemaconceptSupsIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
+ResponseConverter.prototype.getSup = function (resp) {
+    const grpcRes = resp.getConceptmethodRes().getResponse().getSchemaconceptGetsupRes();
+    if (grpcRes.hasNull()) return null;
+    return this.conceptFactory.createConcept(grpcRes.getConcept());
+}
 
-ResponseConverter.prototype.executeResponse = async function (resp) {
-    const resultArray = [];
-    if (resp.hasIteratorid()) {
-        const iterator = this.iteratorFactory.createQueryIterator(resp.getIteratorid());
-        let nextResult = await iterator.nextResult();
-        while (nextResult) {
-            const parsedResult = parseQueryResult(nextResult, this.conceptFactory);
-            resultArray.push(parsedResult);
-            nextResult = await iterator.nextResult();
-        }
-    }
-    if (resp.hasQueryresult()) {
-        const queryResult = resp.getQueryresult();
-        const parsedResult = parseQueryResult(queryResult, this.conceptFactory);
-        resultArray.push(parsedResult);
-    }
-    return resultArray;
-};
-//Type
+// Type
 ResponseConverter.prototype.instances = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getTypeInstancesIter().getId();
     const getterMethod = "getTypeInstancesIterRes";
@@ -105,7 +94,7 @@ ResponseConverter.prototype.getRegex = function (resp) {
     return resp.getConceptmethodRes().getResponse().getAttributetypeGetregexRes().getRegex();
 }
 
-//Relation type
+// Relation type
 ResponseConverter.prototype.addRelationship = function (resp) {
     const grpcConcept = resp.getConceptmethodRes().getResponse().getRelationtypeCreateRes().getConcept();
     return this.conceptFactory.createConcept(grpcConcept);
@@ -117,7 +106,7 @@ ResponseConverter.prototype.getRelatedRoles = function (resp) {
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
-//Thing
+// Thing
 ResponseConverter.prototype.isInferred = function (resp) {
     return resp.getConceptmethodRes().getResponse().getThingIsinferredRes().getInferred();
 }
@@ -166,7 +155,7 @@ ResponseConverter.prototype.getOwners = function (resp) {
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
-//Relation
+// Relation
 
 ResponseConverter.prototype.rolePlayersMap = async function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getRelationRoleplayersmapIter().getId();
@@ -208,6 +197,19 @@ ResponseConverter.prototype.getThen = function (resp) {
     return (methodRes.hasNull()) ? null : methodRes.getPattern();
 }
 
+// Role
+
+ResponseConverter.prototype.getRelationshipTypesThatRelateRole = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getRoleRelationsIter().getId();
+    const getterMethod = "getRoleRelationsIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
+
+ResponseConverter.prototype.getTypesThatPlayRole = function (resp) {
+    const iterId = resp.getConceptmethodRes().getResponse().getRolePlayersIter().getId();
+    const getterMethod = "getRolePlayersIterRes";
+    return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
+}
 
 // ======================= Grakn transaction methods ========================= //
 
@@ -245,5 +247,16 @@ ResponseConverter.prototype.putRule = function (resp) {
     const concept = resp.getPutruleRes().getConcept();
     return this.conceptFactory.createConcept(concept);
 }
+
+ResponseConverter.prototype.getAttributesByValue = function (resp) {
+    const iterId = resp.getGetattributesIter().getId();
+    return this.iteratorFactory.createAttributesIterator(iterId);
+}
+
+ResponseConverter.prototype.executeQuery = function (resp) {
+    const iterRes = resp.getQueryIter();
+    if (iterRes.hasNull()) return null;
+    return this.iteratorFactory.createQueryIterator(iterRes.getId());
+};
 
 module.exports = ResponseConverter;

@@ -74,15 +74,15 @@ TxService.prototype.getThen = function (id) {
 };
 
 // Role
-TxService.prototype.relations = function (id) {
-    const txRequest = TxRequestBuilder.relations(id);
+TxService.prototype.getRelationshipTypesThatRelateRole = function (id) {
+    const txRequest = TxRequestBuilder.getRelationshipTypesThatRelateRole(id);
     return this.communicator.send(txRequest)
-        .then(resp => this.respConverter.relations(resp));
+        .then(resp => this.respConverter.getRelationshipTypesThatRelateRole(resp));
 }
-TxService.prototype.players = function (id) {
-    const txRequest = TxRequestBuilder.players(id);
+TxService.prototype.getTypesThatPlayRole = function (id) {
+    const txRequest = TxRequestBuilder.getTypesThatPlayRole(id);
     return this.communicator.send(txRequest)
-        .then(resp => this.respConverter.players(resp));
+        .then(resp => this.respConverter.getTypesThatPlayRole(resp));
 }
 
 // Type
@@ -333,7 +333,7 @@ TxService.prototype.commit = function () {
 TxService.prototype.execute = function executeQuery(query) {
     const txRequest = TxRequestBuilder.executeQuery(query);
     return this.communicator.send(txRequest)
-        .then(resp => this.respConverter.executeResponse(resp));
+        .then(resp => this.respConverter.executeQuery(resp));
 };
 
 module.exports = TxService;

@@ -44,7 +44,7 @@ describe("Schema concept methods", () => {
     test("Get sups and subs", async () => {
         await tx.execute('define person sub entity;')
         const personSchemaConcept = await tx.getSchemaConcept('person');
-        const sups = await personSchemaConcept.sups();
+        const sups = await (await personSchemaConcept.sups()).collectAll();
         expect(sups.length).toBe(2);
         const label1 = await sups[0].getLabel();
         const label2 = await sups[1].getLabel();
@@ -53,7 +53,7 @@ describe("Schema concept methods", () => {
         expect(supLabels[0]).toBe('entity');
         expect(supLabels[1]).toBe('person');
         const entitySchemaConcept = await tx.getSchemaConcept('entity');
-        const entitySubs = await entitySchemaConcept.subs();
+        const entitySubs = await (await entitySchemaConcept.subs()).collectAll();
         expect(entitySubs.length).toBe(2);
         const subLabel1 = await entitySubs[0].getLabel();
         const subLabel2 = await entitySubs[1].getLabel();

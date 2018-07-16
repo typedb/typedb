@@ -302,12 +302,12 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        assertEquals(testRuleWhen, testRuleWhen.when());
+        assertEquals(testRuleWhen, testRule.when());
     }
 
     @Test
     public void whenCallingGetThen_GetTheExpectedResult() {
-        assertEquals(testRuleThen, testRuleThen.then());
+        assertEquals(testRuleThen, testRule.then());
     }
 
     @Test

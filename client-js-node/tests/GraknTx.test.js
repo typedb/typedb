@@ -22,10 +22,10 @@ describe("GraknTx methods", () => {
 
   test("getConcept", async () => {
     await tx.execute("define person sub entity;");
-    const insertionResult = await tx.execute("insert $x isa person;");
-    const concepts = insertionResult.map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
-    expect(concepts.length).toBe(1);
-    const person = concepts[0];
+    const iterator = await tx.execute("insert $x isa person;");
+    // const concepts = iterator.map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
+    // expect(concepts.length).toBe(1);
+    const person = (await iterator.next()).get('x');
     const personId = person.id;
 
     const samePerson = await tx.getConcept(personId);
@@ -41,10 +41,17 @@ describe("GraknTx methods", () => {
   test("Ensure no duplicates in metatypes", async () => {
     await tx.execute("define person sub entity;");
     const result = await tx.execute("match $x sub entity; get;");
-    const concepts = result.map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
+    const concepts = (await result.collectAll()).map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
     expect(concepts.length).toBe(2);
     const set = new Set(concepts.map(concept => concept.id));
     expect(set.size).toBe(2);
+  });
+
+  test("execute query with no results", async () => {
+    await tx.execute("define person sub entity;");
+    const result = await tx.execute("match $x isa person; get;")
+    const emptyArray = await result.collectAll();
+    expect(emptyArray).toHaveLength(0);
   });
 
   test("getSchemaConcept", async () => {
@@ -81,7 +88,7 @@ describe("GraknTx methods", () => {
     expect(role.baseType).toBe("ROLE");
   });
 
-  test.only("putRule", async () => {
+  test("putRule", async () => {
     const label = "genderisedParentship";
     const when = "{(parent: $p, child: $c) isa parentship; $p has gender 'female'; $c has gender 'male';}"
     const then = "{(mother: $p, son: $c) isa parentship;}";
@@ -95,7 +102,7 @@ describe("GraknTx methods", () => {
     const middleNameAttributeType = await tx.putAttributeType("middlename", env.dataType().STRING);
     const a1 = await firstNameAttributeType.putAttribute('James');
     const a2 = await middleNameAttributeType.putAttribute('James');
-    const attributes = await tx.getAttributesByValue('James', env.dataType().STRING);
+    const attributes = await (await tx.getAttributesByValue('James', env.dataType().STRING)).collectAll();
     expect(attributes.length).toBe(2);
     expect(attributes.filter(a => a.id === a1.id).length).toBe(1);
     expect(attributes.filter(a => a.id === a2.id).length).toBe(1);

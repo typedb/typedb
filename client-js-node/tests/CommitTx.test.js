@@ -10,7 +10,7 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
-    await session.deleteKeyspace();
+    // await session.deleteKeyspace();
     session.close();
 });
 
@@ -38,7 +38,7 @@ describe('Integration test', () => {
     test("When tx commit, different tx will see changes", async () => {
         const tx = await session.transaction(env.txType().WRITE);
         await tx.execute("define superman sub entity;");
-        tx.commit();
+        await tx.commit();
         const newTx = await session.transaction(env.txType().WRITE);
         const superman = await newTx.getSchemaConcept('superman');
         expect(superman.isSchemaConcept()).toBeTruthy();
