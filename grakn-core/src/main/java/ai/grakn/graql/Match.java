@@ -156,11 +156,11 @@ public interface Match extends Streamable<Answer> {
     /**
      * Aggregate results of a query.
      * @param aggregate the aggregate operation to apply
-     * @param <S> the type of the aggregate result
+     * @param <T> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
     @CheckReturnValue
-    <S> AggregateQuery<S> aggregate(Aggregate<Answer, S> aggregate);
+    <T> AggregateQuery<T> aggregate(Aggregate<T> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

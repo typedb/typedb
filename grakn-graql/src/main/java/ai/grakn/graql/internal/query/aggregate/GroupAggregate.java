@@ -41,9 +41,9 @@ import static java.util.stream.Collectors.toList;
 class GroupAggregate<T> extends AbstractAggregate<Map<Concept, T>> {
 
     private final Var varName;
-    private final Aggregate<? super Answer, T> innerAggregate;
+    private final Aggregate<T> innerAggregate;
 
-    GroupAggregate(Var varName, Aggregate<? super Answer, T> innerAggregate) {
+    GroupAggregate(Var varName, Aggregate<T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }

@@ -20,19 +20,18 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
-import ai.grakn.graql.admin.Answer;
 
 class NamedAggregateImpl<S> implements NamedAggregate<S> {
-    private final Aggregate<Answer, S> aggregate;
+    private final Aggregate<S> aggregate;
     private final String name;
 
-    NamedAggregateImpl(Aggregate<Answer, S> aggregate, String name) {
+    NamedAggregateImpl(Aggregate<S> aggregate, String name) {
         this.aggregate = aggregate;
         this.name = name;
     }
 
     @Override
-    public Aggregate<Answer, S> getAggregate() {
+    public Aggregate<S> getAggregate() {
         return aggregate;
     }
 

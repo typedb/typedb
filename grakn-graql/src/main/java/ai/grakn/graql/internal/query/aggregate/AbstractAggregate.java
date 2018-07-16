@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
-import ai.grakn.graql.admin.Answer;
 
 /**
  * Abstract implementation of an {@link Aggregate}, providing an implementation of the {@link Aggregate#as(String)}}
@@ -30,7 +29,7 @@ import ai.grakn.graql.admin.Answer;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractAggregate<S> implements Aggregate<Answer, S> {
+public abstract class AbstractAggregate<S> implements Aggregate<S> {
 
     @Override
     public final NamedAggregate<S> as(String name) {

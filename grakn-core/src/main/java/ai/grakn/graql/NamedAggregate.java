@@ -18,8 +18,6 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.admin.Answer;
-
 import javax.annotation.CheckReturnValue;
 
 /**
@@ -34,7 +32,7 @@ public interface NamedAggregate<T> {
      * @return the aggregate this named aggregate represents
      */
     @CheckReturnValue
-    Aggregate<Answer, T> getAggregate();
+    Aggregate<T> getAggregate();
 
     /**
      * Get the name of this aggregate.

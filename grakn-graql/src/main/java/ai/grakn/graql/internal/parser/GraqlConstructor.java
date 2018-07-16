@@ -39,7 +39,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.util.CommonUtil;
@@ -194,7 +193,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<?, ?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
+    public Aggregate<?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
         String name = visitIdentifier(ctx.identifier());
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
 
@@ -208,7 +207,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<?, ? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
+    public Aggregate<? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
         Set aggregates = ctx.namedAgg().stream().map(this::visitNamedAgg).collect(toSet());
 
         // We can't handle cases when the aggregate types are wrong, because the user can provide custom aggregates
@@ -221,7 +220,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<Answer, ?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
+    public Aggregate<?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
         return visitAggregate(ctx.aggregate());
     }
 
@@ -540,7 +539,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
         return (Match) visit(ctx);
     }
 
-    private Aggregate<Answer, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
+    private Aggregate<?> visitAggregate(GraqlParser.AggregateContext ctx) {
         return (Aggregate) visit(ctx);
     }
 

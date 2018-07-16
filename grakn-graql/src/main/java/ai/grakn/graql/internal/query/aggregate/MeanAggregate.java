@@ -36,7 +36,7 @@ class MeanAggregate extends AbstractAggregate<Optional<Double>> {
 
     private final Var varName;
     private final CountAggregate countAggregate;
-    private final Aggregate<Answer, Number> sumAggregate;
+    private final Aggregate<Number> sumAggregate;
 
     MeanAggregate(Var varName) {
         this.varName = varName;
