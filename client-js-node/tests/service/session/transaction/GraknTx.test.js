@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 
@@ -21,8 +21,8 @@ afterEach(() => {
 describe("GraknTx methods", () => {
 
   test("getConcept", async () => {
-    await tx.execute("define person sub entity;");
-    const iterator = await tx.execute("insert $x isa person;");
+    await tx.query("define person sub entity;");
+    const iterator = await tx.query("insert $x isa person;");
     // const concepts = iterator.map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
     // expect(concepts.length).toBe(1);
     const person = (await iterator.next()).get('x');
@@ -39,8 +39,8 @@ describe("GraknTx methods", () => {
 
   // Bug regression test
   test("Ensure no duplicates in metatypes", async () => {
-    await tx.execute("define person sub entity;");
-    const result = await tx.execute("match $x sub entity; get;");
+    await tx.query("define person sub entity;");
+    const result = await tx.query("match $x sub entity; get;");
     const concepts = (await result.collectAll()).map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
     expect(concepts.length).toBe(2);
     const set = new Set(concepts.map(concept => concept.id));
@@ -48,14 +48,14 @@ describe("GraknTx methods", () => {
   });
 
   test("execute query with no results", async () => {
-    await tx.execute("define person sub entity;");
-    const result = await tx.execute("match $x isa person; get;")
+    await tx.query("define person sub entity;");
+    const result = await tx.query("match $x isa person; get;")
     const emptyArray = await result.collectAll();
     expect(emptyArray).toHaveLength(0);
   });
 
   test("getSchemaConcept", async () => {
-    await tx.execute("define person sub entity;");
+    await tx.query("define person sub entity;");
 
     const personType = await tx.getSchemaConcept("person");
     expect(personType.isSchemaConcept()).toBeTruthy();
@@ -93,22 +93,24 @@ describe("GraknTx methods", () => {
     const when = "{(parent: $p, child: $c) isa parentship; $p has gender 'female'; $c has gender 'male';}"
     const then = "{(mother: $p, son: $c) isa parentship;}";
     const rule = await tx.putRule(label, when, then);
-    expect(await rule.getLabel()).toBe(label);
+    expect(await rule.label()).toBe(label);
     expect(rule.isRule()).toBeTruthy();
   });
 
   test("getAttributesByValue", async () => {
     const firstNameAttributeType = await tx.putAttributeType("firstname", env.dataType().STRING);
     const middleNameAttributeType = await tx.putAttributeType("middlename", env.dataType().STRING);
-    const a1 = await firstNameAttributeType.putAttribute('James');
-    const a2 = await middleNameAttributeType.putAttribute('James');
+    const a1 = await firstNameAttributeType.create('James');
+    const a2 = await middleNameAttributeType.create('James');
     const attributes = await (await tx.getAttributesByValue('James', env.dataType().STRING)).collectAll();
     expect(attributes.length).toBe(2);
     expect(attributes.filter(a => a.id === a1.id).length).toBe(1);
     expect(attributes.filter(a => a.id === a2.id).length).toBe(1);
     attributes.forEach(async attr => {
       expect(attr.isAttribute()).toBeTruthy();
-      expect(await attr.getValue()).toBe('James');
+      expect(await attr.value()).toBe('James');
     });
+    const bondAttributes = await (await tx.getAttributesByValue('Bond', env.dataType().STRING)).collectAll();
+    expect(bondAttributes).toHaveLength(0);
   });
 });

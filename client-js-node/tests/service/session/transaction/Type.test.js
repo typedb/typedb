@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 
@@ -20,14 +20,14 @@ afterEach(() => {
 
 describe("Type methods", () => {
 
-    test("setAbstract && isAbstract", async () => {
+    test("isAbstract", async () => {
         const dogType = await tx.putEntityType("dog");
         let isAbstract = await dogType.isAbstract();
         expect(isAbstract).toBeFalsy();
-        await dogType.setAbstract(true);
+        await dogType.isAbstract(true);
         isAbstract = await dogType.isAbstract();
         expect(isAbstract).toBeTruthy();
-        await dogType.setAbstract(false);
+        await dogType.isAbstract(false);
         isAbstract = await dogType.isAbstract();
         expect(isAbstract).toBeFalsy();
     });
@@ -35,14 +35,14 @@ describe("Type methods", () => {
     test("get/set/delete plays", async () => {
         const role = await tx.putRole('father');
         const type = await tx.putEntityType('person');
-        const plays = await (await type.plays()).collectAll();
+        const plays = await (await type.playing()).collectAll();
         expect(plays.length).toBe(0);
         await type.plays(role);
-        const playsWithRole = await (await type.plays()).collectAll();
+        const playsWithRole = await (await type.playing()).collectAll();
         expect(playsWithRole.length).toBe(1);
         expect(playsWithRole[0].baseType).toBe('ROLE');
-        await type.deletePlays(role);
-        const playsRemoved = await (await type.plays()).collectAll();
+        await type.unplay(role);
+        const playsRemoved = await (await type.playing()).collectAll();
         expect(playsRemoved.length).toBe(0);
     });
 
@@ -51,11 +51,11 @@ describe("Type methods", () => {
         const nameType = await tx.putAttributeType('name', env.dataType().STRING);
         const attrs = await (await type.attributes()).collectAll();
         expect(attrs.length).toBe(0);
-        await type.attribute(nameType);
+        await type.has(nameType);
         const attrsWithName = await (await type.attributes()).collectAll();
         expect(attrsWithName.length).toBe(1);
         expect(attrsWithName[0].baseType).toBe('ATTRIBUTE_TYPE');
-        await type.deleteAttribute(nameType);
+        await type.unhas(nameType);
         const attrsRemoved = await (await type.attributes()).collectAll();
         expect(attrsRemoved.length).toBe(0);
     });
@@ -64,7 +64,7 @@ describe("Type methods", () => {
         const personType = await tx.putEntityType("person");
         const instances = await (await personType.instances()).collectAll();
         expect(instances.length).toBe(0);
-        await personType.addEntity();
+        await personType.create();
         const instancesWithPerson = await (await personType.instances()).collectAll();
         expect(instancesWithPerson.length).toBe(1);
     });
@@ -78,7 +78,7 @@ describe("Type methods", () => {
         const keysWithName = await (await type.keys()).collectAll();
         expect(keysWithName.length).toBe(1);
         expect(keysWithName[0].baseType).toBe('ATTRIBUTE_TYPE');
-        await type.deleteKey(nameType);
+        await type.unkey(nameType);
         const keysRemoved = await (await type.keys()).collectAll();
         expect(keysRemoved.length).toBe(0);
     });

@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 

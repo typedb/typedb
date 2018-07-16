@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 
@@ -22,13 +22,13 @@ describe("Thing methods", () => {
 
     test("isInferred", async () => {
         const personType = await tx.putEntityType('person');
-        const thing = await personType.addEntity();
+        const thing = await personType.create();
         expect(await thing.isInferred()).toBeFalsy();
     });
 
     test("type", async () => {
         const personType = await tx.putEntityType('person');
-        const thing = await personType.addEntity();
+        const thing = await personType.create();
         const type = await thing.type();
         expect(type.id).toBe(personType.id);
         expect(type.isType()).toBeTruthy();
@@ -36,11 +36,11 @@ describe("Thing methods", () => {
 
     test("relationships", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const personType = await tx.putEntityType('person');
-        const parent = await personType.addEntity();
-        await relationship.addRolePlayer(parentRole, parent);
+        const parent = await personType.create();
+        await relationship.assign(parentRole, parent);
         const rels = await (await parent.relationships()).collectAll();
         expect(rels.length).toBe(1);
         expect(rels[0].id).toBe(relationship.id);
@@ -48,25 +48,25 @@ describe("Thing methods", () => {
 
     test("relationships() filtered by role", async () => {
         const personType = await tx.putEntityType('person');
-        const person = await personType.addEntity();
+        const person = await personType.create();
 
         //First relationship type
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const parenthoodRel1 = await relationshipType.addRelationship();
+        const parenthoodRel1 = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
-        await parenthoodRel1.addRolePlayer(parentRole, person);
+        await parenthoodRel1.assign(parentRole, person);
 
-        const parenthoodRel2 = await relationshipType.addRelationship();
-        await parenthoodRel2.addRolePlayer(parentRole, person);
+        const parenthoodRel2 = await relationshipType.create();
+        await parenthoodRel2.assign(parentRole, person);
 
         const parentRelationships = await (await person.relationships(parentRole)).collectAll();
         expect(parentRelationships.length).toBe(2);
 
         //Second relationship type
         const relationshipType2 = await tx.putRelationshipType('employment');
-        const employmentRel = await relationshipType2.addRelationship();
+        const employmentRel = await relationshipType2.create();
         const employerRole = await tx.putRole('employer');
-        await employmentRel.addRolePlayer(employerRole, person);
+        await employmentRel.assign(employerRole, person);
 
 
         const employerRelationships = await (await person.relationships(employerRole)).collectAll();
@@ -74,29 +74,29 @@ describe("Thing methods", () => {
         expect(employerRelationships[0].id).toBe(employmentRel.id);
     });
 
-    test("plays", async () => {
+    test("roles", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const personType = await tx.putEntityType('person');
-        const parent = await personType.addEntity();
-        await relationship.addRolePlayer(parentRole, parent);
-        const plays = await (await parent.plays()).collectAll();
-        expect(plays.length).toBe(1);
-        expect(plays[0].id).toBe(parentRole.id);
+        const parent = await personType.create();
+        await relationship.assign(parentRole, parent);
+        const roles = await (await parent.roles()).collectAll();
+        expect(roles.length).toBe(1);
+        expect(roles[0].id).toBe(parentRole.id);
     });
 
-    test("set/delete/get attributes", async () => {
+    test("has/unhas/get attributes", async () => {
         const personType = await tx.putEntityType('person');
         const attrType = await tx.putAttributeType('name', env.dataType().STRING);
-        await personType.attribute(attrType);
-        const person = await personType.addEntity();
-        const name = await attrType.putAttribute('Marco');
-        await person.attribute(name);
+        await personType.has(attrType);
+        const person = await personType.create();
+        const name = await attrType.create('Marco');
+        await person.has(name);
         const attrs = await (await person.attributes()).collectAll();
         expect(attrs.length).toBe(1);
         expect(attrs[0].id).toBe(name.id);
-        await person.deleteAttribute(name);
+        await person.unhas(name);
         const emptyAttrs = await (await person.attributes()).collectAll();
         expect(emptyAttrs.length).toBe(0);
     });
@@ -106,13 +106,13 @@ describe("Thing methods", () => {
         const attrType = await tx.putAttributeType('name', env.dataType().STRING);
         const attrMarriedType = await tx.putAttributeType('married', env.dataType().BOOLEAN);
         const whateverType = await tx.putAttributeType('whatever', env.dataType().FLOAT);
-        await personType.attribute(attrType);
-        await personType.attribute(attrMarriedType);
-        const person = await personType.addEntity();
-        const notMarried = await attrMarriedType.putAttribute(false);
-        const name = await attrType.putAttribute('Marco');
-        await person.attribute(name);
-        await person.attribute(notMarried);
+        await personType.has(attrType);
+        await personType.has(attrMarriedType);
+        const person = await personType.create();
+        const notMarried = await attrMarriedType.create(false);
+        const name = await attrType.create('Marco');
+        await person.has(name);
+        await person.has(notMarried);
         const attrs = await (await person.attributes()).collectAll();
         expect(attrs.length).toBe(2);
         attrs.forEach(att => { expect(att.isAttribute()).toBeTruthy(); });
@@ -128,14 +128,14 @@ describe("Thing methods", () => {
         const surnameType = await tx.putAttributeType('surname', env.dataType().STRING);
 
         await personType.key(nameType);
-        await personType.attribute(surnameType);
+        await personType.has(surnameType);
 
-        const personName = await nameType.putAttribute('James');
-        const personSurname = await surnameType.putAttribute('Bond');
+        const personName = await nameType.create('James');
+        const personSurname = await surnameType.create('Bond');
 
-        const person = await personType.addEntity();
-        await person.attribute(personName);
-        await person.attribute(personSurname);
+        const person = await personType.create();
+        await person.has(personName);
+        await person.has(personSurname);
 
         const keys = await (await person.keys()).collectAll();
         expect(keys.length).toBe(1);

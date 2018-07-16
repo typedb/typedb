@@ -14,8 +14,8 @@ function GraknTx(txService) {
  * Executes a given Graql query on the current keyspace
  * @param {String} query String representing a Graql query 
  */
-GraknTx.prototype.execute = function executeQuery(query) {
-    return this.txService.execute(query);
+GraknTx.prototype.query = function executeQuery(query) {
+    return this.txService.query(query);
 };
 
 /**

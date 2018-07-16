@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 
@@ -20,9 +20,9 @@ afterEach(() => {
 
 describe("Entity type methods", () => {
 
-    test("addEntity", async () => {
+    test("create", async () => {
         const personType = await tx.putEntityType("person");
-        const person = await personType.addEntity();
+        const person = await personType.create();
         expect(person.isEntity()).toBeTruthy();
     });
 });

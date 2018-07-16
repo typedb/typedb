@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 
@@ -31,7 +31,7 @@ describe("Concept methods", () => {
 
     test("delete instance", async () => {
         const personType = await tx.putEntityType('person');
-        const person = await personType.addEntity();
+        const person = await personType.create();
         await person.delete();
         const nullConcept = await tx.getConcept(person.id);
         expect(nullConcept).toBeNull();
@@ -39,7 +39,7 @@ describe("Concept methods", () => {
 
     test("delete concept already deleted", async () => {
         const personType = await tx.putEntityType('person');
-        const person = await personType.addEntity();
+        const person = await personType.create();
         await person.delete();
         const nullConcept = await tx.getConcept(person.id);
         expect(nullConcept).toBeNull();
@@ -48,19 +48,19 @@ describe("Concept methods", () => {
 
     test("instance isEntity/isRelationship/isAttribute", async () => {
         const personType = await tx.putEntityType('person');
-        const person = await personType.addEntity();
+        const person = await personType.create();
         expect(person.isEntity()).toBeTruthy();
         expect(person.isRelationship()).toBeFalsy();
         expect(person.isAttribute()).toBeFalsy();
 
         const relationshipType = await tx.putRelationshipType('marriage');
-        const marriage = await relationshipType.addRelationship();
+        const marriage = await relationshipType.create();
         expect(marriage.isEntity()).toBeFalsy();
         expect(marriage.isRelationship()).toBeTruthy();
         expect(marriage.isAttribute()).toBeFalsy();
 
         const attributeType = await tx.putAttributeType('employed', env.dataType().BOOLEAN);
-        const employed = await attributeType.putAttribute(true);
+        const employed = await attributeType.create(true);
         expect(employed.isEntity()).toBeFalsy();
         expect(employed.isRelationship()).toBeFalsy();
         expect(employed.isAttribute()).toBeTruthy();

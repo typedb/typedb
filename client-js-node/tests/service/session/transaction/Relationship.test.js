@@ -1,4 +1,4 @@
-const env = require('./support/GraknTestEnvironment');
+const env = require('../../../support/GraknTestEnvironment');
 let session;
 let tx;
 
@@ -22,14 +22,14 @@ describe("Relationsihp methods", () => {
 
     test("rolePlayersMap && rolePlayers with 2 roles with 1 player each", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const childRole = await tx.putRole('child');
         const personType = await tx.putEntityType('person');
-        const parent = await personType.addEntity();
-        const child = await personType.addEntity();
-        await relationship.addRolePlayer(parentRole, parent);
-        await relationship.addRolePlayer(childRole, child);
+        const parent = await personType.create();
+        const child = await personType.create();
+        await relationship.assign(parentRole, parent);
+        await relationship.assign(childRole, child);
         const map = await relationship.rolePlayersMap();
         expect(map.size).toBe(2);
         Array.from(map.keys()).forEach(key => { expect(key.isRole()).toBeTruthy(); });
@@ -40,13 +40,13 @@ describe("Relationsihp methods", () => {
 
     test("rolePlayersMap && rolePlayers with 1 role with 2 players", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const personType = await tx.putEntityType('person');
-        const parent = await personType.addEntity();
-        const anotherParent = await personType.addEntity();
-        await relationship.addRolePlayer(parentRole, parent);
-        await relationship.addRolePlayer(parentRole, anotherParent);
+        const parent = await personType.create();
+        const anotherParent = await personType.create();
+        await relationship.assign(parentRole, parent);
+        await relationship.assign(parentRole, anotherParent);
         const map = await relationship.rolePlayersMap();
         expect(map.size).toBe(1);
         Array.from(map.keys()).forEach(key => { expect(key.isRole()).toBeTruthy(); });
@@ -57,13 +57,13 @@ describe("Relationsihp methods", () => {
 
     test("rolePlayersMap && rolePlayers with 2 roles with the same player", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const childRole = await tx.putRole('child');
         const personType = await tx.putEntityType('person');
-        const parentOfHimself = await personType.addEntity();
-        await relationship.addRolePlayer(parentRole, parentOfHimself);
-        await relationship.addRolePlayer(childRole, parentOfHimself);
+        const parentOfHimself = await personType.create();
+        await relationship.assign(parentRole, parentOfHimself);
+        await relationship.assign(childRole, parentOfHimself);
         const map = await relationship.rolePlayersMap();
         expect(map.size).toBe(2);
         Array.from(map.keys()).forEach(key => { expect(key.isRole()).toBeTruthy(); });
@@ -73,20 +73,20 @@ describe("Relationsihp methods", () => {
         expect(rolePlayers[0].isThing()).toBeTruthy();
     });
 
-    test("addRolePlayer && removeRolePlayer && rolePlayers", async () => {
+    test("assign && unassign && rolePlayers", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const personType = await tx.putEntityType('person');
-        const person = await personType.addEntity();
+        const person = await personType.create();
         const emptyRolePlayers = await (await relationship.rolePlayers()).collectAll();
         expect(emptyRolePlayers.length).toBe(0);
-        await relationship.addRolePlayer(parentRole, person);
+        await relationship.assign(parentRole, person);
         const rolePlayers = await (await relationship.rolePlayers()).collectAll();
         expect(rolePlayers.length).toBe(1);
         expect(rolePlayers[0].isThing()).toBeTruthy();
         expect(rolePlayers[0].id).toBe(person.id);
-        await relationship.removeRolePlayer(parentRole, person);
+        await relationship.unassign(parentRole, person);
         const rolePlayersRemoved = await (await relationship.rolePlayers()).collectAll();
         expect(rolePlayersRemoved.length).toBe(0);
 
@@ -94,14 +94,14 @@ describe("Relationsihp methods", () => {
 
     test("rolePlayers() filtered by Role", async () => {
         const relationshipType = await tx.putRelationshipType('parenthood');
-        const relationship = await relationshipType.addRelationship();
+        const relationship = await relationshipType.create();
         const parentRole = await tx.putRole('parent');
         const childRole = await tx.putRole('child');
         const personType = await tx.putEntityType('person');
-        const parent = await personType.addEntity();
-        const child = await personType.addEntity();
-        await relationship.addRolePlayer(parentRole, parent);
-        await relationship.addRolePlayer(childRole, child);
+        const parent = await personType.create();
+        const child = await personType.create();
+        await relationship.assign(parentRole, parent);
+        await relationship.assign(childRole, child);
         const rolePlayers = await (await relationship.rolePlayers()).collectAll();
         expect(rolePlayers.length).toBe(2);
         const filteredRolePlayers = await (await relationship.rolePlayers(childRole)).collectAll();

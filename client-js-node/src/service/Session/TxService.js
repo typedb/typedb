@@ -4,7 +4,7 @@ const ConceptFactory = require("../../concept/ConceptFactory");
 const ResponseConverter = require("./util/ResponseConverter");
 
 /**
- * TxServiceexecutes the methods provided by the gRPC that are defined
+ * TxService executes the methods provided by the gRPC that are defined
  * inside concept.proto and returns responses in JS data types.
  * It has 2 collaborators:
  *  - a communicator which handles gRPC requests/responses over a duplex Stream
@@ -330,7 +330,7 @@ TxService.prototype.commit = function () {
     return this.communicator.send(txRequest);
 }
 
-TxService.prototype.execute = function executeQuery(query) {
+TxService.prototype.query = function executeQuery(query) {
     const txRequest = TxRequestBuilder.executeQuery(query);
     return this.communicator.send(txRequest)
         .then(resp => this.respConverter.executeQuery(resp));
