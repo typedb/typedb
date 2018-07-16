@@ -30,7 +30,7 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds minimum of a {@link Match}.
  */
-class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Optional<T>> {
+class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Optional<T>> {
 
     private final Var varName;
 

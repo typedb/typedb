@@ -243,7 +243,7 @@ public class Graql {
      * Create an aggregate that will check if there are any results
      */
     @CheckReturnValue
-    public static Aggregate<Object, Boolean> ask() {
+    public static Aggregate<Answer, Boolean> ask() {
         return Aggregates.ask();
     }
 
@@ -251,7 +251,7 @@ public class Graql {
      * Create an aggregate that will count the results of a query.
      */
     @CheckReturnValue
-    public static Aggregate<Object, Long> count() {
+    public static Aggregate<Answer, Long> count() {
         return Aggregates.count();
     }
 
@@ -332,23 +332,21 @@ public class Graql {
     /**
      * Create an aggregate that will collect together several named aggregates into a map.
      * @param aggregates the aggregates to join together
-     * @param <S> the type that the query returns
      * @param <T> the type that each aggregate returns
      */
     @CheckReturnValue
     @SafeVarargs
-    public static <S, T> Aggregate<S, Map<String, T>> select(NamedAggregate<? super S, ? extends T>... aggregates) {
+    public static <T> Aggregate<Answer, Map<String, T>> select(NamedAggregate<? extends T>... aggregates) {
         return select(ImmutableSet.copyOf(aggregates));
     }
 
     /**
      * Create an aggregate that will collect together several named aggregates into a map.
      * @param aggregates the aggregates to join together
-     * @param <S> the type that the query returns
      * @param <T> the type that each aggregate returns
      */
     @CheckReturnValue
-    public static <S, T> Aggregate<S, Map<String, T>> select(Set<NamedAggregate<? super S, ? extends T>> aggregates) {
+    public static <T> Aggregate<Answer, Map<String, T>> select(Set<NamedAggregate<? extends T>> aggregates) {
         return Aggregates.select(ImmutableSet.copyOf(aggregates));
     }
 

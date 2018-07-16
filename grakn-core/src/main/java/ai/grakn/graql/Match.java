@@ -160,7 +160,7 @@ public interface Match extends Streamable<Answer> {
      * @return a query that will yield the aggregate result
      */
     @CheckReturnValue
-    <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate);
+    <S> AggregateQuery<S> aggregate(Aggregate<Answer, S> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

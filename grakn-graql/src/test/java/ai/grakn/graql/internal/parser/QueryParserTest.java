@@ -1167,7 +1167,7 @@ public class QueryParserTest {
         assertEquals(query, parse(query).toString());
     }
 
-    class GetAny extends AbstractAggregate<Answer, Concept> {
+    class GetAny extends AbstractAggregate<Concept> {
 
         private final Var varName;
 

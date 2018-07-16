@@ -31,7 +31,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a {@link Match}.
  */
-class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
+class MedianAggregate extends AbstractAggregate<Optional<Number>> {
 
     private final Var varName;
 

@@ -38,7 +38,7 @@ import static java.util.stream.Collectors.toList;
  * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-class GroupAggregate<T> extends AbstractAggregate<Answer, Map<Concept, T>> {
+class GroupAggregate<T> extends AbstractAggregate<Map<Concept, T>> {
 
     private final Var varName;
     private final Aggregate<? super Answer, T> innerAggregate;

@@ -73,7 +73,7 @@ public class Queries {
         return DeleteQueryImpl.of(vars, match);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<? super Answer, T> aggregate) {
+    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<Answer, T> aggregate) {
         return AggregateQueryImpl.of(match, aggregate);
     }
 }

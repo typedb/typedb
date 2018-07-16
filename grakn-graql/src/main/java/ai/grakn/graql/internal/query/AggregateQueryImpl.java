@@ -32,7 +32,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
 
-    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<? super Answer, T> aggregate) {
+    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<Answer, T> aggregate) {
         return new AutoValue_AggregateQueryImpl<>(match, aggregate);
     }
 

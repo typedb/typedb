@@ -39,6 +39,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.util.CommonUtil;
@@ -220,12 +221,12 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<?, ?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
+    public Aggregate<Answer, ?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
         return visitAggregate(ctx.aggregate());
     }
 
     @Override
-    public NamedAggregate<?, ?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
+    public NamedAggregate<?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
         String name = visitIdentifier(ctx.identifier());
         return visitAggregate(ctx.aggregate()).as(name);
     }
@@ -539,7 +540,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
         return (Match) visit(ctx);
     }
 
-    private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
+    private Aggregate<Answer, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
         return (Aggregate) visit(ctx);
     }
 

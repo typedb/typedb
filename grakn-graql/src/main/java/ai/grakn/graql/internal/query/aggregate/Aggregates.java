@@ -49,14 +49,14 @@ public class Aggregates {
     /**
      * Aggregate that counts results of a {@link Match}.
      */
-    public static Aggregate<Object, Long> count() {
+    public static Aggregate<Answer, Long> count() {
         return new CountAggregate();
     }
 
     /**
      * Aggregate that checks if there are any results
      */
-    public static Aggregate<Object,Boolean> ask() {
+    public static Aggregate<Answer,Boolean> ask() {
         return AskAggregate.get();
     }
 
@@ -80,10 +80,9 @@ public class Aggregates {
 
     /**
      * An aggregate that changes {@link Match} results into a list.
-     * @param <T> the type of the results of the {@link Match}
      */
-    public static <T> Aggregate<T, List<T>> list() {
-        return new ListAggregate<>();
+    public static Aggregate<Answer, List<Answer>> list() {
+        return new ListAggregate();
     }
 
     /**
@@ -116,11 +115,10 @@ public class Aggregates {
 
     /**
      * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
-     * @param <S> the type of the {@link Match} results
      * @param <T> the type of the aggregate results
      */
-    public static <S, T> Aggregate<S, Map<String, T>> select(
-            ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates
+    public static <T> Aggregate<Answer, Map<String, T>> select(
+            ImmutableSet<NamedAggregate<? extends T>> aggregates
     ) {
         return new SelectAggregate<>(aggregates);
     }

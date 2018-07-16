@@ -20,20 +20,20 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.admin.Answer;
 
 /**
  * Abstract implementation of an {@link Aggregate}, providing an implementation of the {@link Aggregate#as(String)}}
  * method.
  *
- * @param <T> The input type to the aggregate.
  * @param <S> The result type of the aggregate.
  *
  * @author Felix Chapman
  */
-public abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
+public abstract class AbstractAggregate<S> implements Aggregate<Answer, S> {
 
     @Override
-    public final NamedAggregate<T, S> as(String name) {
+    public final NamedAggregate<S> as(String name) {
         return new NamedAggregateImpl<>(this, name);
     }
 }

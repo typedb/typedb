@@ -30,7 +30,7 @@ import static java.lang.Math.sqrt;
 /**
  * Aggregate that finds the unbiased sample standard deviation of a {@link Match}.
  */
-class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
+class StdAggregate extends AbstractAggregate<Optional<Double>> {
 
     private final Var varName;
 

@@ -30,7 +30,7 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds maximum of a {@link Match}.
  */
-class MaxAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Optional<T>> {
+class MaxAggregate<T extends Comparable<T>> extends AbstractAggregate<Optional<T>> {
 
     private final Var varName;
 

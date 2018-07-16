@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 /**
  * Aggregate that sums results of a {@link Match}.
  */
-class SumAggregate extends AbstractAggregate<Answer, Number> {
+class SumAggregate extends AbstractAggregate<Number> {
 
     private final Var varName;
 

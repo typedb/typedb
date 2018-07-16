@@ -44,5 +44,5 @@ public interface AggregateQuery<T> extends Query<T> {
     /**
      * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
      */
-    Aggregate<? super Answer, T> aggregate();
+    Aggregate<Answer, T> aggregate();
 }

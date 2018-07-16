@@ -43,5 +43,5 @@ public interface Aggregate<T, S> {
      * @return a new named aggregate
      */
     @CheckReturnValue
-    NamedAggregate<T, S> as(String name);
+    NamedAggregate<S> as(String name);
 }
