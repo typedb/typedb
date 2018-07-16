@@ -251,6 +251,18 @@ jobs:
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
+  client-nodejs-e2e:
+      machine: true
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - restore_cache:
+            name: Restore maven m2 cache
+            key: grakn-cache-m2-version-8
+        - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+        - run: cd client-nodejs && yarn install && yarn run test
+
 workflows:
   version: 2
   run-all-tests:
@@ -269,5 +281,8 @@ workflows:
           requires:
             - build
       - biomed-e2e:
+          requires:
+            - build
+      - client-nodejs-e2e:
           requires:
             - build

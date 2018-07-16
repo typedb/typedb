@@ -6,7 +6,8 @@ const DEFAULT_URI = "localhost:48555";
 let session;
 
 beforeAll(() => {
-    session = Grakn.session(DEFAULT_URI, env.newKeyspace());
+    const grakn = new Grakn(DEFAULT_URI);
+    session = grakn.session(env.newKeyspace());
 });
 
 afterAll(async () => {
