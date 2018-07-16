@@ -1,0 +1,5 @@
+
+\.DS_Store
+.idea
+**/__pycache__
+*_pb2*.py
