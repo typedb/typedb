@@ -5,7 +5,7 @@ const TxService = require("./TxService");
 function Session(uri, keyspace, credentials) {
     this.keyspace = keyspace;
     this.credentials = credentials;
-    this.stub = new services.SessionClient(uri, grpc.credentials.createInsecure());
+    this.stub = new services.SessionServiceClient(uri, grpc.credentials.createInsecure());
 }
 
 Session.prototype.createRemoteTx = async function create(txType) {

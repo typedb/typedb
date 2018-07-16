@@ -18,8 +18,8 @@ function convertBaseType(baseType) {
     case ConceptsBaseType.ATTRIBUTE_TYPE: return messages.Concept.BASE_TYPE.ATTRIBUTE_TYPE;
     case ConceptsBaseType.ENTITY: return messages.Concept.BASE_TYPE.ENTITY;
     case ConceptsBaseType.ENTITY_TYPE: return messages.Concept.BASE_TYPE.ENTITY_TYPE;
-    case ConceptsBaseType.RELATIONSHIP: return messages.Concept.BASE_TYPE.RELATIONSHIP;
-    case ConceptsBaseType.RELATIONSHIP_TYPE: return messages.Concept.BASE_TYPE.RELATIONSHIP_TYPE;
+    case ConceptsBaseType.RELATIONSHIP: return messages.Concept.BASE_TYPE.RELATION;
+    case ConceptsBaseType.RELATIONSHIP_TYPE: return messages.Concept.BASE_TYPE.RELATION_TYPE;
     case ConceptsBaseType.ROLE: return messages.Concept.BASE_TYPE.ROLE;
     case ConceptsBaseType.RULE: return messages.Concept.BASE_TYPE.RULE;
     case ConceptsBaseType.META_TYPE: return messages.Concept.BASE_TYPE.META_TYPE;
@@ -105,7 +105,7 @@ const methods = {
 
   setSup: function (conceptId, superConcept) {
     const setSupReq = new messages.SchemaConcept.SetSup.Req();
-    setSupReq.setConcept(toGrpcConcept(superConcept));
+    setSupReq.setSchemaconcept(toGrpcConcept(superConcept));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setSchemaconceptSetsupReq(setSupReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -155,14 +155,14 @@ const methods = {
   },
   setAttributeType: function (conceptId, type) {
     const hasReq = new messages.Type.Has.Req();
-    hasReq.setConcept(toGrpcConcept(type));
+    hasReq.setAttributetype(toGrpcConcept(type));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setTypeHasReq(hasReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   unsetAttributeType: function (conceptId, type) {
     const unhasReq = new messages.Type.Unhas.Req();
-    unhasReq.setConcept(toGrpcConcept(type));
+    unhasReq.setAttributetype(toGrpcConcept(type));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setTypeUnhasReq(unhasReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -175,14 +175,14 @@ const methods = {
   },
   setKeyType: function (conceptId, keyType) {
     const keyReq = new messages.Type.Key.Req();
-    keyReq.setConcept(toGrpcConcept(keyType));
+    keyReq.setAttributetype(toGrpcConcept(keyType));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setTypeKeyReq(keyReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   unsetKeyType: function (conceptId, keyType) {
     const unkeyReq = new messages.Type.Unkey.Req();
-    unkeyReq.setConcept(toGrpcConcept(keyType));
+    unkeyReq.setAttributetype(toGrpcConcept(keyType));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setTypeUnkeyReq(unkeyReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -208,14 +208,14 @@ const methods = {
   },
   setRolePlayedByType: function (conceptId, role) {
     const playsReq = new messages.Type.Plays.Req();
-    playsReq.setConcept(toGrpcConcept(role));
+    playsReq.setRole(toGrpcConcept(role));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setTypePlaysReq(playsReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   unsetRolePlayedByType: function (conceptId, role) {
     const unPlayReq = new messages.Type.Unplay.Req();
-    unPlayReq.setConcept(toGrpcConcept(role));
+    unPlayReq.setRole(toGrpcConcept(role));
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setTypeUnplayReq(unPlayReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -245,7 +245,7 @@ const methods = {
 
   setRelatedRole: function (conceptId, role) {
     const relatesReq = new messages.RelationType.Relates.Req();
-    relatesReq.setConcept(toGrpcConcept(role))
+    relatesReq.setRole(toGrpcConcept(role))
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRelationtypeRelatesReq(relatesReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -253,7 +253,7 @@ const methods = {
 
   unsetRelatedRole: function (conceptId, role) {
     const unrelateReq = new messages.RelationType.Unrelate.Req();
-    unrelateReq.setConcept(toGrpcConcept(role))
+    unrelateReq.setRole(toGrpcConcept(role))
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRelationtypeUnrelateReq(unrelateReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -317,7 +317,7 @@ const methods = {
   getRelationshipsByRoles: function (conceptId, roles) {
     const relationsReq = new messages.Thing.Relations.Req();
     const conceptMethodReq = new messages.Method.Req();
-    if (roles.length) relationsReq.setConceptsList(roles.map(role => toGrpcConcept(role)));
+    if (roles.length) relationsReq.setRolesList(roles.map(role => toGrpcConcept(role)));
     conceptMethodReq.setThingRelationsReq(relationsReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
@@ -332,7 +332,7 @@ const methods = {
   getAttributesByTypes: function (conceptId, types) {
     const attributesReq = new messages.Thing.Attributes.Req();
     const conceptMethodReq = new messages.Method.Req();
-    if (types.length) attributesReq.setConceptsList(types.map(type => toGrpcConcept(type)));
+    if (types.length) attributesReq.setAttributetypesList(types.map(type => toGrpcConcept(type)));
     conceptMethodReq.setThingAttributesReq(attributesReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
@@ -340,21 +340,21 @@ const methods = {
   getKeysByTypes: function (conceptId, types) {
     const keysReq = new messages.Thing.Keys.Req();
     const conceptMethodReq = new messages.Method.Req();
-    if (types.length) keysReq.setConceptsList(types.map(type => toGrpcConcept(type)));
+    if (types.length) keysReq.setAttributetypesList(types.map(type => toGrpcConcept(type)));
     conceptMethodReq.setThingKeysReq(keysReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   setAttribute: function (conceptId, attribute) {
     const thingHasReq = new messages.Thing.Relhas.Req();
     const conceptMethodReq = new messages.Method.Req();
-    thingHasReq.setConcept(toGrpcConcept(attribute));
+    thingHasReq.setAttribute(toGrpcConcept(attribute));
     conceptMethodReq.setThingRelhasReq(thingHasReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
   unsetAttribute: function (conceptId, attribute) {
     const thingUnhasReq = new messages.Thing.Unhas.Req();
     const conceptMethodReq = new messages.Method.Req();
-    thingUnhasReq.setConcept(toGrpcConcept(attribute));
+    thingUnhasReq.setAttribute(toGrpcConcept(attribute));
     conceptMethodReq.setThingUnhasReq(thingUnhasReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
   },
@@ -368,7 +368,7 @@ const methods = {
   },
   rolePlayers: function (conceptId, roles) {
     const rolePlayersReq = new messages.Relation.RolePlayers.Req();
-    if (roles.length) rolePlayersReq.setConceptsList(roles.map(role => toGrpcConcept(role)))
+    if (roles.length) rolePlayersReq.setRolesList(roles.map(role => toGrpcConcept(role)))
     const conceptMethodReq = new messages.Method.Req();
     conceptMethodReq.setRelationRoleplayersReq(rolePlayersReq);
     return RunConceptMethodRequest(conceptId, conceptMethodReq);
@@ -428,9 +428,9 @@ const methods = {
   },
   putRelationshipType: function (label) {
     const txRequest = new messages.Transaction.Req();
-    const putMessage = new messages.Transaction.PutRelationshipType.Req();
+    const putMessage = new messages.Transaction.PutRelationType.Req();
     putMessage.setLabel(label);
-    txRequest.setPutrelationshiptypeReq(putMessage);
+    txRequest.setPutrelationtypeReq(putMessage);
     return txRequest;
   },
   putRole: function (label) {
@@ -472,7 +472,7 @@ const methods = {
     const openRequest = new messages.Transaction.Open.Req();
     const txRequest = new messages.Transaction.Req();
     openRequest.setKeyspace(keyspace);
-    openRequest.setTxtype(txType);
+    openRequest.setType(txType);
     if (credentials) {
       openRequest.setUsername(credentials.username);
       openRequest.setPassword(credentials.password);

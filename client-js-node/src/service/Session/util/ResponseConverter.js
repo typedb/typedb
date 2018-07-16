@@ -26,36 +26,36 @@ ResponseConverter.prototype.isImplicit = function (resp) {
 }
 ResponseConverter.prototype.subs = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getSchemaconceptSubsIter().getId();
-    const getterMethod = "getSchemaconceptSubsIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getSchemaconceptSubsIterRes().getSchemaconcept();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 ResponseConverter.prototype.sups = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getSchemaconceptSupsIter().getId();
-    const getterMethod = "getSchemaconceptSupsIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getSchemaconceptSupsIterRes().getSchemaconcept();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 ResponseConverter.prototype.getSup = function (resp) {
     const grpcRes = resp.getConceptmethodRes().getResponse().getSchemaconceptGetsupRes();
     if (grpcRes.hasNull()) return null;
-    return this.conceptFactory.createConcept(grpcRes.getConcept());
+    return this.conceptFactory.createConcept(grpcRes.getSchemaconcept());
 }
 
 // Type
 ResponseConverter.prototype.instances = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getTypeInstancesIter().getId();
-    const getterMethod = "getTypeInstancesIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getTypeInstancesIterRes().getThing();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
 ResponseConverter.prototype.getAttributeTypes = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getTypeAttributesIter().getId();
-    const getterMethod = "getTypeAttributesIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getTypeAttributesIterRes().getAttributetype();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
 ResponseConverter.prototype.getKeyTypes = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getTypeKeysIter().getId();
-    const getterMethod = "getTypeKeysIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getTypeKeysIterRes().getAttributetype();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
@@ -65,23 +65,23 @@ ResponseConverter.prototype.isAbstract = function (resp) {
 
 ResponseConverter.prototype.getRolesPlayedByType = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getTypePlayingIter().getId();
-    const getterMethod = "getTypePlayingIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getTypePlayingIterRes().getRole();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
 // Entity type
 ResponseConverter.prototype.addEntity = function (resp) {
-    const grpcConcept = resp.getConceptmethodRes().getResponse().getEntitytypeCreateRes().getConcept();
+    const grpcConcept = resp.getConceptmethodRes().getResponse().getEntitytypeCreateRes().getEntity();
     return this.conceptFactory.createConcept(grpcConcept);
 };
 
 // Attribute type
 ResponseConverter.prototype.getAttribute = function (resp) {
     const grpcRes = resp.getConceptmethodRes().getResponse().getAttributetypeAttributeRes();
-    return (grpcRes.hasNull()) ? null : this.conceptFactory.createConcept(grpcRes.getConcept());
+    return (grpcRes.hasNull()) ? null : this.conceptFactory.createConcept(grpcRes.getAttribute());
 }
 ResponseConverter.prototype.putAttribute = function (resp) {
-    const grpcConcept = resp.getConceptmethodRes().getResponse().getAttributetypeCreateRes().getConcept();
+    const grpcConcept = resp.getConceptmethodRes().getResponse().getAttributetypeCreateRes().getAttribute();
     return this.conceptFactory.createConcept(grpcConcept);
 };
 
@@ -96,13 +96,13 @@ ResponseConverter.prototype.getRegex = function (resp) {
 
 // Relation type
 ResponseConverter.prototype.addRelationship = function (resp) {
-    const grpcConcept = resp.getConceptmethodRes().getResponse().getRelationtypeCreateRes().getConcept();
+    const grpcConcept = resp.getConceptmethodRes().getResponse().getRelationtypeCreateRes().getRelation();
     return this.conceptFactory.createConcept(grpcConcept);
 };
 
 ResponseConverter.prototype.getRelatedRoles = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getRelationtypeRolesIter().getId();
-    const getterMethod = "getRelationtypeRolesIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getRelationtypeRolesIterRes().getRole();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
@@ -112,28 +112,28 @@ ResponseConverter.prototype.isInferred = function (resp) {
 }
 
 ResponseConverter.prototype.getDirectType = function (resp) {
-    const grpcConcept = resp.getConceptmethodRes().getResponse().getThingTypeRes().getConcept();
+    const grpcConcept = resp.getConceptmethodRes().getResponse().getThingTypeRes().getType();
     return this.conceptFactory.createConcept(grpcConcept);
 }
 
 ResponseConverter.prototype.getRelationshipsByRoles = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getThingRelationsIter().getId();
-    const getterMethod = "getThingRelationsIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getThingRelationsIterRes().getRelation();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 ResponseConverter.prototype.getRolesPlayedByThing = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getThingRolesIter().getId();
-    const getterMethod = "getThingRolesIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getThingRolesIterRes().getRole();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 ResponseConverter.prototype.getAttributesByTypes = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getThingAttributesIter().getId();
-    const getterMethod = "getThingAttributesIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getThingAttributesIterRes().getAttribute();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 ResponseConverter.prototype.getKeysByTypes = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getThingKeysIter().getId();
-    const getterMethod = "getThingKeysIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getThingKeysIterRes().getAttribute();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
@@ -150,8 +150,8 @@ ResponseConverter.prototype.getValue = function (resp) {
     if (attrValue.hasDate()) return attrValue.getDate();
 };
 ResponseConverter.prototype.getOwners = function (resp) {
-    const getterMethod = "getAttributeOwnersIterRes";
     const iterId = resp.getConceptmethodRes().getResponse().getAttributeOwnersIter().getId();
+    const getterMethod = (res) => res.getConceptmethodIterRes().getAttributeOwnersIterRes().getThing();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
@@ -181,7 +181,7 @@ ResponseConverter.prototype.rolePlayersMap = async function (resp) {
 
 ResponseConverter.prototype.rolePlayers = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getRelationRoleplayersIter().getId();
-    const getterMethod = "getRelationRoleplayersIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getRelationRoleplayersIterRes().getThing();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
@@ -201,13 +201,13 @@ ResponseConverter.prototype.getThen = function (resp) {
 
 ResponseConverter.prototype.getRelationshipTypesThatRelateRole = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getRoleRelationsIter().getId();
-    const getterMethod = "getRoleRelationsIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getRoleRelationsIterRes().getRelationtype();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
 ResponseConverter.prototype.getTypesThatPlayRole = function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getRolePlayersIter().getId();
-    const getterMethod = "getRolePlayersIterRes";
+    const getterMethod = (res) => res.getConceptmethodIterRes().getRolePlayersIterRes().getType();
     return this.iteratorFactory.createConceptIterator(iterId, getterMethod);
 }
 
@@ -215,7 +215,7 @@ ResponseConverter.prototype.getTypesThatPlayRole = function (resp) {
 
 ResponseConverter.prototype.getSchemaConcept = function (resp) {
     const grpcRes = resp.getGetschemaconceptRes();
-    return (grpcRes.hasNull()) ? null : this.conceptFactory.createConcept(grpcRes.getConcept());
+    return (grpcRes.hasNull()) ? null : this.conceptFactory.createConcept(grpcRes.getSchemaconcept());
 }
 
 ResponseConverter.prototype.getConcept = function (resp) {
@@ -224,27 +224,27 @@ ResponseConverter.prototype.getConcept = function (resp) {
 }
 
 ResponseConverter.prototype.putEntityType = function (resp) {
-    const concept = resp.getPutentitytypeRes().getConcept();
+    const concept = resp.getPutentitytypeRes().getEntitytype();
     return this.conceptFactory.createConcept(concept);
 }
 
 ResponseConverter.prototype.putRelationshipType = function (resp) {
-    const concept = resp.getPutrelationshiptypeRes().getConcept();
+    const concept = resp.getPutrelationtypeRes().getRelationtype();
     return this.conceptFactory.createConcept(concept);
 }
 
 ResponseConverter.prototype.putAttributeType = function (resp) {
-    const concept = resp.getPutattributetypeRes().getConcept();
+    const concept = resp.getPutattributetypeRes().getAttributetype();
     return this.conceptFactory.createConcept(concept);
 }
 
 ResponseConverter.prototype.putRole = function (resp) {
-    const concept = resp.getPutroleRes().getConcept();
+    const concept = resp.getPutroleRes().getRole();
     return this.conceptFactory.createConcept(concept);
 }
 
 ResponseConverter.prototype.putRule = function (resp) {
-    const concept = resp.getPutruleRes().getConcept();
+    const concept = resp.getPutruleRes().getRule();
     return this.conceptFactory.createConcept(concept);
 }
 

@@ -6101,13 +6101,13 @@ proto.session.Concept.serializeBinaryToWriter = function(message, writer) {
 proto.session.Concept.BASE_TYPE = {
   META_TYPE: 0,
   ENTITY_TYPE: 1,
-  RELATIONSHIP_TYPE: 3,
-  ATTRIBUTE_TYPE: 4,
-  ENTITY: 5,
-  RELATIONSHIP: 6,
-  ATTRIBUTE: 7,
-  ROLE: 8,
-  RULE: 9
+  RELATION_TYPE: 2,
+  ATTRIBUTE_TYPE: 3,
+  ROLE: 4,
+  RULE: 5,
+  ENTITY: 6,
+  RELATION: 7,
+  ATTRIBUTE: 8
 };
 
 
@@ -7993,7 +7993,7 @@ proto.session.SchemaConcept.GetSup.Res.oneofGroups_ = [[1,2]];
  */
 proto.session.SchemaConcept.GetSup.Res.ResCase = {
   RES_NOT_SET: 0,
-  CONCEPT: 1,
+  SCHEMACONCEPT: 1,
   NULL: 2
 };
 
@@ -8033,7 +8033,7 @@ proto.session.SchemaConcept.GetSup.Res.prototype.toObject = function(opt_include
  */
 proto.session.SchemaConcept.GetSup.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f),
+    schemaconcept: (f = msg.getSchemaconcept()) && proto.session.Concept.toObject(includeInstance, f),
     pb_null: (f = msg.getNull()) && proto.session.Null.toObject(includeInstance, f)
   };
 
@@ -8074,7 +8074,7 @@ proto.session.SchemaConcept.GetSup.Res.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setSchemaconcept(value);
       break;
     case 2:
       var value = new proto.session.Null;
@@ -8110,7 +8110,7 @@ proto.session.SchemaConcept.GetSup.Res.prototype.serializeBinary = function() {
  */
 proto.session.SchemaConcept.GetSup.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getSchemaconcept();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -8130,23 +8130,23 @@ proto.session.SchemaConcept.GetSup.Res.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept schemaConcept = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.SchemaConcept.GetSup.Res.prototype.getConcept = function() {
+proto.session.SchemaConcept.GetSup.Res.prototype.getSchemaconcept = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.SchemaConcept.GetSup.Res.prototype.setConcept = function(value) {
+proto.session.SchemaConcept.GetSup.Res.prototype.setSchemaconcept = function(value) {
   jspb.Message.setOneofWrapperField(this, 1, proto.session.SchemaConcept.GetSup.Res.oneofGroups_[0], value);
 };
 
 
-proto.session.SchemaConcept.GetSup.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.SchemaConcept.GetSup.Res.prototype.clearSchemaconcept = function() {
+  this.setSchemaconcept(undefined);
 };
 
 
@@ -8154,7 +8154,7 @@ proto.session.SchemaConcept.GetSup.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.SchemaConcept.GetSup.Res.prototype.hasConcept = function() {
+proto.session.SchemaConcept.GetSup.Res.prototype.hasSchemaconcept = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -8352,7 +8352,7 @@ proto.session.SchemaConcept.SetSup.Req.prototype.toObject = function(opt_include
  */
 proto.session.SchemaConcept.SetSup.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    schemaconcept: (f = msg.getSchemaconcept()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -8392,7 +8392,7 @@ proto.session.SchemaConcept.SetSup.Req.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setSchemaconcept(value);
       break;
     default:
       reader.skipField();
@@ -8423,7 +8423,7 @@ proto.session.SchemaConcept.SetSup.Req.prototype.serializeBinary = function() {
  */
 proto.session.SchemaConcept.SetSup.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getSchemaconcept();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -8435,23 +8435,23 @@ proto.session.SchemaConcept.SetSup.Req.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept schemaConcept = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.SchemaConcept.SetSup.Req.prototype.getConcept = function() {
+proto.session.SchemaConcept.SetSup.Req.prototype.getSchemaconcept = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.SchemaConcept.SetSup.Req.prototype.setConcept = function(value) {
+proto.session.SchemaConcept.SetSup.Req.prototype.setSchemaconcept = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.SchemaConcept.SetSup.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.SchemaConcept.SetSup.Req.prototype.clearSchemaconcept = function() {
+  this.setSchemaconcept(undefined);
 };
 
 
@@ -8459,7 +8459,7 @@ proto.session.SchemaConcept.SetSup.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.SchemaConcept.SetSup.Req.prototype.hasConcept = function() {
+proto.session.SchemaConcept.SetSup.Req.prototype.hasSchemaconcept = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -8986,7 +8986,7 @@ proto.session.SchemaConcept.Sups.Iter.Res.prototype.toObject = function(opt_incl
  */
 proto.session.SchemaConcept.Sups.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    schemaconcept: (f = msg.getSchemaconcept()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -9026,7 +9026,7 @@ proto.session.SchemaConcept.Sups.Iter.Res.deserializeBinaryFromReader = function
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setSchemaconcept(value);
       break;
     default:
       reader.skipField();
@@ -9057,7 +9057,7 @@ proto.session.SchemaConcept.Sups.Iter.Res.prototype.serializeBinary = function()
  */
 proto.session.SchemaConcept.Sups.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getSchemaconcept();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -9069,23 +9069,23 @@ proto.session.SchemaConcept.Sups.Iter.Res.serializeBinaryToWriter = function(mes
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept schemaConcept = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.SchemaConcept.Sups.Iter.Res.prototype.getConcept = function() {
+proto.session.SchemaConcept.Sups.Iter.Res.prototype.getSchemaconcept = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.SchemaConcept.Sups.Iter.Res.prototype.setConcept = function(value) {
+proto.session.SchemaConcept.Sups.Iter.Res.prototype.setSchemaconcept = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.SchemaConcept.Sups.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.SchemaConcept.Sups.Iter.Res.prototype.clearSchemaconcept = function() {
+  this.setSchemaconcept(undefined);
 };
 
 
@@ -9093,7 +9093,7 @@ proto.session.SchemaConcept.Sups.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.SchemaConcept.Sups.Iter.Res.prototype.hasConcept = function() {
+proto.session.SchemaConcept.Sups.Iter.Res.prototype.hasSchemaconcept = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -9519,7 +9519,7 @@ proto.session.SchemaConcept.Subs.Iter.Res.prototype.toObject = function(opt_incl
  */
 proto.session.SchemaConcept.Subs.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    schemaconcept: (f = msg.getSchemaconcept()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -9559,7 +9559,7 @@ proto.session.SchemaConcept.Subs.Iter.Res.deserializeBinaryFromReader = function
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setSchemaconcept(value);
       break;
     default:
       reader.skipField();
@@ -9590,7 +9590,7 @@ proto.session.SchemaConcept.Subs.Iter.Res.prototype.serializeBinary = function()
  */
 proto.session.SchemaConcept.Subs.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getSchemaconcept();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -9602,23 +9602,23 @@ proto.session.SchemaConcept.Subs.Iter.Res.serializeBinaryToWriter = function(mes
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept schemaConcept = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.SchemaConcept.Subs.Iter.Res.prototype.getConcept = function() {
+proto.session.SchemaConcept.Subs.Iter.Res.prototype.getSchemaconcept = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.SchemaConcept.Subs.Iter.Res.prototype.setConcept = function(value) {
+proto.session.SchemaConcept.Subs.Iter.Res.prototype.setSchemaconcept = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.SchemaConcept.Subs.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.SchemaConcept.Subs.Iter.Res.prototype.clearSchemaconcept = function() {
+  this.setSchemaconcept(undefined);
 };
 
 
@@ -9626,7 +9626,7 @@ proto.session.SchemaConcept.Subs.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.SchemaConcept.Subs.Iter.Res.prototype.hasConcept = function() {
+proto.session.SchemaConcept.Subs.Iter.Res.prototype.hasSchemaconcept = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -11200,7 +11200,7 @@ proto.session.Role.Relations.Iter.Res.prototype.toObject = function(opt_includeI
  */
 proto.session.Role.Relations.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    relationtype: (f = msg.getRelationtype()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -11240,7 +11240,7 @@ proto.session.Role.Relations.Iter.Res.deserializeBinaryFromReader = function(msg
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRelationtype(value);
       break;
     default:
       reader.skipField();
@@ -11271,7 +11271,7 @@ proto.session.Role.Relations.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Role.Relations.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRelationtype();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -11283,23 +11283,23 @@ proto.session.Role.Relations.Iter.Res.serializeBinaryToWriter = function(message
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept relationType = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Role.Relations.Iter.Res.prototype.getConcept = function() {
+proto.session.Role.Relations.Iter.Res.prototype.getRelationtype = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Role.Relations.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Role.Relations.Iter.Res.prototype.setRelationtype = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Role.Relations.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Role.Relations.Iter.Res.prototype.clearRelationtype = function() {
+  this.setRelationtype(undefined);
 };
 
 
@@ -11307,7 +11307,7 @@ proto.session.Role.Relations.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Role.Relations.Iter.Res.prototype.hasConcept = function() {
+proto.session.Role.Relations.Iter.Res.prototype.hasRelationtype = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -11733,7 +11733,7 @@ proto.session.Role.Players.Iter.Res.prototype.toObject = function(opt_includeIns
  */
 proto.session.Role.Players.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    type: (f = msg.getType()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -11773,7 +11773,7 @@ proto.session.Role.Players.Iter.Res.deserializeBinaryFromReader = function(msg, 
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setType(value);
       break;
     default:
       reader.skipField();
@@ -11804,7 +11804,7 @@ proto.session.Role.Players.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Role.Players.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getType();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -11816,23 +11816,23 @@ proto.session.Role.Players.Iter.Res.serializeBinaryToWriter = function(message, 
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept type = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Role.Players.Iter.Res.prototype.getConcept = function() {
+proto.session.Role.Players.Iter.Res.prototype.getType = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Role.Players.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Role.Players.Iter.Res.prototype.setType = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Role.Players.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Role.Players.Iter.Res.prototype.clearType = function() {
+  this.setType(undefined);
 };
 
 
@@ -11840,7 +11840,7 @@ proto.session.Role.Players.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Role.Players.Iter.Res.prototype.hasConcept = function() {
+proto.session.Role.Players.Iter.Res.prototype.hasType = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -13134,7 +13134,7 @@ proto.session.Type.Instances.Iter.Res.prototype.toObject = function(opt_includeI
  */
 proto.session.Type.Instances.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    thing: (f = msg.getThing()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -13174,7 +13174,7 @@ proto.session.Type.Instances.Iter.Res.deserializeBinaryFromReader = function(msg
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setThing(value);
       break;
     default:
       reader.skipField();
@@ -13205,7 +13205,7 @@ proto.session.Type.Instances.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Type.Instances.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getThing();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -13217,23 +13217,23 @@ proto.session.Type.Instances.Iter.Res.serializeBinaryToWriter = function(message
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept thing = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Instances.Iter.Res.prototype.getConcept = function() {
+proto.session.Type.Instances.Iter.Res.prototype.getThing = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Instances.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Type.Instances.Iter.Res.prototype.setThing = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Instances.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Instances.Iter.Res.prototype.clearThing = function() {
+  this.setThing(undefined);
 };
 
 
@@ -13241,7 +13241,7 @@ proto.session.Type.Instances.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Instances.Iter.Res.prototype.hasConcept = function() {
+proto.session.Type.Instances.Iter.Res.prototype.hasThing = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -13667,7 +13667,7 @@ proto.session.Type.Attributes.Iter.Res.prototype.toObject = function(opt_include
  */
 proto.session.Type.Attributes.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attributetype: (f = msg.getAttributetype()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -13707,7 +13707,7 @@ proto.session.Type.Attributes.Iter.Res.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttributetype(value);
       break;
     default:
       reader.skipField();
@@ -13738,7 +13738,7 @@ proto.session.Type.Attributes.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Type.Attributes.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttributetype();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -13750,23 +13750,23 @@ proto.session.Type.Attributes.Iter.Res.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attributeType = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Attributes.Iter.Res.prototype.getConcept = function() {
+proto.session.Type.Attributes.Iter.Res.prototype.getAttributetype = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Attributes.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Type.Attributes.Iter.Res.prototype.setAttributetype = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Attributes.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Attributes.Iter.Res.prototype.clearAttributetype = function() {
+  this.setAttributetype(undefined);
 };
 
 
@@ -13774,7 +13774,7 @@ proto.session.Type.Attributes.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Attributes.Iter.Res.prototype.hasConcept = function() {
+proto.session.Type.Attributes.Iter.Res.prototype.hasAttributetype = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -14200,7 +14200,7 @@ proto.session.Type.Keys.Iter.Res.prototype.toObject = function(opt_includeInstan
  */
 proto.session.Type.Keys.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attributetype: (f = msg.getAttributetype()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -14240,7 +14240,7 @@ proto.session.Type.Keys.Iter.Res.deserializeBinaryFromReader = function(msg, rea
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttributetype(value);
       break;
     default:
       reader.skipField();
@@ -14271,7 +14271,7 @@ proto.session.Type.Keys.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Type.Keys.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttributetype();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -14283,23 +14283,23 @@ proto.session.Type.Keys.Iter.Res.serializeBinaryToWriter = function(message, wri
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attributeType = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Keys.Iter.Res.prototype.getConcept = function() {
+proto.session.Type.Keys.Iter.Res.prototype.getAttributetype = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Keys.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Type.Keys.Iter.Res.prototype.setAttributetype = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Keys.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Keys.Iter.Res.prototype.clearAttributetype = function() {
+  this.setAttributetype(undefined);
 };
 
 
@@ -14307,7 +14307,7 @@ proto.session.Type.Keys.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Keys.Iter.Res.prototype.hasConcept = function() {
+proto.session.Type.Keys.Iter.Res.prototype.hasAttributetype = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -14733,7 +14733,7 @@ proto.session.Type.Playing.Iter.Res.prototype.toObject = function(opt_includeIns
  */
 proto.session.Type.Playing.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -14773,7 +14773,7 @@ proto.session.Type.Playing.Iter.Res.deserializeBinaryFromReader = function(msg, 
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -14804,7 +14804,7 @@ proto.session.Type.Playing.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Type.Playing.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -14816,23 +14816,23 @@ proto.session.Type.Playing.Iter.Res.serializeBinaryToWriter = function(message, 
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Playing.Iter.Res.prototype.getConcept = function() {
+proto.session.Type.Playing.Iter.Res.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Playing.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Type.Playing.Iter.Res.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Playing.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Playing.Iter.Res.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -14840,7 +14840,7 @@ proto.session.Type.Playing.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Playing.Iter.Res.prototype.hasConcept = function() {
+proto.session.Type.Playing.Iter.Res.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -14857,788 +14857,6 @@ proto.session.Type.Playing.Iter.prototype.getId = function() {
 /** @param {number} value */
 proto.session.Type.Playing.Iter.prototype.setId = function(value) {
   jspb.Message.setField(this, 1, value);
-};
-
-
-
-/**
- * Generated by JsPbCodeGenerator.
- * @param {Array=} opt_data Optional initial data array, typically from a
- * server response, or constructed directly in Javascript. The array is used
- * in place and becomes part of the constructed object. It is not cloned.
- * If no data is provided, the constructed object will be empty, but still
- * valid.
- * @extends {jspb.Message}
- * @constructor
- */
-proto.session.Type.Has = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
-};
-goog.inherits(proto.session.Type.Has, jspb.Message);
-if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Has.displayName = 'proto.session.Type.Has';
-}
-
-
-if (jspb.Message.GENERATE_TO_OBJECT) {
-/**
- * Creates an object representation of this proto suitable for use in Soy templates.
- * Field names that are reserved in JavaScript and will be renamed to pb_name.
- * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
- * For the list of reserved names please see:
- *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
- * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
- *     for transitional soy proto support: http://goto/soy-param-migration
- * @return {!Object}
- */
-proto.session.Type.Has.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Has.toObject(opt_includeInstance, this);
-};
-
-
-/**
- * Static version of the {@see toObject} method.
- * @param {boolean|undefined} includeInstance Whether to include the JSPB
- *     instance for transitional soy proto support:
- *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Has} msg The msg instance to transform.
- * @return {!Object}
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Has.toObject = function(includeInstance, msg) {
-  var f, obj = {
-
-  };
-
-  if (includeInstance) {
-    obj.$jspbMessageInstance = msg;
-  }
-  return obj;
-};
-}
-
-
-/**
- * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Has}
- */
-proto.session.Type.Has.deserializeBinary = function(bytes) {
-  var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Has;
-  return proto.session.Type.Has.deserializeBinaryFromReader(msg, reader);
-};
-
-
-/**
- * Deserializes binary data (in protobuf wire format) from the
- * given reader into the given message object.
- * @param {!proto.session.Type.Has} msg The message object to deserialize into.
- * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Has}
- */
-proto.session.Type.Has.deserializeBinaryFromReader = function(msg, reader) {
-  while (reader.nextField()) {
-    if (reader.isEndGroup()) {
-      break;
-    }
-    var field = reader.getFieldNumber();
-    switch (field) {
-    default:
-      reader.skipField();
-      break;
-    }
-  }
-  return msg;
-};
-
-
-/**
- * Serializes the message to binary data (in protobuf wire format).
- * @return {!Uint8Array}
- */
-proto.session.Type.Has.prototype.serializeBinary = function() {
-  var writer = new jspb.BinaryWriter();
-  proto.session.Type.Has.serializeBinaryToWriter(this, writer);
-  return writer.getResultBuffer();
-};
-
-
-/**
- * Serializes the given message to binary data (in protobuf wire
- * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Has} message
- * @param {!jspb.BinaryWriter} writer
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Has.serializeBinaryToWriter = function(message, writer) {
-  var f = undefined;
-};
-
-
-
-/**
- * Generated by JsPbCodeGenerator.
- * @param {Array=} opt_data Optional initial data array, typically from a
- * server response, or constructed directly in Javascript. The array is used
- * in place and becomes part of the constructed object. It is not cloned.
- * If no data is provided, the constructed object will be empty, but still
- * valid.
- * @extends {jspb.Message}
- * @constructor
- */
-proto.session.Type.Has.Req = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
-};
-goog.inherits(proto.session.Type.Has.Req, jspb.Message);
-if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Has.Req.displayName = 'proto.session.Type.Has.Req';
-}
-
-
-if (jspb.Message.GENERATE_TO_OBJECT) {
-/**
- * Creates an object representation of this proto suitable for use in Soy templates.
- * Field names that are reserved in JavaScript and will be renamed to pb_name.
- * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
- * For the list of reserved names please see:
- *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
- * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
- *     for transitional soy proto support: http://goto/soy-param-migration
- * @return {!Object}
- */
-proto.session.Type.Has.Req.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Has.Req.toObject(opt_includeInstance, this);
-};
-
-
-/**
- * Static version of the {@see toObject} method.
- * @param {boolean|undefined} includeInstance Whether to include the JSPB
- *     instance for transitional soy proto support:
- *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Has.Req} msg The msg instance to transform.
- * @return {!Object}
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Has.Req.toObject = function(includeInstance, msg) {
-  var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
-  };
-
-  if (includeInstance) {
-    obj.$jspbMessageInstance = msg;
-  }
-  return obj;
-};
-}
-
-
-/**
- * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Has.Req}
- */
-proto.session.Type.Has.Req.deserializeBinary = function(bytes) {
-  var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Has.Req;
-  return proto.session.Type.Has.Req.deserializeBinaryFromReader(msg, reader);
-};
-
-
-/**
- * Deserializes binary data (in protobuf wire format) from the
- * given reader into the given message object.
- * @param {!proto.session.Type.Has.Req} msg The message object to deserialize into.
- * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Has.Req}
- */
-proto.session.Type.Has.Req.deserializeBinaryFromReader = function(msg, reader) {
-  while (reader.nextField()) {
-    if (reader.isEndGroup()) {
-      break;
-    }
-    var field = reader.getFieldNumber();
-    switch (field) {
-    case 1:
-      var value = new proto.session.Concept;
-      reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
-      break;
-    default:
-      reader.skipField();
-      break;
-    }
-  }
-  return msg;
-};
-
-
-/**
- * Serializes the message to binary data (in protobuf wire format).
- * @return {!Uint8Array}
- */
-proto.session.Type.Has.Req.prototype.serializeBinary = function() {
-  var writer = new jspb.BinaryWriter();
-  proto.session.Type.Has.Req.serializeBinaryToWriter(this, writer);
-  return writer.getResultBuffer();
-};
-
-
-/**
- * Serializes the given message to binary data (in protobuf wire
- * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Has.Req} message
- * @param {!jspb.BinaryWriter} writer
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Has.Req.serializeBinaryToWriter = function(message, writer) {
-  var f = undefined;
-  f = message.getConcept();
-  if (f != null) {
-    writer.writeMessage(
-      1,
-      f,
-      proto.session.Concept.serializeBinaryToWriter
-    );
-  }
-};
-
-
-/**
- * optional Concept concept = 1;
- * @return {?proto.session.Concept}
- */
-proto.session.Type.Has.Req.prototype.getConcept = function() {
-  return /** @type{?proto.session.Concept} */ (
-    jspb.Message.getWrapperField(this, proto.session.Concept, 1));
-};
-
-
-/** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Has.Req.prototype.setConcept = function(value) {
-  jspb.Message.setWrapperField(this, 1, value);
-};
-
-
-proto.session.Type.Has.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {!boolean}
- */
-proto.session.Type.Has.Req.prototype.hasConcept = function() {
-  return jspb.Message.getField(this, 1) != null;
-};
-
-
-
-/**
- * Generated by JsPbCodeGenerator.
- * @param {Array=} opt_data Optional initial data array, typically from a
- * server response, or constructed directly in Javascript. The array is used
- * in place and becomes part of the constructed object. It is not cloned.
- * If no data is provided, the constructed object will be empty, but still
- * valid.
- * @extends {jspb.Message}
- * @constructor
- */
-proto.session.Type.Has.Res = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
-};
-goog.inherits(proto.session.Type.Has.Res, jspb.Message);
-if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Has.Res.displayName = 'proto.session.Type.Has.Res';
-}
-
-
-if (jspb.Message.GENERATE_TO_OBJECT) {
-/**
- * Creates an object representation of this proto suitable for use in Soy templates.
- * Field names that are reserved in JavaScript and will be renamed to pb_name.
- * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
- * For the list of reserved names please see:
- *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
- * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
- *     for transitional soy proto support: http://goto/soy-param-migration
- * @return {!Object}
- */
-proto.session.Type.Has.Res.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Has.Res.toObject(opt_includeInstance, this);
-};
-
-
-/**
- * Static version of the {@see toObject} method.
- * @param {boolean|undefined} includeInstance Whether to include the JSPB
- *     instance for transitional soy proto support:
- *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Has.Res} msg The msg instance to transform.
- * @return {!Object}
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Has.Res.toObject = function(includeInstance, msg) {
-  var f, obj = {
-
-  };
-
-  if (includeInstance) {
-    obj.$jspbMessageInstance = msg;
-  }
-  return obj;
-};
-}
-
-
-/**
- * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Has.Res}
- */
-proto.session.Type.Has.Res.deserializeBinary = function(bytes) {
-  var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Has.Res;
-  return proto.session.Type.Has.Res.deserializeBinaryFromReader(msg, reader);
-};
-
-
-/**
- * Deserializes binary data (in protobuf wire format) from the
- * given reader into the given message object.
- * @param {!proto.session.Type.Has.Res} msg The message object to deserialize into.
- * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Has.Res}
- */
-proto.session.Type.Has.Res.deserializeBinaryFromReader = function(msg, reader) {
-  while (reader.nextField()) {
-    if (reader.isEndGroup()) {
-      break;
-    }
-    var field = reader.getFieldNumber();
-    switch (field) {
-    default:
-      reader.skipField();
-      break;
-    }
-  }
-  return msg;
-};
-
-
-/**
- * Serializes the message to binary data (in protobuf wire format).
- * @return {!Uint8Array}
- */
-proto.session.Type.Has.Res.prototype.serializeBinary = function() {
-  var writer = new jspb.BinaryWriter();
-  proto.session.Type.Has.Res.serializeBinaryToWriter(this, writer);
-  return writer.getResultBuffer();
-};
-
-
-/**
- * Serializes the given message to binary data (in protobuf wire
- * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Has.Res} message
- * @param {!jspb.BinaryWriter} writer
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Has.Res.serializeBinaryToWriter = function(message, writer) {
-  var f = undefined;
-};
-
-
-
-/**
- * Generated by JsPbCodeGenerator.
- * @param {Array=} opt_data Optional initial data array, typically from a
- * server response, or constructed directly in Javascript. The array is used
- * in place and becomes part of the constructed object. It is not cloned.
- * If no data is provided, the constructed object will be empty, but still
- * valid.
- * @extends {jspb.Message}
- * @constructor
- */
-proto.session.Type.Unhas = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
-};
-goog.inherits(proto.session.Type.Unhas, jspb.Message);
-if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Unhas.displayName = 'proto.session.Type.Unhas';
-}
-
-
-if (jspb.Message.GENERATE_TO_OBJECT) {
-/**
- * Creates an object representation of this proto suitable for use in Soy templates.
- * Field names that are reserved in JavaScript and will be renamed to pb_name.
- * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
- * For the list of reserved names please see:
- *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
- * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
- *     for transitional soy proto support: http://goto/soy-param-migration
- * @return {!Object}
- */
-proto.session.Type.Unhas.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Unhas.toObject(opt_includeInstance, this);
-};
-
-
-/**
- * Static version of the {@see toObject} method.
- * @param {boolean|undefined} includeInstance Whether to include the JSPB
- *     instance for transitional soy proto support:
- *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Unhas} msg The msg instance to transform.
- * @return {!Object}
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Unhas.toObject = function(includeInstance, msg) {
-  var f, obj = {
-
-  };
-
-  if (includeInstance) {
-    obj.$jspbMessageInstance = msg;
-  }
-  return obj;
-};
-}
-
-
-/**
- * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Unhas}
- */
-proto.session.Type.Unhas.deserializeBinary = function(bytes) {
-  var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Unhas;
-  return proto.session.Type.Unhas.deserializeBinaryFromReader(msg, reader);
-};
-
-
-/**
- * Deserializes binary data (in protobuf wire format) from the
- * given reader into the given message object.
- * @param {!proto.session.Type.Unhas} msg The message object to deserialize into.
- * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Unhas}
- */
-proto.session.Type.Unhas.deserializeBinaryFromReader = function(msg, reader) {
-  while (reader.nextField()) {
-    if (reader.isEndGroup()) {
-      break;
-    }
-    var field = reader.getFieldNumber();
-    switch (field) {
-    default:
-      reader.skipField();
-      break;
-    }
-  }
-  return msg;
-};
-
-
-/**
- * Serializes the message to binary data (in protobuf wire format).
- * @return {!Uint8Array}
- */
-proto.session.Type.Unhas.prototype.serializeBinary = function() {
-  var writer = new jspb.BinaryWriter();
-  proto.session.Type.Unhas.serializeBinaryToWriter(this, writer);
-  return writer.getResultBuffer();
-};
-
-
-/**
- * Serializes the given message to binary data (in protobuf wire
- * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Unhas} message
- * @param {!jspb.BinaryWriter} writer
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Unhas.serializeBinaryToWriter = function(message, writer) {
-  var f = undefined;
-};
-
-
-
-/**
- * Generated by JsPbCodeGenerator.
- * @param {Array=} opt_data Optional initial data array, typically from a
- * server response, or constructed directly in Javascript. The array is used
- * in place and becomes part of the constructed object. It is not cloned.
- * If no data is provided, the constructed object will be empty, but still
- * valid.
- * @extends {jspb.Message}
- * @constructor
- */
-proto.session.Type.Unhas.Req = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
-};
-goog.inherits(proto.session.Type.Unhas.Req, jspb.Message);
-if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Unhas.Req.displayName = 'proto.session.Type.Unhas.Req';
-}
-
-
-if (jspb.Message.GENERATE_TO_OBJECT) {
-/**
- * Creates an object representation of this proto suitable for use in Soy templates.
- * Field names that are reserved in JavaScript and will be renamed to pb_name.
- * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
- * For the list of reserved names please see:
- *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
- * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
- *     for transitional soy proto support: http://goto/soy-param-migration
- * @return {!Object}
- */
-proto.session.Type.Unhas.Req.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Unhas.Req.toObject(opt_includeInstance, this);
-};
-
-
-/**
- * Static version of the {@see toObject} method.
- * @param {boolean|undefined} includeInstance Whether to include the JSPB
- *     instance for transitional soy proto support:
- *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Unhas.Req} msg The msg instance to transform.
- * @return {!Object}
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Unhas.Req.toObject = function(includeInstance, msg) {
-  var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
-  };
-
-  if (includeInstance) {
-    obj.$jspbMessageInstance = msg;
-  }
-  return obj;
-};
-}
-
-
-/**
- * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Unhas.Req}
- */
-proto.session.Type.Unhas.Req.deserializeBinary = function(bytes) {
-  var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Unhas.Req;
-  return proto.session.Type.Unhas.Req.deserializeBinaryFromReader(msg, reader);
-};
-
-
-/**
- * Deserializes binary data (in protobuf wire format) from the
- * given reader into the given message object.
- * @param {!proto.session.Type.Unhas.Req} msg The message object to deserialize into.
- * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Unhas.Req}
- */
-proto.session.Type.Unhas.Req.deserializeBinaryFromReader = function(msg, reader) {
-  while (reader.nextField()) {
-    if (reader.isEndGroup()) {
-      break;
-    }
-    var field = reader.getFieldNumber();
-    switch (field) {
-    case 1:
-      var value = new proto.session.Concept;
-      reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
-      break;
-    default:
-      reader.skipField();
-      break;
-    }
-  }
-  return msg;
-};
-
-
-/**
- * Serializes the message to binary data (in protobuf wire format).
- * @return {!Uint8Array}
- */
-proto.session.Type.Unhas.Req.prototype.serializeBinary = function() {
-  var writer = new jspb.BinaryWriter();
-  proto.session.Type.Unhas.Req.serializeBinaryToWriter(this, writer);
-  return writer.getResultBuffer();
-};
-
-
-/**
- * Serializes the given message to binary data (in protobuf wire
- * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Unhas.Req} message
- * @param {!jspb.BinaryWriter} writer
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Unhas.Req.serializeBinaryToWriter = function(message, writer) {
-  var f = undefined;
-  f = message.getConcept();
-  if (f != null) {
-    writer.writeMessage(
-      1,
-      f,
-      proto.session.Concept.serializeBinaryToWriter
-    );
-  }
-};
-
-
-/**
- * optional Concept concept = 1;
- * @return {?proto.session.Concept}
- */
-proto.session.Type.Unhas.Req.prototype.getConcept = function() {
-  return /** @type{?proto.session.Concept} */ (
-    jspb.Message.getWrapperField(this, proto.session.Concept, 1));
-};
-
-
-/** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Unhas.Req.prototype.setConcept = function(value) {
-  jspb.Message.setWrapperField(this, 1, value);
-};
-
-
-proto.session.Type.Unhas.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
-};
-
-
-/**
- * Returns whether this field is set.
- * @return {!boolean}
- */
-proto.session.Type.Unhas.Req.prototype.hasConcept = function() {
-  return jspb.Message.getField(this, 1) != null;
-};
-
-
-
-/**
- * Generated by JsPbCodeGenerator.
- * @param {Array=} opt_data Optional initial data array, typically from a
- * server response, or constructed directly in Javascript. The array is used
- * in place and becomes part of the constructed object. It is not cloned.
- * If no data is provided, the constructed object will be empty, but still
- * valid.
- * @extends {jspb.Message}
- * @constructor
- */
-proto.session.Type.Unhas.Res = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
-};
-goog.inherits(proto.session.Type.Unhas.Res, jspb.Message);
-if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Unhas.Res.displayName = 'proto.session.Type.Unhas.Res';
-}
-
-
-if (jspb.Message.GENERATE_TO_OBJECT) {
-/**
- * Creates an object representation of this proto suitable for use in Soy templates.
- * Field names that are reserved in JavaScript and will be renamed to pb_name.
- * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
- * For the list of reserved names please see:
- *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
- * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
- *     for transitional soy proto support: http://goto/soy-param-migration
- * @return {!Object}
- */
-proto.session.Type.Unhas.Res.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Unhas.Res.toObject(opt_includeInstance, this);
-};
-
-
-/**
- * Static version of the {@see toObject} method.
- * @param {boolean|undefined} includeInstance Whether to include the JSPB
- *     instance for transitional soy proto support:
- *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Unhas.Res} msg The msg instance to transform.
- * @return {!Object}
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Unhas.Res.toObject = function(includeInstance, msg) {
-  var f, obj = {
-
-  };
-
-  if (includeInstance) {
-    obj.$jspbMessageInstance = msg;
-  }
-  return obj;
-};
-}
-
-
-/**
- * Deserializes binary data (in protobuf wire format).
- * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Unhas.Res}
- */
-proto.session.Type.Unhas.Res.deserializeBinary = function(bytes) {
-  var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Unhas.Res;
-  return proto.session.Type.Unhas.Res.deserializeBinaryFromReader(msg, reader);
-};
-
-
-/**
- * Deserializes binary data (in protobuf wire format) from the
- * given reader into the given message object.
- * @param {!proto.session.Type.Unhas.Res} msg The message object to deserialize into.
- * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Unhas.Res}
- */
-proto.session.Type.Unhas.Res.deserializeBinaryFromReader = function(msg, reader) {
-  while (reader.nextField()) {
-    if (reader.isEndGroup()) {
-      break;
-    }
-    var field = reader.getFieldNumber();
-    switch (field) {
-    default:
-      reader.skipField();
-      break;
-    }
-  }
-  return msg;
-};
-
-
-/**
- * Serializes the message to binary data (in protobuf wire format).
- * @return {!Uint8Array}
- */
-proto.session.Type.Unhas.Res.prototype.serializeBinary = function() {
-  var writer = new jspb.BinaryWriter();
-  proto.session.Type.Unhas.Res.serializeBinaryToWriter(this, writer);
-  return writer.getResultBuffer();
-};
-
-
-/**
- * Serializes the given message to binary data (in protobuf wire
- * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Unhas.Res} message
- * @param {!jspb.BinaryWriter} writer
- * @suppress {unusedLocalVariables} f is only used for nested messages
- */
-proto.session.Type.Unhas.Res.serializeBinaryToWriter = function(message, writer) {
-  var f = undefined;
 };
 
 
@@ -15805,7 +15023,7 @@ proto.session.Type.Key.Req.prototype.toObject = function(opt_includeInstance) {
  */
 proto.session.Type.Key.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attributetype: (f = msg.getAttributetype()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -15845,7 +15063,7 @@ proto.session.Type.Key.Req.deserializeBinaryFromReader = function(msg, reader) {
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttributetype(value);
       break;
     default:
       reader.skipField();
@@ -15876,7 +15094,7 @@ proto.session.Type.Key.Req.prototype.serializeBinary = function() {
  */
 proto.session.Type.Key.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttributetype();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -15888,23 +15106,23 @@ proto.session.Type.Key.Req.serializeBinaryToWriter = function(message, writer) {
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attributeType = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Key.Req.prototype.getConcept = function() {
+proto.session.Type.Key.Req.prototype.getAttributetype = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Key.Req.prototype.setConcept = function(value) {
+proto.session.Type.Key.Req.prototype.setAttributetype = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Key.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Key.Req.prototype.clearAttributetype = function() {
+  this.setAttributetype(undefined);
 };
 
 
@@ -15912,7 +15130,7 @@ proto.session.Type.Key.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Key.Req.prototype.hasConcept = function() {
+proto.session.Type.Key.Req.prototype.hasAttributetype = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -16044,12 +15262,12 @@ proto.session.Type.Key.Res.serializeBinaryToWriter = function(message, writer) {
  * @extends {jspb.Message}
  * @constructor
  */
-proto.session.Type.Unkey = function(opt_data) {
+proto.session.Type.Has = function(opt_data) {
   jspb.Message.initialize(this, opt_data, 0, -1, null, null);
 };
-goog.inherits(proto.session.Type.Unkey, jspb.Message);
+goog.inherits(proto.session.Type.Has, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Unkey.displayName = 'proto.session.Type.Unkey';
+  proto.session.Type.Has.displayName = 'proto.session.Type.Has';
 }
 
 
@@ -16064,8 +15282,8 @@ if (jspb.Message.GENERATE_TO_OBJECT) {
  *     for transitional soy proto support: http://goto/soy-param-migration
  * @return {!Object}
  */
-proto.session.Type.Unkey.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Unkey.toObject(opt_includeInstance, this);
+proto.session.Type.Has.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Has.toObject(opt_includeInstance, this);
 };
 
 
@@ -16074,11 +15292,11 @@ proto.session.Type.Unkey.prototype.toObject = function(opt_includeInstance) {
  * @param {boolean|undefined} includeInstance Whether to include the JSPB
  *     instance for transitional soy proto support:
  *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Unkey} msg The msg instance to transform.
+ * @param {!proto.session.Type.Has} msg The msg instance to transform.
  * @return {!Object}
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.session.Type.Unkey.toObject = function(includeInstance, msg) {
+proto.session.Type.Has.toObject = function(includeInstance, msg) {
   var f, obj = {
 
   };
@@ -16094,23 +15312,23 @@ proto.session.Type.Unkey.toObject = function(includeInstance, msg) {
 /**
  * Deserializes binary data (in protobuf wire format).
  * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Unkey}
+ * @return {!proto.session.Type.Has}
  */
-proto.session.Type.Unkey.deserializeBinary = function(bytes) {
+proto.session.Type.Has.deserializeBinary = function(bytes) {
   var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Unkey;
-  return proto.session.Type.Unkey.deserializeBinaryFromReader(msg, reader);
+  var msg = new proto.session.Type.Has;
+  return proto.session.Type.Has.deserializeBinaryFromReader(msg, reader);
 };
 
 
 /**
  * Deserializes binary data (in protobuf wire format) from the
  * given reader into the given message object.
- * @param {!proto.session.Type.Unkey} msg The message object to deserialize into.
+ * @param {!proto.session.Type.Has} msg The message object to deserialize into.
  * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Unkey}
+ * @return {!proto.session.Type.Has}
  */
-proto.session.Type.Unkey.deserializeBinaryFromReader = function(msg, reader) {
+proto.session.Type.Has.deserializeBinaryFromReader = function(msg, reader) {
   while (reader.nextField()) {
     if (reader.isEndGroup()) {
       break;
@@ -16130,9 +15348,9 @@ proto.session.Type.Unkey.deserializeBinaryFromReader = function(msg, reader) {
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
-proto.session.Type.Unkey.prototype.serializeBinary = function() {
+proto.session.Type.Has.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  proto.session.Type.Unkey.serializeBinaryToWriter(this, writer);
+  proto.session.Type.Has.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
@@ -16140,11 +15358,11 @@ proto.session.Type.Unkey.prototype.serializeBinary = function() {
 /**
  * Serializes the given message to binary data (in protobuf wire
  * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Unkey} message
+ * @param {!proto.session.Type.Has} message
  * @param {!jspb.BinaryWriter} writer
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.session.Type.Unkey.serializeBinaryToWriter = function(message, writer) {
+proto.session.Type.Has.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
 };
 
@@ -16160,12 +15378,12 @@ proto.session.Type.Unkey.serializeBinaryToWriter = function(message, writer) {
  * @extends {jspb.Message}
  * @constructor
  */
-proto.session.Type.Unkey.Req = function(opt_data) {
+proto.session.Type.Has.Req = function(opt_data) {
   jspb.Message.initialize(this, opt_data, 0, -1, null, null);
 };
-goog.inherits(proto.session.Type.Unkey.Req, jspb.Message);
+goog.inherits(proto.session.Type.Has.Req, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Unkey.Req.displayName = 'proto.session.Type.Unkey.Req';
+  proto.session.Type.Has.Req.displayName = 'proto.session.Type.Has.Req';
 }
 
 
@@ -16180,8 +15398,8 @@ if (jspb.Message.GENERATE_TO_OBJECT) {
  *     for transitional soy proto support: http://goto/soy-param-migration
  * @return {!Object}
  */
-proto.session.Type.Unkey.Req.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Unkey.Req.toObject(opt_includeInstance, this);
+proto.session.Type.Has.Req.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Has.Req.toObject(opt_includeInstance, this);
 };
 
 
@@ -16190,13 +15408,13 @@ proto.session.Type.Unkey.Req.prototype.toObject = function(opt_includeInstance) 
  * @param {boolean|undefined} includeInstance Whether to include the JSPB
  *     instance for transitional soy proto support:
  *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Unkey.Req} msg The msg instance to transform.
+ * @param {!proto.session.Type.Has.Req} msg The msg instance to transform.
  * @return {!Object}
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.session.Type.Unkey.Req.toObject = function(includeInstance, msg) {
+proto.session.Type.Has.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attributetype: (f = msg.getAttributetype()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -16210,23 +15428,23 @@ proto.session.Type.Unkey.Req.toObject = function(includeInstance, msg) {
 /**
  * Deserializes binary data (in protobuf wire format).
  * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Unkey.Req}
+ * @return {!proto.session.Type.Has.Req}
  */
-proto.session.Type.Unkey.Req.deserializeBinary = function(bytes) {
+proto.session.Type.Has.Req.deserializeBinary = function(bytes) {
   var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Unkey.Req;
-  return proto.session.Type.Unkey.Req.deserializeBinaryFromReader(msg, reader);
+  var msg = new proto.session.Type.Has.Req;
+  return proto.session.Type.Has.Req.deserializeBinaryFromReader(msg, reader);
 };
 
 
 /**
  * Deserializes binary data (in protobuf wire format) from the
  * given reader into the given message object.
- * @param {!proto.session.Type.Unkey.Req} msg The message object to deserialize into.
+ * @param {!proto.session.Type.Has.Req} msg The message object to deserialize into.
  * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Unkey.Req}
+ * @return {!proto.session.Type.Has.Req}
  */
-proto.session.Type.Unkey.Req.deserializeBinaryFromReader = function(msg, reader) {
+proto.session.Type.Has.Req.deserializeBinaryFromReader = function(msg, reader) {
   while (reader.nextField()) {
     if (reader.isEndGroup()) {
       break;
@@ -16236,7 +15454,7 @@ proto.session.Type.Unkey.Req.deserializeBinaryFromReader = function(msg, reader)
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttributetype(value);
       break;
     default:
       reader.skipField();
@@ -16251,9 +15469,9 @@ proto.session.Type.Unkey.Req.deserializeBinaryFromReader = function(msg, reader)
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
-proto.session.Type.Unkey.Req.prototype.serializeBinary = function() {
+proto.session.Type.Has.Req.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  proto.session.Type.Unkey.Req.serializeBinaryToWriter(this, writer);
+  proto.session.Type.Has.Req.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
@@ -16261,13 +15479,13 @@ proto.session.Type.Unkey.Req.prototype.serializeBinary = function() {
 /**
  * Serializes the given message to binary data (in protobuf wire
  * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Unkey.Req} message
+ * @param {!proto.session.Type.Has.Req} message
  * @param {!jspb.BinaryWriter} writer
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.session.Type.Unkey.Req.serializeBinaryToWriter = function(message, writer) {
+proto.session.Type.Has.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttributetype();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -16279,23 +15497,23 @@ proto.session.Type.Unkey.Req.serializeBinaryToWriter = function(message, writer)
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attributeType = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Unkey.Req.prototype.getConcept = function() {
+proto.session.Type.Has.Req.prototype.getAttributetype = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Unkey.Req.prototype.setConcept = function(value) {
+proto.session.Type.Has.Req.prototype.setAttributetype = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Unkey.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Has.Req.prototype.clearAttributetype = function() {
+  this.setAttributetype(undefined);
 };
 
 
@@ -16303,7 +15521,7 @@ proto.session.Type.Unkey.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Unkey.Req.prototype.hasConcept = function() {
+proto.session.Type.Has.Req.prototype.hasAttributetype = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -16319,12 +15537,12 @@ proto.session.Type.Unkey.Req.prototype.hasConcept = function() {
  * @extends {jspb.Message}
  * @constructor
  */
-proto.session.Type.Unkey.Res = function(opt_data) {
+proto.session.Type.Has.Res = function(opt_data) {
   jspb.Message.initialize(this, opt_data, 0, -1, null, null);
 };
-goog.inherits(proto.session.Type.Unkey.Res, jspb.Message);
+goog.inherits(proto.session.Type.Has.Res, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
-  proto.session.Type.Unkey.Res.displayName = 'proto.session.Type.Unkey.Res';
+  proto.session.Type.Has.Res.displayName = 'proto.session.Type.Has.Res';
 }
 
 
@@ -16339,8 +15557,8 @@ if (jspb.Message.GENERATE_TO_OBJECT) {
  *     for transitional soy proto support: http://goto/soy-param-migration
  * @return {!Object}
  */
-proto.session.Type.Unkey.Res.prototype.toObject = function(opt_includeInstance) {
-  return proto.session.Type.Unkey.Res.toObject(opt_includeInstance, this);
+proto.session.Type.Has.Res.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Has.Res.toObject(opt_includeInstance, this);
 };
 
 
@@ -16349,11 +15567,11 @@ proto.session.Type.Unkey.Res.prototype.toObject = function(opt_includeInstance) 
  * @param {boolean|undefined} includeInstance Whether to include the JSPB
  *     instance for transitional soy proto support:
  *     http://goto/soy-param-migration
- * @param {!proto.session.Type.Unkey.Res} msg The msg instance to transform.
+ * @param {!proto.session.Type.Has.Res} msg The msg instance to transform.
  * @return {!Object}
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.session.Type.Unkey.Res.toObject = function(includeInstance, msg) {
+proto.session.Type.Has.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
 
   };
@@ -16369,23 +15587,23 @@ proto.session.Type.Unkey.Res.toObject = function(includeInstance, msg) {
 /**
  * Deserializes binary data (in protobuf wire format).
  * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.session.Type.Unkey.Res}
+ * @return {!proto.session.Type.Has.Res}
  */
-proto.session.Type.Unkey.Res.deserializeBinary = function(bytes) {
+proto.session.Type.Has.Res.deserializeBinary = function(bytes) {
   var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.session.Type.Unkey.Res;
-  return proto.session.Type.Unkey.Res.deserializeBinaryFromReader(msg, reader);
+  var msg = new proto.session.Type.Has.Res;
+  return proto.session.Type.Has.Res.deserializeBinaryFromReader(msg, reader);
 };
 
 
 /**
  * Deserializes binary data (in protobuf wire format) from the
  * given reader into the given message object.
- * @param {!proto.session.Type.Unkey.Res} msg The message object to deserialize into.
+ * @param {!proto.session.Type.Has.Res} msg The message object to deserialize into.
  * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.session.Type.Unkey.Res}
+ * @return {!proto.session.Type.Has.Res}
  */
-proto.session.Type.Unkey.Res.deserializeBinaryFromReader = function(msg, reader) {
+proto.session.Type.Has.Res.deserializeBinaryFromReader = function(msg, reader) {
   while (reader.nextField()) {
     if (reader.isEndGroup()) {
       break;
@@ -16405,9 +15623,9 @@ proto.session.Type.Unkey.Res.deserializeBinaryFromReader = function(msg, reader)
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
-proto.session.Type.Unkey.Res.prototype.serializeBinary = function() {
+proto.session.Type.Has.Res.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  proto.session.Type.Unkey.Res.serializeBinaryToWriter(this, writer);
+  proto.session.Type.Has.Res.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
@@ -16415,11 +15633,11 @@ proto.session.Type.Unkey.Res.prototype.serializeBinary = function() {
 /**
  * Serializes the given message to binary data (in protobuf wire
  * format), writing to the given BinaryWriter.
- * @param {!proto.session.Type.Unkey.Res} message
+ * @param {!proto.session.Type.Has.Res} message
  * @param {!jspb.BinaryWriter} writer
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.session.Type.Unkey.Res.serializeBinaryToWriter = function(message, writer) {
+proto.session.Type.Has.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
 };
 
@@ -16587,7 +15805,7 @@ proto.session.Type.Plays.Req.prototype.toObject = function(opt_includeInstance) 
  */
 proto.session.Type.Plays.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -16627,7 +15845,7 @@ proto.session.Type.Plays.Req.deserializeBinaryFromReader = function(msg, reader)
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -16658,7 +15876,7 @@ proto.session.Type.Plays.Req.prototype.serializeBinary = function() {
  */
 proto.session.Type.Plays.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -16670,23 +15888,23 @@ proto.session.Type.Plays.Req.serializeBinaryToWriter = function(message, writer)
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Plays.Req.prototype.getConcept = function() {
+proto.session.Type.Plays.Req.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Plays.Req.prototype.setConcept = function(value) {
+proto.session.Type.Plays.Req.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Plays.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Plays.Req.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -16694,7 +15912,7 @@ proto.session.Type.Plays.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Plays.Req.prototype.hasConcept = function() {
+proto.session.Type.Plays.Req.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -16811,6 +16029,788 @@ proto.session.Type.Plays.Res.prototype.serializeBinary = function() {
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
 proto.session.Type.Plays.Res.serializeBinaryToWriter = function(message, writer) {
+  var f = undefined;
+};
+
+
+
+/**
+ * Generated by JsPbCodeGenerator.
+ * @param {Array=} opt_data Optional initial data array, typically from a
+ * server response, or constructed directly in Javascript. The array is used
+ * in place and becomes part of the constructed object. It is not cloned.
+ * If no data is provided, the constructed object will be empty, but still
+ * valid.
+ * @extends {jspb.Message}
+ * @constructor
+ */
+proto.session.Type.Unkey = function(opt_data) {
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+};
+goog.inherits(proto.session.Type.Unkey, jspb.Message);
+if (goog.DEBUG && !COMPILED) {
+  proto.session.Type.Unkey.displayName = 'proto.session.Type.Unkey';
+}
+
+
+if (jspb.Message.GENERATE_TO_OBJECT) {
+/**
+ * Creates an object representation of this proto suitable for use in Soy templates.
+ * Field names that are reserved in JavaScript and will be renamed to pb_name.
+ * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
+ * For the list of reserved names please see:
+ *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
+ * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
+ *     for transitional soy proto support: http://goto/soy-param-migration
+ * @return {!Object}
+ */
+proto.session.Type.Unkey.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Unkey.toObject(opt_includeInstance, this);
+};
+
+
+/**
+ * Static version of the {@see toObject} method.
+ * @param {boolean|undefined} includeInstance Whether to include the JSPB
+ *     instance for transitional soy proto support:
+ *     http://goto/soy-param-migration
+ * @param {!proto.session.Type.Unkey} msg The msg instance to transform.
+ * @return {!Object}
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unkey.toObject = function(includeInstance, msg) {
+  var f, obj = {
+
+  };
+
+  if (includeInstance) {
+    obj.$jspbMessageInstance = msg;
+  }
+  return obj;
+};
+}
+
+
+/**
+ * Deserializes binary data (in protobuf wire format).
+ * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @return {!proto.session.Type.Unkey}
+ */
+proto.session.Type.Unkey.deserializeBinary = function(bytes) {
+  var reader = new jspb.BinaryReader(bytes);
+  var msg = new proto.session.Type.Unkey;
+  return proto.session.Type.Unkey.deserializeBinaryFromReader(msg, reader);
+};
+
+
+/**
+ * Deserializes binary data (in protobuf wire format) from the
+ * given reader into the given message object.
+ * @param {!proto.session.Type.Unkey} msg The message object to deserialize into.
+ * @param {!jspb.BinaryReader} reader The BinaryReader to use.
+ * @return {!proto.session.Type.Unkey}
+ */
+proto.session.Type.Unkey.deserializeBinaryFromReader = function(msg, reader) {
+  while (reader.nextField()) {
+    if (reader.isEndGroup()) {
+      break;
+    }
+    var field = reader.getFieldNumber();
+    switch (field) {
+    default:
+      reader.skipField();
+      break;
+    }
+  }
+  return msg;
+};
+
+
+/**
+ * Serializes the message to binary data (in protobuf wire format).
+ * @return {!Uint8Array}
+ */
+proto.session.Type.Unkey.prototype.serializeBinary = function() {
+  var writer = new jspb.BinaryWriter();
+  proto.session.Type.Unkey.serializeBinaryToWriter(this, writer);
+  return writer.getResultBuffer();
+};
+
+
+/**
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.session.Type.Unkey} message
+ * @param {!jspb.BinaryWriter} writer
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unkey.serializeBinaryToWriter = function(message, writer) {
+  var f = undefined;
+};
+
+
+
+/**
+ * Generated by JsPbCodeGenerator.
+ * @param {Array=} opt_data Optional initial data array, typically from a
+ * server response, or constructed directly in Javascript. The array is used
+ * in place and becomes part of the constructed object. It is not cloned.
+ * If no data is provided, the constructed object will be empty, but still
+ * valid.
+ * @extends {jspb.Message}
+ * @constructor
+ */
+proto.session.Type.Unkey.Req = function(opt_data) {
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+};
+goog.inherits(proto.session.Type.Unkey.Req, jspb.Message);
+if (goog.DEBUG && !COMPILED) {
+  proto.session.Type.Unkey.Req.displayName = 'proto.session.Type.Unkey.Req';
+}
+
+
+if (jspb.Message.GENERATE_TO_OBJECT) {
+/**
+ * Creates an object representation of this proto suitable for use in Soy templates.
+ * Field names that are reserved in JavaScript and will be renamed to pb_name.
+ * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
+ * For the list of reserved names please see:
+ *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
+ * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
+ *     for transitional soy proto support: http://goto/soy-param-migration
+ * @return {!Object}
+ */
+proto.session.Type.Unkey.Req.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Unkey.Req.toObject(opt_includeInstance, this);
+};
+
+
+/**
+ * Static version of the {@see toObject} method.
+ * @param {boolean|undefined} includeInstance Whether to include the JSPB
+ *     instance for transitional soy proto support:
+ *     http://goto/soy-param-migration
+ * @param {!proto.session.Type.Unkey.Req} msg The msg instance to transform.
+ * @return {!Object}
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unkey.Req.toObject = function(includeInstance, msg) {
+  var f, obj = {
+    attributetype: (f = msg.getAttributetype()) && proto.session.Concept.toObject(includeInstance, f)
+  };
+
+  if (includeInstance) {
+    obj.$jspbMessageInstance = msg;
+  }
+  return obj;
+};
+}
+
+
+/**
+ * Deserializes binary data (in protobuf wire format).
+ * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @return {!proto.session.Type.Unkey.Req}
+ */
+proto.session.Type.Unkey.Req.deserializeBinary = function(bytes) {
+  var reader = new jspb.BinaryReader(bytes);
+  var msg = new proto.session.Type.Unkey.Req;
+  return proto.session.Type.Unkey.Req.deserializeBinaryFromReader(msg, reader);
+};
+
+
+/**
+ * Deserializes binary data (in protobuf wire format) from the
+ * given reader into the given message object.
+ * @param {!proto.session.Type.Unkey.Req} msg The message object to deserialize into.
+ * @param {!jspb.BinaryReader} reader The BinaryReader to use.
+ * @return {!proto.session.Type.Unkey.Req}
+ */
+proto.session.Type.Unkey.Req.deserializeBinaryFromReader = function(msg, reader) {
+  while (reader.nextField()) {
+    if (reader.isEndGroup()) {
+      break;
+    }
+    var field = reader.getFieldNumber();
+    switch (field) {
+    case 1:
+      var value = new proto.session.Concept;
+      reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
+      msg.setAttributetype(value);
+      break;
+    default:
+      reader.skipField();
+      break;
+    }
+  }
+  return msg;
+};
+
+
+/**
+ * Serializes the message to binary data (in protobuf wire format).
+ * @return {!Uint8Array}
+ */
+proto.session.Type.Unkey.Req.prototype.serializeBinary = function() {
+  var writer = new jspb.BinaryWriter();
+  proto.session.Type.Unkey.Req.serializeBinaryToWriter(this, writer);
+  return writer.getResultBuffer();
+};
+
+
+/**
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.session.Type.Unkey.Req} message
+ * @param {!jspb.BinaryWriter} writer
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unkey.Req.serializeBinaryToWriter = function(message, writer) {
+  var f = undefined;
+  f = message.getAttributetype();
+  if (f != null) {
+    writer.writeMessage(
+      1,
+      f,
+      proto.session.Concept.serializeBinaryToWriter
+    );
+  }
+};
+
+
+/**
+ * optional Concept attributeType = 1;
+ * @return {?proto.session.Concept}
+ */
+proto.session.Type.Unkey.Req.prototype.getAttributetype = function() {
+  return /** @type{?proto.session.Concept} */ (
+    jspb.Message.getWrapperField(this, proto.session.Concept, 1));
+};
+
+
+/** @param {?proto.session.Concept|undefined} value */
+proto.session.Type.Unkey.Req.prototype.setAttributetype = function(value) {
+  jspb.Message.setWrapperField(this, 1, value);
+};
+
+
+proto.session.Type.Unkey.Req.prototype.clearAttributetype = function() {
+  this.setAttributetype(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {!boolean}
+ */
+proto.session.Type.Unkey.Req.prototype.hasAttributetype = function() {
+  return jspb.Message.getField(this, 1) != null;
+};
+
+
+
+/**
+ * Generated by JsPbCodeGenerator.
+ * @param {Array=} opt_data Optional initial data array, typically from a
+ * server response, or constructed directly in Javascript. The array is used
+ * in place and becomes part of the constructed object. It is not cloned.
+ * If no data is provided, the constructed object will be empty, but still
+ * valid.
+ * @extends {jspb.Message}
+ * @constructor
+ */
+proto.session.Type.Unkey.Res = function(opt_data) {
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+};
+goog.inherits(proto.session.Type.Unkey.Res, jspb.Message);
+if (goog.DEBUG && !COMPILED) {
+  proto.session.Type.Unkey.Res.displayName = 'proto.session.Type.Unkey.Res';
+}
+
+
+if (jspb.Message.GENERATE_TO_OBJECT) {
+/**
+ * Creates an object representation of this proto suitable for use in Soy templates.
+ * Field names that are reserved in JavaScript and will be renamed to pb_name.
+ * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
+ * For the list of reserved names please see:
+ *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
+ * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
+ *     for transitional soy proto support: http://goto/soy-param-migration
+ * @return {!Object}
+ */
+proto.session.Type.Unkey.Res.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Unkey.Res.toObject(opt_includeInstance, this);
+};
+
+
+/**
+ * Static version of the {@see toObject} method.
+ * @param {boolean|undefined} includeInstance Whether to include the JSPB
+ *     instance for transitional soy proto support:
+ *     http://goto/soy-param-migration
+ * @param {!proto.session.Type.Unkey.Res} msg The msg instance to transform.
+ * @return {!Object}
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unkey.Res.toObject = function(includeInstance, msg) {
+  var f, obj = {
+
+  };
+
+  if (includeInstance) {
+    obj.$jspbMessageInstance = msg;
+  }
+  return obj;
+};
+}
+
+
+/**
+ * Deserializes binary data (in protobuf wire format).
+ * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @return {!proto.session.Type.Unkey.Res}
+ */
+proto.session.Type.Unkey.Res.deserializeBinary = function(bytes) {
+  var reader = new jspb.BinaryReader(bytes);
+  var msg = new proto.session.Type.Unkey.Res;
+  return proto.session.Type.Unkey.Res.deserializeBinaryFromReader(msg, reader);
+};
+
+
+/**
+ * Deserializes binary data (in protobuf wire format) from the
+ * given reader into the given message object.
+ * @param {!proto.session.Type.Unkey.Res} msg The message object to deserialize into.
+ * @param {!jspb.BinaryReader} reader The BinaryReader to use.
+ * @return {!proto.session.Type.Unkey.Res}
+ */
+proto.session.Type.Unkey.Res.deserializeBinaryFromReader = function(msg, reader) {
+  while (reader.nextField()) {
+    if (reader.isEndGroup()) {
+      break;
+    }
+    var field = reader.getFieldNumber();
+    switch (field) {
+    default:
+      reader.skipField();
+      break;
+    }
+  }
+  return msg;
+};
+
+
+/**
+ * Serializes the message to binary data (in protobuf wire format).
+ * @return {!Uint8Array}
+ */
+proto.session.Type.Unkey.Res.prototype.serializeBinary = function() {
+  var writer = new jspb.BinaryWriter();
+  proto.session.Type.Unkey.Res.serializeBinaryToWriter(this, writer);
+  return writer.getResultBuffer();
+};
+
+
+/**
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.session.Type.Unkey.Res} message
+ * @param {!jspb.BinaryWriter} writer
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unkey.Res.serializeBinaryToWriter = function(message, writer) {
+  var f = undefined;
+};
+
+
+
+/**
+ * Generated by JsPbCodeGenerator.
+ * @param {Array=} opt_data Optional initial data array, typically from a
+ * server response, or constructed directly in Javascript. The array is used
+ * in place and becomes part of the constructed object. It is not cloned.
+ * If no data is provided, the constructed object will be empty, but still
+ * valid.
+ * @extends {jspb.Message}
+ * @constructor
+ */
+proto.session.Type.Unhas = function(opt_data) {
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+};
+goog.inherits(proto.session.Type.Unhas, jspb.Message);
+if (goog.DEBUG && !COMPILED) {
+  proto.session.Type.Unhas.displayName = 'proto.session.Type.Unhas';
+}
+
+
+if (jspb.Message.GENERATE_TO_OBJECT) {
+/**
+ * Creates an object representation of this proto suitable for use in Soy templates.
+ * Field names that are reserved in JavaScript and will be renamed to pb_name.
+ * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
+ * For the list of reserved names please see:
+ *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
+ * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
+ *     for transitional soy proto support: http://goto/soy-param-migration
+ * @return {!Object}
+ */
+proto.session.Type.Unhas.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Unhas.toObject(opt_includeInstance, this);
+};
+
+
+/**
+ * Static version of the {@see toObject} method.
+ * @param {boolean|undefined} includeInstance Whether to include the JSPB
+ *     instance for transitional soy proto support:
+ *     http://goto/soy-param-migration
+ * @param {!proto.session.Type.Unhas} msg The msg instance to transform.
+ * @return {!Object}
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unhas.toObject = function(includeInstance, msg) {
+  var f, obj = {
+
+  };
+
+  if (includeInstance) {
+    obj.$jspbMessageInstance = msg;
+  }
+  return obj;
+};
+}
+
+
+/**
+ * Deserializes binary data (in protobuf wire format).
+ * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @return {!proto.session.Type.Unhas}
+ */
+proto.session.Type.Unhas.deserializeBinary = function(bytes) {
+  var reader = new jspb.BinaryReader(bytes);
+  var msg = new proto.session.Type.Unhas;
+  return proto.session.Type.Unhas.deserializeBinaryFromReader(msg, reader);
+};
+
+
+/**
+ * Deserializes binary data (in protobuf wire format) from the
+ * given reader into the given message object.
+ * @param {!proto.session.Type.Unhas} msg The message object to deserialize into.
+ * @param {!jspb.BinaryReader} reader The BinaryReader to use.
+ * @return {!proto.session.Type.Unhas}
+ */
+proto.session.Type.Unhas.deserializeBinaryFromReader = function(msg, reader) {
+  while (reader.nextField()) {
+    if (reader.isEndGroup()) {
+      break;
+    }
+    var field = reader.getFieldNumber();
+    switch (field) {
+    default:
+      reader.skipField();
+      break;
+    }
+  }
+  return msg;
+};
+
+
+/**
+ * Serializes the message to binary data (in protobuf wire format).
+ * @return {!Uint8Array}
+ */
+proto.session.Type.Unhas.prototype.serializeBinary = function() {
+  var writer = new jspb.BinaryWriter();
+  proto.session.Type.Unhas.serializeBinaryToWriter(this, writer);
+  return writer.getResultBuffer();
+};
+
+
+/**
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.session.Type.Unhas} message
+ * @param {!jspb.BinaryWriter} writer
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unhas.serializeBinaryToWriter = function(message, writer) {
+  var f = undefined;
+};
+
+
+
+/**
+ * Generated by JsPbCodeGenerator.
+ * @param {Array=} opt_data Optional initial data array, typically from a
+ * server response, or constructed directly in Javascript. The array is used
+ * in place and becomes part of the constructed object. It is not cloned.
+ * If no data is provided, the constructed object will be empty, but still
+ * valid.
+ * @extends {jspb.Message}
+ * @constructor
+ */
+proto.session.Type.Unhas.Req = function(opt_data) {
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+};
+goog.inherits(proto.session.Type.Unhas.Req, jspb.Message);
+if (goog.DEBUG && !COMPILED) {
+  proto.session.Type.Unhas.Req.displayName = 'proto.session.Type.Unhas.Req';
+}
+
+
+if (jspb.Message.GENERATE_TO_OBJECT) {
+/**
+ * Creates an object representation of this proto suitable for use in Soy templates.
+ * Field names that are reserved in JavaScript and will be renamed to pb_name.
+ * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
+ * For the list of reserved names please see:
+ *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
+ * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
+ *     for transitional soy proto support: http://goto/soy-param-migration
+ * @return {!Object}
+ */
+proto.session.Type.Unhas.Req.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Unhas.Req.toObject(opt_includeInstance, this);
+};
+
+
+/**
+ * Static version of the {@see toObject} method.
+ * @param {boolean|undefined} includeInstance Whether to include the JSPB
+ *     instance for transitional soy proto support:
+ *     http://goto/soy-param-migration
+ * @param {!proto.session.Type.Unhas.Req} msg The msg instance to transform.
+ * @return {!Object}
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unhas.Req.toObject = function(includeInstance, msg) {
+  var f, obj = {
+    attributetype: (f = msg.getAttributetype()) && proto.session.Concept.toObject(includeInstance, f)
+  };
+
+  if (includeInstance) {
+    obj.$jspbMessageInstance = msg;
+  }
+  return obj;
+};
+}
+
+
+/**
+ * Deserializes binary data (in protobuf wire format).
+ * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @return {!proto.session.Type.Unhas.Req}
+ */
+proto.session.Type.Unhas.Req.deserializeBinary = function(bytes) {
+  var reader = new jspb.BinaryReader(bytes);
+  var msg = new proto.session.Type.Unhas.Req;
+  return proto.session.Type.Unhas.Req.deserializeBinaryFromReader(msg, reader);
+};
+
+
+/**
+ * Deserializes binary data (in protobuf wire format) from the
+ * given reader into the given message object.
+ * @param {!proto.session.Type.Unhas.Req} msg The message object to deserialize into.
+ * @param {!jspb.BinaryReader} reader The BinaryReader to use.
+ * @return {!proto.session.Type.Unhas.Req}
+ */
+proto.session.Type.Unhas.Req.deserializeBinaryFromReader = function(msg, reader) {
+  while (reader.nextField()) {
+    if (reader.isEndGroup()) {
+      break;
+    }
+    var field = reader.getFieldNumber();
+    switch (field) {
+    case 1:
+      var value = new proto.session.Concept;
+      reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
+      msg.setAttributetype(value);
+      break;
+    default:
+      reader.skipField();
+      break;
+    }
+  }
+  return msg;
+};
+
+
+/**
+ * Serializes the message to binary data (in protobuf wire format).
+ * @return {!Uint8Array}
+ */
+proto.session.Type.Unhas.Req.prototype.serializeBinary = function() {
+  var writer = new jspb.BinaryWriter();
+  proto.session.Type.Unhas.Req.serializeBinaryToWriter(this, writer);
+  return writer.getResultBuffer();
+};
+
+
+/**
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.session.Type.Unhas.Req} message
+ * @param {!jspb.BinaryWriter} writer
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unhas.Req.serializeBinaryToWriter = function(message, writer) {
+  var f = undefined;
+  f = message.getAttributetype();
+  if (f != null) {
+    writer.writeMessage(
+      1,
+      f,
+      proto.session.Concept.serializeBinaryToWriter
+    );
+  }
+};
+
+
+/**
+ * optional Concept attributeType = 1;
+ * @return {?proto.session.Concept}
+ */
+proto.session.Type.Unhas.Req.prototype.getAttributetype = function() {
+  return /** @type{?proto.session.Concept} */ (
+    jspb.Message.getWrapperField(this, proto.session.Concept, 1));
+};
+
+
+/** @param {?proto.session.Concept|undefined} value */
+proto.session.Type.Unhas.Req.prototype.setAttributetype = function(value) {
+  jspb.Message.setWrapperField(this, 1, value);
+};
+
+
+proto.session.Type.Unhas.Req.prototype.clearAttributetype = function() {
+  this.setAttributetype(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {!boolean}
+ */
+proto.session.Type.Unhas.Req.prototype.hasAttributetype = function() {
+  return jspb.Message.getField(this, 1) != null;
+};
+
+
+
+/**
+ * Generated by JsPbCodeGenerator.
+ * @param {Array=} opt_data Optional initial data array, typically from a
+ * server response, or constructed directly in Javascript. The array is used
+ * in place and becomes part of the constructed object. It is not cloned.
+ * If no data is provided, the constructed object will be empty, but still
+ * valid.
+ * @extends {jspb.Message}
+ * @constructor
+ */
+proto.session.Type.Unhas.Res = function(opt_data) {
+  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+};
+goog.inherits(proto.session.Type.Unhas.Res, jspb.Message);
+if (goog.DEBUG && !COMPILED) {
+  proto.session.Type.Unhas.Res.displayName = 'proto.session.Type.Unhas.Res';
+}
+
+
+if (jspb.Message.GENERATE_TO_OBJECT) {
+/**
+ * Creates an object representation of this proto suitable for use in Soy templates.
+ * Field names that are reserved in JavaScript and will be renamed to pb_name.
+ * To access a reserved field use, foo.pb_<name>, eg, foo.pb_default.
+ * For the list of reserved names please see:
+ *     com.google.apps.jspb.JsClassTemplate.JS_RESERVED_WORDS.
+ * @param {boolean=} opt_includeInstance Whether to include the JSPB instance
+ *     for transitional soy proto support: http://goto/soy-param-migration
+ * @return {!Object}
+ */
+proto.session.Type.Unhas.Res.prototype.toObject = function(opt_includeInstance) {
+  return proto.session.Type.Unhas.Res.toObject(opt_includeInstance, this);
+};
+
+
+/**
+ * Static version of the {@see toObject} method.
+ * @param {boolean|undefined} includeInstance Whether to include the JSPB
+ *     instance for transitional soy proto support:
+ *     http://goto/soy-param-migration
+ * @param {!proto.session.Type.Unhas.Res} msg The msg instance to transform.
+ * @return {!Object}
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unhas.Res.toObject = function(includeInstance, msg) {
+  var f, obj = {
+
+  };
+
+  if (includeInstance) {
+    obj.$jspbMessageInstance = msg;
+  }
+  return obj;
+};
+}
+
+
+/**
+ * Deserializes binary data (in protobuf wire format).
+ * @param {jspb.ByteSource} bytes The bytes to deserialize.
+ * @return {!proto.session.Type.Unhas.Res}
+ */
+proto.session.Type.Unhas.Res.deserializeBinary = function(bytes) {
+  var reader = new jspb.BinaryReader(bytes);
+  var msg = new proto.session.Type.Unhas.Res;
+  return proto.session.Type.Unhas.Res.deserializeBinaryFromReader(msg, reader);
+};
+
+
+/**
+ * Deserializes binary data (in protobuf wire format) from the
+ * given reader into the given message object.
+ * @param {!proto.session.Type.Unhas.Res} msg The message object to deserialize into.
+ * @param {!jspb.BinaryReader} reader The BinaryReader to use.
+ * @return {!proto.session.Type.Unhas.Res}
+ */
+proto.session.Type.Unhas.Res.deserializeBinaryFromReader = function(msg, reader) {
+  while (reader.nextField()) {
+    if (reader.isEndGroup()) {
+      break;
+    }
+    var field = reader.getFieldNumber();
+    switch (field) {
+    default:
+      reader.skipField();
+      break;
+    }
+  }
+  return msg;
+};
+
+
+/**
+ * Serializes the message to binary data (in protobuf wire format).
+ * @return {!Uint8Array}
+ */
+proto.session.Type.Unhas.Res.prototype.serializeBinary = function() {
+  var writer = new jspb.BinaryWriter();
+  proto.session.Type.Unhas.Res.serializeBinaryToWriter(this, writer);
+  return writer.getResultBuffer();
+};
+
+
+/**
+ * Serializes the given message to binary data (in protobuf wire
+ * format), writing to the given BinaryWriter.
+ * @param {!proto.session.Type.Unhas.Res} message
+ * @param {!jspb.BinaryWriter} writer
+ * @suppress {unusedLocalVariables} f is only used for nested messages
+ */
+proto.session.Type.Unhas.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
 };
 
@@ -16978,7 +16978,7 @@ proto.session.Type.Unplay.Req.prototype.toObject = function(opt_includeInstance)
  */
 proto.session.Type.Unplay.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -17018,7 +17018,7 @@ proto.session.Type.Unplay.Req.deserializeBinaryFromReader = function(msg, reader
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -17049,7 +17049,7 @@ proto.session.Type.Unplay.Req.prototype.serializeBinary = function() {
  */
 proto.session.Type.Unplay.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -17061,23 +17061,23 @@ proto.session.Type.Unplay.Req.serializeBinaryToWriter = function(message, writer
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Type.Unplay.Req.prototype.getConcept = function() {
+proto.session.Type.Unplay.Req.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Type.Unplay.Req.prototype.setConcept = function(value) {
+proto.session.Type.Unplay.Req.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Type.Unplay.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Type.Unplay.Req.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -17085,7 +17085,7 @@ proto.session.Type.Unplay.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Type.Unplay.Req.prototype.hasConcept = function() {
+proto.session.Type.Unplay.Req.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -17601,7 +17601,7 @@ proto.session.EntityType.Create.Res.prototype.toObject = function(opt_includeIns
  */
 proto.session.EntityType.Create.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    entity: (f = msg.getEntity()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -17641,7 +17641,7 @@ proto.session.EntityType.Create.Res.deserializeBinaryFromReader = function(msg, 
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setEntity(value);
       break;
     default:
       reader.skipField();
@@ -17672,7 +17672,7 @@ proto.session.EntityType.Create.Res.prototype.serializeBinary = function() {
  */
 proto.session.EntityType.Create.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getEntity();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -17684,23 +17684,23 @@ proto.session.EntityType.Create.Res.serializeBinaryToWriter = function(message, 
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept entity = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.EntityType.Create.Res.prototype.getConcept = function() {
+proto.session.EntityType.Create.Res.prototype.getEntity = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.EntityType.Create.Res.prototype.setConcept = function(value) {
+proto.session.EntityType.Create.Res.prototype.setEntity = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.EntityType.Create.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.EntityType.Create.Res.prototype.clearEntity = function() {
+  this.setEntity(undefined);
 };
 
 
@@ -17708,7 +17708,7 @@ proto.session.EntityType.Create.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.EntityType.Create.Res.prototype.hasConcept = function() {
+proto.session.EntityType.Create.Res.prototype.hasEntity = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -18108,7 +18108,7 @@ proto.session.RelationType.Create.Res.prototype.toObject = function(opt_includeI
  */
 proto.session.RelationType.Create.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    relation: (f = msg.getRelation()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -18148,7 +18148,7 @@ proto.session.RelationType.Create.Res.deserializeBinaryFromReader = function(msg
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRelation(value);
       break;
     default:
       reader.skipField();
@@ -18179,7 +18179,7 @@ proto.session.RelationType.Create.Res.prototype.serializeBinary = function() {
  */
 proto.session.RelationType.Create.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRelation();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -18191,23 +18191,23 @@ proto.session.RelationType.Create.Res.serializeBinaryToWriter = function(message
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept relation = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.RelationType.Create.Res.prototype.getConcept = function() {
+proto.session.RelationType.Create.Res.prototype.getRelation = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.RelationType.Create.Res.prototype.setConcept = function(value) {
+proto.session.RelationType.Create.Res.prototype.setRelation = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.RelationType.Create.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.RelationType.Create.Res.prototype.clearRelation = function() {
+  this.setRelation(undefined);
 };
 
 
@@ -18215,7 +18215,7 @@ proto.session.RelationType.Create.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.RelationType.Create.Res.prototype.hasConcept = function() {
+proto.session.RelationType.Create.Res.prototype.hasRelation = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -18626,7 +18626,7 @@ proto.session.RelationType.Roles.Iter.Res.prototype.toObject = function(opt_incl
  */
 proto.session.RelationType.Roles.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -18666,7 +18666,7 @@ proto.session.RelationType.Roles.Iter.Res.deserializeBinaryFromReader = function
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -18697,7 +18697,7 @@ proto.session.RelationType.Roles.Iter.Res.prototype.serializeBinary = function()
  */
 proto.session.RelationType.Roles.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -18709,23 +18709,23 @@ proto.session.RelationType.Roles.Iter.Res.serializeBinaryToWriter = function(mes
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.RelationType.Roles.Iter.Res.prototype.getConcept = function() {
+proto.session.RelationType.Roles.Iter.Res.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.RelationType.Roles.Iter.Res.prototype.setConcept = function(value) {
+proto.session.RelationType.Roles.Iter.Res.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.RelationType.Roles.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.RelationType.Roles.Iter.Res.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -18733,7 +18733,7 @@ proto.session.RelationType.Roles.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.RelationType.Roles.Iter.Res.prototype.hasConcept = function() {
+proto.session.RelationType.Roles.Iter.Res.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -18916,7 +18916,7 @@ proto.session.RelationType.Relates.Req.prototype.toObject = function(opt_include
  */
 proto.session.RelationType.Relates.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -18956,7 +18956,7 @@ proto.session.RelationType.Relates.Req.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -18987,7 +18987,7 @@ proto.session.RelationType.Relates.Req.prototype.serializeBinary = function() {
  */
 proto.session.RelationType.Relates.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -18999,23 +18999,23 @@ proto.session.RelationType.Relates.Req.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.RelationType.Relates.Req.prototype.getConcept = function() {
+proto.session.RelationType.Relates.Req.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.RelationType.Relates.Req.prototype.setConcept = function(value) {
+proto.session.RelationType.Relates.Req.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.RelationType.Relates.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.RelationType.Relates.Req.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -19023,7 +19023,7 @@ proto.session.RelationType.Relates.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.RelationType.Relates.Req.prototype.hasConcept = function() {
+proto.session.RelationType.Relates.Req.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -19307,7 +19307,7 @@ proto.session.RelationType.Unrelate.Req.prototype.toObject = function(opt_includ
  */
 proto.session.RelationType.Unrelate.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -19347,7 +19347,7 @@ proto.session.RelationType.Unrelate.Req.deserializeBinaryFromReader = function(m
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -19378,7 +19378,7 @@ proto.session.RelationType.Unrelate.Req.prototype.serializeBinary = function() {
  */
 proto.session.RelationType.Unrelate.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -19390,23 +19390,23 @@ proto.session.RelationType.Unrelate.Req.serializeBinaryToWriter = function(messa
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.RelationType.Unrelate.Req.prototype.getConcept = function() {
+proto.session.RelationType.Unrelate.Req.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.RelationType.Unrelate.Req.prototype.setConcept = function(value) {
+proto.session.RelationType.Unrelate.Req.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.RelationType.Unrelate.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.RelationType.Unrelate.Req.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -19414,7 +19414,7 @@ proto.session.RelationType.Unrelate.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.RelationType.Unrelate.Req.prototype.hasConcept = function() {
+proto.session.RelationType.Unrelate.Req.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -19986,7 +19986,7 @@ proto.session.AttributeType.Create.Res.prototype.toObject = function(opt_include
  */
 proto.session.AttributeType.Create.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attribute: (f = msg.getAttribute()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -20026,7 +20026,7 @@ proto.session.AttributeType.Create.Res.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttribute(value);
       break;
     default:
       reader.skipField();
@@ -20057,7 +20057,7 @@ proto.session.AttributeType.Create.Res.prototype.serializeBinary = function() {
  */
 proto.session.AttributeType.Create.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttribute();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -20069,23 +20069,23 @@ proto.session.AttributeType.Create.Res.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attribute = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.AttributeType.Create.Res.prototype.getConcept = function() {
+proto.session.AttributeType.Create.Res.prototype.getAttribute = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.AttributeType.Create.Res.prototype.setConcept = function(value) {
+proto.session.AttributeType.Create.Res.prototype.setAttribute = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.AttributeType.Create.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.AttributeType.Create.Res.prototype.clearAttribute = function() {
+  this.setAttribute(undefined);
 };
 
 
@@ -20093,7 +20093,7 @@ proto.session.AttributeType.Create.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.AttributeType.Create.Res.prototype.hasConcept = function() {
+proto.session.AttributeType.Create.Res.prototype.hasAttribute = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -20406,7 +20406,7 @@ proto.session.AttributeType.Attribute.Res.oneofGroups_ = [[1,2]];
  */
 proto.session.AttributeType.Attribute.Res.ResCase = {
   RES_NOT_SET: 0,
-  CONCEPT: 1,
+  ATTRIBUTE: 1,
   NULL: 2
 };
 
@@ -20446,7 +20446,7 @@ proto.session.AttributeType.Attribute.Res.prototype.toObject = function(opt_incl
  */
 proto.session.AttributeType.Attribute.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f),
+    attribute: (f = msg.getAttribute()) && proto.session.Concept.toObject(includeInstance, f),
     pb_null: (f = msg.getNull()) && proto.session.Null.toObject(includeInstance, f)
   };
 
@@ -20487,7 +20487,7 @@ proto.session.AttributeType.Attribute.Res.deserializeBinaryFromReader = function
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttribute(value);
       break;
     case 2:
       var value = new proto.session.Null;
@@ -20523,7 +20523,7 @@ proto.session.AttributeType.Attribute.Res.prototype.serializeBinary = function()
  */
 proto.session.AttributeType.Attribute.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttribute();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -20543,23 +20543,23 @@ proto.session.AttributeType.Attribute.Res.serializeBinaryToWriter = function(mes
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attribute = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.AttributeType.Attribute.Res.prototype.getConcept = function() {
+proto.session.AttributeType.Attribute.Res.prototype.getAttribute = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.AttributeType.Attribute.Res.prototype.setConcept = function(value) {
+proto.session.AttributeType.Attribute.Res.prototype.setAttribute = function(value) {
   jspb.Message.setOneofWrapperField(this, 1, proto.session.AttributeType.Attribute.Res.oneofGroups_[0], value);
 };
 
 
-proto.session.AttributeType.Attribute.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.AttributeType.Attribute.Res.prototype.clearAttribute = function() {
+  this.setAttribute(undefined);
 };
 
 
@@ -20567,7 +20567,7 @@ proto.session.AttributeType.Attribute.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.AttributeType.Attribute.Res.prototype.hasConcept = function() {
+proto.session.AttributeType.Attribute.Res.prototype.hasAttribute = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -22579,7 +22579,7 @@ proto.session.Thing.Type.Res.prototype.toObject = function(opt_includeInstance) 
  */
 proto.session.Thing.Type.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    type: (f = msg.getType()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -22619,7 +22619,7 @@ proto.session.Thing.Type.Res.deserializeBinaryFromReader = function(msg, reader)
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setType(value);
       break;
     default:
       reader.skipField();
@@ -22650,7 +22650,7 @@ proto.session.Thing.Type.Res.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Type.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getType();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -22662,23 +22662,23 @@ proto.session.Thing.Type.Res.serializeBinaryToWriter = function(message, writer)
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept type = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Type.Res.prototype.getConcept = function() {
+proto.session.Thing.Type.Res.prototype.getType = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Type.Res.prototype.setConcept = function(value) {
+proto.session.Thing.Type.Res.prototype.setType = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Type.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Type.Res.prototype.clearType = function() {
+  this.setType(undefined);
 };
 
 
@@ -22686,7 +22686,7 @@ proto.session.Thing.Type.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Type.Res.prototype.hasConcept = function() {
+proto.session.Thing.Type.Res.prototype.hasType = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -22861,7 +22861,7 @@ proto.session.Thing.Keys.Req.prototype.toObject = function(opt_includeInstance) 
  */
 proto.session.Thing.Keys.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    conceptsList: jspb.Message.toObjectList(msg.getConceptsList(),
+    attributetypesList: jspb.Message.toObjectList(msg.getAttributetypesList(),
     proto.session.Concept.toObject, includeInstance)
   };
 
@@ -22902,7 +22902,7 @@ proto.session.Thing.Keys.Req.deserializeBinaryFromReader = function(msg, reader)
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.addConcepts(value);
+      msg.addAttributetypes(value);
       break;
     default:
       reader.skipField();
@@ -22933,7 +22933,7 @@ proto.session.Thing.Keys.Req.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Keys.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConceptsList();
+  f = message.getAttributetypesList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       1,
@@ -22945,17 +22945,17 @@ proto.session.Thing.Keys.Req.serializeBinaryToWriter = function(message, writer)
 
 
 /**
- * repeated Concept concepts = 1;
+ * repeated Concept attributeTypes = 1;
  * @return {!Array.<!proto.session.Concept>}
  */
-proto.session.Thing.Keys.Req.prototype.getConceptsList = function() {
+proto.session.Thing.Keys.Req.prototype.getAttributetypesList = function() {
   return /** @type{!Array.<!proto.session.Concept>} */ (
     jspb.Message.getRepeatedWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {!Array.<!proto.session.Concept>} value */
-proto.session.Thing.Keys.Req.prototype.setConceptsList = function(value) {
+proto.session.Thing.Keys.Req.prototype.setAttributetypesList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 1, value);
 };
 
@@ -22965,13 +22965,13 @@ proto.session.Thing.Keys.Req.prototype.setConceptsList = function(value) {
  * @param {number=} opt_index
  * @return {!proto.session.Concept}
  */
-proto.session.Thing.Keys.Req.prototype.addConcepts = function(opt_value, opt_index) {
+proto.session.Thing.Keys.Req.prototype.addAttributetypes = function(opt_value, opt_index) {
   return jspb.Message.addToRepeatedWrapperField(this, 1, opt_value, proto.session.Concept, opt_index);
 };
 
 
-proto.session.Thing.Keys.Req.prototype.clearConceptsList = function() {
-  this.setConceptsList([]);
+proto.session.Thing.Keys.Req.prototype.clearAttributetypesList = function() {
+  this.setAttributetypesList([]);
 };
 
 
@@ -23149,7 +23149,7 @@ proto.session.Thing.Keys.Iter.Res.prototype.toObject = function(opt_includeInsta
  */
 proto.session.Thing.Keys.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attribute: (f = msg.getAttribute()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -23189,7 +23189,7 @@ proto.session.Thing.Keys.Iter.Res.deserializeBinaryFromReader = function(msg, re
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttribute(value);
       break;
     default:
       reader.skipField();
@@ -23220,7 +23220,7 @@ proto.session.Thing.Keys.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Keys.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttribute();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -23232,23 +23232,23 @@ proto.session.Thing.Keys.Iter.Res.serializeBinaryToWriter = function(message, wr
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attribute = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Keys.Iter.Res.prototype.getConcept = function() {
+proto.session.Thing.Keys.Iter.Res.prototype.getAttribute = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Keys.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Thing.Keys.Iter.Res.prototype.setAttribute = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Keys.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Keys.Iter.Res.prototype.clearAttribute = function() {
+  this.setAttribute(undefined);
 };
 
 
@@ -23256,7 +23256,7 @@ proto.session.Thing.Keys.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Keys.Iter.Res.prototype.hasConcept = function() {
+proto.session.Thing.Keys.Iter.Res.prototype.hasAttribute = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -23446,7 +23446,7 @@ proto.session.Thing.Attributes.Req.prototype.toObject = function(opt_includeInst
  */
 proto.session.Thing.Attributes.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    conceptsList: jspb.Message.toObjectList(msg.getConceptsList(),
+    attributetypesList: jspb.Message.toObjectList(msg.getAttributetypesList(),
     proto.session.Concept.toObject, includeInstance)
   };
 
@@ -23487,7 +23487,7 @@ proto.session.Thing.Attributes.Req.deserializeBinaryFromReader = function(msg, r
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.addConcepts(value);
+      msg.addAttributetypes(value);
       break;
     default:
       reader.skipField();
@@ -23518,7 +23518,7 @@ proto.session.Thing.Attributes.Req.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Attributes.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConceptsList();
+  f = message.getAttributetypesList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       1,
@@ -23530,17 +23530,17 @@ proto.session.Thing.Attributes.Req.serializeBinaryToWriter = function(message, w
 
 
 /**
- * repeated Concept concepts = 1;
+ * repeated Concept attributeTypes = 1;
  * @return {!Array.<!proto.session.Concept>}
  */
-proto.session.Thing.Attributes.Req.prototype.getConceptsList = function() {
+proto.session.Thing.Attributes.Req.prototype.getAttributetypesList = function() {
   return /** @type{!Array.<!proto.session.Concept>} */ (
     jspb.Message.getRepeatedWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {!Array.<!proto.session.Concept>} value */
-proto.session.Thing.Attributes.Req.prototype.setConceptsList = function(value) {
+proto.session.Thing.Attributes.Req.prototype.setAttributetypesList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 1, value);
 };
 
@@ -23550,13 +23550,13 @@ proto.session.Thing.Attributes.Req.prototype.setConceptsList = function(value) {
  * @param {number=} opt_index
  * @return {!proto.session.Concept}
  */
-proto.session.Thing.Attributes.Req.prototype.addConcepts = function(opt_value, opt_index) {
+proto.session.Thing.Attributes.Req.prototype.addAttributetypes = function(opt_value, opt_index) {
   return jspb.Message.addToRepeatedWrapperField(this, 1, opt_value, proto.session.Concept, opt_index);
 };
 
 
-proto.session.Thing.Attributes.Req.prototype.clearConceptsList = function() {
-  this.setConceptsList([]);
+proto.session.Thing.Attributes.Req.prototype.clearAttributetypesList = function() {
+  this.setAttributetypesList([]);
 };
 
 
@@ -23734,7 +23734,7 @@ proto.session.Thing.Attributes.Iter.Res.prototype.toObject = function(opt_includ
  */
 proto.session.Thing.Attributes.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attribute: (f = msg.getAttribute()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -23774,7 +23774,7 @@ proto.session.Thing.Attributes.Iter.Res.deserializeBinaryFromReader = function(m
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttribute(value);
       break;
     default:
       reader.skipField();
@@ -23805,7 +23805,7 @@ proto.session.Thing.Attributes.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Attributes.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttribute();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -23817,23 +23817,23 @@ proto.session.Thing.Attributes.Iter.Res.serializeBinaryToWriter = function(messa
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attribute = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Attributes.Iter.Res.prototype.getConcept = function() {
+proto.session.Thing.Attributes.Iter.Res.prototype.getAttribute = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Attributes.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Thing.Attributes.Iter.Res.prototype.setAttribute = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Attributes.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Attributes.Iter.Res.prototype.clearAttribute = function() {
+  this.setAttribute(undefined);
 };
 
 
@@ -23841,7 +23841,7 @@ proto.session.Thing.Attributes.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Attributes.Iter.Res.prototype.hasConcept = function() {
+proto.session.Thing.Attributes.Iter.Res.prototype.hasAttribute = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -24031,7 +24031,7 @@ proto.session.Thing.Relations.Req.prototype.toObject = function(opt_includeInsta
  */
 proto.session.Thing.Relations.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    conceptsList: jspb.Message.toObjectList(msg.getConceptsList(),
+    rolesList: jspb.Message.toObjectList(msg.getRolesList(),
     proto.session.Concept.toObject, includeInstance)
   };
 
@@ -24072,7 +24072,7 @@ proto.session.Thing.Relations.Req.deserializeBinaryFromReader = function(msg, re
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.addConcepts(value);
+      msg.addRoles(value);
       break;
     default:
       reader.skipField();
@@ -24103,7 +24103,7 @@ proto.session.Thing.Relations.Req.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Relations.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConceptsList();
+  f = message.getRolesList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       1,
@@ -24115,17 +24115,17 @@ proto.session.Thing.Relations.Req.serializeBinaryToWriter = function(message, wr
 
 
 /**
- * repeated Concept concepts = 1;
+ * repeated Concept roles = 1;
  * @return {!Array.<!proto.session.Concept>}
  */
-proto.session.Thing.Relations.Req.prototype.getConceptsList = function() {
+proto.session.Thing.Relations.Req.prototype.getRolesList = function() {
   return /** @type{!Array.<!proto.session.Concept>} */ (
     jspb.Message.getRepeatedWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {!Array.<!proto.session.Concept>} value */
-proto.session.Thing.Relations.Req.prototype.setConceptsList = function(value) {
+proto.session.Thing.Relations.Req.prototype.setRolesList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 1, value);
 };
 
@@ -24135,13 +24135,13 @@ proto.session.Thing.Relations.Req.prototype.setConceptsList = function(value) {
  * @param {number=} opt_index
  * @return {!proto.session.Concept}
  */
-proto.session.Thing.Relations.Req.prototype.addConcepts = function(opt_value, opt_index) {
+proto.session.Thing.Relations.Req.prototype.addRoles = function(opt_value, opt_index) {
   return jspb.Message.addToRepeatedWrapperField(this, 1, opt_value, proto.session.Concept, opt_index);
 };
 
 
-proto.session.Thing.Relations.Req.prototype.clearConceptsList = function() {
-  this.setConceptsList([]);
+proto.session.Thing.Relations.Req.prototype.clearRolesList = function() {
+  this.setRolesList([]);
 };
 
 
@@ -24319,7 +24319,7 @@ proto.session.Thing.Relations.Iter.Res.prototype.toObject = function(opt_include
  */
 proto.session.Thing.Relations.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    relation: (f = msg.getRelation()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -24359,7 +24359,7 @@ proto.session.Thing.Relations.Iter.Res.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRelation(value);
       break;
     default:
       reader.skipField();
@@ -24390,7 +24390,7 @@ proto.session.Thing.Relations.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Relations.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRelation();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -24402,23 +24402,23 @@ proto.session.Thing.Relations.Iter.Res.serializeBinaryToWriter = function(messag
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept relation = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Relations.Iter.Res.prototype.getConcept = function() {
+proto.session.Thing.Relations.Iter.Res.prototype.getRelation = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Relations.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Thing.Relations.Iter.Res.prototype.setRelation = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Relations.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Relations.Iter.Res.prototype.clearRelation = function() {
+  this.setRelation(undefined);
 };
 
 
@@ -24426,7 +24426,7 @@ proto.session.Thing.Relations.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Relations.Iter.Res.prototype.hasConcept = function() {
+proto.session.Thing.Relations.Iter.Res.prototype.hasRelation = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -24852,7 +24852,7 @@ proto.session.Thing.Roles.Iter.Res.prototype.toObject = function(opt_includeInst
  */
 proto.session.Thing.Roles.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    role: (f = msg.getRole()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -24892,7 +24892,7 @@ proto.session.Thing.Roles.Iter.Res.deserializeBinaryFromReader = function(msg, r
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRole(value);
       break;
     default:
       reader.skipField();
@@ -24923,7 +24923,7 @@ proto.session.Thing.Roles.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Roles.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRole();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -24935,23 +24935,23 @@ proto.session.Thing.Roles.Iter.Res.serializeBinaryToWriter = function(message, w
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept role = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Roles.Iter.Res.prototype.getConcept = function() {
+proto.session.Thing.Roles.Iter.Res.prototype.getRole = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Roles.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Thing.Roles.Iter.Res.prototype.setRole = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Roles.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Roles.Iter.Res.prototype.clearRole = function() {
+  this.setRole(undefined);
 };
 
 
@@ -24959,7 +24959,7 @@ proto.session.Thing.Roles.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Roles.Iter.Res.prototype.hasConcept = function() {
+proto.session.Thing.Roles.Iter.Res.prototype.hasRole = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -25142,7 +25142,7 @@ proto.session.Thing.Relhas.Req.prototype.toObject = function(opt_includeInstance
  */
 proto.session.Thing.Relhas.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attribute: (f = msg.getAttribute()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -25182,7 +25182,7 @@ proto.session.Thing.Relhas.Req.deserializeBinaryFromReader = function(msg, reade
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttribute(value);
       break;
     default:
       reader.skipField();
@@ -25213,7 +25213,7 @@ proto.session.Thing.Relhas.Req.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Relhas.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttribute();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -25225,23 +25225,23 @@ proto.session.Thing.Relhas.Req.serializeBinaryToWriter = function(message, write
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attribute = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Relhas.Req.prototype.getConcept = function() {
+proto.session.Thing.Relhas.Req.prototype.getAttribute = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Relhas.Req.prototype.setConcept = function(value) {
+proto.session.Thing.Relhas.Req.prototype.setAttribute = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Relhas.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Relhas.Req.prototype.clearAttribute = function() {
+  this.setAttribute(undefined);
 };
 
 
@@ -25249,7 +25249,7 @@ proto.session.Thing.Relhas.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Relhas.Req.prototype.hasConcept = function() {
+proto.session.Thing.Relhas.Req.prototype.hasAttribute = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -25301,7 +25301,7 @@ proto.session.Thing.Relhas.Res.prototype.toObject = function(opt_includeInstance
  */
 proto.session.Thing.Relhas.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    relation: (f = msg.getRelation()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -25341,7 +25341,7 @@ proto.session.Thing.Relhas.Res.deserializeBinaryFromReader = function(msg, reade
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setRelation(value);
       break;
     default:
       reader.skipField();
@@ -25372,7 +25372,7 @@ proto.session.Thing.Relhas.Res.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Relhas.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getRelation();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -25384,23 +25384,23 @@ proto.session.Thing.Relhas.Res.serializeBinaryToWriter = function(message, write
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept relation = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Relhas.Res.prototype.getConcept = function() {
+proto.session.Thing.Relhas.Res.prototype.getRelation = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Relhas.Res.prototype.setConcept = function(value) {
+proto.session.Thing.Relhas.Res.prototype.setRelation = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Relhas.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Relhas.Res.prototype.clearRelation = function() {
+  this.setRelation(undefined);
 };
 
 
@@ -25408,7 +25408,7 @@ proto.session.Thing.Relhas.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Relhas.Res.prototype.hasConcept = function() {
+proto.session.Thing.Relhas.Res.prototype.hasRelation = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -25576,7 +25576,7 @@ proto.session.Thing.Unhas.Req.prototype.toObject = function(opt_includeInstance)
  */
 proto.session.Thing.Unhas.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    attribute: (f = msg.getAttribute()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -25616,7 +25616,7 @@ proto.session.Thing.Unhas.Req.deserializeBinaryFromReader = function(msg, reader
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setAttribute(value);
       break;
     default:
       reader.skipField();
@@ -25647,7 +25647,7 @@ proto.session.Thing.Unhas.Req.prototype.serializeBinary = function() {
  */
 proto.session.Thing.Unhas.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getAttribute();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -25659,23 +25659,23 @@ proto.session.Thing.Unhas.Req.serializeBinaryToWriter = function(message, writer
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept attribute = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Thing.Unhas.Req.prototype.getConcept = function() {
+proto.session.Thing.Unhas.Req.prototype.getAttribute = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Thing.Unhas.Req.prototype.setConcept = function(value) {
+proto.session.Thing.Unhas.Req.prototype.setAttribute = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Thing.Unhas.Req.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Thing.Unhas.Req.prototype.clearAttribute = function() {
+  this.setAttribute(undefined);
 };
 
 
@@ -25683,7 +25683,7 @@ proto.session.Thing.Unhas.Req.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Thing.Unhas.Req.prototype.hasConcept = function() {
+proto.session.Thing.Unhas.Req.prototype.hasAttribute = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -26667,7 +26667,7 @@ proto.session.Relation.RolePlayers.Req.prototype.toObject = function(opt_include
  */
 proto.session.Relation.RolePlayers.Req.toObject = function(includeInstance, msg) {
   var f, obj = {
-    conceptsList: jspb.Message.toObjectList(msg.getConceptsList(),
+    rolesList: jspb.Message.toObjectList(msg.getRolesList(),
     proto.session.Concept.toObject, includeInstance)
   };
 
@@ -26708,7 +26708,7 @@ proto.session.Relation.RolePlayers.Req.deserializeBinaryFromReader = function(ms
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.addConcepts(value);
+      msg.addRoles(value);
       break;
     default:
       reader.skipField();
@@ -26739,7 +26739,7 @@ proto.session.Relation.RolePlayers.Req.prototype.serializeBinary = function() {
  */
 proto.session.Relation.RolePlayers.Req.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConceptsList();
+  f = message.getRolesList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       1,
@@ -26751,17 +26751,17 @@ proto.session.Relation.RolePlayers.Req.serializeBinaryToWriter = function(messag
 
 
 /**
- * repeated Concept concepts = 1;
+ * repeated Concept roles = 1;
  * @return {!Array.<!proto.session.Concept>}
  */
-proto.session.Relation.RolePlayers.Req.prototype.getConceptsList = function() {
+proto.session.Relation.RolePlayers.Req.prototype.getRolesList = function() {
   return /** @type{!Array.<!proto.session.Concept>} */ (
     jspb.Message.getRepeatedWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {!Array.<!proto.session.Concept>} value */
-proto.session.Relation.RolePlayers.Req.prototype.setConceptsList = function(value) {
+proto.session.Relation.RolePlayers.Req.prototype.setRolesList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 1, value);
 };
 
@@ -26771,13 +26771,13 @@ proto.session.Relation.RolePlayers.Req.prototype.setConceptsList = function(valu
  * @param {number=} opt_index
  * @return {!proto.session.Concept}
  */
-proto.session.Relation.RolePlayers.Req.prototype.addConcepts = function(opt_value, opt_index) {
+proto.session.Relation.RolePlayers.Req.prototype.addRoles = function(opt_value, opt_index) {
   return jspb.Message.addToRepeatedWrapperField(this, 1, opt_value, proto.session.Concept, opt_index);
 };
 
 
-proto.session.Relation.RolePlayers.Req.prototype.clearConceptsList = function() {
-  this.setConceptsList([]);
+proto.session.Relation.RolePlayers.Req.prototype.clearRolesList = function() {
+  this.setRolesList([]);
 };
 
 
@@ -26955,7 +26955,7 @@ proto.session.Relation.RolePlayers.Iter.Res.prototype.toObject = function(opt_in
  */
 proto.session.Relation.RolePlayers.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    thing: (f = msg.getThing()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -26995,7 +26995,7 @@ proto.session.Relation.RolePlayers.Iter.Res.deserializeBinaryFromReader = functi
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setThing(value);
       break;
     default:
       reader.skipField();
@@ -27026,7 +27026,7 @@ proto.session.Relation.RolePlayers.Iter.Res.prototype.serializeBinary = function
  */
 proto.session.Relation.RolePlayers.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getThing();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -27038,23 +27038,23 @@ proto.session.Relation.RolePlayers.Iter.Res.serializeBinaryToWriter = function(m
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept thing = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Relation.RolePlayers.Iter.Res.prototype.getConcept = function() {
+proto.session.Relation.RolePlayers.Iter.Res.prototype.getThing = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Relation.RolePlayers.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Relation.RolePlayers.Iter.Res.prototype.setThing = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Relation.RolePlayers.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Relation.RolePlayers.Iter.Res.prototype.clearThing = function() {
+  this.setThing(undefined);
 };
 
 
@@ -27062,7 +27062,7 @@ proto.session.Relation.RolePlayers.Iter.Res.prototype.clearConcept = function() 
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Relation.RolePlayers.Iter.Res.prototype.hasConcept = function() {
+proto.session.Relation.RolePlayers.Iter.Res.prototype.hasThing = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 
@@ -28865,7 +28865,7 @@ proto.session.Attribute.Owners.Iter.Res.prototype.toObject = function(opt_includ
  */
 proto.session.Attribute.Owners.Iter.Res.toObject = function(includeInstance, msg) {
   var f, obj = {
-    concept: (f = msg.getConcept()) && proto.session.Concept.toObject(includeInstance, f)
+    thing: (f = msg.getThing()) && proto.session.Concept.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -28905,7 +28905,7 @@ proto.session.Attribute.Owners.Iter.Res.deserializeBinaryFromReader = function(m
     case 1:
       var value = new proto.session.Concept;
       reader.readMessage(value,proto.session.Concept.deserializeBinaryFromReader);
-      msg.setConcept(value);
+      msg.setThing(value);
       break;
     default:
       reader.skipField();
@@ -28936,7 +28936,7 @@ proto.session.Attribute.Owners.Iter.Res.prototype.serializeBinary = function() {
  */
 proto.session.Attribute.Owners.Iter.Res.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getConcept();
+  f = message.getThing();
   if (f != null) {
     writer.writeMessage(
       1,
@@ -28948,23 +28948,23 @@ proto.session.Attribute.Owners.Iter.Res.serializeBinaryToWriter = function(messa
 
 
 /**
- * optional Concept concept = 1;
+ * optional Concept thing = 1;
  * @return {?proto.session.Concept}
  */
-proto.session.Attribute.Owners.Iter.Res.prototype.getConcept = function() {
+proto.session.Attribute.Owners.Iter.Res.prototype.getThing = function() {
   return /** @type{?proto.session.Concept} */ (
     jspb.Message.getWrapperField(this, proto.session.Concept, 1));
 };
 
 
 /** @param {?proto.session.Concept|undefined} value */
-proto.session.Attribute.Owners.Iter.Res.prototype.setConcept = function(value) {
+proto.session.Attribute.Owners.Iter.Res.prototype.setThing = function(value) {
   jspb.Message.setWrapperField(this, 1, value);
 };
 
 
-proto.session.Attribute.Owners.Iter.Res.prototype.clearConcept = function() {
-  this.setConcept(undefined);
+proto.session.Attribute.Owners.Iter.Res.prototype.clearThing = function() {
+  this.setThing(undefined);
 };
 
 
@@ -28972,7 +28972,7 @@ proto.session.Attribute.Owners.Iter.Res.prototype.clearConcept = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.session.Attribute.Owners.Iter.Res.prototype.hasConcept = function() {
+proto.session.Attribute.Owners.Iter.Res.prototype.hasThing = function() {
   return jspb.Message.getField(this, 1) != null;
 };
 

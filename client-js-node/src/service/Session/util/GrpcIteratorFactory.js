@@ -69,7 +69,7 @@ function GrpcConceptIterator(conceptFactory, communicator, nextRequest, getterMe
   mapResponse = (response) => {
     const iterRes = response.getIterateRes();
     if (iterRes.getDone()) return null;
-    const grpcConcept = iterRes.getConceptmethodIterRes()[getterMethod]().getConcept();
+    const grpcConcept = getterMethod(iterRes);
     return conceptFactory.createConcept(grpcConcept);
   }
 
@@ -128,7 +128,7 @@ function AttributesIterator(conceptFactory, communicator, nextRequest) {
   mapResponse = (response) => {
     const iterRes = response.getIterateRes();
     if (iterRes.getDone()) return null;
-    const grpcConcept = iterRes.getGetattributesIterRes().getConcept();
+    const grpcConcept = iterRes.getGetattributesIterRes().getAttribute();
     return conceptFactory.createConcept(grpcConcept);
   }
 

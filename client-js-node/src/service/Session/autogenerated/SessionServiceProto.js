@@ -2,7 +2,7 @@
 
 'use strict';
 var grpc = require('grpc');
-var Session_pb = require('./SessionMessages');
+var Session_pb = require('./SessionMessages.js');
 var Concept_pb = require('./Concept_pb.js');
 var Answer_pb = require('./Answer_pb.js');
 
@@ -29,11 +29,11 @@ function deserialize_session_Transaction_Res(buffer_arg) {
 }
 
 
-var SessionService = exports.SessionService = {
-  // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
+var SessionServiceService = exports.SessionServiceService = {
+  // Represents a full transaction. The stream of `Transaction.Req`s must begin with a `Open` message.
   // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
   transaction: {
-    path: '/session.Session/transaction',
+    path: '/session.SessionService/transaction',
     requestStream: true,
     responseStream: true,
     requestType: Session_pb.Transaction.Req,
@@ -45,4 +45,4 @@ var SessionService = exports.SessionService = {
   },
 };
 
-exports.SessionClient = grpc.makeGenericClientConstructor(SessionService);
+exports.SessionServiceClient = grpc.makeGenericClientConstructor(SessionServiceService);
