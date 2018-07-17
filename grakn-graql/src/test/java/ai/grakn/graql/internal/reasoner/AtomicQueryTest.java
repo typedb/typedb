@@ -991,59 +991,52 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$z has resource $u;$a >23; $a <27;}";
         String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
+        String query2b = "{$a isa baseRoleEntity;$a has resource $p;$p <27;$p >23;}";
+        String query2c = "{$x isa baseRoleEntity, has resource $a;$a >23; $a <27;}";
+        String query2d = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
         String query3 = "{$e isa baseRoleEntity;$e has resource > 23;}";
-
-        String query4 = "{$p isa baseRoleEntity;$p has resource $a;$a >23;}";
-        String query5 = "{$x isa baseRoleEntity;$x has resource $y;$y >27;$y <23;}";
-        String query6 = "{$a isa baseRoleEntity;$a has resource $p;$p <27;$p >23;}";
-        String query7 = "{$x isa baseRoleEntity, has resource $a;$a >23; $a <27;}";
-        String query8 = "{$x isa baseRoleEntity, has resource $z1;$z1 >23; $z2 <27;}";
-
-        String query9 = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
+        String query3b = "{$p isa baseRoleEntity;$p has resource $a;$a >23;}";
+        String query4 = "{$x isa baseRoleEntity;$x has resource $y;$y >27;$y <23;}";
+        String query5 = "{$x isa baseRoleEntity, has resource $z1;$z1 >23; $z2 <27;}";
 
         queryEquivalence(query, query2, false, graph);
+        queryEquivalence(query, query2b, false, graph);
+        queryEquivalence(query, query2c, false, graph);
+        queryEquivalence(query, query2d, false, graph);
         queryEquivalence(query, query3, false, graph);
+        queryEquivalence(query, query3b, false, graph);
         queryEquivalence(query, query4, false, graph);
         queryEquivalence(query, query5, false, graph);
-        queryEquivalence(query, query6, false, graph);
-        queryEquivalence(query, query7, false, graph);
-        queryEquivalence(query, query8, false, graph);
-        queryEquivalence(query, query9, false, graph);
 
+        queryEquivalence(query2, query2b, true, graph);
+        queryEquivalence(query2, query2c, true, graph);
+        queryEquivalence(query2, query2d, true, graph);
         queryEquivalence(query2, query3, false, graph);
+        queryEquivalence(query2, query3b, false, graph);
         queryEquivalence(query2, query4, false, graph);
         queryEquivalence(query2, query5, false, graph);
-        queryEquivalence(query2, query6, true, graph);
-        queryEquivalence(query2, query7, true, graph);
-        queryEquivalence(query2, query8, false, graph);
-        queryEquivalence(query2, query9, true, graph);
 
-        queryEquivalence(query3, query4, true, graph);
-        queryEquivalence(query3, query5, false, graph);
-        queryEquivalence(query3, query6, false, graph);
-        queryEquivalence(query3, query7, false, graph);
+        queryEquivalence(query2b, query2c, true, graph);
+        queryEquivalence(query2b, query2d, true, graph);
+        queryEquivalence(query2b, query3, false, graph);
+        queryEquivalence(query2b, query3b, false, graph);
+        queryEquivalence(query2b, query4, false, graph);
+        queryEquivalence(query2b, query5, false, graph);
 
-        queryEquivalence(query3, query8, false, true, false, graph);
+        queryEquivalence(query2c, query2d, true, graph);
+        queryEquivalence(query2c, query3, false, graph);
+        queryEquivalence(query2c, query3b, false, graph);
+        queryEquivalence(query2c, query4, false, graph);
+        queryEquivalence(query2c, query5, false, graph);
 
-        queryEquivalence(query3, query9, false, graph);
+        queryEquivalence(query3, query3b, true, graph);
+        queryEquivalence(query3, query4, false, graph);
+        queryEquivalence(query3, query5, false, true, true, graph);
+
+        queryEquivalence(query3b, query4, false, graph);
+        queryEquivalence(query3b, query5, false, true, true, graph);
 
         queryEquivalence(query4, query5, false, graph);
-        queryEquivalence(query4, query6, false, graph);
-        queryEquivalence(query4, query7, false, graph);
-        queryEquivalence(query4, query8, false, true, false, graph);
-        queryEquivalence(query4, query9, false, graph);
-
-        queryEquivalence(query5, query6, false, graph);
-        queryEquivalence(query5, query7, false, graph);
-        queryEquivalence(query5, query8, false, graph);
-        queryEquivalence(query5, query9, false, graph);
-
-        queryEquivalence(query6, query7, true, graph);
-        queryEquivalence(query6, query8, false, graph);
-        queryEquivalence(query6, query9, true, graph);
-
-        queryEquivalence(query7, query8, false, graph);
-        queryEquivalence(query7, query9, true, graph);
     }
 
     @Test //tests alpha-equivalence of resource atoms with different predicates
@@ -1052,22 +1045,22 @@ public class AtomicQueryTest {
         String query = "{$x has resource $r;$r > 1099;}";
         String query2 = "{$x has resource $r;$r < 1099;}";
         String query3 = "{$x has resource $r;$r == 1099;}";
-        String query4 = "{$x has resource $r;$r '1099';}";
-        String query5 = "{$x has resource $r;$r > $var;}";
+        String query3b = "{$x has resource $r;$r '1099';}";
+        String query4 = "{$x has resource $r;$r > $var;}";
 
         queryEquivalence(query, query2, false, graph);
         queryEquivalence(query, query3, false, graph);
+        queryEquivalence(query, query3b, false, graph);
         queryEquivalence(query, query4, false, graph);
-        queryEquivalence(query, query5, false, graph);
 
         queryEquivalence(query2, query3, false, graph);
+        queryEquivalence(query2, query3b, false, graph);
         queryEquivalence(query2, query4, false, graph);
-        queryEquivalence(query2, query5, false, graph);
 
-        queryEquivalence(query3, query4, true, graph);
-        queryEquivalence(query3, query5, false, graph);
+        queryEquivalence(query3, query3b, true, graph);
+        queryEquivalence(query3, query4, false, graph);
 
-        queryEquivalence(query4, query5, false, graph);
+        queryEquivalence(query3b, query4, false, graph);
     }
 
     @Test

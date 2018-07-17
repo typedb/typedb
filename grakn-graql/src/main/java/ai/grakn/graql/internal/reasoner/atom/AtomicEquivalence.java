@@ -19,7 +19,12 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.base.Equivalence;
+import java.util.Collection;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Stream;
 
 
 /**
@@ -37,6 +42,22 @@ import com.google.common.base.Equivalence;
  *
  */
 public abstract class AtomicEquivalence extends Equivalence<Atomic> {
+
+    public static <B extends Atomic, S extends B> boolean equivalence(Collection<S> a1, Collection<S> a2, Equivalence<B> equiv){
+        return ReasonerUtils.isEquivalentCollection(a1, a2, equiv);
+    }
+
+    public static <B extends Atomic, S extends B> int equivalenceHash(Stream<S> atoms, Equivalence<B> equiv){
+        int hashCode = 1;
+        SortedSet<Integer> hashes = new TreeSet<>();
+        atoms.forEach(atom -> hashes.add(equiv.hash(atom)));
+        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
+        return hashCode;
+    }
+
+    public static <B extends Atomic, S extends B> int equivalenceHash(Collection<S> atoms, Equivalence<B> equiv){
+        return equivalenceHash(atoms.stream(), equiv);
+    }
 
     public final static Equivalence<Atomic> Equality = new AtomicEquivalence(){
 

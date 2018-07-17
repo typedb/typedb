@@ -97,7 +97,7 @@ public abstract class Binary extends Atom {
         return  (this.isUserDefined() == that.isUserDefined())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.hasEquivalentPredicatesWith(that);
+                && this.predicateBindingsAlphaEquivalent(that);
     }
 
     @Override
@@ -115,7 +115,7 @@ public abstract class Binary extends Atom {
         return  (this.isUserDefined() == that.isUserDefined())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.predicateBindingsAreEquivalent(that);
+                && this.predicateBindingsStructurallyEquivalent(that);
     }
 
     @Override
@@ -123,7 +123,7 @@ public abstract class Binary extends Atom {
         return alphaEquivalenceHashCode();
     }
 
-    boolean hasEquivalentPredicatesWith(Binary atom) {
+    boolean predicateBindingsAlphaEquivalent(Binary atom) {
         //check if there is a substitution for varName
         IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
         IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
@@ -134,7 +134,7 @@ public abstract class Binary extends Atom {
                 && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isAlphaEquivalent(typePredicate));
     }
 
-    boolean predicateBindingsAreEquivalent(Binary atom) {
+    boolean predicateBindingsStructurallyEquivalent(Binary atom) {
         //check if there is a substitution for varName
         IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
         IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
