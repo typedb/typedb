@@ -93,20 +93,20 @@ Once obtained a `Transaction` you will be able to:
 Grakn is composed of different types of Concepts, that have a specific hierarchy
 
 ```
-                                            Concept
-                                            /       \
-                                          /           \
-                                        /               \
-                                      /                   \
-                              SchemaConcept                    Thing
-                              /     |    \                    /   |  \
-                            /       |     \                 /     |    \
-                          /         |      \              /       |      \
-                        Type      Rule    Role     Entity    Attribute   Relationship
-                    /     |   \
-                  /       |     \
-                /         |       \
-        EntityType  AttributeType  RelationshipType
+                                                Concept
+                                                /       \
+                                              /           \
+                                            /               \
+                                          /                   \
+                                  SchemaConcept                    Thing
+                                  /     |    \                    /   |  \
+                                /       |     \                 /     |    \
+                              /         |      \              /       |      \
+                            Type      Rule    Role     Entity    Attribute   Relationship
+                        /     |   \
+                      /       |     \
+                    /         |       \
+            EntityType  AttributeType  RelationshipType
 ```
 **Iterator**
 
@@ -216,13 +216,13 @@ A `Type` concept has all the `SchemaConcept` methods plus the following:
   An `AttributeType` concept has all the `Type` methods plus the following:
 
   
-  | Method                      | Return type           | Description                                                                                                                                              |
-  | --------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | async `create(value)`       | *Attribute*           | Returns new or existing Attribute of this type with the provided value. The value provided must conform to the DataType specified for this AttributeType |
-  | async `attribute(value)`    | *Attribute* or *null* | Returns the Attribute with the provided value or null if no such Attribute exists                                                                        |
-  | async `dataType()`          | *String*              | Get the data type to which instances of the AttributeType must have                                                                                      |
-  | async `regex()`             | *String* or *null*    | Retrieve the regular expression to which instances of this AttributeType must conform to, or `null` if no regular expression is set                      |
-  | async `regex(String regex)` | *void*                | Set the regular expression that instances of the AttributeType must conform to                                                                           |
+  | Method                      | Return type           | Description                                                                                                                                 |
+  | --------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+  | async `create(value)`       | *Attribute*           | Create new Attribute of this type with the provided value. The value provided must conform to the DataType specified for this AttributeType |
+  | async `attribute(value)`    | *Attribute* or *null* | Retrieve the Attribute with the provided value if it exists                                                                                 |
+  | async `dataType()`          | *String*              | Get the data type to which instances of the AttributeType must have                                                                         |
+  | async `regex()`             | *String* or *null*    | Retrieve the regular expression to which instances of this AttributeType must conform to, or `null` if no regular expression is set         |
+  | async `regex(String regex)` | *void*                | Set the regular expression that instances of the AttributeType must conform to                                                              |
    
   **RelationshipType**  
 
