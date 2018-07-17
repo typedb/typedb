@@ -1,11 +1,14 @@
 [[source]]
-url = "https://pypi.python.org/simple"
+url = "https://pypi.org/simple"
 verify_ssl = true
-
-[dev-packages]
-behave = "*"
-nose = "*"
-grpcio-tools = "*"
+name = "pypi"
 
 [packages]
 grpcio = "*"
+
+[dev-packages]
+grpcio-tools = "*"
+googleapis-common-protos = "*"
+
+[requires]
+python_version = "3.7"
