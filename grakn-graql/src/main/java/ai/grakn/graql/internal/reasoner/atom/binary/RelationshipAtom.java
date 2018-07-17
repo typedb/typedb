@@ -49,7 +49,9 @@ import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -64,6 +66,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -74,6 +77,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -302,7 +306,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (!isBaseEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
         //check id predicate bindings
-        return this.getRoleConceptIdMap().equals(that.getRoleConceptIdMap());
+        return this.predicateBindingsAlphaEquivalent(that);
     }
 
     @Override
@@ -312,12 +316,34 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return equivalenceHashCode;
     }
 
+    private boolean predicateBindingsEquivalent(RelationshipAtom atom,
+                                                BiFunction<String, String, Boolean> conceptComparison,
+                                                Equivalence<Atomic> equiv) {
+        Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
+        Multimap<Role, String> thatIdMap = atom.getRoleConceptIdMap();
+
+        Multimap<Role, NeqPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
+        Multimap<Role, NeqPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
+        return thisIdMap.keySet().equals(thatIdMap.keySet())
+                && thisIdMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisIdMap.get(k), thatIdMap.get(k), conceptComparison))
+                && thisNeqMap.keySet().equals(thatNeqMap.keySet())
+                && thisNeqMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisNeqMap.get(k), thatNeqMap.get(k), equiv));
+    }
+
+    private boolean predicateBindingsAlphaEquivalent(RelationshipAtom atom) {
+        return predicateBindingsEquivalent(atom, String::equals, AtomicEquivalence.AlphaEquivalence);
+    }
+
+    private boolean predicateBindingsStructurallyEquivalent(RelationshipAtom atom) {
+        return predicateBindingsEquivalent(atom, (a, b) -> true, AtomicEquivalence.StructuralEquivalence);
+    }
+
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
         // check bindings
-        return this.getRoleConceptIdMap().keySet().equals(that.getRoleConceptIdMap().keySet());
+        return this.predicateBindingsStructurallyEquivalent(that);
     }
 
     @Override
@@ -432,21 +458,37 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 });
     }
 
+    private <T extends Predicate> Multimap<Role, T> getRolePredicateMap(Class<T> type) {
+        HashMultimap<Role, T> rolePredicateMap = HashMultimap.create();
+
+        HashMultimap<Var, T> predicateMap = HashMultimap.create();
+        getPredicates(type).forEach(p -> p.getVarNames().forEach(v -> predicateMap.put(v, p)));
+        Multimap<Role, Var> roleMap = getRoleVarMap();
+
+        roleMap.entries().stream()
+                .filter(e -> predicateMap.containsKey(e.getValue()))
+                .forEach(e ->  rolePredicateMap.putAll(e.getKey(), predicateMap.get(e.getValue())));
+        return rolePredicateMap;
+    }
+
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
     @Memoized
     public Multimap<Role, String> getRoleConceptIdMap() {
         ImmutableMultimap.Builder<Role, String> builder = ImmutableMultimap.builder();
+        getRolePredicateMap(IdPredicate.class)
+                .entries()
+                .forEach(e -> builder.put(e.getKey(), e.getValue().getPredicateValue()));
+        return builder.build();
+    }
 
-        Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
-                .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
-        Multimap<Role, Var> roleMap = getRoleVarMap();
-
-        roleMap.entries().stream()
-                .filter(e -> varSubMap.containsKey(e.getValue()))
-                .sorted(Comparator.comparing(e -> varSubMap.get(e.getValue()).getPredicateValue()))
-                .forEach(e -> builder.put(e.getKey(), varSubMap.get(e.getValue()).getPredicateValue()));
+    @Memoized
+    public Multimap<Role, NeqPredicate> getRoleNeqPredicateMap() {
+        ImmutableMultimap.Builder<Role, NeqPredicate> builder = ImmutableMultimap.builder();
+        getRolePredicateMap(NeqPredicate.class)
+                .entries()
+                .forEach(e -> builder.put(e.getKey(), e.getValue()));
         return builder.build();
     }
 
