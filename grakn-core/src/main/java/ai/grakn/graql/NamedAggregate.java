@@ -22,18 +22,17 @@ import javax.annotation.CheckReturnValue;
 
 /**
  * An aggregate operation with an associated name. Used when combining aggregates using the 'select' aggregate.
- * @param <T> the type of the query to perform the aggregate operation on
- * @param <S> the type of the result of the aggregate operation
+ * @param <T> the type of the result of the aggregate operation
  *
  * @author Felix Chapman
  */
-public interface NamedAggregate<T, S> {
+public interface NamedAggregate<T> {
     /**
      * Get the aggregate this named aggregate represents.
      * @return the aggregate this named aggregate represents
      */
     @CheckReturnValue
-    Aggregate<T, S> getAggregate();
+    Aggregate<T> getAggregate();
 
     /**
      * Get the name of this aggregate.

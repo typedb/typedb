@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.Match;
-import com.google.common.collect.ImmutableSet;
 import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.admin.Answer;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,24 +32,23 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
- * @param <S> the type of the {@link Match} results
  * @param <T> the type of the aggregate results
  */
-class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {
+class SelectAggregate<T> extends AbstractAggregate<Map<String, T>> {
 
-    private final ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates;
+    private final ImmutableSet<NamedAggregate<? extends T>> aggregates;
 
-    SelectAggregate(ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates) {
+    SelectAggregate(ImmutableSet<NamedAggregate<? extends T>> aggregates) {
         this.aggregates = aggregates;
     }
 
     @Override
-    public Map<String, T> apply(Stream<? extends S> stream) {
-        List<? extends S> list = stream.collect(toList());
+    public Map<String, T> apply(Stream<? extends Answer> stream) {
+        List<? extends Answer> list = stream.collect(toList());
 
         Map<String, T> map = new HashMap<>();
 
-        for (NamedAggregate<? super S, ? extends T> aggregate : aggregates) {
+        for (NamedAggregate<? extends T> aggregate : aggregates) {
             map.put(aggregate.getName(), aggregate.getAggregate().apply(list.stream()));
         }
 
@@ -66,7 +65,7 @@ class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        SelectAggregate<?, ?> that = (SelectAggregate<?, ?>) o;
+        SelectAggregate<?> that = (SelectAggregate<?>) o;
 
         return aggregates.equals(that.aggregates);
     }

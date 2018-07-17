@@ -93,7 +93,7 @@ abstract class AbstractMatch implements MatchAdmin {
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 

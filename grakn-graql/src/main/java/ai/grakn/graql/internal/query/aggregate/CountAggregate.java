@@ -19,15 +19,16 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
+import ai.grakn.graql.admin.Answer;
 
 import java.util.stream.Stream;
 
 /**
  * Aggregate that counts results of a {@link Match}.
  */
-class CountAggregate extends AbstractAggregate<Object, Long> {
+class CountAggregate extends AbstractAggregate<Long> {
     @Override
-    public Long apply(Stream<?> stream) {
+    public Long apply(Stream<? extends Answer> stream) {
         return stream.count();
     }
 

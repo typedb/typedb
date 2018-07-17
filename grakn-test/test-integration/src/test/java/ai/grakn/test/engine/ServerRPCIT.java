@@ -36,6 +36,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -71,7 +72,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.label;
+import static ai.grakn.graql.Graql.max;
+import static ai.grakn.graql.Graql.mean;
+import static ai.grakn.graql.Graql.median;
+import static ai.grakn.graql.Graql.min;
+import static ai.grakn.graql.Graql.std;
+import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
@@ -415,6 +425,72 @@ public class ServerRPCIT {
                     0,
                     tx.graql().compute(CLUSTER).using(K_CORE)
                     .in("human", "animal", "pet-ownership").execute().getClusters().get().size());
+        }
+    }
+
+    @Test
+    public void whenPerformingAggregateQueries_theResultsAreCorrect() {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.BATCH.WRITE)) {
+            EntityType person = tx.putEntityType("person");
+            AttributeType name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType age = tx.putAttributeType("age", DataType.INTEGER);
+            AttributeType rating = tx.putAttributeType("rating", DataType.DOUBLE);
+
+            person.has(name).has(age).has(rating);
+
+            Entity alice = person.create().has(name.create("Alice")).has(age.create(20));
+            Entity bob = person.create().has(name.create("Bob")).has(age.create(22));
+
+            AggregateQuery<Number> nullQuery =
+                    tx.graql().match(var("x").isa("person").has("rating", var("y"))).aggregate(sum("y"));
+            assertNull(nullQuery.execute());
+
+            AggregateQuery<Boolean> askQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(ask());
+            assertTrue(askQuery.execute());
+
+            AggregateQuery<Long> countQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count());
+            assertEquals(2L, countQuery.execute().longValue());
+
+            AggregateQuery<Number> sumAgeQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(sum("y"));
+            assertEquals(42, sumAgeQuery.execute().intValue());
+
+            AggregateQuery<Number> minAgeQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(min("y"));
+            assertEquals(20, minAgeQuery.execute().intValue());
+
+            AggregateQuery<Number> maxAgeQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(max("y"));
+            assertEquals(22, maxAgeQuery.execute().intValue());
+
+            AggregateQuery<Number> meanAgeQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(mean("y"));
+            assertEquals(21.0d, meanAgeQuery.execute().doubleValue(), 0.01d);
+
+            AggregateQuery<Number> medianAgeQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(median("y"));
+            assertEquals(21.0d, medianAgeQuery.execute().doubleValue(), 0.01d);
+
+            AggregateQuery<Number> stdAgeQuery =
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(std("y"));
+            int n = 2;
+            double mean = (20 + 22) / n;
+            double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
+            double std = Math.sqrt(var);
+            assertEquals(std, stdAgeQuery.execute().doubleValue(), 0.0001d);
+
+            // TODO: Enabble the test below once we fix Group Aggregate response through GRPC
+//            AggregateQuery<Map<Concept, List<Answer>>> groupByAgeQuery =
+//                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(group("y"));
+//            Map<Concept, List<Answer>> groups = groupByAgeQuery.execute();
+//            assertEquals(2, groups.keySet().size());
+//            groups.forEach((Concept attribute, List<Answer> answers) -> {
+//                answers.forEach(answer -> {
+//                    assertTrue(answer.get("x").asEntity().attributes(name).collect(toSet()).contains(attribute));
+//                });
+//            });
         }
     }
 

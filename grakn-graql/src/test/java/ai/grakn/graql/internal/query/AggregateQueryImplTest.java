@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import org.junit.Test;
@@ -35,8 +34,8 @@ public class AggregateQueryImplTest {
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
-    private final Aggregate<Object, Long> aggregate1 = Aggregates.count();
-    private final Aggregate<Answer, Number> aggregate2 = Aggregates.sum(Graql.var("x"));
+    private final Aggregate<Long> aggregate1 = Aggregates.count();
+    private final Aggregate<Number> aggregate2 = Aggregates.sum(Graql.var("x"));
 
     @Test
     public void aggregateQueriesWithTheSameMatchAndAggregatesAreEqual() {
