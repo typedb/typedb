@@ -161,7 +161,7 @@ ResponseConverter.prototype.rolePlayersMap = async function (resp) {
     const iterId = resp.getConceptmethodRes().getResponse().getRelationRoleplayersmapIter().getId();
     const getterMethod = "getRelationRoleplayersmapIterRes";
     const iterator = this.iteratorFactory.createRolePlayerIterator(iterId, getterMethod);
-    const rolePlayers = await iterator.collectAll();
+    const rolePlayers = await iterator.collect();
     // Temp map to store String id to Role object
     const tempMap = new Map(rolePlayers.map(entry => [entry.role.id, entry.role]));
     const map = new Map();

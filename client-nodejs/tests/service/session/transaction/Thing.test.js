@@ -41,7 +41,7 @@ describe("Thing methods", () => {
         const personType = await tx.putEntityType('person');
         const parent = await personType.create();
         await relationship.assign(parentRole, parent);
-        const rels = await (await parent.relationships()).collectAll();
+        const rels = await (await parent.relationships()).collect();
         expect(rels.length).toBe(1);
         expect(rels[0].id).toBe(relationship.id);
     });
@@ -59,7 +59,7 @@ describe("Thing methods", () => {
         const parenthoodRel2 = await relationshipType.create();
         await parenthoodRel2.assign(parentRole, person);
 
-        const parentRelationships = await (await person.relationships(parentRole)).collectAll();
+        const parentRelationships = await (await person.relationships(parentRole)).collect();
         expect(parentRelationships.length).toBe(2);
 
         //Second relationship type
@@ -69,7 +69,7 @@ describe("Thing methods", () => {
         await employmentRel.assign(employerRole, person);
 
 
-        const employerRelationships = await (await person.relationships(employerRole)).collectAll();
+        const employerRelationships = await (await person.relationships(employerRole)).collect();
         expect(employerRelationships.length).toBe(1);
         expect(employerRelationships[0].id).toBe(employmentRel.id);
     });
@@ -81,7 +81,7 @@ describe("Thing methods", () => {
         const personType = await tx.putEntityType('person');
         const parent = await personType.create();
         await relationship.assign(parentRole, parent);
-        const roles = await (await parent.roles()).collectAll();
+        const roles = await (await parent.roles()).collect();
         expect(roles.length).toBe(1);
         expect(roles[0].id).toBe(parentRole.id);
     });
@@ -93,11 +93,11 @@ describe("Thing methods", () => {
         const person = await personType.create();
         const name = await attrType.create('Marco');
         await person.has(name);
-        const attrs = await (await person.attributes()).collectAll();
+        const attrs = await (await person.attributes()).collect();
         expect(attrs.length).toBe(1);
         expect(attrs[0].id).toBe(name.id);
         await person.unhas(name);
-        const emptyAttrs = await (await person.attributes()).collectAll();
+        const emptyAttrs = await (await person.attributes()).collect();
         expect(emptyAttrs.length).toBe(0);
     });
 
@@ -113,12 +113,12 @@ describe("Thing methods", () => {
         const name = await attrType.create('Marco');
         await person.has(name);
         await person.has(notMarried);
-        const attrs = await (await person.attributes()).collectAll();
+        const attrs = await (await person.attributes()).collect();
         expect(attrs.length).toBe(2);
         attrs.forEach(att => { expect(att.isAttribute()).toBeTruthy(); });
-        const filteredAttrs = await (await person.attributes(attrMarriedType)).collectAll();
+        const filteredAttrs = await (await person.attributes(attrMarriedType)).collect();
         expect(filteredAttrs.length).toBe(1);
-        const empty = await (await person.attributes(whateverType)).collectAll();
+        const empty = await (await person.attributes(whateverType)).collect();
         expect(empty.length).toBe(0);
     });
 
@@ -137,15 +137,15 @@ describe("Thing methods", () => {
         await person.has(personName);
         await person.has(personSurname);
 
-        const keys = await (await person.keys()).collectAll();
+        const keys = await (await person.keys()).collect();
         expect(keys.length).toBe(1);
         expect(keys[0].id).toBe(personName.id);
 
-        const filteredKeys = await (await person.keys(nameType, surnameType)).collectAll();
+        const filteredKeys = await (await person.keys(nameType, surnameType)).collect();
         expect(filteredKeys.length).toBe(1);
         expect(filteredKeys[0].id).toBe(personName.id);
 
-        const emptyKeys = await (await person.keys(surnameType)).collectAll();
+        const emptyKeys = await (await person.keys(surnameType)).collect();
         expect(emptyKeys.length).toBe(0);
     });
 });

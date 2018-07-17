@@ -1,5 +1,5 @@
 const Transaction = require("./Transaction");
-const SessionService = require("./service/Session");
+const SessionService = require("./service/Session/SessionService");
 
 
 /**

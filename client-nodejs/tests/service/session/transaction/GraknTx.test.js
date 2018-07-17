@@ -41,7 +41,7 @@ describe("Transaction methods", () => {
   test("Ensure no duplicates in metatypes", async () => {
     await tx.query("define person sub entity;");
     const result = await tx.query("match $x sub entity; get;");
-    const concepts = (await result.collectAll()).map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
+    const concepts = (await result.collect()).map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
     expect(concepts.length).toBe(2);
     const set = new Set(concepts.map(concept => concept.id));
     expect(set.size).toBe(2);
@@ -50,7 +50,7 @@ describe("Transaction methods", () => {
   test("execute query with no results", async () => {
     await tx.query("define person sub entity;");
     const result = await tx.query("match $x isa person; get;")
-    const emptyArray = await result.collectAll();
+    const emptyArray = await result.collect();
     expect(emptyArray).toHaveLength(0);
   });
 
@@ -102,7 +102,7 @@ describe("Transaction methods", () => {
     const middleNameAttributeType = await tx.putAttributeType("middlename", env.dataType().STRING);
     const a1 = await firstNameAttributeType.create('James');
     const a2 = await middleNameAttributeType.create('James');
-    const attributes = await (await tx.getAttributesByValue('James', env.dataType().STRING)).collectAll();
+    const attributes = await (await tx.getAttributesByValue('James', env.dataType().STRING)).collect();
     expect(attributes.length).toBe(2);
     expect(attributes.filter(a => a.id === a1.id).length).toBe(1);
     expect(attributes.filter(a => a.id === a2.id).length).toBe(1);
@@ -110,7 +110,7 @@ describe("Transaction methods", () => {
       expect(attr.isAttribute()).toBeTruthy();
       expect(await attr.value()).toBe('James');
     });
-    const bondAttributes = await (await tx.getAttributesByValue('Bond', env.dataType().STRING)).collectAll();
+    const bondAttributes = await (await tx.getAttributesByValue('Bond', env.dataType().STRING)).collect();
     expect(bondAttributes).toHaveLength(0);
   });
 });

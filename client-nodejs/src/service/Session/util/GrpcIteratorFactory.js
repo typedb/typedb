@@ -1,4 +1,4 @@
-const TxRequestBuilder = require("./TxRequestBuilder");
+const RequestBuilder = require("./RequestBuilder");
 
 function GrpcIteratorFactory(conceptFactory, communicator) {
   this.communicator = communicator;
@@ -6,16 +6,16 @@ function GrpcIteratorFactory(conceptFactory, communicator) {
 }
 
 GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
-  return new GrpcQueryIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId));
+  return new GrpcQueryIterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId));
 };
 GrpcIteratorFactory.prototype.createAttributesIterator = function (iteratorId) {
-  return new AttributesIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId));
+  return new AttributesIterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId));
 };
 GrpcIteratorFactory.prototype.createConceptIterator = function (iteratorId, method) {
-  return new GrpcConceptIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
+  return new GrpcConceptIterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId), method);
 };
 GrpcIteratorFactory.prototype.createRolePlayerIterator = function (iteratorId, method) {
-  return new GrpcRolePlayerIterator(this.conceptFactory, this.communicator, TxRequestBuilder.nextReq(iteratorId), method);
+  return new GrpcRolePlayerIterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId), method);
 };
 
 // -- Query Iterator -- // 
@@ -50,7 +50,7 @@ function GrpcQueryIterator(conceptFactory, communicator, nextRequest) {
       .catch(e => { throw e; });
   }
 
-  this.collectAll = async () => {
+  this.collect = async () => {
     const results = [];
     let result = await this.next();
     while (result) {
@@ -79,7 +79,7 @@ function GrpcConceptIterator(conceptFactory, communicator, nextRequest, getterMe
       .catch(e => { throw e; });
   }
 
-  this.collectAll = async () => {
+  this.collect = async () => {
     const results = [];
     let result = await this.next();
     while (result) {
@@ -110,7 +110,7 @@ function GrpcRolePlayerIterator(conceptFactory, communicator, nextRequest, gette
       .catch(e => { throw e; });
   }
 
-  this.collectAll = async () => {
+  this.collect = async () => {
     const results = [];
     let result = await this.next();
     while (result) {
@@ -138,7 +138,7 @@ function AttributesIterator(conceptFactory, communicator, nextRequest) {
       .catch(e => { throw e; });
   }
 
-  this.collectAll = async () => {
+  this.collect = async () => {
     const results = [];
     let result = await this.next();
     while (result) {

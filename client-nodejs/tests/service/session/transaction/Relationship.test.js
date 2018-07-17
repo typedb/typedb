@@ -34,7 +34,7 @@ describe("Relationsihp methods", () => {
         expect(map.size).toBe(2);
         Array.from(map.keys()).forEach(key => { expect(key.isRole()).toBeTruthy(); });
         Array.from(map.values()).forEach(set => { expect(Array.from(set).length).toBe(1); });
-        const rolePlayers = await (await relationship.rolePlayers()).collectAll();
+        const rolePlayers = await (await relationship.rolePlayers()).collect();
         expect(rolePlayers.length).toBe(2);
     });
 
@@ -51,7 +51,7 @@ describe("Relationsihp methods", () => {
         expect(map.size).toBe(1);
         Array.from(map.keys()).forEach(key => { expect(key.isRole()).toBeTruthy(); });
         Array.from(map.values()).forEach(set => { expect(Array.from(set).length).toBe(2); });
-        const rolePlayers = await (await relationship.rolePlayers()).collectAll();
+        const rolePlayers = await (await relationship.rolePlayers()).collect();
         expect(rolePlayers.length).toBe(2);
     });
 
@@ -68,7 +68,7 @@ describe("Relationsihp methods", () => {
         expect(map.size).toBe(2);
         Array.from(map.keys()).forEach(key => { expect(key.isRole()).toBeTruthy(); });
         Array.from(map.values()).forEach(set => { expect(Array.from(set).length).toBe(1); });
-        const rolePlayers = await (await relationship.rolePlayers()).collectAll();
+        const rolePlayers = await (await relationship.rolePlayers()).collect();
         expect(rolePlayers.length).toBe(1);
         expect(rolePlayers[0].isThing()).toBeTruthy();
     });
@@ -79,15 +79,15 @@ describe("Relationsihp methods", () => {
         const parentRole = await tx.putRole('parent');
         const personType = await tx.putEntityType('person');
         const person = await personType.create();
-        const emptyRolePlayers = await (await relationship.rolePlayers()).collectAll();
+        const emptyRolePlayers = await (await relationship.rolePlayers()).collect();
         expect(emptyRolePlayers.length).toBe(0);
         await relationship.assign(parentRole, person);
-        const rolePlayers = await (await relationship.rolePlayers()).collectAll();
+        const rolePlayers = await (await relationship.rolePlayers()).collect();
         expect(rolePlayers.length).toBe(1);
         expect(rolePlayers[0].isThing()).toBeTruthy();
         expect(rolePlayers[0].id).toBe(person.id);
         await relationship.unassign(parentRole, person);
-        const rolePlayersRemoved = await (await relationship.rolePlayers()).collectAll();
+        const rolePlayersRemoved = await (await relationship.rolePlayers()).collect();
         expect(rolePlayersRemoved.length).toBe(0);
 
     });
@@ -102,13 +102,13 @@ describe("Relationsihp methods", () => {
         const child = await personType.create();
         await relationship.assign(parentRole, parent);
         await relationship.assign(childRole, child);
-        const rolePlayers = await (await relationship.rolePlayers()).collectAll();
+        const rolePlayers = await (await relationship.rolePlayers()).collect();
         expect(rolePlayers.length).toBe(2);
-        const filteredRolePlayers = await (await relationship.rolePlayers(childRole)).collectAll();
+        const filteredRolePlayers = await (await relationship.rolePlayers(childRole)).collect();
         expect(filteredRolePlayers.length).toBe(1);
         const player = filteredRolePlayers[0];
         expect(player.id).toBe(child.id);
-        const doubleRolePlayers = await (await relationship.rolePlayers(childRole, parentRole)).collectAll();
+        const doubleRolePlayers = await (await relationship.rolePlayers(childRole, parentRole)).collect();
         expect(doubleRolePlayers.length).toBe(2);
     });
 });
