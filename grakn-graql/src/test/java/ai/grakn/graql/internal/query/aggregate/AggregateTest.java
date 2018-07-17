@@ -27,19 +27,17 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.matcher.MovieMatchers;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;

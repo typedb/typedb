@@ -83,10 +83,14 @@ public class RequestBuilder {
             return query(query.toString(), query.inferring());
         }
 
+        public static SessionProto.Transaction.Req query(String queryString) {
+            return query(queryString, true);
+        }
+
         public static SessionProto.Transaction.Req query(String queryString, boolean infer) {
             SessionProto.Transaction.Query.Req request = SessionProto.Transaction.Query.Req.newBuilder()
                     .setQuery(queryString)
-                    .setInfer(infer)
+                    .setInfer(infer ? SessionProto.Transaction.Query.INFER.TRUE : SessionProto.Transaction.Query.INFER.FALSE)
                     .build();
             return SessionProto.Transaction.Req.newBuilder().setQueryReq(request).build();
         }
