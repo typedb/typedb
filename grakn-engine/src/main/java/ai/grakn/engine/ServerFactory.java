@@ -120,9 +120,9 @@ public class ServerFactory {
     }
 
     private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
-        PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
+//        PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
-        taskRunner.register(postProcessingTask);
+//        taskRunner.register(postProcessingTask);
         return taskRunner;
     }
 

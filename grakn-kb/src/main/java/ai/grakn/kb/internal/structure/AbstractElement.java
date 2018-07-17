@@ -145,17 +145,17 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param value The new value of the unique property
      */
     public void propertyUnique(P key, String value){
-        if(!tx().isBatchTx()) {
-            GraphTraversal<Vertex, Vertex> traversal = tx().getTinkerTraversal().V().has(key.name(), value);
-
-            if(traversal.hasNext()){
-                Vertex vertex = traversal.next();
-                if(!vertex.equals(element()) || traversal.hasNext()){
-                    if(traversal.hasNext()) vertex = traversal.next();
-                    throw PropertyNotUniqueException.cannotChangeProperty(element(), vertex, key, value);
-                }
-            }
-        }
+//        if(!tx().isBatchTx()) {
+//            GraphTraversal<Vertex, Vertex> traversal = tx().getTinkerTraversal().V().has(key.name(), value);
+//
+//            if(traversal.hasNext()){
+//                Vertex vertex = traversal.next();
+//                if(!vertex.equals(element()) || traversal.hasNext()){
+//                    if(traversal.hasNext()) vertex = traversal.next();
+//                    throw PropertyNotUniqueException.cannotChangeProperty(element(), vertex, key, value);
+//                }
+//            }
+//        }
 
         property(key, value);
     }
