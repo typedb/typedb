@@ -1,6 +1,6 @@
 const TxRequestBuilder = require("./util/TxRequestBuilder");
 const GrpcCommunicator = require("./util/GrpcCommunicator");
-const ConceptFactory = require("../../concept/ConceptFactory");
+const ConceptFactory = require("./concept/ConceptFactory");
 const ResponseConverter = require("./util/ResponseConverter");
 
 /**

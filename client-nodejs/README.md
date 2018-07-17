@@ -2,7 +2,7 @@
 
 A Node.js client for [Grakn](https://grakn.ai)
 
-Requires Grakn 1.3.0
+Requires Grakn 1.3.0 && Node >= 6.5.0
 
 # Installation
 
@@ -52,12 +52,12 @@ on the Grakn object the following methods are available:
 
 **Grakn**
 
-| Method                                   | Return type                                                                                                        | Description                                               |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| `session(String keyspace)`               | *GraknSession*                                                                                                     | Return a new GraknSession bound to the specified keyspace |
-| async `keyspace.delete(String keyspace)` | *void*                                                                                                             | Deletes the specified keyspace                            |
-| async `keyspace.retrieve()`              | Array of *String*                                                                                                  | Retrieves all available keyspaces                         |
-| `close()`                                | Closes all the connections and services. This must be used in order to gracefully close communication with server. |
+| Method                                   | Return type       | Description                                                                                                        |
+| ---------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `session(String keyspace)`               | *GraknSession*    | Return a new GraknSession bound to the specified keyspace                                                          |
+| async `keyspace.delete(String keyspace)` | *void*            | Deletes the specified keyspace                                                                                     |
+| async `keyspace.retrieve()`              | Array of *String* | Retrieves all available keyspaces                                                                                  |
+| `close()`                                | *void*            | Closes all the connections and services. This must be used in order to gracefully close communication with server. |
 
 
 
@@ -65,28 +65,28 @@ on the GraknSession the following methods are available:
 
 **GraknSession**
 
-| Method                            | Return type | Description                                                |
-| --------------------------------- | ----------- | ---------------------------------------------------------- |
-| async `transaction(Grakn.txType)` | *GraknTx*   | Return a new GraknTx bound to the keyspace of this session |
+| Method                            | Return type   | Description                                                    |
+| --------------------------------- | ------------- | -------------------------------------------------------------- |
+| async `transaction(Grakn.txType)` | *Transaction* | Return a new Transaction bound to the keyspace of this session |
  
 
-Once obtained a `GraknTx` you will be able to:
+Once obtained a `Transaction` you will be able to:
 
- **GraknTx**  
+ **Transaction**  
  
-| Method                                                       | Return type                          | Description                                                                                                                                                   |
-| ------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| async `query(String graqlQuery)`                             | Iterator of Map<*String*, *Concept*> | Executes a Graql query on the session keyspace. It returns a list of Maps, in each map the key represents the Graql variable specified in the query           |
-| async `commit()`                                             | *void*                               | Commit current GraknTx, persisting changes in the graph. After committing, the transaction will be closed and you will need to get a new one from the session |
-| async `close()`                                              | *void*                               | Closes current GraknTx without committing. This makes the transaction unusable.                                                                               |
-| async `getConcept(String conceptId)`                         | *Concept* or *null*                  | Retrieves a Concept by ConceptId                                                                                                                              |
-| async `getSchemaConcept(String label)`                       | *SchemaConcept* or *null*            | Retrieves a SchemaConcept by label                                                                                                                            |
-| async `getAttributesByValue(attributeValue, Grakn.dataType)` | Iterator of *Attribute*              | Get all Attributes holding the value provided, if any exists                                                                                                  |
-| async `putEntityType(String label)`                          | *EntityType*                         | Create a new EntityType with super-type entity, or return a pre-existing EntityType with the specified label                                                  |
-| async `putRelationshipType(String label)`                    | *RelationshipType*                   | Create a new RelationshipType with super-type relation, or return a pre-existing RelationshipType with the specified label                                    |
-| async `putAttributeType(String label, Grakn.dataType)`       | *AttributeType*                      | Create a new AttributeType with super-type attribute, or return a pre-existing AttributeType with the specified label and DataType                            |
-| async `putRole(String label)`                                | *Role*                               | Create a Role, or return a pre-existing Role, with the specified label.                                                                                       |
-| async `putRule(String label, String when, String then)`      | *Rule*                               | Create a Rule, or return a pre-existing Rule, with the specified label                                                                                        |
+| Method                                                       | Return type                          | Description                                                                                                                                                       |
+| ------------------------------------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| async `query(String graqlQuery)`                             | Iterator of Map<*String*, *Concept*> | Executes a Graql query on the session keyspace. It returns a list of Maps, in each map the key represents the Graql variable specified in the query               |
+| async `commit()`                                             | *void*                               | Commit current Transaction, persisting changes in the graph. After committing, the transaction will be closed and you will need to get a new one from the session |
+| async `close()`                                              | *void*                               | Closes current Transaction without committing. This makes the transaction unusable.                                                                               |
+| async `getConcept(String conceptId)`                         | *Concept* or *null*                  | Retrieves a Concept by ConceptId                                                                                                                                  |
+| async `getSchemaConcept(String label)`                       | *SchemaConcept* or *null*            | Retrieves a SchemaConcept by label                                                                                                                                |
+| async `getAttributesByValue(attributeValue, Grakn.dataType)` | Iterator of *Attribute*              | Get all Attributes holding the value provided, if any exists                                                                                                      |
+| async `putEntityType(String label)`                          | *EntityType*                         | Create a new EntityType with super-type entity, or return a pre-existing EntityType with the specified label                                                      |
+| async `putRelationshipType(String label)`                    | *RelationshipType*                   | Create a new RelationshipType with super-type relation, or return a pre-existing RelationshipType with the specified label                                        |
+| async `putAttributeType(String label, Grakn.dataType)`       | *AttributeType*                      | Create a new AttributeType with super-type attribute, or return a pre-existing AttributeType with the specified label and DataType                                |
+| async `putRole(String label)`                                | *Role*                               | Create a Role, or return a pre-existing Role, with the specified label.                                                                                           |
+| async `putRule(String label, String when, String then)`      | *Rule*                               | Create a Rule, or return a pre-existing Rule, with the specified label                                                                                            |
 
 **Concepts hierarchy** 
 

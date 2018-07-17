@@ -18,7 +18,7 @@ afterEach(() => {
   tx.close();
 });
 
-describe("GraknTx methods", () => {
+describe("Transaction methods", () => {
 
   test("getConcept", async () => {
     await tx.query("define person sub entity;");
