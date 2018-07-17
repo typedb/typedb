@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -35,10 +35,10 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class JoinExplanation extends Explanation {
+public class JoinExplanation extends QueryExplanation {
 
-    public JoinExplanation(List<Answer> answers){ super(answers);}
-    public JoinExplanation(ReasonerQueryImpl q, Answer mergedAnswer){
+    public JoinExplanation(List<ConceptMap> answers){ super(answers);}
+    public JoinExplanation(ReasonerQueryImpl q, ConceptMap mergedAnswer){
         super(q, q.selectAtoms().stream()
                 .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
                 .map(ReasonerQueries::atomic)
@@ -48,8 +48,8 @@ public class JoinExplanation extends Explanation {
     }
 
     @Override
-    public AnswerExplanation childOf(Answer ans) {
-        return new JoinExplanation(ReasonerUtils.listUnion(this.getAnswers(), ans.getExplanation().getAnswers()));
+    public Explanation childOf(ConceptMap ans) {
+        return new JoinExplanation(ReasonerUtils.listUnion(this.getAnswers(), ans.explanation().getAnswers()));
     }
 
     @Override

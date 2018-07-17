@@ -22,7 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -303,7 +303,7 @@ public class InferenceRule {
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
-        Answer partialSubPrime = parentAtom.getParentQuery()
+        ConceptMap partialSubPrime = parentAtom.getParentQuery()
                 .getSubstitution()
                 .unify(ruleUnifierInverse);
 

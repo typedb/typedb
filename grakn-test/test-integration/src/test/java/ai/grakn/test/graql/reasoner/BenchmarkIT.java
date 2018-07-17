@@ -36,7 +36,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -372,13 +372,13 @@ public class BenchmarkIT {
         }
     }
 
-    private List<Answer> executeQuery(String queryString, GraknTx graph, String msg){
+    private List<ConceptMap> executeQuery(String queryString, GraknTx graph, String msg){
         return executeQuery(graph.graql().infer(true).parse(queryString), msg);
     }
 
-    private List<Answer> executeQuery(GetQuery query, String msg) {
+    private List<ConceptMap> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<ConceptMap> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

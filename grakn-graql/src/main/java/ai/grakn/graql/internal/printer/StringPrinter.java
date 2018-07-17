@@ -25,7 +25,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.util.StringUtil;
 
@@ -148,7 +148,7 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder queryAnswer(Answer answer) {
+    public StringBuilder queryAnswer(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
         if (answer.isEmpty()) builder.append("{}");

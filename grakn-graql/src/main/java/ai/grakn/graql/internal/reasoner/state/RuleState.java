@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -41,7 +41,7 @@ public class RuleState extends QueryStateBase{
     private final InferenceRule rule;
     private final Iterator<ResolutionState> bodyIterator;
 
-    public RuleState(InferenceRule rule, Answer sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, unifier, parent, visitedSubGoals, cache);
         this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals, cache));
         this.rule = rule;
@@ -50,7 +50,7 @@ public class RuleState extends QueryStateBase{
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
-        Answer answer = state.getAnswer();
+        ConceptMap answer = state.getAnswer();
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState(), rule) : null;
     }
 
@@ -60,7 +60,7 @@ public class RuleState extends QueryStateBase{
     }
 
     @Override
-    Answer consumeAnswer(AnswerState state) {
+    ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
     }
 }

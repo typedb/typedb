@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import java.util.List;
 
@@ -32,21 +32,21 @@ import java.util.List;
  * @author Kasper Piskorski
  *
  */
-public class LookupExplanation extends Explanation {
+public class LookupExplanation extends QueryExplanation {
 
     public LookupExplanation(ReasonerQuery q){ super(q);}
-    private LookupExplanation(ReasonerQuery q, List<Answer> answers){
+    private LookupExplanation(ReasonerQuery q, List<ConceptMap> answers){
         super(q, answers);
     }
 
     @Override
-    public AnswerExplanation setQuery(ReasonerQuery q){
+    public Explanation setQuery(ReasonerQuery q){
         return new LookupExplanation(q);
     }
 
     @Override
-    public AnswerExplanation childOf(Answer ans) {
-        return new LookupExplanation(getQuery(), ans.getExplanation().getAnswers());
+    public Explanation childOf(ConceptMap ans) {
+        return new LookupExplanation(getQuery(), ans.explanation().getAnswers());
     }
 
     @Override

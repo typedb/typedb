@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 
 import java.util.Iterator;
@@ -33,17 +33,17 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class LazyAnswerIterator extends LazyIterator<Answer> {
+public class LazyAnswerIterator extends LazyIterator<ConceptMap> {
 
-    public LazyAnswerIterator(Stream<Answer> stream){ super(stream);}
-    private LazyAnswerIterator(Iterator<Answer> iterator){ super(iterator);}
+    public LazyAnswerIterator(Stream<ConceptMap> stream){ super(stream);}
+    private LazyAnswerIterator(Iterator<ConceptMap> iterator){ super(iterator);}
 
     public LazyAnswerIterator unify(MultiUnifier unifier){
         if (unifier.isEmpty()) return this;
         return new LazyAnswerIterator(stream().flatMap(a -> a.unify(unifier)).iterator());
     }
 
-    public LazyAnswerIterator merge (Stream<Answer> stream){
+    public LazyAnswerIterator merge (Stream<ConceptMap> stream){
         return new LazyAnswerIterator(Stream.concat(this.stream(), stream));
     }
 }

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,10 +28,10 @@ import java.util.stream.Stream;
 /**
  * An aggregate that changes {@link Match} results into a list.
  */
-class ListAggregate extends AbstractAggregate<List<Answer>> {
+class ListAggregate extends AbstractAggregate<List<ConceptMap>> {
 
     @Override
-    public List<Answer> apply(Stream<? extends Answer> stream) {
+    public List<ConceptMap> apply(Stream<? extends ConceptMap> stream) {
         return stream.collect(Collectors.toList());
     }
 

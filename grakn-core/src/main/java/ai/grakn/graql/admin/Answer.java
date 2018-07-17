@@ -18,156 +18,21 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.Var;
-
-import javax.annotation.CheckReturnValue;
-import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 
 /**
- *
- * <p>
- * Interface for query result class.
- * </p>
- *
- * @author Kasper Piskorski
- *
+ * An object that contains the answer of every Graql query.
+ * @param <T> the data structure in which the specific type of Answer is contained in.
  */
-public interface Answer {
+public interface Answer<T> {
 
-    @CheckReturnValue
-    Set<Var> vars();
+    T get();
 
-    @CheckReturnValue
-    Collection<Concept> concepts();
+    Explanation explanation();
 
-    @CheckReturnValue
-    Set<Map.Entry<Var, Concept>> entrySet();
+    Set<Explanation> explanations();
 
-    /**
-     * Return the {@link Concept} bound to the given variable name.
-     *
-     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
-     */
-    @CheckReturnValue
-    Concept get(String var);
+    Set<? extends Answer<T>> explicit();
 
-    /**
-     * Return the {@link Concept} bound to the given {@link Var}.
-     *
-     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
-     */
-    @CheckReturnValue
-    Concept get(Var var);
-
-    @CheckReturnValue
-    Map<Var, Concept> map();
-
-    @CheckReturnValue
-    boolean containsVar(Var var);
-
-    @CheckReturnValue
-    boolean containsAll(Answer ans);
-
-    @CheckReturnValue
-    boolean isEmpty();
-
-    @CheckReturnValue
-    int size();
-
-    void forEach(BiConsumer<Var, Concept> consumer);
-
-    /**
-     * perform an answer merge without explanation
-     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
-     *
-     * @param a2 answer to be merged with
-     * @return merged answer
-     */
-    @CheckReturnValue
-    Answer merge(Answer a2);
-
-    /**
-     * perform an answer merge with optional explanation
-     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
-     *
-     * @param a2          answer to be merged with
-     * @param explanation flag for providing explanation
-     * @return merged answer
-     */
-    @CheckReturnValue
-    Answer merge(Answer a2, boolean explanation);
-
-    /**
-     * explain this answer by providing explanation with preserving the structure of dependent answers
-     *
-     * @param exp explanation for this answer
-     * @return explained answer
-     */
-    Answer explain(AnswerExplanation exp);
-
-    /**
-     * @param vars variables defining the projection
-     * @return project the answer retaining the requested variables
-     */
-    @CheckReturnValue
-    Answer project(Set<Var> vars);
-
-    /**
-     * @param unifier set of mappings between variables
-     * @return unified answer
-     */
-    @CheckReturnValue
-    Answer unify(Unifier unifier);
-
-    /**
-     * @param multiUnifier set of unifiers defining variable mappings
-     * @return stream of unified answers
-     */
-    @CheckReturnValue
-    Stream<Answer> unify(MultiUnifier multiUnifier);
-
-    /**
-     * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
-     * @return stream of answers with expanded role hierarchy
-     */
-    @CheckReturnValue
-    Stream<Answer> expandHierarchies(Set<Var> toExpand);
-
-    /**
-     * @return an explanation object indicating how this answer was obtained
-     */
-    @CheckReturnValue
-    AnswerExplanation getExplanation();
-
-    /**
-     * @return set of answers corresponding to the explicit path
-     */
-    @CheckReturnValue
-    Set<Answer> getExplicitPath();
-
-    /**
-     * @return set of all answers taking part in the derivation of this answer
-     */
-    @CheckReturnValue
-    Set<Answer> getPartialAnswers();
-
-    /**
-     * @return all explanations taking part in the derivation of this answer
-     */
-    @CheckReturnValue
-    Set<AnswerExplanation> getExplanations();
-
-    /**
-     * @param parent query context
-     * @return (partial) set of predicates corresponding to this answer
-     */
-    @CheckReturnValue
-    Set<Atomic> toPredicates(ReasonerQuery parent);
-
+    Set<? extends Answer<T>> deductions();
 }

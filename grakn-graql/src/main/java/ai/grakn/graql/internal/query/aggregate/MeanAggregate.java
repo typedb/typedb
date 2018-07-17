@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -44,8 +44,8 @@ class MeanAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends Answer> stream) {
-        List<? extends Answer> list = stream.collect(toList());
+    public Number apply(Stream<? extends ConceptMap> stream) {
+        List<? extends ConceptMap> list = stream.collect(toList());
 
         long count = countAggregate.apply(list.stream());
 

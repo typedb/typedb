@@ -30,7 +30,7 @@ import javax.annotation.CheckReturnValue;
  * @author Kasper Piskorski
  *
  */
-public interface AnswerExplanation {
+public interface Explanation {
 
     /**
      * produce a new explanation with provided query set
@@ -38,7 +38,7 @@ public interface AnswerExplanation {
      * @return explanation with provided query
      */
     @CheckReturnValue
-    AnswerExplanation setQuery(ReasonerQuery q);
+    Explanation setQuery(ReasonerQuery q);
 
     /**
      * produce a new explanation with a provided parent answer
@@ -46,7 +46,7 @@ public interface AnswerExplanation {
      * @return new explanation with dependent answers
      */
     @CheckReturnValue
-    AnswerExplanation childOf(Answer ans);
+    Explanation childOf(ConceptMap ans);
 
     /**
      * @return query associated with this explanation
@@ -58,7 +58,7 @@ public interface AnswerExplanation {
      * @return answers this explanation is dependent on
      */
     @CheckReturnValue
-    ImmutableList<Answer> getAnswers();
+    ImmutableList<ConceptMap> getAnswers();
 
     /**
      *

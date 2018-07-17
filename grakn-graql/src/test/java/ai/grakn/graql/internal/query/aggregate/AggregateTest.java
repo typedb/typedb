@@ -25,21 +25,19 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.matcher.MovieMatchers;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;
@@ -83,10 +81,10 @@ public class AggregateTest {
 
     @Test
     public void testGroup() {
-        AggregateQuery<Map<Concept, List<Answer>>> groupQuery =
+        AggregateQuery<Map<Concept, List<ConceptMap>>> groupQuery =
                 qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
 
-        Map<Concept, List<Answer>> groups = groupQuery.execute();
+        Map<Concept, List<ConceptMap>> groups = groupQuery.execute();
 
         Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 

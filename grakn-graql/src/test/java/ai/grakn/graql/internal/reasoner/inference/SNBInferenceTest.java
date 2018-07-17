@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.rule.SampleKBContext;
@@ -132,11 +132,11 @@ public class SNBInferenceTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get;";
 
         long startTime = System.nanoTime();
-        List<Answer> limitedAnswers = limitedQuery.execute();
+        List<ConceptMap> limitedAnswers = limitedQuery.execute();
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
         assertCollectionsEqual(answers, qb.<GetQuery>parse(explicitQuery).execute());
         assertTrue(answers.containsAll(limitedAnswers));
@@ -303,8 +303,8 @@ public class SNBInferenceTest {
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; get $x, $z;";
         Unifier unifier = new UnifierImpl(ImmutableMap.of(Graql.var("z"), Graql.var("y")));
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 =  iqb.<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 =  iqb.<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
         assertCollectionsEqual(answers, answers2);
     }
 

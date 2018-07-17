@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.printer;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * An interface for print objects in Graql responses (e.g. {@link Integer}s and {@link Answer}s into a String).
+ * An interface for print objects in Graql responses (e.g. {@link Integer}s and {@link ConceptMap}s into a String).
  * The intermediate {@link Builder} type is used when the final type is different to the "in-progress" type when
  * creating it. For example, you may want to use a {@link StringBuilder} for {@link Builder} (for efficiency).
  *
@@ -102,8 +102,8 @@ public abstract class Printer<Builder> {
         else if (object instanceof Collection) {
             return collection((Collection<?>) object);
         }
-        else if (object instanceof Answer) {
-            return queryAnswer((Answer) object);
+        else if (object instanceof ConceptMap) {
+            return queryAnswer((ConceptMap) object);
         }
         else if (object instanceof ComputeQuery.Answer) {
             return computeAnswer((ComputeQuery.Answer) object);
@@ -162,14 +162,14 @@ public abstract class Printer<Builder> {
     protected abstract Builder map(Map<?, ?> map);
 
     /**
-     * Convert any {@link Answer} into its print builder
+     * Convert any {@link ConceptMap} into its print builder
      *
      * @param answer the answer to convert into its print builder
      * @return the map as a builder
      */
     @CheckReturnValue
-    protected Builder queryAnswer(Answer answer) {
-        return map(answer.map());
+    protected Builder queryAnswer(ConceptMap answer) {
+        return map(answer.get());
     }
 
     /**

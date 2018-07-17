@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.NamedAggregate;
-import ai.grakn.graql.admin.Answer;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 

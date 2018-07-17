@@ -40,9 +40,9 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
@@ -145,7 +145,7 @@ public class ServerRPCTest {
         when(qb.parse(QUERY)).thenReturn(query);
         when(qb.infer(anyBoolean())).thenReturn(qb);
 
-        when(query.execute()).thenAnswer(params -> Stream.of(new QueryAnswer()));
+        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMapImpl()));
 
         Set<Keyspace> keyspaceSet = new HashSet<>(Arrays.asList(Keyspace.of("testkeyspace1"), Keyspace.of("testkeyspace2")));
         when(mockedKeyspaceStore.keyspaces()).thenReturn(keyspaceSet);
@@ -300,9 +300,9 @@ public class ServerRPCTest {
         when(conceptY.isAttribute()).thenReturn(true);
         when(conceptY.asAttribute().type().label()).thenReturn(Label.of("L456"));
 
-        ImmutableList<Answer> answers = ImmutableList.of(
-                new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
+        ImmutableList<ConceptMap> answers = ImmutableList.of(
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         when(query.stream()).thenAnswer(params -> answers.stream());
@@ -360,9 +360,9 @@ public class ServerRPCTest {
         when(conceptY.isEntity()).thenReturn(true);
         when(conceptY.asEntity().type().label()).thenReturn(Label.of("L456"));
 
-        ImmutableList<Answer> answers = ImmutableList.of(
-                new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
+        ImmutableList<ConceptMap> answers = ImmutableList.of(
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate

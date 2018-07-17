@@ -18,9 +18,10 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
@@ -39,17 +40,17 @@ import java.util.List;
  */
 public class ExplanationBuilder {
 
-    public static List<Answer> buildExplanation(ai.grakn.graql.admin.Answer queryAnswer) {
+    public static List<Answer> buildExplanation(ConceptMap queryAnswer) {
         final List<Answer> explanation = new ArrayList<>();
-        queryAnswer.getExplanation().getAnswers().forEach(answer -> {
-            AnswerExplanation expl = answer.getExplanation();
+        queryAnswer.explanation().getAnswers().forEach(answer -> {
+            Explanation expl = answer.explanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            ai.grakn.graql.admin.Answer inferredAnswer = new QueryAnswer();
+            ConceptMap inferredAnswer = new ConceptMapImpl();
 
             if (expl.isLookupExplanation()){
                 ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.isResource()? atom : atom.rewriteWithRelationVariable());
                 inferredAnswer = ReasonerQueries.atomic(rewrittenQuery, answer).getQuery().stream()
-                        .findFirst().orElse(new QueryAnswer());
+                        .findFirst().orElse(new ConceptMapImpl());
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
                 ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(headAtom.isResource()? headAtom : headAtom.rewriteWithRelationVariable());
@@ -57,7 +58,7 @@ public class ExplanationBuilder {
                 inferredAnswer = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                         .map(Unifier::inverse)
                         .flatMap(unifier -> rewrittenQuery.materialise(answer.unify(unifier)))
-                        .findFirst().orElse(new QueryAnswer());
+                        .findFirst().orElse(new ConceptMapImpl());
             }
             explanation.add(Answer.create(inferredAnswer));
         });

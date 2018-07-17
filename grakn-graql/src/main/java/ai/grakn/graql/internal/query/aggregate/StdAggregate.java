@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import java.util.stream.Stream;
 
@@ -38,7 +38,7 @@ class StdAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends Answer> stream) {
+    public Number apply(Stream<? extends ConceptMap> stream) {
         Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().value().doubleValue());
 
         Iterable<Double> data = numStream::iterator;

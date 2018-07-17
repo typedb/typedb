@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 import java.util.Set;
@@ -43,7 +43,7 @@ class MatchTx extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
         // TODO: This is dodgy. We need to refactor the code to remove this behavior
         if (tx != null) throw GraqlQueryException.multipleTxs();
 

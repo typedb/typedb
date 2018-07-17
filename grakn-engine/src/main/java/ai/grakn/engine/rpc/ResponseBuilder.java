@@ -29,6 +29,8 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
@@ -271,8 +273,8 @@ public class ResponseBuilder {
         public static AnswerProto.Answer answer(Object object) {
             AnswerProto.Answer answer;
 
-            if (object instanceof ai.grakn.graql.admin.Answer) {
-                answer = AnswerProto.Answer.newBuilder().setQueryAnswer(queryAnswer((ai.grakn.graql.admin.Answer) object)).build();
+            if (object instanceof ConceptMap) {
+                answer = AnswerProto.Answer.newBuilder().setQueryAnswer(queryAnswer((ConceptMap) object)).build();
             } else if (object instanceof ComputeQuery.Answer) {
                 answer = AnswerProto.Answer.newBuilder().setComputeAnswer(computeAnswer((ComputeQuery.Answer) object)).build();
             } else {
@@ -283,22 +285,22 @@ public class ResponseBuilder {
             return answer;
         }
 
-        static AnswerProto.QueryAnswer queryAnswer(ai.grakn.graql.admin.Answer answer) {
+        static AnswerProto.QueryAnswer queryAnswer(ConceptMap answer) {
             AnswerProto.QueryAnswer.Builder queryAnswerProto = AnswerProto.QueryAnswer.newBuilder();
             answer.forEach((var, concept) -> {
                 ConceptProto.Concept conceptRps = ResponseBuilder.Concept.concept(concept);
                 queryAnswerProto.putQueryAnswer(var.getValue(), conceptRps);
             });
 
-            // TODO: answer.getExplanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.getExplanation() != null && answer.getExplanation().getQuery() != null) {
-                queryAnswerProto.setExplanation(explanation(answer.getExplanation()));
+            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                queryAnswerProto.setExplanation(explanation(answer.explanation()));
             }
 
             return queryAnswerProto.build();
         }
 
-        static AnswerProto.Explanation explanation(ai.grakn.graql.admin.AnswerExplanation explanation) {
+        static AnswerProto.Explanation explanation(Explanation explanation) {
             return AnswerProto.Explanation.newBuilder()
                     .setQueryPattern(explanation.getQuery().getPattern().toString())
                     .addAllQueryAnswer(explanation.getAnswers().stream()

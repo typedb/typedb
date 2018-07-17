@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answer>>{
+public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<ConceptMap>>{
 
     private final Map<Q, CacheEntry<Q, T>> cache = new HashMap<>();
     private final StructuralCache<Q> sCache;
@@ -126,7 +126,7 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
      * @param answers answer stream of the query
      * @return updated answer stream
      */
-    public abstract Stream<Answer> record(Q query, Stream<Answer> answers);
+    public abstract Stream<ConceptMap> record(Q query, Stream<ConceptMap> answers);
 
     /**
      * retrieve (possibly) cached answers for provided query
@@ -137,9 +137,9 @@ public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answ
 
     public abstract Pair<T, MultiUnifier> getAnswersWithUnifier(Q query);
 
-    public abstract Stream<Answer> getAnswerStream(Q query);
+    public abstract Stream<ConceptMap> getAnswerStream(Q query);
 
-    public abstract Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
+    public abstract Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
 
     /**
      * cache subtraction of specified queries

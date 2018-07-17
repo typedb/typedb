@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.MatchAdmin;
 
 import javax.annotation.CheckReturnValue;
@@ -32,11 +32,11 @@ import java.util.Set;
  * The {@link Match} is the pattern-matching part of a query. The patterns are described in a declarative fashion,
  * then the {@link Match} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * @see Answer
+ * @see ConceptMap
  *
  * @author Felix Chapman
  */
-public interface Match extends Streamable<Answer> {
+public interface Match extends Streamable<ConceptMap> {
     /**
      * Get all {@link Var}s mentioned in the query
      */

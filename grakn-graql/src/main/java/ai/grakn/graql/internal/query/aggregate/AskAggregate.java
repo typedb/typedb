@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import java.util.stream.Stream;
 
@@ -39,7 +39,7 @@ public class AskAggregate extends AbstractAggregate<Boolean> {
     }
 
     @Override
-    public Boolean apply(Stream<? extends Answer> stream) {
+    public Boolean apply(Stream<? extends ConceptMap> stream) {
         return stream.findAny().isPresent();
     }
 

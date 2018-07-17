@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -67,7 +67,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
     }
 
     @Override
-    public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
+    public Stream<ConceptMap> record(Q query, Stream<ConceptMap> answerStream) {
         //NB: stream collection!
         QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         return record(query, newAnswers).stream();
@@ -79,7 +79,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
      * @param answer specific answer to the query
      * @return recorded answer
      */
-    public Answer recordAnswer(Q query, Answer answer){
+    public ConceptMap recordAnswer(Q query, ConceptMap answer){
         return recordAnswer(query, answer, null);
     }
 
@@ -90,7 +90,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
      * @param unifier between the cached and input query
      * @return recorded answer
      */
-    public Answer recordAnswer(Q query, Answer answer, @Nullable MultiUnifier unifier){
+    public ConceptMap recordAnswer(Q query, ConceptMap answer, @Nullable MultiUnifier unifier){
         if(answer.isEmpty()) return answer;
         CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
         if (match != null) {
@@ -119,13 +119,13 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
     }
 
     @Override
-    public Stream<Answer> getAnswerStream(Q query) {
+    public Stream<ConceptMap> getAnswerStream(Q query) {
         return getAnswerStreamWithUnifier(query).getKey();
     }
 
     @Override
     public Pair<QueryAnswers, MultiUnifier> getAnswersWithUnifier(Q query) {
-        Pair<Stream<Answer>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
+        Pair<Stream<ConceptMap>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
         return new Pair<>(
                 new QueryAnswers(answerStreamWithUnifier.getKey().collect(Collectors.toSet())),
                 answerStreamWithUnifier.getValue()
@@ -133,7 +133,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
     }
 
     @Override
-    public Pair<Stream<Answer>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
+    public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
         CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
@@ -157,7 +157,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
      * @param ans sought specific answer to the query
      * @return found answer if any, otherwise empty answer
      */
-    public Answer getAnswer(Q query, Answer ans){
+    public ConceptMap getAnswer(Q query, ConceptMap ans){
         if(ans.isEmpty()) return ans;
         CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
         if (match != null) {
@@ -165,7 +165,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
 
             //NB: only used when checking for materialised answer duplicates
-            Answer answer = match.cachedElement().stream()
+            ConceptMap answer = match.cachedElement().stream()
                     .flatMap(a -> a.unify(multiUnifier))
                     .filter(a -> a.containsAll(ans))
                     .findFirst().orElse(null);
@@ -173,8 +173,8 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
         }
 
         //TODO should it create a cache entry?
-        List<Answer> answers = ReasonerQueries.create(query, ans).getQuery().execute();
-        return answers.isEmpty()? new QueryAnswer() : answers.iterator().next();
+        List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute();
+        return answers.isEmpty()? new ConceptMapImpl() : answers.iterator().next();
     }
 
     @Override

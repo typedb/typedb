@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import java.util.stream.Stream;
 
@@ -36,7 +36,7 @@ class SumAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends Answer> stream) {
+    public Number apply(Stream<? extends ConceptMap> stream) {
         // initial value is set to null so that we can return null if there is no Answers to consume
         return stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(null, this::add);
     }

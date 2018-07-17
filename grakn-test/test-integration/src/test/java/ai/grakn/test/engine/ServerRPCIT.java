@@ -41,7 +41,7 @@ import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -214,7 +214,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
-        List<Answer> answers;
+        List<ConceptMap> answers;
 
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             answers = tx.graql().match(var("x").sub("thing")).get().execute();
@@ -229,7 +229,7 @@ public class ServerRPCIT {
         assertThat(Sets.newHashSet(answers), hasSize(size));
 
         try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
-            for (Answer answer : answers) {
+            for (ConceptMap answer : answers) {
                 assertThat(answer.vars(), contains(var("x")));
                 assertNotNull(tx.getConcept(answer.get("x").id()));
             }
@@ -246,8 +246,8 @@ public class ServerRPCIT {
         
         Grakn.Session reasonerRemoteSession = Grakn.session(engine.grpcUri(), reasonerLocalSession.keyspace());
 
-        List<Answer> remoteAnswers;
-        List<Answer> localAnswers;
+        List<ConceptMap> remoteAnswers;
+        List<ConceptMap> localAnswers;
 
         final long limit = 3;
         String queryString = "match " +
@@ -273,7 +273,7 @@ public class ServerRPCIT {
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
 
-            Answer specificAnswer;
+            ConceptMap specificAnswer;
             try (Grakn.Transaction tx = reasonerRemoteSession.transaction(GraknTxType.READ)) {
                 specificAnswer = Iterables.getOnlyElement(tx.graql().infer(true).<GetQuery>parse(specificQuery).execute());
             }
@@ -282,23 +282,23 @@ public class ServerRPCIT {
         });
     }
 
-    private void testExplanation(Answer answer){
+    private void testExplanation(ConceptMap answer){
         answerHasConsistentExplanations(answer);
         checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
     }
 
     //ensures that each branch ends up with an lookup explanation
-    private void checkExplanationCompleteness(Answer answer){
+    private void checkExplanationCompleteness(ConceptMap answer){
         assertFalse("Non-lookup explanation misses children",
-                answer.getExplanations().stream()
+                answer.explanations().stream()
                         .filter(e -> !e.isLookupExplanation())
                         .anyMatch(e -> e.getAnswers().isEmpty())
         );
     }
 
-    private void checkAnswerConnectedness(Answer answer){
-        ImmutableList<Answer> answers = answer.getExplanation().getAnswers();
+    private void checkAnswerConnectedness(ConceptMap answer){
+        ImmutableList<ConceptMap> answers = answer.explanation().getAnswers();
         answers.forEach(a -> {
             TestCase.assertTrue("Disconnected answer in explanation",
                     answers.stream()
@@ -308,24 +308,24 @@ public class ServerRPCIT {
         });
     }
 
-    private void answerHasConsistentExplanations(Answer answer){
-        Set<Answer> answers = answer.getPartialAnswers().stream()
-                .filter(a -> !a.getExplanation().isJoinExplanation())
+    private void answerHasConsistentExplanations(ConceptMap answer){
+        Set<ConceptMap> answers = answer.deductions().stream()
+                .filter(a -> !a.explanation().isJoinExplanation())
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private boolean explanationConsistentWithAnswer(Answer ans){
-        ReasonerQuery query = ans.getExplanation().getQuery();
+    private boolean explanationConsistentWithAnswer(ConceptMap ans){
+        ReasonerQuery query = ans.explanation().getQuery();
         Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
-        return vars.containsAll(ans.map().keySet());
+        return vars.containsAll(ans.get().keySet());
     }
 
     @Test
     public void whenExecutingTwoSequentialQueries_ResultsAreTheSame() throws InterruptedException {
-        Set<Answer> answers1;
-        Set<Answer> answers2;
+        Set<ConceptMap> answers1;
+        Set<ConceptMap> answers2;
 
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
@@ -340,8 +340,8 @@ public class ServerRPCIT {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
-            Iterator<Answer> iterator1 = query.iterator();
-            Iterator<Answer> iterator2 = query.iterator();
+            Iterator<ConceptMap> iterator1 = query.iterator();
+            Iterator<ConceptMap> iterator2 = query.iterator();
 
             while (iterator1.hasNext() || iterator2.hasNext()) {
                 assertEquals(iterator1.next(), iterator2.next());
@@ -501,7 +501,7 @@ public class ServerRPCIT {
         ) {
             GetQuery query = remoteTx.graql().match(var("x")).get();
 
-            for (Answer answer : query) {
+            for (ConceptMap answer : query) {
                 Concept remoteConcept = answer.get("x");
                 Concept localConcept = localTx.getConcept(remoteConcept.id());
 
@@ -880,7 +880,7 @@ public class ServerRPCIT {
             Var x = var("x");
             Var y = var("y");
 
-            Collection<Answer> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
+            Collection<ConceptMap> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
             assertEquals(6, result.size());
 
             result = qb.match(x.isa("company-123")).get(x).execute();

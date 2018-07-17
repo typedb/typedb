@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -43,7 +43,7 @@ public class CumulativeState extends QueryStateBase{
     private final Iterator<ResolutionState> feederStateIterator;
 
     public CumulativeState(LinkedList<ReasonerQueryImpl> qs,
-                           Answer sub,
+                           ConceptMap sub,
                            Unifier u,
                            QueryStateBase parent,
                            Set<ReasonerAtomicQuery> subGoals,
@@ -59,7 +59,7 @@ public class CumulativeState extends QueryStateBase{
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer answer = getSubstitution().merge(state.getSubstitution(), true);
+        ConceptMap answer = getSubstitution().merge(state.getSubstitution(), true);
         if (subQueries.isEmpty()){
             return new AnswerState(answer, getUnifier(), getParentState());
         }
@@ -72,7 +72,7 @@ public class CumulativeState extends QueryStateBase{
     }
 
     @Override
-    Answer consumeAnswer(AnswerState state) {
+    ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
     }
 }

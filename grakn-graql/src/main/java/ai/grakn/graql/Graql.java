@@ -21,7 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -312,7 +312,7 @@ public class Graql {
      * @param var the variable to group results by
      */
     @CheckReturnValue
-    public static Aggregate<Map<Concept, List<Answer>>> group(String var) {
+    public static Aggregate<Map<Concept, List<ConceptMap>>> group(String var) {
         return group(var, Aggregates.list());
     }
 

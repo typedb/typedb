@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
@@ -41,7 +41,7 @@ import java.util.Set;
 public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
 
     public ConjunctiveState(ReasonerQueryImpl q,
-                            Answer sub,
+                            ConceptMap sub,
                             Unifier u,
                             QueryStateBase parent,
                             Set<ReasonerAtomicQuery> visitedSubGoals,
@@ -54,12 +54,12 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
-        Answer answer = state.getAnswer();
+        ConceptMap answer = state.getAnswer();
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override
-    Answer consumeAnswer(AnswerState state) {
+    ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
     }
 }

@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.DualLinearTransitivityMatrixKB;
@@ -330,8 +330,8 @@ public class RecursiveInferenceTest {
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
         assertCollectionsEqual(answers, explicitAnswers);
     }
 
@@ -380,8 +380,8 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa vertex; get;";
 
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
 
         assertCollectionsEqual(answers, explicitAnswers);
     }

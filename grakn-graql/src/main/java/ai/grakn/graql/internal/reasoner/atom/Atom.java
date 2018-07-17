@@ -22,14 +22,14 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -262,10 +262,10 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
+    public Atom inferTypes(){ return inferTypes(new ConceptMapImpl()); }
 
     @Override
-    public Atom inferTypes(Answer sub){ return this; }
+    public Atom inferTypes(ConceptMap sub){ return this; }
 
     /**
      * @return list of types this atom can take
@@ -276,7 +276,7 @@ public abstract class Atom extends AtomicBase {
      * @param sub partial substitution
      * @return list of possible atoms obtained by applying type inference
      */
-    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes(sub));}
+    public List<Atom> atomOptions(ConceptMap sub){ return Lists.newArrayList(inferTypes(sub));}
 
     /**
      * @param type to be added to this {@link Atom}
@@ -284,7 +284,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
-    public Stream<Answer> materialise(){ return Stream.empty();}
+    public Stream<ConceptMap> materialise(){ return Stream.empty();}
 
     public abstract Atom rewriteWithTypeVariable();
 

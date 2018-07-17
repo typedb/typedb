@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 import java.util.stream.Stream;
@@ -39,7 +39,7 @@ class MatchOrder extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
         return order.orderStream(inner.stream(tx));
     }
 

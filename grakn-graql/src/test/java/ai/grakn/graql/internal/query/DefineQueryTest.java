@@ -33,7 +33,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
@@ -283,7 +283,7 @@ public class DefineQueryTest {
         // Note that two variables refer to the same type. They should both be in the result
         DefineQuery query = qb.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
-        Answer result = query.execute();
+        ConceptMap result = query.execute();
         assertThat(result.vars(), containsInAnyOrder(type, type2));
         assertEquals(result.get(type), result.get(type2));
     }

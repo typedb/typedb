@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -93,7 +93,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
-    public ReasonerAtomicQuery withSubstitution(Answer sub){
+    public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
         return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
     }
 
@@ -164,20 +164,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param answer to be materialised
      * @return stream of materialised answers
      */
-    public Stream<Answer> materialise(Answer answer) {
+    public Stream<ConceptMap> materialise(ConceptMap answer) {
         return this.withSubstitution(answer)
                 .getAtom()
                 .materialise()
-                .map(ans -> ans.explain(answer.getExplanation()));
+                .map(ans -> ans.explain(answer.explanation()));
     }
 
     @Override
-    public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
-    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+    protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
         Atom atom = getAtom();
         return atom.getSchemaConcept() == null?
                 atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
@@ -186,9 +186,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
-                .map(a -> a.explain(a.getExplanation().setQuery(this)))
+                .map(a -> a.explain(a.explanation().setQuery(this)))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 

@@ -86,7 +86,7 @@ public interface ReasonerQuery{
      * @return (partial) substitution obtained from all id predicates (including internal) in the query
      */
     @CheckReturnValue
-    Answer getSubstitution();
+    ConceptMap getSubstitution();
 
     /**
      * @return error messages indicating ontological inconsistencies of the query
@@ -113,7 +113,7 @@ public interface ReasonerQuery{
      * @return stream of answers
      */
     @CheckReturnValue
-    Stream<Answer> resolve();
+    Stream<ConceptMap> resolve();
 
     /**
      * Returns a var-type map local to this query. Map is cached.
@@ -128,6 +128,6 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
+    ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub);
 
 }

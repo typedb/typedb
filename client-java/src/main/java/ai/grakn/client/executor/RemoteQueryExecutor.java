@@ -27,7 +27,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.client.Grakn;
 import com.google.common.collect.Iterators;
 
@@ -51,12 +51,12 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<Answer> run(GetQuery query) {
+    public Stream<ConceptMap> run(GetQuery query) {
         return runAnswerStream(query);
     }
 
     @Override
-    public Stream<Answer> run(InsertQuery query) {
+    public Stream<ConceptMap> run(InsertQuery query) {
         return runAnswerStream(query);
     }
 
@@ -66,8 +66,8 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Answer run(DefineQuery query) {
-        return (Answer) Iterators.getOnlyElement(tx.query(query));
+    public ConceptMap run(DefineQuery query) {
+        return (ConceptMap) Iterators.getOnlyElement(tx.query(query));
     }
 
     @Override
@@ -93,9 +93,9 @@ public final class RemoteQueryExecutor implements QueryExecutor {
         tx.query(query).forEachRemaining(empty -> {});
     }
 
-    private Stream<Answer> runAnswerStream(Query<?> query) {
+    private Stream<ConceptMap> runAnswerStream(Query<?> query) {
         Iterable<Object> iterable = () -> tx.query(query);
         Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(Answer.class::cast);
+        return stream.map(ConceptMap.class::cast);
     }
 }

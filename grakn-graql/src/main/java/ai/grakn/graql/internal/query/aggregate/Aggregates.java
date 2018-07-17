@@ -23,7 +23,7 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -63,7 +63,7 @@ public class Aggregates {
      * Aggregate that groups results of a {@link Match} by variable name
      * @param varName the variable name to group results by
      */
-    public static Aggregate<Map<Concept, List<Answer>>> group(Var varName) {
+    public static Aggregate<Map<Concept, List<ConceptMap>>> group(Var varName) {
         return group(varName, list());
     }
 
@@ -80,7 +80,7 @@ public class Aggregates {
     /**
      * An aggregate that changes {@link Match} results into a list.
      */
-    public static Aggregate<List<Answer>> list() {
+    public static Aggregate<List<ConceptMap>> list() {
         return new ListAggregate();
     }
 

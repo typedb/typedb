@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -34,37 +34,37 @@ import java.util.List;
  * @author Kasper Piskorski
  *
  */
-public class Explanation implements AnswerExplanation {
+public class QueryExplanation implements Explanation {
 
     private final ReasonerQuery query;
-    private final ImmutableList<Answer> answers;
+    private final ImmutableList<ConceptMap> answers;
 
-    public Explanation(){
+    public QueryExplanation(){
         this.query = null;
         this.answers = ImmutableList.of();}
-    Explanation(ReasonerQuery q, List<Answer> ans){
+    QueryExplanation(ReasonerQuery q, List<ConceptMap> ans){
         this.query = q;
         this.answers = ImmutableList.copyOf(ans);
     }
-    Explanation(ReasonerQuery q){
+    QueryExplanation(ReasonerQuery q){
         this(q, new ArrayList<>());
     }
-    Explanation(List<Answer> ans){
+    QueryExplanation(List<ConceptMap> ans){
         this(null, ans);
     }
 
     @Override
-    public AnswerExplanation setQuery(ReasonerQuery q){
-        return new Explanation(q);
+    public ai.grakn.graql.admin.Explanation setQuery(ReasonerQuery q){
+        return new QueryExplanation(q);
     }
 
     @Override
-    public AnswerExplanation childOf(Answer ans) {
-        return new Explanation(getQuery(), ans.getExplanation().getAnswers());
+    public ai.grakn.graql.admin.Explanation childOf(ConceptMap ans) {
+        return new QueryExplanation(getQuery(), ans.explanation().getAnswers());
     }
 
     @Override
-    public ImmutableList<Answer> getAnswers(){ return answers;}
+    public ImmutableList<ConceptMap> getAnswers(){ return answers;}
 
     @Override
     public boolean isLookupExplanation(){ return false;}

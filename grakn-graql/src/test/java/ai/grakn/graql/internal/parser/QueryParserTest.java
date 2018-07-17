@@ -36,7 +36,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -1177,7 +1177,7 @@ public class QueryParserTest {
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         @Override
-        public Concept apply(Stream<? extends Answer> stream) {
+        public Concept apply(Stream<? extends ConceptMap> stream) {
             return stream.findAny().get().get(varName);
         }
 

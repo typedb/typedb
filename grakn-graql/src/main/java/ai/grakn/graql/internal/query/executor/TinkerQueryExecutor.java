@@ -31,7 +31,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -66,12 +66,12 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<Answer> run(GetQuery query) {
+    public Stream<ConceptMap> run(GetQuery query) {
         return query.match().stream().map(result -> result.project(query.vars())).distinct();
     }
 
     @Override
-    public Stream<Answer> run(InsertQuery query) {
+    public Stream<ConceptMap> run(InsertQuery query) {
         Collection<VarPatternAdmin> varPatterns = query.admin().varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
@@ -83,23 +83,23 @@ public class TinkerQueryExecutor implements QueryExecutor {
         }
     }
 
-    private Stream<Answer> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
+    private Stream<ConceptMap> runMatchInsert(Match match, Collection<VarPatternAdmin> varPatterns) {
         Set<Var> varsInMatch = match.admin().getSelectedNames();
         Set<Var> varsInInsert = varPatterns.stream().map(VarPatternAdmin::var).collect(toImmutableSet());
         Set<Var> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
-        Stream<Answer> answers = match.get(projectedVars).stream();
+        Stream<ConceptMap> answers = match.get(projectedVars).stream();
         return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer));
     }
 
     @Override
     public void run(DeleteQuery query) {
-        List<Answer> results = query.admin().match().stream().collect(toList());
+        List<ConceptMap> results = query.admin().match().stream().collect(toList());
         results.forEach(result -> deleteResult(result, query.admin().vars()));
     }
 
     @Override
-    public Answer run(DefineQuery query) {
+    public ConceptMap run(DefineQuery query) {
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
@@ -127,7 +127,7 @@ public class TinkerQueryExecutor implements QueryExecutor {
         return new TinkerComputeExecutor(tx, query);
     }
 
-    private void deleteResult(Answer result, Collection<? extends Var> vars) {
+    private void deleteResult(ConceptMap result, Collection<? extends Var> vars) {
         Collection<? extends Var> toDelete = vars.isEmpty() ? result.vars() : vars;
 
         for (Var var : toDelete) {

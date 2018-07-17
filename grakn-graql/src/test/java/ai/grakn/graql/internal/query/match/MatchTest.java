@@ -40,7 +40,7 @@ import ai.grakn.graql.Order;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.matcher.MatchableConcept;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -846,7 +846,7 @@ public class MatchTest {
     @Test
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         Match query = qb.match(x.has("name"));
-        for (Answer result : query) {
+        for (ConceptMap result : query) {
             assertEquals(result.vars(), ImmutableSet.of(x));
         }
     }
@@ -891,8 +891,8 @@ public class MatchTest {
 
     @Test
     public void whenQueryDoesNotSpecifyRole_ResultIsTheSameAsSpecifyingMetaRole() {
-        Set<Answer> withoutRole = qb.match(var().rel(x).isa("has-cast")).stream().collect(toSet());
-        Set<Answer> withRole = qb.match(var().rel("role", x).isa("has-cast")).stream().collect(toSet());
+        Set<ConceptMap> withoutRole = qb.match(var().rel(x).isa("has-cast")).stream().collect(toSet());
+        Set<ConceptMap> withRole = qb.match(var().rel("role", x).isa("has-cast")).stream().collect(toSet());
 
         assertEquals(withoutRole, withRole);
     }
@@ -1093,25 +1093,25 @@ public class MatchTest {
 
     @Test
     public void testOrderDescendingString() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.desc).stream().findFirst().get();
         assertEquals("The Muppets", answer.get(y).asAttribute().value());
     }
 
     @Test
     public void testOrderAscendingString() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.asc).stream().findFirst().get();
         assertEquals("Apocalypse Now", answer.get(y).asAttribute().value());
     }
 
     @Test
     public void testOrderDescendingDate() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.desc).stream().findFirst().get();
         assertEquals(LocalDateTime.of(2000, 9, 2, 0, 0), answer.get(y).asAttribute().value());
     }
 
     @Test
     public void testOrderAscendingDate() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.asc).stream().findFirst().get();
         assertEquals(LocalDateTime.of(1984, 1, 1, 0, 0), answer.get(y).asAttribute().value());
     }
 

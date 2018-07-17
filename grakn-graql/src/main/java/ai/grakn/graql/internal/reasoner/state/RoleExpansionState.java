@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Iterator;
@@ -39,7 +39,7 @@ class RoleExpansionState extends ResolutionState {
 
     private final Iterator<AnswerState> answerStateIterator;
 
-    RoleExpansionState(Answer sub, Unifier u, Set<Var> toExpand, QueryStateBase parent) {
+    RoleExpansionState(ConceptMap sub, Unifier u, Set<Var> toExpand, QueryStateBase parent) {
         super(sub, parent);
         this.answerStateIterator = getSubstitution()
                 .expandHierarchies(toExpand)

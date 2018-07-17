@@ -24,7 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -34,7 +34,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -95,7 +95,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final EmbeddedGraknTx<?> tx;
     private final ImmutableSet<Atomic> atomSet;
-    private Answer substitution = null;
+    private ConceptMap substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
@@ -147,7 +147,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param sub substitution to be inserted into the query
      * @return corresponding query with additional substitution
      */
-    public ReasonerQueryImpl withSubstitution(Answer sub){
+    public ReasonerQueryImpl withSubstitution(ConceptMap sub){
         return new ReasonerQueryImpl(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
     }
 
@@ -301,7 +301,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return tx.graql().infer(false).match(getPattern()).get();
     }
 
-    private Stream<IsaAtom> inferEntityTypes(Answer sub) {
+    private Stream<IsaAtom> inferEntityTypes(ConceptMap sub) {
         Set<Var> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return Stream.concat(
                 getAtoms(IdPredicate.class),
@@ -336,13 +336,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap() {
         if (varTypeMap == null) {
-            this.varTypeMap = getVarTypeMap(new QueryAnswer());
+            this.varTypeMap = getVarTypeMap(new ConceptMapImpl());
         }
         return varTypeMap;
     }
 
     @Override
-    public ImmutableMap<Var, Type> getVarTypeMap(Answer sub) {
+    public ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub) {
         return ImmutableMap.copyOf(getVarTypeMap(
                 Stream.concat(
                         getAtoms(IsaAtomBase.class),
@@ -416,7 +416,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /** Does id predicates -> answer conversion
      * @return substitution obtained from all id predicates (including internal) in the query
      */
-    public Answer getSubstitution(){
+    public ConceptMap getSubstitution(){
         if (substitution == null) {
             Set<Var> varNames = getVarNames();
             Set<IdPredicate> predicates = getAtoms(IsaAtomBase.class)
@@ -432,12 +432,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
                 answerMap.put(p.getVarName(), concept);
             });
-            substitution = new QueryAnswer(answerMap);
+            substitution = new ConceptMapImpl(answerMap);
         }
         return substitution;
     }
 
-    public Answer getRoleSubstitution(){
+    public ConceptMap getRoleSubstitution(){
         Map<Var, Concept> roleSub = new HashMap<>();
         getAtoms(RelationshipAtom.class)
                 .flatMap(RelationshipAtom::getRolePredicates)
@@ -446,7 +446,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
                     roleSub.put(p.getVarName(), concept);
                 });
-        return new QueryAnswer(roleSub);
+        return new ConceptMapImpl(roleSub);
     }
 
     /**
@@ -457,7 +457,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public Stream<Answer> resolve() {
+    public Stream<ConceptMap> resolve() {
         return new ResolutionIterator(this).hasStream();
     }
 
@@ -469,7 +469,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoal formed from this query
      */
-    public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
@@ -481,7 +481,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public Stream<ResolutionState> subGoals(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getQueryStream(sub)
                 .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
     }
@@ -489,7 +489,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
-    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+    Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
         return Stream.of(this);
     }
 
@@ -518,7 +518,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .collect(Collectors.joining("\n"))
             );
 
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new ConceptMapImpl(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }

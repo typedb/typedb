@@ -29,7 +29,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -62,10 +62,10 @@ abstract class AbstractMatch implements MatchAdmin {
      * @param tx the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(EmbeddedGraknTx<?> tx);
+    public abstract Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx);
 
     @Override
-    public final Stream<Answer> stream() {
+    public final Stream<ConceptMap> stream() {
         return stream(null);
     }
 

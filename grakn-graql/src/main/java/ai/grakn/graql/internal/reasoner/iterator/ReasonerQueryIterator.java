@@ -18,7 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
+
 import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -32,10 +33,10 @@ import java.util.stream.StreamSupport;
  * @author Kasper Piskorski
  *
  */
-public abstract class ReasonerQueryIterator implements Iterator<Answer> {
+public abstract class ReasonerQueryIterator implements Iterator<ConceptMap> {
 
-    public Stream<Answer> hasStream(){
-        Iterable<Answer> iterable = () -> this;
+    public Stream<ConceptMap> hasStream(){
+        Iterable<ConceptMap> iterable = () -> this;
         return StreamSupport.stream(iterable.spliterator(), false).distinct();
     }
 }

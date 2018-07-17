@@ -33,12 +33,12 @@ import static org.mockito.Mockito.mock;
 /**
  * @author Felix Chapman
  */
-public class QueryAnswerTest {
+public class ConceptMapTest {
 
     private final Var varInAnswer = var("x");
     private final Concept conceptInAnswer = mock(Concept.class);
 
-    private final QueryAnswer answer = new QueryAnswer(ImmutableMap.of(varInAnswer, conceptInAnswer));
+    private final ConceptMapImpl answer = new ConceptMapImpl(ImmutableMap.of(varInAnswer, conceptInAnswer));
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

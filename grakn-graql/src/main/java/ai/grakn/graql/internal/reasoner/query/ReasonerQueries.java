@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -86,7 +86,7 @@ public class ReasonerQueries {
      * @param sub (partial) substitution
      * @return reasoner query with the substitution contained in the query
      */
-    public static ReasonerQueryImpl create(ReasonerQueryImpl q, Answer sub){
+    public static ReasonerQueryImpl create(ReasonerQueryImpl q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
     }
 
@@ -124,7 +124,7 @@ public class ReasonerQueries {
      * @param sub (partial) substitution
      * @return atomic query with the substitution contained in the query
      */
-    public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, Answer sub){
+    public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, ConceptMap sub){
         return q.withSubstitution(sub).inferTypes();
     }
 }

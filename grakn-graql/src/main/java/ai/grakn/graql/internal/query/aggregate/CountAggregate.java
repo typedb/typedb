@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import java.util.stream.Stream;
 
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 class CountAggregate extends AbstractAggregate<Long> {
     @Override
-    public Long apply(Stream<? extends Answer> stream) {
+    public Long apply(Stream<? extends ConceptMap> stream) {
         return stream.count();
     }
 

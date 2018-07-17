@@ -20,7 +20,7 @@ package ai.grakn;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.util.Schema;
 
 import java.time.Instant;
@@ -164,11 +164,11 @@ public class SNB {
         return localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
-    static <T> Function<Answer, T> by(Var var) {
+    static <T> Function<ConceptMap, T> by(Var var) {
         return map -> resource(map, var);
     }
 
-    static <T> T resource(Answer result, Var var) {
+    static <T> T resource(ConceptMap result, Var var) {
         return result.get(var).<T>asAttribute().value();
     }
 }

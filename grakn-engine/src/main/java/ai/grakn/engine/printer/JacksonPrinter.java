@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.internal.printer.Printer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -59,7 +60,7 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public Object queryAnswer(ai.grakn.graql.admin.Answer answer) {
+    public Object queryAnswer(ConceptMap answer) {
         return Answer.create(answer);
     }
 

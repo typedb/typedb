@@ -24,7 +24,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -77,7 +77,7 @@ public class PatternPropertyTests {
     @Property
     public void ifAPropertyUniquelyIdentifiesAConcept_0or1ResultsAreReturned(@Open GraknTx tx, VarProperty property){
         if(VarPropertyInternal.from(property).uniquelyIdentifiesConcept()){
-            List<Answer> results = tx.graql().match(Patterns.varPattern(Graql.var("x"), Collections.singleton(property))).get().execute();
+            List<ConceptMap> results = tx.graql().match(Patterns.varPattern(Graql.var("x"), Collections.singleton(property))).get().execute();
             assertThat(results, hasSize(lessThanOrEqualTo(1)));
         }
     }

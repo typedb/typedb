@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -36,7 +36,7 @@ public interface Aggregate<T> {
      * @return the result of the aggregate operation
      */
     @CheckReturnValue
-    T apply(Stream<? extends Answer> stream);
+    T apply(Stream<? extends ConceptMap> stream);
 
     /**
      * Return a {@link NamedAggregate}. This is used when operating on a query with multiple aggregates.

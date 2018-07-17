@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 
 /**
  *
@@ -31,10 +31,10 @@ import ai.grakn.graql.admin.Answer;
  */
 public abstract class ResolutionState {
 
-    private final Answer sub;
+    private final ConceptMap sub;
     private final QueryStateBase parentState;
 
-    ResolutionState(Answer sub, QueryStateBase parent){
+    ResolutionState(ConceptMap sub, QueryStateBase parent){
         this.sub = sub;
         this.parentState = parent;
     }
@@ -47,7 +47,7 @@ public abstract class ResolutionState {
     /**
      * @return substitution this state has
      */
-    public Answer getSubstitution(){ return sub;}
+    public ConceptMap getSubstitution(){ return sub;}
 
     /**
      * @return true if this resolution state is an answer state

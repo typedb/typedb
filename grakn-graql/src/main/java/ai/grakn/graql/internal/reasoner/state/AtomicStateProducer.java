@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -43,7 +43,7 @@ public class AtomicStateProducer extends QueryStateBase {
 
     private final Iterator<ResolutionState> subGoalIterator;
 
-    public AtomicStateProducer(ReasonerAtomicQuery query, Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    public AtomicStateProducer(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
 
         if(query.getAtom().getSchemaConcept() == null){
@@ -68,7 +68,7 @@ public class AtomicStateProducer extends QueryStateBase {
     }
 
     @Override
-    Answer consumeAnswer(AnswerState state) {
+    ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
     }
 }

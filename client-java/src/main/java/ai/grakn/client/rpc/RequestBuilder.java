@@ -29,8 +29,9 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
@@ -281,14 +282,14 @@ public class RequestBuilder {
             }
         }
 
-        public static ai.grakn.graql.admin.Answer queryAnswer(AnswerProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
+        public static ConceptMap queryAnswer(AnswerProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
             ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
 
             queryAnswer.getQueryAnswerMap().forEach((grpcVar, AnswerProto) -> {
                 map.put(Graql.var(grpcVar), RemoteConcept.of(AnswerProto, tx));
             });
 
-            return new QueryAnswer(map.build());
+            return new ConceptMapImpl(map.build());
         }
 
         public static ComputeQuery.Answer computeAnswer(AnswerProto.ComputeAnswer computeAnswerRPC) {

@@ -27,7 +27,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -382,14 +382,14 @@ public class TypeInferenceQueryTest {
 
     private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph) {
         QueryBuilder qb = graph.graql();
-        List<Answer> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
-        List<Answer> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
+        List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
+        List<ConceptMap> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
-    private List<Answer> typedAnswers(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
-        List<Answer> answers = new ArrayList<>();
+    private List<ConceptMap> typedAnswers(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
+        List<ConceptMap> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         for(Type type : possibleTypes){
             GetQuery typedQuery = graph.graql().match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();

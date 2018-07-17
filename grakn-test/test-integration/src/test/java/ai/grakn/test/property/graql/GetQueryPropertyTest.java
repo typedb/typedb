@@ -28,11 +28,11 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.ConceptMapImpl;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -69,8 +69,8 @@ public class GetQueryPropertyTest {
     ) {
         System.out.println(a);
         System.out.println(b);
-        Set<Answer> matchA = matchSet(tx, a);
-        Set<Answer> matchB = matchSet(tx, b);
+        Set<ConceptMap> matchA = matchSet(tx, a);
+        Set<ConceptMap> matchB = matchSet(tx, b);
         String formatMsg = "\nmatch(a Λ b) != match(a) ⋈ match(b)\na = %s\nb = %s \nmatch(a) = %s\nmatch(b) = %s\n";
         String message = String.format(formatMsg, a, b, matchA, matchB);
 
@@ -167,7 +167,7 @@ public class GetQueryPropertyTest {
         assertFalse(tx.graql().match(pattern).get().execute().isEmpty());
     }
 
-    private Set<Answer> matchSet(GraknTx tx, Pattern pattern) {
+    private Set<ConceptMap> matchSet(GraknTx tx, Pattern pattern) {
         final int[] count = {0};
 
         try {
@@ -188,15 +188,15 @@ public class GetQueryPropertyTest {
      * This involves combining answers when all their common variables are bound to the same concept. When both sets
      * of answers have completely disjoint variables, this is equivalent to the cartesian product.
      */
-    private Set<Answer> naturalJoin(Set<Answer> answersA, Set<Answer> answersB) {
+    private Set<ConceptMap> naturalJoin(Set<ConceptMap> answersA, Set<ConceptMap> answersB) {
         return answersA.stream()
                 .flatMap(a -> answersB.stream().map(b -> joinAnswer(a, b)).flatMap(CommonUtil::optionalToStream))
                 .collect(toSet());
     }
 
-    private Optional<Answer> joinAnswer(Answer answerA, Answer answerB) {
-        Map<Var, Concept> answer = Maps.newHashMap(answerA.map());
-        answer.putAll(answerB.map());
+    private Optional<ConceptMap> joinAnswer(ConceptMap answerA, ConceptMap answerB) {
+        Map<Var, Concept> answer = Maps.newHashMap(answerA.get());
+        answer.putAll(answerB.get());
 
         for (Var var : Sets.intersection(answerA.vars(), answerB.vars())) {
             if (!answerA.get(var).equals(answerB.get(var))) {
@@ -204,7 +204,7 @@ public class GetQueryPropertyTest {
             }
         }
 
-        return Optional.of(new QueryAnswer(answer));
+        return Optional.of(new ConceptMapImpl(answer));
     }
 
     private void assertEquivalent(GraknTx tx, Pattern patternA, Pattern patternB) {
