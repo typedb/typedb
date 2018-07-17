@@ -38,6 +38,9 @@ public abstract class AbstractAggregate<S> implements Aggregate<S> {
         return new NamedAggregateImpl<>(this, name);
     }
 
+    /**
+     * A Comparator class to compare the 2 numbers only if they have the same primitive type.
+     */
     public static class NumberPrimitiveTypeComparator implements Comparator<Number> {
 
         @Override

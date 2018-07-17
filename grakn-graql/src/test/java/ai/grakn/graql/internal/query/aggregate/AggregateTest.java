@@ -111,7 +111,7 @@ public class AggregateTest {
     }
 
     @Test
-    public void testCountAndGroup() {
+    public void testSelectCountAndGroup() {
         AggregateQuery<Map<String, Object>> query = qb.match(var("x").isa("movie"), var().rel("x").rel("y"))
                         .aggregate(select(count().as("c"), group("x").as("g")));
 

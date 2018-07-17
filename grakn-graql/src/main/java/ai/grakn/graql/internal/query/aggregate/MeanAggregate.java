@@ -24,7 +24,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;

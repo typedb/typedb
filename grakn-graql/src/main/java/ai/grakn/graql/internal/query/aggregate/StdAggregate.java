@@ -22,7 +22,6 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;

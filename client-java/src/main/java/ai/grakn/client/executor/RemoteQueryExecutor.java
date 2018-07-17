@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.client.Grakn;
 import com.google.common.collect.Iterators;
 
+import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -76,7 +77,9 @@ public final class RemoteQueryExecutor implements QueryExecutor {
 
     @Override
     public <T> T run(AggregateQuery<T> query) {
-        return (T) Iterators.getOnlyElement(tx.query(query));
+        Iterator iterator = tx.query(query);
+        if (iterator.hasNext()) return (T) Iterators.getOnlyElement(iterator);
+        else return null;
     }
 
 

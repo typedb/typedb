@@ -68,7 +68,7 @@ public class ResponseBuilder {
                     .build();
         }
 
-        static SessionProto.Transaction.Res queryIterator(@Nullable int iteratorId) {
+        static SessionProto.Transaction.Res queryIterator(int iteratorId) {
             SessionProto.Transaction.Query.Iter.Builder iterator = SessionProto.Transaction.Query.Iter.newBuilder();
             if (iteratorId == -1) {
                 iterator.setNull(ConceptProto.Null.getDefaultInstance());
