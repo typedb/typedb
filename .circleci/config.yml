@@ -261,6 +261,13 @@ jobs:
             name: Restore maven m2 cache
             key: grakn-cache-m2-version-8
         - run:
+            name: Prepare apt repositories
+            command: |
+              curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+              echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+              sudo apt-get install apt-transport-https
+              sudo apt-get update
+        - run:
             name: Install yarn
             command: sudo apt-get -y install yarn
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
