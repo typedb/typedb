@@ -21,7 +21,9 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
@@ -117,12 +119,7 @@ public class RuleUtils {
      * @return all rules that are reachable from the entry types
      */
     public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
-        final Equivalence<Atom> equivalence = new Equivalence<Atom>(){
-            @Override
-            protected boolean doEquivalent(Atom a1, Atom a2) {return a1.isAlphaEquivalent(a2);}
-            @Override
-            protected int doHash(Atom a) {return a.alphaEquivalenceHashCode();}
-        };
+        final Equivalence<Atomic> equivalence = AtomicEquivalence.AlphaEquivalence;
 
         Set<InferenceRule> rules = new HashSet<>();
         Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();

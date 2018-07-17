@@ -36,12 +36,16 @@ import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.Schema;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -298,6 +302,67 @@ public class ReasonerUtils {
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
         return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
+    }
+
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param comparison function on the basis of which the collections shall be compared
+     * @param <T> collection type
+     * @return true iff the given collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <T> boolean isEquivalentCollection(Collection<T> a, Collection<T> b, BiFunction<T, T, Boolean> comparison) {
+        return a.size() == b.size()
+                && a.stream().allMatch(e -> b.stream().anyMatch(e2 -> comparison.apply(e, e2)))
+                && b.stream().allMatch(e -> a.stream().anyMatch(e2 -> comparison.apply(e, e2)));
+    }
+
+    private static <B, S extends B> Map<Equivalence.Wrapper<B>, Integer> getCardinalityMap(Collection<S> coll, Equivalence<B> equiv) {
+        Map<Equivalence.Wrapper<B>, Integer> count = new HashMap<>();
+
+        for (S obj : coll) {
+            count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
+        }
+        return count;
+    }
+
+    private static <T> int getFreq(T obj, Map<T, Integer> freqMap) {
+        Integer count = freqMap.get(obj);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param equiv equivalence on the basis of which the collections shall be compared
+     * @param <B> collection base type
+     * @param <S> collection super type
+     * @return true iff the given Collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <B, S extends B> boolean isEquivalentCollection(Collection<S> a, Collection<S> b,  Equivalence<B> equiv) {
+        if (a.size() != b.size()) {
+            return false;
+        } else {
+            Map<Equivalence.Wrapper<B>, Integer> mapa = getCardinalityMap(a, equiv);
+            Map<Equivalence.Wrapper<B>, Integer>  mapb = getCardinalityMap(b, equiv);
+            if (mapa.size() != mapb.size()) {
+                return false;
+            } else {
+                Iterator<Equivalence.Wrapper<B>> it = mapa.keySet().iterator();
+
+                Equivalence.Wrapper<B> obj;
+                do {
+                    if (!it.hasNext()) {
+                        return true;
+                    }
+
+                    obj = it.next();
+                } while (getFreq(obj, mapa) == getFreq(obj, mapb));
+
+                return false;
+            }
+        }
     }
 
     /**

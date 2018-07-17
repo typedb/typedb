@@ -44,7 +44,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -224,26 +223,6 @@ public abstract class Atom extends AtomicBase {
      * @return value variable name
      */
     public abstract Var getPredicateVariable();
-
-    /**
-     * @param var variable of interest
-     * @return id predicate referring to prescribed variable
-     */
-    @Nullable
-    public IdPredicate getIdPredicate(Var var){
-        return getPredicate(var, IdPredicate.class);
-    }
-
-    /**
-     * @param var variable the predicate refers to
-     * @param type predicate type
-     * @param <T> predicate type generic
-     * @return specific predicate referring to provided variable
-     */
-    @Nullable
-    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
-        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
-    }
 
     public abstract Stream<Predicate> getInnerPredicates();
 

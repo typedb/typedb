@@ -23,15 +23,19 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -97,7 +101,7 @@ public abstract class Binary extends Atom {
         return  (this.isUserDefined() == that.isUserDefined())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.hasEquivalentPredicatesWith(that);
+                && this.predicateBindingsEquivalent(that, AtomicEquivalence.AlphaEquivalence);
     }
 
     @Override
@@ -115,7 +119,7 @@ public abstract class Binary extends Atom {
         return  (this.isUserDefined() == that.isUserDefined())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.predicateBindingsAreEquivalent(that);
+                && this.predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
     }
 
     @Override
@@ -123,26 +127,24 @@ public abstract class Binary extends Atom {
         return alphaEquivalenceHashCode();
     }
 
-    boolean hasEquivalentPredicatesWith(Binary atom) {
+    boolean predicateBindingsEquivalent(Binary that, Equivalence<Atomic> equiv) {
         //check if there is a substitution for varName
-        IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
-        IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
+        IdPredicate thisVarPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate varPredicate = that.getIdPredicate(that.getVarName());
+
+        NeqPredicate thisVarNeqPredicate = this.getPredicate(this.getVarName(), NeqPredicate.class);
+        NeqPredicate varNeqPredicate = that.getPredicate(that.getVarName(), NeqPredicate.class);
 
         IdPredicate thisTypePredicate = this.getTypePredicate();
-        IdPredicate typePredicate = atom.getTypePredicate();
-        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && thisVarPredicate.isAlphaEquivalent(varPredicate)))
-                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isAlphaEquivalent(typePredicate));
-    }
+        IdPredicate typePredicate = that.getTypePredicate();
 
-    boolean predicateBindingsAreEquivalent(Binary atom) {
-        //check if there is a substitution for varName
-        IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
-        IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
+        NeqPredicate thisTypeNeqPredicate = this.getPredicate(this.getPredicateVariable(), NeqPredicate.class);
+        NeqPredicate typeNeqPredicate = that.getPredicate(that.getPredicateVariable(), NeqPredicate.class);
 
-        IdPredicate thisTypePredicate = this.getTypePredicate();
-        IdPredicate typePredicate = atom.getTypePredicate();
-        return (thisVarPredicate == null) == (varPredicate == null)
-                && (thisTypePredicate == null) == (typePredicate == null);
+        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && equiv.equivalent(thisVarPredicate, varPredicate)))
+                && (thisVarNeqPredicate == null && varNeqPredicate == null || thisVarNeqPredicate != null && equiv.equivalent(thisVarNeqPredicate, varNeqPredicate))
+                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
+                && (thisTypeNeqPredicate == null && typeNeqPredicate == null || thisTypeNeqPredicate != null && equiv.equivalent(thisTypeNeqPredicate, typeNeqPredicate));
     }
 
     @Override
