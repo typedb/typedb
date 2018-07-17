@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
@@ -54,6 +55,7 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class AggregateTest {
 
@@ -128,7 +130,7 @@ public class AggregateTest {
     }
 
     @Test
-    public void testSum() {
+    public void testSumInt() {
         AggregateQuery<Number> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(sum("y"));
@@ -143,6 +145,16 @@ public class AggregateTest {
                 .aggregate(sum("y"));
 
         assertEquals(27.7d, query.execute().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testSumNull() {
+        rule.tx().putAttributeType("random", AttributeType.DataType.INTEGER);
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+                .aggregate(sum("y"));
+
+        assertNull(query.execute());
     }
 
     @Test
@@ -164,12 +176,32 @@ public class AggregateTest {
     }
 
     @Test
+    public void testMaxNull() {
+        rule.tx().putAttributeType("random", AttributeType.DataType.INTEGER);
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+                .aggregate(max("y"));
+
+        assertNull(query.execute());
+    }
+
+    @Test
     public void testMinInt() {
         AggregateQuery<Number> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(min("y"));
 
         assertEquals(5, query.execute().intValue());
+    }
+
+    @Test
+    public void testMinNull() {
+        rule.tx().putAttributeType("random", AttributeType.DataType.INTEGER);
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+                .aggregate(min("y"));
+
+        assertNull(query.execute());
     }
 
     @Test
@@ -180,6 +212,16 @@ public class AggregateTest {
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testMeanNull() {
+        rule.tx().putAttributeType("random", AttributeType.DataType.INTEGER);
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+                .aggregate(mean("y"));
+
+        assertNull(query.execute());
     }
 
     @Test
@@ -199,6 +241,16 @@ public class AggregateTest {
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(8.0d, query.execute().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testMedianNull() {
+        rule.tx().putAttributeType("random", AttributeType.DataType.INTEGER);
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+                .aggregate(median("y"));
+
+        assertNull(query.execute());
     }
 
     @Test
@@ -227,6 +279,16 @@ public class AggregateTest {
         double expected = sqrt(variance);
 
         assertEquals(expected, query.execute().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testStdNull() {
+        rule.tx().putAttributeType("random", AttributeType.DataType.INTEGER);
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
+                .aggregate(std("y"));
+
+        assertNull(query.execute());
     }
 
     @Test
