@@ -50,9 +50,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -83,28 +81,23 @@ public class AtomicQueryTest {
     @ClassRule
     public static final SampleKBContext unificationWithTypesSet = SampleKBContext.load("unificationWithTypesTest.gql");
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     @BeforeClass
     public static void setUpClass() {
         assumeTrue(GraknTestUtil.usingTinker());
     }
 
-    @Test
+    @Test (expected = GraqlQueryException.class)
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         EmbeddedGraknTx<?> graph = geoKB.tx();
         String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
     }
 
-    @Test
+    @Test (expected = GraqlQueryException.class)
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String patternString = "{$x isa someType;}";
-        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
     }
 

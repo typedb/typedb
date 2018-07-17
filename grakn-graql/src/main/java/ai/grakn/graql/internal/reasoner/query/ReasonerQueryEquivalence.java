@@ -31,9 +31,11 @@ import java.util.stream.Collectors;
  * <p>
  * Static class defining different equivalence comparisons for reasoner queries ({@link ReasonerQuery}):
  *
- * - alpha equivalence - two queries are alpha-equivalent if they are equal up to the choice of free variables
+ * - Equality - two queries are equal if they contain the same {@link Atomic}s of which all corresponding pairs are equal.
  *
- * - structural equivalence - two queries are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates)
+ * - Alpha equivalence - two queries are alpha-equivalent if they are equal up to the choice of free variables.
+ *
+ * - Structural equivalence - two queries are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates).
  *
  * </p>
  *

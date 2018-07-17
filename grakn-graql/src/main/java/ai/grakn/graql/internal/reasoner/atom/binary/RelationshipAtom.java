@@ -314,8 +314,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
         Multimap<Role, String> thatIdMap = atom.getRoleConceptIdMap();
 
-        Multimap<Role, NeqPredicate> thisNeqMap = this.getRolePredicateMap(NeqPredicate.class);
-        Multimap<Role, NeqPredicate> thatNeqMap = atom.getRolePredicateMap(NeqPredicate.class);
+        Multimap<Role, NeqPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
+        Multimap<Role, NeqPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
         return thisIdMap.keySet().equals(thatIdMap.keySet())
                 && thisIdMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisIdMap.get(k), thatIdMap.get(k), conceptComparison))
                 && thisNeqMap.keySet().equals(thatNeqMap.keySet())
@@ -450,6 +450,19 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 });
     }
 
+    private <T extends Predicate> Multimap<Role, T> getRolePredicateMap(Class<T> type) {
+        HashMultimap<Role, T> rolePredicateMap = HashMultimap.create();
+
+        HashMultimap<Var, T> predicateMap = HashMultimap.create();
+        getPredicates(type).forEach(p -> p.getVarNames().forEach(v -> predicateMap.put(v, p)));
+        Multimap<Role, Var> roleMap = getRoleVarMap();
+
+        roleMap.entries().stream()
+                .filter(e -> predicateMap.containsKey(e.getValue()))
+                .forEach(e ->  rolePredicateMap.putAll(e.getKey(), predicateMap.get(e.getValue())));
+        return rolePredicateMap;
+    }
+
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
@@ -462,17 +475,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return builder.build();
     }
 
-    private <T extends Predicate> Multimap<Role, T> getRolePredicateMap(Class<T> type) {
-        HashMultimap<Role, T> rolePredicateMap = HashMultimap.create();
-
-        HashMultimap<Var, T> predicateMap = HashMultimap.create();
-        getPredicates(type).forEach(p -> p.getVarNames().forEach(v -> predicateMap.put(v, p)));
-        Multimap<Role, Var> roleMap = getRoleVarMap();
-
-        roleMap.entries().stream()
-                .filter(e -> predicateMap.containsKey(e.getValue()))
-                .forEach(e ->  rolePredicateMap.putAll(e.getKey(), predicateMap.get(e.getValue())));
-        return rolePredicateMap;
+    @Memoized
+    public Multimap<Role, NeqPredicate> getRoleNeqPredicateMap() {
+        ImmutableMultimap.Builder<Role, NeqPredicate> builder = ImmutableMultimap.builder();
+        getRolePredicateMap(NeqPredicate.class)
+                .entries()
+                .forEach(e -> builder.put(e.getKey(), e.getValue()));
+        return builder.build();
     }
 
     @Memoized

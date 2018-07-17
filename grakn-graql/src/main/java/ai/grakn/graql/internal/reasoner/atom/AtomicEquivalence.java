@@ -30,11 +30,19 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Static class defining different equivalence comparisons for atomics({@link Atomic}):
+ * Static class defining different equivalence comparisons for {@link Atomic}s :
  *
- * - alpha equivalence - two atomics are alpha-equivalent if they are equal up to the choice of free variables
+ * - Equality: two {@link Atomic}s are equal if they are equal including all their corresponding variables.
  *
- * - structural equivalence - two atomics are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates {@link ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate})
+ * - Alpha-equivalence: two {@link Atomic}s are alpha-equivalent if they are equal up to the choice of free variables.
+ *
+ * - Structural equivalence:
+ * Two atomics are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates {@link ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate}).
+ * Hence:
+ * - any two IdPredicates are structurally equivalent
+ * - structural equivalence check on queries is done by looking at {@link Atom}s. As a result:
+ *   * connected predicates are assessed together with atoms they are connected to
+ *   * dangling predicates are ignored
  *
  * </p>
  *
