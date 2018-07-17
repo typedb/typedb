@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Factory for making {@link Aggregate} implementations.
@@ -42,7 +41,7 @@ public class Aggregates {
     /**
      * Aggregate that finds mean of a {@link Match}.
      */
-    public static Aggregate<Optional<Double>> mean(Var varName) {
+    public static Aggregate<Number> mean(Var varName) {
         return new MeanAggregate(varName);
     }
 
@@ -88,29 +87,29 @@ public class Aggregates {
     /**
      * Aggregate that finds maximum of a {@link Match}.
      */
-    public static <T extends Comparable<T>> Aggregate<Optional<T>> max(Var varName) {
-        return new MaxAggregate<>(varName);
+    public static Aggregate<Number> max(Var varName) {
+        return new MaxAggregate(varName);
     }
 
     /**
      * Aggregate that finds median of a {@link Match}.
      */
-    public static Aggregate<Optional<Number>> median(Var varName) {
+    public static Aggregate<Number> median(Var varName) {
         return new MedianAggregate(varName);
     }
 
     /**
      * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
      */
-    public static Aggregate<Optional<Double>> std(Var varName) {
+    public static Aggregate<Number> std(Var varName) {
         return new StdAggregate(varName);
     }
 
     /**
      * Aggregate that finds minimum of a {@link Match}.
      */
-    public static <T extends Comparable<T>> Aggregate<Optional<T>> min(Var varName) {
-        return new MinAggregate<>(varName);
+    public static Aggregate<Number> min(Var varName) {
+        return new MinAggregate(varName);
     }
 
     /**

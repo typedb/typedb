@@ -30,7 +30,7 @@ import static java.lang.Math.sqrt;
 /**
  * Aggregate that finds the unbiased sample standard deviation of a {@link Match}.
  */
-class StdAggregate extends AbstractAggregate<Optional<Double>> {
+class StdAggregate extends AbstractAggregate<Number> {
 
     private final Var varName;
 
@@ -39,7 +39,7 @@ class StdAggregate extends AbstractAggregate<Optional<Double>> {
     }
 
     @Override
-    public Optional<Double> apply(Stream<? extends Answer> stream) {
+    public Number apply(Stream<? extends Answer> stream) {
         Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().value().doubleValue());
 
         Iterable<Double> data = numStream::iterator;
@@ -59,9 +59,9 @@ class StdAggregate extends AbstractAggregate<Optional<Double>> {
         }
 
         if (n < 2) {
-            return Optional.empty();
+            return null;
         } else {
-            return Optional.of(sqrt(M2 / (double) (n - 1)));
+            return sqrt(M2 / (double) (n - 1));
         }
     }
 

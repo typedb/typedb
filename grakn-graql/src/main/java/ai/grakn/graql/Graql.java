@@ -268,7 +268,7 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static <T extends Comparable<T>> Aggregate<Optional<T>> max(String var) {
+    public static Aggregate<Number> max(String var) {
         return Aggregates.max(Graql.var(var));
     }
 
@@ -277,7 +277,7 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static <T extends Comparable<T>> Aggregate<Optional<T>> min(String var) {
+    public static Aggregate<Number> min(String var) {
         return Aggregates.min(Graql.var(var));
     }
 
@@ -286,7 +286,7 @@ public class Graql {
      * @param var the variable to find the mean of
      */
     @CheckReturnValue
-    public static Aggregate<Optional<Double>> mean(String var) {
+    public static Aggregate<Number> mean(String var) {
         return Aggregates.mean(Graql.var(var));
     }
 
@@ -295,7 +295,7 @@ public class Graql {
      * @param var the variable to find the median of
      */
     @CheckReturnValue
-    public static Aggregate<Optional<Number>> median(String var) {
+    public static Aggregate<Number> median(String var) {
         return Aggregates.median(Graql.var(var));
     }
 
@@ -304,7 +304,7 @@ public class Graql {
      * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
-    public static Aggregate<Optional<Double>> std(String var) {
+    public static Aggregate<Number> std(String var) {
         return Aggregates.std(Graql.var(var));
     }
 
