@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -149,9 +148,7 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             return new Pair<>(answers.unify(multiUnifier).stream(), multiUnifier);
         }
         return new Pair<>(
-                //TODO reeanable once bug fixed
-                query.getQuery().stream().map(ans -> ans.explain(new LookupExplanation(query))),
-                //structuralCache().get(query),
+                structuralCache().get(query),
                 new MultiUnifierImpl()
         );
     }
