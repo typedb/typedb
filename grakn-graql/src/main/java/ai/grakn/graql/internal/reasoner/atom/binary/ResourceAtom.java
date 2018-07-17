@@ -166,27 +166,16 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    boolean predicateBindingsAlphaEquivalent(Binary at) {
-        if (!(at instanceof ResourceAtom && super.predicateBindingsAlphaEquivalent(at))) return false;
+    boolean predicateBindingsEquivalent(Binary at, Equivalence<Atomic> equiv) {
+        if (!(at instanceof ResourceAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
 
         ResourceAtom that = (ResourceAtom) at;
-        if (!multiPredicateEquivalent(that, AtomicEquivalence.AlphaEquivalence)) return false;
+        if (!multiPredicateEquivalent(that, equiv)) return false;
 
-        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate thisPredicate = this.getIdPredicate(this.getPredicateVariable());
         IdPredicate predicate = that.getIdPredicate(that.getPredicateVariable());
-        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isAlphaEquivalent(predicate);
-    }
 
-    @Override
-    boolean predicateBindingsStructurallyEquivalent(Binary at) {
-        if (!(at instanceof ResourceAtom && super.predicateBindingsStructurallyEquivalent(at))) return false;
-
-        ResourceAtom that = (ResourceAtom) at;
-        if (!multiPredicateEquivalent(that, AtomicEquivalence.StructuralEquivalence)) return false;
-
-        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
-        IdPredicate predicate = that.getIdPredicate(that.getPredicateVariable());
-        return (thisPredicate == null) == (predicate == null);
+        return thisPredicate == null && predicate == null || thisPredicate != null && equiv.equivalent(thisPredicate, predicate);
     }
 
     @Override

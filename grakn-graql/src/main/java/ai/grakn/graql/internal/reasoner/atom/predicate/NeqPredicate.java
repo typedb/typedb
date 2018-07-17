@@ -26,8 +26,10 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Equivalence;
 import java.util.Set;
 
 /**
@@ -62,29 +64,48 @@ public abstract class NeqPredicate extends Predicate<Var> {
         return pattern.admin().getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
+    private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){
+        IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
+        IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
+        IdPredicate thatRefPredicate = that.getIdPredicate(that.getPredicate());
+        return ( (thisPredicate == null) ? (thisPredicate == thatPredicate) : equiv.equivalent(thisPredicate, thatPredicate) )
+                && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : equiv.equivalent(thisRefPredicate, thatRefPredicate) );
+    }
+
+    private int bindingHash(Equivalence<Atomic> equiv){
+        int hashCode = 1;
+        IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
+        hashCode = hashCode * 37 + (idPredicate != null? equiv.hash(idPredicate) : 0);
+        hashCode = hashCode * 37 + (refIdPredicate != null? equiv.hash(refIdPredicate) : 0);
+        return hashCode;
+    }
+
     @Override
     public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         NeqPredicate that = (NeqPredicate) obj;
-
-        //check bindings
-        IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
-        IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
-        IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
-        IdPredicate thatRefPredicate = that.getIdPredicate(that.getPredicate());
-        return ( (thisPredicate == null) ? (thisPredicate == thatPredicate) : thisPredicate.isAlphaEquivalent(thatPredicate) )
-                && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : thisRefPredicate.isAlphaEquivalent(thatRefPredicate) );
+        return predicateBindingsEquivalent(that, AtomicEquivalence.AlphaEquivalence);
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
-        int hashCode = 1;
-        IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
-        IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
-        hashCode = hashCode * 37 + (idPredicate != null? idPredicate.alphaEquivalenceHashCode() : 0);
-        hashCode = hashCode * 37 + (refIdPredicate != null? refIdPredicate.alphaEquivalenceHashCode() : 0);
-        return hashCode;
+        return bindingHash(AtomicEquivalence.AlphaEquivalence);
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        NeqPredicate that = (NeqPredicate) obj;
+        return predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return bindingHash(AtomicEquivalence.StructuralEquivalence);
     }
 
     @Override
