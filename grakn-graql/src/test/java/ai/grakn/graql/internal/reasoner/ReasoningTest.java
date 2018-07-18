@@ -45,6 +45,7 @@ import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -882,14 +883,13 @@ public class ReasoningTest {
         assertEquals(answers, inferredAnswers);
     }
 
-    //TODO fix in another PR
-    @Ignore
+
     @Test
-    public void whenQueryingAppendedRelations_ruleAreMatchedCorrectly(){
+    public void whenQueryingAppendedRelations_rulesAreMatchedCorrectly(){
         QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
         Set<Answer> variants = Stream.of(
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;").execute()),
                 Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, inferredRole: $z ); $x has resource 'value'; get;").execute()),
-                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); get;").execute()),
                 Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;").execute()),
                 Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (anotherRole: $x, andYetAnotherRole: $y); get;").execute())
         )
@@ -897,7 +897,7 @@ public class ReasoningTest {
                 .collect(Collectors.toSet());
 
         List<Answer> answers = qb.<GetQuery>parse("match $r isa relation; get;").execute();
-        assertEquals(variants, answers);
+        assertCollectionsEqual(variants, answers);
     }
 
     @Test //tests a query containing a neq predicate bound to a recursive relation

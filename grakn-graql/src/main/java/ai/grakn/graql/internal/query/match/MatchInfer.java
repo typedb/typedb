@@ -67,12 +67,13 @@ class MatchInfer extends MatchModifier {
         try {
             Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<VarPatternAdmin> conj = conjIt.next();
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx);
+
+            ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
             conjQuery.checkValid();
             Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, embeddedTx);
+                conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
                 Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
                 answerStream = Stream.concat(answerStream, localStream);
             }

@@ -470,6 +470,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
+    /**
+     * @return rewritten (decomposed) version of the query
+     */
+    public ReasonerQueryImpl rewrite(){
+        return new ReasonerQueryImpl(
+                this.selectAtoms().stream()
+                        .flatMap(at -> at.rewriteToAtoms().stream())
+                        .collect(Collectors.toList()),
+                tx()
+        );
+    }
+
     @Override
     public Stream<Answer> resolve() {
         return new ResolutionIterator(this).hasStream();

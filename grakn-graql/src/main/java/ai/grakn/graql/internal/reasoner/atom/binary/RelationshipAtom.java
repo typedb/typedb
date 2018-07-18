@@ -55,6 +55,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -189,6 +190,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
+    public Set<Atom> rewriteToAtoms(){
+        if (this.getPotentialRules().map(r -> new InferenceRule(r, tx())).noneMatch(InferenceRule::isAppendRule)) return super.rewriteToAtoms();
+        return this.getRelationPlayers().stream()
+                .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
+                .collect(toSet());
+    }
+
     @Override
     public String toString(){
         String typeString = getSchemaConcept() != null?
@@ -257,10 +265,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     /**
      * construct a $varName (rolemap) isa $typeVariable relation
      * @param varName            variable name
-     * @param relationPlayers list of rolePlayer-roleType mappings
+     * @param relationPlayers collection of rolePlayer-roleType mappings
      * @return corresponding {@link VarPatternAdmin}
      */
-    private VarPattern relationPattern(Var varName, List<RelationPlayer> relationPlayers) {
+    private VarPattern relationPattern(Var varName, Collection<RelationPlayer> relationPlayers) {
         VarPattern var = varName;
         for (RelationPlayer rp : relationPlayers) {
             VarPatternAdmin rolePattern = rp.getRole().orElse(null);
@@ -939,8 +947,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Unifier baseUnifier = super.getUnifier(pAtom);
         Set<Unifier> unifiers = new HashSet<>();
         if (pAtom.isRelation()) {
-            assert(pAtom instanceof RelationshipAtom); // This is safe due to the check above
-            RelationshipAtom parentAtom = (RelationshipAtom) pAtom;
+            RelationshipAtom parentAtom = pAtom.toRelationshipAtom();
 
             //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
@@ -998,6 +1005,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         return Stream.of(substitution.merge(relationSub));
     }
+
+
 
     /**
      * if any {@link Role} variable of the parent is user defined rewrite ALL {@link Role} variables to user defined (otherwise unification is problematic)

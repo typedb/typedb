@@ -32,6 +32,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -257,6 +258,21 @@ public class InferenceRule {
             );
         }
         return this;
+    }
+
+    public boolean isAppendRule(){
+        Atom headAtom = getHead().getAtom();
+        SchemaConcept headType = headAtom.getSchemaConcept();
+        if (headType.isRelationshipType()
+                && headAtom.getVarName().isUserDefinedName()) {
+            RelationshipAtom bodyAtom = getBody().getAtoms(RelationshipAtom.class)
+                    .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                    .filter(at -> at.getSchemaConcept().equals(headType))
+                    .filter(at -> at.getVarName().isUserDefinedName())
+                    .findFirst().orElse(null);
+            return bodyAtom != null;
+        }
+        return false;
     }
 
     private InferenceRule rewriteVariables(Atom parentAtom){

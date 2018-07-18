@@ -108,6 +108,9 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
                     })
                     .forEach(answers::add);
         } else {
+            if (!answer.vars().containsAll(query.getVarNames())){
+                throw GraqlQueryException.invalidQueryCacheEntry(query);
+            }
             this.putEntry(query, new QueryAnswers(answer));
         }
         return answer;

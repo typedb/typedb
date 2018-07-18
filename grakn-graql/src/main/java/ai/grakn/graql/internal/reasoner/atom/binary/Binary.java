@@ -180,13 +180,11 @@ public abstract class Binary extends Atom {
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
 
         if (parentVarName.isUserDefinedName()
-                && childVarName.isUserDefinedName()
-                && !childVarName.equals(parentVarName)) {
+                && childVarName.isUserDefinedName()) {
             varMappings.put(childVarName, parentVarName);
         }
         if (parentPredicateVarName.isUserDefinedName()
-                && childPredicateVarName.isUserDefinedName()
-                && !childPredicateVarName.equals(parentPredicateVarName)) {
+                && childPredicateVarName.isUserDefinedName()) {
             varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
         return new UnifierImpl(varMappings);
