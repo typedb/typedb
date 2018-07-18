@@ -86,7 +86,7 @@ public class ResolutionQueryPlan {
             }
         }
 
-        boolean refine = plan.size() != queries.size() && !query.requiresSchema();
+        boolean refine = !query.requiresSchema();
         return refine? refine(queries) : ImmutableList.copyOf(queries);
     }
 

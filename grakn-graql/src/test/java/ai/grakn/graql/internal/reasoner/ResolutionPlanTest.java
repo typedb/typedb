@@ -133,6 +133,19 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    public void prioritiseNonResolvableRelations() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa derivedRelation;" +
+                "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        checkPlanSanity(query);
+        assertTrue(!new ResolutionPlan(query).plan().get(0).isRuleResolvable());
+    }
+
+    @Test
     public void prioritiseSpecificResourcesOverRelations(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
