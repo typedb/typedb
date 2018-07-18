@@ -114,10 +114,10 @@ This object represents a query answer and it is contained in the Iterator return
 
 **Explanation**
 
-| Method           | Return type       | Description |
-| ---------------- | ----------------- | ----------- |
-| `queryPattern()` | String            |             |
-| `answers()`      | Array of *Answer* |             |
+| Method           | Return type       | Description                                                                                 |
+| ---------------- | ----------------- | ------------------------------------------------------------------------------------------- |
+| `queryPattern()` | String            | Returns a query pattern that describes how the owning answer was retrieved.                 |
+| `answers()`      | Array of *Answer* | Set of deducted/factual answers that allowed us to determine that the owning answer is true |
 
 
 **Concepts hierarchy** 
