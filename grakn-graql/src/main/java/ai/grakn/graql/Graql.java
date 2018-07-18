@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
@@ -243,7 +242,7 @@ public class Graql {
      * Create an aggregate that will check if there are any results
      */
     @CheckReturnValue
-    public static Aggregate<Object, Boolean> ask() {
+    public static Aggregate<Boolean> ask() {
         return Aggregates.ask();
     }
 
@@ -251,7 +250,7 @@ public class Graql {
      * Create an aggregate that will count the results of a query.
      */
     @CheckReturnValue
-    public static Aggregate<Object, Long> count() {
+    public static Aggregate<Long> count() {
         return Aggregates.count();
     }
 
@@ -259,7 +258,7 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Number> sum(String var) {
+    public static Aggregate<Number> sum(String var) {
         return Aggregates.sum(Graql.var(var));
     }
 
@@ -268,7 +267,7 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String var) {
+    public static Aggregate<Number> max(String var) {
         return Aggregates.max(Graql.var(var));
     }
 
@@ -277,7 +276,7 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String var) {
+    public static Aggregate<Number> min(String var) {
         return Aggregates.min(Graql.var(var));
     }
 
@@ -286,7 +285,7 @@ public class Graql {
      * @param var the variable to find the mean of
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Optional<Double>> mean(String var) {
+    public static Aggregate<Number> mean(String var) {
         return Aggregates.mean(Graql.var(var));
     }
 
@@ -295,7 +294,7 @@ public class Graql {
      * @param var the variable to find the median of
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Optional<Number>> median(String var) {
+    public static Aggregate<Number> median(String var) {
         return Aggregates.median(Graql.var(var));
     }
 
@@ -304,7 +303,7 @@ public class Graql {
      * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Optional<Double>> std(String var) {
+    public static Aggregate<Number> std(String var) {
         return Aggregates.std(Graql.var(var));
     }
 
@@ -313,7 +312,7 @@ public class Graql {
      * @param var the variable to group results by
      */
     @CheckReturnValue
-    public static Aggregate<Answer, Map<Concept, List<Answer>>> group(String var) {
+    public static Aggregate<Map<Concept, List<Answer>>> group(String var) {
         return group(var, Aggregates.list());
     }
 
@@ -324,31 +323,29 @@ public class Graql {
      * @param <T> the type the aggregate returns
      */
     @CheckReturnValue
-    public static <T> Aggregate<Answer, Map<Concept, T>> group(
-            String var, Aggregate<? super Answer, T> aggregate) {
+    public static <T> Aggregate<Map<Concept, T>> group(
+            String var, Aggregate<T> aggregate) {
         return Aggregates.group(Graql.var(var), aggregate);
     }
 
     /**
      * Create an aggregate that will collect together several named aggregates into a map.
      * @param aggregates the aggregates to join together
-     * @param <S> the type that the query returns
      * @param <T> the type that each aggregate returns
      */
     @CheckReturnValue
     @SafeVarargs
-    public static <S, T> Aggregate<S, Map<String, T>> select(NamedAggregate<? super S, ? extends T>... aggregates) {
+    public static <T> Aggregate<Map<String, T>> select(NamedAggregate<? extends T>... aggregates) {
         return select(ImmutableSet.copyOf(aggregates));
     }
 
     /**
      * Create an aggregate that will collect together several named aggregates into a map.
      * @param aggregates the aggregates to join together
-     * @param <S> the type that the query returns
      * @param <T> the type that each aggregate returns
      */
     @CheckReturnValue
-    public static <S, T> Aggregate<S, Map<String, T>> select(Set<NamedAggregate<? super S, ? extends T>> aggregates) {
+    public static <T> Aggregate<Map<String, T>> select(Set<NamedAggregate<? extends T>> aggregates) {
         return Aggregates.select(ImmutableSet.copyOf(aggregates));
     }
 

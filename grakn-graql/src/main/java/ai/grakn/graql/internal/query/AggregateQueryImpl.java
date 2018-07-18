@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -32,7 +31,7 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
 
-    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<? super Answer, T> aggregate) {
+    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<T> aggregate) {
         return new AutoValue_AggregateQueryImpl<>(match, aggregate);
     }
 

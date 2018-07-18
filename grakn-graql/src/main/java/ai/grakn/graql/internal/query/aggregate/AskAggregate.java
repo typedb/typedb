@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.admin.Answer;
+
 import java.util.stream.Stream;
 
 /**
@@ -25,7 +27,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class AskAggregate extends AbstractAggregate<Object,Boolean> {
+public class AskAggregate extends AbstractAggregate<Boolean> {
 
     private static final AskAggregate INSTANCE = new AskAggregate();
 
@@ -37,7 +39,7 @@ public class AskAggregate extends AbstractAggregate<Object,Boolean> {
     }
 
     @Override
-    public Boolean apply(Stream<?> stream) {
+    public Boolean apply(Stream<? extends Answer> stream) {
         return stream.findAny().isPresent();
     }
 

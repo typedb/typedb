@@ -90,7 +90,9 @@ message Transaction {
     message Query {
         message Req {
             string query = 1;
-            bool infer = 2; // If this is not present, leave at server default.
+            INFER infer = 2;
+            // We cannot use bool for `infer` because GRPC's default value for bool is FALSE
+            // We use enum INFER instead, because the default value is index 0 (TRUE)
         }
         message Iter {
             oneof iter {
@@ -100,6 +102,11 @@ message Transaction {
             message Res {
                 Answer answer = 1;
             }
+        }
+        enum INFER {
+            TRUE = 0;
+            FALSE = 1;
+            // The default value of this enum is 0 (TRUE)
         }
     }
 

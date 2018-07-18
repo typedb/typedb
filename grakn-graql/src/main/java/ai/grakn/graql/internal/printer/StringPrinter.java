@@ -177,8 +177,6 @@ class StringPrinter extends Printer<StringBuilder> {
         else if (computeAnswer.getPaths().isPresent()) {
             builder.append(collection(computeAnswer.getPaths().get()));
         }
-        //TODO: remove
-        System.out.println("BUILDER: " + builder.toString());
 
         return builder;
     }
