@@ -9,6 +9,7 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
+    await session.close();
     graknClient.keyspace.delete("testcommit");
     env.tearDown();
 });
