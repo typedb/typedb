@@ -2,17 +2,16 @@
 title: Google Cloud Deployment
 keywords: cloud, deployment, google
 tags: [getting-started, deployment, cloud]
-summary: "Deploying Grakn on Google Cloud"
+summary: "Deploying Grakn on Google Cloud Platform"
 sidebar: documentation_sidebar
 permalink: /docs/cloud-deployment/gc-deployment
 folder: docs
 ---
 
-# Google Cloud Launcher
+# GCP Marketplace
 
 ## Deployment
-We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the
-[Cloud Launcher](https://console.cloud.google.com/launcher/details/grakn-public/grakn-kgms-premium):
+We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the listing in [GCP Marketplace](https://console.cloud.google.com/marketplace/details/grakn-public/grakn-kgms-premium):
 
 ![](/images/gc-solution-listing.png)
 
