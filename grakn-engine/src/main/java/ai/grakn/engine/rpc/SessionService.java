@@ -229,7 +229,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
-            Query<?> query = tx().graql().infer(request.getInfer()).parse(request.getQuery());
+            Query<?> query = tx().graql()
+                    .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))
+                    .parse(request.getQuery());
 
             Stream<Transaction.Res> responseStream;
             int iteratorId;
