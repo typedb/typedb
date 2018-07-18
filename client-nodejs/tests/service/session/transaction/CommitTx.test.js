@@ -52,7 +52,7 @@ describe('Integration test', () => {
         expect(answer.get().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);
         tx.close()
-        localSession.close();
+        await localSession.close();
     });
 
     test("no results with infer false", async () => {
@@ -62,7 +62,7 @@ describe('Integration test', () => {
         const answer = await iterator.next();
         expect(answer).toBeNull();
         tx.close();
-        localSession.close();
+        await localSession.close();
     });
 
 });

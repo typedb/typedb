@@ -13,7 +13,7 @@ module.exports = {
     session: () => session,
     tearDown: async () => {
         await graknClient.keyspace.delete(TEST_KEYSPACE);
-        session.close();
+        await session.close();
     },
     dataType: () => Grakn.dataType,
     txType: () => Grakn.txType,
