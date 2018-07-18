@@ -58,7 +58,7 @@ public class EngineGraknSessionTest {
     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
 
-    //Needed to start cass depending on profile
+    //Needed to startBackground cass depending on profile
     @ClassRule
     public static final SessionContext sessionContext = SessionContext.create();
 

@@ -148,7 +148,7 @@ public class DistributionContext extends CompositeTestRule {
         propertiesFile.deleteOnExit();
         config.write(propertiesFile);
 
-        // Java commands to start Engine process
+        // Java commands to startBackground Engine process
         String[] commands = {"java",
                 "-cp", getClassPath(),
                 "-Dgrakn.dir=" + EXTRACTED_DISTRIBUTION_DIRECTORY,
@@ -200,6 +200,6 @@ public class DistributionContext extends CompositeTestRule {
         } catch (IOException e) {
             LOG.error("logs/grakn.log: unable to open " + graknLog.toAbsolutePath().toString());
         }
-        throw new RuntimeException("Could not start engine within expected time");
+        throw new RuntimeException("Could not startBackground engine within expected time");
     }
 }

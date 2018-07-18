@@ -95,7 +95,7 @@ public class KBWriterMainTest {
     public void exportCalledWithIncorrectURI_ErrorIsPrintedToSystemErr(){
         run("export", "-u", engine.uri().toString().substring(1), "-data", "-keyspace", session.keyspace().getValue());
 
-        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
+        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server startBackground'?"));
     }
 
     private void run(String... args){

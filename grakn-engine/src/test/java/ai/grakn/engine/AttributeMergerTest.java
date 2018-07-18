@@ -2,9 +2,9 @@ package ai.grakn.engine;
 
 import org.junit.Test;
 
-public class UniquenessProcessorTest {
+public class AttributeMergerTest {
     // Unique Attribute
-    // - deduplicate
+    // - merge
     // - optimise with janus unique index
     // - reduce by propertyUnique (deprecate)
 
