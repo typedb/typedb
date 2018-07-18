@@ -44,26 +44,26 @@ describe('Integration test', () => {
         newTx.close();
     });
 
-    // test("explanation", async () => {
-    //     const localSession = graknClient.session("gene");
-    //     const tx = await localSession.transaction(env.txType().WRITE);
-    //     const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: true });
-    //     const answer = await iterator.next();
-    //     expect(answer.get().size).toBe(1);
-    //     expect(answer.explanation().answers()).toHaveLength(3);
-    //     tx.close()
-    //     localSession.close();
-    // });
+    test("explanation", async () => {
+        const localSession = graknClient.session("gene");
+        const tx = await localSession.transaction(env.txType().WRITE);
+        const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: true });
+        const answer = await iterator.next();
+        expect(answer.get().size).toBe(1);
+        expect(answer.explanation().answers()).toHaveLength(3);
+        tx.close()
+        localSession.close();
+    });
 
-    // test("no results with infer false", async () => {
-    //     const localSession = graknClient.session("gene");
-    //     const tx = await localSession.transaction(env.txType().WRITE);
-    //     const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: false });
-    //     const answer = await iterator.next();
-    //     expect(answer).toBeNull();
-    //     tx.close();
-    //     localSession.close();
-    // });
+    test("no results with infer false", async () => {
+        const localSession = graknClient.session("gene");
+        const tx = await localSession.transaction(env.txType().WRITE);
+        const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: false });
+        const answer = await iterator.next();
+        expect(answer).toBeNull();
+        tx.close();
+        localSession.close();
+    });
 
 });
 
