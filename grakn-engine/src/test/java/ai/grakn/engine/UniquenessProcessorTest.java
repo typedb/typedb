@@ -2,7 +2,7 @@ package ai.grakn.engine;
 
 import org.junit.Test;
 
-public class AttributeUniquenessTest {
+public class UniquenessProcessorTest {
     // Unique Attribute
     // - deduplicate
     // - optimise with janus unique index
