@@ -27,10 +27,10 @@ describe('Integration test', () => {
 
     test("If tx does not commit, different Tx won't see changes", async () => {
         const tx = await session.transaction(env.txType().WRITE);
-        await tx.query("define superman sub entity;");
+        await tx.query("define catwoman sub entity;");
         tx.close()
         const newTx = await session.transaction(env.txType().WRITE);
-        await expect(newTx.query("match $x sub superman; get;")).rejects.toThrowError(); // superman label does not exist in the graph
+        await expect(newTx.query("match $x sub catwoman; get;")).rejects.toThrowError(); // catwoman label does not exist in the graph
         newTx.close();
     });
 
@@ -44,10 +44,10 @@ describe('Integration test', () => {
         newTx.close();
     });
 
-    test("explanation", async () => {
+    test("explanation and default of infer is true", async () => {
         const localSession = graknClient.session("gene");
         const tx = await localSession.transaction(env.txType().WRITE);
-        const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: true });
+        const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;");
         const answer = await iterator.next();
         expect(answer.get().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);

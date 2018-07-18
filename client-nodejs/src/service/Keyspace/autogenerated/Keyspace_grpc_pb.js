@@ -2,7 +2,7 @@
 
 'use strict';
 var grpc = require('grpc');
-var Keyspace_pb = require('./KeyspaceMessages');
+var Keyspace_pb = require('./Keyspace_pb.js');
 
 function serialize_keyspace_Keyspace_Create_Req(arg) {
   if (!(arg instanceof Keyspace_pb.Keyspace.Create.Req)) {

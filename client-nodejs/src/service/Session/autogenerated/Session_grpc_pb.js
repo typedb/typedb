@@ -2,7 +2,7 @@
 
 'use strict';
 var grpc = require('grpc');
-var Session_pb = require('./SessionMessages.js');
+var Session_pb = require('./Session_pb.js');
 var Concept_pb = require('./Concept_pb.js');
 var Answer_pb = require('./Answer_pb.js');
 
