@@ -34,8 +34,8 @@ Execute Graql query (this example works inside an `async` function):
 
 ```
 const resultIterator = await tx.query("match $x isa person; limit 10; get;");
-const resultMap = await resultIterator.next();
-const person = resultMap.get('x');
+const answer = await resultIterator.next();
+const person = answer.get().get('x');
 tx.close();
 ```
 
@@ -52,41 +52,73 @@ on the Grakn object the following methods are available:
 
 **Grakn**
 
-| Method                                   | Return type       | Description                                                                                                        |
-| ---------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `session(String keyspace)`               | *GraknSession*    | Return a new GraknSession bound to the specified keyspace                                                          |
-| async `keyspace.delete(String keyspace)` | *void*            | Deletes the specified keyspace                                                                                     |
-| async `keyspace.retrieve()`              | Array of *String* | Retrieves all available keyspaces                                                                                  |
-| `close()`                                | *void*            | Closes all the connections and services. This must be used in order to gracefully close communication with server. |
+| Method                                   | Return type       | Description                                          |
+| ---------------------------------------- | ----------------- | ---------------------------------------------------- |
+| `session(String keyspace)`               | *Session*         | Return a new Session bound to the specified keyspace |
+| async `keyspace.delete(String keyspace)` | *void*            | Deletes the specified keyspace                       |
+| async `keyspace.retrieve()`              | Array of *String* | Retrieves all available keyspaces                    |
 
 
 
-on the GraknSession the following methods are available:
+on the Session the following methods are available:
 
-**GraknSession**
+**Session**
 
-| Method                            | Return type   | Description                                                    |
-| --------------------------------- | ------------- | -------------------------------------------------------------- |
-| async `transaction(Grakn.txType)` | *Transaction* | Return a new Transaction bound to the keyspace of this session |
+| Method                            | Return type   | Description                                                                           |
+| --------------------------------- | ------------- | ------------------------------------------------------------------------------------- |
+| async `transaction(Grakn.txType)` | *Transaction* | Return a new Transaction bound to the keyspace of this session                        |
+| `close()`                         | *void*        | This must be used to correctly terminate session and close communication with server. |
  
 
 Once obtained a `Transaction` you will be able to:
 
  **Transaction**  
  
-| Method                                                       | Return type                          | Description                                                                                                                                                       |
-| ------------------------------------------------------------ | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| async `query(String graqlQuery)`                             | Iterator of Map<*String*, *Concept*> | Executes a Graql query on the session keyspace. It returns a list of Maps, in each map the key represents the Graql variable specified in the query               |
-| async `commit()`                                             | *void*                               | Commit current Transaction, persisting changes in the graph. After committing, the transaction will be closed and you will need to get a new one from the session |
-| async `close()`                                              | *void*                               | Closes current Transaction without committing. This makes the transaction unusable.                                                                               |
-| async `getConcept(String conceptId)`                         | *Concept* or *null*                  | Retrieves a Concept by ConceptId                                                                                                                                  |
-| async `getSchemaConcept(String label)`                       | *SchemaConcept* or *null*            | Retrieves a SchemaConcept by label                                                                                                                                |
-| async `getAttributesByValue(attributeValue, Grakn.dataType)` | Iterator of *Attribute*              | Get all Attributes holding the value provided, if any exists                                                                                                      |
-| async `putEntityType(String label)`                          | *EntityType*                         | Create a new EntityType with super-type entity, or return a pre-existing EntityType with the specified label                                                      |
-| async `putRelationshipType(String label)`                    | *RelationshipType*                   | Create a new RelationshipType with super-type relation, or return a pre-existing RelationshipType with the specified label                                        |
-| async `putAttributeType(String label, Grakn.dataType)`       | *AttributeType*                      | Create a new AttributeType with super-type attribute, or return a pre-existing AttributeType with the specified label and DataType                                |
-| async `putRole(String label)`                                | *Role*                               | Create a Role, or return a pre-existing Role, with the specified label.                                                                                           |
-| async `putRule(String label, String when, String then)`      | *Rule*                               | Create a Rule, or return a pre-existing Rule, with the specified label                                                                                            |
+| Method                                                       | Return type               | Description                                                                                                                                                                                    |
+| ------------------------------------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| async `query(String graqlQuery[, { infer }])`                | Iterator of *Answer*      | Executes a Graql query on the session keyspace. It's possible to specify whether to enable inference passing an object with *infer* property set to true or false. Inference is ON by default. |
+| async `commit()`                                             | *void*                    | Commit current Transaction, persisting changes in the graph. After committing, the transaction will be closed and you will need to get a new one from the session                              |
+| async `close()`                                              | *void*                    | Closes current Transaction without committing. This makes the transaction unusable.                                                                                                            |
+| async `getConcept(String conceptId)`                         | *Concept* or *null*       | Retrieves a Concept by ConceptId                                                                                                                                                               |
+| async `getSchemaConcept(String label)`                       | *SchemaConcept* or *null* | Retrieves a SchemaConcept by label                                                                                                                                                             |
+| async `getAttributesByValue(attributeValue, Grakn.dataType)` | Iterator of *Attribute*   | Get all Attributes holding the value provided, if any exists                                                                                                                                   |
+| async `putEntityType(String label)`                          | *EntityType*              | Create a new EntityType with super-type entity, or return a pre-existing EntityType with the specified label                                                                                   |
+| async `putRelationshipType(String label)`                    | *RelationshipType*        | Create a new RelationshipType with super-type relation, or return a pre-existing RelationshipType with the specified label                                                                     |
+| async `putAttributeType(String label, Grakn.dataType)`       | *AttributeType*           | Create a new AttributeType with super-type attribute, or return a pre-existing AttributeType with the specified label and DataType                                                             |
+| async `putRole(String label)`                                | *Role*                    | Create a Role, or return a pre-existing Role, with the specified label.                                                                                                                        |
+| async `putRule(String label, String when, String then)`      | *Rule*                    | Create a Rule, or return a pre-existing Rule, with the specified label                                                                                                                         |
+
+**Iterator**
+
+Some of the following Concept methods return an Iterator,
+on every iterator the following methods are available:
+
+| Method                    | Return type                 | Description                                                                                                                                                                                                                                                               |
+| ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| async `next()`            | *IteratorElement* or *null* | Retrieves next element or returns null when no more elements are available                                                                                                                                                                                                |
+| async `collect()`         | Array of *IteratorElement*  | Consumes the iterator and collect all the elements into an array                                                                                                                                                                                                          |
+| async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator returned by transaction.query() method**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
+
+**IteratorElement**
+
+Element handled by iterators, depending on the type of iterator this can be a type of *Concept* or an *Answer*.
+
+**Answer**
+
+This object represents a query answer and it is contained in the Iterator returned by `transaction.query()` method, the following methods are available:
+
+| Method          | Return type              | Description                                                                                     |
+| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `get()`         | Map<*String*, *Concept*> | Returns result map in which every variable name (key) is linked to a Concept.                   |
+| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
+
+**Explanation**
+
+| Method           | Return type       | Description |
+| ---------------- | ----------------- | ----------- |
+| `queryPattern()` | String            |             |
+| `answers()`      | Array of *Answer* |             |
+
 
 **Concepts hierarchy** 
 
@@ -108,15 +140,6 @@ Grakn is composed of different types of Concepts, that have a specific hierarchy
                     /         |       \
             EntityType  AttributeType  RelationshipType
 ```
-**Iterator**
-
-Some of the following Concept methods return an Iterator,
-on every iterator the following methods are available:
-
-| Method            | Return type                  | Description                                                                |
-| ----------------- | ---------------------------- | -------------------------------------------------------------------------- |
-| async `next()`    | *Iterator element* or *null* | Retrieves next element or returns null when no more elements are available |
-| async `collect()` | Array of *Iterator element*  | Consumes the iterator and collect all the elements into an array           |
 
 **Concept** 
 

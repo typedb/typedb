@@ -32,8 +32,8 @@ describe("Attribute methods", () => {
     //     const personType = await tx.putEntityType('person');
     //     await personType.attribute(dateType);
 
-    //     const insertionResult = await tx.query("insert $x isa person, has birth-date 2018-08-06;");
-    //     const concepts = insertionResult.map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
+    //     const iterator = await tx.query("insert $x isa person, has birth-date 2018-08-06;");
+    //     const concepts = (await iterator.collectConcept());
     //     const person = concepts[0];
     //     const attrs = await person.attributes();
     //     const date = attrs[0];

@@ -330,8 +330,8 @@ TxService.prototype.commit = function () {
     return this.communicator.send(txRequest);
 }
 
-TxService.prototype.query = function executeQuery(query) {
-    const txRequest = RequestBuilder.executeQuery(query);
+TxService.prototype.query = function executeQuery(query, options) {
+    const txRequest = RequestBuilder.executeQuery(query, options);
     return this.communicator.send(txRequest)
         .then(resp => this.respConverter.executeQuery(resp));
 };

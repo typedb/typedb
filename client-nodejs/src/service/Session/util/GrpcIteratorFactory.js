@@ -1,35 +1,25 @@
 const RequestBuilder = require("./RequestBuilder");
+const AnswerFactory = require("./AnswerFactory");
 
 function GrpcIteratorFactory(conceptFactory, communicator) {
   this.communicator = communicator;
   this.conceptFactory = conceptFactory;
+  this.answerFactory = new AnswerFactory(conceptFactory);
 }
 
 // Query Iterator
 
 GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
-  function mapQueryAnswer(queryAnswer, conceptFactory) {
-    const answerMap = new Map();
-    queryAnswer.getQueryanswerMap()
-      .forEach((grpcConcept, key) => {
-        answerMap.set(key, conceptFactory.createConcept(grpcConcept));
-      });
-    return answerMap;
-  }
-
-  function mapComputeAnswer(computeAnswer, conceptFactory) {
-
-  }
-
-  mapResponse = (response, conceptFactory) => {
+  mapResponse = (response) => {
     const iterRes = response.getIterateRes();
     if (iterRes.getDone()) return null;
     const answer = iterRes.getQueryIterRes().getAnswer();
-    if (answer.hasQueryanswer()) return mapQueryAnswer(answer.getQueryanswer(), conceptFactory);
-    if (answer.hasComputeanswer()) return mapComputeAnswer(answer.getComputeAnswer(), conceptFactory);
-    // add aggregate answer
+    return this.answerFactory.createAnswer(answer);
   }
-  return new Iterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId), mapResponse);
+  const iterator = new Iterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId), mapResponse);
+  // Extend iterator with helper method collectConcepts()
+  iterator.collectConcepts = async function () { return (await this.collect()).map(a => Array.from(a.get().values())).reduce((a, c) => a.concat(c), []); };
+  return iterator;
 };
 
 //Concept Iterator

@@ -23,9 +23,7 @@ describe("Transaction methods", () => {
   test("getConcept", async () => {
     await tx.query("define person sub entity;");
     const iterator = await tx.query("insert $x isa person;");
-    // const concepts = iterator.map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
-    // expect(concepts.length).toBe(1);
-    const person = (await iterator.next()).get('x');
+    const person = (await iterator.next()).get().get('x');
     const personId = person.id;
 
     const samePerson = await tx.getConcept(personId);
@@ -41,7 +39,7 @@ describe("Transaction methods", () => {
   test("Ensure no duplicates in metatypes", async () => {
     await tx.query("define person sub entity;");
     const result = await tx.query("match $x sub entity; get;");
-    const concepts = (await result.collect()).map(map => Array.from(map.values())).reduce((a, c) => a.concat(c), []);
+    const concepts = (await result.collectConcepts());
     expect(concepts.length).toBe(2);
     const set = new Set(concepts.map(concept => concept.id));
     expect(set.size).toBe(2);
@@ -113,4 +111,5 @@ describe("Transaction methods", () => {
     const bondAttributes = await (await tx.getAttributesByValue('Bond', env.dataType().STRING)).collect();
     expect(bondAttributes).toHaveLength(0);
   });
+
 });

@@ -486,11 +486,14 @@ const methods = {
     txRequest.setCommitReq(commitMessage);
     return txRequest;
   },
-  executeQuery: function (query, infer) {
+  executeQuery: function (query, options) {
     const txRequest = new messages.Transaction.Req();
     const queryMessage = new messages.Transaction.Query.Req();
     queryMessage.setQuery(query);
-    if (infer) queryMessage.setInfer(infer);
+    if (options) {
+      if ('infer' in options)
+        queryMessage.setInfer(options.infer);
+    }
     txRequest.setQueryReq(queryMessage);
     return txRequest;
   },

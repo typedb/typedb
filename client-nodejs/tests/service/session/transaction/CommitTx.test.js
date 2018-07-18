@@ -1,18 +1,16 @@
-const Grakn = require("../../../../src/Grakn");
 const env = require('../../../support/GraknTestEnvironment');
-const DEFAULT_URI = "localhost:48555";
 
-
+let graknClient;
 let session;
 
 beforeAll(() => {
-    const grakn = new Grakn(DEFAULT_URI);
-    session = grakn.session(env.newKeyspace());
+    graknClient = env.graknClient;
+    session = graknClient.session("testcommit");
 });
 
 afterAll(async () => {
-    // await session.deleteKeyspace();
-    session.close();
+    graknClient.keyspace.delete("testcommit");
+    env.tearDown();
 });
 
 describe('Integration test', () => {
@@ -45,6 +43,27 @@ describe('Integration test', () => {
         expect(superman.isSchemaConcept()).toBeTruthy();
         newTx.close();
     });
+
+    // test("explanation", async () => {
+    //     const localSession = graknClient.session("gene");
+    //     const tx = await localSession.transaction(env.txType().WRITE);
+    //     const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: true });
+    //     const answer = await iterator.next();
+    //     expect(answer.get().size).toBe(1);
+    //     expect(answer.explanation().answers()).toHaveLength(3);
+    //     tx.close()
+    //     localSession.close();
+    // });
+
+    // test("no results with infer false", async () => {
+    //     const localSession = graknClient.session("gene");
+    //     const tx = await localSession.transaction(env.txType().WRITE);
+    //     const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: false });
+    //     const answer = await iterator.next();
+    //     expect(answer).toBeNull();
+    //     tx.close();
+    //     localSession.close();
+    // });
 
 });
 

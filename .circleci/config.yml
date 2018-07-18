@@ -68,7 +68,6 @@ jobs:
       ##############################################################################
       - run:
           name: Prepare apt repositories
-          name: Prepare apt repositories
           command: |
             curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
             echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
@@ -282,6 +281,7 @@ jobs:
             name: Install yarn
             command: sudo apt-get -y install yarn
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+        - run: cd grakn-dist/target/grakn-dist-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: cd client-nodejs && yarn install && yarn run test
 
 workflows:

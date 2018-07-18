@@ -14,8 +14,8 @@ function Transaction(txService) {
  * Executes a given Graql query on the current keyspace
  * @param {String} query String representing a Graql query 
  */
-Transaction.prototype.query = function executeQuery(query) {
-    return this.txService.query(query);
+Transaction.prototype.query = function executeQuery(query, options) {
+    return this.txService.query(query, options);
 };
 
 /**
