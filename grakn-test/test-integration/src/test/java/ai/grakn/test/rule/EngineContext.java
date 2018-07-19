@@ -199,7 +199,7 @@ public class EngineContext extends CompositeTestRule {
         // we end up wanting to use the JanusFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
-        // startBackground engine
+        // start engine
         setRestAssuredUri(config);
 
         sparkHttp = spark.Service.ignite();

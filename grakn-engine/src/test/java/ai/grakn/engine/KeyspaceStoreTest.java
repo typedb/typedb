@@ -69,7 +69,7 @@ public class KeyspaceStoreTest {
     private static Grakn graknClient;
 
 
-    //Needed to startBackground cass depending on profile
+    //Needed to start cass depending on profile
     @ClassRule
     public static final SessionContext sessionContext = SessionContext.create();
 
