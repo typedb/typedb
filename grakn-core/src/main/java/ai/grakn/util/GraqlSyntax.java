@@ -56,7 +56,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 
@@ -200,7 +199,7 @@ public class GraqlSyntax {
             accepted.put(CENTRALITY, ImmutableMap.of(K_CORE, ImmutableSet.of(MIN_K)));
             accepted.put(CLUSTER, ImmutableMap.of(
                     K_CORE, ImmutableSet.of(K),
-                    CONNECTED_COMPONENT, ImmutableSet.of(SIZE, MEMBERS, CONTAINS)
+                    CONNECTED_COMPONENT, ImmutableSet.of(SIZE, CONTAINS)
             ));
 
             return ImmutableMap.copyOf(accepted);
@@ -210,10 +209,7 @@ public class GraqlSyntax {
             Map<Method, Map<Algorithm, Map<Parameter, Object>>> defaults = new HashMap<>();
 
             defaults.put(CENTRALITY, ImmutableMap.of(K_CORE, ImmutableMap.of(MIN_K, Argument.DEFAULT_MIN_K)));
-            defaults.put(CLUSTER, ImmutableMap.of(
-                    K_CORE, ImmutableMap.of(K, Argument.DEFAULT_K),
-                    CONNECTED_COMPONENT, ImmutableMap.of(MEMBERS, Argument.DEFAULT_MEMBERS)
-            ));
+            defaults.put(CLUSTER, ImmutableMap.of(K_CORE, ImmutableMap.of(K, Argument.DEFAULT_K)));
 
             return ImmutableMap.copyOf(defaults);
         }
@@ -368,7 +364,6 @@ public class GraqlSyntax {
             MIN_K("min-k"),
             K("k"),
             CONTAINS("contains"),
-            MEMBERS("members"),
             SIZE("size");
 
             private final String param;
@@ -401,7 +396,6 @@ public class GraqlSyntax {
 
             public final static long DEFAULT_MIN_K = 2L;
             public final static long DEFAULT_K = 2L;
-            public final static boolean DEFAULT_MEMBERS = false;
 
             private Parameter param;
             private T arg;
@@ -429,10 +423,6 @@ public class GraqlSyntax {
 
             public static Argument<Long> size(long size) {
                 return new Argument<>(SIZE, size);
-            }
-
-            public static Argument<Boolean> members(boolean members) {
-                return new Argument<>(MEMBERS, members);
             }
 
             public static Argument<ConceptId> contains(ConceptId conceptId) {

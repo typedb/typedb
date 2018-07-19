@@ -415,7 +415,7 @@ public class ServerRPCIT {
 
             // connected component member
             Set<Set<ConceptId>> membersList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership").where(members(true)).execute().asConceptSet().get();
+                    .in("human", "animal", "pet-ownership").execute().asConceptSet().get();
             assertEquals(1, membersList.size());
             Set<ConceptId> memberSet = membersList.iterator().next();
             assertEquals(3, memberSet.size());

@@ -700,9 +700,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
             } else if (argContext instanceof GraqlParser.ComputeArgKContext) {
                 argList.add(Argument.k(getInteger(((GraqlParser.ComputeArgKContext) argContext).INTEGER())));
 
-            } else if (argContext instanceof GraqlParser.ComputeArgMembersContext) {
-                argList.add(Argument.members(visitBool(((GraqlParser.ComputeArgMembersContext) argContext).bool())));
-
             } else if (argContext instanceof GraqlParser.ComputeArgSizeContext) {
                 argList.add(Argument.size(getInteger(((GraqlParser.ComputeArgSizeContext) argContext).INTEGER())));
 

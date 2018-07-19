@@ -209,9 +209,6 @@ public interface ComputeQuery<T> extends Query<List<T>> {
         Optional<Long> size();
 
         @CheckReturnValue
-        Optional<Boolean> members();
-
-        @CheckReturnValue
         Optional<ConceptId> contains();
     }
 

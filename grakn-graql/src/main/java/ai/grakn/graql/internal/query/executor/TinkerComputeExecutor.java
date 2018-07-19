@@ -473,7 +473,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
                 .map(centrality -> new ConceptSetMeasure(centrality.getValue(), centrality.getKey()));
     }
 
-    private Stream<? extends Answer> runComputeCluster() {
+    private Stream<ConceptSet> runComputeCluster() {
         if (query.using().get().equals(K_CORE)) return runComputeKCore();
         if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent();
 
@@ -481,9 +481,8 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
     }
 
 
-    private Stream<? extends Answer> runComputeConnectedComponent() {
+    private Stream<ConceptSet> runComputeConnectedComponent() {
         boolean restrictSize = query.where().get().size().isPresent();
-        boolean getMembers = query.where().get().members().get();
 
         if (!scopeContainsInstance()) {
             LOG.info("Selected types don't have instances");
@@ -504,24 +503,24 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
         }
 
         GraknMapReduce<?> mapReduce;
-
-        if (restrictSize) {
-            if (getMembers) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
-            else mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
-        } else {
-            if (getMembers) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-            else mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
-        }
+        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
+        else mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 
         Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
+        Map<String, Set<ConceptId>> result = memory.get(mapReduce.getClass().getName());
+        return result.values().stream().map(ConceptSet::new);
 
-        if (getMembers) {
-            Map<String, Set<ConceptId>> result = memory.get(mapReduce.getClass().getName());
-            return result.values().stream().map(ConceptSet::new);
-        } else {
-            Map<String, Long> result = memory.get(mapReduce.getClass().getName());
-            return result.values().stream().map(Numeric::new);
-        }
+//        TODO: Enable the following compute cluster-size through a separate compute method
+//        if (!query.where().get().members().get()) {
+//            GraknMapReduce<?> mapReduce;
+//            if (restrictSize) {
+//                mapreduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().get().size().get());
+//            } else {
+//                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
+//            }
+//            Map<String, Long> result = memory.get(mapReduce.getClass().getName());
+//            return result.values().stream().map(Numeric::new);
+//        }
     }
 
     private Stream<ConceptSet> runComputeKCore() {

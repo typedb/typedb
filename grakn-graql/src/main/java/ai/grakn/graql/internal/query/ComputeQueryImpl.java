@@ -25,8 +25,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.AnswerList;
-import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
@@ -75,7 +73,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 import static java.util.stream.Collectors.joining;
@@ -468,7 +465,6 @@ public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T
             arguments.put(MIN_K, this::minK);
             arguments.put(K, this::k);
             arguments.put(SIZE, this::size);
-            arguments.put(MEMBERS, this::members);
             arguments.put(CONTAINS, this::contains);
 
             return arguments;
@@ -511,14 +507,6 @@ public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T
         }
 
         @Override
-        public Optional<Boolean> members() {
-            Object defaultArg = getDefaultArgument(MEMBERS);
-            if (defaultArg != null) return Optional.of((Boolean) defaultArg);
-
-            return Optional.ofNullable((Boolean) getArgumentValue(MEMBERS));
-        }
-
-        @Override
         public Optional<ConceptId> contains() {
             return Optional.ofNullable((ConceptId) getArgumentValue(CONTAINS));
         }
@@ -549,7 +537,6 @@ public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T
             return (this.minK().equals(that.minK()) &&
                     this.k().equals(that.k()) &&
                     this.size().equals(that.size()) &&
-                    this.members().equals(that.members()) &&
                     this.contains().equals(that.contains()));
         }
 
