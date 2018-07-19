@@ -62,8 +62,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -96,8 +94,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final ImmutableSet<Atomic> atomSet;
     private Answer substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
-
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         this.tx = tx;
@@ -538,8 +534,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         } else {
             dbIterator = Collections.emptyIterator();
             ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
-
-            LOG.trace("CQ plan:\n" + queryPlan);
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);

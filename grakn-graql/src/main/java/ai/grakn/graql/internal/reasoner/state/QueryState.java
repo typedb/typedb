@@ -54,6 +54,11 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
     }
 
     @Override
+    public String toString(){
+        return getClass() + "\n" + getQuery() + "\n";
+    }
+
+    @Override
     public ResolutionState generateSubGoal() {
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
