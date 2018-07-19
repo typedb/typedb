@@ -17,9 +17,9 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.client.Grakn;
 import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;

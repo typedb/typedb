@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -67,7 +66,6 @@ public class GraknTxJanusTest extends JanusTestBase {
             graknTx = janusGraphFactory.open(GraknTxType.WRITE);
         }
 
-        when(session.uri()).thenReturn(Grakn.IN_MEMORY);
         when(session.config()).thenReturn(TEST_CONFIG);
     }
 

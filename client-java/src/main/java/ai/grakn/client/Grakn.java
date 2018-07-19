@@ -116,11 +116,6 @@ public final class Grakn {
         }
 
         @Override
-        public String uri() {
-            return uri.toString();
-        }
-
-        @Override
         public Keyspace keyspace() {
             return keyspace;
         }

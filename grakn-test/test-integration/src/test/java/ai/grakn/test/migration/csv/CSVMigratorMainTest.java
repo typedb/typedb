@@ -18,9 +18,9 @@
 
 package ai.grakn.test.migration.csv;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;

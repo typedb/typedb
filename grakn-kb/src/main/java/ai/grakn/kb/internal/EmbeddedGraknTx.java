@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -57,11 +56,8 @@ import ai.grakn.kb.internal.concept.TypeImpl;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import ai.grakn.util.SimpleURI;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -73,10 +69,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.ws.rs.core.UriBuilder;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -654,10 +648,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         clearGraph();
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
 
-        //TODO We should not hit the REST endpoint when deleting keyspaces through a graph
-        // retrieved from and EngineGraknGraphFactory
-        //Remove the graph from the system keyspace
-        EngineCommunicator.contactEngine(getDeleteKeyspaceEndpoint(), REST.HttpConn.DELETE_METHOD);
+        //Access KeyspaceStore here
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -781,18 +772,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             List<String> errors = validator.getErrorsFound();
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
-    }
-
-    @Nullable
-    private URI getDeleteKeyspaceEndpoint() {
-        if (Grakn.IN_MEMORY.equals(session().uri())) {
-            return null;
-        }
-
-        URI uri = UriBuilder.fromUri(new SimpleURI(session().uri()).toURI())
-                .path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace().getValue()))
-                .build();
-        return uri;
     }
 
     public boolean isValidElement(Element element) {

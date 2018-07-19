@@ -75,7 +75,7 @@ public class BatchExecutorClientIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = EmbeddedGraknSession.create(keyspace, engine.uri().toString());
+        this.session = EmbeddedGraknSession.create(keyspace, engine.config());
     }
 
     @Ignore("This test stops and restart server - this is not supported yet by gRPC [https://github.com/grpc/grpc/issues/7031] - fix when gRPC 1.1 is released")

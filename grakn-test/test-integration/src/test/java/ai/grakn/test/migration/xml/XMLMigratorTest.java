@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration.xml;
 
-import ai.grakn.Grakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;

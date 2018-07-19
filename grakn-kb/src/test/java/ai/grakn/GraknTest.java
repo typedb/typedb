@@ -41,15 +41,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").transaction(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
+        assertThat(Grakn.sessionInMemory( "test").transaction(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknTx test1 = Grakn.session(Grakn.IN_MEMORY, "test1").transaction(GraknTxType.WRITE);
+        GraknTx test1 = Grakn.sessionInMemory( "test1").transaction(GraknTxType.WRITE);
         test1.close();
-        GraknTx test11 = Grakn.session(Grakn.IN_MEMORY, "test1").transaction(GraknTxType.WRITE);
-        GraknTx test2 = Grakn.session(Grakn.IN_MEMORY, "test2").transaction(GraknTxType.WRITE);
+        GraknTx test11 = Grakn.sessionInMemory( "test1").transaction(GraknTxType.WRITE);
+        GraknTx test2 = Grakn.sessionInMemory( "test2").transaction(GraknTxType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -57,26 +57,26 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "default").transaction(GraknTxType.WRITE);
+        GraknTx graph = Grakn.sessionInMemory( "default").transaction(GraknTxType.WRITE);
         graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, "default").transaction(GraknTxType.WRITE);
+        graph = Grakn.sessionInMemory( "default").transaction(GraknTxType.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
 
     @Test
     public void testComputer(){
-        GraknComputer computer = ((EmbeddedGraknSession) Grakn.session(Grakn.IN_MEMORY, "bob")).getGraphComputer();
+        GraknComputer computer = ((EmbeddedGraknSession) Grakn.sessionInMemory( "bob")).getGraphComputer();
         assertThat(computer, instanceOf(GraknComputer.class));
     }
 
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).transaction(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.sessionInMemory( keyspace).transaction(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).transaction(GraknTxType.BATCH);
+        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.sessionInMemory( keyspace).transaction(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());
@@ -93,7 +93,7 @@ public class GraknTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i =0; i < 50; i ++){
-            futures.add(pool.submit(() -> sessions.add(Grakn.session(Grakn.IN_MEMORY, keyspace))));
+            futures.add(pool.submit(() -> sessions.add(Grakn.sessionInMemory(keyspace))));
         }
 
         for (Future<?> future : futures) {

@@ -41,7 +41,7 @@ public class KeyspaceSessionImpl implements KeyspaceSession {
     private final EmbeddedGraknSession session;
 
     public KeyspaceSessionImpl(GraknConfig config) {
-        session = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, engineURI(config), config, GraknTxFactoryBuilder.getInstance());
+        session = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, config, GraknTxFactoryBuilder.getInstance());
     }
 
     @Override
@@ -49,7 +49,4 @@ public class KeyspaceSessionImpl implements KeyspaceSession {
         return session.transaction(txType);
     }
 
-    private String engineURI(GraknConfig config) {
-        return config.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + config.getProperty(GraknConfigKey.SERVER_PORT);
-    }
 }

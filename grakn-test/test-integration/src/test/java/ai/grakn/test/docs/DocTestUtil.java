@@ -18,7 +18,7 @@
 
 package ai.grakn.test.docs;
 
-import ai.grakn.Grakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;

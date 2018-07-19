@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
@@ -32,26 +31,13 @@ import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
 import ai.grakn.kb.internal.log.CommitLogHandler;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.REST;
-import ai.grakn.util.SimpleURI;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
 import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-
-import static ai.grakn.util.EngineCommunicator.contactEngine;
-import static mjson.Json.read;
 
 /**
  * Builds a {@link TxFactory}. This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
@@ -62,17 +48,12 @@ import static mjson.Json.read;
  */
 public class EmbeddedGraknSession implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknSession.class);
-    private static final int LOG_SUBMISSION_PERIOD = 1;
-    private final String engineUri;
     private final Keyspace keyspace;
     private final GraknConfig config;
-    private final boolean remoteSubmissionNeeded;
     private final CommitLogHandler commitLogHandler;
-    private ScheduledExecutorService commitLogSubmitter;
 
     private final TxFactory<?> txFactory;
     private final TxFactory<?> computerTxFactory;
-
 
 
     //References so we don't have to open a tx just to check the count of the transactions
@@ -82,35 +63,15 @@ public class EmbeddedGraknSession implements GraknSession {
     /**
      * Instantiates {@link EmbeddedGraknSession}
      * @param keyspace to which keyspace the session should be bound to
-     * @param engineUri to which Engine the session should be bound to
      * @param config config to be used. If null is supplied, it will be created
-     * @param remoteSubmissionNeeded whether to create a background task which submits commit logs periodically
      */
-    EmbeddedGraknSession(Keyspace keyspace, String engineUri, @Nullable GraknConfig config, boolean remoteSubmissionNeeded, TxFactoryBuilder txFactoryBuilder){
+    EmbeddedGraknSession(Keyspace keyspace, @Nullable GraknConfig config, TxFactoryBuilder txFactoryBuilder){
         Objects.requireNonNull(keyspace);
-        Objects.requireNonNull(engineUri);
 
-        this.remoteSubmissionNeeded = remoteSubmissionNeeded;
-        this.engineUri = engineUri;
         this.keyspace = keyspace;
 
-        //Create commit log submitter if needed
-        if(remoteSubmissionNeeded) {
-            ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
-                    .setNameFormat("commit-log-submit-%d").build();
-            commitLogSubmitter = Executors.newSingleThreadScheduledExecutor(namedThreadFactory);
-            commitLogSubmitter.scheduleAtFixedRate(this::submitLogs, 0, LOG_SUBMISSION_PERIOD, TimeUnit.SECONDS);
-        }
-
-        //Set properties directly or via a remote call
-        if(config == null) {
-            if (Grakn.IN_MEMORY.equals(engineUri)) {
-                config = getTxInMemoryConfig();
-            } else {
-                config = getTxConfig();
-            }
-        }
-        this.config = config;
+        // TODO check whether this if is still needed
+        this.config = (config != null) ? config : GraknConfig.create();
 
         this.commitLogHandler = new CommitLogHandler(keyspace());
 
@@ -126,52 +87,32 @@ public class EmbeddedGraknSession implements GraknSession {
     /**
      * This methods creates a {@link EmbeddedGraknSession} object for the remote API.
      * A user should not call this method directly.
-     * See {@link Grakn#session(String, String)} for creating a {@link GraknSession} for the remote API
+     * Note: This method uses default TxFactoryBuilder implementation in Grakn core.
      */
-    //This must remain public because it is accessed via reflection from Grakn.session()
-    // Also this method uses default TxFactoryBuilder implementation in Grakn core.
-    @SuppressWarnings("unused")
-    public static EmbeddedGraknSession create(Keyspace keyspace, String engineUri){
-        return new EmbeddedGraknSession(keyspace, engineUri, null, true, GraknTxFactoryBuilder.getInstance());
+    public static EmbeddedGraknSession create(Keyspace keyspace){
+        return new EmbeddedGraknSession(keyspace, null, GraknTxFactoryBuilder.getInstance());
+    }
+
+    public static EmbeddedGraknSession createInMemory(Keyspace keyspace){
+        return new EmbeddedGraknSession(keyspace, getTxInMemoryConfig(), GraknTxFactoryBuilder.getInstance());
+    }
+
+    public static EmbeddedGraknSession create(Keyspace keyspace, GraknConfig config){
+        return new EmbeddedGraknSession(keyspace, config, GraknTxFactoryBuilder.getInstance());
     }
 
     /**
      * Creates a {@link EmbeddedGraknSession} specific for internal use (within Engine),
-     * using provided Grakn configuration and disabling the remote (via REST) submission of commit log.
+     * using provided Grakn configuration
      */
-    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, String engineUri, GraknConfig config, TxFactoryBuilder txFactoryBuilder){
-        return new EmbeddedGraknSession(keyspace, engineUri, config, false, txFactoryBuilder);
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, GraknConfig config, TxFactoryBuilder txFactoryBuilder){
+        return new EmbeddedGraknSession(keyspace, config,  txFactoryBuilder);
     }
 
-    GraknConfig getTxConfig(){
-        SimpleURI uri = new SimpleURI(engineUri);
-        return getTxRemoteConfig(uri, keyspace);
-    }
 
     /**
-     * Gets the properties needed to create a {@link GraknTx} by pinging engine for the config file
-     *
-     * @return the properties needed to build a {@link GraknTx}
-     */
-    private static GraknConfig getTxRemoteConfig(SimpleURI uri, Keyspace keyspace){
-        URI keyspaceUri = UriBuilder.fromUri(uri.toURI()).path(REST.resolveTemplate(REST.WebPath.KB_KEYSPACE, keyspace.getValue())).build();
-
-        Properties properties = new Properties();
-        //Get Specific Configs
-        properties.putAll(read(contactEngine(keyspaceUri, REST.HttpConn.PUT_METHOD)).asMap());
-
-        GraknConfig config = GraknConfig.of(properties);
-
-        //Overwrite Engine IP with something which is remotely accessible
-        config.setConfigProperty(GraknConfigKey.SERVER_HOST_NAME, uri.getHost());
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, uri.getPort());
-
-        return config;
-    }
-
-    /**
-     * Gets properties which let you build a toy in-mempoty {@link GraknTx}.
-     * This does nto contact engine in anyway and can be run in an isolated manner
+     * Gets properties which let you build a toy in-memory {@link GraknTx}.
+     * This does not contact engine in any way and it can be run in an isolated manner
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
@@ -218,18 +159,8 @@ public class EmbeddedGraknSession implements GraknSession {
             LOG.warn(ErrorMessage.TXS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
-        //Stop submitting commit logs automatically
-        if(remoteSubmissionNeeded) commitLogSubmitter.shutdown();
-
-        //Close the main tx connections
-        submitLogs();
         if(tx != null) tx.closeSession();
         if(txBatch != null) txBatch.closeSession();
-    }
-
-    @Override
-    public String uri() {
-        return engineUri;
     }
 
     @Override
@@ -246,9 +177,6 @@ public class EmbeddedGraknSession implements GraknSession {
         return config;
     }
 
-    protected void submitLogs(){
-        commitLogHandler().submit(engineUri, keyspace).ifPresent(LOG::debug);
-    }
 
     private int openTransactions(EmbeddedGraknTx<?> graph){
         if(graph == null) return 0;

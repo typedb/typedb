@@ -181,7 +181,7 @@ public class ValidatorTest extends TxTestBase {
         }
 
         tx.commit();
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -195,7 +195,7 @@ public class ValidatorTest extends TxTestBase {
         godfather.delete();
 
         tx.commit();
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 

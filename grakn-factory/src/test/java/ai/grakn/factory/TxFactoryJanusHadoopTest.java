@@ -44,7 +44,6 @@ public class TxFactoryJanusHadoopTest {
     @Before
     public void setUp() {
         when(session.keyspace()).thenReturn(Keyspace.of("rubbish"));
-        when(session.uri()).thenReturn("rubbish");
         when(session.config()).thenReturn(TxFactoryJanusHadoopTest.TEST_CONFIG);
         factory = new TxFactoryJanusHadoop(session);
     }

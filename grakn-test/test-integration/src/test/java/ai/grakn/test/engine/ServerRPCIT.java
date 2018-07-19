@@ -147,7 +147,6 @@ public class ServerRPCIT {
     @Test
     public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
         try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
-            assertEquals(engine.grpcUri().toString(), session.uri());
             assertEquals(localSession.keyspace(), session.keyspace());
         }
     }

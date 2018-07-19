@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
@@ -47,7 +46,6 @@ public class GraknTxFactoryBuilderTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
-    private final static String ENGINE_URL = Grakn.IN_MEMORY;
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule
@@ -67,7 +65,6 @@ public class GraknTxFactoryBuilderTest {
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
         //Factory 1 & 2 Definition
         when(session.keyspace()).thenReturn(KEYSPACE);
-        when(session.uri()).thenReturn(ENGINE_URL);
         when(session.config()).thenReturn(TEST_CONFIG);
         TxFactory mgf1 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
         TxFactory mgf2 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);

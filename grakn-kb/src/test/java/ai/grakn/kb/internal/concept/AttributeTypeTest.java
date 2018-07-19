@@ -152,7 +152,7 @@ public class AttributeTypeTest extends TxTestBase {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
+        try (GraknSession session = Grakn.sessionInMemory( "somethingmorerandom")) {
             try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
@@ -163,7 +163,7 @@ public class AttributeTypeTest extends TxTestBase {
         // offset the time to GMT where the colleague is working
         TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
         // the colleague extracts the LocalTime which should be the same
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
+        try (GraknSession session = Grakn.sessionInMemory( "somethingmorerandom")) {
             try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();

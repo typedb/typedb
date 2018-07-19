@@ -18,10 +18,10 @@
 
 package ai.grakn.test.migration.export;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.kbs.MovieKB;

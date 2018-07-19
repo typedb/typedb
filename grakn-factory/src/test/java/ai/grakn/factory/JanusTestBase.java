@@ -52,7 +52,6 @@ public abstract class JanusTestBase {
     @BeforeClass
     public static void setupMain(){
         when(session.keyspace()).thenReturn(TEST_SHARED);
-        when(session.uri()).thenReturn(Grakn.IN_MEMORY);
         when(session.config()).thenReturn(TEST_CONFIG);
         when(session.commitLogHandler()).thenReturn(commitLogHandler);
         janusGraphFactory = new TxFactoryJanus(session);

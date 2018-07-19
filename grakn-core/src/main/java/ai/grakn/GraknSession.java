@@ -29,8 +29,6 @@ import javax.annotation.CheckReturnValue;
  * <p>
  *     This class facilitates the construction of Grakn Graphs by determining which session should be built.
  *     The graphs produced by a session are singletons bound to a specific keyspace.
- *     To create graphs bound to a different keyspace you must create another session
- *     using {@link Grakn#session(String, String)}
  *
  * </p>
  *
@@ -53,13 +51,6 @@ public interface GraknSession extends AutoCloseable {
      *
      */
     void close();
-
-    /**
-     * Used to determine the location of the Engine which this session is interacting with.
-     *
-     * @return the uri of the engine used to build this {@link GraknSession}
-     */
-    String uri();
 
     /**
      * Use to determine which {@link Keyspace} this {@link GraknSession} is interacting with.

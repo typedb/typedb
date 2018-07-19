@@ -18,21 +18,13 @@
 
 package ai.grakn.kb.internal.log;
 
-import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.kb.log.CommitLog;
-import ai.grakn.util.EngineCommunicator;
-import ai.grakn.util.REST;
-import ai.grakn.util.SimpleURI;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 
-import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -80,34 +72,5 @@ public class CommitLogHandler {
         } finally {
             lock.readLock().unlock();
         }
-    }
-
-    /**
-     * Submits the commit logs to the provided server address and under the provided {@link Keyspace}
-     */
-    public Optional<String> submit(String engineUri, Keyspace keyspace){
-        if(commitLog().instanceCount().isEmpty() && commitLog().attributes().isEmpty()){
-            return Optional.empty();
-        }
-
-        URI endPoint = getCommitLogEndPoint(engineUri, keyspace);
-        try{
-            lock.writeLock().lock();
-            String response = EngineCommunicator.contactEngine(endPoint, REST.HttpConn.POST_METHOD, mapper.writeValueAsString(commitLog()));
-            commitLog().clear();
-            return Optional.of("Response from engine [" + response + "]");
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    static URI getCommitLogEndPoint(String engineUri, Keyspace keyspace) {
-        if (Grakn.IN_MEMORY.equals(engineUri)) {
-            return null;
-        }
-        String path = REST.resolveTemplate(REST.WebPath.COMMIT_LOG_URI, keyspace.getValue());
-        return UriBuilder.fromUri(new SimpleURI(engineUri).toURI()).path(path).build();
     }
 }

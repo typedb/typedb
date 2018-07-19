@@ -44,24 +44,22 @@ import java.nio.file.Paths;
 public class GraknSessionLocal extends EmbeddedGraknSession {
     private final static File JANUS_CONFIG_FILE = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/conf/test/janus/grakn.properties").toFile();
 
-    private GraknSessionLocal(Keyspace keyspace, String engineUri, GraknConfig config) {
-        super(keyspace, engineUri, config, false, GraknTxFactoryBuilder.getInstance());
+    private GraknSessionLocal(Keyspace keyspace, GraknConfig config) {
+        super(keyspace, config,  GraknTxFactoryBuilder.getInstance());
     }
 
     public static GraknSessionLocal create(Keyspace keyspace) {
-        return new GraknSessionLocal(keyspace, "fake-local-engine-uri", null);
+        return new GraknSessionLocal(keyspace, null);
     }
 
-    public static GraknSessionLocal create(Keyspace keyspace, String engineUri, GraknConfig config) {
-        return new GraknSessionLocal(keyspace, engineUri, config);
+    public static GraknSessionLocal create(Keyspace keyspace, GraknConfig config) {
+        return new GraknSessionLocal(keyspace, config);
     }
 
-    @Override
     protected void submitLogs(){
         //No Op
     }
 
-    @Override
     GraknConfig getTxConfig() {
         if (GraknTestUtil.usingJanus()) {
             return getTxJanusConfig();

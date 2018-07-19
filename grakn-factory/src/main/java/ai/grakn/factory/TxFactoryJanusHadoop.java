@@ -89,7 +89,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
 
     @Override
     protected HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
-        LOG.warn("Hadoop graph ignores parameter address [" + session().uri() + "]");
+        LOG.warn("Hadoop graph ignores parameter address.");
 
         //Load Defaults
         TxFactoryJanus.getDefaultProperties().forEach((key, value) -> {

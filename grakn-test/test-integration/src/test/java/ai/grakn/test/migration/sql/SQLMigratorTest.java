@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.Grakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;

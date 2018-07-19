@@ -75,7 +75,7 @@ public class SchemaMutationTest extends TxTestBase {
         bob = man.create();
         marriage.create().assign(wife, alice).assign(husband, bob);
         tx.commit();
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
     }
 
     @Test
@@ -248,7 +248,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
         animal.has(name);
         tx.commit();
     }
@@ -261,7 +261,7 @@ public class SchemaMutationTest extends TxTestBase {
         tx.commit();
 
         //Now delete the relation
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);
