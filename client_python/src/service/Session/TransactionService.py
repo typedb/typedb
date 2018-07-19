@@ -6,10 +6,11 @@ from .util import enums
 
 class TransactionService(object):
 
-    def __init__(self, keyspace, tx_type, communicator):
+    def __init__(self, keyspace, tx_type, transaction_endpoint):
         self.keyspace = keyspace
         self.tx_type = tx_type
-        self._communicator = communicator
+
+        self._communicator = Communicator(transaction_endpoint)
         self._response_converter = ResponseConverter(self)
 
         # open the transaction with an 'open' message
@@ -67,3 +68,32 @@ class TransactionService(object):
         response = self._communicator.send(request)
         return response 
 
+
+class Communicator(object):
+    """ An iterator and interface for GRPC stream """
+
+    def __init__(self, grpc_stream_constructor):
+        self._queue = queue.Queue()
+        self._response_iterator = grpc_stream_constructor(self)
+
+    def _add_request(self, request):
+        self._queue.put(request)
+
+    def __next__(self):
+        print("`next` called on Communicator")
+        print("Current queue: {0}".format(list(self._queue.queue)))
+        next_item = self._queue.get(block=True)
+        if next_item is None:
+            raise StopIteration()
+        return next_item
+
+    def __iter__(self):
+        return self
+
+    def send(self, request):
+        self._add_request(request)
+        return next(self._response_iterator)
+
+    def close(self):
+        self._queue.clear()
+        self._queue.append(None)

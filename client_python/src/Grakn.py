@@ -4,20 +4,9 @@ import src.service.Session.util.enums as enums
 import Session_pb2 as SessionMessages
 import Concept_pb2 as ConceptMessages
 
-class Grakn(object):
 
-    # workaround for Protobuf's non-relative imports
-#    TxType = enums.TxType
-#    DataType = enums.DataType
-
-    def __init__(self):
-        pass
-
-    # stateless method
-    def session(self, uri: str, keyspace: str):
-        return Session(uri, keyspace)
-
-    # TODO keyspace delete/retrieve
+def session(self, uri: str, keyspace: str):
+    return Session(uri, keyspace)
 
 class TxType(object):
     READ = SessionMessages.Transaction.Type.Value('READ')
