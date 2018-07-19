@@ -24,9 +24,10 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerList;
+import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.util.StringConverter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
@@ -82,13 +83,12 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
- *
- * @author Grakn Warriors
+ * @param <T> return type of ComputeQuery
  */
-public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, ComputeQuery.Answer> implements ComputeQuery {
+public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T> implements ComputeQuery<T> {
 
     private GraknTx tx;
-    private Set<ComputeExecutor<Answer>> runningJobs = ConcurrentHashMap.newKeySet();
+    private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
     private boolean includeAttributes;
@@ -126,16 +126,11 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final Stream<Answer> stream() {
-        return Stream.of(execute());
-    }
-
-    @Override
-    public final Answer execute() {
+    public final Stream<T> stream() {
         Optional<GraqlQueryException> exception = getException();
         if (exception.isPresent()) throw exception.get();
 
-        ComputeExecutor<Answer> job = executor().run(this);
+        ComputeExecutor<T> job = executor().run(this);
 
         runningJobs.add(job);
 
@@ -144,6 +139,14 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         } finally {
             runningJobs.remove(job);
         }
+
+    }
+
+    @Override
+    public final List<T> execute() {
+        return stream().collect(Collectors.toList());
+//        if (answers.size() == 1 && answers.get(0) instanceof Numeric) return answers.get(0);
+//        return new AnswerList(answers);
     }
 
     @Override
@@ -152,7 +155,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery withTx(GraknTx tx) {
+    public final ComputeQuery<T> withTx(GraknTx tx) {
         this.tx = tx;
         return this;
     }
@@ -168,7 +171,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery from(ConceptId fromID) {
+    public final ComputeQuery<T> from(ConceptId fromID) {
         this.fromID = fromID;
         return this;
     }
@@ -179,7 +182,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery to(ConceptId toID) {
+    public final ComputeQuery<T> to(ConceptId toID) {
         this.toID = toID;
         return this;
     }
@@ -190,7 +193,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery of(String type, String... types) {
+    public final ComputeQuery<T> of(String type, String... types) {
         ArrayList<String> typeList = new ArrayList<>(types.length + 1);
         typeList.add(type);
         typeList.addAll(Arrays.asList(types));
@@ -199,7 +202,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery of(Collection<Label> types) {
+    public final ComputeQuery<T> of(Collection<Label> types) {
         this.ofTypes = ImmutableSet.copyOf(types);
 
         return this;
@@ -211,7 +214,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery in(String type, String... types) {
+    public final ComputeQuery<T> in(String type, String... types) {
         ArrayList<String> typeList = new ArrayList<>(types.length + 1);
         typeList.add(type);
         typeList.addAll(Arrays.asList(types));
@@ -220,7 +223,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery in(Collection<Label> types) {
+    public final ComputeQuery<T> in(Collection<Label> types) {
         this.inTypes = ImmutableSet.copyOf(types);
         return this;
     }
@@ -232,7 +235,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery using(Algorithm algorithm) {
+    public final ComputeQuery<T> using(Algorithm algorithm) {
         this.algorithm = algorithm;
         return this;
     }
@@ -244,7 +247,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery where(Argument arg, Argument... args) {
+    public final ComputeQuery<T> where(Argument arg, Argument... args) {
         ArrayList<Argument> argList = new ArrayList(args.length + 1);
         argList.add(arg);
         argList.addAll(Arrays.asList(args));
@@ -253,7 +256,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
     }
 
     @Override
-    public final ComputeQuery where(Collection<Argument> args) {
+    public final ComputeQuery<T> where(Collection<Argument> args) {
         if (this.arguments == null) this.arguments = new ArgumentsImpl();
         for (Argument arg : args) this.arguments.setArgument(arg);
 
@@ -421,7 +424,7 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ComputeQuery that = (ComputeQuery) o;
+        ComputeQuery<?> that = (ComputeQuery<?>) o;
 
         return (Objects.equals(this.tx(), that.tx()) &&
                 this.method().equals(that.method()) &&
@@ -555,92 +558,6 @@ public class ComputeQueryImpl extends AbstractQuery<ComputeQuery.Answer, Compute
         public int hashCode() {
             int result = tx.hashCode();
             result = 31 * result + argumentsOrdered.hashCode();
-
-            return result;
-        }
-    }
-
-    /**
-     * Answer inner class to provide access to Compute Query computation results
-     *
-     * @author Grakn Warriors
-     */
-    public static class AnswerImpl implements Answer {
-
-        private Number number = null;
-        private List<List<ConceptId>> paths = null;
-        private Map<Long, Set<ConceptId>> centrality = null;
-        private Set<Set<ConceptId>> clusters = null;
-        private List<Long> clusterSizes = null;
-
-        public AnswerImpl() {
-        }
-
-        @Override
-        public Optional<Number> getNumber() {
-            return Optional.ofNullable(number);
-        }
-
-        public Answer setNumber(Number number) {
-            this.number = number;
-            return this;
-        }
-
-        @Override
-        public Optional<List<List<ConceptId>>> getPaths() {
-            return Optional.ofNullable(paths);
-        }
-
-        public Answer setPaths(List<List<ConceptId>> paths) {
-            this.paths = ImmutableList.copyOf(paths);
-            return this;
-        }
-
-        @Override
-        public Optional<Map<Long, Set<ConceptId>>> getCentrality() {
-            return Optional.ofNullable(centrality);
-        }
-
-        public Answer setCentrality(Map<Long, Set<ConceptId>> countMap) {
-            this.centrality = ImmutableMap.copyOf(countMap);
-            return this;
-        }
-
-        public Optional<Set<Set<ConceptId>>> getClusters() {
-            return Optional.ofNullable(clusters);
-        }
-
-        public Answer setClusters(Set<Set<ConceptId>> clusters) {
-            this.clusters = ImmutableSet.copyOf(clusters);
-            return this;
-        }
-
-        public Optional<List<Long>> getClusterSizes() {
-            return Optional.ofNullable(clusterSizes);
-        }
-
-        public Answer setClusterSizes(Collection<Long> clusterSizes) {
-            this.clusterSizes = ImmutableList.copyOf(clusterSizes);
-            return this;
-        }
-
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || this.getClass() != o.getClass()) return false;
-
-            Answer that = (Answer) o;
-
-            return (this.getPaths().equals(that.getPaths()) &&
-                    this.getNumber().equals(that.getNumber()));
-        }
-
-        @Override
-        public int hashCode() {
-            int result = Objects.hashCode(number);
-            result = 31 * result + Objects.hashCode(paths);
-            result = 31 * result + Objects.hashCode(centrality);
-            result = 31 * result + Objects.hashCode(clusters);
-            result = 31 * result + Objects.hashCode(clusterSizes);
 
             return result;
         }

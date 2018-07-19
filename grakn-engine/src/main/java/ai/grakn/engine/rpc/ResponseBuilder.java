@@ -28,10 +28,12 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.ConceptMap;
 import ai.grakn.graql.admin.Explanation;
-import ai.grakn.graql.internal.printer.Printer;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Numeric;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
@@ -43,9 +45,6 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -271,95 +270,88 @@ public class ResponseBuilder {
     public static class Answer {
 
         public static AnswerProto.Answer answer(Object object) {
-            AnswerProto.Answer answer;
+            AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
 
             if (object instanceof ConceptMap) {
-                answer = AnswerProto.Answer.newBuilder().setQueryAnswer(queryAnswer((ConceptMap) object)).build();
-            } else if (object instanceof ComputeQuery.Answer) {
-                answer = AnswerProto.Answer.newBuilder().setComputeAnswer(computeAnswer((ComputeQuery.Answer) object)).build();
-            } else {
-                // If not an QueryAnswer or ComputeAnswer, convert to JSON
-                answer = AnswerProto.Answer.newBuilder().setOtherResult(Printer.jsonPrinter().toString(object)).build();
+                answer.setConceptMap(conceptMap((ConceptMap) object));
+            } else if (object instanceof ConceptList) {
+                answer.setConceptList(conceptList((ConceptList) object));
+            } else if (object instanceof ConceptSetMeasure) {
+                answer.setConceptSetMeasure(conceptSetMeasure((ConceptSetMeasure) object));
+            } else if (object instanceof ConceptSet) {
+                answer.setConceptSet(conceptSet((ConceptSet) object));
+            } else if (object instanceof Numeric) {
+                answer.setNumeric(numeric((Numeric) object));
             }
 
-            return answer;
-        }
-
-        static AnswerProto.QueryAnswer queryAnswer(ConceptMap answer) {
-            AnswerProto.QueryAnswer.Builder queryAnswerProto = AnswerProto.QueryAnswer.newBuilder();
-            answer.forEach((var, concept) -> {
-                ConceptProto.Concept conceptRps = ResponseBuilder.Concept.concept(concept);
-                queryAnswerProto.putQueryAnswer(var.getValue(), conceptRps);
-            });
-
-            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
-                queryAnswerProto.setExplanation(explanation(answer.explanation()));
-            }
-
-            return queryAnswerProto.build();
+            return answer.build();
         }
 
         static AnswerProto.Explanation explanation(Explanation explanation) {
             return AnswerProto.Explanation.newBuilder()
-                    .setQueryPattern(explanation.getQuery().getPattern().toString())
-                    .addAllQueryAnswer(explanation.getAnswers().stream()
-                            .map(Answer::queryAnswer)
+                    .setPattern(explanation.getQuery().getPattern().toString())
+                    .addAllAnswers(explanation.getAnswers().stream()
+                            .map(Answer::conceptMap)
                             .collect(Collectors.toList()))
                     .build();
         }
 
-        static AnswerProto.ComputeAnswer computeAnswer(ComputeQuery.Answer computeAnswer) {
-            AnswerProto.ComputeAnswer.Builder computeAnswerRPC = AnswerProto.ComputeAnswer.newBuilder();
+        static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
+            AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
+            answer.map().forEach((var, concept) -> {
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.concept(concept);
+                conceptMapProto.putMap(var.getValue(), conceptProto);
+            });
 
-            if (computeAnswer.getNumber().isPresent()) {
-                computeAnswerRPC.setNumber(computeAnswer.getNumber().get().toString());
-            }
-            else if (computeAnswer.getPaths().isPresent()) {
-                 computeAnswerRPC.setPaths(paths(computeAnswer.getPaths().get()));
-            }
-            else if (computeAnswer.getCentrality().isPresent()) {
-                computeAnswerRPC.setCentrality(centralityCounts(computeAnswer.getCentrality().get()));
-            }
-            else if (computeAnswer.getClusters().isPresent()) {
-                computeAnswerRPC.setClusters(clusters(computeAnswer.getClusters().get()));
-            }
-            else if (computeAnswer.getClusterSizes().isPresent()) {
-                computeAnswerRPC.setClusterSizes(clusterSizes(computeAnswer.getClusterSizes().get()));
+            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                conceptMapProto.setExplanation(explanation(answer.explanation()));
             }
 
-            return computeAnswerRPC.build();
+            return conceptMapProto.build();
         }
 
-        private static AnswerProto.Paths paths(List<List<ConceptId>> paths) {
-            AnswerProto.Paths.Builder pathsRPC = AnswerProto.Paths.newBuilder();
-            for (List<ConceptId> path : paths) pathsRPC.addPaths(conceptIds(path));
+        static AnswerProto.ConceptList conceptList(ConceptList answer) {
+            AnswerProto.ConceptList.Builder conceptListProto = AnswerProto.ConceptList.newBuilder();
+            conceptListProto.setList(conceptIds(answer.list()));
 
-            return pathsRPC.build();
-        }
-
-        private static AnswerProto.Centrality centralityCounts(Map<Long, Set<ConceptId>> centralityCounts) {
-            AnswerProto.Centrality.Builder centralityCountsRPC = AnswerProto.Centrality.newBuilder();
-
-            for (Map.Entry<Long, Set<ConceptId>> centralityCount : centralityCounts.entrySet()) {
-                centralityCountsRPC.putCentrality(centralityCount.getKey(), conceptIds(centralityCount.getValue()));
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                conceptListProto.setExplanation(explanation(answer.explanation()));
             }
 
-            return centralityCountsRPC.build();
+            return conceptListProto.build();
         }
 
-        private static AnswerProto.ClusterSizes clusterSizes(Collection<Long> clusterSizes) {
-            AnswerProto.ClusterSizes.Builder clusterSizesRPC = AnswerProto.ClusterSizes.newBuilder();
-            clusterSizesRPC.addAllClusterSizes(clusterSizes);
-
-            return clusterSizesRPC.build();
+        static AnswerProto.ConceptSet conceptSet(ConceptSet answer) {
+            AnswerProto.ConceptSet.Builder conceptSetProto = AnswerProto.ConceptSet.newBuilder();
+            conceptSetProto.setSet(conceptIds(answer.set()));
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                conceptSetProto.setExplanation(explanation(answer.explanation()));
+            }
+            return conceptSetProto.build();
         }
 
-        private static AnswerProto.Clusters clusters(Collection<? extends Collection<ConceptId>> clusters) {
-            AnswerProto.Clusters.Builder clustersRPC = AnswerProto.Clusters.newBuilder();
-            for(Collection<ConceptId> cluster : clusters) clustersRPC.addClusters(conceptIds(cluster));
+        static AnswerProto.ConceptSetMeasure conceptSetMeasure(ConceptSetMeasure answer) {
+            AnswerProto.ConceptSetMeasure.Builder conceptSetMeasureProto = AnswerProto.ConceptSetMeasure.newBuilder();
+            conceptSetMeasureProto.setSet(conceptIds(answer.set()));
+            conceptSetMeasureProto.setMeasurement(number(answer.measurement()));
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                conceptSetMeasureProto.setExplanation(explanation(answer.explanation()));
+            }
+            return conceptSetMeasureProto.build();
+        }
 
-            return clustersRPC.build();
+        static AnswerProto.Numeric numeric(Numeric answer) {
+            AnswerProto.Numeric.Builder numericProto = AnswerProto.Numeric.newBuilder();
+            numericProto.setNumber(number(answer.number()));
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                numericProto.setExplanation(explanation(answer.explanation()));
+            }
+            return numericProto.build();
+        }
+
+        static AnswerProto.Number number(Number number) {
+            return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
         }
 
         private static AnswerProto.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {

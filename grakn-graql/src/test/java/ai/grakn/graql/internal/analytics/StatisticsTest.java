@@ -112,20 +112,20 @@ public class StatisticsTest {
             assertGraqlQueryExceptionThrown(graph.graql().compute(MEDIAN).of(thing));
 
             // resource-type has no instance
-            assertFalse(graph.graql().compute(MAX).of(resourceType7).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(MIN).of(resourceType7).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(SUM).of(resourceType7).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(STD).of(resourceType7).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(MEDIAN).of(resourceType7).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(MEAN).of(resourceType7).execute().getNumber().isPresent());
+            assertFalse(graph.graql().compute(MAX).of(resourceType7).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(MIN).of(resourceType7).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(SUM).of(resourceType7).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(STD).of(resourceType7).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(MEDIAN).of(resourceType7).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(MEAN).of(resourceType7).execute().asNumber().isPresent());
 
             // resources are not connected to any entities
-            assertFalse(graph.graql().compute(MAX).of(resourceType3).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(MIN).of(resourceType3).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(SUM).of(resourceType3).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(STD).of(resourceType3).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(MEDIAN).of(resourceType3).execute().getNumber().isPresent());
-            assertFalse(graph.graql().compute(MEAN).of(resourceType3).execute().getNumber().isPresent());
+            assertFalse(graph.graql().compute(MAX).of(resourceType3).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(MIN).of(resourceType3).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(SUM).of(resourceType3).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(STD).of(resourceType3).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(MEDIAN).of(resourceType3).execute().asNumber().isPresent());
+            assertFalse(graph.graql().compute(MEAN).of(resourceType3).execute().asNumber().isPresent());
 
             // resource-type has incorrect data type
             assertGraqlQueryExceptionThrown(graph.graql().compute(MAX).of(resourceType4));
@@ -164,38 +164,38 @@ public class StatisticsTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MIN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
+            result = Graql.compute(MIN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MIN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MIN).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MIN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MIN).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MIN).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MIN).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MIN).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MIN).of(resourceType2, resourceType5).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MIN).of(resourceType2).withTx(graph).execute().getNumber();
+            result = graph.graql().compute(MIN).of(resourceType2).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MIN).withTx(graph).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MIN).withTx(graph).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
 
-            result = Graql.compute(MAX).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
+            result = Graql.compute(MAX).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MAX).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MAX).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MAX).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MAX).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MAX).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MAX).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MAX).of(resourceType2).in(Collections.emptyList()).execute().getNumber();
+            result = graph.graql().compute(MAX).of(resourceType2).in(Collections.emptyList()).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MAX).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MAX).of(resourceType2, resourceType5).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MAX).of(resourceType2).withTx(graph).execute().getNumber();
+            result = graph.graql().compute(MAX).of(resourceType2).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MAX).withTx(graph).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MAX).withTx(graph).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -203,22 +203,22 @@ public class StatisticsTest {
         addResourcesInstances();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MIN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MIN).of(resourceType2).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(MIN).of(resourceType2).in(thing, anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MIN).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(MIN).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
 
-            result = Graql.compute(MAX).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MAX).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MAX).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MAX).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MAX).of(resourceType2).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(MAX).of(resourceType2).in(thing, anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MAX).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(MAX).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -226,24 +226,24 @@ public class StatisticsTest {
         addResourceRelations();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(MIN).of(resourceType1).in(Collections.emptySet()).execute().getNumber();
+            result = graph.graql().compute(MIN).of(resourceType1).in(Collections.emptySet()).execute().asNumber();
             assertEquals(1.2, result.get().doubleValue(), delta);
-            result = Graql.compute(MIN).in(thing).of(resourceType2).withTx(graph).execute().getNumber();
+            result = Graql.compute(MIN).in(thing).of(resourceType2).withTx(graph).execute().asNumber();
             assertEquals(-1L, result.get());
-            result = graph.graql().compute(MIN).in(thing).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MIN).in(thing).of(resourceType2, resourceType5).execute().asNumber();
             assertEquals(-7L, result.get());
-            result = graph.graql().compute(MIN).in(thing, thing, thing).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MIN).in(thing, thing, thing).of(resourceType2, resourceType5).execute().asNumber();
             assertEquals(-7L, result.get());
-            result = graph.graql().compute(MIN).in(anotherThing).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MIN).in(anotherThing).of(resourceType2).execute().asNumber();
             assertEquals(0L, result.get());
 
-            result = Graql.compute(MAX).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MAX).withTx(graph).of(resourceType1).execute().asNumber();
             assertEquals(1.8, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MAX).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(MAX).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(7.5, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MAX).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(MAX).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(7.5, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MAX).in(anotherThing).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MAX).in(anotherThing).of(resourceType2).execute().asNumber();
             assertEquals(0L, result.get());
         }
     }
@@ -256,21 +256,21 @@ public class StatisticsTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(SUM).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(SUM).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(SUM).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(SUM).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(SUM).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(SUM).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(SUM).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType2, resourceType5).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(SUM).of(resourceType2).withTx(graph).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType2).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(SUM).withTx(graph).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(SUM).withTx(graph).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -278,13 +278,13 @@ public class StatisticsTest {
         addResourcesInstances();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(SUM).of(resourceType2).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType2).in(thing, anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(SUM).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -292,15 +292,15 @@ public class StatisticsTest {
         addResourceRelations();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType1).withTx(graph).execute().asNumber();
             assertEquals(4.5, result.get().doubleValue(), delta);
-            result = Graql.compute(SUM).of(resourceType2).in(thing).withTx(graph).execute().getNumber();
+            result = Graql.compute(SUM).of(resourceType2).in(thing).withTx(graph).execute().asNumber();
             assertEquals(3L, result.get());
-            result = graph.graql().compute(SUM).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(27.0, result.get().doubleValue(), delta);
-            result = graph.graql().compute(SUM).of(resourceType2, resourceType5).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType2, resourceType5).in(thing, anotherThing).execute().asNumber();
             assertEquals(-18L, result.get());
-            result = graph.graql().compute(SUM).of(resourceType2, resourceType5).in(thing).execute().getNumber();
+            result = graph.graql().compute(SUM).of(resourceType2, resourceType5).in(thing).execute().asNumber();
             assertEquals(-11L, result.get());
         }
     }
@@ -312,21 +312,21 @@ public class StatisticsTest {
         // resource-type has no instance
         addSchemaAndEntities();
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MEAN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEAN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEAN).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MEAN).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEAN).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MEAN).of(resourceType2, resourceType5).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEAN).of(resourceType2).withTx(graph).execute().getNumber();
+            result = graph.graql().compute(MEAN).of(resourceType2).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEAN).withTx(graph).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MEAN).withTx(graph).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -334,13 +334,13 @@ public class StatisticsTest {
         addResourcesInstances();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEAN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEAN).of(resourceType2).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(MEAN).of(resourceType2).in(thing, anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEAN).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(MEAN).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -348,15 +348,15 @@ public class StatisticsTest {
         addResourceRelations();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MEAN).withTx(graph).of(resourceType1).execute().asNumber();
             assertEquals(1.5, result.get().doubleValue(), delta);
-            result = Graql.compute(MEAN).of(resourceType2).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEAN).of(resourceType2).withTx(graph).execute().asNumber();
             assertEquals(1D, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MEAN).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(MEAN).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(4.5, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MEAN).in(thing, anotherThing).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MEAN).in(thing, anotherThing).of(resourceType2, resourceType5).execute().asNumber();
             assertEquals(-3D, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MEAN).in(thing).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(MEAN).in(thing).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(3.9, result.get().doubleValue(), delta);
         }
     }
@@ -369,21 +369,21 @@ public class StatisticsTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(STD).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(STD).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(STD).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(STD).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(STD).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(STD).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(STD).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType2, resourceType5).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(STD).of(resourceType2).withTx(graph).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType2).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(STD).withTx(graph).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(STD).withTx(graph).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -391,13 +391,13 @@ public class StatisticsTest {
         addResourcesInstances();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(STD).of(resourceType2).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType2).in(thing, anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(STD).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -405,15 +405,15 @@ public class StatisticsTest {
         addResourceRelations();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType1).withTx(graph).execute().asNumber();
             assertEquals(Math.sqrt(0.18 / 3), result.get().doubleValue(), delta);
-            result = Graql.compute(STD).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(STD).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertEquals(Math.sqrt(0D), result.get().doubleValue(), delta);
-            result = graph.graql().compute(STD).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(Math.sqrt(54.18 / 6), result.get().doubleValue(), delta);
-            result = graph.graql().compute(STD).of(resourceType2, resourceType5).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType2, resourceType5).in(thing, anotherThing).execute().asNumber();
             assertEquals(Math.sqrt(110.0 / 6), result.get().doubleValue(), delta);
-            result = graph.graql().compute(STD).of(resourceType2).in(thing).execute().getNumber();
+            result = graph.graql().compute(STD).of(resourceType2).in(thing).execute().asNumber();
             assertEquals(2.5, result.get().doubleValue(), delta);
         }
 
@@ -426,7 +426,7 @@ public class StatisticsTest {
 
         List<Number> numberList = list.parallelStream().map(i -> {
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-                return graph.graql().compute(STD).of(resourceType2).in(thing).execute().getNumber().get();
+                return graph.graql().compute(STD).of(resourceType2).in(thing).execute().asNumber().get();
             }
         }).collect(Collectors.toList());
         numberList.forEach(value -> assertEquals(2.5D, value.doubleValue(), delta));
@@ -440,21 +440,21 @@ public class StatisticsTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MEDIAN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEDIAN).of(resourceType1).in(Collections.emptyList()).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType1).execute().getNumber();
+            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType1).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEDIAN).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEDIAN).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of(resourceType2, resourceType5).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEDIAN).of(resourceType2).withTx(graph).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of(resourceType2).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEDIAN).withTx(graph).of(resourceType2).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).withTx(graph).of(resourceType2).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -462,13 +462,13 @@ public class StatisticsTest {
         addResourcesInstances();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().getNumber();
+            result = Graql.compute(MEDIAN).of(resourceType1).withTx(graph).execute().asNumber();
             assertFalse(result.isPresent());
-            result = graph.graql().compute(MEDIAN).of(resourceType2).in(thing, anotherThing).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of(resourceType2).in(thing, anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
-            result = Graql.compute(MEDIAN).of(resourceType2).withTx(graph).in(anotherThing).execute().getNumber();
+            result = Graql.compute(MEDIAN).of(resourceType2).withTx(graph).in(anotherThing).execute().asNumber();
             assertFalse(result.isPresent());
         }
 
@@ -476,19 +476,19 @@ public class StatisticsTest {
         addResourceRelations();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(MEDIAN).of(resourceType1).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of(resourceType1).execute().asNumber();
             assertEquals(1.5D, result.get().doubleValue(), delta);
-            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType6).execute().getNumber();
+            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType6).execute().asNumber();
             assertEquals(7.5D, result.get().doubleValue(), delta);
-            result = graph.graql().compute(MEDIAN).of(resourceType1, resourceType6).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of(resourceType1, resourceType6).execute().asNumber();
             assertEquals(1.8D, result.get().doubleValue(), delta);
-            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType2).execute().getNumber();
+            result = Graql.compute(MEDIAN).withTx(graph).of(resourceType2).execute().asNumber();
             assertEquals(0L, result.get().longValue());
-            result = Graql.compute(MEDIAN).withTx(graph).in(thing).of(resourceType5).execute().getNumber();
+            result = Graql.compute(MEDIAN).withTx(graph).in(thing).of(resourceType5).execute().asNumber();
             assertEquals(-7L, result.get().longValue());
-            result = graph.graql().compute(MEDIAN).in(thing, anotherThing).of(resourceType2, resourceType5).execute().getNumber();
+            result = graph.graql().compute(MEDIAN).in(thing, anotherThing).of(resourceType2, resourceType5).execute().asNumber();
             assertEquals(-7L, result.get().longValue());
-            result = Graql.compute(MEDIAN).withTx(graph).in(thing).of(resourceType2).execute().getNumber();
+            result = Graql.compute(MEDIAN).withTx(graph).in(thing).of(resourceType2).execute().asNumber();
             assertNotEquals(0L, result.get().longValue());
         }
 
@@ -501,7 +501,7 @@ public class StatisticsTest {
 
         List<Number> numberList = list.parallelStream().map(i -> {
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-                return graph.graql().compute(MEDIAN).of(resourceType1).execute().getNumber().get();
+                return graph.graql().compute(MEDIAN).of(resourceType1).execute().asNumber().get();
             }
         }).collect(Collectors.toList());
         numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
@@ -547,16 +547,16 @@ public class StatisticsTest {
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // No need to test all statistics as most of them share the same vertex program
 
-            result = graph.graql().compute(MIN).of("power").execute().getNumber();
+            result = graph.graql().compute(MIN).of("power").execute().asNumber();
             assertEquals(1L, result.get().longValue());
 
-            result = graph.graql().compute(MAX).of("power").execute().getNumber();
+            result = graph.graql().compute(MAX).of("power").execute().asNumber();
             assertEquals(3L, result.get().longValue());
 
-            result = graph.graql().compute(SUM).of("power").execute().getNumber();
+            result = graph.graql().compute(SUM).of("power").execute().asNumber();
             assertEquals(8L, result.get().longValue());
 
-            result = graph.graql().compute(MEDIAN).of("power").execute().getNumber();
+            result = graph.graql().compute(MEDIAN).of("power").execute().asNumber();
             assertEquals(2L, result.get().longValue());
         }
     }

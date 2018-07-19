@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.graql.admin.ConceptMap;
-import ai.grakn.graql.internal.query.ConceptMapImpl;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;

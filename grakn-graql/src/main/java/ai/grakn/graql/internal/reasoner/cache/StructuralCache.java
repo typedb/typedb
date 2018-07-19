@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;

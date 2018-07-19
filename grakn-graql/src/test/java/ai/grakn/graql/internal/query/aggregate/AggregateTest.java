@@ -25,7 +25,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.matcher.MovieMatchers;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;

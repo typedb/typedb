@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;

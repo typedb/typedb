@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
@@ -46,7 +46,7 @@ public abstract class Answer {
     }
 
     public static Answer create(ConceptMap map){
-        Map<String, Concept> conceptMap = map.get().entrySet().stream().collect(Collectors.toMap(
+        Map<String, Concept> conceptMap = map.map().entrySet().stream().collect(Collectors.toMap(
                 entry -> entry.getKey().getValue(),
                 entry -> ConceptBuilder.build(entry.getValue())
         ));

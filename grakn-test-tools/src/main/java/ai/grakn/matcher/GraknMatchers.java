@@ -24,7 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.kb.internal.structure.Shard;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -72,7 +72,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(Streamable<? extends ConceptMap> item) {
-                return item.stream().map(m -> Maps.transformValues(m.get(), MatchableConcept::of)).collect(toList());
+                return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::of)).collect(toList());
             }
         };
     }

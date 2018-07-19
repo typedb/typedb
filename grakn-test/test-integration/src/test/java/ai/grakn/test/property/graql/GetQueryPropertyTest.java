@@ -28,11 +28,11 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.ConceptMapImpl;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -195,8 +195,8 @@ public class GetQueryPropertyTest {
     }
 
     private Optional<ConceptMap> joinAnswer(ConceptMap answerA, ConceptMap answerB) {
-        Map<Var, Concept> answer = Maps.newHashMap(answerA.get());
-        answer.putAll(answerB.get());
+        Map<Var, Concept> answer = Maps.newHashMap(answerA.map());
+        answer.putAll(answerB.map());
 
         for (Var var : Sets.intersection(answerA.vars(), answerB.vars())) {
             if (!answerA.get(var).equals(answerB.get(var))) {

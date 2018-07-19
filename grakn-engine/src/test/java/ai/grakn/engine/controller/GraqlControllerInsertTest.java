@@ -28,7 +28,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.internal.query.ConceptMapImpl;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;

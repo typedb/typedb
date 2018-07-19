@@ -21,6 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;

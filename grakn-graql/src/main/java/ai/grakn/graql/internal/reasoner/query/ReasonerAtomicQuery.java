@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;

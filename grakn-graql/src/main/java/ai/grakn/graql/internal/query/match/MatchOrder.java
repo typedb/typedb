@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
 import java.util.stream.Stream;

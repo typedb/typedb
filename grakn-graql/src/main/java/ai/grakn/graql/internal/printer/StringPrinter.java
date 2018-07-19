@@ -24,8 +24,13 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerList;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.util.StringUtil;
 
@@ -136,7 +141,7 @@ class StringPrinter extends Printer<StringBuilder> {
 
         builder.append("{");
         collection.stream().findFirst().ifPresent(item -> builder.append(build(item)));
-        collection.stream().skip(1).forEach(item -> builder.append(",").append(build(item)));
+        collection.stream().skip(1).forEach(item -> builder.append(", ").append(build(item)));
         builder.append("}");
 
         return builder;
@@ -148,7 +153,7 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder queryAnswer(ConceptMap answer) {
+    public StringBuilder conceptMap(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
         if (answer.isEmpty()) builder.append("{}");
@@ -157,28 +162,10 @@ class StringPrinter extends Printer<StringBuilder> {
         return builder;
     }
 
-    //TODO: implement StringPrinter for ComputeAnswer properly!
     @Override
-    protected StringBuilder computeAnswer(ComputeQuery.Answer computeAnswer) {
+    protected StringBuilder conceptSetMeasure(ConceptSetMeasure answer) {
         StringBuilder builder = new StringBuilder();
-
-        if (computeAnswer.getNumber().isPresent()) {
-            builder.append(computeAnswer.getNumber().get());
-        }
-        else if (computeAnswer.getCentrality().isPresent()) {
-            builder.append(map(computeAnswer.getCentrality().get()));
-        }
-        else if (computeAnswer.getClusters().isPresent()) {
-            builder.append(collection(computeAnswer.getClusters().get()));
-        }
-        else if (computeAnswer.getClusterSizes().isPresent()) {
-            builder.append(collection(computeAnswer.getClusterSizes().get()));
-        }
-        else if (computeAnswer.getPaths().isPresent()) {
-            builder.append(collection(computeAnswer.getPaths().get()));
-        }
-
-        return builder;
+        return builder.append(answer.measurement()).append(": ").append(collection(answer.set()));
     }
 
     @Override

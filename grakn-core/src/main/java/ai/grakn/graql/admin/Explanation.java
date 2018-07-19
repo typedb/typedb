@@ -18,8 +18,10 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
 import javax.annotation.CheckReturnValue;
+import java.util.Set;
 
 /**
  *
@@ -59,6 +61,18 @@ public interface Explanation {
      */
     @CheckReturnValue
     ImmutableList<ConceptMap> getAnswers();
+
+    /**
+     * @return set of answers corresponding to the explicit path
+     */
+    @CheckReturnValue
+    Set<ConceptMap> explicit();
+
+    /**
+     * @return set of all answers taking part in the derivation of this answer
+     */
+    @CheckReturnValue
+    Set<ConceptMap> deductions();
 
     /**
      *

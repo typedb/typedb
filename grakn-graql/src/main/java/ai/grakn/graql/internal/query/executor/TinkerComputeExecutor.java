@@ -34,6 +34,11 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
@@ -57,9 +62,9 @@ import ai.grakn.graql.internal.analytics.StatisticsMapReduce;
 import ai.grakn.graql.internal.analytics.StdMapReduce;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
 import ai.grakn.graql.internal.analytics.Utility;
-import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.GraqlSyntax;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -80,7 +85,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -91,16 +95,25 @@ import java.util.stream.Stream;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
 
 /**
  * A Graql Compute query job executed against a {@link GraknComputer}.
  *
  * @author Grakn Warriors
  */
-class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
+class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
 
-    private final ComputeQuery query;
+    private final ComputeQuery<T> query;
 
     private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeExecutor.class);
     private final EmbeddedGraknTx<?> tx;
@@ -116,25 +129,22 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
     }
 
     @Override
-    public ComputeQuery.Answer get() {
-        switch (query.method()) {
-            case MIN:
-            case MAX:
-            case MEDIAN:
-            case SUM:
-                return runComputeMinMaxMedianOrSum();
-            case MEAN:
-                return runComputeMean();
-            case STD:
-                return runComputeStd();
-            case COUNT:
-                return runComputeCount();
-            case PATH:
-                return runComputePath();
-            case CENTRALITY:
-                return runComputeCentrality();
-            case CLUSTER:
-                return runComputeCluster();
+    public Stream<T> get() {
+        GraqlSyntax.Compute.Method<?> method = query.method();
+        if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
+            return Stream.of((T) runComputeMinMaxMedianOrSum());
+        } else if (method.equals(MEAN)) {
+            return Stream.of((T) runComputeMean());
+        } else if (method.equals(STD)) {
+            return Stream.of((T) runComputeStd());
+        } else if (method.equals(COUNT)) {
+            return Stream.of((T) runComputeCount());
+        } else if (method.equals(PATH)) {
+            return (Stream<T>) runComputePath();
+        } else if (method.equals(CENTRALITY)) {
+            return (Stream<T>) runComputeCentrality();
+        } else if (method.equals(CLUSTER)) {
+            return (Stream<T>) runComputeCluster();
         }
 
         throw GraqlQueryException.invalidComputeQuery_invalidMethod();
@@ -160,8 +170,8 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private ComputeQuery.Answer runComputeMinMaxMedianOrSum() {
-        return new ComputeQueryImpl.AnswerImpl().setNumber(runComputeStatistics());
+    private Numeric runComputeMinMaxMedianOrSum() {
+        return new Numeric(runComputeStatistics());
     }
 
     /**
@@ -169,15 +179,13 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private ComputeQuery.Answer runComputeMean() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Answer runComputeMean() {
         Map<String, Double> meanPair = runComputeStatistics();
-        if (meanPair == null) return answer;
+        if (meanPair == null) return new Numeric(null);
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
 
-        return answer.setNumber(mean);
+        return new Numeric(mean);
     }
 
     /**
@@ -185,18 +193,16 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private ComputeQuery.Answer runComputeStd() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Answer runComputeStd() {
         Map<String, Double> stdTuple = runComputeStatistics();
-        if (stdTuple == null) return answer;
+        if (stdTuple == null) return new Numeric(null);
 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
         double count = stdTuple.get(StdMapReduce.COUNT);
         Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
 
-        return answer.setNumber(std);
+        return new Numeric(std);
     }
 
     /**
@@ -277,17 +283,17 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        switch (query.method()) {
-            case MIN:
-                return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
-            case MAX:
-                return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
-            case MEAN:
-                return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
-            case STD:
-                return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
-            case SUM:
-                return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+        GraqlSyntax.Compute.Method<?> method = query.method();
+        if (method.equals(MIN)) {
+            return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+        } else if (method.equals(MAX)) {
+            return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+        } else if (method.equals(MEAN)) {
+            return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+        }else if (method.equals(STD)) {
+            return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
+        } else if (method.equals(SUM)) {
+            return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         }
 
         return null;
@@ -298,12 +304,10 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer object containing the count value
      */
-    private ComputeQuery.Answer runComputeCount() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Numeric runComputeCount() {
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
-            return answer.setNumber(0L);
+            return new Numeric(0);
         }
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
@@ -326,7 +330,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
         }
 
         LOG.debug("Count = " + finalCount);
-        return answer.setNumber(finalCount);
+        return new Numeric(finalCount);
     }
 
     /**
@@ -334,14 +338,12 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer containing the list of shortest paths
      */
-    private ComputeQuery.Answer runComputePath() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Stream<ConceptList> runComputePath() {
         ConceptId fromID = query.from().get();
         ConceptId toID = query.to().get();
 
         if (!scopeContainsInstances(fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
-        if (fromID.equals(toID)) return answer.setPaths(ImmutableList.of(ImmutableList.of(fromID)));
+        if (fromID.equals(toID)) return Stream.of(new ConceptList(ImmutableList.of(fromID)));
 
         Set<LabelId> scopedLabelIds = convertLabelsToIds(scopeTypeLabels());
 
@@ -353,16 +355,18 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
             pathsAsEdgeList.put(ConceptId.of(id), ConceptId.of(id2));
         }));
 
-        List<List<ConceptId>> shortestPathAsList;
+        List<List<ConceptId>> paths;
         if (!resultFromMemory.isEmpty()) {
-            if (!scopeIncludesAttributes()) shortestPathAsList = getComputePathResultList(pathsAsEdgeList, fromID);
-            else shortestPathAsList = getComputePathResultListIncludingImplicitRelations(getComputePathResultList(pathsAsEdgeList, fromID));
+            paths = getComputePathResultList(pathsAsEdgeList, fromID);
+            if (scopeIncludesAttributes()) {
+                paths = getComputePathResultListIncludingImplicitRelations(paths);
+            }
         }
         else {
-            shortestPathAsList = Collections.emptyList();
+            paths = Collections.emptyList();
         }
 
-        return answer.setPaths(shortestPathAsList);
+        return paths.stream().map(ConceptList::new);
     }
 
     /**
@@ -370,7 +374,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private ComputeQuery.Answer runComputeCentrality() {
+    private Stream<ConceptSetMeasure> runComputeCentrality() {
         if (query.using().get().equals(DEGREE)) return runComputeDegree();
         if (query.using().get().equals(K_CORE)) return runComputeCoreness();
 
@@ -382,9 +386,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private ComputeQuery.Answer runComputeDegree() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Stream<ConceptSetMeasure> runComputeDegree() {
         Set<Label> targetTypeLabels;
 
         // Check if ofType is valid before returning emptyMap
@@ -404,7 +406,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
         Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
 
         if (!scopeContainsInstance()) {
-            return answer;
+            return Stream.empty();
         }
 
         Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels);
@@ -414,7 +416,10 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                                                 new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
                                                 scopeTypeLabelIDs);
 
-        return answer.setCentrality(computerResult.memory().get(DegreeDistributionMapReduce.class.getName()));
+        Map<Long, Set<ConceptId>> centralityMap = computerResult.memory().get(DegreeDistributionMapReduce.class.getName());
+
+        return centralityMap.entrySet().stream()
+                .map(centrality -> new ConceptSetMeasure(centrality.getValue(), centrality.getKey()));
     }
 
     /**
@@ -422,9 +427,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
      *
      * @return a Answer containing the centrality count map
      */
-    private ComputeQuery.Answer runComputeCoreness() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Stream<ConceptSetMeasure> runComputeCoreness() {
         long k = query.where().get().minK().get();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
@@ -449,7 +452,7 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
         Set<Label> scopeTypeLabels = Sets.union(scopeTypeLabels(), targetTypeLabels);
 
         if (!scopeContainsInstance()) {
-            return answer.setCentrality(Collections.emptyMap());
+            return Stream.empty();
         }
 
         ComputerResult result;
@@ -461,13 +464,16 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                              new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
                              scopeTypeLabelIDs);
         } catch (NoResultException e) {
-            return answer.setCentrality(Collections.emptyMap());
+            return Stream.empty();
         }
 
-        return answer.setCentrality(result.memory().get(DegreeDistributionMapReduce.class.getName()));
+        Map<Long, Set<ConceptId>> centralityMap = result.memory().get(DegreeDistributionMapReduce.class.getName());
+
+        return centralityMap.entrySet().stream()
+                .map(centrality -> new ConceptSetMeasure(centrality.getValue(), centrality.getKey()));
     }
 
-    private ComputeQuery.Answer runComputeCluster() {
+    private Stream<? extends Answer> runComputeCluster() {
         if (query.using().get().equals(K_CORE)) return runComputeKCore();
         if (query.using().get().equals(CONNECTED_COMPONENT)) return runComputeConnectedComponent();
 
@@ -475,16 +481,13 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
     }
 
 
-    private ComputeQuery.Answer runComputeConnectedComponent() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Stream<? extends Answer> runComputeConnectedComponent() {
         boolean restrictSize = query.where().get().size().isPresent();
         boolean getMembers = query.where().get().members().get();
 
         if (!scopeContainsInstance()) {
             LOG.info("Selected types don't have instances");
-            if (getMembers) return answer.setClusters(Collections.emptySet());
-            return answer.setClusterSizes(Collections.emptySet());
+            return Stream.empty();
         }
 
         Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels());
@@ -514,24 +517,20 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
 
         if (getMembers) {
             Map<String, Set<ConceptId>> result = memory.get(mapReduce.getClass().getName());
-            answer.setClusters(new HashSet<>(result.values()));
+            return result.values().stream().map(ConceptSet::new);
         } else {
             Map<String, Long> result = memory.get(mapReduce.getClass().getName());
-            answer.setClusterSizes(result.values());
+            return result.values().stream().map(Numeric::new);
         }
-
-        return answer;
     }
 
-    private ComputeQuery.Answer runComputeKCore() {
-        ComputeQueryImpl.AnswerImpl answer = new ComputeQueryImpl.AnswerImpl();
-
+    private Stream<ConceptSet> runComputeKCore() {
         long k = query.where().get().k().get();
 
         if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
 
         if (!scopeContainsInstance()) {
-            return answer.setClusters(Collections.emptySet());
+            return Stream.empty();
         }
 
         ComputerResult computerResult;
@@ -542,11 +541,11 @@ class TinkerComputeExecutor implements ComputeExecutor<ComputeQuery.Answer> {
                     new ClusterMemberMapReduce(KCoreVertexProgram.K_CORE_LABEL),
                     subLabelIds);
         } catch (NoResultException e) {
-            return answer.setClusters(Collections.emptySet());
+            return Stream.empty();
         }
 
         Map<String, Set<ConceptId>> result = computerResult.memory().get(ClusterMemberMapReduce.class.getName());
-        return answer.setClusters(new HashSet<>(result.values()));
+        return result.values().stream().map(ConceptSet::new);
     }
 
     /**

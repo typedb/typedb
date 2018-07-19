@@ -19,16 +19,19 @@
 package ai.grakn.engine.printer;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.internal.printer.Printer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,14 +63,13 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public Object queryAnswer(ConceptMap answer) {
+    public Object conceptMap(ConceptMap answer) {
         return Answer.create(answer);
     }
 
-    //TODO: implement JacksonPrinter for ComputeAnswer properly!
     @Override
-    public Object computeAnswer(ComputeQuery.Answer computeAnswer) {
-        return object(computeAnswer);
+    protected Object conceptSetMeasure(ConceptSetMeasure answer) {
+        return new HashMap.SimpleEntry<>(answer.measurement(), answer.set());
     }
 
     @Override

@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 

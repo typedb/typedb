@@ -20,8 +20,13 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerList;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Numeric;
 import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
@@ -102,11 +107,30 @@ public abstract class Printer<Builder> {
         else if (object instanceof Collection) {
             return collection((Collection<?>) object);
         }
-        else if (object instanceof ConceptMap) {
-            return queryAnswer((ConceptMap) object);
-        }
-        else if (object instanceof ComputeQuery.Answer) {
-            return computeAnswer((ComputeQuery.Answer) object);
+        if (object instanceof Answer) {
+            if (object instanceof Numeric) {
+                return numeric((Numeric) object);
+            }
+            else if (object instanceof ConceptMap) {
+                return conceptMap((ConceptMap) object);
+            }
+            else if (object instanceof ConceptList) {
+                return conceptList((ConceptList) object);
+            }
+            else if (object instanceof ConceptSet) {
+                if (object instanceof ConceptSetMeasure) {
+                    return conceptSetMeasure((ConceptSetMeasure) object);
+                }
+                else {
+                    return conceptSet((ConceptSet) object);
+                }
+            }
+            else if (object instanceof AnswerList) {
+                return answerList((AnswerList) object);
+            }
+            else {
+                return null;
+            }
         }
         else if (object instanceof Map) {
             return map((Map<?, ?>) object);
@@ -162,24 +186,66 @@ public abstract class Printer<Builder> {
     protected abstract Builder map(Map<?, ?> map);
 
     /**
-     * Convert any {@link ConceptMap} into its print builder
+     * Convert any {@link AnswerList} into its print builder
      *
-     * @param answer the answer to convert into its print builder
-     * @return the map as a builder
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the answer list as an output builder
      */
     @CheckReturnValue
-    protected Builder queryAnswer(ConceptMap answer) {
-        return map(answer.get());
+    protected Builder answerList(AnswerList answer) {
+        return collection(answer.list());
     }
 
     /**
-     * Convert any {@link ComputeQuery.Answer} into its print builder
+     * Convert any {@link ConceptList} into its print builder
      *
-     * @param computeAnswer is the answer result of a Graql Compute queries
-     * @return the computeAnswer as an output builder
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept list as an output builder
      */
     @CheckReturnValue
-    protected abstract Builder computeAnswer(ComputeQuery.Answer computeAnswer);
+    protected Builder conceptList(ConceptList answer) {
+        return collection(answer.list());
+    }
+
+    /**
+     * Convert any {@link ConceptMap} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept map as an output builder
+     */
+    @CheckReturnValue
+    protected abstract Builder conceptMap(ConceptMap answer);
+
+    /**
+     * Convert any {@link ConceptSet} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept set as an output builder
+     */
+    @CheckReturnValue
+    protected Builder conceptSet(ConceptSet answer) {
+        return collection(answer.set());
+    }
+
+    /**
+     * Convert any {@link ConceptSetMeasure} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept set measure as an output builder
+     */
+    @CheckReturnValue
+    protected abstract Builder conceptSetMeasure(ConceptSetMeasure answer);
+
+    /**
+     * Convert any {@link Numeric} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the number as an output builder
+     */
+    @CheckReturnValue
+    protected Builder numeric(Numeric answer) {
+        return object(answer.number());
+    }
 
     /**
      * Default conversion behaviour if none of the more specific methods can be used

@@ -18,12 +18,17 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -65,6 +70,18 @@ public class QueryExplanation implements Explanation {
 
     @Override
     public ImmutableList<ConceptMap> getAnswers(){ return answers;}
+
+    @Override
+    public Set<ConceptMap> explicit(){
+        return deductions().stream().filter(ans -> ans.explanation().isLookupExplanation()).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<ConceptMap> deductions(){
+        Set<ConceptMap> answers = new HashSet<>();
+        this.getAnswers().forEach(ans -> ans.explanation().deductions().forEach(answers::add));
+        return answers;
+    }
 
     @Override
     public boolean isLookupExplanation(){ return false;}

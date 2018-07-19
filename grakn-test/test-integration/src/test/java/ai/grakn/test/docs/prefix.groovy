@@ -23,7 +23,7 @@ import ai.grakn.batch.BatchExecutorClient
 import ai.grakn.concept.*
 import ai.grakn.engine.TaskId
 import ai.grakn.graql.*
-import ai.grakn.graql.admin.ConceptMap
+import ai.grakn.graql.answer.ConceptMap
 import ai.grakn.migration.csv.CSVMigrator
 import mjson.Json
 

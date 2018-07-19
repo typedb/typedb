@@ -16,13 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query.answer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -69,7 +69,7 @@ public class ConceptMapImpl implements ConceptMap {
     }
 
     public ConceptMapImpl(ConceptMap map){
-        this.map = ImmutableMap.<Var, Concept>builder().putAll(map.get().entrySet()).build();
+        this.map = ImmutableMap.<Var, Concept>builder().putAll(map.map().entrySet()).build();
         this.explanation = map.explanation();
     }
 
@@ -88,28 +88,9 @@ public class ConceptMapImpl implements ConceptMap {
     }
 
     @Override
-    public String toString(){
-        return map.entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
-                .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
+    public ConceptMap get() {
+        return this;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || !(obj instanceof ConceptMap)) return false;
-        ConceptMapImpl a2 = (ConceptMapImpl) obj;
-        return map.equals(a2.map);
-    }
-
-    @Override
-    public int hashCode(){ return map.hashCode();}
-
-    @Override
-    public ImmutableMap<Var, Concept> get() {
-        return map;
-    }
-
 
     @Override
     public Explanation explanation(){
@@ -117,22 +98,8 @@ public class ConceptMapImpl implements ConceptMap {
     }
 
     @Override
-    public Set<Explanation> explanations(){
-        Set<Explanation> explanations = Sets.newHashSet(this.explanation());
-        this.explanation().getAnswers().forEach(ans -> ans.explanations().forEach(explanations::add));
-        return explanations;
-    }
-
-    @Override
-    public Set<ConceptMap> explicit(){
-        return deductions().stream().filter(ans -> ans.explanation().isLookupExplanation()).collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<ConceptMap> deductions(){
-        Set<ConceptMap> answers = Sets.newHashSet(this);
-        this.explanation().getAnswers().forEach(ans -> ans.deductions().forEach(answers::add));
-        return answers;
+    public ImmutableMap<Var, Concept> map() {
+        return map;
     }
 
     @Override
@@ -157,13 +124,31 @@ public class ConceptMapImpl implements ConceptMap {
     public boolean containsVar(Var var){ return map.containsKey(var);}
 
     @Override
-    public boolean containsAll(ConceptMap map){ return this.map.entrySet().containsAll(map.get().entrySet());}
+    public boolean containsAll(ConceptMap map){ return this.map.entrySet().containsAll(map.map().entrySet());}
 
     @Override
     public boolean isEmpty(){ return map.isEmpty();}
 
     @Override
     public int size(){ return map.size();}
+
+    @Override
+    public String toString(){
+        return map.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
+                .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || !(obj instanceof ConceptMap)) return false;
+        ConceptMapImpl a2 = (ConceptMapImpl) obj;
+        return map.equals(a2.map);
+    }
+
+    @Override
+    public int hashCode(){ return map.hashCode();}
 
     @Override
     public void forEach(BiConsumer<Var, Concept> consumer) {
@@ -179,7 +164,7 @@ public class ConceptMapImpl implements ConceptMap {
         Set<Var> varIntersection = Sets.intersection(this.vars(), map.vars());
         Map<Var, Concept> entryMap = Sets.union(
                 this.map.entrySet(),
-                map.get().entrySet()
+                map.map().entrySet()
         )
                 .stream()
                 .filter(e -> !varIntersection.contains(e.getKey()))

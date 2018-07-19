@@ -25,13 +25,13 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.graql.internal.query.ConceptMapImpl;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
@@ -252,7 +252,7 @@ public class QueryOperationExecutor {
     }
 
     private ConceptMap insertAll(ConceptMap map) {
-        concepts.putAll(map.get());
+        concepts.putAll(map.map());
 
         for (VarAndProperty property : sortProperties()) {
             property.executor().execute(this);

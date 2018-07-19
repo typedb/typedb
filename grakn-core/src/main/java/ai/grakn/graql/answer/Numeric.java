@@ -16,23 +16,39 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.admin;
+package ai.grakn.graql.answer;
 
-import java.util.Set;
+import ai.grakn.graql.admin.Explanation;
 
 /**
- * An object that contains the answer of every Graql query.
- * @param <T> the data structure in which the specific type of Answer is contained in.
+ * A type of {@link Answer} object that contains a {@link Number}.
  */
-public interface Answer<T> {
+public class Numeric implements Answer<Numeric>{
 
-    T get();
+    private final Number value;
+    private final Explanation explanation;
 
-    Explanation explanation();
+    public Numeric(Number value) {
+        this(value, null);
+    }
 
-    Set<Explanation> explanations();
+    public Numeric(Number value, Explanation explanation) {
+        this.value = value;
+        this.explanation = explanation;
+    }
 
-    Set<? extends Answer<T>> explicit();
 
-    Set<? extends Answer<T>> deductions();
+    @Override
+    public Numeric get() {
+        return this;
+    }
+
+    @Override
+    public Explanation explanation() {
+        return explanation;
+    }
+
+    public Number number() {
+        return value;
+    }
 }

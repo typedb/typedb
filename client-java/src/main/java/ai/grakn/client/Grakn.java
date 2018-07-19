@@ -26,6 +26,7 @@ import ai.grakn.QueryExecutor;
 import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.client.rpc.ResponseReader;
 import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -225,7 +226,7 @@ public final class Grakn {
                     return Collections.emptyIterator();
                 case ID:
                     int iteratorId = txResponse.getQueryIter().getId();
-                    return new Iterator<>(this, iteratorId, response -> RequestBuilder.Answer.answer(response.getQueryIterRes().getAnswer(), this));
+                    return new Iterator<>(this, iteratorId, response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
             }

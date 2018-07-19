@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 
 import java.util.stream.Stream;
 

@@ -36,7 +36,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -847,7 +847,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseKey() {
-        assertEquals("match $x key name; get $x;", parse("match $x key name; get $x;").toString());
+        assertEquals("match $x key name; get $x;", parse("match $x key name; map $x;").toString());
     }
 
     @Test

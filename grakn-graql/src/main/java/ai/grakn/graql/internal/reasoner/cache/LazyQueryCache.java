@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;

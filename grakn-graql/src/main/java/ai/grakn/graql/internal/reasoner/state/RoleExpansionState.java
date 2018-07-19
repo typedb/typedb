@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Iterator;

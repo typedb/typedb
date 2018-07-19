@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 
 import java.util.Collection;
 

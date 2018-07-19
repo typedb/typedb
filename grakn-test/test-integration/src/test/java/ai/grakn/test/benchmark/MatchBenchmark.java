@@ -25,7 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SessionContext;
 import org.junit.Rule;
 import org.openjdk.jmh.annotations.Benchmark;

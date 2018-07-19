@@ -22,13 +22,14 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
@@ -37,23 +38,24 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
- *
- * @author Grakn Warriors
+ * @param <T> return type of ComputeQuery
  */
-public interface ComputeQuery extends Query<ComputeQuery.Answer> {
+public interface ComputeQuery<T> extends Query<List<T>> {
+
+    Stream<? extends Answer> stream();
 
     /**
      * @param tx the graph to execute the compute query on
      * @return a ComputeQuery with the graph set
      */
     @Override
-    ComputeQuery withTx(GraknTx tx);
+    ComputeQuery<T> withTx(GraknTx tx);
 
     /**
      * @param fromID is the Concept ID of in which compute path query will start from
      * @return A ComputeQuery with the fromID set
      */
-    ComputeQuery from(ConceptId fromID);
+    ComputeQuery<T> from(ConceptId fromID);
 
     /**
      * @return a String representing the name of the compute query method
@@ -70,7 +72,7 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
      * @param toID is the Concept ID in which compute query will stop at
      * @return A ComputeQuery with the toID set
      */
-    ComputeQuery to(ConceptId toID);
+    ComputeQuery<T> to(ConceptId toID);
 
     /**
      * @return a Concept ID in which which compute query will stop at
@@ -82,13 +84,13 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
      * @param types is an array of concept types in which the compute query would apply to
      * @return a ComputeQuery with the of set
      */
-    ComputeQuery of(String type, String... types);
+    ComputeQuery<T> of(String type, String... types);
 
     /**
      * @param types is an array of concept types in which the compute query would apply to
      * @return a ComputeQuery with the of set
      */
-    ComputeQuery of(Collection<Label> types);
+    ComputeQuery<T> of(Collection<Label> types);
 
     /**
      * @return the collection of concept types in which the compute query would apply to
@@ -100,13 +102,13 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
      * @param types is an array of concept types that determines the scope of graph for the compute query
      * @return a ComputeQuery with the inTypes set
      */
-    ComputeQuery in(String type, String... types);
+    ComputeQuery<T> in(String type, String... types);
 
     /**
      * @param types is an array of concept types that determines the scope of graph for the compute query
      * @return a ComputeQuery with the inTypes set
      */
-    ComputeQuery in(Collection<Label> types);
+    ComputeQuery<T> in(Collection<Label> types);
 
     /**
      * @return the collection of concept types that determines the scope of graph for the compute query
@@ -118,7 +120,7 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
      * @param algorithm name as an condition for the compute query
      * @return a ComputeQuery with algorithm condition set
      */
-    ComputeQuery using(Algorithm algorithm);
+    ComputeQuery<T> using(Algorithm algorithm);
 
     /**
      * @return the algorithm type for the compute query
@@ -131,13 +133,13 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
      * @param args is an array of arguments
      * @return a ComputeQuery with the arguments set
      */
-    ComputeQuery where(Argument arg, Argument... args);
+    ComputeQuery<T> where(Argument arg, Argument... args);
 
     /**
      * @param args is a list of arguments that could be provided to modify the compute query parameters
      * @return
      */
-    ComputeQuery where(Collection<Argument> args);
+    ComputeQuery<T> where(Collection<Argument> args);
 
     /**
      * @return an Arguments object containing all the provided individual arguments combined
@@ -150,7 +152,7 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
      *
      * @return a ComputeQuery with the inTypes set
      */
-    ComputeQuery includeAttributes(boolean include);
+    ComputeQuery<T> includeAttributes(boolean include);
 
     /**
      * Get if this query will include attributes and their relationships
@@ -213,26 +215,4 @@ public interface ComputeQuery extends Query<ComputeQuery.Answer> {
         Optional<ConceptId> contains();
     }
 
-    /**
-     * Answer inner interface to provide access to Compute Query computation results
-     *
-     * @author Grakn Warriors
-     */
-    interface Answer {
-
-        @CheckReturnValue
-        Optional<Number> getNumber();
-
-        @CheckReturnValue
-        Optional<List<List<ConceptId>>> getPaths();
-
-        @CheckReturnValue
-        Optional<Map<Long, Set<ConceptId>>> getCentrality();
-
-        @CheckReturnValue
-        Optional<Set<Set<ConceptId>>> getClusters();
-
-        @CheckReturnValue
-        Optional<List<Long>> getClusterSizes();
-    }
 }

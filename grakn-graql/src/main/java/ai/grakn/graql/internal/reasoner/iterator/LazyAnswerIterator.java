@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 
 import java.util.Iterator;

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
 import org.junit.Test;

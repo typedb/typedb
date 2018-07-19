@@ -25,7 +25,8 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 
 import java.util.stream.Stream;
 
@@ -54,5 +55,5 @@ public interface QueryExecutor {
 
     <T> T run(AggregateQuery<T> query);
 
-    ComputeExecutor<ComputeQuery.Answer> run(ComputeQuery query);
+    <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query);
 }

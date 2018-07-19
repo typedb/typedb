@@ -16,11 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.admin;
+package ai.grakn.graql.answer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.admin.MultiUnifier;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -32,39 +37,14 @@ import java.util.stream.Stream;
 /**
  * A type of Answer object that contains a {@link Map} of {@link Var} to {@link Concept}.
  */
-public interface ConceptMap extends Answer<Map<Var, Concept>>{
+public interface ConceptMap extends Answer<ConceptMap> {
 
     @Override
     @CheckReturnValue
-    Map<Var, Concept> get();
+    ConceptMap get();
 
-    /**
-     * @return an explanation object indicating how this answer was obtained
-     */
-    @Override
     @CheckReturnValue
-    Explanation explanation();
-
-    /**
-     * @return all explanations taking part in the derivation of this answer
-     */
-    @Override
-    @CheckReturnValue
-    Set<Explanation> explanations();
-
-    /**
-     * @return set of answers corresponding to the explicit path
-     */
-    @Override
-    @CheckReturnValue
-    Set<ConceptMap> explicit();
-
-    /**
-     * @return set of all answers taking part in the derivation of this answer
-     */
-    @Override
-    @CheckReturnValue
-    Set<ConceptMap> deductions();
+    Map<Var, Concept> map();
 
     @CheckReturnValue
     Set<Var> vars();

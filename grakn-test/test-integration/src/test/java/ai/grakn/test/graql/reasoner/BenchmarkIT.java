@@ -36,7 +36,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;

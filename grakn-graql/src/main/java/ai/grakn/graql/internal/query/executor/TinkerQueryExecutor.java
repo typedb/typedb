@@ -31,7 +31,8 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -123,7 +124,7 @@ public class TinkerQueryExecutor implements QueryExecutor {
 
 
     @Override
-    public ComputeExecutor<ComputeQuery.Answer> run(ComputeQuery query) {
+    public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
         return new TinkerComputeExecutor(tx, query);
     }
 

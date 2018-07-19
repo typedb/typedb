@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 

@@ -23,10 +23,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.query.ConceptMapImpl;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
@@ -379,6 +379,6 @@ public class ExplanationTest {
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
         ReasonerQuery query = ans.explanation().getQuery();
         Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
-        return vars.containsAll(ans.get().keySet());
+        return vars.containsAll(ans.map().keySet());
     }
 }

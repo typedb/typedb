@@ -4346,7 +4346,7 @@ Version v1.0.0
 - mark the RAML plugin in Engine to be ignore by the m2e Eclipse plugin
 - Moving batch loading trigger to MindmapsClient (#130)
 - Hal subgraphs and getPath (#129)
-- New getPath method to read paths from config files   - the new method will return the path if it is absolute     or it will prepend the project dir to it if it is relative   - new endpoint /graph/match
+- New getPath method to read paths from config files   - the new name will return the path if it is absolute     or it will prepend the project dir to it if it is relative   - new endpoint /graph/match
 - new getPath method in ConfigProperties
 - Analytics (#127)
 - Fixed creation of logs folder and project path (#128)

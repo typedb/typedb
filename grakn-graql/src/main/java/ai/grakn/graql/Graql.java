@@ -21,7 +21,8 @@ package ai.grakn.graql;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.ConceptMap;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -135,7 +136,7 @@ public class Graql {
     }
 
     @CheckReturnValue
-    public static ComputeQuery compute(Method method) {
+    public static <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
         return withoutGraph().compute(method);
     }
 
