@@ -23,6 +23,7 @@ import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -67,6 +68,7 @@ public class AttributeMerger {
     private CompletableFuture<Void> startBackground() {
         return CompletableFuture.supplyAsync(() -> {
             LOG.info("startBackground() - start");
+            // TODO: what if getBatch throws an exception
             for (AttributeQueue.Attributes newAttrs = newAttributeQueue.getBatch(QUEUE_GET_BATCH_MIN,
                     QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS); ;) {
                 LOG.info("startBackground() - process new attributes...");
@@ -82,6 +84,7 @@ public class AttributeMerger {
     }
 
     public void add(String conceptId, String value) {
+        LOG.info("add(conceptId = " + conceptId + ", value = " + value + ")");
         newAttributeQueue.add(AttributeQueue.Attribute.create(conceptId, value));
     }
 
@@ -110,7 +113,13 @@ public class AttributeMerger {
          * @return an {@link Attributes} instance containing a list of duplicates
          */
         Attributes getBatch(int min, int max, long timeLimit) {
-            throw new UnsupportedOperationException();
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            return new Attributes(Arrays.asList());
         }
 
         @AutoValue
