@@ -52,7 +52,7 @@ describe('Integration test', () => {
         const answer = await iterator.next();
         expect(answer.get().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);
-        tx.close()
+        await tx.close()
         await localSession.close();
     });
 
@@ -62,7 +62,7 @@ describe('Integration test', () => {
         const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;", { infer: false });
         const answer = await iterator.next();
         expect(answer).toBeNull();
-        tx.close();
+        await tx.close();
         await localSession.close();
     });
 

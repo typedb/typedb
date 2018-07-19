@@ -1,7 +1,7 @@
 
 
 /**
- * Builds 
+ * Factory for Answer and Explanation objects
  * @param {Object} conceptFactory 
  */
 function AnswerFactory(conceptFactory) {

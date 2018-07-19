@@ -1,6 +1,9 @@
 const RequestBuilder = require("./RequestBuilder");
 const AnswerFactory = require("./AnswerFactory");
 
+/**
+ * Factory of Iterators, bound to a specific transaction
+ */
 function GrpcIteratorFactory(conceptFactory, communicator) {
   this.communicator = communicator;
   this.conceptFactory = conceptFactory;

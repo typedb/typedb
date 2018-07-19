@@ -44,7 +44,7 @@ tx.close();
 First create a new Grakn object with 
 
 ```
-// URI must a string containing host address and gRPC port of a running Grakn instance, e.g. "localhost:48555"
+// URI must be a string containing host address and gRPC port of a running Grakn instance, e.g. "localhost:48555"
 const grakn = new Grakn(URI);
 ```
 

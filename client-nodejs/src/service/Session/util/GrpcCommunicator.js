@@ -1,4 +1,9 @@
 
+/**
+ * Wrapper for Duplex Stream that exposes method to send new requests and returns
+ * responses as results of Promises.
+ * @param {*} stream 
+ */
 function GrpcCommunicator(stream) {
   this.stream = stream;
   this.pending = [];
