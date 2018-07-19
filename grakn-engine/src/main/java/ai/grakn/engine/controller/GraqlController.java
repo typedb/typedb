@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.engine.uniqueness.AttributeMerger;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -241,6 +242,59 @@ public class GraqlController implements HttpController {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
+//    /**
+//     * Execute a query and return a response in the format specified by the request.
+//     *
+//     * @param tx          open transaction to current graph
+//     * @param queryString read query to be executed
+//     * @param acceptType  response format that the client will accept
+//     * @param multi       execute multiple statements
+//     * @param parser
+//     */
+//    private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
+//
+//        // By default use Jackson printer
+//        Printer<?> printer = this.printer;
+//
+//        if (APPLICATION_TEXT.equals(acceptType)) printer = Printer.stringPrinter(false);
+//
+//        String formatted;
+//        boolean commitQuery = true;
+//        if (multi) {
+//            Stream<Query<?>> query = parser.parseList(queryString);
+//            List<?> collectedResults = query.map(this::executeAndMonitor).collect(Collectors.toList());
+//            if (skipSerialisation) {
+//                formatted = mapper.writeValueAsString(new Object[collectedResults.size()]);
+//            } else {
+//                formatted = printer.toString(collectedResults);
+//            }
+//        } else {
+//            Query<?> query = parser.parseQuery(queryString);
+//            if (skipSerialisation) {
+//                formatted = "";
+//            } else {
+//                // If acceptType is 'application/text' add new line after every result
+//                if (APPLICATION_TEXT.equals(acceptType)) {
+//                    //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
+//                    if (query instanceof Streamable) {
+//                        formatted = printer.toStream(((Streamable<?>) query).stream()).collect(Collectors.joining("\n"));
+//                    } else {
+//                        formatted = printer.toString(query.execute());
+//                    }
+//                } else {
+//                    // If acceptType is 'application/json' map results to JSON representation
+//                    formatted = printer.toString(executeAndMonitor(query));
+//                }
+//
+//            }
+//            commitQuery = !query.isReadOnly();
+//        }
+//
+//        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
+//
+//        return formatted;
+//    }
+
     /**
      * Execute a query and return a response in the format specified by the request.
      *
@@ -284,11 +338,15 @@ public class GraqlController implements HttpController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.commitAndGetLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) {
+            tx.commitAndGetLogs().ifPresent(commitLog ->
+                    commitLog.attributes().forEach((value, conceptIds) ->
+                            conceptIds.forEach(id -> AttributeMerger.singleton.add(id.getValue(), value))
+                    ));
+        }
 
         return formatted;
     }
-
     private Object executeAndMonitor(Query<?> query) {
         return query.execute();
     }

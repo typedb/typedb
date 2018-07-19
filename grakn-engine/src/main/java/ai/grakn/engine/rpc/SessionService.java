@@ -31,6 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.engine.uniqueness.AttributeMerger;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -222,11 +223,18 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             responseSender.onNext(ResponseBuilder.Transaction.open());
         }
 
+//        private void commit() {
+//            tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
+//            responseSender.onNext(ResponseBuilder.Transaction.commit());
+//        }
+
         private void commit() {
-            tx().commitAndGetLogs().ifPresent(postProcessor::submit);
+            tx().commitAndGetLogs().ifPresent(commitLog ->
+                    commitLog.attributes().forEach((value, conceptIds) ->
+                            conceptIds.forEach(id -> AttributeMerger.singleton.add(id.getValue(), value))
+                    ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
-
         private void query(SessionProto.Transaction.Query.Req request) {
             Query<?> query = tx().graql()
                     .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))
