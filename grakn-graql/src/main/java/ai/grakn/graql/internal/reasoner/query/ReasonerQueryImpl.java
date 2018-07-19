@@ -537,7 +537,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             subGoalIterator = Collections.emptyIterator();
         } else {
             dbIterator = Collections.emptyIterator();
-            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
+            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this.rewrite());
 
             LOG.trace("CQ plan:\n" + queryPlan);
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
