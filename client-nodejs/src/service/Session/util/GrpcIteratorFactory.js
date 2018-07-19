@@ -13,7 +13,7 @@ function GrpcIteratorFactory(conceptFactory, communicator) {
 // Query Iterator
 
 GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
-  mapResponse = (response) => {
+  const mapResponse = (response) => {
     const iterRes = response.getIterateRes();
     if (iterRes.getDone()) return null;
     const answer = iterRes.getQueryIterRes().getAnswer();
@@ -40,7 +40,7 @@ GrpcIteratorFactory.prototype.createConceptIterator = function (iteratorId, gett
 // Role player Iterator
 GrpcIteratorFactory.prototype.createRolePlayerIterator = function (iteratorId) {
 
-  mapResponse = (response, conceptFactory) => {
+  const mapResponse = (response, conceptFactory) => {
     const iterRes = response.getIterateRes();
     if (iterRes.getDone()) return null;
     const resContent = iterRes.getConceptmethodIterRes().getRelationRoleplayersmapIterRes();
