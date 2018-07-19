@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 public class AttributeMerger {
     private static Logger LOG = LoggerFactory.getLogger(AttributeMerger.class);
 
+    public static AttributeMerger singleton = new AttributeMerger(null, new AttributeQueue());
+
     private static final int QUEUE_GET_BATCH_MIN = 1;
     private static final int QUEUE_GET_BATCH_MAX = 10;
     private static final int QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS = 1000;
