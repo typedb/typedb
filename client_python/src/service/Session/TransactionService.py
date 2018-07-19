@@ -1,6 +1,8 @@
 from typing import Type
 
-from .util import RequestBuilder, enums
+from .util.RequestBuilder import RequestBuilder
+from .util.ResponseConverter import ResponseConverter
+from .util import enums
 
 class TransactionService(object):
 
@@ -8,8 +10,9 @@ class TransactionService(object):
         self.keyspace = keyspace
         self.tx_type = tx_type
         self._communicator = communicator
+        self._response_converter = ResponseConverter(self)
+
         # open the transaction with an 'open' message
-        
         open_req = RequestBuilder.open_tx(keyspace, tx_type)
         self._communicator.send(open_req)
 
@@ -20,7 +23,9 @@ class TransactionService(object):
     def query(self, query: str):
         # TODO create QueryRequest GRPC object
         request = RequestBuilder.query(query)
-        return self._communicator.send(request)
+        response = self._communicator.send(request)
+        # convert `response` into a python iterator
+        return self._response_converter.query(response) 
 
     def commit(self):
         self._tx_service.commit()
@@ -29,7 +34,7 @@ class TransactionService(object):
     def close(self):
         self._tx_service.close() # close the service
 
-    def get_concept(self, concept_id: str): # TODO annotate return types
+    def get_concept(self, concept_id: str): 
         return self._tx_service.get_concept(concept_id)
 
     def get_schema_concept(self, label: str): 
@@ -54,5 +59,11 @@ class TransactionService(object):
         return self._tx_service.put_rule(label, when, then)
 
 
-   
+    # --- Transaction Messages ---
+
+
+    def iterate(self, iterator_id: int):
+        request = RequestBuilder.next_request(iterator_id)
+        response = self._communicator.send(request)
+        return response 
 

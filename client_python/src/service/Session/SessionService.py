@@ -12,17 +12,19 @@ class Communicator(object):
     """ An iterator and interface for GRPC stream """
 
     def __init__(self, grpc_stream_constructor):
-        self._deque = queue.deque()
+        self._queue = queue.Queue()
         self._response_iterator = grpc_stream_constructor(self)
 
     def _add_request(self, request):
-        self._deque.append(request)
+        self._queue.put(request)
 
     def __next__(self):
-        next_item = self._deque.popLeft()
+        print("`next` called on Communicator")
+        print("Current queue: {0}".format(list(self._queue.queue)))
+        next_item = self._queue.get(block=True)
         if next_item is None:
             raise StopIteration()
-        return self._deque.popLeft()
+        return next_item
 
     def __iter__(self):
         return self
@@ -32,8 +34,8 @@ class Communicator(object):
         return next(self._response_iterator)
 
     def close(self):
-        self._deque.clear()
-        self._deque.append(None)
+        self._queue.clear()
+        self._queue.append(None)
 
     
 

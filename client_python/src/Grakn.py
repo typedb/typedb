@@ -1,4 +1,3 @@
-from enum import Enum
 from .Session import Session
 
 import src.service.Session.util.enums as enums
@@ -20,13 +19,13 @@ class Grakn(object):
 
     # TODO keyspace delete/retrieve
 
-class TxType(Enum):
+class TxType(object):
     READ = SessionMessages.Transaction.Type.Value('READ')
     WRITE = SessionMessages.Transaction.Type.Value('WRITE')
     BATCH = SessionMessages.Transaction.Type.Value('BATCH')
         
     
-class DataType(Enum):
+class DataType(object):
     STRING = ConceptMessages.AttributeType.DATA_TYPE.Value('STRING')
     BOOLEAN = ConceptMessages.AttributeType.DATA_TYPE.Value('BOOLEAN')
     INTEGER = ConceptMessages.AttributeType.DATA_TYPE.Value('INTEGER')

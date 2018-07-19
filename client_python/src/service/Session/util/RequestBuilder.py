@@ -41,3 +41,10 @@ class RequestBuilder(object):
 
         
 
+    def next_request(iterator_id: int):
+        iterate_request = messages.Transaction.Iter.Req()
+        iterate_request.id = iterator_id
+        
+        transaction_req = messages.Transaction.Req()
+        transaction_req.iterate_req.CopyFrom(iterate_request)
+        return transaction_req 
