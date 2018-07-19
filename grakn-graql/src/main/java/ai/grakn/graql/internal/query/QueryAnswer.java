@@ -68,24 +68,18 @@ public class QueryAnswer implements Answer {
         this.explanation = new Explanation();
     }
 
-    public QueryAnswer(Answer a){
-        this.map = ImmutableMap.<Var, Concept>builder().putAll(a.entrySet()).build();
-        this.explanation = a.getExplanation();
-    }
-
     public QueryAnswer(Collection<Map.Entry<Var, Concept>> mappings, AnswerExplanation exp){
         this.map = ImmutableMap.<Var, Concept>builder().putAll(mappings).build();
         this.explanation = exp;
     }
 
-    public QueryAnswer(Map<Var, Concept> m, AnswerExplanation exp){
-        this.map = ImmutableMap.copyOf(m);
-        this.explanation = exp;
-    }
+    public QueryAnswer(Map<Var, Concept> m, AnswerExplanation exp){ this(m.entrySet(), exp); }
 
     public QueryAnswer(Map<Var, Concept> m){
         this(m, new Explanation());
     }
+
+    public QueryAnswer(Answer a){ this(a.entrySet(), a.getExplanation()); }
 
     @Override
     public String toString(){
