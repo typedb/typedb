@@ -1,10 +1,28 @@
-package ai.grakn.engine.attribute.uniqueness;
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016-2018 Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ */
+
+package ai.grakn.engine.uniqueness;
 
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -24,7 +42,7 @@ import java.util.stream.Collectors;
 public class AttributeMerger {
     private static Logger LOG = LoggerFactory.getLogger(AttributeMerger.class);
 
-    public static AttributeMerger singleton = new AttributeMerger(null, new AttributeQueue());
+    public static AttributeMerger singleton = create();
 
     private static final int QUEUE_GET_BATCH_MIN = 1;
     private static final int QUEUE_GET_BATCH_MAX = 10;
@@ -34,9 +52,10 @@ public class AttributeMerger {
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
     private EmbeddedGraknTx tx = null;
 
-    public AttributeMerger(EmbeddedGraknTx tx, AttributeMerger.AttributeQueue newAttributeQueue) {
-        this.tx = tx;
-        this.newAttributeQueue = newAttributeQueue;
+    private static AttributeMerger create() {
+        AttributeMerger singleton = new AttributeMerger();
+        singleton.startBackground();
+        return singleton;
     }
 
     /**
@@ -45,19 +64,25 @@ public class AttributeMerger {
      * the merge algorithm as implemented in {@link MergeAlgorithm}.
      *
      */
-    public CompletableFuture<Void> startBackground() {
-        LOG.info("startBackground() - start");
-        for (AttributeQueue.Attributes newAttrs = newAttributeQueue.getBatch(QUEUE_GET_BATCH_MIN,
-                QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS); ;) {
-            LOG.info("startBackground() - process new attributes...");
-            LOG.info("startBackground() - newAttrs: " + newAttrs);
-            Map<String, List<String>> grouped = newAttrs.attributes().stream().collect(Collectors.groupingBy(attrValue -> attrValue));
-            LOG.info("startBackground() - grouped: " + grouped);
-            grouped.forEach((k, attrValue) -> mergeAlgorithm.merge(tx, attrValue));
-            LOG.info("startBackground() - merge completed.");
-            newAttrs.markProcessed();
-            LOG.info("startBackground() - new attributes processed.");
-        }
+    private CompletableFuture<Void> startBackground() {
+        return CompletableFuture.supplyAsync(() -> {
+            LOG.info("startBackground() - start");
+            for (AttributeQueue.Attributes newAttrs = newAttributeQueue.getBatch(QUEUE_GET_BATCH_MIN,
+                    QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS); ;) {
+                LOG.info("startBackground() - process new attributes...");
+                LOG.info("startBackground() - newAttrs: " + newAttrs);
+                Map<String, List<AttributeQueue.Attribute>> grouped = newAttrs.attributes().stream().collect(Collectors.groupingBy(attr -> attr.value()));
+                LOG.info("startBackground() - grouped: " + grouped);
+                grouped.forEach((k, attrValue) -> mergeAlgorithm.merge(tx, attrValue));
+                LOG.info("startBackground() - merge completed.");
+                newAttrs.markProcessed();
+                LOG.info("startBackground() - new attributes processed.");
+            }
+        });
+    }
+
+    public void add(String conceptId, String value) {
+        newAttributeQueue.add(AttributeQueue.Attribute.create(conceptId, value));
     }
 
     /**
@@ -66,13 +91,13 @@ public class AttributeMerger {
      */
     static class AttributeQueue {
         private static Logger LOG = LoggerFactory.getLogger(AttributeQueue.class);
-        private Queue<String> newAttributeQueue = new LinkedBlockingQueue<>();
+        private Queue<Attribute> newAttributeQueue = new LinkedBlockingQueue<>();
 
         /**
          * Enqueue a new attribute to the queue
          * @param attribute
          */
-        public void add(String attribute) {
+        public void add(Attribute attribute) {
             newAttributeQueue.add(attribute);
         }
 
@@ -88,14 +113,24 @@ public class AttributeMerger {
             throw new UnsupportedOperationException();
         }
 
-        class Attributes {
-            List<String> attributes;
+        @AutoValue
+        static abstract class Attribute {
+            public abstract String conceptId();
+            public abstract String value();
 
-            Attributes(List<String> attributes) {
+            public static Attribute create(String conceptId, String value) {
+                return new AutoValue_AttributeMerger_AttributeQueue_Attribute(conceptId, value);
+            }
+        }
+
+        class Attributes {
+            List<Attribute> attributes;
+
+            Attributes(List<Attribute> attributes) {
                 this.attributes = attributes;
             }
 
-            List<String> attributes() {
+            List<Attribute> attributes() {
                 throw new UnsupportedOperationException();
             }
 
@@ -117,7 +152,7 @@ public class AttributeMerger {
          * The duplicates being processed will be marked so they cannot be touched by other operations.
          * @param duplicates the list of duplicates to be merged
          */
-        public void merge(EmbeddedGraknTx tx, List<String> duplicates) {
+        public void merge(EmbeddedGraknTx tx, List<AttributeQueue.Attribute> duplicates) {
 //            lock(null);
 //            String keep = null;
 //            List<String> remove = null;
