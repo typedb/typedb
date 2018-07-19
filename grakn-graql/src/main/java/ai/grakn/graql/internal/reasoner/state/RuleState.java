@@ -47,6 +47,10 @@ public class RuleState extends QueryStateBase{
         this.rule = rule;
     }
 
+    @Override
+    public String toString(){
+        return getClass() + "\n" + rule + "\n";
+    }
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
