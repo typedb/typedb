@@ -201,7 +201,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subGoalIterator = Collections.emptyIterator();
         } else {
             visitedSubGoals.add(this);
-            subGoalIterator = this.getRuleStream()
+            subGoalIterator = this.getRuleStream(cache)
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
@@ -211,8 +211,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    private Stream<Pair<InferenceRule, Unifier>> getRuleStream(){
-        return getAtom().getApplicableRules()
+    private Stream<Pair<InferenceRule, Unifier>> getRuleStream(QueryCache<ReasonerAtomicQuery> cache){
+        return cache.ruleCache().getApplicableRules(this.getAtom())
                 .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
                 .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
     }
