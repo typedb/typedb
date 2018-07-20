@@ -4,11 +4,9 @@ from . import Grakn
 from .service.Session.TransactionService import TransactionService
 
 class Transaction(object):
+    """ Presents the Grakn interface to the user, actual work with GRPC happens in TransactionService """
 
     def __init__(self, transaction_service: TransactionService):
-        """ Want to decouple this from GRPC -- pass in a TransactionService
-        which implements requirements and uses whatever protocol"""
-        
         self._tx_service = transaction_service
 
 
@@ -37,7 +35,7 @@ class Transaction(object):
     def put_relationship_type(self, label: str):
         return self._tx_service.put_relationship_type(label)
 
-    def put_attribute_type(self, label: str, data_type: Type):
+    def put_attribute_type(self, label: str, data_type):
         return self._tx_service.put_attribute_type(label, data_type)
 
     def put_role(self, label: str):
@@ -45,7 +43,3 @@ class Transaction(object):
 
     def put_rule(self, label: str, when: str, then: str):
         return self._tx_service.put_rule(label, when, then)
-
-
-   
-

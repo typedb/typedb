@@ -23,11 +23,10 @@ class TransactionService(object):
     # targets of top level Transaction class
 
     def query(self, query: str):
-        # TODO create QueryRequest GRPC object
         request = RequestBuilder.query(query)
         response = self._communicator.send(request)
         # convert `response` into a python iterator
-        return self._response_converter.query(response) 
+        return self._response_converter.query(response.query_iter) 
 
     def commit(self):
         request = RequestBuilder.commit()
@@ -39,28 +38,43 @@ class TransactionService(object):
     def get_concept(self, concept_id: str): 
         request = RequestBuilder.get_concept(concept_id)
         response = self._communicator.send(request)
-        return self._response_converter.get_concept(response)
+        return self._response_converter.get_concept(response.getConcept_res)
 
     def get_schema_concept(self, label: str): 
-        pass
+        request = RequestBuilder.get_schema_concept(label)
+        response = self._communicator.send(request)
+        return self._response_converter.get_schema_concept(response.getSchemaConcept_res)
 
-    def get_attributes_by_value(self, attribute_value, data_type: type(enums.DataType)):
-        pass
+    def get_attributes_by_value(self, attribute_value, data_type: enums.DataType):
+        request = RequestBuilder.get_attributes_by_value(attribute_value, data_type)
+        response = self._communicator.send(request)
+        return self._response_converter.get_attributes_by_value(response.getAttributes_iter)
 
     def put_entity_type(self, label: str):
-        pass
+        request = RequestBuilder.put_entity_type(label)
+        response = self._communicator.send(request)
+        # TODO unpack response
 
     def put_relationship_type(self, label: str):
-        pass
+        request = RequestBuilder.put_relationship_type(label)
+        response = self._communicator.send(request)
+        return self._response_converter.put_relationship_type(response.putRelationship_
+        # TODO unpack response
 
-    def put_attribute_type(self, label: str, data_type: type(enums.DataType)):
-        pass
+    def put_attribute_type(self, label: str, data_type: enums.DataType):
+        request = RequestBuilder.put_attribute_type(label, data_type)
+        response = self._communicator.send(request)
+        # TODO unpack response
 
     def put_role(self, label: str):
-        pass
+        request = RequestBuilder.put_role(label)
+        response = self._communicator.send(request)
+        # TODO unpack response
 
     def put_rule(self, label: str, when: str, then: str):
-        pass
+        request = RequestBuilder.put_rule(label, when, then)
+        response = self._communicator.send(request)
+        # TODO unpack
 
     # --- Transaction Messages ---
 
@@ -103,5 +117,6 @@ class Communicator(object):
         return next(self._response_iterator)
 
     def close(self):
-        self._queue.clear()
-        self._queue.append(None)
+        with self._queue.mutex: # probably don't even need the mutex
+            self._queue.queue.clear()
+        self._queue.put(None)

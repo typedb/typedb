@@ -1,7 +1,6 @@
 from . import BaseTypeMapping
 from .ConceptHierarchy import EntityType, RelationshipType, AttributeType, Role, Rule, Entity, Relationship, Attribute, Type
 
-
 class ConceptFactory(object):
     def __init__(self, tx_service):
         self.tx_service = tx_service

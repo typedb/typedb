@@ -9,13 +9,46 @@ class ResponseConverter(object):
         self._answer_converter = AnswerConverter(self._concept_factory)
 
 
-    def query(self, grpc_response):
-        iter_res = grpc_response.query_iter
-        iterator_id = iter_res.id
-
+    def query(self, grpc_query_iter):
+        iterator_id = grpc_query_iter.id
         return ResponseIterator(self._tx_service,
                                 iterator_id,
                                 lambda res: self._answer_converter.convert(res.iterate_res.query_iter_res.answer))
+
+
+    def get_concept(self, grpc_get_schema_concept):
+        which_one = grpc_get_schema_concept.WhichOneof("res")
+        if which_one == "concept":
+            grpc_concept = grpc_get_schema_concept.concept
+            return self._concept_factory.create_concept(grpc_concept)
+        elif which_one == "null":
+            return None
+        else:
+            raise Exception("Unknown getConcept response: {0}".format(which_one))
+
+
+    def get_schema_concept(self, grpc_get_concept):
+        which_one = grpc_get_concept.WhichOneof("res")
+        if which_one == "schemaConcept":
+            grpc_concept = grpc_get_concept.schemaConcept
+            return self._concept_factory.create_concept(grpc_concept)
+        elif which_one == "null":
+            return None
+        else:
+            raise Exception("Unknown getSchemaConcept response: {0}".format(which_one))
+
+    def get_attributes_by_value(self, grpc_get_attrs_iter):
+        iterator_id = grpc_get_attrs_iter.id
+        return ResponseIterator(self._tx_service,
+                                iterator_id,
+                                lambda res: self._concept_factory.create_concept(res.iterate_res.getAttributes_iter_res.attribute))
+
+    def put_entity_type(self, grpc_put_entity):
+        
+
+        
+         
+         
 
 
 
