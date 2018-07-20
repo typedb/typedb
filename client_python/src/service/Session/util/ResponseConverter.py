@@ -101,6 +101,7 @@ class ResponseIterator(object):
         return self
 
     def __next__(self):
+        # get next from server
         iter_response = self._tx_service.iterate(self.iterator_id)
         print("Iterator response:")
         print(iter_response)

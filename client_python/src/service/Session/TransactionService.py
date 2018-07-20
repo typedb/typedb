@@ -1,3 +1,4 @@
+import queue
 from typing import Type
 
 from .util.RequestBuilder import RequestBuilder
@@ -29,38 +30,45 @@ class TransactionService(object):
         return self._response_converter.query(response) 
 
     def commit(self):
-        self._tx_service.commit()
-        self.close()
+        request = RequestBuilder.commit()
+        self._communicator.send(request)
 
     def close(self):
-        self._tx_service.close() # close the service
+        self._communicator.close()
 
     def get_concept(self, concept_id: str): 
-        return self._tx_service.get_concept(concept_id)
+        request = RequestBuilder.get_concept(concept_id)
+        response = self._communicator.send(request)
+        return self._response_converter.get_concept(response)
 
     def get_schema_concept(self, label: str): 
-        return self._tx_service.get_schema_concept(label)
+        pass
 
     def get_attributes_by_value(self, attribute_value, data_type: type(enums.DataType)):
-        return self._tx_service.get_attributes_by_value(attribute_value, data_type)
+        pass
 
     def put_entity_type(self, label: str):
-        return self._tx_service.put_entity_type(label)
+        pass
 
     def put_relationship_type(self, label: str):
-        return self._tx_service.put_relationship_type(label)
+        pass
 
     def put_attribute_type(self, label: str, data_type: type(enums.DataType)):
-        return self._tx_service.put_attribute_type(label, data_type)
+        pass
 
     def put_role(self, label: str):
-        return self._tx_service.put_role(label)
+        pass
 
     def put_rule(self, label: str, when: str, then: str):
-        return self._tx_service.put_rule(label, when, then)
-
+        pass
 
     # --- Transaction Messages ---
+
+    def run_concept_method(self, concept_id, grpc_concept_method_req):
+        # wrap method_req into a transaction message
+        tx_request = RequestBuilder.concept_method_req_to_tx_req(concept_id, grpc_concept_method_req)
+        response = self._communicator.send(tx_request)
+        return response
 
 
     def iterate(self, iterator_id: int):

@@ -4,7 +4,6 @@ from . import Grakn
 from .service.Session.TransactionService import TransactionService
 
 class Transaction(object):
-    
 
     def __init__(self, transaction_service: TransactionService):
         """ Want to decouple this from GRPC -- pass in a TransactionService

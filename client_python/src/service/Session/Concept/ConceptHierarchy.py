@@ -1,4 +1,4 @@
-
+from ..util.RequestBuilder import RequestBuilder
 
 
 class Concept(object):
@@ -49,93 +49,117 @@ class Concept(object):
 
 class SchemaConcept(Concept):
 
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
-
-    
     def label(self, value=None):
         if value is None:
-            # get label
-            return None
+            get_label_req = RequestBuilder.ConceptMethod.SchemaConcept.get_label()
+            response = self._tx_service.run_concept_method(self.id, get_label_req)
+            # TODO unpack response
+
         else:
-            # set label to value
-            pass
+            set_label_req = RequestBuilder.ConceptMethod.SchemaConcept.set_label(value)
+            response = self._tx_service.run_concept_method(self.id, set_label_req)
+            # TODO unpack response
 
     def is_implicit(self) -> bool:
-        pass
+        is_implicit_req = RequestBuilder.ConceptMethod.SchemaConcept.is_implicit()
+        response = self._tx_service.run_concept_method(self.id, is_implicit_req)
+        # TODO unpack response
 
-    def sup(self, schema_type=None):
-        if schema_type is None:
-            # set direct super SchemaConcept of this SchemaConcept
-            pass
-        else:
+    def sup(self, super_concept=None):
+        if super_concept is None:
             # get direct super schema concept
-            pass
+            get_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.get_sup()
+            response = self._tx_service.run_concept_method(self.id, get_sup_req)
+            # TODO unpack response 
+        else:
+            # set direct super SchemaConcept of this SchemaConcept
+            set_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.set_sup(super_concept)
+            response = self._tx_service.run_concept_method(self.id, set_sup_req)
+            # TODO unpack response
 
     def subs(self):
-        pass
+        subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
+        response = self._tx_service.run_concept_method(self.id, subs_req)
+        # TODO unpack response
 
     def sups(self):
-        pass
+        sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
+        response = self._tx_service.run_concept_method(self.id, sups_req)
+        # TODO unpack resposne
 
 class Type(SchemaConcept):
 
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
-
-    def is_abstract(value: bool = None):
+    def is_abstract(self, value: bool = None):
         if value is None:
             # return True/False if the type is set to abstract
-            pass
+            is_abstract_req = RequestBuilder.ConceptMethod.Type.is_abstract()
+            response = self._tx_service.run_concept_method(self.id, is_abstract_req)
+            # TODO unpack response
         else:
-            # set type to be abstract
-            pass
-
-    def playing(self):
-        pass
-
-    def plays(self, role):
-        pass
+            set_abstract_req = RequestBuilder.ConceptMethod.Type.set_abstract(value)
+            response = self._tx_service.run_concept_method(self.id, set_abstract_req)
+            # TODO unpack response
 
     def attributes(self):
-        pass
+        attributes_req = RequestBuilder.ConceptMethod.Type.attributes()
+        response = self._tx_service.run_concept_method(self.id, attributes_req)
+        # TODO unpack response
 
     def instances(self):
+        instances_req = RequestBuilder.ConceptMethod.Type.instances()
+        response = self._tx_service.run_concept_method(self.id, instances_req)
+        # TODO unpack response
+
+    def playing(self):
+        playing_req = RequestBuilder.ConceptMethod.Type.playing()
+        response = self._tx_service.run_concept_method(self.id, playing_req)
+        # TODO unpack response
+
+    def plays(self, role_concept):
+        plays_req = RequestBuilder.ConceptMethod.Type.plays(role_concept)
+        response = self._tx_service.run_concept_method(self.id, plays_req)
+        # TODO unpack response
+
+    def unplay(self, role_concept):
+        unplay_req = RequestBuilder.ConceptMethod.Type.unplay(role_concept)
+        response = self._tx_service.run_concept_method(self.id, unplay_req)
+        # TODO unpack response
+    
+    def has(self, attribute_concept):
+        has_req = RequestBuilder.ConceptMethod.Type.has(attribute_concept)
+        response = self._tx_service.run_concept_method(self.id, has_req)
+        # TODO unpack response
+
+    def unhas(self, attribute_concept):
+        unhas_req = RequestBuilder.ConceptMethod.Type.unhas(attribute_concept)
+        response = self._tx_service.run_concept_method(self.id, unhas_req)
+        # TODO unpack response
         pass
 
     def keys(self):
-        pass
+        keys_req = RequestBuilder.ConceptMethod.Type.keys()
+        response = self._tx_service.run_concept_method(self.id, keys_req)
+        # TODO unpack response
 
-    def key(self, attribute_type):
-        pass
+    def key(self, attribute_concept):
+        key_req = RequestBuilder.ConceptMethod.Type.key(attribute_concept)
+        response = self._tx_service.run_concept_method(self.id, key_req)
+        # TODO unpack response
 
-    def has(self, attribute_type):
-        pass
-
-    def unplay(self, role):
-        pass
-
-    def unhas(self, attribute_type):
-        pass
-
-    def unkey(self, attribute_type):
-        pass
+    def unkey(self, attribute_concept):
+        unkey_req = RequestBuilder.ConceptMethod.Type.unkey(attribute_concept)
+        response = self._tx_service.run_concept_method(self.id, unkey_req)
+        # TODO unpack response
 
 
 
 class EntityType(Type):
-
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
 
     def create(self):
         pass
 
 class AttributeType(Type):
     
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
-
     def create(self, value):
         pass
 
@@ -156,9 +180,6 @@ class AttributeType(Type):
 
 class RelationshipType(Type):
 
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
-
     def create(self):
         pass
 
@@ -173,32 +194,33 @@ class RelationshipType(Type):
 
 class Rule(SchemaConcept):
 
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
-
     def get_when(self):
-        pass
+        when_req = RequestBuilder.ConceptMethod.Rule.when()
+        response = self._tx_service.run_concept_method(self.id, when_req)
+        # TODO unpack response
+
 
     def get_then(self):
-        pass
+        then_req = RequestBuilder.ConceptMethod.Rule.then()
+        response = self._tx_service.run_concept_method(self.id, then_req)
+        # TODO unpack response
 
 class Role(SchemaConcept):
 
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
-
     def relationships(self):
-        pass
+        # NOTE: relations vs relationships here
+        relations_req = RequestBuilder.ConceptMethod.Role.relations()
+        response = self._tx_service.run_concept_method(self.id, relations_req)
+        # TODO unpack response
+        
 
     def players(self):
-        pass
-
+        players_req = RequestBuilder.ConceptMethod.Role.players()
+        response = self._tx_service.run_concept_method(self.id, players_req)
+        # TODO unpack response
 
 
 class Thing(Concept):
-
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
 
     def is_inferred(self) -> bool:
         pass
@@ -226,14 +248,9 @@ class Thing(Concept):
 
 
 class Entity(Thing):
-
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
+    pass
 
 class Attribute(Thing):
-
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
 
     def data_type(self):
         pass
@@ -246,9 +263,6 @@ class Attribute(Thing):
 
 
 class Relationship(Thing):
-
-    def __init__(self, concept_id, base_type, tx_service):
-        super().__init__(concept_id, base_type, tx_service)
 
     def role_players_map(self):
         pass
