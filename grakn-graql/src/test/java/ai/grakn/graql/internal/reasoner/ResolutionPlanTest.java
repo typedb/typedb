@@ -499,7 +499,7 @@ public class ResolutionPlanTest {
     }
 
     private void checkQueryPlanComplete(ReasonerQueryImpl query, ResolutionQueryPlan plan){
-        assertEquals(query.selectAtoms(), plan.queries().stream().flatMap(q -> q.selectAtoms().stream()).collect(toSet()));
+        assertEquals(query.selectAtoms(), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
