@@ -117,7 +117,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             try {
                 submit(() -> handleRequest(request));
             } catch (RuntimeException e) {
-                close(ResponseBuilder.exception(e));
+                close(e);
             }
         }
 
@@ -188,7 +188,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             if (!terminated.getAndSet(true)) {
                 if (error != null) {
                     LOG.error("Runtime Exception in RPC TransactionListener: ", error);
-                    responseSender.onError(error);
+                    responseSender.onError(ResponseBuilder.exception(error));
                 } else {
                     responseSender.onCompleted();
                 }
@@ -229,7 +229,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
-            Query<?> query = tx().graql().infer(request.getInfer()).parse(request.getQuery());
+            Query<?> query = tx().graql()
+                    .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))
+                    .parse(request.getQuery());
 
             Stream<Transaction.Res> responseStream;
             int iteratorId;

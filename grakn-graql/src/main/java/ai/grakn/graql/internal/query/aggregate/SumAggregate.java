@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 /**
  * Aggregate that sums results of a {@link Match}.
  */
-class SumAggregate extends AbstractAggregate<Answer, Number> {
+class SumAggregate extends AbstractAggregate<Number> {
 
     private final Var varName;
 
@@ -37,10 +37,14 @@ class SumAggregate extends AbstractAggregate<Answer, Number> {
 
     @Override
     public Number apply(Stream<? extends Answer> stream) {
-        return stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(0, this::add);
+        // initial value is set to null so that we can return null if there is no Answers to consume
+        return stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(null, this::add);
     }
 
     private Number add(Number x, Number y) {
+        // if this method is called, then there is at least one number to apply SumAggregate to, thus we set x back to 0
+        if (x == null) x = 0;
+
         // This method is necessary because Number doesn't support '+' because java!
         if (x instanceof Long || y instanceof Long) {
             return x.longValue() + y.longValue();

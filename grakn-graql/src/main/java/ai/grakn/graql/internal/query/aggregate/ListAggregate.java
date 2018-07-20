@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Match;
+import ai.grakn.graql.admin.Answer;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,12 +27,11 @@ import java.util.stream.Stream;
 
 /**
  * An aggregate that changes {@link Match} results into a list.
- * @param <T> the type of the results of the {@link Match}
  */
-class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
+class ListAggregate extends AbstractAggregate<List<Answer>> {
 
     @Override
-    public List<T> apply(Stream<? extends T> stream) {
+    public List<Answer> apply(Stream<? extends Answer> stream) {
         return stream.collect(Collectors.toList());
     }
 

@@ -25,7 +25,6 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
@@ -73,7 +72,7 @@ public class Queries {
         return DeleteQueryImpl.of(vars, match);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<? super Answer, T> aggregate) {
+    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
         return AggregateQueryImpl.of(match, aggregate);
     }
 }

@@ -168,6 +168,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchTest {
@@ -1088,6 +1089,30 @@ public class MatchTest {
     @Test(expected = Exception.class)
     public void testOrderBy8() {
         movieKB.tx().graql().match(x.isa("movie")).orderBy(x, Order.asc).stream().findAny().get();
+    }
+
+    @Test
+    public void testOrderDescendingString() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        assertEquals("The Muppets", answer.get(y).asAttribute().value());
+    }
+
+    @Test
+    public void testOrderAscendingString() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        assertEquals("Apocalypse Now", answer.get(y).asAttribute().value());
+    }
+
+    @Test
+    public void testOrderDescendingDate() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        assertEquals(LocalDateTime.of(2000, 9, 2, 0, 0), answer.get(y).asAttribute().value());
+    }
+
+    @Test
+    public void testOrderAscendingDate() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        assertEquals(LocalDateTime.of(1984, 1, 1, 0, 0), answer.get(y).asAttribute().value());
     }
 
     @Test
