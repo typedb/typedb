@@ -341,7 +341,7 @@ public class GraqlShellIT {
                 anything(),
                 "commit",
                 "compute count;",
-                is("7")
+                is("{7}")
         );
     }
 

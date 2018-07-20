@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 
 /**
  * Implementation for {@link DefineQuery}
- *
- * @author Grakn Warriors
  */
 @AutoValue
 abstract class DefineQueryImpl extends AbstractExecutableQuery<ConceptMap> implements DefineQuery {
