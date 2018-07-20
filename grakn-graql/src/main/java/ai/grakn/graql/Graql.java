@@ -264,21 +264,21 @@ public class Graql {
     }
 
     /**
-     * Create an aggregate that will find the maximum of a variable's values.
-     * @param var the variable to find the maximum of
-     */
-    @CheckReturnValue
-    public static Aggregate<Number> max(String var) {
-        return Aggregates.max(Graql.var(var));
-    }
-
-    /**
      * Create an aggregate that will find the minimum of a variable's values.
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
     public static Aggregate<Number> min(String var) {
         return Aggregates.min(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the maximum of a variable's values.
+     * @param var the variable to find the maximum of
+     */
+    @CheckReturnValue
+    public static Aggregate<Number> max(String var) {
+        return Aggregates.max(Graql.var(var));
     }
 
     /**

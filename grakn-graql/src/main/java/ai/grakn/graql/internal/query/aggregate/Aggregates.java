@@ -31,18 +31,16 @@ import java.util.Map;
 
 /**
  * Factory for making {@link Aggregate} implementations.
- *
- * @author Felix Chapman
  */
 public class Aggregates {
 
     private Aggregates() {}
 
     /**
-     * Aggregate that finds mean of a {@link Match}.
+     * Aggregate that checks if there are any results
      */
-    public static Aggregate<Number> mean(Var varName) {
-        return new MeanAggregate(varName);
+    public static Aggregate<Boolean> ask() {
+        return AskAggregate.get();
     }
 
     /**
@@ -53,10 +51,52 @@ public class Aggregates {
     }
 
     /**
-     * Aggregate that checks if there are any results
+     * Aggregate that sums results of a {@link Match}.
      */
-    public static Aggregate<Boolean> ask() {
-        return AskAggregate.get();
+    public static Aggregate<Number> sum(Var varName) {
+        return new SumAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds minimum of a {@link Match}.
+     */
+    public static Aggregate<Number> min(Var varName) {
+        return new MinAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds maximum of a {@link Match}.
+     */
+    public static Aggregate<Number> max(Var varName) {
+        return new MaxAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds mean of a {@link Match}.
+     */
+    public static Aggregate<Number> mean(Var varName) {
+        return new MeanAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds median of a {@link Match}.
+     */
+    public static Aggregate<Number> median(Var varName) {
+        return new MedianAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
+     */
+    public static Aggregate<Number> std(Var varName) {
+        return new StdAggregate(varName);
+    }
+
+    /**
+     * An aggregate that changes {@link Match} results into a list.
+     */
+    public static Aggregate<List<ConceptMap>> list() {
+        return new ListAggregate();
     }
 
     /**
@@ -78,41 +118,6 @@ public class Aggregates {
     }
 
     /**
-     * An aggregate that changes {@link Match} results into a list.
-     */
-    public static Aggregate<List<ConceptMap>> list() {
-        return new ListAggregate();
-    }
-
-    /**
-     * Aggregate that finds maximum of a {@link Match}.
-     */
-    public static Aggregate<Number> max(Var varName) {
-        return new MaxAggregate(varName);
-    }
-
-    /**
-     * Aggregate that finds median of a {@link Match}.
-     */
-    public static Aggregate<Number> median(Var varName) {
-        return new MedianAggregate(varName);
-    }
-
-    /**
-     * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
-     */
-    public static Aggregate<Number> std(Var varName) {
-        return new StdAggregate(varName);
-    }
-
-    /**
-     * Aggregate that finds minimum of a {@link Match}.
-     */
-    public static Aggregate<Number> min(Var varName) {
-        return new MinAggregate(varName);
-    }
-
-    /**
      * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
      * @param <T> the type of the aggregate results
      */
@@ -122,10 +127,5 @@ public class Aggregates {
         return new SelectAggregate<>(aggregates);
     }
 
-    /**
-     * Aggregate that sums results of a {@link Match}.
-     */
-    public static Aggregate<Number> sum(Var varName) {
-        return new SumAggregate(varName);
-    }
+
 }
