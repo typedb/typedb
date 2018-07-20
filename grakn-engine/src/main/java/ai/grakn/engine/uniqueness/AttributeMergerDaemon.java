@@ -18,12 +18,28 @@
 
 package ai.grakn.engine.uniqueness;
 
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +67,6 @@ public class AttributeMergerDaemon {
 
     private Queue newAttributeQueue = new Queue();
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
-    private EmbeddedGraknTx tx = null;
     private boolean stopDaemon = false;
 
     private static AttributeMergerDaemon create() {
@@ -81,14 +96,21 @@ public class AttributeMergerDaemon {
                     Queue.Attributes newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
                     LOG.info("startDaemon() - process new attributes...");
                     LOG.info("startDaemon() - newAttrs: " + newAttrs);
-                    Map<String, List<Queue.Attribute>> grouped = newAttrs.attributes().stream().collect(Collectors.groupingBy(attr -> attr.value()));
-                    LOG.info("startDaemon() - grouped: " + grouped);
-                    grouped.forEach((k, attrValue) -> mergeAlgorithm.merge(tx, attrValue));
+                    Map<KeyspaceAndValue, List<Queue.Attribute>> groupByKeyspaceAndValue = newAttrs.attributes().stream()
+                            .collect(Collectors.groupingBy(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())));
+                    groupByKeyspaceAndValue.forEach((groupName, group) -> LOG.info("startDaemon() - group: " + groupName + " = " + group));
+                    groupByKeyspaceAndValue.forEach((keyspaceAndValue, attrValue) -> {
+                        try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
+                             EmbeddedGraknTx      tx = s.transaction(GraknTxType.WRITE)) {
+                            mergeAlgorithm.merge(tx, attrValue);
+                            tx.commitSubmitNoLogs();
+                        }
+                    });
                     LOG.info("startDaemon() - merge completed.");
 //                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
                     LOG.info("startDaemon() - new attributes processed.");
                 } catch (RuntimeException e) {
-                    LOG.error("An exception has occurred in the AttributeMerger. ", e);
+                    LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
                 }
             }
             LOG.info("startDaemon() - stop");
@@ -96,16 +118,17 @@ public class AttributeMergerDaemon {
         });
 
         daemon.exceptionally(e -> {
-            LOG.error("An exception has occurred in the AttributeMerger. ", e);
+            LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
             return null;
         });
 
         return daemon;
     }
 
-    public void add(String conceptId, String value) {
-        LOG.info("add(conceptId = " + conceptId + ", value = " + value + ")");
-        newAttributeQueue.add(Queue.Attribute.create(conceptId, value));
+    public void add(Keyspace keyspace, String value, ConceptId conceptId) {
+        final Queue.Attribute newAttribute = Queue.Attribute.create(keyspace, value, conceptId);
+        LOG.info("add(" + newAttribute + ")");
+        newAttributeQueue.add(newAttribute);
     }
 
     /**
@@ -124,7 +147,7 @@ public class AttributeMergerDaemon {
             newAttributeQueue.add(attribute);
         }
 
-        // TODO: change to readBatch / vs markRead
+        // TODO: change to read
         /**
          * get n attributes where min <= n <= max. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
          *
@@ -156,11 +179,12 @@ public class AttributeMergerDaemon {
 
         @AutoValue
         static abstract class Attribute {
-            public abstract String conceptId();
+            public abstract Keyspace keyspace();
             public abstract String value();
+            public abstract ConceptId conceptId();
 
-            public static Attribute create(String conceptId, String value) {
-                return new AutoValue_AttributeMerger_AttributeQueue_Attribute(conceptId, value);
+            public static Attribute create(Keyspace keyspace, String value, ConceptId conceptId) {
+                return new AutoValue_AttributeMergerDaemon_Queue_Attribute(keyspace, value, conceptId);
             }
         }
 
@@ -193,25 +217,34 @@ public class AttributeMergerDaemon {
         private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
 
         /**
-         * Merges a list of duplicates. Given a list of duplicates, will 'keep' one and remove 'the rest'.
-         * {@link ai.grakn.concept.Concept} pointing to a duplicate will correctly point to the one 'kept' rather than 'the rest' which are deleted.
-         * The duplicates being processed will be marked so they cannot be touched by other operations.
-         * @param duplicates the list of duplicates to be merged
+         * Merges a list of attributes.
+         * The attributes being processed will be marked so they cannot be touched by other operations.
+         * @param attributes the list of attributes to be merged
+         * @return the merged attribute (TODO)
          */
-        public void merge(EmbeddedGraknTx tx, List<Queue.Attribute> duplicates) {
-            LOG.info("merging '" + duplicates + "'...");
-            lock(duplicates);
+        public void merge(EmbeddedGraknTx tx, List<Queue.Attribute> attributes) {
+            LOG.info("merging '" + attributes + "'...");
+            if (attributes.size() >= 2) {
+                lock(attributes);
 
-            String keep = null;
-            List<String> remove = null;
-            merge(tx, keep, remove);
+                GraphTraversalSource tinker = tx.getTinkerTraversal();
+                GraphTraversal<Vertex, Vertex> attrVertices = tinker.V()
+                        .has(Schema.VertexProperty.INDEX.name(), attributes.get(0).value());
+                Vertex target = attrVertices.next();
+                List<Vertex> duplicates = attrVertices.toList(); // TODO: don't convert to a List
+                for (Vertex dup: duplicates) {
+                    List<Vertex> linkedEntities = Lists.newArrayList(dup.vertices(Direction.IN));
+                    for (Vertex ent: linkedEntities) {
+                        Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
+                        edge.remove();
+                        ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), target);
+                    }
+                    dup.remove();
+                }
 
-            unlock(duplicates);
-            LOG.info("merging completed.");
-        }
-
-        // TODO
-        private void merge(EmbeddedGraknTx tx, String keep, List<String> remove) {
+                unlock(attributes);
+                LOG.info("merging completed.");
+            }
         }
 
         // TODO
@@ -223,4 +256,16 @@ public class AttributeMergerDaemon {
         }
     }
 
+    /**
+     *
+     */
+    @AutoValue
+    static abstract class KeyspaceAndValue {
+        public abstract Keyspace keyspace();
+        public abstract String value();
+
+        public static KeyspaceAndValue create(Keyspace keyspace, String value) {
+            return new AutoValue_AttributeMergerDaemon_KeyspaceAndValue(keyspace, value);
+        }
+    }
 }

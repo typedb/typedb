@@ -341,7 +341,7 @@ public class GraqlController implements HttpController {
         if (commitQuery) {
             tx.commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> AttributeMergerDaemon.singleton.add(id.getValue(), value))
+                            conceptIds.forEach(id -> AttributeMergerDaemon.singleton.add(commitLog.keyspace(), value, id))
                     )
             );
         }

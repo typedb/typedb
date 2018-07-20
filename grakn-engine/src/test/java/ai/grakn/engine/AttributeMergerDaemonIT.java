@@ -34,7 +34,7 @@ public class AttributeMergerDaemonIT {
         SimpleURI grakn = new SimpleURI("localhost", 48555);
         String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
         Keyspace keyspace = Keyspace.of(keyspaceFriendlyNameWithDate); //
-        System.out.println("BITCH testing performed on keyspace '" + keyspaceFriendlyNameWithDate + "'");
+        System.out.println("testing performed on keyspace '" + keyspaceFriendlyNameWithDate + "'");
 
         // turn off janus index and propertyUnique
 
@@ -48,7 +48,8 @@ public class AttributeMergerDaemonIT {
                 Entity person2 = person.create();
                 Attribute name1 = name.create("John");
                 Attribute name2 = name.create("John");
-                System.out.println(name1.id() + ", " + name2.id());
+                System.out.println("person: " + person1.id() + ", " + person2.id());
+                System.out.println("name: " + name1.id() + ", " + name2.id());
                 person1.has(name1);
                 person2.has(name2);
 
@@ -57,25 +58,25 @@ public class AttributeMergerDaemonIT {
         }
 
         System.out.println("Thread.sleep(3000) in order to wait until the merging process finished...");
-        Thread.sleep(3000); // wait for the merging operation to complete
+        Thread.sleep(20000); // wait for the merging operation to complete
         System.out.println("finished waiting.");
 
         // TODO: enable
-//        try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
-//            try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
-//                AttributeType<String> name = tx.getAttributeType("name");
-//                EntityType person = tx.getEntityType("person");
-//
-//                List<Entity> people = person.instances().collect(Collectors.toList());
-//                Set<ConceptId> names = name.instances().map(e -> e.id()).collect(Collectors.toSet());
-//                Set<ConceptId> namesAssociatedToPeople = people.stream().flatMap(p -> p.attributes(name)).map(e -> e.id()).collect(Collectors.toSet());
-//
-//                // assert that there is only one real "John" and the duplicate is deleted
-//                assertThat(names.size(), equalTo(1));
-//
-//                // assert that every entity connected to the duplicate "John" is connected to the real "John"
-//                assertThat(names, equalTo(namesAssociatedToPeople));
-//            }
-//        }
+        try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
+            try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
+                AttributeType<String> name = tx.getAttributeType("name");
+                EntityType person = tx.getEntityType("person");
+
+                List<Entity> people = person.instances().collect(Collectors.toList());
+                Set<ConceptId> names = name.instances().map(e -> e.id()).collect(Collectors.toSet());
+                Set<ConceptId> namesAssociatedToPeople = people.stream().flatMap(p -> p.attributes(name)).map(e -> e.id()).collect(Collectors.toSet());
+
+                // assert that there is only one real "John" and the duplicate is deleted
+                assertThat(names.size(), equalTo(1));
+
+                // assert that every entity connected to the duplicate "John" is connected to the real "John"
+                assertThat(names, equalTo(namesAssociatedToPeople));
+            }
+        }
     }
 }

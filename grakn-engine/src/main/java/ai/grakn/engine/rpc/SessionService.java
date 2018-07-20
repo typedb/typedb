@@ -231,7 +231,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> AttributeMergerDaemon.singleton.add(id.getValue(), value))
+                            conceptIds.forEach(id -> AttributeMergerDaemon.singleton.add(commitLog.keyspace(), value, id))
                     ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
