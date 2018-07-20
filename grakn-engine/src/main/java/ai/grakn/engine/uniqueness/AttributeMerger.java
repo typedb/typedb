@@ -24,12 +24,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This class is responsible for merging attribute duplicates which is done in order to maintain attribute uniqueness.
@@ -66,21 +69,29 @@ public class AttributeMerger {
      *
      */
     private CompletableFuture<Void> startBackground() {
-        return CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<Void> backgroundThread = CompletableFuture.supplyAsync(() -> {
             LOG.info("startBackground() - start");
-            // TODO: what if getBatch throws an exception
-            for (AttributeQueue.Attributes newAttrs = newAttributeQueue.getBatch(QUEUE_GET_BATCH_MIN,
-                    QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS); ;) {
+            // TODO: what if takeBatch throws an exception
+            for (AttributeQueue.Attributes newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
+                    ;
+                    newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS)) {
                 LOG.info("startBackground() - process new attributes...");
                 LOG.info("startBackground() - newAttrs: " + newAttrs);
                 Map<String, List<AttributeQueue.Attribute>> grouped = newAttrs.attributes().stream().collect(Collectors.groupingBy(attr -> attr.value()));
                 LOG.info("startBackground() - grouped: " + grouped);
                 grouped.forEach((k, attrValue) -> mergeAlgorithm.merge(tx, attrValue));
                 LOG.info("startBackground() - merge completed.");
-                newAttrs.markProcessed();
+//                newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
                 LOG.info("startBackground() - new attributes processed.");
             }
         });
+
+        backgroundThread.exceptionally(t -> {
+            LOG.error("An exception has occurred in the AttributeMerger. ", t);
+            return null;
+        });
+
+        return backgroundThread;
     }
 
     public void add(String conceptId, String value) {
@@ -104,6 +115,7 @@ public class AttributeMerger {
             newAttributeQueue.add(attribute);
         }
 
+        // TODO: change to peekBatch
         /**
          * get n attributes where min <= n <= max. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
          *
@@ -112,14 +124,21 @@ public class AttributeMerger {
          * @param timeLimit specifies the maximum waiting time where the method will immediately return the items it has if larger than what is specified in the min param.
          * @return an {@link Attributes} instance containing a list of duplicates
          */
-        Attributes getBatch(int min, int max, long timeLimit) {
+        Attributes takeBatch(int min, int max, long timeLimit) {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            return new Attributes(Arrays.asList());
+            List<Attribute> batch = new LinkedList<>();
+
+            for (int i = 0; i < max; ++i) {
+                Attribute e = newAttributeQueue.poll();
+                if (e != null) batch.add(e);
+            }
+
+            return new Attributes(batch);
         }
 
         @AutoValue
@@ -139,12 +158,14 @@ public class AttributeMerger {
                 this.attributes = attributes;
             }
 
+            // TODO
             List<Attribute> attributes() {
-                throw new UnsupportedOperationException();
+                return attributes;
             }
 
+            // TODO
             void markProcessed() {
-                throw new UnsupportedOperationException();
+                Arrays.asList();
             }
         }
     }
@@ -155,6 +176,7 @@ public class AttributeMerger {
      */
     static class MergeAlgorithm {
         private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
+
         /**
          * Merges a list of duplicates. Given a list of duplicates, will 'keep' one and remove 'the rest'.
          * {@link ai.grakn.concept.Concept} pointing to a duplicate will correctly point to the one 'kept' rather than 'the rest' which are deleted.
@@ -162,25 +184,25 @@ public class AttributeMerger {
          * @param duplicates the list of duplicates to be merged
          */
         public void merge(EmbeddedGraknTx tx, List<AttributeQueue.Attribute> duplicates) {
-//            lock(null);
-//            String keep = null;
-//            List<String> remove = null;
-//            merge(tx, keep, remove);
-//            unlock(null);
-
-            throw new UnsupportedOperationException();
+            LOG.info("merging '" + duplicates + "'...");
+            lock(null);
+            String keep = null;
+            List<String> remove = null;
+            merge(tx, keep, remove);
+            unlock(null);
+            LOG.info("merging completed.");
         }
 
+        // TODO
         private void merge(EmbeddedGraknTx tx, String keep, List<String> remove) {
-            throw new UnsupportedOperationException();
         }
 
+        // TODO
         private void lock(List<String> attributes) {
-            throw new UnsupportedOperationException();
         }
 
+        // TODO
         private void unlock(List<String> attributes) {
-            throw new UnsupportedOperationException();
         }
     }
 

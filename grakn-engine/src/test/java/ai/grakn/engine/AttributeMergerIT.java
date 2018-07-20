@@ -34,7 +34,7 @@ public class AttributeMergerIT {
         SimpleURI grakn = new SimpleURI("localhost", 48555);
         String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
         Keyspace keyspace = Keyspace.of(keyspaceFriendlyNameWithDate); //
-        System.out.println("testing performed on keyspace '" + keyspaceFriendlyNameWithDate + "'");
+        System.out.println("BITCH testing performed on keyspace '" + keyspaceFriendlyNameWithDate + "'");
 
         // turn off janus index and propertyUnique
 
@@ -48,6 +48,7 @@ public class AttributeMergerIT {
                 Entity person2 = person.create();
                 Attribute name1 = name.create("John");
                 Attribute name2 = name.create("John");
+                System.out.println(name1.id() + ", " + name2.id());
                 person1.has(name1);
                 person2.has(name2);
 
