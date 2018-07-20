@@ -191,7 +191,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
     public Set<Atom> rewriteToAtoms(){
-        if (this.getPotentialRules().map(r -> new InferenceRule(r, tx())).noneMatch(InferenceRule::isAppendRule)) return super.rewriteToAtoms();
+        boolean requiresAppendRule =
+                this.getPotentialRules()
+                        .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
+                        .noneMatch(InferenceRule::isAppendRule);
+        if (requiresAppendRule) return super.rewriteToAtoms();
         return this.getRelationPlayers().stream()
                 .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
                 .collect(toSet());
@@ -517,18 +521,23 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .map(graph::<Role>getSchemaConcept);
     }
 
+    public static long applicabilityTime = 0;
+
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
+
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof RelationshipAtom)) return false;
-
+        long time = System.currentTimeMillis();
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
         RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new QueryAnswer());
 
         //rule head atom is applicable if it is unifiable
-        return headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
+        boolean b = headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
                 && !headAtom.getRelationPlayerMappings(atomWithType).isEmpty();
+        applicabilityTime += System.currentTimeMillis() - time;
+        return b;
     }
 
     @Override

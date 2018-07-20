@@ -62,6 +62,8 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import ai.grakn.util.SimpleURI;
+import com.google.common.collect.Sets;
+import java.util.HashMap;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -116,6 +118,49 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private static final @Nullable Constructor<?> queryBuilderConstructor = getQueryBuilderConstructor();
 
     private static final @Nullable Method queryExecutorFactory = getQueryExecutorFactory();
+
+    private final RuleCache ruleCache = new RuleCache();
+
+    public class RuleCache {
+
+        private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
+
+        private final Map<Rule, Object> ruleInitMap = new HashMap<>();
+
+        private EmbeddedGraknTx outer(){ return EmbeddedGraknTx.this;}
+
+        public Stream<Rule> getRules() {
+            Rule metaRule = outer().getMetaRule();
+            return metaRule.subs().filter(sub -> !sub.equals(metaRule));
+        }
+
+        public Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct){
+            if (type == null) return getRules();
+
+            Set<Rule> match = ruleMap.get(type);
+            if (match != null) return match.stream();
+
+            Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
+            if (type.isImplicit()) types.add(outer().getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
+
+            Set<Rule> rules = new HashSet<>();
+            ruleMap.put(type, rules);
+            return types.stream()
+                    .flatMap(SchemaConcept::thenRules)
+                    .peek(rules::add);
+        }
+
+        public <T> T getRule(Rule rule, Supplier<T> converter){
+            T match = (T) ruleInitMap.get(rule);
+            if (match != null) return match;
+
+            T newMatch = converter.get();
+            ruleInitMap.put(rule, newMatch);
+            return newMatch;
+        }
+    }
+
+    public RuleCache ruleCache(){ return ruleCache;}
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();

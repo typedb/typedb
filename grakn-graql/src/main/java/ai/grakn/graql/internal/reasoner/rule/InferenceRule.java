@@ -71,7 +71,7 @@ public class InferenceRule {
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
-    private int priority = Integer.MAX_VALUE;
+    private long priority = Long.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
@@ -113,9 +113,9 @@ public class InferenceRule {
     /**
      * @return the priority with which the rule should be fired
      */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = -RuleUtils.getDependentRules(getBody()).size();
+    public long resolutionPriority(){
+        if (priority == Long.MAX_VALUE) {
+            priority = -getBody().selectAtoms().stream().flatMap(Atom::getApplicableRules).count();
         }
         return priority;
     }

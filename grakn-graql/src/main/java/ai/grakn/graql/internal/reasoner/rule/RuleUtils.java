@@ -25,15 +25,14 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 
-import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -70,10 +69,7 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        if (type == null) return getRules(graph);
-        Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        if (type.isImplicit()) types.add(graph.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
-        return types.stream().flatMap(SchemaConcept::thenRules);
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRulesWithType(type, direct);
     }
 
     /**
