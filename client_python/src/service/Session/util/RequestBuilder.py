@@ -21,7 +21,7 @@ class RequestBuilder(object):
     def open_tx(keyspace, tx_type):
         open_request = transaction_messages.Transaction.Open.Req()
         open_request.keyspace = keyspace
-        open_request.type = tx_type
+        open_request.type = tx_type.value
 
         transaction_req = transaction_messages.Transaction.Req()
         transaction_req.open_req.CopyFrom(open_request)
@@ -177,7 +177,7 @@ class RequestBuilder(object):
             @staticmethod
             def get_label():
                 get_schema_label_req = concept_messages.SchemaConcept.GetLabel.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_getLabel_req.CopyFrom(get_schema_label_req)
                 return concept_method_req
             
@@ -185,21 +185,21 @@ class RequestBuilder(object):
             def set_label(label):
                 set_schema_label_req = concept_messages.SchemaConcept.SetLabel.Req()
                 set_schema_label_req.label = label
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_setLabel_req.CopyFrom(set_schema_label_req)
                 return concept_method_req
             
             @staticmethod
             def is_implicit():
                 is_implicit_req = concept_messages.SchemaConcept.IsImplicit.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_isImplicit_req.CopyFrom(is_implicit_req)
                 return concept_method_req
 
             @staticmethod
             def get_sup():
                 get_sup_req = concept_messages.SchemaConcept.GetSup.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_getSup_req.CopyFrom(get_sup_req)
                 return concept_method_req
 
@@ -207,21 +207,21 @@ class RequestBuilder(object):
             def set_sup(concept): 
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(concept)
                 set_sup_req = concept_messages.SchemaConcept.SetSup.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_setSup_req.CopyFrom(set_sup_req)
                 return concept_method_req
 
             @staticmethod
             def subs():
-                subs_req = concept_messages.Method.Subs.Req()
-                concept_method_req = concept_messages.Method.Req()
+                subs_req = concept_messages.SchemaConcept.Subs.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_subs_req.CopyFrom(subs_req)
                 return concept_method_req
 
             @staticmethod
             def sups():
-                sups_req = concept_messages.Method.Sups.Req()
-                concept_method_req = concept_messages.Method.Req()
+                sups_req = concept_messages.SchemaConcept.Sups.Req()
+                concept_method_req = concept_messages.SchemaConcept.Req()
                 concept_method_req.schemaConcept_sups_req.CopyFrom(sups_req)
                 return concept_method_req
 
@@ -233,14 +233,14 @@ class RequestBuilder(object):
             @staticmethod
             def when():
                 when_req = concept_messages.Rule.When.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Rule.Req()
                 concept_method_req.rule_when_req.CopyFrom(when_req)
                 return concept_method_req
 
             @staticmethod
             def then():
                 then_req = concept_messages.Rule.Then.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Rule.Req()
                 concept_method_req.rule_then_req.CopyFrom(then_req)
                 return concept_method_req
 
@@ -250,14 +250,14 @@ class RequestBuilder(object):
             @staticmethod
             def relations():
                 relations_req = concept_messages.Role.Relations.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Role.Req()
                 concept_method_req.role_relations_req.CopyFrom(relations_req)
                 return concept_method_req
 
             @staticmethod
             def players():
                 players_req = concept_messages.Role.Players.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Role.Req()
                 concept_method_req.role_players_req.CopyFrom(players_req)
                 return concept_method_req
 
@@ -269,7 +269,7 @@ class RequestBuilder(object):
             @staticmethod
             def is_abstract():
                 is_abstract_req = concept_messages.Type.IsAbstract.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_isAbstract_req.CopyFrom(is_abstract_req)
                 return concept_method_req
 
@@ -278,28 +278,28 @@ class RequestBuilder(object):
                 set_abstract_req = concept_messages.Type.SetAbstract.Req()
                 assert type(abstract) == bool
                 set_abstract_req.abstract = abstract
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_setAbstract_req.CopyFrom(set_abstract_req)
                 return concept_method_req
 
             @staticmethod
             def type_instances():
                 type_instances_req = concept_messages.Type.Instances.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_instances_req.CopyFrom(type_instances_req)
                 return concept_method_req
 
             @staticmethod
             def keys():
                 type_keys_req = concept_messages.Type.Keys.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_keys_req.CopyFrom(type_keys_req)
                 return concept_method_req
 
             @staticmethod
             def attributes():
                 type_attributes_req = concept_messages.Type.Attributes.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_attributes_req.CopyFrom(type_attributes_req)
                 return concept_method_req
                 
@@ -308,7 +308,7 @@ class RequestBuilder(object):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_type_concept)
                 has_req = concept_messages.Type.Has.Req()
                 has_req.attributeType.CopyFrom(grpc_concept)
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_has_req.CopyFrom(has_req)
                 return concept_method_req
             
@@ -317,7 +317,7 @@ class RequestBuilder(object):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_type_concept)
                 unhas_req = concept_messages.Type.Unhas.Req()
                 unhas_req.attributeType.CopyFrom(grpc_concept)
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_unhas_req.CopyFrom(unhas_req)
                 return concept_method_req
 
@@ -326,7 +326,7 @@ class RequestBuilder(object):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_type_concept)
                 key_req = concept_messages.Type.Key.Req()
                 key_req.attributeType.CopyFrom(grpc_concept)
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_has_req.CopyFrom(key_req)
                 return concept_method_req
 
@@ -335,14 +335,14 @@ class RequestBuilder(object):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_type_concept)
                 unkey_req = concept_messages.Type.Unkey.Req()
                 unkey_req.attributeType.CopyFrom(grpc_concept)
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_has_req.CopyFrom(unkey_req)
                 return concept_method_req
 
             @staticmethod
             def playing():
                 playing_req = concept_messages.Type.Playing.Req()
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_playing_req.CopyFrom(playing_req)
                 return concept_method_req
 
@@ -351,7 +351,7 @@ class RequestBuilder(object):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
                 plays_req = concept_messages.Type.Plays.Req()
                 plays_req.attributeType.CopyFrom(grpc_concept)
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_has_req.CopyFrom(plays_req)
                 return concept_method_req
 
@@ -360,7 +360,7 @@ class RequestBuilder(object):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
                 unplays_req = concept_messages.Type.Unplays.Req()
                 unplays_req.attributeType.CopyFrom(grpc_concept)
-                concept_method_req = concept_messages.Method.Req()
+                concept_method_req = concept_messages.Type.Req()
                 concept_method_req.type_has_req.CopyFrom(unplays_req)
 
         

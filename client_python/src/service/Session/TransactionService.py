@@ -7,9 +7,9 @@ from .util import enums
 
 class TransactionService(object):
 
-    def __init__(self, keyspace, tx_type, transaction_endpoint):
+    def __init__(self, keyspace, tx_type: enums.TxType, transaction_endpoint):
         self.keyspace = keyspace
-        self.tx_type = tx_type
+        self.tx_type = tx_type.value
 
         self._communicator = Communicator(transaction_endpoint)
         self._response_converter = ResponseConverter(self)
@@ -53,28 +53,27 @@ class TransactionService(object):
     def put_entity_type(self, label: str):
         request = RequestBuilder.put_entity_type(label)
         response = self._communicator.send(request)
-        # TODO unpack response
+        return self._response_converter.put_entity_type(response.putEntityType_res)
 
     def put_relationship_type(self, label: str):
         request = RequestBuilder.put_relationship_type(label)
         response = self._communicator.send(request)
-        return self._response_converter.put_relationship_type(response.putRelationship_
-        # TODO unpack response
+        return self._response_converter.put_relationship_type(response.putRelationshipType_res)
 
     def put_attribute_type(self, label: str, data_type: enums.DataType):
         request = RequestBuilder.put_attribute_type(label, data_type)
         response = self._communicator.send(request)
-        # TODO unpack response
+        return self._response_converter.put_attribute_type(response.putAttributeType_res)
 
     def put_role(self, label: str):
         request = RequestBuilder.put_role(label)
         response = self._communicator.send(request)
-        # TODO unpack response
+        return self._response_converter.put_role(response.putRole_res)
 
     def put_rule(self, label: str, when: str, then: str):
         request = RequestBuilder.put_rule(label, when, then)
         response = self._communicator.send(request)
-        # TODO unpack
+        return self._response_converter.put_rule(response.putRule_res)
 
     # --- Transaction Messages ---
 
@@ -82,11 +81,11 @@ class TransactionService(object):
         # wrap method_req into a transaction message
         tx_request = RequestBuilder.concept_method_req_to_tx_req(concept_id, grpc_concept_method_req)
         response = self._communicator.send(tx_request)
-        return response
+        return response.conceptMethod_res
 
 
     def iterate(self, iterator_id: int):
-        request = RequestBuilder.next_request(iterator_id)
+        request = RequestBuilder.next_iter(iterator_id)
         response = self._communicator.send(request)
         return response 
 

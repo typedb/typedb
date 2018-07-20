@@ -43,11 +43,20 @@ class ResponseConverter(object):
                                 iterator_id,
                                 lambda res: self._concept_factory.create_concept(res.iterate_res.getAttributes_iter_res.attribute))
 
-    def put_entity_type(self, grpc_put_entity):
-        
+    def put_entity_type(self, grpc_put_entity_type):
+        return self._concept_factory.create_concept(grpc_put_entity_type.entityType) 
 
-        
-         
+    def put_relationship_type(self, grpc_put_relationship_type):
+        return self._concept_factory.create_concept(grpc_put_relationship_type.relationType)
+
+    def put_attribute_type(self, grpc_put_attribute_type):
+        return self._concept_factory.create_concept(grpc_put_attribute_type.attributeType)
+
+    def put_role(self, grpc_put_role):
+        return self._concept_factory.create_concept(grpc_put_role.role)
+
+    def put_rule(self, grpc_put_rule):
+        return self._concept_factory.create_concept(grpc_put_rule.rule)
          
 
 
