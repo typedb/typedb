@@ -75,7 +75,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.mean;
