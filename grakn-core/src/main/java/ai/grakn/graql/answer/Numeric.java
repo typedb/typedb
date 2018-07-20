@@ -51,4 +51,17 @@ public class Numeric implements Answer<Numeric>{
     public Number number() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Numeric a2 = (Numeric) obj;
+        return this.value.toString().equals(a2.value.toString());
+    }
+
+    @Override
+    public int hashCode(){
+        return value.hashCode();
+    }
 }

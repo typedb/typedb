@@ -41,6 +41,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.query.ComputeQueryImpl;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -68,6 +69,7 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -319,12 +321,12 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcX =
                     ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION).build();
-            AnswerProto.QueryAnswer.Builder answerX = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
-            AnswerProto.Answer.Builder resultX = AnswerProto.Answer.newBuilder().setQueryAnswer(answerX);
+            AnswerProto.ConceptMap.Builder conceptMapX = AnswerProto.ConceptMap.newBuilder().putMap("x", rpcX);
+            AnswerProto.Answer.Builder answerX = AnswerProto.Answer.newBuilder().setConceptMap(conceptMapX);
             Transaction.Res resX = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(resultX))).build();
+                                    .setAnswer(answerX))).build();
             assertEquals(resX, response1);
 
             tx.send(iterate(iterator));
@@ -332,12 +334,12 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcY =
                     ConceptProto.Concept.newBuilder().setId(V456).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE).build();
-            AnswerProto.QueryAnswer.Builder answerY = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
-            AnswerProto.Answer.Builder resultY = AnswerProto.Answer.newBuilder().setQueryAnswer(answerY);
+            AnswerProto.ConceptMap.Builder conceptMapY = AnswerProto.ConceptMap.newBuilder().putMap("y", rpcY);
+            AnswerProto.Answer.Builder answerY = AnswerProto.Answer.newBuilder().setConceptMap(conceptMapY);
             Transaction.Res resY = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(resultY))).build();
+                                    .setAnswer(answerY))).build();
             assertEquals(resY, response2);
 
             tx.send(iterate(iterator));
@@ -390,7 +392,7 @@ public class ServerRPCTest {
         ComputeQuery countQuery = mock(ComputeQuery.class);
         when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
 
-        when(countQuery.execute()).thenReturn(new ComputeQueryImpl.AnswerImpl().setNumber(100L));
+        when(countQuery.execute()).thenReturn(Collections.singletonList(new Numeric(100)));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
@@ -401,7 +403,9 @@ public class ServerRPCTest {
             Transaction.Res expected = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(AnswerProto.Answer.newBuilder().setOtherResult("100")))).build();
+                                    .setAnswer(AnswerProto.Answer.newBuilder()
+                                            .setNumeric(AnswerProto.Numeric.newBuilder()
+                                                    .setNumber(AnswerProto.Number.newBuilder().setValue("100")))))).build();
 
             assertEquals(expected, tx.receive().ok());
         }

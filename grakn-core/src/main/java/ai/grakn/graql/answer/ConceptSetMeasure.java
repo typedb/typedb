@@ -47,4 +47,21 @@ public class ConceptSetMeasure extends ConceptSet{
     public Number measurement() {
         return measurement;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ConceptSetMeasure a2 = (ConceptSetMeasure) obj;
+        return this.set().equals(a2.set())
+                && measurement.toString().equals(a2.measurement.toString());
+    }
+
+    @Override
+    public int hashCode(){
+        int hash = super.hashCode();
+        hash = 31 * hash + measurement.hashCode();
+
+        return hash;
+    }
 }

@@ -18,11 +18,10 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -59,12 +58,12 @@ public class QueryExplanation implements Explanation {
     }
 
     @Override
-    public ai.grakn.graql.admin.Explanation setQuery(ReasonerQuery q){
+    public Explanation setQuery(ReasonerQuery q){
         return new QueryExplanation(q);
     }
 
     @Override
-    public ai.grakn.graql.admin.Explanation childOf(ConceptMap ans) {
+    public Explanation childOf(ConceptMap ans) {
         return new QueryExplanation(getQuery(), ans.explanation().getAnswers());
     }
 

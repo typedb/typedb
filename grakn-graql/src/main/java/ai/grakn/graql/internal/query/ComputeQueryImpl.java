@@ -142,8 +142,6 @@ public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T
     @Override
     public final List<T> execute() {
         return stream().collect(Collectors.toList());
-//        if (answers.size() == 1 && answers.get(0) instanceof Numeric) return answers.get(0);
-//        return new AnswerList(answers);
     }
 
     @Override

@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.printer;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.AnswerList;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
@@ -125,9 +124,6 @@ public abstract class Printer<Builder> {
                     return conceptSet((ConceptSet) object);
                 }
             }
-            else if (object instanceof AnswerList) {
-                return answerList((AnswerList) object);
-            }
             else {
                 return null;
             }
@@ -184,17 +180,6 @@ public abstract class Printer<Builder> {
      */
     @CheckReturnValue
     protected abstract Builder map(Map<?, ?> map);
-
-    /**
-     * Convert any {@link AnswerList} into its print builder
-     *
-     * @param answer is the answer result of a Graql Compute queries
-     * @return the answer list as an output builder
-     */
-    @CheckReturnValue
-    protected Builder answerList(AnswerList answer) {
-        return collection(answer.list());
-    }
 
     /**
      * Convert any {@link ConceptList} into its print builder

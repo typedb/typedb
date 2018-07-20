@@ -142,7 +142,7 @@ public class ConceptMapImpl implements ConceptMap {
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
-        if (obj == null || !(obj instanceof ConceptMap)) return false;
+        if (obj == null || getClass() != obj.getClass()) return false;
         ConceptMapImpl a2 = (ConceptMapImpl) obj;
         return map.equals(a2.map);
     }

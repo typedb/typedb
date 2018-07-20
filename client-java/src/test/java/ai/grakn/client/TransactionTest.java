@@ -172,7 +172,7 @@ public class TransactionTest {
                 .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                         .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                 .setAnswer(AnswerProto.Answer.newBuilder()
-                                        .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))))).build();
+                                        .setConceptMap(AnswerProto.ConceptMap.newBuilder().putMap("x", v123))))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.iterate(ITERATOR), iteratorNext);

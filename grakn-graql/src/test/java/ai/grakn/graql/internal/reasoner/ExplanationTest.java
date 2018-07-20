@@ -111,24 +111,24 @@ public class ExplanationTest {
         assertEquals(queryAnswer3, answer3);
         assertEquals(queryAnswer4, answer4);
 
-        assertEquals(queryAnswer1.deductions().size(), 1);
-        assertEquals(queryAnswer2.deductions().size(), 3);
-        assertEquals(queryAnswer3.deductions().size(), 5);
-        assertEquals(queryAnswer4.deductions().size(), 7);
+        assertEquals(queryAnswer1.explanation().deductions().size(), 1);
+        assertEquals(queryAnswer2.explanation().deductions().size(), 3);
+        assertEquals(queryAnswer3.explanation().deductions().size(), 5);
+        assertEquals(queryAnswer4.explanation().deductions().size(), 7);
 
         assertTrue(queryAnswer1.explanation().isLookupExplanation());
 
         assertTrue(queryAnswer2.explanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
-        assertEquals(2, queryAnswer2.explicit().size());
+        assertEquals(2, queryAnswer2.explanation().explicit().size());
 
         assertTrue(queryAnswer3.explanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
-        assertEquals(3, queryAnswer3.explicit().size());
+        assertEquals(3, queryAnswer3.explanation().explicit().size());
 
         assertTrue(queryAnswer4.explanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
-        assertEquals(4, queryAnswer4.explicit().size());
+        assertEquals(4, queryAnswer4.explanation().explicit().size());
     }
 
     @Test
@@ -153,14 +153,14 @@ public class ExplanationTest {
 
         //(res), (uni, ctr) - (region, ctr)
         //                  - (uni, region) - {(city, region), (uni, city)
-        assertEquals(queryAnswer1.deductions().size(), 6);
-        assertEquals(queryAnswer2.deductions().size(), 6);
+        assertEquals(queryAnswer1.explanation().deductions().size(), 6);
+        assertEquals(queryAnswer2.explanation().deductions().size(), 6);
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
-        assertEquals(4, queryAnswer1.explicit().size());
+        assertEquals(4, queryAnswer1.explanation().explicit().size());
 
         assertEquals(4, getLookupExplanations(queryAnswer2).size());
-        assertEquals(4, queryAnswer2.explicit().size());
+        assertEquals(4, queryAnswer2.explanation().explicit().size());
     }
 
     @Test
@@ -178,7 +178,7 @@ public class ExplanationTest {
         assertTrue(answer.explanation().isRuleExplanation());
         assertEquals(2, answer.explanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
-        assertEquals(4, answer.explicit().size());
+        assertEquals(4, answer.explanation().explicit().size());
         testExplanation(answers);
     }
 
@@ -349,7 +349,7 @@ public class ExplanationTest {
     }
 
     private void answerHasConsistentExplanations(ConceptMap answer){
-        Set<ConceptMap> answers = answer.deductions().stream()
+        Set<ConceptMap> answers = answer.explanation().deductions().stream()
                 .filter(a -> !a.explanation().isJoinExplanation())
                 .collect(Collectors.toSet());
 

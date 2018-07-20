@@ -31,6 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import org.junit.Before;
@@ -80,7 +81,7 @@ public class KCoreTest {
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().asConceptSet().get();
+            List<ConceptSet> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -90,7 +91,7 @@ public class KCoreTest {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.putEntityType(thing).create();
             graph.putEntityType(anotherThing).create();
-            Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().asConceptSet().get();
+            List<ConceptSet> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -120,7 +121,7 @@ public class KCoreTest {
                     .assign(role3, entity1)
                     .assign(role4, entity2);
 
-            Set<Set<ConceptId>> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().asConceptSet().get();
+            List<ConceptSet> result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -130,17 +131,17 @@ public class KCoreTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            Set<Set<ConceptId>> result1 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().asConceptSet().get();
+            List<ConceptSet> result1 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertEquals(1, result1.size());
-            assertEquals(4, result1.iterator().next().size());
+            assertEquals(4, result1.iterator().next().set().size());
 
-            Set<Set<ConceptId>> result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().asConceptSet().get();
+            List<ConceptSet> result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute();
             assertEquals(result1, result2);
 
-            result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).in(thing, related).execute().asConceptSet().get();
+            result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).in(thing, related).execute();
             assertEquals(result1, result2);
 
-            result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).in(thing, related).execute().asConceptSet().get();
+            result2 = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).in(thing, related).execute();
             assertTrue(result2.isEmpty());
         }
     }
@@ -161,15 +162,15 @@ public class KCoreTest {
             graph.commit();
         }
 
-        Set<Set<ConceptId>> result;
+        List<ConceptSet> result;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(2L)).execute().asConceptSet().get();
+            result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(2L)).execute();
             assertEquals(1, result.size());
-            assertEquals(5, result.iterator().next().size());
+            assertEquals(5, result.iterator().next().set().size());
 
-            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().asConceptSet().get();
+            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.iterator().next().size());
+            assertEquals(4, result.iterator().next().set().size());
         }
     }
 
@@ -197,17 +198,17 @@ public class KCoreTest {
             graph.commit();
         }
 
-        Set<Set<ConceptId>> result;
+        List<ConceptSet> result;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(4L)).execute().asConceptSet().get();
+            result = graph.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(4L)).execute();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
-            assertEquals(5, result.iterator().next().size());
+            assertEquals(5, result.iterator().next().set().size());
 
-            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).includeAttributes(true).execute().asConceptSet().get();
+            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).includeAttributes(true).execute();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
-            assertEquals(6, result.iterator().next().size());
+            assertEquals(6, result.iterator().next().set().size());
         }
     }
 
@@ -288,16 +289,16 @@ public class KCoreTest {
             graph.commit();
         }
 
-        Set<Set<ConceptId>> result;
+        List<ConceptSet> result;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute().asConceptSet().get();
+            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute();
             assertEquals(2, result.size());
-            assertEquals(4, result.iterator().next().size());
+            assertEquals(4, result.iterator().next().set().size());
 
             System.out.println("result = " + result);
-            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute().asConceptSet().get();
+            result = graph.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertEquals(1, result.size());
-            assertEquals(9, result.iterator().next().size());
+            assertEquals(9, result.iterator().next().set().size());
         }
     }
 
@@ -313,14 +314,14 @@ public class KCoreTest {
             list.add(i);
         }
 
-        Set<Set<Set<ConceptId>>> result = list.parallelStream().map(i -> {
+        Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-                return Graql.compute(CLUSTER).withTx(graph).using(K_CORE).where(k(3L)).execute().asConceptSet().get();
+                return Graql.compute(CLUSTER).withTx(graph).using(K_CORE).where(k(3L)).execute();
             }
         }).collect(Collectors.toSet());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(4, map.iterator().next().size());
+            assertEquals(4, map.iterator().next().set().size());
         });
     }
 

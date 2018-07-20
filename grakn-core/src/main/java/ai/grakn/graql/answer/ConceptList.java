@@ -54,4 +54,17 @@ public class ConceptList implements Answer<ConceptList>{
     public List<ConceptId> list() {
         return list;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ConceptList a2 = (ConceptList) obj;
+        return this.list.equals(a2.list);
+    }
+
+    @Override
+    public int hashCode(){
+        return list.hashCode();
+    }
 }

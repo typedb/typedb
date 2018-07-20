@@ -40,9 +40,12 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Numeric;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -75,7 +78,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.mean;
@@ -87,7 +89,6 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
@@ -377,55 +378,46 @@ public class ServerRPCIT {
 
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             // count
-            assertEquals(1L, tx.graql().compute(COUNT).in("animal").execute().get());
+            assertEquals(1, tx.graql().compute(COUNT).in("animal").execute().get(0).number().intValue());
 
             // statistics
-            assertEquals(10L, tx.graql().compute(MIN).of("age").in("human").execute().get());
-            assertEquals(10L, tx.graql().compute(MAX).of("age").in("human").execute().get());
-            assertEquals(10L, tx.graql().compute(MEAN).of("age").in("human").execute().get());
+            assertEquals(10, tx.graql().compute(MIN).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.graql().compute(MAX).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.graql().compute(MEAN).of("age").in("human").execute().get(0).number().intValue());
 
 
-            Answer answer = tx.graql().compute(STD).of("age").in("human").execute();
-            assertEquals(0L, answer.get());
+            List<Numeric> answer = tx.graql().compute(STD).of("age").in("human").execute();
+            assertEquals(0, answer.get(0).number().intValue());
 
 
-            assertEquals(10L, tx.graql().compute(SUM).of("age").in("human").execute().get());
-            assertEquals(10L, tx.graql().compute(MEDIAN).of("age").in("human").execute().get());
+            assertEquals(10, tx.graql().compute(SUM).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.graql().compute(MEDIAN).of("age").in("human").execute().get(0).number().intValue());
 
             // degree
-            Map<Long, Set<ConceptId>> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
-                    .of("animal").in("human", "animal", "pet-ownership").execute().asSetMeasure().get();
-            assertEquals(1L, centrality.size());
-            assertEquals(idCoco, centrality.get(1L).iterator().next());
+            List<ConceptSetMeasure> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
+                    .of("animal").in("human", "animal", "pet-ownership").execute();
+            assertEquals(1, centrality.size());
+            assertEquals(idCoco, centrality.get(0).set().iterator().next());
+            assertEquals(1, centrality.get(0).measurement().intValue());
 
             // coreness
-            assertTrue(tx.graql().compute(CENTRALITY).using(K_CORE).of("animal").execute().asSetMeasure().get().isEmpty());
+            assertTrue(tx.graql().compute(CENTRALITY).using(K_CORE).of("animal").execute().isEmpty());
 
             // path
-            List<List<ConceptId>> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute().asConceptList().get();
+            List<ConceptList> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute();
             assertEquals(1, paths.size());
-            assertEquals(idCoco, paths.get(0).get(2));
-            assertEquals(idMike, paths.get(0).get(0));
+            assertEquals(idCoco, paths.get(0).list().get(2));
+            assertEquals(idMike, paths.get(0).list().get(0));
 
-            // connected component size
-            List<Long> sizeList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership").execute().asClusterSizes().get();
-            assertEquals(1, sizeList.size());
-            assertTrue(sizeList.contains(3L));
-
-            // connected component member
-            Set<Set<ConceptId>> membersList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership").execute().asConceptSet().get();
-            assertEquals(1, membersList.size());
-            Set<ConceptId> memberSet = membersList.iterator().next();
-            assertEquals(3, memberSet.size());
-            assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), memberSet);
+            // connected component
+            List<ConceptSet> clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .in("human", "animal", "pet-ownership").execute();
+            assertEquals(1, clusterList.size());
+            assertEquals(3, clusterList.get(0).set().size());
+            assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), clusterList.get(0).set());
 
             // k-core
-            assertEquals(
-                    0,
-                    tx.graql().compute(CLUSTER).using(K_CORE)
-                    .in("human", "animal", "pet-ownership").execute().asConceptSet().get().size());
+            assertTrue(tx.graql().compute(CLUSTER).using(K_CORE).in("human", "animal", "pet-ownership").execute().isEmpty());
         }
     }
 

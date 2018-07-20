@@ -24,13 +24,8 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.AnswerList;
-import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.util.StringUtil;
 

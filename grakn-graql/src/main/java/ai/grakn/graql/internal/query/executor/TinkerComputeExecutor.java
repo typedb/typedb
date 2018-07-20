@@ -40,7 +40,6 @@ import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Numeric;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.ClusterSizeMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
 import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
 import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
@@ -132,13 +131,13 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
     public Stream<T> get() {
         GraqlSyntax.Compute.Method<?> method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
-            return Stream.of((T) runComputeMinMaxMedianOrSum());
+            return (Stream<T>) runComputeMinMaxMedianOrSum();
         } else if (method.equals(MEAN)) {
-            return Stream.of((T) runComputeMean());
+            return (Stream<T>) runComputeMean();
         } else if (method.equals(STD)) {
-            return Stream.of((T) runComputeStd());
+            return (Stream<T>) runComputeStd();
         } else if (method.equals(COUNT)) {
-            return Stream.of((T) runComputeCount());
+            return (Stream<T>) runComputeCount();
         } else if (method.equals(PATH)) {
             return (Stream<T>) runComputePath();
         } else if (method.equals(CENTRALITY)) {
@@ -170,8 +169,10 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Numeric runComputeMinMaxMedianOrSum() {
-        return new Numeric(runComputeStatistics());
+    private Stream<Numeric> runComputeMinMaxMedianOrSum() {
+        Number number = runComputeStatistics();
+        if (number == null) return Stream.empty();
+        else return Stream.of(new Numeric(number));
     }
 
     /**
@@ -179,13 +180,12 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Answer runComputeMean() {
+    private Stream<Numeric> runComputeMean() {
         Map<String, Double> meanPair = runComputeStatistics();
-        if (meanPair == null) return new Numeric(null);
+        if (meanPair == null) return Stream.empty();
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-
-        return new Numeric(mean);
+        return Stream.of(new Numeric(mean));
     }
 
     /**
@@ -193,26 +193,26 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Answer runComputeStd() {
+    private Stream<Numeric> runComputeStd() {
         Map<String, Double> stdTuple = runComputeStatistics();
-        if (stdTuple == null) return new Numeric(null);
+        if (stdTuple == null)  return Stream.empty();
 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
         double count = stdTuple.get(StdMapReduce.COUNT);
         Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
 
-        return new Numeric(std);
+        return Stream.of(new Numeric(std));
     }
 
     /**
      * The compute statistics base algorithm that is called in every compute statistics query
      *
-     * @param <T> The return type of {@link StatisticsMapReduce}
-     * @return result of compute statistics algorithm, which will be of type T
+     * @param <S> The return type of {@link StatisticsMapReduce}
+     * @return result of compute statistics algorithm, which will be of type S
      */
     @Nullable
-    private <T> T runComputeStatistics() {
+    private <S> S runComputeStatistics() {
         AttributeType.DataType<?> targetDataType = validateAndGetTargetDataType();
         if (!targetContainsInstance()) return null;
 
@@ -226,10 +226,10 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
         if (query.method().equals(MEDIAN)) {
             Number result = computerResult.memory().get(MedianVertexProgram.MEDIAN);
             LOG.debug("Median = " + result);
-            return (T) result;
+            return (S) result;
         }
 
-        Map<Serializable, T> resultMap = computerResult.memory().get(mapReduce.getClass().getName());
+        Map<Serializable, S> resultMap = computerResult.memory().get(mapReduce.getClass().getName());
         LOG.debug("Result = " + resultMap.get(MapReduce.NullObject.instance()));
         return resultMap.get(MapReduce.NullObject.instance());
     }
@@ -304,10 +304,10 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing the count value
      */
-    private Numeric runComputeCount() {
+    private Stream<Numeric> runComputeCount() {
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
-            return new Numeric(0);
+            return Stream.of(new Numeric(0));
         }
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
@@ -330,7 +330,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
         }
 
         LOG.debug("Count = " + finalCount);
-        return new Numeric(finalCount);
+        return Stream.of(new Numeric(finalCount));
     }
 
     /**

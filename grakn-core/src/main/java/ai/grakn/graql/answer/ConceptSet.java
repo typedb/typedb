@@ -54,4 +54,17 @@ public class ConceptSet implements Answer<ConceptSet>{
     public Set<ConceptId> set() {
         return set;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ConceptSet a2 = (ConceptSet) obj;
+        return this.set.equals(a2.set);
+    }
+
+    @Override
+    public int hashCode(){
+        return set.hashCode();
+    }
 }
