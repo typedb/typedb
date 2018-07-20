@@ -77,8 +77,8 @@ public class QueryExplanation implements Explanation {
 
     @Override
     public Set<ConceptMap> deductions(){
-        Set<ConceptMap> answers = new HashSet<>();
-        this.getAnswers().forEach(ans -> ans.explanation().deductions().forEach(answers::add));
+        Set<ConceptMap> answers = new HashSet<>(this.getAnswers());
+        this.getAnswers().forEach(ans -> answers.addAll(ans.explanation().deductions()));
         return answers;
     }
 

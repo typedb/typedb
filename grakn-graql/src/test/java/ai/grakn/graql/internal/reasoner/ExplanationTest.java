@@ -111,10 +111,10 @@ public class ExplanationTest {
         assertEquals(queryAnswer3, answer3);
         assertEquals(queryAnswer4, answer4);
 
-        assertEquals(queryAnswer1.explanation().deductions().size(), 1);
-        assertEquals(queryAnswer2.explanation().deductions().size(), 3);
-        assertEquals(queryAnswer3.explanation().deductions().size(), 5);
-        assertEquals(queryAnswer4.explanation().deductions().size(), 7);
+        assertEquals(0, queryAnswer1.explanation().deductions().size());
+        assertEquals(2, queryAnswer2.explanation().deductions().size());
+        assertEquals(4, queryAnswer3.explanation().deductions().size());
+        assertEquals(6, queryAnswer4.explanation().deductions().size());
 
         assertTrue(queryAnswer1.explanation().isLookupExplanation());
 
@@ -153,8 +153,8 @@ public class ExplanationTest {
 
         //(res), (uni, ctr) - (region, ctr)
         //                  - (uni, region) - {(city, region), (uni, city)
-        assertEquals(queryAnswer1.explanation().deductions().size(), 6);
-        assertEquals(queryAnswer2.explanation().deductions().size(), 6);
+        assertEquals(6, queryAnswer1.explanation().deductions().size());
+        assertEquals(6, queryAnswer2.explanation().deductions().size());
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.explanation().explicit().size());
