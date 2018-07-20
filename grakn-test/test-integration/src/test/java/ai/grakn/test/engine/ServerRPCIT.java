@@ -38,6 +38,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -429,7 +430,7 @@ public class ServerRPCIT {
     }
 
     @Test
-    public void whenPerformingAggregateQueries_theResultsAreCorrect() {
+    public void whenExecutingAggregateQueries_theResultsAreCorrect() {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.BATCH.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType name = tx.putAttributeType("name", DataType.STRING);
@@ -491,6 +492,19 @@ public class ServerRPCIT {
 //                    assertTrue(answer.get("x").asEntity().attributes(name).collect(toSet()).contains(attribute));
 //                });
 //            });
+        }
+    }
+
+    @Test
+    public void whenExecutingDeleteQueries_ConceptsAreDeleted() {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
+            DeleteQuery deleteQuery = tx.graql().match(var().rel("x").rel("y").isa("has-genre")).delete("x", "y");
+            deleteQuery.execute();
+            assertTrue(tx.graql().match(var().rel("x").rel("y").isa("has-genre")).get("x", "y").execute().isEmpty());
+
+            deleteQuery = tx.graql().match(var("x").isa("person")).delete();
+            deleteQuery.execute();
+            assertTrue(tx.graql().match(var("x").isa("person")).get().execute().isEmpty());
         }
     }
 
