@@ -31,7 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.uniqueness.AttributeMerger;
+import ai.grakn.engine.uniqueness.AttributeMergerDaemon;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -231,7 +231,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> AttributeMerger.singleton.add(id.getValue(), value))
+                            conceptIds.forEach(id -> AttributeMergerDaemon.singleton.add(id.getValue(), value))
                     ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }

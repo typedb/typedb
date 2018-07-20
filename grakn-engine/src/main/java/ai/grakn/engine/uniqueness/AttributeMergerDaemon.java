@@ -24,17 +24,12 @@ import com.google.common.base.MoreObjects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * This class is responsible for merging attribute duplicates which is done in order to maintain attribute uniqueness.
@@ -45,69 +40,81 @@ import java.util.stream.StreamSupport;
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class AttributeMerger {
-    private static Logger LOG = LoggerFactory.getLogger(AttributeMerger.class);
+public class AttributeMergerDaemon {
+    private static Logger LOG = LoggerFactory.getLogger(AttributeMergerDaemon.class);
 
-    public static AttributeMerger singleton = create();
+    public static AttributeMergerDaemon singleton = create();
 
     private static final int QUEUE_GET_BATCH_MIN = 1;
     private static final int QUEUE_GET_BATCH_MAX = 10;
     private static final int QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS = 1000;
 
-    private AttributeQueue newAttributeQueue = new AttributeQueue();
+    private Queue newAttributeQueue = new Queue();
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
     private EmbeddedGraknTx tx = null;
+    private boolean stopDaemon = false;
 
-    private static AttributeMerger create() {
-        AttributeMerger singleton = new AttributeMerger();
-        singleton.startBackground();
+    private static AttributeMergerDaemon create() {
+        AttributeMergerDaemon singleton = new AttributeMergerDaemon();
+        singleton.startDaemon();
         return singleton;
     }
 
     /**
-     * Starts an always-on background thread which continuously merge attribute duplicates.
-     * The thread listens to the {@link AttributeQueue} queue for incoming attributes and applies
+     * Stops the attribute merger daemon
+     */
+    public void stopDaemon() {
+        stopDaemon = true;
+    }
+
+    /**
+     * Starts the attribute merger daemon, which continuously merge attribute duplicates.
+     * The thread listens to the {@link Queue} queue for incoming attributes and applies
      * the merge algorithm as implemented in {@link MergeAlgorithm}.
      *
      */
-    private CompletableFuture<Void> startBackground() {
-        CompletableFuture<Void> backgroundThread = CompletableFuture.supplyAsync(() -> {
-            LOG.info("startBackground() - start");
-            // TODO: what if takeBatch throws an exception
-            for (AttributeQueue.Attributes newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
-                    ;
-                    newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS)) {
-                LOG.info("startBackground() - process new attributes...");
-                LOG.info("startBackground() - newAttrs: " + newAttrs);
-                Map<String, List<AttributeQueue.Attribute>> grouped = newAttrs.attributes().stream().collect(Collectors.groupingBy(attr -> attr.value()));
-                LOG.info("startBackground() - grouped: " + grouped);
-                grouped.forEach((k, attrValue) -> mergeAlgorithm.merge(tx, attrValue));
-                LOG.info("startBackground() - merge completed.");
-//                newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
-                LOG.info("startBackground() - new attributes processed.");
+    private CompletableFuture<Void> startDaemon() {
+        CompletableFuture<Void> daemon = CompletableFuture.supplyAsync(() -> {
+            LOG.info("startDaemon() - start");
+            while (!stopDaemon) {
+                try {
+                    Queue.Attributes newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
+                    LOG.info("startDaemon() - process new attributes...");
+                    LOG.info("startDaemon() - newAttrs: " + newAttrs);
+                    Map<String, List<Queue.Attribute>> grouped = newAttrs.attributes().stream().collect(Collectors.groupingBy(attr -> attr.value()));
+                    LOG.info("startDaemon() - grouped: " + grouped);
+                    grouped.forEach((k, attrValue) -> mergeAlgorithm.merge(tx, attrValue));
+                    LOG.info("startDaemon() - merge completed.");
+//                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
+                    LOG.info("startDaemon() - new attributes processed.");
+                } catch (RuntimeException e) {
+                    LOG.error("An exception has occurred in the AttributeMerger. ", e);
+                }
             }
-        });
-
-        backgroundThread.exceptionally(t -> {
-            LOG.error("An exception has occurred in the AttributeMerger. ", t);
+            LOG.info("startDaemon() - stop");
             return null;
         });
 
-        return backgroundThread;
+        daemon.exceptionally(e -> {
+            LOG.error("An exception has occurred in the AttributeMerger. ", e);
+            return null;
+        });
+
+        return daemon;
     }
 
     public void add(String conceptId, String value) {
         LOG.info("add(conceptId = " + conceptId + ", value = " + value + ")");
-        newAttributeQueue.add(AttributeQueue.Attribute.create(conceptId, value));
+        newAttributeQueue.add(Queue.Attribute.create(conceptId, value));
     }
 
     /**
      * TODO
      *
      */
-    static class AttributeQueue {
-        private static Logger LOG = LoggerFactory.getLogger(AttributeQueue.class);
-        private Queue<Attribute> newAttributeQueue = new LinkedBlockingQueue<>();
+    static class Queue {
+        private static Logger LOG = LoggerFactory.getLogger(Queue.class);
+        private java.util.Queue<Attribute> newAttributeQueue = new LinkedBlockingQueue<>();
 
         /**
          * Enqueue a new attribute to the queue
@@ -117,16 +124,16 @@ public class AttributeMerger {
             newAttributeQueue.add(attribute);
         }
 
-        // TODO: change to peekBatch
+        // TODO: change to readBatch / vs markRead
         /**
          * get n attributes where min <= n <= max. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
          *
          * @param min minimum number of items to be returned. the method will block until it is reached.
          * @param max the maximum number of items to be returned.
          * @param timeLimit specifies the maximum waiting time where the method will immediately return the items it has if larger than what is specified in the min param.
-         * @return an {@link Attributes} instance containing a list of duplicates
+         * @return an {@link Queue.Attributes} instance containing a list of duplicates
          */
-        Attributes takeBatch(int min, int max, long timeLimit) {
+        Queue.Attributes takeBatch(int min, int max, long timeLimit) {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
@@ -141,6 +148,10 @@ public class AttributeMerger {
             }
 
             return new Attributes(batch);
+        }
+
+        // TODO
+        void markRead(Queue.Attributes batch) {
         }
 
         @AutoValue
@@ -165,11 +176,6 @@ public class AttributeMerger {
                 return attributes;
             }
 
-            // TODO
-            void markProcessed() {
-                Arrays.asList();
-            }
-
             @Override
             public String toString() {
                 return MoreObjects.toStringHelper(this)
@@ -192,13 +198,15 @@ public class AttributeMerger {
          * The duplicates being processed will be marked so they cannot be touched by other operations.
          * @param duplicates the list of duplicates to be merged
          */
-        public void merge(EmbeddedGraknTx tx, List<AttributeQueue.Attribute> duplicates) {
+        public void merge(EmbeddedGraknTx tx, List<Queue.Attribute> duplicates) {
             LOG.info("merging '" + duplicates + "'...");
-            lock(null);
+            lock(duplicates);
+
             String keep = null;
             List<String> remove = null;
             merge(tx, keep, remove);
-            unlock(null);
+
+            unlock(duplicates);
             LOG.info("merging completed.");
         }
 
@@ -207,11 +215,11 @@ public class AttributeMerger {
         }
 
         // TODO
-        private void lock(List<String> attributes) {
+        private void lock(List<Queue.Attribute> attributes) {
         }
 
         // TODO
-        private void unlock(List<String> attributes) {
+        private void unlock(List<Queue.Attribute> attributes) {
         }
     }
 
