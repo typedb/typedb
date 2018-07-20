@@ -111,9 +111,7 @@ public class Aggregates {
      * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
-    public static <T> Aggregate<Map<Concept, T>> group(
-            Var varName, Aggregate<T> innerAggregate
-    ) {
+    public static <T> Aggregate<Map<Concept, T>> group(Var varName, Aggregate<T> innerAggregate) {
         return new GroupAggregate<>(varName, innerAggregate);
     }
 
@@ -121,11 +119,7 @@ public class Aggregates {
      * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
      * @param <T> the type of the aggregate results
      */
-    public static <T> Aggregate<Map<String, T>> select(
-            ImmutableSet<NamedAggregate<? extends T>> aggregates
-    ) {
+    public static <T> Aggregate<Map<String, T>> select(ImmutableSet<NamedAggregate<? extends T>> aggregates) {
         return new SelectAggregate<>(aggregates);
     }
-
-
 }
