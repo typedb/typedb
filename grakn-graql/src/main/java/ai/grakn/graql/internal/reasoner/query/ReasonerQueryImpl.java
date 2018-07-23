@@ -69,7 +69,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -233,7 +232,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public boolean isRuleResolvable() {
-        return selectAtoms().stream().anyMatch(Atom::isRuleResolvable);
+        return selectAtoms().anyMatch(Atom::isRuleResolvable);
     }
 
     /**
@@ -241,7 +240,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean isBoundlesslyDisconnected(){
         return !isAtomic()
-                && selectAtoms().stream()
+                && selectAtoms()
                 .filter(at -> !at.isBounded())
                 .anyMatch(Atom::isDisconnected);
     }
@@ -249,7 +248,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return true if the query requires direct schema lookups
      */
-    public boolean requiresSchema(){ return selectAtoms().stream().anyMatch(Atom::requiresSchema);}
+    public boolean requiresSchema(){ return selectAtoms().anyMatch(Atom::requiresSchema);}
 
     /**
      * @return true if this query is atomic
@@ -391,34 +390,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * atom selection function
      * @return selected atoms
      */
-    public Set<Atom> selectAtoms() {
-        Set<Atom> atomsToSelect = getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toSet());
-        if (atomsToSelect.size() <= 2) return atomsToSelect;
-
-        Set<Atom> orderedSelection = new LinkedHashSet<>();
-
-        Atom atom = atomsToSelect.stream()
-                .filter(at -> at.getNeighbours(Atom.class).findFirst().isPresent())
-                .findFirst().orElse(null);
-        while(!atomsToSelect.isEmpty() && atom != null) {
-            orderedSelection.add(atom);
-            atomsToSelect.remove(atom);
-            atom = atom.getNeighbours(Atom.class)
-                    .filter(atomsToSelect::contains)
-                    .findFirst().orElse(null);
-        }
-        //if disjoint select at random
-        if (!atomsToSelect.isEmpty()) orderedSelection.addAll(atomsToSelect);
-
-        if (orderedSelection.isEmpty()) {
-            throw GraqlQueryException.noAtomsSelected(this);
-        }
-        return orderedSelection;
+    public Stream<Atom> selectAtoms() {
+        return getAtoms(Atom.class).filter(Atomic::isSelectable);
     }
 
     /** Does id predicates -> answer conversion
@@ -465,11 +440,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * @return true if this query requires atom decomposition
+     */
+    public boolean requiresDecomposition(){
+        return this.selectAtoms().anyMatch(Atom::requiresDecomposition);
+    }
+    /**
      * @return rewritten (decomposed) version of the query
      */
     public ReasonerQueryImpl rewrite(){
+        if (!requiresDecomposition()) return this;
         return new ReasonerQueryImpl(
-                this.selectAtoms().stream()
+                this.selectAtoms()
                         .flatMap(at -> at.rewriteToAtoms().stream())
                         .collect(Collectors.toList()),
                 tx()

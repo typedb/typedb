@@ -124,14 +124,14 @@ public class RuleUtils {
         Set<InferenceRule> rules = new HashSet<>();
         Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();
         Stack<Equivalence.Wrapper<Atom>> atoms = new Stack<>();
-        query.selectAtoms().stream().map(equivalence::wrap).forEach(atoms::push);
+        query.selectAtoms().map(equivalence::wrap).forEach(atoms::push);
         while(!atoms.isEmpty()) {
             Equivalence.Wrapper<Atom> wrappedAtom = atoms.pop();
              Atom atom = wrappedAtom.get();
             if (!visitedAtoms.contains(wrappedAtom) && atom != null){
                 atom.getApplicableRules()
                         .peek(rules::add)
-                        .flatMap(rule -> rule.getBody().selectAtoms().stream())
+                        .flatMap(rule -> rule.getBody().selectAtoms())
                         .map(equivalence::wrap)
                         .filter(at -> !visitedAtoms.contains(at))
                         .filter(at -> !atoms.contains(at))

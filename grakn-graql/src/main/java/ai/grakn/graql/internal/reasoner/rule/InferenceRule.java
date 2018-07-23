@@ -196,7 +196,7 @@ public class InferenceRule {
      * @param unifier unifier unifying parent with the rule
      * @return rule with propagated constraints from parent
      */
-    public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
+    private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Atom headAtom = head.getAtom();
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
@@ -296,6 +296,13 @@ public class InferenceRule {
         return this;
     }
 
+    private InferenceRule rewriteBodyAtoms(){
+        if (getBody().requiresDecomposition()) {
+            return new InferenceRule(getHead(), getBody().rewrite(), ruleId, tx);
+        }
+        return this;
+    }
+
     /**
      * rewrite the rule to a form with user defined variables
      * @param parentAtom reference parent atom
@@ -303,6 +310,7 @@ public class InferenceRule {
      */
     public InferenceRule rewrite(Atom parentAtom){
         return this
+                .rewriteBodyAtoms()
                 .rewriteHeadToRelation(parentAtom)
                 .rewriteVariables(parentAtom);
     }
