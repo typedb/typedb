@@ -118,7 +118,7 @@ abstract class AbstractMatch implements MatchAdmin {
     public GetQuery get(Set<Var> vars) {
         if (vars.isEmpty()) vars = getPattern().commonVars();
 
-        return Queries.get(ImmutableSet.copyOf(vars), this);
+        return Queries.get(this, ImmutableSet.copyOf(vars));
     }
 
     @Override
@@ -129,7 +129,7 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableMultiset<VarPatternAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
-        return Queries.insert(varAdmins, admin());
+        return Queries.insert(admin(), varAdmins);
     }
 
     @Override
@@ -154,7 +154,7 @@ abstract class AbstractMatch implements MatchAdmin {
     public final DeleteQuery delete(Set<Var> vars) {
         if (vars.isEmpty()) vars = getPattern().commonVars();
 
-        return Queries.delete(vars, this);
+        return Queries.delete(this, vars);
     }
 
     @Override

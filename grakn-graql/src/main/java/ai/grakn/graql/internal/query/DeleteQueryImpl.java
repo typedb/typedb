@@ -65,7 +65,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(vars(), match().withTx(tx));
+        return Queries.delete(match().withTx(tx).admin(), vars());
     }
 
     @Override
