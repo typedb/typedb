@@ -208,6 +208,9 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Answer project(Set<Var> vars) {
+        for (Var var : vars) {
+            if (!map.containsKey(var)) throw GraqlQueryException.varNotInQuery(var);
+        }
         return new QueryAnswer(
                 this.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
