@@ -25,6 +25,8 @@ import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.SimpleURI;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;
@@ -152,14 +154,18 @@ public class Grakn {
         return config;
     }
 
-
+    /**
+     * Byeee
+     */
 
     public static class Keyspace{
 
         public static void delete(ai.grakn.Keyspace keyspace){
             EmbeddedGraknSession session = session(keyspace);
             try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
-                tx.admin().delete();
+                tx.closeSession();
+                tx.clearGraph();
+                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
             }
             keyspaceStore.deleteKeyspace(keyspace);
         }

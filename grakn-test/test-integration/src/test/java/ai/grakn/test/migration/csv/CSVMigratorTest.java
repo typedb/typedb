@@ -67,7 +67,7 @@ public class CSVMigratorTest {
     @Before
     public void setup() {
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = new Grakn(engine.uri()).session(keyspace);
         defaultMigrator = new MigratorBuilder()
                 .setUri(engine.uri())
                 .setKeyspace(keyspace)

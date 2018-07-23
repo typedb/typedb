@@ -46,8 +46,8 @@ public class Main {
             throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
-        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.READ)) {
-            KBWriter graphWriter = new KBWriter(graph);
+        try(GraknTx tx = new Grakn(options.getUri()).session(options.getKeyspace()).transaction(GraknTxType.READ)) {
+            KBWriter graphWriter = new KBWriter(tx);
 
             if (options.exportSchema()) {
                 System.out.println(graphWriter.dumpSchema());

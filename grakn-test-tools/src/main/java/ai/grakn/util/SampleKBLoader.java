@@ -97,7 +97,7 @@ public class SampleKBLoader {
 
     public void rollback() {
         if (tx instanceof GraknTxTinker) {
-            tx.admin().delete();
+            Grakn.Keyspace.delete(tx.keyspace());
             graphLoaded = false;
         } else if (!tx.isClosed()) {
             tx.close();

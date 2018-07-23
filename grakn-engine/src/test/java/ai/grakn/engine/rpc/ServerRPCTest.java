@@ -757,13 +757,6 @@ public class ServerRPCTest {
     }
 
     @Test
-    public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
-        keyspaceBlockingStub.delete(delete(MYKS.getValue()));
-
-        verify(tx).delete();
-    }
-
-    @Test
     public void whenSendingDeleteRequestWithInvalidKeyspace_CallDeleteOnEmbeddedTx() {
         String keyspace = "not!@akeyspace";
         exception.expect(hasStatus(Status.INVALID_ARGUMENT));

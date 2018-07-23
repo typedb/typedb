@@ -642,15 +642,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
 
-    @Override
-    public void delete() {
-        closeSession();
-        clearGraph();
-        txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-    }
 
+    //TODO move this outside Tx
     //This is overridden by vendors for more efficient clearing approaches
-    protected void clearGraph() {
+    public void clearGraph() {
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 

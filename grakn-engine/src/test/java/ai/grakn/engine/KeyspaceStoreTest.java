@@ -136,9 +136,9 @@ public class KeyspaceStoreTest {
         txs.forEach(GraknTx::close);
 
         //Delete a tx entirely
-        GraknTx deletedGraph = txs.iterator().next();
-        deletedGraph.admin().delete();
-        txs.remove(deletedGraph);
+        GraknTx deletedTx = txs.iterator().next();
+        Grakn.Keyspace.delete(deletedTx.keyspace());
+        txs.remove(deletedTx);
 
         // Get system keyspaces
         Set<String> systemKeyspaces = getSystemKeyspaces();
@@ -147,7 +147,7 @@ public class KeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(keyspaceStore.containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(keyspaceStore.containsKeyspace(deletedTx.keyspace()));
     }
 
     @Test
@@ -158,10 +158,10 @@ public class KeyspaceStoreTest {
         Set<GraknTx> txs = buildTxs(engineFactoryKBProvider, keyspaces);
         txs.forEach(GraknTx::close);
 
-        //Delete a tx entirely
-        GraknTx deletedGraph = txs.iterator().next();
-        deletedGraph.admin().delete();
-        txs.remove(deletedGraph);
+        //Delete a keyspace entirely
+        GraknTx deletedTx = txs.iterator().next();
+        Grakn.Keyspace.delete(deletedTx.keyspace());
+        txs.remove(deletedTx);
 
         // Get system keyspaces
         Set<String> systemKeyspaces = getSystemKeyspaces();
@@ -170,7 +170,7 @@ public class KeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(keyspaceStore.containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(keyspaceStore.containsKeyspace(deletedTx.keyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)

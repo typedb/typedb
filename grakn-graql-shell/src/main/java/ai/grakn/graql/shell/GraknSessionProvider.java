@@ -44,12 +44,12 @@ public class GraknSessionProvider implements SessionProvider{
     @Override
     public GraknSession getSession(GraqlShellOptions options, ConsoleReader console) {
         int defaultGrpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        SimpleURI defaultGrpcUri = new SimpleURI(ai.grakn.Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
+        SimpleURI defaultGrpcUri = new SimpleURI(ai.grakn.client.Grakn.DEFAULT_URI.getHost(), defaultGrpcPort);
         SimpleURI location = options.getUri();
 
         SimpleURI uri = location != null ? location : defaultGrpcUri;
         Keyspace keyspace = options.getKeyspace();
 
-        return Grakn.session(uri, keyspace);
+        return new Grakn(uri).session(keyspace);
     }
 }

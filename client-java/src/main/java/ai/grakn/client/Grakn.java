@@ -21,7 +21,6 @@ package ai.grakn.client;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
 import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.executor.RemoteQueryExecutor;
@@ -73,10 +72,18 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  */
 public final class Grakn {
 
-    private Grakn() {}
+    private static ManagedChannel channel;
+    private static KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
 
-    public static Grakn.Session session(SimpleURI uri, Keyspace keyspace) {
-        return new Session(uri, keyspace);
+
+    public Grakn(SimpleURI uri) {
+        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+        keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+    }
+
+    public Grakn.Session session(ai.grakn.Keyspace keyspace) {
+        return new Session(keyspace);
     }
 
     /**
@@ -87,14 +94,10 @@ public final class Grakn {
      */
     public static class Session implements GraknSession {
 
-        private final Keyspace keyspace;
-        private final SimpleURI uri;
-        private final ManagedChannel channel;
+        private final ai.grakn.Keyspace keyspace;
 
-        private Session(SimpleURI uri, Keyspace keyspace) {
+        private Session(ai.grakn.Keyspace keyspace) {
             this.keyspace = keyspace;
-            this.uri = uri;
-            this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
         SessionServiceGrpc.SessionServiceStub sessionStub() {
@@ -116,8 +119,22 @@ public final class Grakn {
         }
 
         @Override
-        public Keyspace keyspace() {
+        public ai.grakn.Keyspace keyspace() {
             return keyspace;
+        }
+    }
+
+    /**
+     * Internal class used to handle keyspace related operations
+     */
+
+    public static final class Keyspace {
+
+        public static void delete(ai.grakn.Keyspace keyspace){
+            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
+            keyspaceBlockingStub.delete(request);
+            //TODO: add test to check if transactions are closed on the server side:
+            // open tx, delete keyspace and try to access tx again
         }
     }
 
@@ -173,13 +190,6 @@ public final class Grakn {
             return RemoteQueryExecutor.create(this);
         }
 
-        @Override // TODO: Move out of Transaction class
-        public void delete() {
-            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
-            KeyspaceServiceGrpc.KeyspaceServiceBlockingStub stub = session.keyspaceBlockingStub();
-            stub.delete(request);
-            close();
-        }
 
         private SessionProto.Transaction.Res responseOrThrow() {
             Transceiver.Response response;

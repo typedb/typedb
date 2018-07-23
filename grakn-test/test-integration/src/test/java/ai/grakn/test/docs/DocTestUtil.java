@@ -157,7 +157,7 @@ public class DocTestUtil {
 
     public static GraknSession getTestGraph(SimpleURI uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        GraknSession session = Grakn.session(uri, keyspace);
+        GraknSession session = new Grakn(uri).session(keyspace);
 
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);

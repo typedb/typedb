@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.shell;
 
-import ai.grakn.Grakn;
+import ai.grakn.client.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.util.CommonUtil;

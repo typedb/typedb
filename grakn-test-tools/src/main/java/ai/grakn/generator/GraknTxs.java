@@ -76,7 +76,7 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
 public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
 
-    private static GraknTx lastGeneratedGraph;
+    private static GraknTx lastGeneratedTx;
 
     private static StringBuilder txSummary;
 
@@ -88,7 +88,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     public static GraknTx lastGeneratedGraph() {
-        return lastGeneratedGraph;
+        return lastGeneratedTx;
     }
 
     /**
@@ -121,33 +121,33 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
         txSummary.append("size: ").append(size).append("\n");
 
-        closeGraph(lastGeneratedGraph);
+        closeTx(lastGeneratedTx);
 
         // Clear tx before retrieving
         tx = factory.transaction(GraknTxType.WRITE);
-        tx.admin().delete();
+        Grakn.Keyspace.delete(tx.keyspace());
         tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
             mutateOnce();
         }
 
-        // Close graphs randomly, unless parameter is set
+        // Close transactions randomly, unless parameter is set
         boolean shouldOpen = open != null ? open : random.nextBoolean();
 
         if (!shouldOpen) tx.close();
 
-        setLastGeneratedGraph(tx);
+        setLastGeneratedTx(tx);
         return tx;
     }
 
-    private static void setLastGeneratedGraph(GraknTx graph) {
-        lastGeneratedGraph = graph;
+    private static void setLastGeneratedTx(GraknTx tx) {
+        lastGeneratedTx = tx;
     }
 
-    private void closeGraph(GraknTx graph){
-        if(graph != null && !graph.isClosed()){
-            graph.close();
+    private void closeTx(GraknTx tx){
+        if(tx != null && !tx.isClosed()){
+            tx.close();
         }
     }
 

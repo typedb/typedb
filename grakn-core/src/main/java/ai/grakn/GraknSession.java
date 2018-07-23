@@ -57,5 +57,5 @@ public interface GraknSession extends AutoCloseable {
      *
      * @return The {@link Keyspace} of the knowledge base this {@link GraknSession} is interacting with.
      */
-    Keyspace keyspace();
+    ai.grakn.Keyspace keyspace();
 }

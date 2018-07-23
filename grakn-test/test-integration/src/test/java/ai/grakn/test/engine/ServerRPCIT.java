@@ -129,7 +129,7 @@ public class ServerRPCIT {
             MovieKB.get().accept(tx);
             tx.commit();
         }
-        remoteSession = Grakn.session(engine.grpcUri(), localSession.keyspace());
+        remoteSession = new Grakn(engine.grpcUri()).session(localSession.keyspace());
     }
 
     @After
@@ -139,21 +139,21 @@ public class ServerRPCIT {
 
     @Test
     public void whenOpeningASession_ReturnARemoteGraknSession() {
-        try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
+        try (GraknSession session = new Grakn(engine.grpcUri()).session(localSession.keyspace())) {
             assertTrue(Grakn.Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void whenOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
+        try (GraknSession session = new Grakn(engine.grpcUri()).session(localSession.keyspace())) {
             assertEquals(localSession.keyspace(), session.keyspace());
         }
     }
 
     @Test
     public void whenOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (GraknSession session = Grakn.session(engine.grpcUri(), localSession.keyspace())) {
+        try (GraknSession session = new Grakn(engine.grpcUri()).session(localSession.keyspace())) {
             try (GraknTx tx = session.transaction(GraknTxType.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(localSession.keyspace(), tx.keyspace());
@@ -236,14 +236,14 @@ public class ServerRPCIT {
     }
 
     @Test @Ignore
-    public void whenExecutingAQuery_ExplanationsAreReturned() throws InterruptedException {
+    public void whenExecutingAQuery_ExplanationsAreReturned() {
         GraknSession reasonerLocalSession = engine.sessionWithNewKeyspace();
         try (GraknTx tx = reasonerLocalSession.transaction(GraknTxType.WRITE)) {
             GenealogyKB.get().accept(tx);
             tx.commit();
         }
         
-        Grakn.Session reasonerRemoteSession = Grakn.session(engine.grpcUri(), reasonerLocalSession.keyspace());
+        Grakn.Session reasonerRemoteSession = new Grakn(engine.grpcUri()).session(reasonerLocalSession.keyspace());
 
         List<Answer> remoteAnswers;
         List<Answer> localAnswers;
@@ -831,7 +831,7 @@ public class ServerRPCIT {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
-            tx.admin().delete();
+            Grakn.Keyspace.delete(tx.keyspace());
 
             assertTrue(tx.isClosed());
         }

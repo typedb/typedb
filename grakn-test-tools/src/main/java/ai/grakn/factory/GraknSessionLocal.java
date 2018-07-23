@@ -42,7 +42,6 @@ import java.nio.file.Paths;
  * @author Filipe Peliz Pinto Teixeira
  */
 public class GraknSessionLocal extends EmbeddedGraknSession {
-    private final static File JANUS_CONFIG_FILE = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/conf/test/janus/grakn.properties").toFile();
 
     private GraknSessionLocal(Keyspace keyspace, GraknConfig config) {
         super(keyspace, config,  GraknTxFactoryBuilder.getInstance());
@@ -56,25 +55,5 @@ public class GraknSessionLocal extends EmbeddedGraknSession {
         return new GraknSessionLocal(keyspace, config);
     }
 
-    protected void submitLogs(){
-        //No Op
-    }
 
-    GraknConfig getTxConfig() {
-        if (GraknTestUtil.usingJanus()) {
-            return getTxJanusConfig();
-        } else {
-            return getTxInMemoryConfig();
-        }
-    }
-
-    /**
-     * Gets the Janus Properties directly by reading them from disk.
-     * This is the part which bypasses the need for a REST endpoint.
-     *
-     * @return the properties needed to build a JanusGraph
-     */
-    private GraknConfig getTxJanusConfig() {
-        return GraknConfig.read(JANUS_CONFIG_FILE);
-    }
 }

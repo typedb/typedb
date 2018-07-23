@@ -247,31 +247,32 @@ public class GraknTxPropertyTest {
         assertEquals(graph, graph.admin());
     }
 
-    @Property
-    public void whenCallingClear_TheGraphCloses(@Open GraknTx graph) {
-        graph.admin().delete();
-        assertTrue(graph.isClosed());
-    }
-
-    @Property
-    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
-        graph.admin().delete();
-        graph = Grakn.sessionInMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
-        List<Concept> concepts = allConceptsFrom(graph);
-        concepts.forEach(concept -> {
-            assertTrue(concept.isSchemaConcept());
-            assertTrue(isMetaLabel(concept.asSchemaConcept().label()));
-        });
-        graph.close();
-    }
-
-    @Property
-    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
-        graph.admin().delete();
-        graph = Grakn.sessionInMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
-        assertNotNull(graph.getSchemaConcept(label));
-        graph.close();
-    }
+    //TODO: move the following 3 tests to Grakn.Keyspace tests!
+//    @Property
+//    public void whenCallingDelete_TheTransactionCloses(@Open GraknTx graph) {
+//        graph.admin().delete();
+//        assertTrue(graph.isClosed());
+//    }
+//
+//    @Property
+//    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
+//        graph.admin().delete();
+//        graph = Grakn.sessionInMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
+//        List<Concept> concepts = allConceptsFrom(graph);
+//        concepts.forEach(concept -> {
+//            assertTrue(concept.isSchemaConcept());
+//            assertTrue(isMetaLabel(concept.asSchemaConcept().label()));
+//        });
+//        graph.close();
+//    }
+//
+//    @Property
+//    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
+//        graph.admin().delete();
+//        graph = Grakn.sessionInMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
+//        assertNotNull(graph.getSchemaConcept(label));
+//        graph.close();
+//    }
 
     @Property
     public void whenCallingIsClosedOnAClosedGraph_ReturnTrue(@Open(false) GraknTx graph) {

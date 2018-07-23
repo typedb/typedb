@@ -62,7 +62,7 @@ public class SQLMigratorMainTest {
     @Before
     public void setup() throws SQLException {
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = new Grakn(engine.uri()).session(keyspace);
         connection = setupExample(factory, "pets");
     }
 

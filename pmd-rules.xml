@@ -38,7 +38,7 @@ http://pmd.sourceforge.net/ruleset/2.0.0 ">
 
     </rule>
 
-    <!-- Avoid entirely redundant things, such as unnecesary use of `this` -->
+    <!-- Avoid entirely redundant things, such as unnecessary use of `this` -->
     <rule ref="rulesets/java/unnecessary.xml">
 
         <!-- Ignore unnecessary parentheses rule

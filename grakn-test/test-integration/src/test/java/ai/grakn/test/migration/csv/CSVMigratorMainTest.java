@@ -64,7 +64,7 @@ public class CSVMigratorMainTest {
     @Before
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = new Grakn(engine.uri()).session(keyspace);
         load(factory, getFile("csv", "pets/schema.gql"));
     }
 

@@ -74,7 +74,7 @@ public class BenchmarkIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = Grakn.session(engine.uri(), keyspace);
+        this.session = new Grakn(engine.uri()).session(keyspace);
     }
 
     private void loadOntology(String fileName, GraknSession session){

@@ -139,16 +139,16 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.WRITE);
-            QueryBuilder qb = graph.graql();
+            GraknTx tx = new Grakn(options.getUri()).session(options.getKeyspace()).transaction(GraknTxType.WRITE);
+            QueryBuilder qb = tx.graql();
 
             StringBuilder builder = new StringBuilder();
             builder.append("Graph schema contains:\n");
-            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
-            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
-            builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
-            builder.append("\t ").append(graph.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
-            builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
+            builder.append("\t ").append(tx.admin().getMetaEntityType().instances().count()).append(" entity types\n");
+            builder.append("\t ").append(tx.admin().getMetaRelationType().instances().count()).append(" relation types\n");
+            builder.append("\t ").append(tx.admin().getMetaRole().subs().count()).append(" roles\n\n");
+            builder.append("\t ").append(tx.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
+            builder.append("\t ").append(tx.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(label(ENTITY.getLabel()))).aggregate(count()).execute()).append(" entities\n");
@@ -158,7 +158,7 @@ public class MigrationCLI {
 
             System.out.println(builder);
 
-            graph.close();
+            tx.close();
         }
     }
 
