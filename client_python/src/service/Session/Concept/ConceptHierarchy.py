@@ -156,41 +156,64 @@ class Type(SchemaConcept):
 class EntityType(Type):
 
     def create(self):
-        pass
+        create_req = RequestBuilder.ConceptMethod.EntityType.create_req()
+        response = self._tx_service.run_concept_method(create_req)
+        # TODO unpack response
 
 class AttributeType(Type):
     
     def create(self, value):
-        pass
-
+        """ Create an instance with this AttributeType """
+        self_data_type = self.data_type()
+        create_inst_req = RequestBuilder.ConceptMethod.AttributeType.create_req(value, self_data_type)
+        response = self._tx_service.run_concept_method(create_inst_req)
+        # TODO unpack 
+        
     def attribute(self, value):
-        pass
+        self_data_type = self.data_type()
+        get_attribute_req = RequestBuilder.ConceptMethod.AttributeType.attribute(value, self_data_type)
+        response = self._tx_service.run_concept_method(get_attribute_req)
+        # TODO unpack
 
     def data_type(self):
-        pass
+        get_data_type_req = RequestBuilder.ConceptMethod.AttributeType.data_type()
+        response =  self._tx_service.run_concept_method(get_data_type_req)
+        # TODO unpack
 
     def regex(self, pattern: str = None):
         if pattern is None:
-            # retrieve the regex or None if no regex is set
-            pass
+            get_regex_req = RequestBuilder.ConceptMethod.AttributeType.get_regex()
+            response = self._tx_service.run_concept_method(get_regex_req)
+            # TODO unpack
         else:
-            # set regex
-            pass
+            set_regex_req = RequestBuilder.ConceptMethod.putAttribtueType_req.set_regex(pattern)
+            response = self._tx_service.run_concept_method(set_regex_req)
+            # TODO unpack
 
 
 class RelationshipType(Type):
 
+    # NOTE: `relation` not `relationship` in builder already
     def create(self):
-        pass
-
+        create_rel_inst_req = RequestBuilder.ConceptMethod.RelationType.create()
+        response = self._tx_service.run_concept_method(create_rel_inst_req)
+        # TODO unpack
+        
     def roles(self):
-        pass
+        get_roles = RequestBuilder.ConceptMethod.RelationType.roles()
+        response = self._tx_service.run_concept_method(get_roles)
+        # TODO unpack
 
-    def relates(self, role):
-        pass
+    def relates(self, role: Role):
+        relates_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
+        response = self._tx_service.run_concept_method(relates_req)
+        # TODO unpack
+        
 
     def unrelate(self, role):
-        pass
+        unrelate_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
+        response = self._tx_service.run_concept_method(unrelate_req)
+        # TODO unpack
 
 class Rule(SchemaConcept):
 
@@ -223,28 +246,45 @@ class Role(SchemaConcept):
 class Thing(Concept):
 
     def is_inferred(self) -> bool:
-        pass
+        is_inferred_req = RequestBuilder.ConceptMethod.Thing.is_inferred()
+        response = self._tx_service.run_concept_method(self.id, is_inferred_req)
+        # TODO unpack response
 
     def type(self):
-        pass
+        type_req = RequestBuilder.ConceptMethod.Thing.type()
+        response = self._tx_service.run_concept_method(self.id, type_req)
+        # TODO unpack response
 
     def relationships(self, *roles):
-        pass
+        # NOTE `relations` rather than `relationships`
+        relations_req = RequestBuilder.ConceptMethod.Thing.relations(roles)
+        response = self._tx_service.run_concept_method(self.id, relations_req)
+        # TODO unpack response
 
     def attributes(self, *attribute_types):
-        pass
+        attrs_req = RequestBuilder.ConceptMethod.Thing.attributes(attribute_types)
+        response = self._tx_service.run_concept_method(self.id, attrs_req)
+        # TODO unpack response
 
     def plays(self):
-        pass
+        plays_req = RequestBuilder.ConceptMethod.Thing.plays()
+        response = self._tx_service.run_concept_method(self.id, plays_req)
+        # TODO unpack response
 
     def keys(self, *attribute_types):
-        pass
+        keys_req = RequestBuilder.ConceptMethod.Thing.keys(attribute_types)
+        response = self._tx_service.run_concept_method(self.id, keys_req)
+        # TODO unpack response
 
     def has(self, attribute):
-        pass
+        has_req = RequestBuilder.ConceptMethod.Thing.has(attribute)
+        response = self._tx_service.run_concept_method(self.id, has_req)
+        # TODO unpack response
 
     def unhas(self, attribute):
-        pass
+        unhas_req = RequestBuilder.ConceptMethod.Thing.unhas(attribute)
+        response = self._tx_service.run_concept_method(self.id, unhas_req)
+        # TODO unpack response
 
 
 class Entity(Thing):
@@ -252,28 +292,40 @@ class Entity(Thing):
 
 class Attribute(Thing):
 
-    def data_type(self):
-        pass
-
     def value(self):
-        pass
+        value_req = RequestBuilder.ConceptMethod.Attribute.value()
+        response = self._tx_service.run_concept_method(self.id, value_req)
+        # TODO unpack response
 
     def owners(self):
-        pass
+        owners_req = RequestBuilder.ConceptMethod.Attribute.owners()
+        response = self._tx_service.run_concept_method(self.id, owners_req)
+        # TODO unpack response
 
 
 class Relationship(Thing):
 
+    # NOTE `relation` has replaced `relationship` in ResponseBuilder
+
     def role_players_map(self):
-        pass
+        role_players_map_req = RequestBuilder.ConceptMethod.Relation.role_players_map()
+        response = self._tx_service.run_concept_method(self.id, role_players_map_req)
+        # TODO unpack response
 
     def role_players(self, *roles):
-        pass
+        role_players_req = RequestBuilder.ConceptMethod.Relation.role_players()
+        response = self._tx_service.run_concept_method(self.id, role_players_req)
+        # TODO unpack response
 
     def assign(self, role, thing):
-        pass
+        assign_req = RequestBuilder.ConceptMethod.Relation.assign(role, thing)
+        response = self._tx_service.run_concept_method(self.id, assign_req)
+        # TODO unpack response
 
     def unassign(self, role, thing):
-        pass
+        unassign_req = RequestBuilder.ConceptMethod.Relation.unassign(role, thing)
+        response = self._tx_service.run_concept_method(self.id, unassign_req)
+        # TODO unpack response
+
 
 
