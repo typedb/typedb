@@ -27,6 +27,7 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery8;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriends;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -181,6 +182,21 @@ public class GraknQueryHandlersTest extends TestCase {
         when(mockQuery.limit()).thenReturn(10);
 
         GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler queryHandler = new GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler();
+        queryHandler.executeOperation(mockQuery, mockConnectionState, mockReporter);
+    }
+
+    @Test
+    public void testShortQuery6Execution() throws DbException {
+        LdbcShortQuery6MessageForum mockQuery = mock(LdbcShortQuery6MessageForum.class);
+        doAnswer(invocationOnMock -> {
+            Object[] args = invocationOnMock.getArguments();
+            ((List) args[1]).forEach(System.out::println);
+            return null;
+        }).when(mockReporter).report(anyInt(),anyList(),any());
+
+        when(mockQuery.messageId()).thenReturn(8590136012L);
+
+        GraknShortQueryHandlers.LdbcShortQuery6MessageForumHandler queryHandler = new GraknShortQueryHandlers.LdbcShortQuery6MessageForumHandler();
         queryHandler.executeOperation(mockQuery, mockConnectionState, mockReporter);
     }
 

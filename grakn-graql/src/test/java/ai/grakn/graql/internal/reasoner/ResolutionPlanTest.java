@@ -35,6 +35,8 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
+import ai.grakn.util.Repeat;
+import ai.grakn.util.RepeatRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
@@ -44,6 +46,8 @@ import java.util.List;
 import org.junit.BeforeClass;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -61,6 +65,11 @@ import static org.junit.Assume.assumeTrue;
 
 public class ResolutionPlanTest {
 
+    private static final int repeat = 10;
+
+    @Rule
+    public RepeatRule repeatRule = new RepeatRule();
+
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("resolution-plan-test.gql");
 
@@ -70,6 +79,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedResource() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -82,6 +92,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedEntity() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -94,6 +105,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -113,6 +125,25 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
+    public void prioritiseSubbedResolvableRelationsOverNonSubbedNonResolvableOnes() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa derivedRelation;" +
+                "$z id 'sampleId';" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
+                getAtomOfType(query, "derivedRelation", testTx),
+                getAtomOfType(query, "relation", testTx)
+        );
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
+    }
+
+    @Test
+    @Repeat( times = repeat )
     public void prioritiseMostSubbedRelations() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -132,8 +163,27 @@ public class ResolutionPlanTest {
         checkPlanSanity(query);
     }
 
+    @Ignore
     @Test
-    public void prioritiseNonResolvableRelations() {
+    @Repeat( times = repeat )
+    public void prioritiseNonResolvableRelations_OnlyAtomicQueriesPresent() {
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "(someRole:$x, otherRole: $y) isa relation;" +
+                "(someRole:$y, otherRole: $z) isa derivedRelation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
+                getAtomOfType(query, "relation", testTx),
+                getAtomOfType(query, "derivedRelation", testTx)
+        );
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
+    }
+
+    @Test
+    @Repeat( times = repeat )
+    public void prioritiseNonResolvableRelations_SandwichedResolvableRelation() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
                 "(someRole:$x, otherRole: $y) isa relation;" +
@@ -146,6 +196,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverRelations(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -166,6 +217,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverNonSpecific(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -188,6 +240,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void doNotPrioritiseNonSpecificResources(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -201,6 +254,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureIndirectTypeAtomsAreNotLostWhenPlanning(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -216,6 +270,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureOptimalOrderPickedWhenResourcesWithSubstitutionsArePresent() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         Concept concept = testTx.graql().match(var("x").isa("baseEntity")).get("x")
@@ -244,6 +299,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -258,6 +314,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -279,6 +336,7 @@ public class ResolutionPlanTest {
                                         \   (d, g) - (g, h)*
      */
     @Test
+    @Repeat( times = repeat )
     public void makeSureBranchedQueryChainsWithResolvableRelationsDoNotProduceDisconnectedPlans(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
 
@@ -319,6 +377,7 @@ public class ResolutionPlanTest {
                         \ (b, e)* - (e, f)*
      */
     @Test
+    @Repeat( times = repeat )
     public void makeSureBranchedQueryChainsWithResolvableRelationsDoNotProduceDisconnectedPlans_anotherVariant(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
 
@@ -352,6 +411,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureDisconnectedQueryProducesValidPlan(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -369,6 +429,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureNonTrivialDisconnectedQueryProducesValidPlan(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -392,6 +453,7 @@ public class ResolutionPlanTest {
      * disconnected conjunction with specific concepts
      */
     @Test
+    @Repeat( times = repeat )
     public void makeSureDisconnectedConjunctionWithSpecificConceptsResolvedFirst(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -413,6 +475,7 @@ public class ResolutionPlanTest {
      * disconnected conjunction with ontological atom
      */
     @Test
+    @Repeat( times = repeat )
     public void makeSureDisconnectedConjunctionWithOntologicalAtomResolvedFirst() {
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -433,6 +496,7 @@ public class ResolutionPlanTest {
     }
 
     @Test
+    @Repeat( times = repeat )
     public void makeSureAttributeResolvedBeforeConjunction(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
