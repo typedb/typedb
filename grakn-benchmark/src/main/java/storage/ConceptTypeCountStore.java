@@ -35,7 +35,7 @@ public class ConceptTypeCountStore implements ConceptStore {
 
     @Override
     public void add(Concept concept) {
-        String typeLabel = concept.asThing().type().getLabel().toString();
+        String typeLabel = concept.asThing().type().label().toString();
 
 //        Integer count = this.conceptTypeCountStorage.get(typeLabel);
 //        this.conceptTypeCountStorage.put(typeLabel, count + 1);

@@ -33,7 +33,7 @@ public class AttributeOwnerTypeStrategy<T> implements HasPicker {
     public AttributeOwnerTypeStrategy(Type type, StreamProviderInterface<T> picker) {
         this.type = type;
         this.picker = picker;
-        typeLabel = this.type.getLabel().getValue();
+        typeLabel = this.type.label().getValue();
     }
 
     @Override

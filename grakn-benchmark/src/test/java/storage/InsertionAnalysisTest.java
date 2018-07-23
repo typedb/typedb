@@ -51,7 +51,7 @@ public class InsertionAnalysisTest {
             Concept conceptMock = mock(Concept.class);
             Thing thingMock = mock(Thing.class);
             when(conceptMock.asThing()).thenReturn(thingMock);
-            when(thingMock.getId()).thenReturn(ConceptId.of(variable.getValue()));
+            when(thingMock.id()).thenReturn(ConceptId.of(variable.getValue()));
             when(answerMock.get(variable.getKey())).thenReturn(conceptMock);
 
         }
@@ -72,7 +72,7 @@ public class InsertionAnalysisTest {
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
         assertEquals(1, insertedConcepts.size());
-        assertEquals("V123456", insertedConcepts.iterator().next().asThing().getId().toString());
+        assertEquals("V123456", insertedConcepts.iterator().next().asThing().id().toString());
     }
 
     @Test
@@ -109,7 +109,7 @@ public class InsertionAnalysisTest {
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
         assertEquals(1, insertedConcepts.size());
-        assertEquals(rId, insertedConcepts.iterator().next().asThing().getId().toString());
+        assertEquals(rId, insertedConcepts.iterator().next().asThing().id().toString());
     }
 
     @Test
@@ -145,7 +145,7 @@ public class InsertionAnalysisTest {
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
         assertEquals(1, insertedConcepts.size());
-        assertEquals(rId, insertedConcepts.iterator().next().asThing().getId().toString());
+        assertEquals(rId, insertedConcepts.iterator().next().asThing().id().toString());
     }
 
     @Test
@@ -172,7 +172,7 @@ public class InsertionAnalysisTest {
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
         assertEquals(1, insertedConcepts.size());
-        assertEquals(yId, insertedConcepts.iterator().next().asThing().getId().toString());
+        assertEquals(yId, insertedConcepts.iterator().next().asThing().id().toString());
     }
 
     @Test
@@ -199,6 +199,6 @@ public class InsertionAnalysisTest {
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
         assertEquals(1, insertedConcepts.size());
-        assertEquals(yId, insertedConcepts.iterator().next().asThing().getId().toString());
+        assertEquals(yId, insertedConcepts.iterator().next().asThing().id().toString());
     }
 }

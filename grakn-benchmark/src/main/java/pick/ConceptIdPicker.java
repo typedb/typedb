@@ -77,7 +77,7 @@ public class ConceptIdPicker extends Picker<ConceptId> {
 
             // Because we use limit 1, there will only be 1 result
             // return the ConceptId of the single variable in the single result
-            return result.get(0).get(this.matchVar).getId();
+            return result.get(0).get(this.matchVar).id();
         });
     }
 

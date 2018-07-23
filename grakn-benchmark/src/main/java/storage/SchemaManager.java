@@ -63,7 +63,7 @@ public class SchemaManager {
             throw new RuntimeException(e);
         }
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
 
             QueryBuilder qb = tx.graql();
             Var x = Graql.var().asUserDefined();  //TODO This needed to be asUserDefined or else getting error: ai.grakn.exception.GraqlQueryException: the variable $1528883020589004 is not in the query
@@ -84,7 +84,7 @@ public class SchemaManager {
 
             for (Answer element : schema) {
                 Var z = Graql.var().asUserDefined();
-                qb.undefine(z.id(element.get(y).getId())).execute();
+                qb.undefine(z.id(element.get(y).id())).execute();
             }
 
             tx.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
@@ -100,7 +100,7 @@ public class SchemaManager {
         return result.stream()
                 .map(answer -> (T) answer.get(var("x")).asType())
                 .filter(type -> !type.isImplicit())
-                .filter(type -> !Schema.MetaSchema.isMetaLabel(type.getLabel()))
+                .filter(type -> !Schema.MetaSchema.isMetaLabel(type.label()))
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
@@ -112,7 +112,7 @@ public class SchemaManager {
         return result.stream()
                 .map(answer -> answer.get(var("x")).asRole())
                 .filter(type -> !type.isImplicit())
-                .filter(type -> !Schema.MetaSchema.isMetaLabel(type.getLabel()))
+                .filter(type -> !Schema.MetaSchema.isMetaLabel(type.label()))
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
@@ -123,7 +123,7 @@ public class SchemaManager {
 
         while (iter.hasNext()) {
             currentType = (T) iter.next();
-            l = currentType.getLabel().toString();
+            l = currentType.label().toString();
             if (l.equals(typeName)) {
                 return currentType;
             }

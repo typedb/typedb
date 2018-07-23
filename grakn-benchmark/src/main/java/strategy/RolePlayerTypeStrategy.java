@@ -36,7 +36,7 @@ public class RolePlayerTypeStrategy extends TypeStrategy implements HasPicker {
     public RolePlayerTypeStrategy(Role role, Type type, PDF numInstancesPDF, StreamProviderInterface<ConceptId> conceptPicker) {
         super(type, numInstancesPDF);
         this.role = role;
-        this.roleLabel = role.getLabel().getValue();
+        this.roleLabel = role.label().getValue();
         this.conceptPicker = conceptPicker;
     }
 

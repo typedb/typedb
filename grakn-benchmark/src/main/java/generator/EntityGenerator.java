@@ -43,7 +43,7 @@ public class EntityGenerator extends Generator<EntityStrategy> {
         QueryBuilder qb = this.tx.graql();
 
         // TODO Can using toString be avoided? Waiting for TP task #20179
-//        String entityTypeName = this.strategy.getType().getLabel().getValue();
+//        String entityTypeName = this.strategy.getType().label().getValue();
 
         String typeLabel = this.strategy.getTypeLabel();
         Query query = qb.insert(var("x").isa(typeLabel));

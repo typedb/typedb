@@ -27,27 +27,20 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import com.google.common.collect.ImmutableMap;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.concept.AttributeType.DataType.LONG;
-import static ai.grakn.concept.AttributeType.DataType.STRING;
-import static ai.grakn.concept.AttributeType.DataType.BOOLEAN;
-import static ai.grakn.concept.AttributeType.DataType.DOUBLE;
-import static ai.grakn.concept.AttributeType.DataType.INTEGER;
-import static ai.grakn.concept.AttributeType.DataType.FLOAT;
-import static ai.grakn.concept.AttributeType.DataType.DATE;
+import static ai.grakn.concept.AttributeType.DataType.*;
 
 /**
  * Stores identifiers for all concepts in a Grakn
@@ -126,7 +119,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     private <T extends SchemaConcept> HashSet<String> getTypeLabels(Set<T> conceptTypes) {
         HashSet<String> typeLabels = new HashSet<>();
         for (T conceptType : conceptTypes) {
-            typeLabels.add(conceptType.getLabel().toString());
+            typeLabels.add(conceptType.label().toString());
         }
         return typeLabels;
     }
@@ -134,9 +127,9 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     private HashMap<String, AttributeType.DataType<?>> getAttributeTypeLabels(Set<AttributeType> conceptTypes) {
         HashMap<String, AttributeType.DataType<?>> typeLabels = new HashMap<>();
         for (AttributeType conceptType : conceptTypes) {
-            String label = conceptType.getLabel().toString();
+            String label = conceptType.label().toString();
 
-            AttributeType.DataType<?> datatype = conceptType.getDataType();
+            AttributeType.DataType<?> datatype = conceptType.dataType();
             typeLabels.put(label, datatype);
         }
         return typeLabels;
@@ -193,14 +186,14 @@ public class IgniteConceptIdStore implements IdStoreInterface {
     @Override
     public void add(Concept concept) {
 
-        Label conceptTypeLabel = concept.asThing().type().getLabel();
+        Label conceptTypeLabel = concept.asThing().type().label();
         String tableName = this.getTableName(conceptTypeLabel.toString());
 
         if (concept.isAttribute()) {
             Attribute<?> attribute = concept.asAttribute();
             AttributeType.DataType<?> datatype = attribute.dataType();
 
-            Object value = attribute.getValue();
+            Object value = attribute.value();
             try (PreparedStatement stmt = this.conn.prepareStatement(
                     "INSERT INTO " + tableName + " (id, ) VALUES (?, )")) {
 
@@ -238,7 +231,7 @@ public class IgniteConceptIdStore implements IdStoreInterface {
 
         } else {
 
-            String conceptId = concept.asThing().getId().toString(); // TODO use the value instead for attributes
+            String conceptId = concept.asThing().id().toString(); // TODO use the value instead for attributes
 
             try (PreparedStatement stmt = this.conn.prepareStatement(
                     "INSERT INTO " + tableName + " (id, ) VALUES (?, )")) {

@@ -20,12 +20,10 @@ package generator;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import org.apache.tinkerpop.gremlin.structure.T;
 import pdf.ConstantPDF;
 import pick.StreamProviderInterface;
 import strategy.AttributeOwnerTypeStrategy;

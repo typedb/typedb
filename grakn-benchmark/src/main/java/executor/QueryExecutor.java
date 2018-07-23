@@ -19,8 +19,8 @@
 package executor;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.client.Grakn;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
@@ -35,9 +35,7 @@ import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Random;
 import java.util.stream.Stream;
-
 
 import static ai.grakn.graql.Graql.count;
 
@@ -137,114 +135,114 @@ public class QueryExecutor {
         }
     }
 
-    void processQueriesBrave() {
-
+//    void processQueriesBrave() {
+//
+////        // Configure a reporter, which controls how often spans are sent
+////        //   (the dependency is io.zipkin.reporter2:zipkin-sender-okhttp3)
+////        sender = OkHttpSender.create("http://127.0.0.1:9411/api/v2/spans");
+////        AsyncReporter<zipkin2.Span> spanReporter = AsyncReporter.create(sender);
+////
+////        // Create a tracing component with the service name you want to see in Zipkin.
+////        Tracing tracing = Tracing.newBuilder()
+////                .localServiceName("my-service")
+////                .spanReporter(spanReporter)
+////                .build();
+////
+////        // Tracing exposes objects you might need, most importantly the tracer
+////        Tracer tracer = tracing.tracer();
+////
+////
+////        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+////
+////        // Schedules the span to be sent, and won't block the calling thread on I/O
+////        reporter.report(span);
+////
+////
+////        // Start a new trace or a span within an existing trace representing an operation
+////        Span span = tracer.nextSpan().name("encode").start();
+////// Put the span in "scope" so that downstream code such as loggers can see trace IDs
+////        try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
+////            return encoder.encode();
+////        } catch (RuntimeException | Error e) {
+////            span.error(e); // Unless you handle exceptions, you might not know the operation failed!
+////            throw e;
+////        } finally {
+////            span.finish(); // note the scope is independent of the span. Always finish a span.
+////        }
+//
 //        // Configure a reporter, which controls how often spans are sent
 //        //   (the dependency is io.zipkin.reporter2:zipkin-sender-okhttp3)
-//        sender = OkHttpSender.create("http://127.0.0.1:9411/api/v2/spans");
-//        AsyncReporter<zipkin2.Span> spanReporter = AsyncReporter.create(sender);
+////        sender = OkHttpSender.create("http://127.0.0.1:9411/api/v2/spans");
+////        AsyncReporter<zipkin2.Span> spanReporter = AsyncReporter.create(sender);
 //
-//        // Create a tracing component with the service name you want to see in Zipkin.
-//        Tracing tracing = Tracing.newBuilder()
-//                .localServiceName("my-service")
-//                .spanReporter(spanReporter)
-//                .build();
 //
-//        // Tracing exposes objects you might need, most importantly the tracer
-//        Tracer tracer = tracing.tracer();
+////        Tracing brave = Tracing.newBuilder().spanReporter(spans::add).build();
+////        BraveTracer opentracing = BraveTracer.wrap(brave); //TODO Can't find wrap
 //
 //
 //        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 //
-//        // Schedules the span to be sent, and won't block the calling thread on I/O
-//        reporter.report(span);
+//        Tracing tracing = Tracing.newBuilder()
+//                .localServiceName("my-service")
+////        .spanReporter(spanReporter)
+//                .spanReporter(reporter)
+//                .build();
 //
-//
-//        // Start a new trace or a span within an existing trace representing an operation
-//        Span span = tracer.nextSpan().name("encode").start();
-//// Put the span in "scope" so that downstream code such as loggers can see trace IDs
-//        try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
-//            return encoder.encode();
-//        } catch (RuntimeException | Error e) {
-//            span.error(e); // Unless you handle exceptions, you might not know the operation failed!
-//            throw e;
-//        } finally {
-//            span.finish(); // note the scope is independent of the span. Always finish a span.
-//        }
-
-        // Configure a reporter, which controls how often spans are sent
-        //   (the dependency is io.zipkin.reporter2:zipkin-sender-okhttp3)
-//        sender = OkHttpSender.create("http://127.0.0.1:9411/api/v2/spans");
-//        AsyncReporter<zipkin2.Span> spanReporter = AsyncReporter.create(sender);
-
-
-//        Tracing brave = Tracing.newBuilder().spanReporter(spans::add).build();
-//        BraveTracer opentracing = BraveTracer.wrap(brave); //TODO Can't find wrap
-
-
-        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-
-        Tracing tracing = Tracing.newBuilder()
-                .localServiceName("my-service")
-//        .spanReporter(spanReporter)
-                .spanReporter(reporter)
-                .build();
-
-        Tracer tracer = tracing.tracer();
-
-//        Tracer tracer = Tracing.currentTracer();
 //        Tracer tracer = tracing.tracer();
-//        Span span = tracer.newTrace().name("encode").start();
+//
+////        Tracer tracer = Tracing.currentTracer();
+////        Tracer tracer = tracing.tracer();
+////        Span span = tracer.newTrace().name("encode").start();
+////        try {
+////            doSomethingExpensive();
+////        } finally {
+////            span.finish();
+////        }
+//
+//        //TODO this looks good
+//        BraveTracer braveTracer = BraveTracer.create(tracing);
+//        BraveSpanBuilder serverCall = braveTracer.buildSpan("ServerCall");
+////        serverCall.
+//
+//        Span twoPhase = tracer.newTrace().name("twoPhase").start();
+////        try {
+////        Span prepare = tracer.newChild(twoPhase.context()).name("prepare").start();
+////            try {
+////                prepare();
+////        try {
+////            Thread.sleep(500);
+////        } catch (InterruptedException e) {
+////            e.printStackTrace();
+////        }
+////        System.out.println("-- Phase 1: prepare --");
+//////            } catch (InterruptedException e) {
+//////                e.printStackTrace();
+//////            } finally {
+////        prepare.finish();
+////            }
+//
+//        Span commit = tracer.newChild(twoPhase.context()).name("phase2").start();
+////            try {
+////                commit();
+//        System.out.println("-- Phase 2: commit --");
 //        try {
-//            doSomethingExpensive();
-//        } finally {
-//            span.finish();
-//        }
-
-        //TODO this looks good
-        BraveTracer braveTracer = BraveTracer.create(tracing);
-        BraveSpanBuilder serverCall = braveTracer.buildSpan("ServerCall");
-//        serverCall.
-
-        Span twoPhase = tracer.newTrace().name("twoPhase").start();
-//        try {
-//        Span prepare = tracer.newChild(twoPhase.context()).name("prepare").start();
-//            try {
-//                prepare();
-//        try {
-//            Thread.sleep(500);
+//            Thread.sleep(700);
 //        } catch (InterruptedException e) {
 //            e.printStackTrace();
 //        }
-//        System.out.println("-- Phase 1: prepare --");
 ////            } catch (InterruptedException e) {
 ////                e.printStackTrace();
 ////            } finally {
-//        prepare.finish();
-//            }
-
-        Span commit = tracer.newChild(twoPhase.context()).name("phase2").start();
-//            try {
-//                commit();
-        System.out.println("-- Phase 2: commit --");
-        try {
-            Thread.sleep(700);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            } finally {
-        commit.finish();
-//            }
-//        prepare.finish();
-
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        } finally {
-        twoPhase.finish();
-//        }
-    }
+//        commit.finish();
+////            }
+////        prepare.finish();
+//
+////        } catch (InterruptedException e) {
+////            e.printStackTrace();
+////        } finally {
+//        twoPhase.finish();
+////        }
+//    }
 
     public static void main(String[] args) {
         String uri = "localhost:48555";

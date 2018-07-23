@@ -70,7 +70,7 @@ public class IgniteConceptIdStoreTest {
         entityTypes = new HashSet<>();
 
         EntityType personEntityType = mock(EntityType.class);
-        when(personEntityType.getLabel()).thenReturn(Label.of("person"));
+        when(personEntityType.label()).thenReturn(Label.of("person"));
 
         entityTypes.add(personEntityType);
 
@@ -99,15 +99,15 @@ public class IgniteConceptIdStoreTest {
 
             // ConceptID
             ConceptId conceptId = idIterator.next();
-            when(thingMock.getId()).thenReturn(conceptId);
+            when(thingMock.id()).thenReturn(conceptId);
 
             // Concept Type
             Type conceptTypeMock = mock(Type.class);
             when(thingMock.type()).thenReturn(conceptTypeMock);
 
-            // Concept Type getLabel()
+            // Concept Type label()
             Label label = Label.of(typeLabel);
-            when(conceptTypeMock.getLabel()).thenReturn(label);
+            when(conceptTypeMock.label()).thenReturn(label);
         }
     }
 

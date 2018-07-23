@@ -34,7 +34,7 @@ public class TypeStrategy<T extends Type> implements TypeStrategyInterface {
         this.type = type;
         this.numInstancesPDF = numInstancesPDF;
         // TODO Storing the label value can be avoided when TP functionality #20179 is complete
-        this.typeLabel = this.type.getLabel().getValue();
+        this.typeLabel = this.type.label().getValue();
     }
 
     public T getType() {
