@@ -24,8 +24,6 @@ import ai.grakn.client.Grakn;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
-import brave.Span;
-import brave.Tracer;
 import brave.Tracing;
 import brave.opentracing.BraveSpan;
 import brave.opentracing.BraveSpanBuilder;
