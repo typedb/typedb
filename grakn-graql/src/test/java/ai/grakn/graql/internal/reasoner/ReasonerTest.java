@@ -489,7 +489,7 @@ public class ReasonerTest {
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
 
         List<Answer> answers = query.execute();
-        assertEquals(answers.iterator().next().get("a").asAttribute().getValue().toString(), "19");
+        assertEquals(answers.iterator().next().get("a").asAttribute().value().toString(), "19");
     }
 
     @Test
@@ -504,8 +504,8 @@ public class ReasonerTest {
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);
-        assertEquals(answers.iterator().next().get("a").asAttribute().getValue().toString(), "19");
-        assertEquals(answers2.iterator().next().get("a").asAttribute().getValue().toString(), "23");
+        assertEquals(answers.iterator().next().get("a").asAttribute().value().toString(), "19");
+        assertEquals(answers2.iterator().next().get("a").asAttribute().value().toString(), "23");
     }
 
     @Test

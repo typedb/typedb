@@ -73,7 +73,7 @@ public class BenchmarkTest {
         GraknSession graknSession = sessionContext.newSession();
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-        try(GraknTx tx = graknSession.open(GraknTxType.WRITE)) {
+        try(GraknTx tx = graknSession.transaction(GraknTxType.WRITE)) {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
@@ -90,12 +90,12 @@ public class BenchmarkTest {
                     .plays(fromRole)
                     .plays(toRole);
 
-            Entity fromEntity = genericEntity.addEntity();
-            Entity toEntity = genericEntity.addEntity();
+            Entity fromEntity = genericEntity.create();
+            Entity toEntity = genericEntity.create();
 
-            relation0.addRelationship()
-                    .addRolePlayer(fromRole, fromEntity)
-                    .addRolePlayer(toRole, toEntity);
+            relation0.create()
+                    .assign(fromRole, fromEntity)
+                    .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
                 Var fromVar = Graql.var().asUserDefined();
@@ -105,16 +105,16 @@ public class BenchmarkTest {
                         .when(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
-                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa("relation" + (i - 1))
                                 )
                         )
                         .then(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
-                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa("relation" + i)
                                 )
                         );
@@ -123,7 +123,7 @@ public class BenchmarkTest {
             tx.commit();
         }
 
-        try( GraknTx tx = graknSession.open(GraknTxType.READ)) {
+        try( GraknTx tx = graknSession.transaction(GraknTxType.READ)) {
             final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
@@ -263,7 +263,7 @@ public class BenchmarkTest {
 
         //with substitution
         Concept id = iqb.<GetQuery>parse("match $x has index 'a'; get;").execute().iterator().next().get("x");
-        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "'; get;";
+        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.id().getValue() + "'; get;";
         GetQuery query3 = iqb.parse(queryString3);
 
         executeQuery(query, "full");

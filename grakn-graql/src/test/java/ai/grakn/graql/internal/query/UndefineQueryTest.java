@@ -104,7 +104,7 @@ public class UndefineQueryTest {
     public void whenUndefiningDataType_DoNothing() {
         qb.undefine(label("name").datatype(STRING)).execute();
 
-        assertEquals(STRING, tx.getAttributeType("name").getDataType());
+        assertEquals(STRING, tx.getAttributeType("name").dataType());
     }
 
     @Test
@@ -157,7 +157,7 @@ public class UndefineQueryTest {
 
         assertNotNull(tx.getType(NEW_TYPE));
 
-        qb.undefine(var().id(newType.getId()).sub(ENTITY)).execute();
+        qb.undefine(var().id(newType.id()).sub(ENTITY)).execute();
 
         assertNull(tx.getType(NEW_TYPE));
     }
@@ -188,55 +188,55 @@ public class UndefineQueryTest {
     public void whenUndefiningPlays_TheTypeNoLongerPlaysTheRole() {
         qb.define(label(NEW_TYPE).sub(ENTITY).plays("actor")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), hasItemInArray(tx.getRole("actor")));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("actor")));
 
         qb.undefine(label(NEW_TYPE).plays("actor")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), not(hasItemInArray(tx.getRole("actor"))));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
     public void whenUndefiningPlaysWhichDoesntExist_DoNothing() {
         qb.define(label(NEW_TYPE).sub(ENTITY).plays("production-with-cast")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
 
         qb.undefine(label(NEW_TYPE).plays("actor")).execute();
 
-        assertThat(tx.getType(NEW_TYPE).plays().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
+        assertThat(tx.getType(NEW_TYPE).playing().toArray(), hasItemInArray(tx.getRole("production-with-cast")));
     }
 
     @Test
     public void whenUndefiningRegexProperty_TheAttributeTypeHasNoRegex() {
         qb.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")).execute();
 
-        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
         qb.undefine(label(NEW_TYPE).regex("abc")).execute();
 
-        assertNull(tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertNull(tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
     public void whenUndefiningRegexPropertyWithWrongRegex_DoNothing() {
         qb.define(label(NEW_TYPE).sub(ATTRIBUTE).datatype(STRING).regex("abc")).execute();
 
-        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
 
         qb.undefine(label(NEW_TYPE).regex("xyz")).execute();
 
-        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).getRegex());
+        assertEquals("abc", tx.<AttributeType>getType(NEW_TYPE).regex());
     }
 
     @Test
     public void whenUndefiningRelatesProperty_TheRelationshipTypeNoLongerRelatesTheRole() {
         qb.define(label(NEW_TYPE).sub(RELATIONSHIP).relates("actor")).execute();
 
-        assertThat(tx.<RelationshipType>getType(NEW_TYPE).relates().toArray(), hasItemInArray(tx.getRole("actor")));
+        assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), hasItemInArray(tx.getRole("actor")));
 
         qb.undefine(label(NEW_TYPE).relates("actor")).execute();
 
-        assertThat(tx.<RelationshipType>getType(NEW_TYPE).relates().toArray(), not(hasItemInArray(tx.getRole("actor"))));
+        assertThat(tx.<RelationshipType>getType(NEW_TYPE).roles().toArray(), not(hasItemInArray(tx.getRole("actor"))));
     }
 
     @Test
@@ -280,8 +280,8 @@ public class UndefineQueryTest {
         Role descendant = tx.getRole("descendant");
 
         assertThat(pokemon.attributes().toArray(), arrayContaining(pokedexNo));
-        assertThat(evolution.relates().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
-        assertThat(pokemon.plays().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
+        assertThat(evolution.roles().toArray(), arrayContainingInAnyOrder(ancestor, descendant));
+        assertThat(pokemon.playing().filter(r -> !r.isImplicit()).toArray(), arrayContainingInAnyOrder(ancestor, descendant));
 
         qb.undefine(schema).execute();
 
@@ -327,7 +327,7 @@ public class UndefineQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
 
-        qb.undefine(var().id(movie.getId()).isa("movie")).execute();
+        qb.undefine(var().id(movie.id()).isa("movie")).execute();
     }
 
     @Test

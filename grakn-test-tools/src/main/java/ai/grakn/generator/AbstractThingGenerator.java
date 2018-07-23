@@ -82,17 +82,17 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
             Attribute attribute = newResource(attributeType);
 
             //Link everything together
-            type.attribute(attributeType);
-            thing.attribute(attribute);
+            type.has(attributeType);
+            thing.has(attribute);
         }
 
         return thing;
     }
 
     protected Attribute newResource(AttributeType type) {
-        AttributeType.DataType<?> dataType = type.getDataType();
+        AttributeType.DataType<?> dataType = type.dataType();
         Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
-        return type.putAttribute(value);
+        return type.create(value);
     }
 
     @SuppressWarnings("unused") /**Used through annotation {@link NonMeta}*/

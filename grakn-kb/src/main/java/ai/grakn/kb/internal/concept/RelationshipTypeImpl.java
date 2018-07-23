@@ -67,7 +67,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     }
 
     @Override
-    public Relationship addRelationship() {
+    public Relationship create() {
         return addRelationship(false);
     }
 
@@ -85,7 +85,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
 
     @Override
-    public Stream<Role> relates() {
+    public Stream<Role> roles() {
         return cachedRelates.get().stream();
     }
 
@@ -111,7 +111,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
      * @return The {@link Relationship} Type itself.
      */
     @Override
-    public RelationshipType deleteRelates(Role role) {
+    public RelationshipType unrelate(Role role) {
         checkSchemaMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
 
@@ -168,16 +168,16 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     private Stream<Relationship> relationEdges(){
         //Unfortunately this is a slow process
-        return relates().
-                flatMap(Role::playedByTypes).
+        return roles().
+                flatMap(Role::players).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index
                     return  vertex().tx().getTinkerTraversal().V().
-                            has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
+                            has(Schema.VertexProperty.ID.name(), type.id().getValue()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
-                            has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
+                            has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), labelId().getValue()).
                             toStream().
                             map(edge -> vertex().tx().factory().<Relationship>buildConcept(edge));
                 });

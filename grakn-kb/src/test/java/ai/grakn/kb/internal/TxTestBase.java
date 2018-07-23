@@ -65,14 +65,14 @@ public class TxTestBase {
         if(isBatch){
             if(newTxNeeded(txBatch)){
                 closeTxIfOpen(tx);
-                return txBatch = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.BATCH);
+                return txBatch = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.BATCH);
             } else {
                 return txBatch;
             }
         } else {
             if(newTxNeeded(tx)){
                 closeTxIfOpen(txBatch);
-                return tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+                return tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
             } else {
                 return tx;
             }

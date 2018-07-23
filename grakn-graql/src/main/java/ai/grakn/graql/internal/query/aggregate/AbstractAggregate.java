@@ -21,19 +21,35 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
 
+import java.util.Comparator;
+
 /**
  * Abstract implementation of an {@link Aggregate}, providing an implementation of the {@link Aggregate#as(String)}}
  * method.
  *
- * @param <T> The input type to the aggregate.
  * @param <S> The result type of the aggregate.
  *
  * @author Felix Chapman
  */
-public abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
+public abstract class AbstractAggregate<S> implements Aggregate<S> {
 
     @Override
-    public final NamedAggregate<T, S> as(String name) {
+    public final NamedAggregate<S> as(String name) {
         return new NamedAggregateImpl<>(this, name);
+    }
+
+    /**
+     * A Comparator class to compare the 2 numbers only if they have the same primitive type.
+     */
+    public static class NumberPrimitiveTypeComparator implements Comparator<Number> {
+
+        @Override
+        public int compare(Number a, Number b) {
+            if (((Object) a).getClass().equals(((Object) b).getClass()) && a instanceof Comparable) {
+                return ((Comparable) a).compareTo(b);
+            }
+
+            throw new RuntimeException("Invalid attempt to compare non-comparable primitive type of Numbers in Aggregate function");
+        }
     }
 }

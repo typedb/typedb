@@ -69,28 +69,28 @@ public interface Thing extends Concept{
      * @return A set of all the {@link Role}s which this {@link Thing} is currently playing.
      */
     @CheckReturnValue
-    Stream<Role> plays();
+    Stream<Role> roles();
 
     /**
      * Creates a {@link Relationship} from this {@link Thing} to the provided {@link Attribute}.
      * <p>
-     * This has the same effect as {@link #attributeRelationship(Attribute)}, but returns the instance itself to allow
+     * This has the same effect as {@link #relhas(Attribute)}, but returns the instance itself to allow
      * method chaining.
      * </p>
      * @param attribute The {@link Attribute} to which a {@link Relationship} is created
      * @return The instance itself
      */
-    Thing attribute(Attribute attribute);
+    Thing has(Attribute attribute);
 
     /**
      * Creates a {@link Relationship} from this instance to the provided {@link Attribute}.
      * <p>
-     * This has the same effect as {@link #attribute(Attribute)}, but returns the new {@link Relationship}.
+     * This has the same effect as {@link #has(Attribute)}, but returns the new {@link Relationship}.
      * </p>
      * @param attribute The {@link Attribute} to which a {@link Relationship} is created
      * @return The {@link Relationship} connecting the {@link Thing} and the {@link Attribute}
      */
-    Relationship attributeRelationship(Attribute attribute);
+    Relationship relhas(Attribute attribute);
 
     /**
      * Retrieves a collection of {@link Attribute} attached to this {@link Thing}
@@ -117,7 +117,7 @@ public interface Thing extends Concept{
      * @param attribute the {@link Attribute} to be removed
      * @return The {@link Thing} itself
      */
-    Thing deleteAttribute(Attribute attribute);
+    Thing unhas(Attribute attribute);
 
     /**
      * Used to indicate if this {@link Thing} has been created as the result of a {@link Rule} inference.

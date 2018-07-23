@@ -41,9 +41,8 @@
         <module>grakn-core</module>
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
-        <module>grakn-client</module>
+        <module>client-java</module>
         <module>grakn-test-tools</module>
-        <module>grakn-grpc</module>
         <module>grakn-benchmark</module>
     </modules>
 
@@ -240,7 +239,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-client</artifactId>
+                <artifactId>client-java</artifactId>
                 <version>1.3.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
@@ -263,11 +262,6 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.3.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-grpc</artifactId>
                 <version>1.3.0-SNAPSHOT</version>
             </dependency>
             <dependency>
@@ -939,11 +933,11 @@
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>snapshots</id>
-            <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+            <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
             <id>releases</id>
-            <url>https://maven.grakn.ai/content/repositories/releases/</url>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
 
@@ -1001,6 +995,11 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>nexus-staging-maven-plugin</artifactId>
+                    <version>1.6.7</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -1161,6 +1160,7 @@
                         <!-- Skip generated classes, we only care about code we write -->
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
                         <exclude>**/ai/grakn/rpc/generated/*.java</exclude>
+                        <exclude>**/ai/grakn/rpc/proto/*.java</exclude>
                         <exclude>**/**AutoValue_**.java</exclude>
 
                         <!-- Following controllers contain duplicate annotations for documentation -->
@@ -1224,7 +1224,6 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.7</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
@@ -1242,18 +1241,6 @@
                 <repository>
                     <id>ossrh</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>internal-releases</id>
-            <properties>
-                <skip.deploy.dist>false</skip.deploy.dist>
-            </properties>
-            <distributionManagement>
-                <repository>
-                    <id>internal-releases</id>
-                    <url>https://maven.grakn.ai/content/repositories/internal-releases/</url>
                 </repository>
             </distributionManagement>
         </profile>

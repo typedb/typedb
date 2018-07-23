@@ -168,6 +168,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchTest {
@@ -191,9 +192,9 @@ public class MatchTest {
     @ClassRule
     public static final SampleKBContext weirdKB = SampleKBContext.load(graph -> {
         AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
-        weirdLoopType.attribute(weirdLoopType);
-        Attribute<String> weird = weirdLoopType.putAttribute("weird");
-        weird.attribute(weird);
+        weirdLoopType.has(weirdLoopType);
+        Attribute<String> weird = weirdLoopType.create("weird");
+        weird.has(weird);
     });
 
     @Rule
@@ -287,7 +288,7 @@ public class MatchTest {
         query.forEach(result -> {
             Concept cx = result.get(x);
             Concept cy = result.get(y);
-            assertEquals(cx.asAttribute().getValue(), cy.asAttribute().getValue());
+            assertEquals(cx.asAttribute().value(), cy.asAttribute().value());
         });
     }
 
@@ -301,7 +302,7 @@ public class MatchTest {
         query.forEach(result -> {
             Concept cx = result.get(x);
             Concept cy = result.get(y);
-            assertEquals(cx.asAttribute().getValue(), cy.asAttribute().getValue());
+            assertEquals(cx.asAttribute().value(), cy.asAttribute().value());
         });
     }
 
@@ -661,7 +662,7 @@ public class MatchTest {
 
             SchemaConcept schemaConcept = tx.getSchemaConcept(type);
             if (schemaConcept.isType()) {
-                graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
+                graphAPIPlays = schemaConcept.asType().playing().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }
@@ -672,7 +673,7 @@ public class MatchTest {
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get(x).stream()
                                            .map(answer -> answer.get(x)).collect(Collectors.toSet());
-            Collection<Type> graphAPIPlayedBy = tx.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
+            Collection<Type> graphAPIPlayedBy = tx.<Role>getSchemaConcept(type).players().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
@@ -753,8 +754,8 @@ public class MatchTest {
         assertThat(query, iterableWithSize(greaterThan(10)));
 
         query.forEach(result -> {
-            Comparable cx = (Comparable) result.get(x).asAttribute().getValue();
-            Comparable cy = (Comparable) result.get(y).asAttribute().getValue();
+            Comparable cx = (Comparable) result.get(x).asAttribute().value();
+            Comparable cy = (Comparable) result.get(y).asAttribute().value();
             assertThat(cx, greaterThan(cy));
         });
     }
@@ -790,8 +791,8 @@ public class MatchTest {
         assertThat(query, iterableWithSize(greaterThan(5)));
 
         query.forEach(result -> {
-            Comparable cx = (Comparable) result.get(x).asAttribute().getValue();
-            Comparable cy = (Comparable) result.get(y).asAttribute().getValue();
+            Comparable cx = (Comparable) result.get(x).asAttribute().value();
+            Comparable cy = (Comparable) result.get(y).asAttribute().value();
             assertThat(cx, lessThanOrEqualTo(cy));
         });
     }
@@ -800,7 +801,7 @@ public class MatchTest {
     public void testMatchAllResourcesUsingResourceName() {
         Match match = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
-        Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
+        Thing godfather = movieKB.tx().getAttributeType("title").attribute("Godfather").owner();
         Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
 
         Set<Attribute<?>> results = match.get(x).stream().map(answer -> answer.get(x).asAttribute()).collect(toSet());
@@ -822,8 +823,8 @@ public class MatchTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
-        ConceptId id = godfather.getId();
+        Thing godfather = movieKB.tx().getAttributeType("title").attribute("Godfather").owner();
+        ConceptId id = godfather.id();
         Match query = qb.match(var().id(id).has("title", x));
 
         assertThat(query, variable(x, contains(hasValue("Godfather"))));
@@ -955,8 +956,8 @@ public class MatchTest {
 
         Relationship implicitRelation = hasTitle.instances().iterator().next();
 
-        ConceptId owner = implicitRelation.rolePlayers(titleOwner).iterator().next().getId();
-        ConceptId value = implicitRelation.rolePlayers(titleValue).iterator().next().getId();
+        ConceptId owner = implicitRelation.rolePlayers(titleOwner).iterator().next().id();
+        ConceptId value = implicitRelation.rolePlayers(titleValue).iterator().next().id();
 
         Match query = qb.match(x.id(owner).has(title, y.id(value), r));
 
@@ -976,7 +977,7 @@ public class MatchTest {
 
         Relationship relationship = match.get("x").stream().map(answer -> answer.get("x").asRelationship()).findAny().get();
 
-        Match queryById = qb.match(var("x").id(relationship.getId()));
+        Match queryById = qb.match(var("x").id(relationship.id()));
 
         assertThat(queryById, variable(x, contains(MatchableConcept.of(relationship))));
     }
@@ -1091,11 +1092,35 @@ public class MatchTest {
     }
 
     @Test
+    public void testOrderDescendingString() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        assertEquals("The Muppets", answer.get(y).asAttribute().value());
+    }
+
+    @Test
+    public void testOrderAscendingString() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        assertEquals("Apocalypse Now", answer.get(y).asAttribute().value());
+    }
+
+    @Test
+    public void testOrderDescendingDate() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        assertEquals(LocalDateTime.of(2000, 9, 2, 0, 0), answer.get(y).asAttribute().value());
+    }
+
+    @Test
+    public void testOrderAscendingDate() {
+        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        assertEquals(LocalDateTime.of(1984, 1, 1, 0, 0), answer.get(y).asAttribute().value());
+    }
+
+    @Test
     public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults() {
         EntityType type = movieKB.tx().putEntityType("Concept Type");
-        Entity entity = type.addEntity();
+        Entity entity = type.create();
 
-        Collection<Concept> results = movieKB.tx().graql().match(x.isa(type.getLabel().getValue()))
+        Collection<Concept> results = movieKB.tx().graql().match(x.isa(type.label().getValue()))
                 .stream().findAny().get().concepts();
 
         assertThat(results, containsInAnyOrder(entity));

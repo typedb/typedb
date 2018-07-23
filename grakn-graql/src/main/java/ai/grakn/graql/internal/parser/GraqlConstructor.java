@@ -193,7 +193,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<?, ?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
+    public Aggregate<?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
         String name = visitIdentifier(ctx.identifier());
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
 
@@ -207,7 +207,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<?, ? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
+    public Aggregate<? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
         Set aggregates = ctx.namedAgg().stream().map(this::visitNamedAgg).collect(toSet());
 
         // We can't handle cases when the aggregate types are wrong, because the user can provide custom aggregates
@@ -220,12 +220,12 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<?, ?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
+    public Aggregate<?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
         return visitAggregate(ctx.aggregate());
     }
 
     @Override
-    public NamedAggregate<?, ?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
+    public NamedAggregate<?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
         String name = visitIdentifier(ctx.identifier());
         return visitAggregate(ctx.aggregate()).as(name);
     }
@@ -539,7 +539,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
         return (Match) visit(ctx);
     }
 
-    private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
+    private Aggregate<?> visitAggregate(GraqlParser.AggregateContext ctx) {
         return (Aggregate) visit(ctx);
     }
 

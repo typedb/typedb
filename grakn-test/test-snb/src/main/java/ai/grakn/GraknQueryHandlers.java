@@ -106,7 +106,7 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery2 ldbcQuery2, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 LocalDateTime maxDate = SNB.fromDate(ldbcQuery2.maxDate());
 
                 // to make this query execute faster split it into two parts:
@@ -158,7 +158,7 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery8 ldbcQuery8, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 // for speed the query is again split into the ordering and limit phase
                 Var reply = var("aReply");
                 Var responder = var("responder");
@@ -209,13 +209,13 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery1 ldbcQuery1, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 Var anyone = var("anyone");
                 Var anyoneElse = var("anyoneElse");
 
                 // for speed fetch the Grakn id first
                 ConceptId graknPersonId = match($person.has(PERSON_ID, ldbcQuery1.personId())).withTx(graknTx).
-                        get().execute().iterator().next().get($person).getId();
+                        get().execute().iterator().next().get($person).id();
 
                 // sort by lastname and then id
                 Comparator<Answer> byLastNameAndId = Comparator.comparing(by($lastName)).thenComparing(by($friendId));
@@ -275,14 +275,14 @@ public class GraknQueryHandlers {
                 // these queries get all of the additional related material, excluding resources
                 Var location = var("aLocation");
                 Match locationQuery = match(
-                        $friend.id(map.get($friend).getId()),
+                        $friend.id(map.get($friend).id()),
                         var().rel($friend).rel(location).isa(IS_LOCATED_IN));
                 Answer locationResult = locationQuery.withTx(graknTx).get().execute().iterator().next();
 
                 Var year = var("aYear");
                 Var oganisation = var("aOrganisation");
                 Match universityQuery = match(
-                        $friend.id(map.get($friend).getId()),
+                        $friend.id(map.get($friend).id()),
                         var().rel($friend).rel(oganisation).isa(STUDY_AT).has(CLASS_YEAR, year),
                         var().rel(oganisation).rel(location).isa(IS_LOCATED_IN)
                 );
@@ -296,7 +296,7 @@ public class GraknQueryHandlers {
                 }).collect(Collectors.toList());
 
                 Match workQuery = match(
-                        $friend.id(map.get($friend).getId()),
+                        $friend.id(map.get($friend).id()),
                         var().rel($friend).rel(oganisation).isa(WORK_AT).has(WORK_FROM, year),
                         var().rel(oganisation).rel(location).isa(IS_LOCATED_IN)
                 );
@@ -329,12 +329,12 @@ public class GraknQueryHandlers {
 
         private static <T> T getSingleResource(Entity entity, String resourceType, GraknTx graknTx) {
             return (T) entity.attributes(graknTx.getAttributeType(resourceType)).
-                    iterator().next().getValue();
+                    iterator().next().value();
         }
 
         private static <T> List<T> getListResources(Entity entity, String resourceType, GraknTx graknTx) {
             Stream<Attribute<?>> rawResources = entity.attributes(graknTx.getAttributeType(resourceType));
-            return rawResources.map(resource -> (T) resource.getValue()).collect(Collectors.toList());
+            return rawResources.map(resource -> (T) resource.value()).collect(Collectors.toList());
         }
     }
 
@@ -345,13 +345,13 @@ public class GraknQueryHandlers {
         @Override
         public void executeOperation(LdbcQuery13 ldbcQuery13, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graknTx = session.open(GraknTxType.READ)) {
+            try (GraknTx graknTx = session.transaction(GraknTxType.READ)) {
                 Match match = match($person.has(PERSON_ID, ldbcQuery13.person1Id()));
                 Concept person1 = match.withTx(graknTx).get().execute().iterator().next().get($person);
                 match = match($person.has(PERSON_ID, ldbcQuery13.person2Id()));
                 Concept person2 = match.withTx(graknTx).get().execute().iterator().next().get($person);
 
-                ComputeQuery pathQuery = compute(PATH).from(person1.getId()).to(person2.getId())
+                ComputeQuery pathQuery = compute(PATH).from(person1.id()).to(person2.id())
                         .in("knows", "person");
 
                 List<List<ConceptId>> paths = pathQuery.withTx(graknTx).execute().getPaths().get();

@@ -46,6 +46,6 @@ public abstract class EmbeddedSchemaConcept {
     }
 
     public static EmbeddedSchemaConcept create(ai.grakn.concept.SchemaConcept schemaConcept){
-        return create(Link.create(schemaConcept), schemaConcept.getLabel());
+        return create(Link.create(schemaConcept), schemaConcept.label());
     }
 }

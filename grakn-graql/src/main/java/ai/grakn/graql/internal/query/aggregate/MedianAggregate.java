@@ -23,7 +23,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -31,7 +30,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a {@link Match}.
  */
-class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
+class MedianAggregate extends AbstractAggregate<Number> {
 
     private final Var varName;
 
@@ -40,9 +39,9 @@ class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
     }
 
     @Override
-    public Optional<Number> apply(Stream<? extends Answer> stream) {
+    public Number apply(Stream<? extends Answer> stream) {
         List<Number> results = stream
-                .map(result -> ((Number) result.get(varName).asAttribute().getValue()))
+                .map(result -> ((Number) result.get(varName).asAttribute().value()))
                 .sorted()
                 .collect(toList());
 
@@ -51,13 +50,13 @@ class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
         int halveCeiling = (int) Math.ceil((size - 1) / 2.0);
 
         if (size == 0) {
-            return Optional.empty();
+            return null;
         } else if (size % 2 == 1) {
             // Take exact middle result
-            return Optional.of(results.get(halveFloor));
+            return results.get(halveFloor);
         } else {
             // Take average of middle results
-            return Optional.of((results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2);
+            return (results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2;
         }
     }
 

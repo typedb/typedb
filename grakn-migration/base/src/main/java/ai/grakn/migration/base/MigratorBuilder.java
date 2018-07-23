@@ -18,7 +18,7 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.GraknClient;
+import ai.grakn.batch.GraknClient;
 import ai.grakn.util.SimpleURI;
 
 /**

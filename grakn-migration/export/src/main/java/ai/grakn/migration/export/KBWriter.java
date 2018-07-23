@@ -88,6 +88,6 @@ public class KBWriter {
 
         return Stream.of(types, roles, rules)
                 .flatMap(Function.identity())
-                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
+                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.label()));
     }
 }

@@ -137,7 +137,7 @@ public class ReasonerUtils {
     public static Set<SchemaConcept> supers(SchemaConcept schemaConcept){
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
             superTypes.add(superType);
             superType = superType.sup();
         }
@@ -206,7 +206,7 @@ public class ReasonerUtils {
     public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
-        if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ){
+        if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.label()) ){
             compatibleRoles.addAll(
                     Sets.intersection(
                             new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
@@ -216,12 +216,12 @@ public class ReasonerUtils {
             compatibleRoles.addAll(entryRoles);
         }
 
-        if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {
+        if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.label())) {
             Set<Role> compatibleRolesFromTypes = new TypeConverter().toCompatibleRoles(parentType).collect(toSet());
 
             //do set intersection meta role
             compatibleRoles = compatibleRoles.stream()
-                    .filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel()) || compatibleRolesFromTypes.contains(role))
+                    .filter(role -> Schema.MetaSchema.isMetaLabel(role.label()) || compatibleRolesFromTypes.contains(role))
                     .collect(toSet());
             //parent role also possible
             if (parentRole != null) compatibleRoles.add(parentRole);
@@ -250,7 +250,7 @@ public class ReasonerUtils {
     public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
         Set<T> concepts = top(schemaConcepts);
         T meta = concepts.stream()
-                .filter(c -> Schema.MetaSchema.isMetaLabel(c.getLabel()))
+                .filter(c -> Schema.MetaSchema.isMetaLabel(c.label()))
                 .findFirst().orElse(null);
         return meta != null ? Collections.singleton(meta) : concepts;
     }
@@ -282,9 +282,9 @@ public class ReasonerUtils {
     public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child) {
         if (parent == null) return true;
         if (child == null) return false;
-        if (Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
+        if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
         SchemaConcept superType = child;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())){
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }

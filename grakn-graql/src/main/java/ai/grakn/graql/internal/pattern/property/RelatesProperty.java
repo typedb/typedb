@@ -143,7 +143,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
             Role role = executor.get(this.role().var()).asRole();
 
             if (!relationshipType.isDeleted() && !role.isDeleted()) {
-                relationshipType.deleteRelates(role);
+                relationshipType.unrelate(role);
             }
         };
 

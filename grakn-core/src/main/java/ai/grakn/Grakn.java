@@ -91,9 +91,9 @@ public class Grakn {
      */
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
 
-    private static final String SESSION_CLASS = "ai.grakn.factory.EmbeddedGraknSession";
+    private static final String EMBEDDED_GRAKN_SESSION = "ai.grakn.factory.EmbeddedGraknSession";
 
-    private static final String SESSION_BUILDER = "create";
+    private static final String CREATE = "create";
 
     /**
      * Constant to be passed to {@link #session(String, String)} to specify an in-memory graph.
@@ -102,13 +102,12 @@ public class Grakn {
 
     private static final Map<String, GraknSession> clients = new ConcurrentHashMap<>();
 
-    private static <F extends GraknSession> F loadImplementation(String className,
-                                                                 String location,
+    private static <F extends GraknSession> F loadImplementation(String location,
                                                                  Keyspace keyspace) {
         try {
             @SuppressWarnings("unchecked")
-            Class cl = Class.forName(className);
-            return (F) cl.getMethod(SESSION_BUILDER, Keyspace.class, String.class).invoke(null, keyspace, location);
+            Class cl = Class.forName(EMBEDDED_GRAKN_SESSION);
+            return (F) cl.getMethod(CREATE, Keyspace.class, String.class).invoke(null, keyspace, location);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -148,6 +147,6 @@ public class Grakn {
     @CheckReturnValue
     public static GraknSession session(String location, Keyspace keyspace) {
         String key = location + keyspace.getValue();
-        return clients.computeIfAbsent(key, k -> loadImplementation(SESSION_CLASS, location, keyspace));
+        return clients.computeIfAbsent(key, k -> loadImplementation(location, keyspace));
     }
 }

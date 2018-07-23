@@ -24,7 +24,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -32,11 +31,11 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds mean of a {@link Match}.
  */
-class MeanAggregate extends AbstractAggregate<Answer, Optional<Double>> {
+class MeanAggregate extends AbstractAggregate<Number> {
 
     private final Var varName;
     private final CountAggregate countAggregate;
-    private final Aggregate<Answer, Number> sumAggregate;
+    private final Aggregate<Number> sumAggregate;
 
     MeanAggregate(Var varName) {
         this.varName = varName;
@@ -45,16 +44,16 @@ class MeanAggregate extends AbstractAggregate<Answer, Optional<Double>> {
     }
 
     @Override
-    public Optional<Double> apply(Stream<? extends Answer> stream) {
+    public Number apply(Stream<? extends Answer> stream) {
         List<? extends Answer> list = stream.collect(toList());
 
         long count = countAggregate.apply(list.stream());
 
         if (count == 0) {
-            return Optional.empty();
+            return null;
         } else {
             Number sum = sumAggregate.apply(list.stream());
-            return Optional.of(sum.doubleValue() / count);
+            return sum.doubleValue() / count;
         }
     }
 

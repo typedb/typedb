@@ -54,7 +54,7 @@ interface RelationshipStructure extends CacheOwner{
      *
      * @return The {@link ConceptId} of the {@link Relationship}
      */
-    ConceptId getId();
+    ConceptId id();
 
     /**
      * Used for determining which {@link Keyspace} a {@link RelationshipStructure} was created in and is bound to.

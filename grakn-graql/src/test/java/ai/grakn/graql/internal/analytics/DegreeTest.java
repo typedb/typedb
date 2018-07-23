@@ -63,7 +63,7 @@ public class DegreeTest {
     @Before
     public void setUp() {
         session = sessionContext.newSession();
-        tx = session.open(GraknTxType.WRITE);
+        tx = session.transaction(GraknTxType.WRITE);
     }
 
     @Test
@@ -72,10 +72,10 @@ public class DegreeTest {
         EntityType thingy = tx.putEntityType("thingy");
         EntityType anotherThing = tx.putEntityType("another");
 
-        ConceptId entity1 = thingy.addEntity().getId();
-        ConceptId entity2 = thingy.addEntity().getId();
-        ConceptId entity3 = thingy.addEntity().getId();
-        ConceptId entity4 = anotherThing.addEntity().getId();
+        ConceptId entity1 = thingy.create().id();
+        ConceptId entity2 = thingy.create().id();
+        ConceptId entity3 = thingy.create().id();
+        ConceptId entity4 = anotherThing.create().id();
 
         Role role1 = tx.putRole("role1");
         Role role2 = tx.putRole("role2");
@@ -84,18 +84,18 @@ public class DegreeTest {
         RelationshipType related = tx.putRelationshipType("related").relates(role1).relates(role2);
 
         // relate them
-        related.addRelationship()
-                .addRolePlayer(role1, tx.getConcept(entity1))
-                .addRolePlayer(role2, tx.getConcept(entity2));
-        related.addRelationship()
-                .addRolePlayer(role1, tx.getConcept(entity2))
-                .addRolePlayer(role2, tx.getConcept(entity3));
-        related.addRelationship()
-                .addRolePlayer(role1, tx.getConcept(entity2))
-                .addRolePlayer(role2, tx.getConcept(entity4));
+        related.create()
+                .assign(role1, tx.getConcept(entity1))
+                .assign(role2, tx.getConcept(entity2));
+        related.create()
+                .assign(role1, tx.getConcept(entity2))
+                .assign(role2, tx.getConcept(entity3));
+        related.create()
+                .assign(role1, tx.getConcept(entity2))
+                .assign(role2, tx.getConcept(entity4));
         tx.commit();
 
-        tx = session.open(GraknTxType.READ);
+        tx = session.transaction(GraknTxType.READ);
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -113,7 +113,7 @@ public class DegreeTest {
         tx.close();
 
         Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
                 return graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             }
         }).collect(Collectors.toSet());
@@ -127,7 +127,7 @@ public class DegreeTest {
                 }
         ));
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees1 =
                     graph.graql().compute(CENTRALITY).using(DEGREE).of("thingy").execute().getCentrality().get();
 
@@ -163,20 +163,20 @@ public class DegreeTest {
         Role pet = tx.putRole("pet");
         Role owner = tx.putRole("owner");
 
-        Entity person = tx.putEntityType("person").plays(owner).addEntity();
+        Entity person = tx.putEntityType("person").plays(owner).create();
 
         EntityType animal = tx.putEntityType("animal").plays(pet);
-        Entity dog = tx.putEntityType("dog").sup(animal).addEntity();
+        Entity dog = tx.putEntityType("dog").sup(animal).create();
 
         tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner)
-                .addRelationship().addRolePlayer(pet, dog).addRolePlayer(owner, person);
+                .create().assign(pet, dog).assign(owner, person);
 
         Map<Long, Set<ConceptId>> correctDegrees = new HashMap<>();
-        correctDegrees.put(1L, Sets.newHashSet(person.getId(), dog.getId()));
+        correctDegrees.put(1L, Sets.newHashSet(person.id(), dog.id()));
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // set subgraph, use animal instead of dog
             Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
@@ -199,33 +199,33 @@ public class DegreeTest {
         AttributeType<String> altName =
                 tx.putAttributeType("alternate-name", AttributeType.DataType.STRING);
 
-        animal.attribute(name).attribute(altName);
+        animal.has(name).has(altName);
 
         // add data to the graph
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        Attribute coconut = name.putAttribute("coconut");
-        Attribute stinky = altName.putAttribute("stinky");
-        mansBestFriend.addRelationship().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
-        coco.attribute(coconut).attribute(stinky);
+        Entity coco = animal.create();
+        Entity dave = person.create();
+        Attribute coconut = name.create("coconut");
+        Attribute stinky = altName.create("stinky");
+        mansBestFriend.create().assign(owner, dave).assign(pet, coco);
+        coco.has(coconut).has(stinky);
 
         // manually compute the degree for small graph
         Map<Long, Set<ConceptId>> subgraphReferenceDegrees = new HashMap<>();
-        subgraphReferenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId()));
+        subgraphReferenceDegrees.put(1L, Sets.newHashSet(coco.id(), dave.id()));
 
         // manually compute degree for almost full graph
         Map<Long, Set<ConceptId>> almostFullReferenceDegrees = new HashMap<>();
-        almostFullReferenceDegrees.put(2L, Sets.newHashSet(coco.getId()));
-        almostFullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId(), coconut.getId()));
+        almostFullReferenceDegrees.put(2L, Sets.newHashSet(coco.id()));
+        almostFullReferenceDegrees.put(1L, Sets.newHashSet(dave.id(), coconut.id()));
 
         // manually compute degrees
         Map<Long, Set<ConceptId>> fullReferenceDegrees = new HashMap<>();
-        fullReferenceDegrees.put(3L, Sets.newHashSet(coco.getId()));
-        fullReferenceDegrees.put(1L, Sets.newHashSet(dave.getId(), coconut.getId(), stinky.getId()));
+        fullReferenceDegrees.put(3L, Sets.newHashSet(coco.id()));
+        fullReferenceDegrees.put(1L, Sets.newHashSet(dave.id(), coconut.id(), stinky.id()));
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
@@ -257,17 +257,17 @@ public class DegreeTest {
         EntityType animal = tx.putEntityType("animal").plays(pet);
 
         // make one person breeder and owner
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        mansBestFriend.addRelationship().addRolePlayer(pet, coco).addRolePlayer(owner, dave);
+        Entity coco = animal.create();
+        Entity dave = person.create();
+        mansBestFriend.create().assign(pet, coco).assign(owner, dave);
 
         // manual degrees
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(coco.id(), dave.id()));
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
@@ -293,20 +293,20 @@ public class DegreeTest {
         mansBestFriend.plays(ownership);
 
         // add instances
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
-        Relationship daveOwnsCoco = mansBestFriend.addRelationship()
-                .addRolePlayer(owner, dave).addRolePlayer(pet, coco);
-        Attribute aStartDate = startDate.putAttribute("01/01/01");
-        hasOwnershipResource.addRelationship()
-                .addRolePlayer(ownershipResource, aStartDate).addRolePlayer(ownership, daveOwnsCoco);
+        Entity coco = animal.create();
+        Entity dave = person.create();
+        Relationship daveOwnsCoco = mansBestFriend.create()
+                .assign(owner, dave).assign(pet, coco);
+        Attribute aStartDate = startDate.create("01/01/01");
+        hasOwnershipResource.create()
+                .assign(ownershipResource, aStartDate).assign(ownership, daveOwnsCoco);
 
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId(), dave.getId(), aStartDate.getId(), daveOwnsCoco.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(coco.id(), dave.id(), aStartDate.id(), daveOwnsCoco.id()));
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
@@ -327,22 +327,22 @@ public class DegreeTest {
         EntityType person = tx.putEntityType("person").plays(actor);
         EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
 
-        Entity godfather = movie.addEntity();
-        Entity marlonBrando = person.addEntity();
-        Entity donVitoCorleone = character.addEntity();
+        Entity godfather = movie.create();
+        Entity marlonBrando = person.create();
+        Entity donVitoCorleone = character.create();
 
-        hasCast.addRelationship()
-                .addRolePlayer(productionWithCast, godfather)
-                .addRolePlayer(actor, marlonBrando)
-                .addRolePlayer(characterBeingPlayed, donVitoCorleone);
+        hasCast.create()
+                .assign(productionWithCast, godfather)
+                .assign(actor, marlonBrando)
+                .assign(characterBeingPlayed, donVitoCorleone);
 
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(godfather.getId(), marlonBrando.getId(),
-                donVitoCorleone.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(godfather.id(), marlonBrando.id(),
+                donVitoCorleone.id()));
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }
@@ -360,21 +360,21 @@ public class DegreeTest {
         EntityType animal = tx.putEntityType("animal").plays(pet);
 
         // make one person breeder and owner
-        Entity coco = animal.addEntity();
-        Entity dave = person.addEntity();
+        Entity coco = animal.create();
+        Entity dave = person.create();
 
-        mansBestFriend.addRelationship()
-                .addRolePlayer(pet, coco)
-                .addRolePlayer(owner, dave)
-                .addRolePlayer(breeder, dave);
+        mansBestFriend.create()
+                .assign(pet, coco)
+                .assign(owner, dave)
+                .assign(breeder, dave);
 
         Map<Long, Set<ConceptId>> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(1L, Sets.newHashSet(coco.getId()));
-        referenceDegrees.put(2L, Collections.singleton(dave.getId()));
+        referenceDegrees.put(1L, Sets.newHashSet(coco.id()));
+        referenceDegrees.put(2L, Collections.singleton(dave.id()));
 
         tx.commit();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             Map<Long, Set<ConceptId>> degrees = graph.graql().compute(CENTRALITY).using(DEGREE).execute().getCentrality().get();
             assertEquals(referenceDegrees, degrees);
         }

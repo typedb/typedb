@@ -46,7 +46,7 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
                             QueryStateBase parent,
                             Set<ReasonerAtomicQuery> visitedSubGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
-        super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals, cache);
+        super(ReasonerQueries.create(q, sub), sub, u, MultiUnifierImpl::new, parent, visitedSubGoals, cache);
     }
 
     @Override

@@ -156,7 +156,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknTx graph = factory.open(GraknTxType.WRITE);
+            GraknTx graph = factory.transaction(GraknTxType.WRITE);
             Attribute<Long> count = graph.getAttributesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getAttributeType("count"));

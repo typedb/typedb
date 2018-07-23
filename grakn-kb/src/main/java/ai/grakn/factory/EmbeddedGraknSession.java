@@ -185,7 +185,7 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
     @Override
-    public EmbeddedGraknTx open(GraknTxType transactionType) {
+    public EmbeddedGraknTx transaction(GraknTxType transactionType) {
         switch (transactionType){
             case READ:
             case WRITE:

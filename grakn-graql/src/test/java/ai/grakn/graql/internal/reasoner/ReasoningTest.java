@@ -30,7 +30,7 @@ import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -165,8 +165,8 @@ public class ReasoningTest {
     @ClassRule
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
 
-    @Before
-    public void onStartup() throws Exception {
+    @BeforeClass
+    public static void onStartup() throws Exception {
         assumeTrue(GraknTestUtil.usingTinker());
     }
 
@@ -1253,7 +1253,7 @@ public class ReasoningTest {
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
         GraknTx graph = test29.tx();
         QueryBuilder qb = graph.graql().infer(true);
-        final int arity = (int) graph.getRelationshipType(label).relates().count();
+        final int arity = (int) graph.getRelationshipType(label).roles().count();
 
         VarPattern resourcePattern = var("a1").has("name", "a");
 

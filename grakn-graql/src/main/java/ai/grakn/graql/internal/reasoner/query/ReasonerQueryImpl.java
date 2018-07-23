@@ -35,7 +35,6 @@ import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -258,7 +257,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public boolean isTypeRoleCompatible(Var typedVar, Type parentType){
-        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.getLabel())) return true;
+        if (parentType == null || Schema.MetaSchema.isMetaLabel(parentType.label())) return true;
 
         Set<Type> parentTypes = parentType.subs().collect(Collectors.toSet());
         return getAtoms(RelationshipAtom.class)
@@ -266,9 +265,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .noneMatch(ra -> ra.getRoleVarMap().entries().stream()
                         //get roles this type needs to play
                         .filter(e -> e.getValue().equals(typedVar))
-                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                        .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().label()))
                         //check if it can play it
-                        .anyMatch(e -> e.getKey().playedByTypes().noneMatch(parentTypes::contains)));
+                        .anyMatch(e -> e.getKey().players().noneMatch(parentTypes::contains)));
     }
 
     @Override
@@ -500,7 +499,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return query state iterator (db iter + unifier + state iter) for this query
      */
-    public Pair<Iterator<ResolutionState>, MultiUnifier> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         Iterator<AnswerState> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
 
@@ -521,10 +520,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new QueryAnswer(), parent.getUnifier(), parent, subGoals, cache));
         }
-        return new Pair<>(
-                Iterators.concat(dbIterator, subGoalIterator),
-                new MultiUnifierImpl()
-        );
+        return Iterators.concat(dbIterator, subGoalIterator);
     }
 
 

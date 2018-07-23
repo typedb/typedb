@@ -91,7 +91,7 @@ public class QueryAnswer implements Answer {
     public String toString(){
         return entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getKey().getValue()))
-                .map(e -> "[" + e.getKey() + "/" + e.getValue().getId() + "]").collect(Collectors.joining());
+                .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
     }
 
     @Override
@@ -142,7 +142,7 @@ public class QueryAnswer implements Answer {
     public int size(){ return map.size();}
 
     @Override
-    public void forEach(BiConsumer<? super Var, ? super Concept> consumer) {
+    public void forEach(BiConsumer<Var, Concept> consumer) {
         map.forEach(consumer);
     }
 

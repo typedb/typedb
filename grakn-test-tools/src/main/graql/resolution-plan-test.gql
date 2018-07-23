@@ -2,49 +2,50 @@ define
 
 #Roles
 
-role1 sub role;
-role2 sub role;
+someRole sub role;
+otherRole sub role;
 
 #Entities
 
 baseEntity sub entity
-    plays role1
-    plays role2
+    plays someRole
+    plays otherRole
     has resource
     has anotherResource;
 
-entity1 sub baseEntity;
-entity2 sub baseEntity;
+someEntity sub baseEntity;
+someOtherEntity sub baseEntity;
+yetAnotherEntity sub baseEntity;
 
 #Relations
 
 relation sub relationship
-    relates role1
-    relates role2;
-
-derivedRelation sub relationship
-    relates role1
-    relates role2;
+    relates someRole
+    relates otherRole;
 
 anotherRelation sub relationship
-    relates role1
-    relates role2;
+    relates someRole
+    relates otherRole;
 
 yetAnotherRelation sub relationship
-    relates role1
-    relates role2;
+    relates someRole
+    relates otherRole;
+
+derivedRelation sub relationship
+    relates someRole
+    relates otherRole;
 
 resource sub attribute datatype string;
 anotherResource sub attribute datatype string;
 
-simple-rule
+
+simple-relation-rule
 when {
-(role1: $x, role2: $y) isa relation;
-(role1: $y, role2: $z) isa relation;},
+(someRole: $x, otherRole: $y) isa relation;},
 then {
-(role1: $x, role2: $z) isa derivedRelation;};
+(someRole: $x, otherRole: $y) isa derivedRelation;};
 
 insert
 
-$x isa entity1;
-$y isa entity2;
+$x isa someEntity;
+$y isa someOtherEntity;

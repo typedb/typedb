@@ -37,8 +37,15 @@ import java.util.List;
  */
 public class InvalidKBException extends GraknException{
 
+    private final String NAME = "InvalidKBException";
+
     private InvalidKBException(String message) {
         super(message);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     public static InvalidKBException create(String message) {

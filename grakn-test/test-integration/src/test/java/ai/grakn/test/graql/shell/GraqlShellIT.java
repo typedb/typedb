@@ -403,7 +403,6 @@ public class GraqlShellIT {
     @Test
     public void whenEngineIsNotRunning_ShowAnError() throws Exception {
         ShellResponse response = runShell("", "-r", "localhost:7654");
-
         assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 

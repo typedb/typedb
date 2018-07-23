@@ -31,7 +31,7 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="ai.grakn.engine.GraknEngineServer" level="WARN">
+    <logger name="ai.grakn.engine.Server" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>
 

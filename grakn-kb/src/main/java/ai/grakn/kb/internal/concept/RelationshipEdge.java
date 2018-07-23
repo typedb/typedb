@@ -84,9 +84,9 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     private RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, relationshipType, null, t -> t.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, relationshipType, null, t -> t.labelId().getValue());
 
         this.relationType.set(relationshipType);
         this.ownerRole.set(ownerRole);
@@ -106,7 +106,7 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
     }
 
     @Override
-    public ConceptId getId() {
+    public ConceptId id() {
         return ConceptId.of(edge().id().getValue());
     }
 
@@ -117,9 +117,9 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
 
     @Override
     public RelationshipReified reify() {
-        LOG.debug("Reifying concept [" + getId() + "]");
+        LOG.debug("Reifying concept [" + id() + "]");
         //Build the Relationship Vertex
-        VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATIONSHIP, getId());
+        VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATIONSHIP, id());
         RelationshipReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge
@@ -194,9 +194,9 @@ public class RelationshipEdge implements RelationshipStructure, CacheOwner {
 
     @Override
     public String toString(){
-        return "ID [" + getId() + "] Type [" + type().getLabel() + "] Roles and Role Players: \n" +
-                "Role [" + ownerRole().getLabel() + "] played by [" + owner().getId() + "] \n" +
-                "Role [" + valueRole().getLabel() + "] played by [" + value().getId() + "] \n";
+        return "ID [" + id() + "] Type [" + type().label() + "] Roles and Role Players: \n" +
+                "Role [" + ownerRole().label() + "] played by [" + owner().id() + "] \n" +
+                "Role [" + valueRole().label() + "] played by [" + value().id() + "] \n";
     }
 
     @Override

@@ -34,6 +34,6 @@ public class Entities extends AbstractThingGenerator<Entity, EntityType> {
 
     @Override
     protected Entity newInstance(EntityType type) {
-        return type.addEntity();
+        return type.create();
     }
 }

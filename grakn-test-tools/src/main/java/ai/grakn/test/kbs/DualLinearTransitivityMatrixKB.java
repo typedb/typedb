@@ -72,35 +72,35 @@ public class DualLinearTransitivityMatrixKB extends TestKB {
 
         ConceptId[] aInstancesIds = new ConceptId[m+1];
         ConceptId[][] bInstancesIds = new ConceptId[m][n+1];
-        aInstancesIds[0] = putEntityWithResource(graph, "a0", graph.getEntityType("start"), key).getId();
-        aInstancesIds[m] = putEntityWithResource(graph, "a" + m, graph.getEntityType("end"), key).getId();
+        aInstancesIds[0] = putEntityWithResource(graph, "a0", graph.getEntityType("start"), key).id();
+        aInstancesIds[m] = putEntityWithResource(graph, "a" + m, graph.getEntityType("end"), key).id();
         for(int i = 1 ; i < m ;i++) {
-            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).getId();
+            aInstancesIds[i] = putEntityWithResource(graph, "a" + i, aEntity, key).id();
         }
 
         for(int i = 1 ; i < m ;i++) {
             for (int j = 1; j <= n; j++) {
-                bInstancesIds[i][j] = putEntityWithResource(graph, "b" + i + j, bEntity, key).getId();
+                bInstancesIds[i][j] = putEntityWithResource(graph, "b" + i + j, bEntity, key).id();
             }
         }
 
         for (int i = 0; i < m; i++) {
-            R1.addRelationship()
-                    .addRolePlayer(R1from, graph.getConcept(aInstancesIds[i]))
-                    .addRolePlayer(R1to, graph.getConcept(aInstancesIds[i + 1]));
+            R1.create()
+                    .assign(R1from, graph.getConcept(aInstancesIds[i]))
+                    .assign(R1to, graph.getConcept(aInstancesIds[i + 1]));
         }
 
         for(int j = 1 ; j <= n ;j++) {
-            R2.addRelationship()
-                    .addRolePlayer(R2from, graph.getConcept(aInstancesIds[0]))
-                    .addRolePlayer(R2to, graph.getConcept(bInstancesIds[1][j]));
-            R2.addRelationship()
-                    .addRolePlayer(R2from, graph.getConcept(bInstancesIds[m-1][j]))
-                    .addRolePlayer(R2to, graph.getConcept(aInstancesIds[m]));
+            R2.create()
+                    .assign(R2from, graph.getConcept(aInstancesIds[0]))
+                    .assign(R2to, graph.getConcept(bInstancesIds[1][j]));
+            R2.create()
+                    .assign(R2from, graph.getConcept(bInstancesIds[m-1][j]))
+                    .assign(R2to, graph.getConcept(aInstancesIds[m]));
             for (int i = 1; i < m - 1; i++) {
-                R2.addRelationship()
-                        .addRolePlayer(R2from, graph.getConcept(bInstancesIds[i][j]))
-                        .addRolePlayer(R2to, graph.getConcept(bInstancesIds[i + 1][j]));
+                R2.create()
+                        .assign(R2from, graph.getConcept(bInstancesIds[i][j]))
+                        .assign(R2to, graph.getConcept(bInstancesIds[i + 1][j]));
             }
         }
     }

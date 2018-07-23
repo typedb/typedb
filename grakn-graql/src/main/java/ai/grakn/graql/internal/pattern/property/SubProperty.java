@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.runner.ConceptBuilder;
+import ai.grakn.graql.internal.query.executor.ConceptBuilder;
 import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;

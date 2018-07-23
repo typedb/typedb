@@ -19,8 +19,8 @@
 package ai.grakn.graql.shell;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
+import ai.grakn.batch.BatchExecutorClient;
+import ai.grakn.batch.GraknClient;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Charsets;
