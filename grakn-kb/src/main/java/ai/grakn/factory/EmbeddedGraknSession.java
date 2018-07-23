@@ -19,7 +19,6 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -69,36 +68,14 @@ public class EmbeddedGraknSession implements GraknSession {
         Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace;
-
-        // TODO check whether this if is still needed
-        this.config = (config != null) ? config : GraknConfig.create();
-
+        this.config = config;
         this.commitLogHandler = new CommitLogHandler(keyspace());
-
-
         this.txFactory = txFactoryBuilder.getFactory(this, false);
         this.computerTxFactory = txFactoryBuilder.getFactory(this, true);
     }
 
     public CommitLogHandler commitLogHandler(){
         return commitLogHandler;
-    }
-
-    /**
-     * This methods creates a {@link EmbeddedGraknSession} object for the remote API.
-     * A user should not call this method directly.
-     * Note: This method uses default TxFactoryBuilder implementation in Grakn core.
-     */
-    public static EmbeddedGraknSession create(Keyspace keyspace){
-        return new EmbeddedGraknSession(keyspace, null, GraknTxFactoryBuilder.getInstance());
-    }
-
-    public static EmbeddedGraknSession createInMemory(Keyspace keyspace){
-        return new EmbeddedGraknSession(keyspace, getTxInMemoryConfig(), GraknTxFactoryBuilder.getInstance());
-    }
-
-    public static EmbeddedGraknSession create(Keyspace keyspace, GraknConfig config){
-        return new EmbeddedGraknSession(keyspace, config, GraknTxFactoryBuilder.getInstance());
     }
 
     /**
@@ -109,21 +86,6 @@ public class EmbeddedGraknSession implements GraknSession {
         return new EmbeddedGraknSession(keyspace, config,  txFactoryBuilder);
     }
 
-
-    /**
-     * Gets properties which let you build a toy in-memory {@link GraknTx}.
-     * This does not contact engine in any way and it can be run in an isolated manner
-     *
-     * @return the properties needed to build an in-memory {@link GraknTx}
-     */
-    static GraknConfig getTxInMemoryConfig(){
-        GraknConfig config = GraknConfig.empty();
-        config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
-        config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, GraknTxFactoryBuilder.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, GraknTxFactoryBuilder.IN_MEMORY);
-        return config;
-    }
 
     @Override
     public EmbeddedGraknTx transaction(GraknTxType transactionType) {

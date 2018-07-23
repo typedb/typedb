@@ -18,6 +18,7 @@
 
 package ai.grakn.test.rule;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -26,19 +27,18 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
+import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
-import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
-import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.rpc.KeyspaceService;
-import ai.grakn.engine.rpc.SessionService;
+import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.engine.rpc.ServerOpenRequest;
+import ai.grakn.engine.rpc.SessionService;
 import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
@@ -48,7 +48,8 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.engine.rpc.OpenRequest;
+import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
@@ -160,7 +161,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return EmbeddedGraknSession.create(randomKeyspace(), config);
+        return EmbeddedGraknSession.createEngineSession(randomKeyspace(), config, GraknTxFactoryBuilder.getInstance());
     }
 
     @Override
@@ -241,10 +242,7 @@ public class EngineContext extends CompositeTestRule {
                     }));
         }
 
-        keyspaceNames.forEach(name -> {
-            GraknTx graph = factory.tx(Keyspace.of(name), GraknTxType.WRITE);
-            graph.admin().delete();
-        });
+        keyspaceNames.forEach(name -> Grakn.Keyspace.delete(Keyspace.of(name)));
         factory.refreshConnections();
     }
 
@@ -294,7 +292,7 @@ public class EngineContext extends CompositeTestRule {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        keyspaceStore = KeyspaceStoreImpl.create(new KeyspaceSessionImpl(config));
+        keyspaceStore = KeyspaceStoreImpl.getInstance();
 
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);

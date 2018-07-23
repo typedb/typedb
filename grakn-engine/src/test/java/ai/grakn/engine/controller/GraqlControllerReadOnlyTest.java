@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
-import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;

@@ -647,8 +647,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         closeSession();
         clearGraph();
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-
-        //Access KeyspaceStore here
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -682,7 +680,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      */
     @Override
     public void commit() throws InvalidKBException {
-        close(true, true);
+        close(true, false);
     }
 
     /**

@@ -18,6 +18,8 @@
 
 package ai.grakn.test.batch;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -60,7 +62,7 @@ import static org.mockito.Mockito.spy;
 public class BatchExecutorClientIT {
 
     public static final int MAX_DELAY = 100;
-    private EmbeddedGraknSession session;
+    private GraknSession session;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -75,7 +77,7 @@ public class BatchExecutorClientIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = EmbeddedGraknSession.create(keyspace, engine.config());
+        this.session = Grakn.session(keyspace, engine.config());
     }
 
     @Ignore("This test stops and restart server - this is not supported yet by gRPC [https://github.com/grpc/grpc/issues/7031] - fix when gRPC 1.1 is released")
@@ -189,19 +191,19 @@ public class BatchExecutorClientIT {
 
     private BatchExecutorClient loader(int maxDelay) {
         // load schema
-        try (EmbeddedGraknTx<?> graph = session.transaction(GraknTxType.WRITE)) {
-            Role role = graph.putRole("some-role");
-            graph.putRelationshipType("some-relationship").relates(role);
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+            Role role = tx.putRole("some-role");
+            tx.putRelationshipType("some-relationship").relates(role);
 
-            EntityType nameTag = graph.putEntityType("name_tag");
-            AttributeType<String> nameTagString = graph
+            EntityType nameTag = tx.putEntityType("name_tag");
+            AttributeType<String> nameTagString = tx
                     .putAttributeType("name_tag_string", AttributeType.DataType.STRING);
-            AttributeType<String> nameTagId = graph
+            AttributeType<String> nameTagId = tx
                     .putAttributeType("name_tag_id", AttributeType.DataType.STRING);
 
             nameTag.has(nameTagString);
             nameTag.has(nameTagId);
-            graph.commitSubmitNoLogs();
+            tx.commit();
 
             GraknClient graknClient = GraknClient.of(engine.uri());
             return spy(

@@ -18,7 +18,9 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -35,6 +37,8 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
@@ -92,7 +96,7 @@ public class PostProcessingTest {
     }
 
     @After
-    public void takeDown() throws InterruptedException {
+    public void takeDown(){
         session.close();
     }
 
@@ -190,10 +194,10 @@ public class PostProcessingTest {
         EntityType et2;
 
         //Create Simple GraknTx
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.config()).transaction(GraknTxType.WRITE)) {
+        try (GraknTx graknTx = Grakn.session(keyspace, engine.config()).transaction(GraknTxType.WRITE)) {
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
-            graknTx.commitSubmitNoLogs();
+            graknTx.commit();
         }
 
         checkShardCount(keyspace, et1, 1);
@@ -215,7 +219,7 @@ public class PostProcessingTest {
     }
 
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.config()).transaction(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.createEngineSession(keyspace, engine.config(), GraknTxFactoryBuilder.getInstance()).transaction(GraknTxType.WRITE)) {
             int shards = graknTx.getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.id().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();

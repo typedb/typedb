@@ -27,8 +27,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
-import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
@@ -77,13 +76,13 @@ public class KeyspaceStoreTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(Keyspace.of(k), GraknTxType.WRITE);
-    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).transaction(GraknTxType.WRITE);
+    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(Keyspace.of(k), sparkContext.config()).transaction(GraknTxType.WRITE);
 
     private final Set<GraknTx> transactions = new HashSet<>();
 
     @BeforeClass
     public static void setup(){
-        keyspaceStore = KeyspaceStoreImpl.create(new KeyspaceSessionImpl(config));
+        keyspaceStore = KeyspaceStoreImpl.getInstance();
         keyspaceStore.loadSystemSchema();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 

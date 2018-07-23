@@ -57,11 +57,10 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknTx graph = Grakn.sessionInMemory( "default").transaction(GraknTxType.WRITE);
-        graph.admin().delete();
-        graph = Grakn.sessionInMemory( "default").transaction(GraknTxType.WRITE);
-        graph.putEntityType("A thing");
-        assertNotNull(graph.getEntityType("A thing"));
+        Grakn.Keyspace.delete(Keyspace.of("default"));
+        GraknTx tx = Grakn.sessionInMemory( "default").transaction(GraknTxType.WRITE);
+        tx.putEntityType("A thing");
+        assertNotNull(tx.getEntityType("A thing"));
     }
 
     @Test

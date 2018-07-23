@@ -69,7 +69,6 @@ public interface KeyspaceStore {
     boolean containsKeyspace(Keyspace keyspace);
 
     /**
-     * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
      * This removes the keyspace of the deleted graph from the system graph
      *
      * @param keyspace the {@link Keyspace} to be removed from the system graph

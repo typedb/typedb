@@ -18,10 +18,9 @@
 
 package ai.grakn.test.rule;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknSessionLocal;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import org.junit.rules.TestRule;
@@ -62,7 +61,7 @@ public class SessionContext extends CompositeTestRule {
     }
 
     public GraknSession newSession(){
-        GraknSession session = EmbeddedGraknSession.create(randomKeyspace());
+        GraknSession session = Grakn.session(randomKeyspace());
         openedSessions.add(session);
         return session;
     }

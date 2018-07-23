@@ -18,11 +18,15 @@
 
 package ai.grakn;
 
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.util.SimpleURI;
+import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 
 import javax.annotation.CheckReturnValue;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -99,25 +103,65 @@ public class Grakn {
      * If one doesn't exist, it will be created for you.
      * @return A session instance that can produce concurrent connection to the specified knowledge graph.
      */
-    private static final Map<String, GraknSession> sessions = new ConcurrentHashMap<>();
-    private static final Map<String, GraknSession> inMemorySessions = new ConcurrentHashMap<>();
+    private static final Map<String, EmbeddedGraknSession> sessions = new ConcurrentHashMap<>();
+    private static final Map<String, EmbeddedGraknSession> inMemorySessions = new ConcurrentHashMap<>();
+    private static final KeyspaceStore keyspaceStore = KeyspaceStoreImpl.getInstance();
 
     @CheckReturnValue
-    public static GraknSession session(String keyspace) {
-        return session(Keyspace.of(keyspace));
+    public static EmbeddedGraknSession session(String keyspace) {
+        return session(ai.grakn.Keyspace.of(keyspace));
+    }
+
+    public static EmbeddedGraknSession session(ai.grakn.Keyspace keyspace) {
+        return session(keyspace, GraknConfig.create());
+    }
+
+    public static EmbeddedGraknSession sessionInMemory(ai.grakn.Keyspace keyspace) {
+        return inMemorySessions.computeIfAbsent(keyspace.getValue(), k -> {
+            TxFactoryBuilder factoryBuilder = GraknTxFactoryBuilder.getInstance();
+            GraknConfig config = getTxInMemoryConfig();
+            return EmbeddedGraknSession.createEngineSession(keyspace, config, factoryBuilder);
+        });
     }
 
     @CheckReturnValue
-    public static GraknSession session(Keyspace keyspace) {
-        return sessions.computeIfAbsent(keyspace.getValue(), k -> EmbeddedGraknSession.create(keyspace));
+    public static EmbeddedGraknSession session(ai.grakn.Keyspace keyspace, GraknConfig config) {
+        return sessions.computeIfAbsent(keyspace.getValue(), k -> {
+            TxFactoryBuilder factoryBuilder = GraknTxFactoryBuilder.getInstance();
+            return EmbeddedGraknSession.createEngineSession(keyspace, config, factoryBuilder);
+        });
     }
 
     @CheckReturnValue
-    public static GraknSession sessionInMemory(String keyspace) {
-        return EmbeddedGraknSession.createInMemory(Keyspace.of(keyspace));
+    public static EmbeddedGraknSession sessionInMemory(String keyspace) {
+        return sessionInMemory(ai.grakn.Keyspace.of(keyspace));
     }
-    @CheckReturnValue
-    public static GraknSession sessionInMemory(Keyspace keyspace) {
-        return inMemorySessions.computeIfAbsent(keyspace.getValue(), k -> EmbeddedGraknSession.createInMemory(keyspace));
+
+    /**
+     * Gets properties which let you build a toy in-memory {@link GraknTx}.
+     * This does not contact engine in any way and it can be run in an isolated manner
+     *
+     * @return the properties needed to build an in-memory {@link GraknTx}
+     */
+    private static GraknConfig getTxInMemoryConfig(){
+        GraknConfig config = GraknConfig.empty();
+        config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
+        config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, GraknTxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, GraknTxFactoryBuilder.IN_MEMORY);
+        return config;
+    }
+
+
+
+    public static class Keyspace{
+
+        public static void delete(ai.grakn.Keyspace keyspace){
+            EmbeddedGraknSession session = session(keyspace);
+            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
+                tx.admin().delete();
+            }
+            keyspaceStore.deleteKeyspace(keyspace);
+        }
     }
 }
