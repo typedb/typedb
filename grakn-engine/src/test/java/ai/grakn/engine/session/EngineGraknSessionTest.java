@@ -33,6 +33,7 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
@@ -56,18 +57,12 @@ import static org.mockito.Mockito.mock;
 
 public class EngineGraknSessionTest {
     private static final GraknConfig config = GraknConfig.create();
-    private static final ServerStatus status = mock(ServerStatus.class);
-    private static final MetricRegistry metricRegistry = new MetricRegistry();
-    private static final KeyspaceStoreFake systemKeyspace = KeyspaceStoreFake.of();
 
     private static EngineGraknTxFactory graknFactory;
 
     @ClassRule
     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
-    //Needed so that Grakn.session() can return a session
-    @ClassRule
-    public static final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, systemKeyspace, status, metricRegistry));
 
     //Needed to start cass depending on profile
     @ClassRule
@@ -87,8 +82,7 @@ public class EngineGraknSessionTest {
     @Test
     public void whenOpeningTransactionsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureTransactionsAreTheSame(){
         String keyspace = "mykeyspace";
-
-        GraknTx tx1 = Grakn.session(sparkContext.uri(), keyspace).transaction(GraknTxType.WRITE);
+        GraknTx tx1 = Grakn.session(keyspace).transaction(GraknTxType.WRITE);
         tx1.close();
         GraknTx tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 
@@ -115,7 +109,7 @@ public class EngineGraknSessionTest {
     public void whenInsertingAfterSessionHasBeenClosed_shouldThrowTxException(){
         assumeFalse(GraknTestUtil.usingTinker()); //Tinker does not have any connections to close
 
-        GraknSession session = Grakn.session(sparkContext.uri(), SampleKBLoader.randomKeyspace());
+        GraknSession session = Grakn.session(SampleKBLoader.randomKeyspace());
         GraknTx tx = session.transaction(GraknTxType.WRITE);
         session.close();
 

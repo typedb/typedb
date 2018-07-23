@@ -146,7 +146,7 @@ public class GraknTxTest extends TxTestBase {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.READ);
+        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -215,7 +215,7 @@ public class GraknTxTest extends TxTestBase {
 
         //Purge the above concepts into the main cache
         tx.commit();
-        tx = EmbeddedGraknSession.createInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
+        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         //Check cache is in good order
         Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
@@ -267,14 +267,14 @@ public class GraknTxTest extends TxTestBase {
         String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
-        tx = EmbeddedGraknSession.createInMemory(keyspace).transaction(GraknTxType.READ);
+        tx = Grakn.sessionInMemory(keyspace).transaction(GraknTxType.READ);
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationshipType(relationType1));
 
         //Pass some mutations
         tx.close();
-        tx = EmbeddedGraknSession.createInMemory(keyspace).transaction(GraknTxType.WRITE);
+        tx = Grakn.sessionInMemory(keyspace).transaction(GraknTxType.WRITE);
         EntityType entityT = tx.putEntityType(entityType);
         entityT.create();
         Role roleT1 = tx.putRole(roleType1);
@@ -285,7 +285,7 @@ public class GraknTxTest extends TxTestBase {
         tx.commit();
 
         //Fail some mutations again
-        tx = EmbeddedGraknSession.createInMemory(keyspace).transaction(GraknTxType.READ);
+        tx = Grakn.sessionInMemory(keyspace).transaction(GraknTxType.READ);
         failMutation(tx, entityT::create);
         failMutation(tx, () -> resourceT.create("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
