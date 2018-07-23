@@ -150,13 +150,9 @@ class StringPrinter extends Printer<StringBuilder> {
     @Override
     public StringBuilder queryAnswer(Answer answer) {
         StringBuilder builder = new StringBuilder();
-
-//        if (answer.isEmpty()) builder.append("{}");
-        builder.append("{");
         answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
-        builder.append("}");
 
-        return builder;
+        return new StringBuilder("{" + builder.toString().trim() + "}");
     }
 
     //TODO: implement StringPrinter for ComputeAnswer properly!
