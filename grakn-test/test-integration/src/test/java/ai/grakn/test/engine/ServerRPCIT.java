@@ -497,7 +497,7 @@ public class ServerRPCIT {
     @Test
     public void whenExecutingDeleteQueries_ConceptsAreDeleted() {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
-            DeleteQuery deleteQuery = tx.graql().match(var().rel("x").rel("y").isa("has-genre")).delete("x", "y");
+            DeleteQuery deleteQuery = tx.graql().match(var("g").rel("x").rel("y").isa("has-genre")).delete("x", "y");
             deleteQuery.execute();
             assertTrue(tx.graql().match(var().rel("x").rel("y").isa("has-genre")).get("x", "y").execute().isEmpty());
 

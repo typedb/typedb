@@ -136,7 +136,7 @@ class StringPrinter extends Printer<StringBuilder> {
 
         builder.append("{");
         collection.stream().findFirst().ifPresent(item -> builder.append(build(item)));
-        collection.stream().skip(1).forEach(item -> builder.append(",").append(build(item)));
+        collection.stream().skip(1).forEach(item -> builder.append(",\n").append(build(item)));
         builder.append("}");
 
         return builder;
@@ -151,8 +151,10 @@ class StringPrinter extends Printer<StringBuilder> {
     public StringBuilder queryAnswer(Answer answer) {
         StringBuilder builder = new StringBuilder();
 
-        if (answer.isEmpty()) builder.append("{}");
-        else answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
+//        if (answer.isEmpty()) builder.append("{}");
+        builder.append("{");
+        answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
+        builder.append("}");
 
         return builder;
     }

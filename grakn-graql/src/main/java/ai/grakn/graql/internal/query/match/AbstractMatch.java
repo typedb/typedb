@@ -41,13 +41,12 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatch implements MatchAdmin {
@@ -104,19 +103,21 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public GetQuery get(String var, String... vars) {
-        Stream<String> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
-        return get(varStream.map(Graql::var).collect(toImmutableSet()));
+        Set<Var> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Graql::var).collect(Collectors.toSet());
+        return get(varSet);
     }
 
     @Override
     public GetQuery get(Var var, Var... vars) {
-        Stream<Var> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
-        return get(varStream.collect(toImmutableSet()));
+        Set<Var> varSet = new HashSet<>(Arrays.asList(vars));
+        varSet.add(var);
+        return get(varSet);
     }
 
     @Override
     public GetQuery get(Set<Var> vars) {
-        return Queries.get(ImmutableSet.copyOf(vars), this);
+        if (vars.isEmpty()) return get();
+        else return Queries.get(ImmutableSet.copyOf(vars), this);
     }
 
     @Override
@@ -131,19 +132,27 @@ abstract class AbstractMatch implements MatchAdmin {
     }
 
     @Override
+    public DeleteQuery delete() {
+        return delete(getPattern().commonVars());
+    }
+
+    @Override
     public final DeleteQuery delete(String var, String... vars) {
-        List<Var> varList = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(toList());
-        return delete(varList);
+        Set<Var> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(Collectors.toSet());
+        return delete(varSet);
     }
 
     @Override
-    public final DeleteQuery delete(Var... vars) {
-        return delete(Arrays.asList(vars));
+    public final DeleteQuery delete(Var var, Var... vars) {
+        Set<Var> varSet = new HashSet<>(Arrays.asList(vars));
+        varSet.add(var);
+        return delete(varSet);
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends Var> vars) {
-        return Queries.delete(vars, this);
+    public final DeleteQuery delete(Set<Var> vars) {
+        if (vars.isEmpty()) return delete();
+        else return Queries.delete(vars, this);
     }
 
     @Override

@@ -176,7 +176,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
+        Set<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
         return visitMatchPart(ctx.matchPart()).delete(vars);
     }
 
