@@ -40,7 +40,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.concept.AttributeType.DataType.*;
+import static ai.grakn.concept.AttributeType.DataType.BOOLEAN;
+import static ai.grakn.concept.AttributeType.DataType.DATE;
+import static ai.grakn.concept.AttributeType.DataType.DOUBLE;
+import static ai.grakn.concept.AttributeType.DataType.FLOAT;
+import static ai.grakn.concept.AttributeType.DataType.INTEGER;
+import static ai.grakn.concept.AttributeType.DataType.LONG;
+import static ai.grakn.concept.AttributeType.DataType.STRING;
 
 /**
  * Stores identifiers for all concepts in a Grakn
