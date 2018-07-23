@@ -49,7 +49,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-client</artifactId>
+            <artifactId>client-java</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -17,50 +17,48 @@
  */
 
 package generator;
-import ai.grakn.GraknSession;
+
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.concept.ConceptId;
+import ai.grakn.client.Grakn;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
 import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
 import pdf.UniformPDF;
-
+import pick.CentralStreamProvider;
 import pick.FromIdStoragePicker;
 import pick.IntegerPicker;
-import pick.StreamProvider;
-import pick.PickableCollectionValuePicker;
-import pick.CentralStreamProvider;
 import pick.NotInRelationshipConceptIdStream;
-
+import pick.PickableCollectionValuePicker;
+import pick.StreamProvider;
 import storage.ConceptStore;
 import storage.IdStoreInterface;
 import storage.IgniteConceptIdStore;
 import storage.InsertionAnalysis;
 import storage.SchemaManager;
+import strategy.AttributeOwnerTypeStrategy;
+import strategy.AttributeStrategy;
 import strategy.EntityStrategy;
 import strategy.RelationshipStrategy;
-import strategy.AttributeStrategy;
-import strategy.RouletteWheelCollection;
 import strategy.RolePlayerTypeStrategy;
+import strategy.RouletteWheelCollection;
 import strategy.TypeStrategyInterface;
-import strategy.AttributeOwnerTypeStrategy;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
-import java.util.List;
 
 /**
  *
@@ -99,9 +97,9 @@ public class DataGenerator {
         attributeStrategies = new RouletteWheelCollection<>(this.rand);
         operationStrategies = new RouletteWheelCollection<>(this.rand);
 
-        GraknSession session = this.getSession();
+        Grakn.Session session = this.getSession();
 
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
+        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
 
             // TODO Add checking to ensure that all of these strategies make sense
             this.entityTypes = SchemaManager.getTypesOfMetaType(tx, "entity");
@@ -317,8 +315,8 @@ public class DataGenerator {
         this.operationStrategies.add(0.2, this.attributeStrategies);
     }
 
-    private GraknSession getSession() {
-        return RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
+    private Grakn.Session getSession() {
+        return Grakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
     }
 
     public void generate(int numConceptsLimit) {
@@ -327,14 +325,14 @@ public class DataGenerator {
         effectively paused while benchmarking takes place
         */
 
-        GraknSession session = this.getSession();
+        Grakn.Session session = this.getSession();
 
         GeneratorFactory gf = new GeneratorFactory();
         int conceptTotal = this.storage.total();
 
         while (conceptTotal < numConceptsLimit) {
             System.out.printf("---- Iteration %d ----\n", this.iteration);
-            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+            try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
 
                 //TODO Deal with this being an Object. TypeStrategy should be/have an interface for this purpose?
                 TypeStrategyInterface typeStrategy = this.operationStrategies.next().next();

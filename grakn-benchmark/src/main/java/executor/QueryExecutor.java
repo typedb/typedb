@@ -18,13 +18,11 @@
 
 package executor;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.client.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
-import ai.grakn.remote.RemoteGrakn;
 import ai.grakn.util.SimpleURI;
 import brave.Span;
 import brave.Tracer;
@@ -90,8 +88,8 @@ public class QueryExecutor {
 
     void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts) throws Exception {
 
-        GraknSession session = RemoteGrakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        Grakn.Session session = Grakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
+        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
 
             AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 
