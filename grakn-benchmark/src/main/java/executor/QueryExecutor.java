@@ -32,6 +32,7 @@ import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -43,6 +44,7 @@ import static ai.grakn.graql.Graql.count;
 public class QueryExecutor {
 
     private final String uri;
+    private final String dataSetName;
     private final String keyspace;
 
     static final ArrayList<Query> queries = new ArrayList<>();
@@ -69,20 +71,21 @@ public class QueryExecutor {
         queries.add(Graql.match(Graql.var("x").isa("name").has("rating", 5)).aggregate(count()));
     }
 
-    public QueryExecutor(String keyspace, String uri) {
+    public QueryExecutor(String keyspace, String uri, String dataSetName) {
         this.keyspace = keyspace;
         this.uri = uri;
+        this.dataSetName = dataSetName;
     }
 
-    public void processStaticQueries(int numRepeats, int numConcepts) {
+    public void processStaticQueries(int numRepeats, int numConcepts, Number runTimeStamp) {
         try {
-            this.processQueries(queries.stream(), numRepeats, numConcepts);
+            this.processQueries(queries.stream(), numRepeats, numConcepts, runTimeStamp);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts) throws Exception {
+    void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, Number runTimeStamp) throws Exception {
 
         Grakn.Session session = Grakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
@@ -105,7 +108,9 @@ public class QueryExecutor {
 
                 BraveSpanBuilder queryBatchSpanBuilder = braveTracer.buildSpan("querySpan")
                         .withTag("numConcepts", numConcepts)
-                        .withTag("query", query.toString());
+                        .withTag("query", query.toString())
+                        .withTag("dataSetName", this.dataSetName)
+                        .withTag("runStartDateTime", runTimeStamp);
 
                 BraveSpan queryBatchSpan = queryBatchSpanBuilder.start();
 
@@ -245,10 +250,10 @@ public class QueryExecutor {
     public static void main(String[] args) {
         String uri = "localhost:48555";
         String keyspace = "societal_model";
-        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri);
+        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, "generated_societal_model");
 //        queryExecutor.processQueriesBrave();
         try {
-            queryExecutor.processStaticQueries(100, 400);
+            queryExecutor.processStaticQueries(100, 400, new Date().getTime());
         } catch (Exception e) {
             e.printStackTrace();
         }

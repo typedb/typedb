@@ -21,6 +21,10 @@ package manage;
 import executor.QueryExecutor;
 import generator.DataGenerator;
 
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
 /**
  *
  */
@@ -35,24 +39,33 @@ public class BenchmarkManager {
         this.numQueryRepetitions = numQueryRepetitions;
     }
 
-    public void run(int numConcepts) {
-        this.dataGenerator.generate(numConcepts);
-        this.queryExecutor.processStaticQueries(numQueryRepetitions, numConcepts);
+    public void run(List<Integer> numConceptsInRun) {
+        Number timestamp = this.runStartDateTime();
+        for (int numConcepts : numConceptsInRun) {
+            this.dataGenerator.generate(numConcepts);
+            this.queryExecutor.processStaticQueries(numQueryRepetitions, numConcepts, timestamp);
+        }
     }
 
+    /**
+     * Used to generate a timestamp for each benchmarking run
+     * @return
+     */
+    private Number runStartDateTime(){
+        return new Date().getTime();
+    }
 
     public static void main(String[] args) {
 
         String uri = "localhost:48555";
         String keyspace = "societal_model";
+        String dataSetName = "generated_societal_model";
 
         DataGenerator dataGenerator = new DataGenerator(keyspace, uri);
-        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri);
+        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, dataSetName);
         BenchmarkManager manager = new BenchmarkManager(dataGenerator, queryExecutor, 100);
-        manager.run(100);
-        manager.run(200);
-        manager.run(300);
-        manager.run(400);
-//        manager.run(1000);
+
+        List<Integer> numConceptsInRun = Arrays.asList(100, 200, 300, 400);
+        manager.run(numConceptsInRun);
     }
 }
