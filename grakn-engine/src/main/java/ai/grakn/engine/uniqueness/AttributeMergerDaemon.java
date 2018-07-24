@@ -24,10 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
-import ai.grakn.util.SimpleURI;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -38,8 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +58,7 @@ public class AttributeMergerDaemon {
     public static AttributeMergerDaemon singleton = create();
 
     private static final int QUEUE_GET_BATCH_MIN = 1;
-    private static final int QUEUE_GET_BATCH_MAX = 10;
+    private static final int QUEUE_GET_BATCH_MAX = 100;
     private static final int QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS = 1000;
 
     private Queue newAttributeQueue = new Queue();
@@ -94,8 +90,7 @@ public class AttributeMergerDaemon {
             while (!stopDaemon) {
                 try {
                     Queue.Attributes newAttrs = newAttributeQueue.takeBatch(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
-                    LOG.info("startDaemon() - process new attributes...");
-                    LOG.info("startDaemon() - newAttrs: " + newAttrs);
+                    LOG.info("startDaemon() - starting a new batch to process these new attributes: " + newAttrs);
                     Map<KeyspaceAndValue, List<Queue.Attribute>> groupByKeyspaceAndValue = newAttrs.attributes().stream()
                             .collect(Collectors.groupingBy(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())));
                     groupByKeyspaceAndValue.forEach((groupName, group) -> LOG.info("startDaemon() - group: " + groupName + " = " + group));
@@ -219,30 +214,30 @@ public class AttributeMergerDaemon {
         /**
          * Merges a list of attributes.
          * The attributes being processed will be marked so they cannot be touched by other operations.
-         * @param attributes the list of attributes to be merged
+         * @param duplicates the list of attributes to be merged
          * @return the merged attribute (TODO)
          */
-        public void merge(EmbeddedGraknTx tx, List<Queue.Attribute> attributes) {
-            LOG.info("merging '" + attributes + "'...");
-            if (attributes.size() >= 2) {
-                lock(attributes);
+        public void merge(EmbeddedGraknTx tx, List<Queue.Attribute> duplicates) {
+            LOG.info("merging '" + duplicates + "'...");
+            if (duplicates.size() >= 1) {
+                lock(duplicates);
 
                 GraphTraversalSource tinker = tx.getTinkerTraversal();
-                GraphTraversal<Vertex, Vertex> attrVertices = tinker.V()
-                        .has(Schema.VertexProperty.INDEX.name(), attributes.get(0).value());
-                Vertex target = attrVertices.next();
-                List<Vertex> duplicates = attrVertices.toList(); // TODO: don't convert to a List
-                for (Vertex dup: duplicates) {
+                Vertex mergeTargetV = tinker.V().has(Schema.VertexProperty.INDEX.name(), duplicates.get(0).value()).next();
+                List<Vertex> duplicatesV = duplicates.stream()
+                        .map(attr -> tinker.V().has(Schema.VertexProperty.ID.name(), attr.conceptId()).next())
+                        .collect(Collectors.toList());
+                for (Vertex dup: duplicatesV) {
                     List<Vertex> linkedEntities = Lists.newArrayList(dup.vertices(Direction.IN));
                     for (Vertex ent: linkedEntities) {
                         Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
                         edge.remove();
-                        ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), target);
+                        ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
                     }
                     dup.remove();
                 }
 
-                unlock(attributes);
+                unlock(duplicates);
                 LOG.info("merging completed.");
             }
         }
