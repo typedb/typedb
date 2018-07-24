@@ -33,7 +33,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
@@ -46,7 +45,6 @@ import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -199,20 +197,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subGoalIterator = Collections.emptyIterator();
         } else {
             visitedSubGoals.add(this);
-            subGoalIterator = this.getRuleStream(cache)
+            subGoalIterator = cache.ruleCache().getRuleStream(this.getAtom())
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }
-
-    /**
-     * @return stream of all rules applicable to this atomic query including permuted cases when the role types are meta roles
-     */
-    private Stream<Pair<InferenceRule, Unifier>> getRuleStream(QueryCache<ReasonerAtomicQuery> cache){
-        return cache.ruleCache().getApplicableRules(this.getAtom())
-                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
-                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
-    }
-
 }

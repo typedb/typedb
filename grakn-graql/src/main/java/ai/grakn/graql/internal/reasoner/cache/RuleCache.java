@@ -19,25 +19,34 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * TODO
+ * Introduces rule cache that wraps around the atom matching rule retrieval to ensure resolution of fruitless rules is not pursued.
+ *
+ * @author Kasper Piskorski
+ *
  */
 public class RuleCache {
     private final Set<Rule> fruitlessRules = new HashSet<>();
     private final Set<Rule> checkedRules = new HashSet<>();
 
+    /**
+     * @param atom of interest
+     * @return stream of rules applicable to this atom
+     */
     public Stream<InferenceRule> getApplicableRules(Atom atom){
         return atom.getApplicableRules()
                 .filter( r -> {
                     if (fruitlessRules.contains(r.getRule())) return false;
-                    if (checkedRules.contains(r.getRule())) return true;
-                    if (r.getBody().isRuleResolvable()) return true;
+                    if (r.getBody().isRuleResolvable() || checkedRules.contains(r.getRule())) return true;
                     boolean fruitless = !r.getBody().getQuery().stream().findFirst().isPresent();
                     if (fruitless) {
                         fruitlessRules.add(r.getRule());
@@ -46,6 +55,15 @@ public class RuleCache {
                     checkedRules.add(r.getRule());
                     return true;
                 });
+    }
 
+    /**
+     * @param atom of interest
+     * @return stream of all rules applicable to this atom including permuted cases when the role types are meta roles
+     */
+    public Stream<Pair<InferenceRule, Unifier>> getRuleStream(Atom atom){
+        return getApplicableRules(atom)
+                .flatMap(r -> r.getMultiUnifier(atom).stream().map(unifier -> new Pair<>(r, unifier)))
+                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
     }
 }
