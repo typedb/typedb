@@ -83,7 +83,7 @@ public class RuleUtils {
      */
     public static boolean subGraphIsCyclical(Set<InferenceRule> rules, GraknTx graph){
         Iterator<Rule> ruleIterator = rules.stream()
-                .map(r -> graph.<Rule>getConcept(r.getRule().id()))
+                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
                 .iterator();
         boolean cyclical = false;
         while (ruleIterator.hasNext() && !cyclical){

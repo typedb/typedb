@@ -51,17 +51,16 @@ import java.util.stream.Stream;
 public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answer>>{
 
     private final Map<Q, CacheEntry<Q, T>> cache = new HashMap<>();
-    private final StructuralCache<Q> sCache = new StructuralCache<>();
-    private final RuleCache ruleCache = new RuleCache();
+    private final StructuralCache<Q> sCache;
 
-    Cache(){ }
+    Cache(){
+        this.sCache = new StructuralCache<>();
+    }
 
     /**
      * @return structural cache of this cache
      */
     StructuralCache<Q> structuralCache(){ return sCache;}
-
-    public RuleCache ruleCache(){ return ruleCache;}
 
     /**
      * @param query for which the entry is to be retrieved
