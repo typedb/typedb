@@ -49,7 +49,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
 
     @Override
     public GetQuery withTx(GraknTx tx) {
-        return Queries.get(vars(), match().withTx(tx).admin());
+        return Queries.get(match().withTx(tx).admin(), vars());
     }
 
     @Override
