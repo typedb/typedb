@@ -53,7 +53,7 @@ There are various ways to access Grakn in the cloud. Here we will address the mo
 
 ### Using Grakn gRPC client
 
-To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is not enabled by default. To create a suitable firewall rule, execute the command in red circle in your terminal:
+To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is not enabled by default. To create a suitable firewall rule, execute the command in the red circle in your terminal:
 
 ![](/images/gc-grpc-firewall-command.png)
 
@@ -73,7 +73,7 @@ To check cluster health, execute the `grakn cluster status` command. The output 
 The command lists available servers and their state in the cluster.
 
 #### Accessing the Graql console
-To log into the Graql console, simply type `graql console`. After entering the user credentials you are free to interact with Grakn via the Graql terminal. Successful login attempt shall look like this:
+To log into the Graql console, simply type `graql console`. After entering the user credentials you are free to interact with Grakn via the Graql terminal. Successful login attempt will look like this:
 
 ![](/images/gc-graql-console.png)
 

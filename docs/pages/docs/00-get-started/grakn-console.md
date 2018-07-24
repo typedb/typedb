@@ -18,22 +18,22 @@ Once the grakn server is running, to open grakn console, navigate to the `bin` d
 
 Once run, you will be prompted for user credentials. Provided you log in as user with `admin` privileges, Grakn console allows you to perform the following actions:
 
-* create a new user:
+* **create** a new user:
 
 `CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
 
-* update an existing user's password
+* **update** an existing user's password
 
 `UPDATE USER username WITH PASSWORD newpassword`
 
-* retrieve all of the users present:
+* **retrieve** all of the present users:
 
 `LIST USERS`
 
-* retrieve a user:
+* **retrieve** a user:
 
 `GET USER username`
 
-* delete an existing user:
+* **delete** an existing user:
 
 `DELETE USER username`
