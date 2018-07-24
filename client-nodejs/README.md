@@ -140,6 +140,14 @@ Grakn is composed of different types of Concepts, that have a specific hierarchy
                     /         |       \
             EntityType  AttributeType  RelationshipType
 ```
+---
+
+All Concepts are bound to the transaction that has been used to retrieve them. 
+If for any reason a trasaction gets closed all the concepts bound to it won't be able to 
+communicate with the database anymore, so all the methods won't work and the user will have to re-query
+for the needed concepts.
+
+---
 
 **Concept** 
 
@@ -196,7 +204,6 @@ A `SchemaConcept` concept has all the `Concept` methods plus the following:
   
  | Method             | Return type         | Description                                               |
  | ------------------ | ------------------- | --------------------------------------------------------- |
- | async `dataType()` | *String*            | Returns DataType of this Attribute                        |
  | async `value()`    | *String*            | Get value of this Attribute                               |
  | async `owners()`   | Iterator of *Thing* | Returns the set of all Things that possess this Attribute |
    
