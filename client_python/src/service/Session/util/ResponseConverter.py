@@ -1,5 +1,5 @@
+from . import enums
 from ..Concept import ConceptFactory
-from . import RequestBuilder
 
 class ResponseConverter(object):
     
@@ -60,22 +60,112 @@ class ResponseConverter(object):
     def put_rule(tx_service, grpc_put_rule):
         return ConceptFactory.create_concept(tx_service, grpc_put_rule.rule)
 
+    @staticmethod
+    def from_grpc_value_object(grpc_value_object):
+        whichone = grpc_value_object.WhichOneof('value')
+        # check the one is in the known datatypes
+        known_datatypes = [e.name.lower() for e in enums.DataType]
+        if whichone.lower() not in known_datatypes:
+            raise Exception("Unknown value object value key: {0}, not in {1}".format(whichone, known_datatypes))
+        return whichone
+            
+
+
+
+        
 
     # --- concept method helpers ---
-    @staticmethod
-    def subs_iterator(tx_service, grpc_subs_iter):
-        iterator_id = grpc_subs_iter
-        return ResponseIterator(tx_service,
-                                iterator_id,
-                                lambda tx_serv, res: ConceptFactory.create_concept(tx_serv, iterate_res.schemaConcept_subs_res.schemaConcept))
 
     @staticmethod
-    def sups_iterator(tx_service, grpc_sups_iter):
-        iterator_id = grpc_sups_iter
-        return ResponseIterator(tx_service,
-                                iterator_id,
-                                lambda tx_serv, res: ConceptFactory.create_concept(tx_serv, iterate_res.schemaConcept_sups_res.schemaConcept))
+    # TODO refactor all iterators to use this directly, much more compact & still easy to read
+    def iter_res_to_iterator(tx_service, iterator_id, next_iteration_handler):
+        return ResponseIterator(tx_service, iterator_id, next_iteration_handler)
 
+
+    class SchemaConcept(object):
+        @staticmethod
+        def subs_iterator(tx_service, grpc_subs_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_subs_iter.id,
+                    lambda tx_serv, iter_res: 
+                        ConceptFactory.create_concept(tx_serv,  
+                        iter_res.conceptMethod_iter_res.schemaConcept_subs_iter_res.schemaConcept)
+                    )
+    
+        @staticmethod
+        def sups_iterator(tx_service, grpc_sups_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_sups_iter.id,
+                    lambda tx_serv, iter_res:
+                        ConceptFactory.create_concept(tx_serv, 
+                        iter_res.conceptMethod_iter_res.schemaConcept_sups_iter_res.schemaConcept)
+                    )
+    
+    class Type(object):                                        
+        @staticmethod
+        def attributes(tx_service, grpc_type_attributes_iter): 
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_type_attributes_iter.id,
+                    lambda tx_serv, iter_res: 
+                        ConceptFactory.create_concept(tx_serv,
+                        iter_res.conceptMethod_iter_res.type_attributes_iter_res.attributeType)
+                    )
+    
+        @staticmethod
+        def instances(tx_service, grpc_type_instances_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_type_instances_iter.id,
+                    lambda tx_serv, iter_res: 
+                        ConceptFactory.create_concept(tx_serv,
+                        iter_res.conceptMethod_iter_res.type_instances_iter_res.thing)
+                    )
+        
+        @staticmethod
+        def playing(tx_service, grpc_playing_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_playing_iter.id,
+                    lambda tx_serv, iter_res:
+                        ConceptFactory.create_concept(tx_serv,
+                        iter_res.conceptMethod_iter_res.type_playing_iter_res.role)
+                    )
+
+        @staticmethod
+        def keys(tx_service, grpc_keys_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_keys_iter.id,
+                    lambda tx_serv, iter_res:
+                        ConceptFactory.create_concept(tx_serv,
+                        iter_res.conceptMethod_iter_res.type_keys_iter_res.attributeType)
+                    )
+                                        
+    class RelationshipType(object):
+                                            
+        @staticmethod
+        def roles(tx_service, grpc_roles_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_roles_iter.id,
+                    lambda tx_serv, iter_res:
+                        ConceptFactory.create_concept(tx_serv,
+                        iter_res.conceptMethod_iter_res.relationType_roles_iter_res.role)
+                    )
+
+    class Role(object):
+
+        @staticmethod
+        def relations(tx_service, grpc_relations_iter):
+            return ResponseConverter.iter_res_to_iterator(
+                    tx_service,
+                    grpc_relations_iter.id,
+                    lambda tx_serv, iter_res:
+                        ConceptFactory.create_concept(tx_serv,
+                        iter_res.conceptMethod_iter_res.role_relations_iter_res.relationType))
 
 class Explanation(object):
     def __init__(self, query_pattern, answers):

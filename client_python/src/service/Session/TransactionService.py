@@ -12,7 +12,6 @@ class TransactionService(object):
         self.tx_type = tx_type.value
 
         self._communicator = Communicator(transaction_endpoint)
-        self._response_converter = ResponseConverter(self)
 
         # open the transaction with an 'open' message
         open_req = RequestBuilder.open_tx(keyspace, tx_type)
@@ -87,7 +86,7 @@ class TransactionService(object):
     def iterate(self, iterator_id: int):
         request = RequestBuilder.next_iter(iterator_id)
         response = self._communicator.send(request)
-        return response 
+        return response.iterate_res 
 
 
 class Communicator(object):
