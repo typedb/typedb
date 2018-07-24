@@ -73,14 +73,14 @@ To check cluster health, execute the `grakn cluster status` command. The output 
 The command lists available servers and their state in the cluster.
 
 #### Accessing the Graql console
-To log into the Graql console, simply type `graql console`. After entering the user credentials you are free to interact with Grakn via the Graql terminal. Successful login attempt will look like this:
+To log into the Graql console, simply type `graql console`. After entering the user credentials you are free to interact with Grakn via the Graql terminal. A successful login attempt will look like this:
 
 ![](/images/gc-graql-console.png)
 
 A summary of available commands can be found [here](http://dev.grakn.ai/docs/get-started/graql-console).
 
 #### Accessing the Grakn console
-The Grakn console can be accessed similarly to Graql console by typing `grakn console start` and providing the user credentials. Successful login will look like this:
+The Grakn console can be accessed similarly to Graql console by typing `grakn console start` and providing the user credentials. A successful login will look like this:
 
 ![](/images/gc-grakn-console.png)
 
