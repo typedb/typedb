@@ -516,23 +516,18 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .map(graph::<Role>getSchemaConcept);
     }
 
-    public static long applicabilityTime = 0;
-
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
 
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof RelationshipAtom)) return false;
-        long time = System.currentTimeMillis();
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
         RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new QueryAnswer());
 
         //rule head atom is applicable if it is unifiable
-        boolean b = headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
+        return headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
                 && !headAtom.getRelationPlayerMappings(atomWithType).isEmpty();
-        applicabilityTime += System.currentTimeMillis() - time;
-        return b;
     }
 
     @Override

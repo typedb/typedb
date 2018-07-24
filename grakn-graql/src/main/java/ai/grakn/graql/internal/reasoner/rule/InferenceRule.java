@@ -115,7 +115,8 @@ public class InferenceRule {
      */
     public long resolutionPriority(){
         if (priority == Long.MAX_VALUE) {
-            priority = -getBody().selectAtoms().stream().flatMap(Atom::getApplicableRules).count();
+            //NB: only checking locally as checking full tree (getDependentRules) is expensive
+            priority = -getBody().selectAtoms().flatMap(Atom::getApplicableRules).count();
         }
         return priority;
     }
@@ -132,7 +133,7 @@ public class InferenceRule {
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
-    public boolean hasDisconnectedHead(){
+    private boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 

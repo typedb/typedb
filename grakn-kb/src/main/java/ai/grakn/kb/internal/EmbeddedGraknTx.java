@@ -119,6 +119,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     private static final @Nullable Method queryExecutorFactory = getQueryExecutorFactory();
 
+    //----------------------------- Transaction Specific
+    private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
+    private @Nullable GraphTraversalSource graphTraversalSource = null;
+
     private final RuleCache ruleCache = new RuleCache();
 
     public class RuleCache {
@@ -161,10 +165,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     public RuleCache ruleCache(){ return ruleCache;}
-
-    //----------------------------- Transaction Specific
-    private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
-    private @Nullable GraphTraversalSource graphTraversalSource = null;
 
     public EmbeddedGraknTx(EmbeddedGraknSession session, G graph) {
         this.session = session;
