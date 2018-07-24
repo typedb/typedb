@@ -45,6 +45,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.cache.GlobalCache;
 import ai.grakn.kb.internal.cache.TxCache;
+import ai.grakn.kb.internal.cache.TxRuleCache;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.ConceptImpl;
 import ai.grakn.kb.internal.concept.ConceptVertex;
@@ -62,8 +63,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import ai.grakn.util.SimpleURI;
-import com.google.common.collect.Sets;
-import java.util.HashMap;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -122,59 +121,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
-
-    private final RuleCache ruleCache = new RuleCache();
-
-    /**
-     * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing ain't cheap).
-     *
-     * @author Kasper Piskorski
-     */
-    public class RuleCache {
-
-        private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
-
-        private final Map<Rule, Object> ruleInitMap = new HashMap<>();
-
-        private EmbeddedGraknTx outer(){ return EmbeddedGraknTx.this;}
-
-        public Stream<Rule> getRules() {
-            Rule metaRule = outer().getMetaRule();
-            return metaRule.subs().filter(sub -> !sub.equals(metaRule));
-        }
-
-        public Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct){
-            if (type == null) return getRules();
-
-            Set<Rule> match = ruleMap.get(type);
-            if (match != null) return match.stream();
-
-            Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-            if (type.isImplicit()) types.add(outer().getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
-
-            Set<Rule> rules = new HashSet<>();
-            ruleMap.put(type, rules);
-            return types.stream()
-                    .flatMap(SchemaConcept::thenRules)
-                    .peek(rules::add);
-        }
-
-        public <T> T getRule(Rule rule, Supplier<T> converter){
-            T match = (T) ruleInitMap.get(rule);
-            if (match != null) return match;
-
-            T newMatch = converter.get();
-            ruleInitMap.put(rule, newMatch);
-            return newMatch;
-        }
-    }
-
-    public RuleCache ruleCache(){ return ruleCache;}
+    private final TxRuleCache ruleCache;
 
     public EmbeddedGraknTx(EmbeddedGraknSession session, G graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
+        this.ruleCache = new TxRuleCache(this);
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(session.config());
@@ -189,6 +142,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     public EmbeddedGraknSession session(){
         return session;
     }
+
+    public TxRuleCache ruleCache(){ return ruleCache;}
 
     /**
          * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -596,8 +551,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, Schema.BaseType.RULE, false,
+        Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
+        rule.thenTypes().forEach(type -> ruleCache.updateRules(type, rule));
+        return rule;
     }
 
     //------------------------------------ Lookup
