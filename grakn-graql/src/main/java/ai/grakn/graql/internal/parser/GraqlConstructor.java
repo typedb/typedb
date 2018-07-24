@@ -45,7 +45,6 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.GraqlSyntax;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -176,8 +175,9 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
-        return visitMatchPart(ctx.matchPart()).delete(vars);
+        Match match = visitMatchPart(ctx.matchPart());
+        if (ctx.variables() != null) return match.delete(visitVariables(ctx.variables()));
+        else return match.delete();
     }
 
 

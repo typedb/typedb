@@ -50,7 +50,7 @@ class MinAggregate extends AbstractAggregate<Number> {
         Object value = result.get(varName).asAttribute().value();
 
         if (value instanceof Number) return (Number) value;
-        else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
+        else throw new RuntimeException("Invalid attempt to compare non-Numbers in Min Aggregate function");
     }
 
     @Override

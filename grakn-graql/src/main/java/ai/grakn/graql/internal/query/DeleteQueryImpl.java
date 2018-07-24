@@ -27,8 +27,9 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
@@ -64,7 +65,7 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(vars(), match().withTx(tx));
+        return Queries.delete(match().withTx(tx).admin(), vars());
     }
 
     @Override
@@ -74,7 +75,12 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public String toString() {
-        return match() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        StringBuilder query = new StringBuilder();
+        query.append(match()).append(" ").append("delete");
+        if(!vars().isEmpty()) query.append(" ").append(vars().stream().map(Var::toString).collect(joining(", ")).trim());
+        query.append(";");
+
+        return query.toString();
     }
 
     @Override
