@@ -1,4 +1,8 @@
+from typing import Union, Optional
 from ..util.RequestBuilder import RequestBuilder
+# from . import ResponseConverter
+from ..Concept import ConceptFactory
+
 
 
 class Concept(object):
@@ -10,6 +14,7 @@ class Concept(object):
 
 
     def delete(self):
+        # TODO
         pass
 
 
@@ -49,33 +54,42 @@ class Concept(object):
 
 class SchemaConcept(Concept):
 
-    def label(self, value=None):
+    def label(self, value=None) -> Optional[str]:
         if value is None:
             get_label_req = RequestBuilder.ConceptMethod.SchemaConcept.get_label()
             response = self._tx_service.run_concept_method(self.id, get_label_req)
-            # TODO unpack response
-
+            return response.label
         else:
             set_label_req = RequestBuilder.ConceptMethod.SchemaConcept.set_label(value)
             response = self._tx_service.run_concept_method(self.id, set_label_req)
-            # TODO unpack response
+            return
 
     def is_implicit(self) -> bool:
         is_implicit_req = RequestBuilder.ConceptMethod.SchemaConcept.is_implicit()
         response = self._tx_service.run_concept_method(self.id, is_implicit_req)
-        # TODO unpack response
+        return response.implicit
 
-    def sup(self, super_concept=None):
+    def sup(self, super_concept=None) -> Optional[Concept]:
         if super_concept is None:
             # get direct super schema concept
             get_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.get_sup()
             response = self._tx_service.run_concept_method(self.id, get_sup_req)
-            # TODO unpack response 
+            
+            # check if received a Null or Concept
+            whichone = response.WhichOneof('res')
+            if whichone == 'schemaConcept':
+                grpc_schema_concept = response.schemaConcept
+                concept = ConceptFactory.create_concept(self._tx_service, grpc_schema_concept)
+            elif whichone == 'null':
+                return None
+            else:
+                # TODO specialize exception
+                raise Exception("Unknown response concent for getting super schema concept: {0}".format(whichone))
         else:
             # set direct super SchemaConcept of this SchemaConcept
             set_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.set_sup(super_concept)
             response = self._tx_service.run_concept_method(self.id, set_sup_req)
-            # TODO unpack response
+            return
 
     def subs(self):
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()

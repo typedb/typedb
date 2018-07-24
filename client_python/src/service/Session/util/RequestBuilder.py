@@ -38,9 +38,8 @@ class RequestBuilder(object):
         query_message.query = query
         if options is not None:
             if 'infer' in options:
-                if options['infer']:
-                    query_message.infer = transaction_messages.Transaction.Query.INFER.TRUE if options['infer'] else \
-                                           transaction_messages.Transaction.Query.INFER.FALSE
+                query_message.infer = transaction_messages.Transaction.Query.INFER.TRUE if options['infer'] else \
+                                      transaction_messages.Transaction.Query.INFER.FALSE
 
         transaction_req = transaction_messages.Transaction.Req()
         transaction_req.query_req.CopyFrom(query_message)
@@ -370,6 +369,7 @@ class RequestBuilder(object):
 
 
         class EntityType(object):
+            """ Generates EntityType method messages """
 
             @staticmethod
             def create():
@@ -379,6 +379,7 @@ class RequestBuilder(object):
                 return concept_method_req
 
         class RelationType(object):
+            """ Generates RelationType method messages """
             
             @staticmethod
             def create(role_concept):
@@ -415,6 +416,7 @@ class RequestBuilder(object):
                 return concept_messages_req
 
         class AttributeType(object):
+            """ Generates AttributeType method messages """
             
             @staticmethod
             def create(value, datatype):
@@ -457,6 +459,7 @@ class RequestBuilder(object):
 
 
         class Thing(object):
+            """ Generates Thing method messages """
 
             @staticmethod
             def is_inferred():
@@ -532,6 +535,7 @@ class RequestBuilder(object):
                 return concept_method_req
         
         class Relation(object):
+            """ Generates Relation (aka Relationship) method messages """
 
             @staticmethod
             def role_players_map():
@@ -574,6 +578,7 @@ class RequestBuilder(object):
                 return concept_method_req
 
         class Attribute(object):
+            """ Generates Attribute method messages """
 
             @staticmethod
             def value():
