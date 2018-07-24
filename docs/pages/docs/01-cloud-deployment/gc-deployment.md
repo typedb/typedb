@@ -30,17 +30,30 @@ When the deployment is complete you should be able to see the post-deployment sc
 ![](/images/gc-deployment-complete.png)
 
 
-# Running Grakn
+## Running Grakn
 **A Grakn Cluster starts automatically running as user `grakn`.** There is no need to manually start grakn servers.
 **Once the deployment is started, please allow some time for the cluster to fully bootup and synchronise**. A reasonable rule of thumb for the bootup time is **2 minutes per cluster node**. The progress of cluster bootup can be
 checked by logging in to a cluster node and executing the [cluster health check](#cluster-check) command.
+
+## User credentials
+In order to use Graql and Grakn consoles, user credentials are required. The default user is `grakn`, whereas the default password can be found in the Google Deployments screen in the red circle:
+
+![](/images/gc-user-password.png)
+
+**Once logged in, We strongly encourage to change the default user password**. In order to do so, log in to th Grakn console and type:
+ 
+```
+UPDATE USER grakn WITH PASSWORD newpassword
+```
+
+More details on available commands can be found [here](http://dev.grakn.ai/docs/get-started/grakn-console). 
 
 ## Accessing Grakn
 There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
 
 ### Using Grakn gRPC client
 
-To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is enabled by default. If you chose otherwise for your deployment, a suitable firewall rule can be created if needed by executing the command in red circle in your terminal:
+To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is not enabled by default. To create a suitable firewall rule, execute the command in red circle in your terminal:
 
 ![](/images/gc-grpc-firewall-command.png)
 
@@ -60,11 +73,7 @@ To check cluster health, execute the `grakn cluster status` command. The output 
 The command lists available servers and their state in the cluster.
 
 #### Accessing the Graql console
-To access the Graql console, a user password is required. You can see it in the Google console screen in the red circle:
-
-![](/images/gc-user-password.png)
-
-To log into the Graql console, simply type `graql console`. After entering the user credentials (user: grakn, password: the one from the Google console) you are free to interact with Grakn via the Graql terminal. Successful login attempt shall look like this:
+To log into the Graql console, simply type `graql console`. After entering the user credentials you are free to interact with Grakn via the Graql terminal. Successful login attempt shall look like this:
 
 ![](/images/gc-graql-console.png)
 
@@ -75,28 +84,7 @@ The Grakn console can be accessed similarly to Graql console by typing `grakn co
 
 ![](/images/gc-grakn-console.png)
 
-Provided you log in as user with `admin` privileges, Grakn console allows you to perform the following actions:
-
-* create a new user:
-
-`CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
-
-* update an existing user's password
-
-`UPDATE USER username WITH PASSWORD newpassword`
-
-* retrieve all of the users present:
-
-`LIST USERS`
-
-* retrieve a user:
-
-`GET USER username`
-
-* delete an existing user:
-
-`DELETE USER username`
-
+A summary of available commands can be found [here](http://dev.grakn.ai/docs/get-started/grakn-console).
 
 ## Next Steps
 
