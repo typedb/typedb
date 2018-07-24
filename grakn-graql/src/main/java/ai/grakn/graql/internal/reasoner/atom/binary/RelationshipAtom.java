@@ -190,8 +190,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
+    @Override
     public Set<Atom> rewriteToAtoms(){
-        if (this.getPotentialRules().map(r -> new InferenceRule(r, tx())).noneMatch(InferenceRule::isAppendRule)) return super.rewriteToAtoms();
         return this.getRelationPlayers().stream()
                 .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
                 .collect(toSet());
