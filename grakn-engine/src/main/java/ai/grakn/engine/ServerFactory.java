@@ -35,7 +35,6 @@ import ai.grakn.engine.task.postprocessing.CountPostProcessor;
 import ai.grakn.engine.task.postprocessing.CountStorage;
 import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
 import ai.grakn.engine.task.postprocessing.IndexStorage;
-import ai.grakn.engine.task.postprocessing.PostProcessingTask;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
@@ -109,7 +108,7 @@ public class ServerFactory {
 
         ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, postProcessor, rpcServerRPC, httpControllers);
 
-        BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config, engineGraknTxFactory, postProcessor.index());
+        BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config);
 
         Server server = new Server(engineId, config, serverStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, keyspaceStore);
 
@@ -119,10 +118,9 @@ public class ServerFactory {
         return server;
     }
 
-    private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
-//        PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
+    // TODO: remove this method
+    private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig) {
         BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
-//        taskRunner.register(postProcessingTask);
         return taskRunner;
     }
 
