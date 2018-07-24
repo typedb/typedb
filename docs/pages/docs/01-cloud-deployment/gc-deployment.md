@@ -29,7 +29,11 @@ When the deployment is complete you should be able to see the post-deployment sc
 
 ![](/images/gc-deployment-complete.png)
 
-Once the vms are deployed, please allow some time for cluster to fully bootup and synchronise. 2 minutes per node in a cluster is a reasonable rule of thumb for full bootup time.
+
+# Running Grakn
+**A Grakn Cluster starts automatically running as user `grakn`.** There is no need to manually start grakn servers.
+**Once the deployment is started, please allow some time for the cluster to fully bootup and synchronise**. A reasonable rule of thumb for the bootup time is **2 minutes per cluster node**. The progress of cluster bootup can be
+checked by logging in to a cluster node and executing the [cluster health check](#cluster-check) command.
 
 ## Accessing Grakn
 There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
@@ -48,10 +52,12 @@ To do so go back to the Google console and follow the red arrow as shown below t
 
 Once logged in, a variety of interactions are possible through `grakn` and `graql` terminals.
 
-#### Cluster health check
+#### <a name="cluster-check"></a> Cluster health check
 To check cluster health, execute the `grakn cluster status` command. The output shall look like this:
 
 ![](/images/gc-cluster-health.png)
+
+The command lists available servers and their state in the cluster.
 
 #### Accessing the Graql console
 To access the Graql console, a user password is required. You can see it in the Google console screen in the red circle:

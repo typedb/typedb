@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -42,6 +43,7 @@ public class CumulativeState extends QueryStateBase{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
     private final Iterator<ResolutionState> feederStateIterator;
+    private final ReasonerQueryImpl query;
 
     public CumulativeState(List<ReasonerQueryImpl> qs,
                            Answer sub,
@@ -52,10 +54,19 @@ public class CumulativeState extends QueryStateBase{
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
 
+        this.query = subQueries.getFirst();
         //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
         this.feederStateIterator = !subQueries.isEmpty()?
                 subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
                 Collections.emptyIterator();
+    }
+
+    @Override
+    public String toString(){
+        return getClass() + "\n" +
+                getSubstitution() + "\n" +
+                query + "\n" +
+                subQueries.stream().map(ReasonerQueryImpl::toString).collect(Collectors.joining("\n")) + "\n";
     }
 
     @Override

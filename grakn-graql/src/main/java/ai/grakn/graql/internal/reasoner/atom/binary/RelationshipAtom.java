@@ -55,7 +55,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
@@ -190,12 +189,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
+    @Override
     public Set<Atom> rewriteToAtoms(){
-        boolean requiresAppendRule =
-                this.getPotentialRules()
-                        .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
-                        .noneMatch(InferenceRule::isAppendRule);
-        if (requiresAppendRule) return super.rewriteToAtoms();
         return this.getRelationPlayers().stream()
                 .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
                 .collect(toSet());

@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -41,6 +40,7 @@ import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -71,22 +71,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         super(pattern, tx);
-        atom = selectAtoms().stream().findFirst().orElse(null);
+        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
     ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
-        atom = selectAtoms().stream().findFirst().orElse(null);
+        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
     ReasonerAtomicQuery(Atom at) {
         super(at);
-        atom = selectAtoms().stream().findFirst().orElse(null);
+        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
     ReasonerAtomicQuery(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
         super(atoms, tx);
-        atom = selectAtoms().stream().findFirst().orElse(null);
+        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
     @Override
@@ -125,15 +125,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Atom getAtom() {
         return atom;
-    }
-
-    @Override
-    public Set<Atom> selectAtoms() {
-        Set<Atom> selectedAtoms = super.selectAtoms();
-        if (selectedAtoms.size() != 1) {
-            throw GraqlQueryException.nonAtomicQuery(this);
-        }
-        return selectedAtoms;
     }
 
     /**
