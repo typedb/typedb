@@ -125,6 +125,11 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     private final RuleCache ruleCache = new RuleCache();
 
+    /**
+     * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing ain't cheap).
+     *
+     * @author Kasper Piskorski
+     */
     public class RuleCache {
 
         private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
