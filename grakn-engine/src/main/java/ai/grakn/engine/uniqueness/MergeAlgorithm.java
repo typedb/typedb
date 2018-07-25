@@ -22,6 +22,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -30,6 +31,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,17 +51,24 @@ public class MergeAlgorithm {
      * @return the merged attribute (TODO)
      */
     public void merge(EmbeddedGraknTx tx, List<Attribute> duplicates) {
-        LOG.info("merging '" + duplicates + "'...");
-        if (duplicates.size() >= 1) {
+        LOG.info("merge started...");
+
+        GraphTraversalSource tinker = tx.getTinkerTraversal();
+        GraphTraversal<Vertex, Vertex> t = tinker.V().has(Schema.VertexProperty.INDEX.name(), duplicates.get(0).value());
+        Vertex mergeTargetV = t.next();
+        List<Vertex> prevMergeTargetV = t.next(1);
+        List<String> excludeMergeTarget = duplicates.stream()
+                .map(elem -> elem.conceptId().getValue())
+                .filter(elem -> !elem.equals(mergeTargetV.value(Schema.VertexProperty.ID.name())))
+                .collect(Collectors.toList());
+        List<Vertex> duplicatesV = new LinkedList<>();
+        duplicatesV.addAll(tinker.V().has(Schema.VertexProperty.ID.name(), P.within(excludeMergeTarget)).toList());
+        duplicatesV.addAll(prevMergeTargetV);
+
+        LOG.info("items from queue = '" + duplicates + "', merge target = " + mergeTargetV + ", previous merge target = " + prevMergeTargetV + ", merge duplicates = " + duplicatesV);
+        if (duplicatesV.size() >= 1) {
             lock(duplicates);
 
-            GraphTraversalSource tinker = tx.getTinkerTraversal();
-            Vertex mergeTargetV = tinker.V().has(Schema.VertexProperty.INDEX.name(), duplicates.get(0).value()).next();
-            List<String> excludeMergeTarget = duplicates.stream()
-                    .map(elem -> elem.conceptId().getValue())
-                    .filter(elem -> !elem.equals(mergeTargetV.value(Schema.VertexProperty.ID.name())))
-                    .collect(Collectors.toList());
-            List<Vertex> duplicatesV = tinker.V().has(Schema.VertexProperty.ID.name(), P.within(excludeMergeTarget)).toList();
             for (Vertex dup: duplicatesV) {
                 List<Vertex> linkedEntities = Lists.newArrayList(dup.vertices(Direction.IN));
                 for (Vertex ent: linkedEntities) {
@@ -70,7 +80,7 @@ public class MergeAlgorithm {
             }
 
             unlock(duplicates);
-            LOG.info("merging completed.");
+            LOG.info("merge completed.");
         }
     }
 

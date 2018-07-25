@@ -117,7 +117,6 @@ public class AttributeMergerDaemon {
                     tx.commitSubmitNoLogs();
                 }
             });
-            LOG.info("merge completed.");
 //                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
             LOG.info("new attributes processed.");
         } catch (RuntimeException e) {
