@@ -113,7 +113,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system tx
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
-        GraknSession factory = Grakn.sessionInMemory( keyspace);
+        GraknSession factory = Grakn.sessionInMemory(keyspace);
 
         int size = status.size();
 
@@ -125,7 +125,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
         // Clear tx before retrieving
         tx = factory.transaction(GraknTxType.WRITE);
-        Grakn.Keyspace.delete(tx.keyspace());
+        Grakn.Keyspace.deleteInMemory(tx.keyspace());
         tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {

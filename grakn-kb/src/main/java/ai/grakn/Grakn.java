@@ -129,8 +129,7 @@ public class Grakn {
         if(sessions.size()==0) KeyspaceStoreImpl.getInstance().loadSystemSchema();
         return sessions.computeIfAbsent(keyspace.getValue(), k -> {
             TxFactoryBuilder factoryBuilder = GraknTxFactoryBuilder.getInstance();
-            KeyspaceStore keyspaceStore = KeyspaceStoreImpl.getInstance();
-            if(!keyspaceStore.containsKeyspace(keyspace)) keyspaceStore.addKeyspace(keyspace);
+            KeyspaceStoreImpl.getInstance().addKeyspace(keyspace);
             return EmbeddedGraknSession.createEngineSession(keyspace, config, factoryBuilder);
         });
     }
