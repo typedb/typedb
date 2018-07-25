@@ -140,6 +140,13 @@ class RequestBuilder(object):
         """ Construct Concept Method requests """
 
         @staticmethod
+        def delete():
+            delete_req = concept_messages.Concept.Delete.Req()
+            concept_method_req = concept_messages.Method.Req()
+            concept_method_req.concept_delete_req.CopyFrom(delete_req)
+            return concept_method_req
+
+        @staticmethod
         def _concept_to_grpc_concept(concept):
             """ Takes a concept from ConceptHierarcy and converts to GRPC message """
             grpc_concept = concept_messages.Concept()
@@ -516,7 +523,7 @@ class RequestBuilder(object):
                 return concept_method_req
             
             @staticmethod
-            def relhas(attribute_concept):
+            def has(attribute_concept):
                 grpc_attribute_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_concept)
                 relhas_req = concept_messages.Thing.Relhas.Req()
                 relhas_req.attribute.CopyFrom(grpc_attribute_concept)

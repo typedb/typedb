@@ -16,9 +16,9 @@ class Concept(object):
 
 
     def delete(self):
-        # TODO
-        pass
-
+        del_request = RequestBuilder.ConceptMethod.delete()
+        method_response = self._tx_service.run_concept_method(self.id, del_request)
+        return
 
     def is_schema_concept(self) -> bool:
         return isinstance(self, SchemaConcept)
@@ -365,9 +365,9 @@ class Thing(Concept):
 
 
     def has(self, attribute):
-        has_req = RequestBuilder.ConceptMethod.Thing.relhas(attribute)
+        has_req = RequestBuilder.ConceptMethod.Thing.has(attribute)
         method_response = self._tx_service.run_concept_method(self.id, has_req)
-        # TODO ask haikal about this one
+        return
 
 
     def unhas(self, attribute):
