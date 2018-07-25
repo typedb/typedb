@@ -33,13 +33,14 @@ import java.util.stream.Stream;
 
 /**
  * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing is expensive when large number of rules present).
+ * NB: non-committed rules are alse cached.
  *
  * @author Kasper Piskorski
  */
 public class TxRuleCache {
 
     private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
-    private final Map<Rule, Object> ruleInitMap = new HashMap<>();
+    private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
     private final EmbeddedGraknTx tx;
 
     public TxRuleCache(EmbeddedGraknTx tx){
@@ -63,7 +64,10 @@ public class TxRuleCache {
         Set<Rule> match = ruleMap.get(type);
         if (match == null){
             Set<Rule> rules = Sets.newHashSet(rule);
-            ruleMap.put(type, Sets.newHashSet(rule));
+            getTypes(type, false).stream()
+                    .flatMap(SchemaConcept::thenRules)
+                    .forEach(rules::add);
+            ruleMap.put(type, rules);
             return rules;
         }
         match.add(rule);
@@ -78,6 +82,12 @@ public class TxRuleCache {
         return getRulesWithType(type, false);
     }
 
+    private Set<SchemaConcept> getTypes(SchemaConcept type, boolean direct) {
+        Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
+        if (type.isImplicit()) types.add(tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
+        return types;
+    }
+
     /**
      * @param type for which rules containing it in the head are sought
      * @param direct way of assessing isa edges
@@ -89,12 +99,9 @@ public class TxRuleCache {
         Set<Rule> match = ruleMap.get(type);
         if (match != null) return match.stream();
 
-        Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        if (type.isImplicit()) types.add(tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
-
         Set<Rule> rules = new HashSet<>();
         ruleMap.put(type, rules);
-        return types.stream()
+        return getTypes(type, direct).stream()
                 .flatMap(SchemaConcept::thenRules)
                 .peek(rules::add);
     }
@@ -107,11 +114,19 @@ public class TxRuleCache {
      * @return parsed rule object
      */
     public <T> T getRule(Rule rule, Supplier<T> converter){
-        T match = (T) ruleInitMap.get(rule);
+        T match = (T) ruleConversionMap.get(rule);
         if (match != null) return match;
 
         T newMatch = converter.get();
-        ruleInitMap.put(rule, newMatch);
+        ruleConversionMap.put(rule, newMatch);
         return newMatch;
+    }
+
+    /**
+     * cleans cache contents
+     */
+    public void closeTx(){
+        ruleMap.clear();
+        ruleConversionMap.clear();
     }
 }

@@ -19,10 +19,12 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
@@ -42,6 +44,7 @@ import ai.grakn.kb.internal.cache.TxRuleCache;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -289,8 +292,26 @@ public class CacheTest {
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
-        Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
-        assertTrue(rules.contains(dummyRule));
+        Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+        assertTrue(cachedRules.contains(dummyRule));
+    }
+
+    @Test
+    public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
+        EmbeddedGraknTx<?> oldTx = testContext.tx();
+        EmbeddedGraknSession session = testContext.tx().session();
+        oldTx.close();
+        EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE);
+
+        Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
+        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Rule dummyRule = tx.putRule("dummyRule", when, then);
+
+        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
+
+        Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
+        Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(toSet());
+        assertEquals(Sets.union(commitedRules, Sets.newHashSet(dummyRule)), cachedRules);
     }
 
     //TODO: currently we do not acknowledge deletions

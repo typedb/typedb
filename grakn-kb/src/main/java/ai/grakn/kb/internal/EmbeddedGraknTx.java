@@ -69,7 +69,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Read
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -555,12 +554,15 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
         //NB: thenTypes() will be empty as type edges added on commit
-        rule.then().admin().varPatterns().stream()
-                .flatMap(v -> v.getTypeLabels().stream())
-                .map(vl -> this.admin().<SchemaConcept>getSchemaConcept(vl))
-                .filter(Objects::nonNull)
-                .filter(Concept::isType)
-                .forEach(type -> ruleCache.updateRules(type, rule));
+        //NB: this will cache also non-committed rules
+        if (rule.then() != null){
+            rule.then().admin().varPatterns().stream()
+                    .flatMap(v -> v.getTypeLabels().stream())
+                    .map(vl -> this.admin().<SchemaConcept>getSchemaConcept(vl))
+                    .filter(Objects::nonNull)
+                    .filter(Concept::isType)
+                    .forEach(type -> ruleCache.updateRules(type, rule));
+        }
         return rule;
     }
 
@@ -667,6 +669,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         closeSession();
         clearGraph();
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+        ruleCache().closeTx();
 
         //TODO We should not hit the REST endpoint when deleting keyspaces through a graph
         // retrieved from and EngineGraknGraphFactory
@@ -742,6 +745,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             //Ignored for Tinker
         } finally {
             txCache().closeTx(closedReason);
+            ruleCache().closeTx();
         }
     }
 
