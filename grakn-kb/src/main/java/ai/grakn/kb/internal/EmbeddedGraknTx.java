@@ -69,6 +69,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Read
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -553,7 +554,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     public Rule putRule(Label label, Pattern when, Pattern then) {
         Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
-        rule.thenTypes().forEach(type -> ruleCache.updateRules(type, rule));
+        //NB: thenTypes() will be empty as type edges added on commit
+        rule.then().admin().varPatterns().stream()
+                .flatMap(v -> v.getTypeLabels().stream())
+                .map(vl -> this.admin().<SchemaConcept>getSchemaConcept(vl))
+                .filter(Objects::nonNull)
+                .filter(Concept::isType)
+                .forEach(type -> ruleCache.updateRules(type, rule));
         return rule;
     }
 

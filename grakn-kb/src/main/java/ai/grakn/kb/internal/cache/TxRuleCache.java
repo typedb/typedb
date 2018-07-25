@@ -72,6 +72,14 @@ public class TxRuleCache {
 
     /**
      * @param type for which rules containing it in the head are sought
+     * @return rules containing specified type in the head
+     */
+    public Stream<Rule> getRulesWithType(SchemaConcept type){
+        return getRulesWithType(type, false);
+    }
+
+    /**
+     * @param type for which rules containing it in the head are sought
      * @param direct way of assessing isa edges
      * @return rules containing specified type in the head
      */
