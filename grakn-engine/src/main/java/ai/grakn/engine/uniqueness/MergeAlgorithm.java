@@ -44,19 +44,39 @@ import java.util.stream.Stream;
 public class MergeAlgorithm {
     private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
 
+    public void merge(EmbeddedGraknTx tx, String value) {
+        GraphTraversalSource tinker = tx.getTinkerTraversal();
+        GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), value);
+        Vertex mergeTargetV = duplicates.next();
+        duplicates.forEachRemaining(dup -> {
+            try {
+                dup.vertices(Direction.IN).forEachRemaining(ent -> {
+                    Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
+                    edge.remove();
+                    ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                });
+            }
+            catch (IllegalStateException vertexAlreadyRemovedException) {
+                LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
+            }
+            dup.remove();
+
+        });
+    }
+
     /**
      * Merges a list of attributes.
      * The attributes being processed will be marked so they cannot be touched by other operations.
      * @param duplicates the list of attributes to be merged
      * @return the merged attribute (TODO)
      */
-    public void merge(EmbeddedGraknTx tx, List<Attribute> duplicates) {
+    public void merge2(EmbeddedGraknTx tx, List<Attribute> duplicates) {
         LOG.info("merge started...");
 
         GraphTraversalSource tinker = tx.getTinkerTraversal();
         GraphTraversal<Vertex, Vertex> t = tinker.V().has(Schema.VertexProperty.INDEX.name(), duplicates.get(0).value());
         Vertex mergeTargetV = t.next();
-        List<Vertex> prevMergeTargetV = t.next(1);
+        List<Vertex> prevMergeTargetV = t.next(1); // TODO: does not feel right
         List<String> excludeMergeTarget = duplicates.stream()
                 .map(elem -> elem.conceptId().getValue())
                 .filter(elem -> !elem.equals(mergeTargetV.value(Schema.VertexProperty.ID.name())))

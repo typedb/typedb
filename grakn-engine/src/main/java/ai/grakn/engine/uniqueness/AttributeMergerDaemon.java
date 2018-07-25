@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
@@ -107,13 +108,33 @@ public class AttributeMergerDaemon {
         try {
             Attributes newAttrs = newAttributeQueue.takeBatch(min, max, waitTimeLimitMs);
             LOG.info("starting a new batch to process these new attributes: " + newAttrs);
+            Set<KeyspaceAndValue> duplicates = newAttrs.attributes().stream()
+                    .map(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
+            duplicates.forEach(keyspaceAndValue -> {
+                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
+                     EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
+                    mergeAlgorithm.merge(tx, keyspaceAndValue.value());
+                    tx.commitSubmitNoLogs();
+                }
+            });
+//                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
+            LOG.info("new attributes processed.");
+        } catch (RuntimeException e) {
+            LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
+        }
+    }
+
+    public void merge2(int min, int max, int waitTimeLimitMs) {
+        try {
+            Attributes newAttrs = newAttributeQueue.takeBatch(min, max, waitTimeLimitMs);
+            LOG.info("starting a new batch to process these new attributes: " + newAttrs);
             Map<KeyspaceAndValue, List<Attribute>> groupByKeyspaceAndValue = newAttrs.attributes().stream()
                     .collect(Collectors.groupingBy(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())));
             groupByKeyspaceAndValue.forEach((groupName, group) -> LOG.info("startDaemon() - group: " + groupName + " = " + group));
             groupByKeyspaceAndValue.forEach((keyspaceAndValue, attrValue) -> {
                 try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
                      EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
-                    mergeAlgorithm.merge(tx, attrValue);
+                    mergeAlgorithm.merge2(tx, attrValue);
                     tx.commitSubmitNoLogs();
                 }
             });
