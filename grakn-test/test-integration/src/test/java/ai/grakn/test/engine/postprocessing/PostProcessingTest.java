@@ -219,7 +219,7 @@ public class PostProcessingTest {
     }
 
     private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.createEngineSession(keyspace, engine.config(), GraknTxFactoryBuilder.getInstance()).transaction(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> graknTx = Grakn.session(keyspace, engine.config()).transaction(GraknTxType.WRITE)) {
             int shards = graknTx.getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.id().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();

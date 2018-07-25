@@ -21,7 +21,7 @@ package ai.grakn.test.migration.export;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
+import ai.grakn.Grakn;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -52,7 +52,7 @@ public class KBWriterMainTest {
     @BeforeClass
     public static void loadMovieKB() {
         keyspace = SampleKBLoader.randomKeyspace();
-        try(GraknTx tx = new Grakn(engine.grpcUri()).session(keyspace).transaction(GraknTxType.WRITE)){
+        try(GraknTx tx = Grakn.session(keyspace).transaction(GraknTxType.WRITE)){
             MovieKB.get().accept(tx);
             tx.commit();
         }

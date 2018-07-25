@@ -18,7 +18,7 @@
 
 package ai.grakn.test.docs;
 
-import ai.grakn.client.Grakn;
+import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
@@ -157,7 +157,7 @@ public class DocTestUtil {
 
     public static GraknSession getTestGraph(SimpleURI uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        GraknSession session = new Grakn(uri).session(keyspace);
+        GraknSession session = Grakn.session(keyspace);
 
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);
