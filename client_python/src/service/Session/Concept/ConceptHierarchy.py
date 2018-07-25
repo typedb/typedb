@@ -1,8 +1,9 @@
-from ..util import enums
+from src.service.Session.util import enums
 from typing import Union, Optional
-from ..util.RequestBuilder import RequestBuilder
-from ..util.ResponseConverter import ResponseConverter
-from ..Concept import ConceptFactory
+from src.service.Session.util.RequestBuilder import RequestBuilder
+# from src.service.Session.util.ResponseConverter import ResponseConverter # cannot get name from module because circular imports
+import src.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
+from src.service.Session.Concept import ConceptFactory
 
 
 
@@ -94,12 +95,12 @@ class SchemaConcept(Concept):
     def subs(self):
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
         method_response = self._tx_service.run_concept_method(self.id, subs_req)
-        return ResponseConverter.SchemaConcept.subs_iterator(self._tx_service, method_response.schemaConcept_sups_iter) 
+        return ResponseConverter.ResponseConverter.SchemaConcept.subs_iterator(self._tx_service, method_response.schemaConcept_sups_iter) 
 
     def sups(self):
         sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
         method_response = self._tx_service.run_concept_method(self.id, sups_req)
-        return ResponseConverter.SchemaConcept.sups_iterator(self._tx_service, method_response.schemaConcept_sups_iter)
+        return ResponseConverter.ResponseConverter.SchemaConcept.sups_iterator(self._tx_service, method_response.schemaConcept_sups_iter)
 
 class Type(SchemaConcept):
 
@@ -117,17 +118,17 @@ class Type(SchemaConcept):
     def attributes(self):
         attributes_req = RequestBuilder.ConceptMethod.Type.attributes()
         method_response = self._tx_service.run_concept_method(self.id, attributes_req)
-        return ResponseConverter.Type.attributes(self._tx_service, method_response.type_attributes_iter)
+        return ResponseConverter.ResponseConverter.Type.attributes(self._tx_service, method_response.type_attributes_iter)
 
     def instances(self):
         instances_req = RequestBuilder.ConceptMethod.Type.instances()
         method_response = self._tx_service.run_concept_method(self.id, instances_req)
-        return ResponseConverter.Type.instances(self._tx_service, method_response.type_instances_iter)
+        return ResponseConverter.ResponseConverter.Type.instances(self._tx_service, method_response.type_instances_iter)
 
     def playing(self):
         playing_req = RequestBuilder.ConceptMethod.Type.playing()
         method_response = self._tx_service.run_concept_method(self.id, playing_req)
-        return ResponseConverter.Type.playing(self._tx_service, method_response.type_playing_iter)
+        return ResponseConverter.ResponseConverter.Type.playing(self._tx_service, method_response.type_playing_iter)
 
     def plays(self, role_concept):
         plays_req = RequestBuilder.ConceptMethod.Type.plays(role_concept)
@@ -153,7 +154,7 @@ class Type(SchemaConcept):
     def keys(self):
         keys_req = RequestBuilder.ConceptMethod.Type.keys()
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
-        return ResponseConverter.Type.keys(self._tx_service, method_response.type_keys_iter) 
+        return ResponseConverter.ResponseConverter.Type.keys(self._tx_service, method_response.type_keys_iter) 
 
 
     def key(self, attribute_concept_type):
@@ -173,7 +174,7 @@ class EntityType(Type):
     def create(self):
         """ Instantiate an entity of the given type and return it """
         create_req = RequestBuilder.ConceptMethod.EntityType.create_req()
-        method_response = self._tx_service.run_concept_method(create_req)
+        method_response = self._tx_service.run_concept_method(self.id, create_req)
         grpc_entity_concept = method_response.entityType_create_res.entity
         return ConceptFactory.create_concept(self._tx_service, grpc_entity_concept)
 
@@ -183,14 +184,14 @@ class AttributeType(Type):
         """ Create an instance with this AttributeType """
         self_data_type: enums.DataType = self.data_type()
         create_inst_req = RequestBuilder.ConceptMethod.AttributeType.create_req(value, self_data_type)
-        method_response = self._tx_service.run_concept_method(create_inst_req)
+        method_response = self._tx_service.run_concept_method(self.id, create_inst_req)
         grpc_attribute_concept = method_response.attributeType_create_res.attribute
         return ConceptFactory.create_concept(self._tx_service, grpc_attribute_concept)
         
     def attribute(self, value):
         self_data_type = self.data_type()
         get_attribute_req = RequestBuilder.ConceptMethod.AttributeType.attribute(value, self_data_type)
-        method_response = self._tx_service.run_concept_method(get_attribute_req)
+        method_response = self._tx_service.run_concept_method(self.id, get_attribute_req)
         response = method_response.attributeType_attribute_res
         whichone = response.WhichOneof('res')
         if whichone == 'attribute':
@@ -202,7 +203,7 @@ class AttributeType(Type):
 
     def data_type(self):
         get_data_type_req = RequestBuilder.ConceptMethod.AttributeType.data_type()
-        method_response = self._tx_service.run_concept_method(get_data_type_req)
+        method_response = self._tx_service.run_concept_method(self.id, get_data_type_req)
         response = method_response.attributeType_dataType_res
         whichone = response.WhichOneof('res')
         if whichone == 'dataType':
@@ -223,11 +224,11 @@ class AttributeType(Type):
     def regex(self, pattern: str = None):
         if pattern is None:
             get_regex_req = RequestBuilder.ConceptMethod.AttributeType.get_regex()
-            method_response = self._tx_service.run_concept_method(get_regex_req)
+            method_response = self._tx_service.run_concept_method(self.id, get_regex_req)
             return method_response.attributeType_getRegex_res.regex
         else:
             set_regex_req = RequestBuilder.ConceptMethod.putAttribtueType_req.set_regex(pattern)
-            method_response = self._tx_service.run_concept_method(set_regex_req)
+            method_response = self._tx_service.run_concept_method(self.id, set_regex_req)
             return
 
 
@@ -238,25 +239,25 @@ class RelationshipType(Type):
     def create(self):
         """ Create an instance of a relationship with this type """
         create_rel_inst_req = RequestBuilder.ConceptMethod.RelationType.create()
-        method_response = self._tx_service.run_concept_method(create_rel_inst_req)
+        method_response = self._tx_service.run_concept_method(self.id, create_rel_inst_req)
         grpc_relationship_concept = method_response.relationshipType_create_res.relation
         return ConceptFactory.create_concept(self._tx_service, grpc_relationship_concept)
         
     def roles(self):
         get_roles = RequestBuilder.ConceptMethod.RelationType.roles()
-        method_response = self._tx_service.run_concept_method(get_roles)
-        return ResponseConverter.RelationshipType.roles(self._tx_service, method_response.relationType_roles_iter)
+        method_response = self._tx_service.run_concept_method(self.id, get_roles)
+        return ResponseConverter.ResponseConverter.RelationshipType.roles(self._tx_service, method_response.relationType_roles_iter)
         
 
     def relates(self, role):
         relates_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
-        method_response = self._tx_service.run_concept_method(relates_req)
+        method_response = self._tx_service.run_concept_method(self.id, relates_req)
         return
         
 
     def unrelate(self, role):
         unrelate_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
-        method_response = self._tx_service.run_concept_method(unrelate_req)
+        method_response = self._tx_service.run_concept_method(self.id, unrelate_req)
         return
 
 class Rule(SchemaConcept):
@@ -291,7 +292,7 @@ class Role(SchemaConcept):
         # NOTE: relations vs relationships here
         relations_req = RequestBuilder.ConceptMethod.Role.relations()
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.role_relations_iter.id,
                 lambda tx_service, iter_res:
@@ -301,7 +302,7 @@ class Role(SchemaConcept):
     def players(self):
         players_req = RequestBuilder.ConceptMethod.Role.players()
         method_response = self._tx_service.run_concept_method(self.id, players_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.role_players_iter.id,
                 lambda tx_service, iter_res:
@@ -325,7 +326,7 @@ class Thing(Concept):
         # NOTE `relations` rather than `relationships`
         relations_req = RequestBuilder.ConceptMethod.Thing.relations(roles)
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_relations_iter.id,
                 lambda tx_service, iter_res:
@@ -335,7 +336,7 @@ class Thing(Concept):
     def attributes(self, *attribute_types):
         attrs_req = RequestBuilder.ConceptMethod.Thing.attributes(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, attrs_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_attributes_iter.id,
                 lambda tx_service, iter_res:
@@ -345,7 +346,7 @@ class Thing(Concept):
     def plays(self):
         plays_req = RequestBuilder.ConceptMethod.Thing.plays()
         method_response = self._tx_service.run_concept_method(self.id, plays_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_plays_iter.id,
                 lambda tx_service, iter_res:
@@ -355,7 +356,7 @@ class Thing(Concept):
     def keys(self, *attribute_types):
         keys_req = RequestBuilder.ConceptMethod.Thing.keys(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_keys_iter.id,
                 lambda tx_service, iter_res:
@@ -384,12 +385,12 @@ class Attribute(Thing):
         value_req = RequestBuilder.ConceptMethod.Attribute.value()
         method_response = self._tx_service.run_concept_method(self.id, value_req)
         grpc_value_object = method_response.attribute_value_res.value
-        return ResponseConverter.from_grpc_value_object(grpc_value_object)
+        return ResponseConverter.ResponseConverter.from_grpc_value_object(grpc_value_object)
 
     def owners(self):
         owners_req = RequestBuilder.ConceptMethod.Attribute.owners()
         method_response = self._tx_service.run_concept_method(self.id, owners_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.attribute_ownser_iter.id,
                 lambda tx_service, iter_res:
@@ -411,7 +412,7 @@ class Relationship(Thing):
             player = ConceptFactory.create_concept(tx_service, response.player)
             return (role, player)
 
-        iterator = ResponseConverter.iter_res_to_iterator(
+        iterator = ResponseConverter.ResponseConverter.iter_res_to_iterator(
                     self._tx_service,
                     method_response.relation_rolePlayersMap_iter.id,
                     to_pair)
@@ -439,7 +440,7 @@ class Relationship(Thing):
     def role_players(self, *roles):
         role_players_req = RequestBuilder.ConceptMethod.Relation.role_players()
         method_response = self._tx_service.run_concept_method(self.id, role_players_req)
-        return ResponseConverter.iter_res_to_iterator(
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
                 method_response.relation_rolePlayer_iter.id,
                 lambda tx_service, iter_res:

@@ -1,7 +1,4 @@
-from typing import Type
-
-from . import Grakn
-from .service.Session.TransactionService import TransactionService
+from src.service.Session.TransactionService import TransactionService
 
 class Transaction(object):
     """ Presents the Grakn interface to the user, actual work with GRPC happens in TransactionService """

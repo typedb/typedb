@@ -1,5 +1,5 @@
-from . import enums
-from ..Concept import ConceptFactory
+from src.service.Session.util import enums
+from src.service.Session.Concept import ConceptFactory
 
 class ResponseConverter(object):
     
@@ -180,9 +180,16 @@ class Answer(object):
     def __init__(self, answer_map, explanation: Explanation):
         self._answer_map = answer_map
         self._explanation = explanation
-    def get(self): # optional argument: variable to get
-        # TODO this needs to return a Concept to match Java Answer API
-        return self._answer_map
+
+    def get(self, var=None): # optional argument: variable to get
+        if var is None:
+            return self._answer_map
+        else:
+            try:
+                return self._answer_map[var]
+            except Exception as e:
+                raise e
+
     def explanation(self):
         return self._explanation
 
@@ -258,7 +265,6 @@ class ResponseIterator(object):
         if which_one == 'done' and iter_response.done:
             raise StopIteration()
         else:
-            print(iter_response)
             return self._iter_resp_converter(self._tx_service, iter_response)
 
 

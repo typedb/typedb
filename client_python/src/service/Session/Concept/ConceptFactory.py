@@ -1,5 +1,5 @@
-from . import BaseTypeMapping
-from .ConceptHierarchy import EntityType, RelationshipType, AttributeType, Role, Rule, Entity, Relationship, Attribute, Type
+from src.service.Session.Concept import BaseTypeMapping
+from src.service.Session.Concept.ConceptHierarchy import EntityType, RelationshipType, AttributeType, Role, Rule, Entity, Relationship, Attribute, Type
 
 
 # map names to ConceptHierarchy types

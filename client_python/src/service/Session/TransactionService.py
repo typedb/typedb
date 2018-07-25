@@ -1,9 +1,10 @@
 import queue
 from typing import Type
 
-from .util.RequestBuilder import RequestBuilder
-from .util.ResponseConverter import ResponseConverter
-from .util import enums
+from src.service.Session.util.RequestBuilder import RequestBuilder
+# from src.service.Session.util.ResponseConverter import ResponseConverter
+import src.service.Session.util.ResponseConverter as ResponseConverter
+from src.service.Session.util import enums
 
 class TransactionService(object):
 
@@ -25,7 +26,7 @@ class TransactionService(object):
         request = RequestBuilder.query(query)
         response = self._communicator.send(request)
         # convert `response` into a python iterator
-        return ResponseConverter.query(self, response.query_iter) 
+        return ResponseConverter.ResponseConverter.query(self, response.query_iter) 
 
     def commit(self):
         request = RequestBuilder.commit()
@@ -37,42 +38,42 @@ class TransactionService(object):
     def get_concept(self, concept_id: str): 
         request = RequestBuilder.get_concept(concept_id)
         response = self._communicator.send(request)
-        return ResponseConverter.get_concept(self, response.getConcept_res)
+        return ResponseConverter.ResponseConverter.get_concept(self, response.getConcept_res)
 
     def get_schema_concept(self, label: str): 
         request = RequestBuilder.get_schema_concept(label)
         response = self._communicator.send(request)
-        return ResponseConverter.get_schema_concept(self, response.getSchemaConcept_res)
+        return ResponseConverter.ResponseConverter.get_schema_concept(self, response.getSchemaConcept_res)
 
     def get_attributes_by_value(self, attribute_value, data_type: enums.DataType):
         request = RequestBuilder.get_attributes_by_value(attribute_value, data_type)
         response = self._communicator.send(request)
-        return ResponseConverter.get_attributes_by_value(self, response.getAttributes_iter)
+        return ResponseConverter.ResponseConverter.get_attributes_by_value(self, response.getAttributes_iter)
 
     def put_entity_type(self, label: str):
         request = RequestBuilder.put_entity_type(label)
         response = self._communicator.send(request)
-        return ResponseConverter.put_entity_type(self, response.putEntityType_res)
+        return ResponseConverter.ResponseConverter.put_entity_type(self, response.putEntityType_res)
 
     def put_relationship_type(self, label: str):
         request = RequestBuilder.put_relationship_type(label)
         response = self._communicator.send(request)
-        return ResponseConverter.put_relationship_type(self, response.putRelationshipType_res)
+        return ResponseConverter.ResponseConverter.put_relationship_type(self, response.putRelationshipType_res)
 
     def put_attribute_type(self, label: str, data_type: enums.DataType):
         request = RequestBuilder.put_attribute_type(label, data_type)
         response = self._communicator.send(request)
-        return ResponseConverter.put_attribute_type(self, response.putAttributeType_res)
+        return ResponseConverter.ResponseConverter.put_attribute_type(self, response.putAttributeType_res)
 
     def put_role(self, label: str):
         request = RequestBuilder.put_role(label)
         response = self._communicator.send(request)
-        return ResponseConverter.put_role(self, response.putRole_res)
+        return ResponseConverter.ResponseConverter.put_role(self, response.putRole_res)
 
     def put_rule(self, label: str, when: str, then: str):
         request = RequestBuilder.put_rule(label, when, then)
         response = self._communicator.send(request)
-        return ResponseConverter.put_rule(self, response.putRule_res)
+        return ResponseConverter.ResponseConverter.put_rule(self, response.putRule_res)
 
     # --- Transaction Messages ---
 
@@ -80,7 +81,7 @@ class TransactionService(object):
         # wrap method_req into a transaction message
         tx_request = RequestBuilder.concept_method_req_to_tx_req(concept_id, grpc_concept_method_req)
         response = self._communicator.send(tx_request)
-        return response.conceptMethod_res
+        return response.conceptMethod_res.response
 
 
     def iterate(self, iterator_id: int):
