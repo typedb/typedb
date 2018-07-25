@@ -57,7 +57,7 @@ public class XMLMigratorTest {
     @BeforeClass
     public static void loadSchema(){
         keyspace = SampleKBLoader.randomKeyspace();
-        session = new Grakn(engine.uri()).session(keyspace);
+        session = new Grakn(engine.grpcUri()).session(keyspace);
     }
 
     @After

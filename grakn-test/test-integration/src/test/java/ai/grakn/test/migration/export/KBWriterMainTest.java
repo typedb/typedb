@@ -52,7 +52,7 @@ public class KBWriterMainTest {
     @BeforeClass
     public static void loadMovieKB() {
         keyspace = SampleKBLoader.randomKeyspace();
-        try(GraknTx tx = new Grakn(engine.uri()).session(keyspace).transaction(GraknTxType.WRITE)){
+        try(GraknTx tx = new Grakn(engine.grpcUri()).session(keyspace).transaction(GraknTxType.WRITE)){
             MovieKB.get().accept(tx);
             tx.commit();
         }

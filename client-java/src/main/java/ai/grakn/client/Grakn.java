@@ -134,7 +134,7 @@ public final class Grakn {
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
             keyspaceBlockingStub.delete(request);
             //TODO: add test to check if transactions are closed on the server side:
-            // open tx, delete keyspace and try to access tx again
+            //TODO: open tx, delete keyspace and try to access tx again
         }
     }
 

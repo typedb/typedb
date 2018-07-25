@@ -64,7 +64,7 @@ public class JsonMigratorTest {
     @Before
     public void setup(){
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        session = new Grakn(engine.uri()).session(keyspace);
+        session = new Grakn(engine.grpcUri()).session(keyspace);
         migrator = new MigratorBuilder()
                 .setUri(engine.uri())
                 .setKeyspace(keyspace)

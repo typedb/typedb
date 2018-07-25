@@ -70,7 +70,7 @@ public class JsonMigratorMainTest {
     @Before
     public void setup() {
         keyspace = SampleKBLoader.randomKeyspace();
-        session = new Grakn(engine.uri()).session(keyspace);
+        session = new Grakn(engine.grpcUri()).session(keyspace);
 
         load(session, getFile("json", "simple-schema/schema.gql"));
     }
