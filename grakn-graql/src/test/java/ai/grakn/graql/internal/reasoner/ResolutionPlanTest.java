@@ -218,6 +218,25 @@ public class ResolutionPlanTest {
 
     @Test
     @Repeat( times = repeat )
+    public void prioritiseSpecificResourcesOverResolvableRelationsWithGuards(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa baseEntity;" +
+                "(someRole:$x, otherRole: $y) isa derivedRelation;" +
+                "$y isa someEntity;" +
+                "$w has resource 'test';" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
+                getAtomOfType(query, "resource", testTx),
+                getAtomOfType(query, "derivedRelation", testTx)
+        );
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
+    }
+
+    @Test
+    @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverNonSpecific(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -540,7 +559,7 @@ public class ResolutionPlanTest {
     private void checkOptimalAtomPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         ImmutableList<Atom> atomPlan = resolutionPlan.plan();
-        assertEquals(atomPlan, desiredAtomPlan);
+        assertEquals(desiredAtomPlan, atomPlan);
         checkAtomPlanComplete(query, resolutionPlan);
         checkAtomPlanConnected(resolutionPlan);
     }
@@ -572,11 +591,11 @@ public class ResolutionPlanTest {
     }
 
     private void checkAtomPlanComplete(ReasonerQueryImpl query, ResolutionPlan plan){
-        assertEquals(query.selectAtoms(), Sets.newHashSet(plan.plan()) );
+        assertEquals(query.selectAtoms().collect(toSet()), Sets.newHashSet(plan.plan()) );
     }
 
     private void checkQueryPlanComplete(ReasonerQueryImpl query, ResolutionQueryPlan plan){
-        assertEquals(query.selectAtoms(), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
+        assertEquals(query.selectAtoms().collect(toSet()), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){

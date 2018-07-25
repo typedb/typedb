@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -78,14 +77,12 @@ public class GraqlTraversalPlanner {
     /**
      * optimise for:
      * - atoms with highest number of substitutions
-     * - edge atoms (with less number of neighbours)
      * @param candidates list of candidates
      * @return optimal candidate from the provided list according to the criteria above
      */
     @Nullable
     private static Atom optimalCandidate(List<Atom> candidates){
         return candidates.stream()
-                .sorted(Comparator.comparing(at -> at.getNeighbours(RelationshipAtom.class).count()))
                 .sorted(Comparator.comparing(at -> !at.isGround()))
                 .sorted(Comparator.comparing(at -> -at.getPredicates().count()))
                 .findFirst().orElse(null);
