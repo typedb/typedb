@@ -106,8 +106,6 @@ public class Grakn {
      * @return A session instance that can produce concurrent connection to the specified knowledge graph.
      */
     private static final Map<String, EmbeddedGraknSession> sessions = new ConcurrentHashMap<>();
-    private static final Map<String, EmbeddedGraknSession> inMemorySessions = new ConcurrentHashMap<>();
-    private static final KeyspaceStore keyspaceStore = KeyspaceStoreImpl.getInstance();
 
     @CheckReturnValue
     public static EmbeddedGraknSession session(String keyspace) {
@@ -119,7 +117,7 @@ public class Grakn {
     }
 
     public static EmbeddedGraknSession sessionInMemory(ai.grakn.Keyspace keyspace) {
-        return inMemorySessions.computeIfAbsent(keyspace.getValue(), k -> {
+        return sessions.computeIfAbsent(keyspace.getValue(), k -> {
             TxFactoryBuilder factoryBuilder = GraknTxFactoryBuilder.getInstance();
             GraknConfig config = getTxInMemoryConfig();
             return EmbeddedGraknSession.createEngineSession(keyspace, config, factoryBuilder);
@@ -128,8 +126,11 @@ public class Grakn {
 
     @CheckReturnValue
     public static EmbeddedGraknSession session(ai.grakn.Keyspace keyspace, GraknConfig config) {
+        if(sessions.size()==0) KeyspaceStoreImpl.getInstance().loadSystemSchema();
         return sessions.computeIfAbsent(keyspace.getValue(), k -> {
             TxFactoryBuilder factoryBuilder = GraknTxFactoryBuilder.getInstance();
+            KeyspaceStore keyspaceStore = KeyspaceStoreImpl.getInstance();
+            if(!keyspaceStore.containsKeyspace(keyspace)) keyspaceStore.addKeyspace(keyspace);
             return EmbeddedGraknSession.createEngineSession(keyspace, config, factoryBuilder);
         });
     }
@@ -162,12 +163,23 @@ public class Grakn {
 
         public static void delete(ai.grakn.Keyspace keyspace){
             EmbeddedGraknSession session = session(keyspace);
+            session.close();
             try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
                 tx.closeSession();
                 tx.clearGraph();
                 tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
             }
-            keyspaceStore.deleteKeyspace(keyspace);
+            KeyspaceStoreImpl.getInstance().deleteKeyspace(keyspace);
+        }
+
+        public static void deleteInMemory(ai.grakn.Keyspace keyspace){
+            EmbeddedGraknSession session = sessionInMemory(keyspace);
+            session.close();
+            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
+                tx.closeSession();
+                tx.clearGraph();
+                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+            }
         }
     }
 }

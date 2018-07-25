@@ -41,15 +41,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.sessionInMemory( "test").transaction(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
+        assertThat(Grakn.sessionInMemory("test").transaction(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknTx test1 = Grakn.sessionInMemory( "test1").transaction(GraknTxType.WRITE);
+        GraknTx test1 = Grakn.sessionInMemory("test1").transaction(GraknTxType.WRITE);
         test1.close();
-        GraknTx test11 = Grakn.sessionInMemory( "test1").transaction(GraknTxType.WRITE);
-        GraknTx test2 = Grakn.sessionInMemory( "test2").transaction(GraknTxType.WRITE);
+        GraknTx test11 = Grakn.sessionInMemory("test1").transaction(GraknTxType.WRITE);
+        GraknTx test2 = Grakn.sessionInMemory("test2").transaction(GraknTxType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -57,25 +57,25 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        Grakn.Keyspace.delete(Keyspace.of("default"));
-        GraknTx tx = Grakn.sessionInMemory( "default").transaction(GraknTxType.WRITE);
+        Grakn.Keyspace.deleteInMemory(Keyspace.of("default"));
+        GraknTx tx = Grakn.sessionInMemory("default").transaction(GraknTxType.WRITE);
         tx.putEntityType("A thing");
         assertNotNull(tx.getEntityType("A thing"));
     }
 
     @Test
     public void testComputer(){
-        GraknComputer computer = ((EmbeddedGraknSession) Grakn.sessionInMemory( "bob")).getGraphComputer();
+        GraknComputer computer = ((EmbeddedGraknSession) Grakn.sessionInMemory("bob")).getGraphComputer();
         assertThat(computer, instanceOf(GraknComputer.class));
     }
 
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.sessionInMemory( keyspace).transaction(GraknTxType.WRITE);
+        EmbeddedGraknTx<?> graph = (EmbeddedGraknTx<?>) Grakn.sessionInMemory(keyspace).transaction(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.sessionInMemory( keyspace).transaction(GraknTxType.BATCH);
+        EmbeddedGraknTx<?> batchGraph = (EmbeddedGraknTx<?>) Grakn.sessionInMemory(keyspace).transaction(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());

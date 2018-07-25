@@ -100,8 +100,8 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             return true;
         }
 
-        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            boolean keyspaceExists = (graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
+        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+            boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
             if(keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
         }
@@ -131,7 +131,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     }
 
     @Override
-    public Set<Keyspace> keyspaces() {
+    synchronized public Set<Keyspace> keyspaces() {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
@@ -144,7 +144,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     }
 
     @Override
-    public void loadSystemSchema() {
+    synchronized public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
         try (EmbeddedGraknTx<?> tx = session.transaction(GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
@@ -152,7 +152,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             }
             LOG.info("Loading schema");
             loadSystemSchema(tx);
-            tx.commitSubmitNoLogs();
+            tx.commit();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (RuntimeException e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);

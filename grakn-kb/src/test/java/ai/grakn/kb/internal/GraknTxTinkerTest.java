@@ -72,7 +72,8 @@ public class GraknTxTinkerTest extends TxTestBase {
     public void whenClearingGraph_EnsureGraphIsClosedAndRealodedWhenNextOpening(){
         tx.putEntityType("entity type");
         assertNotNull(tx.getEntityType("entity type"));
-        Grakn.Keyspace.delete(tx.keyspace());
+
+        Grakn.Keyspace.deleteInMemory(tx.keyspace());
         assertTrue(tx.isClosed());
         tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
         assertNull(tx.getEntityType("entity type"));
