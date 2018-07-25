@@ -96,6 +96,7 @@ class Communicator(object):
     def __init__(self, grpc_stream_constructor):
         self._queue = queue.Queue()
         self._response_iterator = grpc_stream_constructor(self)
+        self.closed = False
 
     def _add_request(self, request):
         self._queue.put(request)
@@ -112,10 +113,17 @@ class Communicator(object):
         return self
 
     def send(self, request):
+        if self.closed:
+            raise Exception("gRPC connection is closed!")
         self._add_request(request)
-        return next(self._response_iterator)
+        response = next(self._response_iterator)
+        if response != None:
+            return response
+        else:
+            raise Exception("No response from gRPC")
 
     def close(self):
         with self._queue.mutex: # probably don't even need the mutex
             self._queue.queue.clear()
         self._queue.put(None)
+        self.closed = True

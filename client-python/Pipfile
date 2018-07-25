@@ -5,10 +5,15 @@ name = "pypi"
 
 [packages]
 grpcio = "*"
+pylint = "*"
 
 [dev-packages]
 grpcio-tools = "*"
 googleapis-common-protos = "*"
+pylint = "*"
+protobuf = "*"
+"flake8" = "*"
+pyflakes = "*"
 
 [requires]
 python_version = "3.7"
