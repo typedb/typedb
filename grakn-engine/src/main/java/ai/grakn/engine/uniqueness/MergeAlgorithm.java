@@ -70,11 +70,15 @@ public class MergeAlgorithm {
             lock(duplicates);
 
             for (Vertex dup: duplicatesV) {
-                List<Vertex> linkedEntities = Lists.newArrayList(dup.vertices(Direction.IN));
-                for (Vertex ent: linkedEntities) {
-                    Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
-                    edge.remove();
-                    ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                try {
+                    dup.vertices(Direction.IN).forEachRemaining(ent -> {
+                        Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
+                        edge.remove();
+                        ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                    });
+                }
+                catch (IllegalStateException vertexAlreadyRemovedException) {
+                    LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
                 }
                 dup.remove();
             }
