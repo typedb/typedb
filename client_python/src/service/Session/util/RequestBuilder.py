@@ -285,7 +285,7 @@ class RequestBuilder(object):
                 return concept_method_req
 
             @staticmethod
-            def type_instances():
+            def instances():
                 type_instances_req = concept_messages.Type.Instances.Req()
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.type_instances_req.CopyFrom(type_instances_req)
@@ -364,6 +364,7 @@ class RequestBuilder(object):
                 unplays_req.attributeType.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.type_has_req.CopyFrom(unplays_req)
+                return concept_method_req
 
        
 
@@ -382,10 +383,8 @@ class RequestBuilder(object):
             """ Generates RelationType method messages """
             
             @staticmethod
-            def create(role_concept):
-                grpc_role_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
+            def create():
                 create_req = concept_messages.RelationType.Create.Req()
-                create_req.role.CopyFrom(grpc_role_concept)
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.relationType_create_req.CopyFrom(create_req)
                 return concept_method_req

@@ -136,7 +136,7 @@ class Type(SchemaConcept):
         return
 
     def unplay(self, role_concept):
-        unplay_req = RequestBuilder.ConceptMethod.Type.unplay(role_concept)
+        unplay_req = RequestBuilder.ConceptMethod.Type.unplays(role_concept)
         method_response = self._tx_service.run_concept_method(self.id, unplay_req)
         return
     
@@ -173,7 +173,7 @@ class EntityType(Type):
 
     def create(self):
         """ Instantiate an entity of the given type and return it """
-        create_req = RequestBuilder.ConceptMethod.EntityType.create_req()
+        create_req = RequestBuilder.ConceptMethod.EntityType.create()
         method_response = self._tx_service.run_concept_method(self.id, create_req)
         grpc_entity_concept = method_response.entityType_create_res.entity
         return ConceptFactory.create_concept(self._tx_service, grpc_entity_concept)
@@ -183,7 +183,7 @@ class AttributeType(Type):
     def create(self, value):
         """ Create an instance with this AttributeType """
         self_data_type: enums.DataType = self.data_type()
-        create_inst_req = RequestBuilder.ConceptMethod.AttributeType.create_req(value, self_data_type)
+        create_inst_req = RequestBuilder.ConceptMethod.AttributeType.create(value, self_data_type)
         method_response = self._tx_service.run_concept_method(self.id, create_inst_req)
         grpc_attribute_concept = method_response.attributeType_create_res.attribute
         return ConceptFactory.create_concept(self._tx_service, grpc_attribute_concept)
@@ -227,7 +227,7 @@ class AttributeType(Type):
             method_response = self._tx_service.run_concept_method(self.id, get_regex_req)
             return method_response.attributeType_getRegex_res.regex
         else:
-            set_regex_req = RequestBuilder.ConceptMethod.putAttribtueType_req.set_regex(pattern)
+            set_regex_req = RequestBuilder.ConceptMethod.AttributeType.set_regex(pattern)
             method_response = self._tx_service.run_concept_method(self.id, set_regex_req)
             return
 
@@ -365,7 +365,7 @@ class Thing(Concept):
 
 
     def has(self, attribute):
-        has_req = RequestBuilder.ConceptMethod.Thing.has(attribute)
+        has_req = RequestBuilder.ConceptMethod.Thing.relhas(attribute)
         method_response = self._tx_service.run_concept_method(self.id, has_req)
         # TODO ask haikal about this one
 
