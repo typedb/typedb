@@ -44,7 +44,33 @@ public class Queries {
     private Queries() {
     }
 
-    public static GetQuery get(ImmutableSet<Var> vars, MatchAdmin match) {
+    public static GetQuery get(MatchAdmin match, ImmutableSet<Var> vars) {
+        validateMatchVars(match, vars);
+        return GetQueryImpl.of(match, vars);
+    }
+
+    public static InsertQueryAdmin insert(GraknTx tx, Collection<VarPatternAdmin> vars) {
+        return InsertQueryImpl.create(vars, null, tx);
+    }
+
+    /**
+     * @param match the {@link Match} to insert for each result
+     * @param varPattern  a collection of Vars to insert
+     */
+    public static InsertQueryAdmin insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
+        return InsertQueryImpl.create(varPattern, match, match.tx());
+    }
+
+    public static DeleteQueryAdmin delete(MatchAdmin match, Set<Var> vars) {
+        validateMatchVars(match, vars);
+        return DeleteQueryImpl.of(vars, match);
+    }
+
+    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+        return AggregateQueryImpl.of(match, aggregate);
+    }
+
+    private static void validateMatchVars(MatchAdmin match, Set<Var> vars) {
         Set<Var> selectedVars = match.getSelectedNames();
 
         for (Var var : vars) {
@@ -52,27 +78,5 @@ public class Queries {
                 throw GraqlQueryException.varNotInQuery(var);
             }
         }
-
-        return GetQueryImpl.of(match, vars);
-    }
-
-    public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, GraknTx tx) {
-        return InsertQueryImpl.create(vars, null, tx);
-    }
-
-    /**
-     * @param vars  a collection of Vars to insert
-     * @param match the {@link Match} to insert for each result
-     */
-    public static InsertQueryAdmin insert(Collection<VarPatternAdmin> vars, MatchAdmin match) {
-        return InsertQueryImpl.create(vars, match, match.tx());
-    }
-
-    public static DeleteQueryAdmin delete(Collection<? extends Var> vars, Match match) {
-        return DeleteQueryImpl.of(vars, match);
-    }
-
-    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
-        return AggregateQueryImpl.of(match, aggregate);
     }
 }

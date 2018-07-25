@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public interface Match extends Streamable<Answer> {
     /**
-     * Get all {@link Var}s mentioned in the query
+     * Construct a get query with all all {@link Var}s mentioned in the query
      */
     @CheckReturnValue
     GetQuery get();
@@ -79,6 +79,12 @@ public interface Match extends Streamable<Answer> {
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
+     * Construct a delete query with all all {@link Var}s mentioned in the query
+     */
+    @CheckReturnValue
+    DeleteQuery delete();
+
+    /**
      * @param vars an array of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
@@ -90,14 +96,14 @@ public interface Match extends Streamable<Answer> {
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Var... vars);
+    DeleteQuery delete(Var var, Var... vars);
 
     /**
      * @param vars a collection of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Collection<? extends Var> vars);
+    DeleteQuery delete(Set<Var> vars);
 
     /**
      * Order the results by degree in ascending order
