@@ -2,6 +2,7 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
@@ -11,18 +12,36 @@ import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.util.Schema;
+import ai.grakn.util.SimpleURI;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Optional;
 
 import static ai.grakn.graql.Graql.*;
 
 public class ScratchpadTest {
+    @Test
+    public void printTheAnswerFromMatchIsaNameGet() throws InterruptedException {
+        SimpleURI grakn = new SimpleURI("localhost", 48555);
+        String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
+        Keyspace keyspace = Keyspace.of("grakn6"); //
+
+        try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
+            try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                tx.graql().match(var("n").isa("name")).get().execute().forEach(n -> {
+                    System.out.println(n.get("n").id() + " = " + n.get("n").asAttribute().value());
+                });
+            }
+        }
+    }
+
+
     @Test
     public void getAttribute() {
         EmbeddedGraknSession session = EmbeddedGraknSession.create(Keyspace.of("grakn"), "0.0.0.0:4567");
