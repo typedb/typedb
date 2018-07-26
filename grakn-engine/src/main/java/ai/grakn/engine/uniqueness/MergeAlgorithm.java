@@ -20,7 +20,6 @@ package ai.grakn.engine.uniqueness;
 
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -30,9 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * TODO
@@ -41,6 +38,13 @@ import java.util.stream.Collectors;
 public class MergeAlgorithm {
     private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
 
+
+    /**
+     * Merges a list of attributes.
+     * The attributes being processed will be marked so they cannot be touched by other operations.
+     * @param value the value of attributes to be merged
+     * @return the merged attribute (TODO)
+     */
     public void merge(EmbeddedGraknTx tx, String value) {
         GraphTraversalSource tinker = tx.getTinkerTraversal();
         GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), value);
@@ -58,50 +62,6 @@ public class MergeAlgorithm {
             catch (IllegalStateException vertexAlreadyRemovedException) {
                 LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
             }
-        }
-    }
-
-    /**
-     * Merges a list of attributes.
-     * The attributes being processed will be marked so they cannot be touched by other operations.
-     * @param duplicates the list of attributes to be merged
-     * @return the merged attribute (TODO)
-     */
-    public void merge2(EmbeddedGraknTx tx, List<Attribute> duplicates) {
-        LOG.info("merge2 started...");
-
-        GraphTraversalSource tinker = tx.getTinkerTraversal();
-        GraphTraversal<Vertex, Vertex> t = tinker.V().has(Schema.VertexProperty.INDEX.name(), duplicates.get(0).value());
-        Vertex mergeTargetV = t.next();
-        List<Vertex> prevMergeTargetV = t.next(1); // TODO: does not feel right
-        List<String> excludeMergeTarget = duplicates.stream()
-                .map(elem -> elem.conceptId().getValue())
-                .filter(elem -> !elem.equals(mergeTargetV.value(Schema.VertexProperty.ID.name())))
-                .collect(Collectors.toList());
-        List<Vertex> duplicatesV = new LinkedList<>();
-        duplicatesV.addAll(tinker.V().has(Schema.VertexProperty.ID.name(), P.within(excludeMergeTarget)).toList());
-        duplicatesV.addAll(prevMergeTargetV);
-
-        LOG.info("items from queue = '" + duplicates + "', merge target = " + mergeTargetV + ", previous merge target = " + prevMergeTargetV + ", merge duplicates = " + duplicatesV);
-        if (duplicatesV.size() >= 1) {
-            lock(duplicates);
-
-            for (Vertex dup: duplicatesV) {
-                try {
-                    dup.vertices(Direction.IN).forEachRemaining(ent -> {
-                        Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
-                        edge.remove();
-                        ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
-                    });
-                    dup.remove();
-                }
-                catch (IllegalStateException vertexAlreadyRemovedException) {
-                    LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
-                }
-            }
-
-            unlock(duplicates);
-            LOG.info("merge2 completed.");
         }
     }
 

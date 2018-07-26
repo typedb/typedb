@@ -126,27 +126,6 @@ public class AttributeMergerDaemon {
         }
     }
 
-    public void merge2(int min, int max, int waitTimeLimitMs) {
-        try {
-            Attributes newAttrs = newAttributeQueue.takeBatch(min, max, waitTimeLimitMs);
-            LOG.info("starting a new batch to process these new attributes: " + newAttrs);
-            Map<KeyspaceAndValue, List<Attribute>> groupByKeyspaceAndValue = newAttrs.attributes().stream()
-                    .collect(Collectors.groupingBy(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())));
-            groupByKeyspaceAndValue.forEach((groupName, group) -> LOG.info("startDaemon() - group: " + groupName + " = " + group));
-            groupByKeyspaceAndValue.forEach((keyspaceAndValue, attrValue) -> {
-                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
-                     EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
-                    mergeAlgorithm.merge2(tx, attrValue);
-                    tx.commitSubmitNoLogs();
-                }
-            });
-//                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
-            LOG.info("new attributes processed.");
-        } catch (RuntimeException e) {
-            LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
-        }
-    }
-
     public void add(Keyspace keyspace, String value, ConceptId conceptId) {
         final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
         LOG.info("add(" + newAttribute + ")");
