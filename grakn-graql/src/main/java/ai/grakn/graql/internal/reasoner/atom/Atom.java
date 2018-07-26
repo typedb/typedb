@@ -82,7 +82,7 @@ public abstract class Atom extends AtomicBase {
         if (isResource() || getSchemaConcept() == null) return false;
         SchemaConcept schemaConcept = getSchemaConcept();
         return getApplicableRules()
-                .filter(rule -> rule.getBody().selectAtoms().stream()
+                .filter(rule -> rule.getBody().selectAtoms()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                         .anyMatch(at -> typesCompatible(schemaConcept, at.getSchemaConcept())))
                 .anyMatch(this::isRuleApplicable);
@@ -177,7 +177,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    protected Stream<Rule> getPotentialRules(){
+    public Stream<Rule> getPotentialRules(){
         boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
@@ -191,7 +191,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, tx()))
+                    .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -293,6 +293,16 @@ public abstract class Atom extends AtomicBase {
 
     public Stream<Answer> materialise(){ return Stream.empty();}
 
+    /**
+     * @return if this atom requires decomposition into a set of atoms
+     */
+    public boolean requiresDecomposition(){
+        return this.getPotentialRules().map(r -> new InferenceRule(r, tx())).anyMatch(InferenceRule::isAppendRule);
+    }
+
+    /**
+     * @return set of atoms this atom can be decomposed to
+     */
     public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
 
     public abstract Atom rewriteWithTypeVariable();

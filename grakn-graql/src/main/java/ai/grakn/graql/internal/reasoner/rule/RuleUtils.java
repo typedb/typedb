@@ -25,15 +25,14 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 
-import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -52,8 +51,7 @@ public class RuleUtils {
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(GraknTx graph) {
-        return graph.admin().getMetaRule().subs().
-                filter(sub -> !sub.equals(graph.admin().getMetaRule()));
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRules();
     }
 
     /**
@@ -70,10 +68,7 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        if (type == null) return getRules(graph);
-        Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        if (type.isImplicit()) types.add(graph.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
-        return types.stream().flatMap(SchemaConcept::thenRules);
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRulesWithType(type, direct);
     }
 
     /**
@@ -124,14 +119,14 @@ public class RuleUtils {
         Set<InferenceRule> rules = new HashSet<>();
         Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();
         Stack<Equivalence.Wrapper<Atom>> atoms = new Stack<>();
-        query.selectAtoms().stream().map(equivalence::wrap).forEach(atoms::push);
+        query.selectAtoms().map(equivalence::wrap).forEach(atoms::push);
         while(!atoms.isEmpty()) {
             Equivalence.Wrapper<Atom> wrappedAtom = atoms.pop();
              Atom atom = wrappedAtom.get();
             if (!visitedAtoms.contains(wrappedAtom) && atom != null){
                 atom.getApplicableRules()
                         .peek(rules::add)
-                        .flatMap(rule -> rule.getBody().selectAtoms().stream())
+                        .flatMap(rule -> rule.getBody().selectAtoms())
                         .map(equivalence::wrap)
                         .filter(at -> !visitedAtoms.contains(at))
                         .filter(at -> !atoms.contains(at))

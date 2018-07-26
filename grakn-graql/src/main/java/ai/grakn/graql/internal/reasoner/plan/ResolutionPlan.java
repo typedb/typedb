@@ -68,7 +68,7 @@ public final class ResolutionPlan {
      * @return true if the plan is complete with respect to provided query - contains all selectable atoms
      */
     private boolean isComplete(){
-        return plan.containsAll(query.selectAtoms());
+        return query.selectAtoms().allMatch(plan::contains);
     }
 
     /**

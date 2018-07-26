@@ -70,7 +70,7 @@ public class InferenceRule {
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
-    private int priority = Integer.MAX_VALUE;
+    private long priority = Long.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
@@ -112,9 +112,10 @@ public class InferenceRule {
     /**
      * @return the priority with which the rule should be fired
      */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = -RuleUtils.getDependentRules(getBody()).size();
+    public long resolutionPriority(){
+        if (priority == Long.MAX_VALUE) {
+            //NB: only checking locally as checking full tree (getDependentRules) is expensive
+            priority = -getBody().selectAtoms().flatMap(Atom::getApplicableRules).count();
         }
         return priority;
     }
@@ -131,7 +132,7 @@ public class InferenceRule {
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
-    public boolean hasDisconnectedHead(){
+    private boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 
@@ -195,7 +196,7 @@ public class InferenceRule {
      * @param unifier unifier unifying parent with the rule
      * @return rule with propagated constraints from parent
      */
-    public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
+    private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Atom headAtom = head.getAtom();
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
@@ -295,6 +296,13 @@ public class InferenceRule {
         return this;
     }
 
+    private InferenceRule rewriteBodyAtoms(){
+        if (getBody().requiresDecomposition()) {
+            return new InferenceRule(getHead(), getBody().rewrite(), ruleId, tx);
+        }
+        return this;
+    }
+
     /**
      * rewrite the rule to a form with user defined variables
      * @param parentAtom reference parent atom
@@ -302,6 +310,7 @@ public class InferenceRule {
      */
     public InferenceRule rewrite(Atom parentAtom){
         return this
+                .rewriteBodyAtoms()
                 .rewriteHeadToRelation(parentAtom)
                 .rewriteVariables(parentAtom);
     }

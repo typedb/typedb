@@ -29,7 +29,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -94,6 +93,9 @@ public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext freshRelationDerivation = SampleKBContext.load("freshRelationDerivation.gql");
+
+    @ClassRule
+    public static final SampleKBContext appendingRPsContext = SampleKBContext.load("appendingRPsTest.gql");
 
     @ClassRule
     public static final SampleKBContext test7 = SampleKBContext.load("testSet7.gql");
@@ -169,9 +171,6 @@ public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
-
-    @ClassRule
-    public static final SampleKBContext appendingRPsContext = SampleKBContext.load("appendingRPsTest.gql");
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -898,6 +897,14 @@ public class ReasoningTest {
 
         List<Answer> answers = qb.<GetQuery>parse("match $r isa relation; get;").execute();
         assertCollectionsEqual(variants, answers);
+    }
+
+    @Test
+    public void whenRuleContainsRelationRequiringAppend_bodyIsRewrittenCorrectly(){
+        QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
+
+        List<Answer> answers = qb.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;").execute();
+        assertEquals(2, answers.size());
     }
 
     @Test //tests a query containing a neq predicate bound to a recursive relation
