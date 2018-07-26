@@ -18,32 +18,16 @@
 
 package ai.grakn.engine.uniqueness;
 
-import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
-import com.google.auto.value.AutoValue;
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.Lists;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import ai.grakn.engine.uniqueness.queue.Attribute;
+import ai.grakn.engine.uniqueness.queue.Attributes;
+import ai.grakn.engine.uniqueness.queue.InMemoryQueue;
+import ai.grakn.engine.uniqueness.queue.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 /**
  * This class is responsible for merging attribute duplicates which is done in order to maintain attribute uniqueness.
@@ -63,7 +47,7 @@ public class AttributeMergerDaemon {
     public static final int QUEUE_GET_BATCH_MAX = 1;
     public static final int QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS = 1000;
 
-    private Queue newAttributeQueue = new Queue();
+    private Queue newAttributeQueue = new InMemoryQueue();
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
     private boolean stopDaemon = false;
 
@@ -76,21 +60,21 @@ public class AttributeMergerDaemon {
     /**
      * Stops the attribute merger daemon
      */
-    public void stopDaemon() {
+    public void stopMergeDaemon() {
         stopDaemon = true;
     }
 
     /**
      * Starts the attribute merger daemon, which continuously merge attribute duplicates.
-     * The thread listens to the {@link Queue} queue for incoming attributes and applies
+     * The thread listens to the {@link InMemoryQueue} queue for incoming attributes and applies
      * the merge algorithm as implemented in {@link MergeAlgorithm}.
      *
      */
-    private CompletableFuture<Void> startDaemon() {
+    private CompletableFuture<Void> startMergeDaemon() {
         CompletableFuture<Void> daemon = CompletableFuture.supplyAsync(() -> {
             LOG.info("startDaemon() - start");
             while (!stopDaemon) {
-                merge(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
+                mergeNow(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
             }
             LOG.info("startDaemon() - stop");
             return null;
@@ -104,32 +88,16 @@ public class AttributeMergerDaemon {
         return daemon;
     }
 
-    public int merge(int min, int max, int waitTimeLimitMs) {
-        try {
-            Attributes newAttrs = newAttributeQueue.takeBatch(min, max, waitTimeLimitMs);
-            LOG.info("starting a new batch to process these new attributes: " + newAttrs);
-            Set<KeyspaceAndValue> duplicates = newAttrs.attributes().stream()
-                    .map(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
-            for (KeyspaceAndValue keyspaceAndValue: duplicates) {
-                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
-                     EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
-                    mergeAlgorithm.merge(tx, keyspaceAndValue.value());
-                    tx.commitSubmitNoLogs();
-                }
-            }
-//                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
-            LOG.info("new attributes processed.");
-            return newAttributeQueue.size();
-        } catch (RuntimeException e) {
-            LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
-            throw e;
-        }
+    public int mergeNow(int min, int max, int waitTimeLimitMs) {
+        Attributes newAttrs = newAttributeQueue.readAttributes(min, max, waitTimeLimitMs);
+        mergeAlgorithm.merge(newAttrs);
+        return newAttributeQueue.size();
     }
 
     public void add(Keyspace keyspace, String value, ConceptId conceptId) {
         final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
         LOG.info("add(" + newAttribute + ")");
-        newAttributeQueue.add(newAttribute);
+        newAttributeQueue.insertAttribute(newAttribute);
     }
 }
 

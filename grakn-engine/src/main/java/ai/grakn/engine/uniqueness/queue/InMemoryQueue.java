@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.uniqueness;
+package ai.grakn.engine.uniqueness.queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,34 +29,17 @@ import java.util.concurrent.LinkedBlockingQueue;
  * TODO
  * @author Ganeshwara Herawan Hananda
  */
-public class Queue {
-    private static Logger LOG = LoggerFactory.getLogger(Queue.class);
+public class InMemoryQueue implements Queue {
+    private static Logger LOG = LoggerFactory.getLogger(InMemoryQueue.class);
     private java.util.Queue<Attribute> newAttributeQueue = new LinkedBlockingQueue<>();
 
-    /**
-     * Enqueue a new attribute to the queue
-     * @param attribute
-     */
-    public void add(Attribute attribute) {
+    @Override
+    public void insertAttribute(Attribute attribute) {
         newAttributeQueue.add(attribute);
     }
 
-    // TODO: change to read
-    /**
-     * get n attributes where min <= n <= max. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
-     *
-     * @param min minimum number of items to be returned. the method will block until it is reached.
-     * @param max the maximum number of items to be returned.
-     * @param timeLimit specifies the maximum waiting time where the method will immediately return the items it has if larger than what is specified in the min param.
-     * @return an {@link Attributes} instance containing a list of duplicates
-     */
-    Attributes takeBatch(int min, int max, long timeLimit) {
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
+    @Override
+    public Attributes readAttributes(int min, int max, long timeLimit) {
         List<Attribute> batch = new LinkedList<>();
 
         for (int i = 0; i < max && batch.size() <= max; ++i) {
@@ -68,9 +51,11 @@ public class Queue {
     }
 
     // TODO
-    void markRead(Attributes batch) {
+    @Override
+    public void ackAttributes(Attributes batch) {
     }
 
+    @Override
     public int size() {
         return newAttributeQueue.size();
     }

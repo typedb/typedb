@@ -18,6 +18,10 @@
 
 package ai.grakn.engine.uniqueness;
 
+import ai.grakn.GraknTxType;
+import ai.grakn.engine.uniqueness.queue.Attribute;
+import ai.grakn.engine.uniqueness.queue.Attributes;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -30,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * TODO
@@ -38,6 +44,25 @@ import java.util.List;
 public class MergeAlgorithm {
     private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
 
+    public void merge(Attributes newAttributes) {
+        try {
+            LOG.info("starting a new batch to process these new attributes: " + newAttributes);
+            Set<KeyspaceAndValue> duplicates = newAttributes.attributes().stream()
+                    .map(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
+            for (KeyspaceAndValue keyspaceAndValue: duplicates) {
+                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
+                     EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
+                    merge(tx, keyspaceAndValue.value());
+                    tx.commitSubmitNoLogs();
+                }
+            }
+//                    newAttributes.markProcessed(); // TODO: enable after readAttributes is changed to processBatch()
+            LOG.info("new attributes processed.");
+        } catch (RuntimeException e) {
+            LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
+            throw e;
+        }
+    }
 
     /**
      * Merges a list of attributes.
