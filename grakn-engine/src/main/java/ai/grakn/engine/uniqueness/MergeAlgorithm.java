@@ -45,7 +45,8 @@ public class MergeAlgorithm {
         GraphTraversalSource tinker = tx.getTinkerTraversal();
         GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), value);
         Vertex mergeTargetV = duplicates.next();
-        duplicates.forEachRemaining(dup -> {
+        while (duplicates.hasNext()) {
+            Vertex dup = duplicates.next();
             try {
                 dup.vertices(Direction.IN).forEachRemaining(ent -> {
                     Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
@@ -57,7 +58,7 @@ public class MergeAlgorithm {
             catch (IllegalStateException vertexAlreadyRemovedException) {
                 LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
             }
-        });
+        }
     }
 
     /**

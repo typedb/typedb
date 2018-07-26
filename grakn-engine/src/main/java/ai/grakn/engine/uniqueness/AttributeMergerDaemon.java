@@ -104,23 +104,25 @@ public class AttributeMergerDaemon {
         return daemon;
     }
 
-    public void merge(int min, int max, int waitTimeLimitMs) {
+    public int merge(int min, int max, int waitTimeLimitMs) {
         try {
             Attributes newAttrs = newAttributeQueue.takeBatch(min, max, waitTimeLimitMs);
             LOG.info("starting a new batch to process these new attributes: " + newAttrs);
             Set<KeyspaceAndValue> duplicates = newAttrs.attributes().stream()
                     .map(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
-            duplicates.forEach(keyspaceAndValue -> {
+            for (KeyspaceAndValue keyspaceAndValue: duplicates) {
                 try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
                      EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
                     mergeAlgorithm.merge(tx, keyspaceAndValue.value());
                     tx.commitSubmitNoLogs();
                 }
-            });
+            }
 //                    newAttrs.markProcessed(); // TODO: enable after takeBatch is changed to processBatch()
             LOG.info("new attributes processed.");
+            return newAttributeQueue.size();
         } catch (RuntimeException e) {
             LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
+            throw e;
         }
     }
 

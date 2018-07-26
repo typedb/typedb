@@ -70,4 +70,8 @@ public class Queue {
     // TODO
     void markRead(Attributes batch) {
     }
+
+    public int size() {
+        return newAttributeQueue.size();
+    }
 }

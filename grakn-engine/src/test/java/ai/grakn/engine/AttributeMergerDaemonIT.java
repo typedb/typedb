@@ -5,18 +5,22 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.util.SimpleURI;
 import org.junit.Test;
 
-import java.util.Collection;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
@@ -36,7 +40,7 @@ public class AttributeMergerDaemonIT {
         Keyspace keyspace = Keyspace.of(keyspaceFriendlyNameWithDate); //
         System.out.println("testing performed on keyspace '" + keyspaceFriendlyNameWithDate + "'");
 
-        // turn off janus index and propertyUnique
+        // TODO: check that we've turned off janus index and propertyUnique
 
         // insert 2 "John"
         try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
@@ -77,6 +81,107 @@ public class AttributeMergerDaemonIT {
                 // assert that every entity connected to the duplicate "John" is connected to the real "John"
                 assertThat(names, equalTo(namesAssociatedToPeople));
             }
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToMergeManyAttributesIntoOne() {
+        String grakn = "localhost:48555";
+        String merge = "http://localhost:4567/merge";
+        String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
+        Keyspace keyspace = Keyspace.of(keyspaceFriendlyNameWithDate);
+        String name = "John";
+        int duplicateCount = 180;
+
+        // TODO: check that we've turned off janus index and propertyUnique
+
+        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+            try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                tx.graql().define(
+                        label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
+                        label("parent").sub("role"),
+                        label("child").sub("role"),
+                        label("person").sub("entity").has("name").plays("parent").plays("child"),
+                        label("parentchild").sub("relationship").relates("parent").relates("child")
+                ).execute();
+                tx.commit();
+            }
+        }
+
+        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+            System.out.println("inserting a new name attribute with value '" + name + "'...");
+            for (int i = 0; i < duplicateCount; ++i) {
+                try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                    tx.graql().insert(var().isa("name").val(name)).execute();
+                    tx.commit();
+                }
+            }
+            System.out.println("done.");
+        }
+
+        // merge
+        while (true) {
+            System.out.println("triggering merge.");
+            int merged = triggerMerge(merge);
+            System.out.println(merged + " attributes removed");
+            if (merged == 0) {
+                System.out.println(merged + " no duplicates exist. merge finished");
+                break;
+            }
+        }
+
+        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+            System.out.println("inserting a new name attribute with value '" + name + "'...");
+            for (int i = 0; i < duplicateCount; ++i) {
+                try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                    tx.graql().insert(var().isa("name").val(name)).execute();
+                    tx.commit();
+                }
+            }
+            System.out.println("done.");
+        }
+
+        // merge
+        while (true) {
+            System.out.println("triggering merge.");
+            int merged = triggerMerge(merge);
+            System.out.println(merged + " attributes removed");
+            if (merged == 0) {
+                System.out.println(merged + " no duplicates exist. merge finished");
+                break;
+            }
+        }
+
+        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+            try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
+                List<Concept> concept = tx.graql().match(var("n").isa("name")).get().execute()
+                        .stream().map(e -> e.get(var("n"))).collect(Collectors.toList());
+                assertThat(concept, hasSize(1));
+            }
+        }
+    }
+
+    private int triggerMerge(String url) {
+        try {
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("GET");
+            if (con.getResponseCode() != 200) {
+                throw new RuntimeException("request to '" + url + "', returned with HTTP status code" + con.getResponseCode());
+            }
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+                String inputLine;
+                StringBuffer response = new StringBuffer();
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+
+                return Integer.parseInt(response.toString());
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -29,7 +29,6 @@ public class ScratchpadTest {
     @Test
     public void printTheAnswerFromMatchIsaNameGet() throws InterruptedException {
         SimpleURI grakn = new SimpleURI("localhost", 48555);
-        String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
         Keyspace keyspace = Keyspace.of("grakn6"); //
 
         try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
