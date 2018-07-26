@@ -20,7 +20,6 @@ package ai.grakn.engine.uniqueness;
 
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -31,11 +30,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * TODO
@@ -55,12 +52,11 @@ public class MergeAlgorithm {
                     edge.remove();
                     ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
                 });
+                dup.remove();
             }
             catch (IllegalStateException vertexAlreadyRemovedException) {
                 LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
             }
-            dup.remove();
-
         });
     }
 
@@ -71,7 +67,7 @@ public class MergeAlgorithm {
      * @return the merged attribute (TODO)
      */
     public void merge2(EmbeddedGraknTx tx, List<Attribute> duplicates) {
-        LOG.info("merge started...");
+        LOG.info("merge2 started...");
 
         GraphTraversalSource tinker = tx.getTinkerTraversal();
         GraphTraversal<Vertex, Vertex> t = tinker.V().has(Schema.VertexProperty.INDEX.name(), duplicates.get(0).value());
@@ -96,15 +92,15 @@ public class MergeAlgorithm {
                         edge.remove();
                         ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
                     });
+                    dup.remove();
                 }
                 catch (IllegalStateException vertexAlreadyRemovedException) {
                     LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
                 }
-                dup.remove();
             }
 
             unlock(duplicates);
-            LOG.info("merge completed.");
+            LOG.info("merge2 completed.");
         }
     }
 
