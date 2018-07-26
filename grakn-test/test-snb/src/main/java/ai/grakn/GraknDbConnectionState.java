@@ -17,6 +17,9 @@
  */
 package ai.grakn;
 
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import com.ldbc.driver.DbConnectionState;
 
 import java.io.IOException;
@@ -47,8 +50,7 @@ public class GraknDbConnectionState extends DbConnectionState {
 
         keyspace = properties.get("ai.grakn.keyspace");
 
-        //TODO check if need to rebuild Grakn properties with current uri
-        session = Grakn.session(keyspace);
+        session = EmbeddedGraknSession.createEngineSession(Keyspace.of(keyspace), GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
     }
 
     @Override

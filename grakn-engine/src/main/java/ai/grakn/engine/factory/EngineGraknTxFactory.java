@@ -43,10 +43,6 @@ import java.util.concurrent.locks.Lock;
  * <p>
  * <p>
  *     This internal factory is used to produce {@link GraknTx}s.
- *
- *     It is also worth noting that both this class and {@link Grakn#session(String)} us the same
- *     {@link GraknTxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
- *     are actually the same graphs.
  * </p>
  *
  * @author fppt

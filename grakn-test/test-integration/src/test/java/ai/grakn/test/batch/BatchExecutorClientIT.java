@@ -69,15 +69,13 @@ public class BatchExecutorClientIT {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
-    private Keyspace keyspace;
 
     @Before
     public void setupSession() {
         // Because we think tinkerpop is not thread-safe and batch-loading uses multiple threads
         assumeFalse(usingTinker());
 
-        keyspace = randomKeyspace();
-        this.session = Grakn.session(keyspace, engine.config());
+        this.session = engine.sessionWithNewKeyspace();
     }
 
     @Ignore("This test stops and restart server - this is not supported yet by gRPC [https://github.com/grpc/grpc/issues/7031] - fix when gRPC 1.1 is released")
@@ -91,7 +89,7 @@ public class BatchExecutorClientIT {
             // Engine goes down
             engine.server().getHttpHandler().stopHTTP();
             // Most likely the first call doesn't find the server but it's retried
-            generate(this::query).limit(1).forEach(q -> loader.add(q, keyspace));
+            generate(this::query).limit(1).forEach(q -> loader.add(q, session.keyspace()));
             engine.server().getHttpHandler().startHTTP();
         }
 
@@ -109,7 +107,7 @@ public class BatchExecutorClientIT {
 
             // Load some queries
             generate(this::query).limit(1).forEach(q ->
-                    loader.add(q, keyspace)
+                    loader.add(q, session.keyspace())
             );
         }
 
@@ -123,7 +121,7 @@ public class BatchExecutorClientIT {
 
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             generate(this::query).limit(100).forEach(q ->
-                    loader.add(q, keyspace)
+                    loader.add(q, session.keyspace())
             );
         }
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
@@ -142,7 +140,7 @@ public class BatchExecutorClientIT {
 
             int n = 100;
             generate(this::query).limit(n).forEach(q ->
-                    loader.add(q, keyspace)
+                    loader.add(q, session.keyspace())
             );
 
             everythingLoaded.await();
@@ -170,7 +168,7 @@ public class BatchExecutorClientIT {
 
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             for (int i = 0; i < n; i++) {
-                loader.add(query(), keyspace);
+                loader.add(query(), session.keyspace());
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);

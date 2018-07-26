@@ -18,6 +18,9 @@
 
 package ai.grakn;
 
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.ResultReporter;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcQuery1;
@@ -62,7 +65,7 @@ public class GraknQueryHandlersTest extends TestCase {
         super.setUp();
 
         // connect to the graph
-        graknSession =  Grakn.session("snb");
+        graknSession = EmbeddedGraknSession.createEngineSession(Keyspace.of("snb"), GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
 
         // mock the graph connection
         mockConnectionState = mock(GraknDbConnectionState.class);

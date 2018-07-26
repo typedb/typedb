@@ -18,7 +18,6 @@
 
 package ai.grakn.test.batch;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.batch.Client;
