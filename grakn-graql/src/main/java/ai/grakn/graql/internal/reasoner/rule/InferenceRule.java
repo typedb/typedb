@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
@@ -67,7 +66,7 @@ import static java.util.stream.Collectors.toSet;
 public class InferenceRule {
 
     private final EmbeddedGraknTx<?> tx;
-    private final ConceptId ruleId;
+    private final Rule rule;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
@@ -76,15 +75,15 @@ public class InferenceRule {
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.ruleId = rule.id();
+        this.rule = rule;
         //TODO simplify once changes propagated to rule objects
         this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
         this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, EmbeddedGraknTx<?> tx){
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.ruleId = ruleId;
+        this.rule = rule;
         this.head = head;
         this.body = body;
     }
@@ -128,7 +127,7 @@ public class InferenceRule {
         return Patterns.conjunction(vars);
     }
 
-    public ConceptId getRuleId(){ return ruleId;}
+    public Rule getRule(){ return rule;}
 
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
@@ -244,7 +243,7 @@ public class InferenceRule {
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
                 ReasonerQueries.create(bodyAtoms, tx),
-                ruleId,
+                rule,
                 tx
         );
     }
@@ -254,7 +253,7 @@ public class InferenceRule {
             return new InferenceRule(
                     ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
                     ReasonerQueries.create(getBody().getAtoms(), tx),
-                    ruleId,
+                    rule,
                     tx
             );
         }
@@ -292,14 +291,14 @@ public class InferenceRule {
                     }).forEach(bodyRewrites::add);
 
             ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
-            return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
+            return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
         }
         return this;
     }
 
     private InferenceRule rewriteBodyAtoms(){
         if (getBody().requiresDecomposition()) {
-            return new InferenceRule(getHead(), getBody().rewrite(), ruleId, tx);
+            return new InferenceRule(getHead(), getBody().rewrite(), rule, tx);
         }
         return this;
     }
