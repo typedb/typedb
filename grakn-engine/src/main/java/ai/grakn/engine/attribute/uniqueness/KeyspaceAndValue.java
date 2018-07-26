@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.uniqueness.queue;
+package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.Keyspace;
-import ai.grakn.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -27,12 +26,11 @@ import com.google.auto.value.AutoValue;
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
-public abstract class Attribute {
+public abstract class KeyspaceAndValue {
     public abstract Keyspace keyspace();
     public abstract String value();
-    public abstract ConceptId conceptId();
 
-    public static Attribute create(Keyspace keyspace, String value, ConceptId conceptId) {
-        return new AutoValue_Attribute(keyspace, value, conceptId);
+    public static KeyspaceAndValue create(Keyspace keyspace, String value) {
+        return new AutoValue_KeyspaceAndValue(keyspace, value);
     }
 }

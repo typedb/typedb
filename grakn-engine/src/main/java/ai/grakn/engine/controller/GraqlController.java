@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.uniqueness.AttributeMergerDaemon;
+import ai.grakn.engine.attribute.uniqueness.AttributeMergerDaemon;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;

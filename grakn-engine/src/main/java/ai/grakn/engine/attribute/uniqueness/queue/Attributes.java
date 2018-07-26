@@ -16,9 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.uniqueness.queue;
+package ai.grakn.engine.attribute.uniqueness.queue;
 
-import ai.grakn.engine.uniqueness.queue.Attribute;
 import com.google.common.base.MoreObjects;
 
 import java.util.List;

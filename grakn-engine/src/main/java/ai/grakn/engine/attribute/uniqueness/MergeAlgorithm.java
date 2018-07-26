@@ -16,11 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.uniqueness;
+package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.uniqueness.queue.Attribute;
-import ai.grakn.engine.uniqueness.queue.Attributes;
+import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
+import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;

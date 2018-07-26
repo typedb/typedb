@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.uniqueness.queue;
+package ai.grakn.engine.attribute.uniqueness.queue;
 
 /**
  * TODO

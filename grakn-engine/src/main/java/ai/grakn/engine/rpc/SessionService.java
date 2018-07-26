@@ -31,7 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.uniqueness.AttributeMergerDaemon;
+import ai.grakn.engine.attribute.uniqueness.AttributeMergerDaemon;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;

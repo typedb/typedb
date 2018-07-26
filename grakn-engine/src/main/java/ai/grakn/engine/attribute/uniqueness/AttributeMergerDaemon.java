@@ -16,14 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.engine.uniqueness;
+package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.uniqueness.queue.Attribute;
-import ai.grakn.engine.uniqueness.queue.Attributes;
-import ai.grakn.engine.uniqueness.queue.InMemoryQueue;
-import ai.grakn.engine.uniqueness.queue.Queue;
+import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
+import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
+import ai.grakn.engine.attribute.uniqueness.queue.InMemoryQueue;
+import ai.grakn.engine.attribute.uniqueness.queue.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class AttributeMergerDaemon {
     /**
      * Stops the attribute merger daemon
      */
-    public void stopMergeDaemon() {
+    public void stopDaemon() {
         stopDaemon = true;
     }
 
@@ -70,7 +70,7 @@ public class AttributeMergerDaemon {
      * the merge algorithm as implemented in {@link MergeAlgorithm}.
      *
      */
-    private CompletableFuture<Void> startMergeDaemon() {
+    private CompletableFuture<Void> startDaemon() {
         CompletableFuture<Void> daemon = CompletableFuture.supplyAsync(() -> {
             LOG.info("startDaemon() - start");
             while (!stopDaemon) {
