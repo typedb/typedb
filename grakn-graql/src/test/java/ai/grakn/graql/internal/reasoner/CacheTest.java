@@ -33,7 +33,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -95,7 +95,7 @@ public class CacheTest {
 
     @Test
     public void recordRetrieveAnswers(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
         assertEquals(record, cache.getAnswers(retrieveQuery).unify(retrieveToRecordUnifier));
         assertEquals(record, cache.getAnswers(recordQuery));
@@ -103,16 +103,16 @@ public class CacheTest {
 
     @Test
     public void recordUpdateRetrieveAnswers(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
-        cache.recordAnswer(recordQuery, singleAnswer);
+        cache.record(recordQuery, singleAnswer);
         assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
         assertTrue(cache.getAnswers(retrieveQuery).contains(singleAnswer.unify(recordToRetrieveUnifier)));
     }
 
     @Test
     public void recordRetrieveAnswerStream(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         Set<Answer> record = cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet());
         assertEquals(record, cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(Collectors.toSet()));
         assertEquals(record, cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet()));
@@ -120,9 +120,9 @@ public class CacheTest {
 
     @Test
     public void recordUpdateRetrieveAnswerStream(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
-        cache.recordAnswer(recordQuery, singleAnswer);
+        cache.record(recordQuery, singleAnswer);
 
         assertTrue(cache.getAnswerStream(recordQuery).anyMatch(ans -> ans.equals(singleAnswer)));
         assertTrue(cache.getAnswerStream(retrieveQuery).anyMatch(ans -> ans.equals(singleAnswer.unify(recordToRetrieveUnifier))));
@@ -130,38 +130,38 @@ public class CacheTest {
 
     @Test
     public void getRetrieveAnswerStream() {
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
 
         Stream<Answer> recordStream = cache.getAnswerStream(recordQuery);
         Stream<Answer> retrieveStream = cache.getAnswerStream(retrieveQuery);
 
-        QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
+        QueryAnswers records = new QueryAnswers(recordStream.collect(Collectors.toSet()));
         QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
 
-        assertTrue(recordAnswers.contains(answer));
+        assertTrue(records.contains(answer));
         assertTrue(retrieveAnswers.contains(retrieveAnswer));
     }
 
     @Test
     public void getUpdateRetrieveAnswerStream() {
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
         Answer retrieveSingleAnswer = singleAnswer.unify(recordToRetrieveUnifier);
         Stream<Answer> recordStream = cache.getAnswerStream(recordQuery);
         Stream<Answer> retrieveStream = cache.getAnswerStream(retrieveQuery);
 
-        cache.recordAnswer(recordQuery, singleAnswer);
+        cache.record(recordQuery, singleAnswer);
 
-        QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
+        QueryAnswers records = new QueryAnswers(recordStream.collect(Collectors.toSet()));
         QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
 
         //NB: not expecting the update in the stream
-        assertTrue(recordAnswers.contains(answer));
+        assertTrue(records.contains(answer));
         assertTrue(retrieveAnswers.contains(retrieveAnswer));
-        assertFalse(recordAnswers.contains(singleAnswer));
+        assertFalse(records.contains(singleAnswer));
         assertFalse(retrieveAnswers.contains(retrieveSingleAnswer));
 
         assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
@@ -170,10 +170,10 @@ public class CacheTest {
 
     @Test
     public void recordRetrieveSingleAnswer(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         Answer answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         Answer retrieveAnswer = answer.unify(recordToRetrieveUnifier);
-        cache.recordAnswer(recordQuery, answer);
+        cache.record(recordQuery, answer);
 
         assertEquals(cache.getAnswer(recordQuery, new QueryAnswer()), new QueryAnswer());
         assertEquals(cache.getAnswer(recordQuery, answer), answer);

@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Collections;
@@ -50,7 +50,7 @@ public class CumulativeState extends QueryStateBase{
                            Unifier u,
                            QueryStateBase parent,
                            Set<ReasonerAtomicQuery> subGoals,
-                           QueryCache<ReasonerAtomicQuery> cache) {
+                           SimpleQueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
 
