@@ -48,7 +48,6 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
