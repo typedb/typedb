@@ -71,7 +71,7 @@ public class InferenceRule {
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
-    private int priority = Integer.MAX_VALUE;
+    private long priority = Long.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
@@ -113,9 +113,10 @@ public class InferenceRule {
     /**
      * @return the priority with which the rule should be fired
      */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = -RuleUtils.getDependentRules(getBody()).size();
+    public long resolutionPriority(){
+        if (priority == Long.MAX_VALUE) {
+            //NB: only checking locally as checking full tree (getDependentRules) is expensive
+            priority = -getBody().selectAtoms().flatMap(Atom::getApplicableRules).count();
         }
         return priority;
     }
@@ -132,7 +133,7 @@ public class InferenceRule {
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
-    public boolean hasDisconnectedHead(){
+    private boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 

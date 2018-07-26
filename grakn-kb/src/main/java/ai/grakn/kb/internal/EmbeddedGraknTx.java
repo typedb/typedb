@@ -45,6 +45,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.cache.GlobalCache;
 import ai.grakn.kb.internal.cache.TxCache;
+import ai.grakn.kb.internal.cache.TxRuleCache;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.ConceptImpl;
 import ai.grakn.kb.internal.concept.ConceptVertex;
@@ -120,11 +121,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
+    private final TxRuleCache ruleCache;
 
     public EmbeddedGraknTx(EmbeddedGraknSession session, G graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
+        this.ruleCache = new TxRuleCache(this);
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(session.config());
@@ -139,6 +142,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     public EmbeddedGraknSession session(){
         return session;
     }
+
+    public TxRuleCache ruleCache(){ return ruleCache;}
 
     /**
          * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -546,8 +551,19 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, Schema.BaseType.RULE, false,
+        Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
+        //NB: thenTypes() will be empty as type edges added on commit
+        //NB: this will cache also non-committed rules
+        if (rule.then() != null){
+            rule.then().admin().varPatterns().stream()
+                    .flatMap(v -> v.getTypeLabels().stream())
+                    .map(vl -> this.admin().<SchemaConcept>getSchemaConcept(vl))
+                    .filter(Objects::nonNull)
+                    .filter(Concept::isType)
+                    .forEach(type -> ruleCache.updateRules(type, rule));
+        }
+        return rule;
     }
 
     //------------------------------------ Lookup
@@ -653,6 +669,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         closeSession();
         clearGraph();
         txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+        ruleCache().closeTx();
 
         //TODO We should not hit the REST endpoint when deleting keyspaces through a graph
         // retrieved from and EngineGraknGraphFactory
@@ -728,6 +745,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             //Ignored for Tinker
         } finally {
             txCache().closeTx(closedReason);
+            ruleCache().closeTx();
         }
     }
 

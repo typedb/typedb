@@ -39,6 +39,8 @@ abstract class VarPatternImpl extends AbstractVarPattern {
 
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
 
+    private int hashCode = 0;
+
     @Override
     public abstract Var var();
 
@@ -65,11 +67,13 @@ abstract class VarPatternImpl extends AbstractVarPattern {
 
     @Override
     public final int hashCode() {
-        // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
-        int result = properties().hashCode();
-        if (var().isUserDefinedName()) result = 31 * result + var().hashCode();
-        result = 31 * result + (var().isUserDefinedName() ? 1 : 0);
-        return result;
+        if (hashCode == 0) {
+            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
+            hashCode = properties().hashCode();
+            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
+            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+        }
+        return hashCode;
     }
 
     @Override
