@@ -298,7 +298,7 @@ public class InferenceRule {
 
     private InferenceRule rewriteBodyAtoms(){
         if (getBody().requiresDecomposition()) {
-            return new InferenceRule(getHead(), getBody().rewrite(), ruleId, tx);
+            return new InferenceRule(getHead(), getBody().rewrite(), rule, tx);
         }
         return this;
     }

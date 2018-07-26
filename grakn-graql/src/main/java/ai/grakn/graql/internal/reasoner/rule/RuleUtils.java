@@ -73,12 +73,11 @@ public class RuleUtils {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
-     * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops
      */
-    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, GraknTx graph){
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
         Iterator<Rule> ruleIterator = rules.stream()
-                .map(r -> graph.<Rule>getConcept(r.getRule().id()))
+                .map(InferenceRule::getRule)
                 .iterator();
         boolean cyclical = false;
         while (ruleIterator.hasNext() && !cyclical){
