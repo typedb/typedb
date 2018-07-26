@@ -1,5 +1,5 @@
-from src.service.Session.util import enums
-from src.service.Session.Concept import ConceptFactory
+from grakn.service.Session.util import enums
+from grakn.service.Session.Concept import ConceptFactory
 
 class ResponseConverter(object):
     

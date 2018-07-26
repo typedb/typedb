@@ -1,9 +1,10 @@
-from src.service.Session.util import enums
 from typing import Union, Optional
-from src.service.Session.util.RequestBuilder import RequestBuilder
-# from src.service.Session.util.ResponseConverter import ResponseConverter # cannot get name from module because circular imports
-import src.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
-from src.service.Session.Concept import ConceptFactory
+
+from grakn.service.Session.util import enums
+from grakn.service.Session.util.RequestBuilder import RequestBuilder
+# from grakn.service.Session.util.ResponseConverter import ResponseConverter # cannot get name from module because circular imports
+import grakn.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
+from grakn.service.Session.Concept import ConceptFactory
 
 
 

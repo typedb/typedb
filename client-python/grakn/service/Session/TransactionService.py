@@ -1,10 +1,10 @@
 import queue
 from typing import Type
 
-from src.service.Session.util.RequestBuilder import RequestBuilder
+from grakn.service.Session.util.RequestBuilder import RequestBuilder
 # from src.service.Session.util.ResponseConverter import ResponseConverter
-import src.service.Session.util.ResponseConverter as ResponseConverter
-from src.service.Session.util import enums
+import grakn.service.Session.util.ResponseConverter as ResponseConverter
+from grakn.service.Session.util import enums
 
 class TransactionService(object):
 
