@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='grakn',
@@ -7,6 +7,7 @@ setup(
     license='Apache-2.0',
     description='A Python client for Grakn',
     long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",
     author='Grakn Labs',
     author_email='community@grakn.ai',
     url='https://github.com/flyingsilverfin/grakn/tree/client-python-dev',
