@@ -21,13 +21,13 @@ To start deployment, click on the `Launch on Compute Engine` button which will t
 
 Feel free to adjust the settings to your needs.
 
-### <a name="firewallk"></a> Configuring firewall settings
-Please pay extra attention to the `Allow TCP port 48555 traffic` tickbox as it allows automatic addition of a suitable firewall rule to allow connecting to servers from outside the cluster via RPC. 
+### <a name="firewall"></a> Configuring firewall settings
+Please pay extra attention to the `Allow TCP port 48555 traffic` tickbox as it allows the automatic addition of a suitable firewall rule to allow connecting to servers from outside the cluster via RPC. 
 The tickbox location is highlighted below:
 
 ![](/images/gc-deployment-options-firewall.png)
 
-If you decide to tick the box, please specify the allowed IP ranges to connect via the RPC port 48555. The field to control that can be found after clicking on the `More` roll as pictured below:
+Should you decide to tick the box, please specify the allowed IP ranges to connect via the RPC port 48555. The field to control this can be found after clicking on the `More` roll as pictured below:
 
 ![](/images/gc-deployment-options-ip-ranges.png)
 
@@ -70,7 +70,7 @@ To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It 
 
 ![](/images/gc-grpc-firewall-command.png)
 
-This firewall setting is also optionally settable during the [deployment stage](#firewall).
+This firewall setting is also available during the [deployment stage](#firewall).
 
 ## Accessing Grakn
 There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
