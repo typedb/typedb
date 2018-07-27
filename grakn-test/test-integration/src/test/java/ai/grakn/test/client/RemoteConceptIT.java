@@ -29,7 +29,11 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.ImmutableMap;
@@ -42,9 +46,12 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -86,6 +93,15 @@ public class RemoteConceptIT {
     private Label FRIEND = Label.of("friend");
     private Label FRIENDSHIP = Label.of("friendship");
 
+    private Label EMPLOYMENT = Label.of("employment");
+    private Label EMPLOYER = Label.of("employer");
+    private Label EMPLOYEE = Label.of("employee");
+
+    //Rules
+    private Label TEST_RULE = Label.of("genderisedParentship");
+    private Pattern testRuleWhen = var("x").isa("person");
+    private Pattern testRuleThen = var("y").isa("person");
+
     // Attribute values
     private String ALICE = "Alice";
     private String ALICE_EMAIL = "alice@email.com";
@@ -105,6 +121,11 @@ public class RemoteConceptIT {
     private RelationshipType marriage;
     private Role friend;
     private RelationshipType friendship;
+    private Role employer;
+    private Role employee;
+    private RelationshipType employment;
+    private Rule metaRule;
+    private Rule testRule;
 
     private Attribute<String> emailAlice;
     private Attribute<String> emailBob;
@@ -114,6 +135,7 @@ public class RemoteConceptIT {
     private Entity alice;
     private Entity bob;
     private Relationship aliceAndBob;
+    private Relationship selfEmployment;
 
     @BeforeClass
     public static void setUpClass() {
@@ -149,11 +171,18 @@ public class RemoteConceptIT {
         wife = tx.putRole(WIFE);
         marriage = tx.putRelationshipType(MARRIAGE).relates(wife).relates(husband);
 
+        employer = tx.putRole(EMPLOYER);
+        employee = tx.putRole(EMPLOYEE);
+        employment = tx.putRelationshipType(EMPLOYMENT).relates(employee).relates(employer);
 
         friend = tx.putRole(FRIEND);
         friendship = tx.putRelationshipType(FRIENDSHIP);
 
         person.plays(wife).plays(husband);
+
+        //Rules
+        metaRule = tx.getSchemaConcept(Label.of("rule"));
+        testRule = tx.putRule(TEST_RULE, testRuleWhen, testRuleThen);
 
         // Attributes
         EMAIL_COUNTER++;
@@ -170,6 +199,8 @@ public class RemoteConceptIT {
 
         // Relationships
         aliceAndBob = marriage.create().assign(wife, alice).assign(husband, bob);
+        selfEmployment = employment.create().assign(employer, alice).assign(employee, alice);
+
     }
 
     @After
@@ -253,20 +284,30 @@ public class RemoteConceptIT {
         assertNull(age.attribute(-1));
     }
 
+    @Test
+    public void whenCallingGetWhenOnMetaRule_ReturnNull(){
+        assertNull(metaRule.when());
+    }
+
+    @Test
+    public void whenCallingGetThenOnMetaRule_ReturnNull(){
+        assertNull(metaRule.then());
+    }
+
     @Ignore @Test //TODO: build a more expressive dataset to test this
     public void whenCallingIsInferred_GetTheExpectedResult() {
         //assertTrue(thing.isInferred());
         //assertFalse(thing.isInferred());
     }
 
-    @Ignore @Test //TODO: build a more expressive dataset to test this
+    @Test
     public void whenCallingGetWhen_GetTheExpectedResult() {
-        //assertEquals(PATTERN, rule.when());
+        assertEquals(testRuleWhen, testRule.when());
     }
 
-    @Ignore @Test //TODO: build a more expressive dataset to test this
+    @Test
     public void whenCallingGetThen_GetTheExpectedResult() {
-        //assertEquals(PATTERN, rule.then());
+        assertEquals(testRuleThen, testRule.then());
     }
 
     @Test
@@ -350,13 +391,13 @@ public class RemoteConceptIT {
 
     @Test
     public void whenCallingThingPlays_GetTheExpectedResult() {
-        assertThat(alice.roles().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife));
+        assertThat(alice.roles().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(wife, employee, employer));
         assertThat(bob.roles().filter(r -> !r.isImplicit()).collect(toSet()), containsInAnyOrder(husband));
     }
 
     @Test
     public void whenCallingRelationshipsWithNoArguments_GetTheExpectedResult() {
-        assertThat(alice.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob));
+        assertThat(alice.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob, selfEmployment));
         assertThat(bob.relationships().filter(rel -> !rel.type().isImplicit()).collect(toSet()), containsInAnyOrder(aliceAndBob));
     }
 
@@ -395,6 +436,13 @@ public class RemoteConceptIT {
     @Test
     public void whenCallingRolePlayersWithNoArguments_GetTheExpectedResult() {
         assertThat(aliceAndBob.rolePlayers().collect(toSet()), containsInAnyOrder(alice, bob));
+    }
+
+    @Test
+    public void whenCallingRolePlayersWithNoArgumentsOnReflexiveRelation_GetDistinctExpectedResult() {
+        List<Thing> list = selfEmployment.rolePlayers().collect(toList());
+        assertEquals(1, list.size());
+        assertThat(list, containsInAnyOrder(alice));
     }
 
     @Test

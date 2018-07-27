@@ -23,7 +23,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import java.util.Set;
 
 /**
  * Admin class for inspecting and manipulating a DeleteQuery
@@ -41,5 +41,5 @@ public interface DeleteQueryAdmin extends DeleteQuery {
      * Get the {@link Var}s to delete on each result of {@link #match()}.
      */
     @CheckReturnValue
-    Collection<? extends Var> vars();
+    Set<Var> vars();
 }

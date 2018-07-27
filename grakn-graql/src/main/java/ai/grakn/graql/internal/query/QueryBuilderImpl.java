@@ -115,7 +115,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
-        return Queries.insert(varAdmins, tx);
+        return Queries.insert(tx, varAdmins);
     }
 
     @Override

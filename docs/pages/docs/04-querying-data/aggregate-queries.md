@@ -140,7 +140,7 @@ Find the minimum of the given attribute variable.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
 <pre class="language-graql"> <code>
-match $x isa person, has firstname $n; aggregate min $n;
+match $x isa person, has age $a; aggregate min $a;
 </code>
 </pre>
 </div>

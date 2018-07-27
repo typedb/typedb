@@ -67,9 +67,9 @@ abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMa
     @Override
     public final InsertQuery withTx(GraknTx tx) {
         if (match() != null) {
-            return Queries.insert(varPatterns(), match().withTx(tx).admin());
+            return Queries.insert(match().withTx(tx).admin(), varPatterns());
         } else {
-            return Queries.insert(varPatterns(), tx);
+            return Queries.insert(tx, varPatterns());
         }
     }
 
