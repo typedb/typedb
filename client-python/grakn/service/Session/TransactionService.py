@@ -102,8 +102,8 @@ class Communicator(object):
         self._queue.put(request)
 
     def __next__(self):
-        print("`next` called on Communicator")
-        print("Current queue: {0}".format(list(self._queue.queue)))
+        # print("`next` called on Communicator")
+        # print("Current queue: {0}".format(list(self._queue.queue)))
         next_item = self._queue.get(block=True)
         if next_item is None:
             raise StopIteration()
@@ -114,13 +114,24 @@ class Communicator(object):
 
     def send(self, request):
         if self.closed:
-            raise Exception("gRPC connection is closed!")
-        self._add_request(request)
-        response = next(self._response_iterator)
-        if response != None:
-            return response
-        else:
-            raise Exception("No response from gRPC")
+            #TODO specialize exception
+            # TODO integrate this into TransactionService to throw a "Transaction is closed" rather than "connection is closed..."
+            raise Exception("Connection is closed")
+
+        try:
+            self._add_request(request)
+            response = next(self._response_iterator)
+        except Exception as e: # TODO specialize exception
+            # on any GRPC exception, close the stream
+            self.close()
+            # TODO specialize exception
+            raise Exception("Server/network error: {0}".format(e))
+
+        if response is None:
+            # TODO specialize exception
+            raise Exception("No response from connection")
+        
+        return response
 
     def close(self):
         with self._queue.mutex: # probably don't even need the mutex
