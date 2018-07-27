@@ -9,8 +9,8 @@ permalink: /docs/get-started/grakn-console
 folder: docs
 ---
 
-The Grakn console executable is contained in the `bin` folder of the distribution and is shared with `server` and `cluster` functionalities.
-Once the grakn server is running, to open grakn console, navigate to the `bin` directory and run:
+The Grakn console executable is contained in the main directory of the distribution and is shared with `server` and `cluster` functionalities.
+Once the grakn server is running, to open the Grakn console, navigate to the distribution directory and run:
 
 ```
 ./grakn console start

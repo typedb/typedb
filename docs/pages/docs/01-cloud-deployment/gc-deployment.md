@@ -19,7 +19,21 @@ To start deployment, click on the `Launch on Compute Engine` button which will t
 
 ![](/images/gc-deployment-options.png)
 
-Feel free to adjust the settings to your needs. When satisfied with the configuration press `Deploy`
+Feel free to adjust the settings to your needs.
+
+### <a name="firewall"></a> Configuring firewall settings
+Please pay extra attention to the `Allow TCP port 48555 traffic` tickbox as it allows the automatic addition of a suitable firewall rule to allow connecting to servers from outside the cluster via RPC. 
+The tickbox location is highlighted below:
+
+![](/images/gc-deployment-options-firewall.png)
+
+Should you decide to tick the box, please specify the allowed IP ranges to connect via the RPC port 48555. The field to control this can be found after clicking on the `More` roll as pictured below:
+
+![](/images/gc-deployment-options-ip-ranges.png)
+
+### Finalising deployment
+
+When satisfied with the configuration, press `Deploy`.
 
 ![](/images/gc-deployment-pending.png)
 
@@ -48,14 +62,18 @@ UPDATE USER grakn WITH PASSWORD newpassword
 
 More details on available commands can be found [here](http://dev.grakn.ai/docs/get-started/grakn-console). 
 
-## Accessing Grakn
-There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
+## Connecting to Grakn
+ 
+### Using Grakn gRPC
 
-### Using Grakn gRPC client
-
-To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is not enabled by default. To create a suitable firewall rule, execute the command in the red circle in your terminal:
+To enable gRPC communication, traffic on TCP port 48555 needs to be allowed. It is not enabled by default. To create a suitable firewall rule, please execute the command in the red circle in your terminal:
 
 ![](/images/gc-grpc-firewall-command.png)
+
+This firewall setting is also available during the [deployment stage](#firewall).
+
+## Accessing Grakn
+There are various ways to access Grakn in the cloud. Here we will address the most common usage patterns.
 
 ### Logging in into a node
 You may require a more direct interaction with the database. You need to log into a node to achieve that.
