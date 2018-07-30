@@ -41,17 +41,17 @@ With aggregate queries you can calculate means, standard deviations, counts and 
 How would you find the standard deviation of the risk values of all bonds?
 
 
-#### Asking things
-Answer me quickly: do we have a company named "AwesomePuppies" in our knowledge graph?
+#### Count things
+Answer me quickly: how many companies are named "AwesomePuppies" in our knowledge graph?
 
 Let’s ask the dashboard. Literally. Run this query in the _Dashboard Console_:
 
 ```graql
 match $x isa company has name "AwesomePuppies";
-aggregate ask;
+aggregate count;
 ```
 
-To find out whether something is in the knowledge graph, you just need to use the `ask` aggregate. If the `get` query returns no result, then the corresponding `ask` aggregate will return `False`. Otherwise it will return `True`. Nothing fancy, but very useful. Especially if you are building an app on top of Grakn.
+To count the occurrence of something in the knowledge graph, you can use `count` aggregate. If the `get` query returns no result, then the corresponding `count` aggregate will return `0`. Otherwise it will return the total count. Nothing fancy, but very useful. Especially if you are building an app on top of Grakn.
 
 
 ## Compute queries
