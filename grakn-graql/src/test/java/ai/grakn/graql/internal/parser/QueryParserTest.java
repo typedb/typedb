@@ -608,7 +608,15 @@ public class QueryParserTest {
     @Test
     public void testParseAggregateGroup() {
         AggregateQuery<Map<Concept, List<ConceptMap>>> expected = match(var("x").isa("movie")).aggregate(group("x"));
-        AggregateQuery<Map<Concept, List<ConceptMap>>> parsed = parse("match $x isa movie; aggregate (count as c, group $x as g);");
+        AggregateQuery<Map<Concept, List<ConceptMap>>> parsed = parse("match $x isa movie; aggregate group $x;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseAggregateGroupCount() {
+        AggregateQuery<Map<Concept, Value>> expected = match(var("x").isa("movie")).aggregate(group("x", count()));
+        AggregateQuery<Map<Concept, Value>> parsed = parse("match $x isa movie; aggregate group $x count;");
 
         assertEquals(expected, parsed);
     }
@@ -625,7 +633,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x (count as c);";
+        String query = "match $x isa movie; aggregate group $x count;";
         assertEquals(query, parse(query).toString());
     }
 
