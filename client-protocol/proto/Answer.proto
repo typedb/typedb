@@ -13,7 +13,7 @@ message Answer {
         ConceptList conceptList = 2;
         ConceptSet conceptSet = 3;
         ConceptSetMeasure conceptSetMeasure = 4;
-        Numeric numeric = 5;
+        Value value = 5;
     }
 }
 
@@ -43,7 +43,7 @@ message ConceptSetMeasure {
     Explanation explanation = 3;
 }
 
-message Numeric {
+message Value {
     Number number = 1;
     Explanation explanation = 2;
 }
@@ -54,4 +54,5 @@ message ConceptIds {
 
 message Number {
     string value = 1;
+    // We use a string to contain the full representation of a number
 }

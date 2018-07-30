@@ -45,7 +45,7 @@ import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
@@ -74,7 +74,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.max;
@@ -384,7 +383,7 @@ public class ServerRPCIT {
             assertEquals(10, tx.graql().compute(MEAN).of("age").in("human").execute().get(0).number().intValue());
 
 
-            List<Numeric> answer = tx.graql().compute(STD).of("age").in("human").execute();
+            List<Value> answer = tx.graql().compute(STD).of("age").in("human").execute();
             assertEquals(0, answer.get(0).number().intValue());
 
 
@@ -432,45 +431,41 @@ public class ServerRPCIT {
             Entity alice = person.create().has(name.create("Alice")).has(age.create(20));
             Entity bob = person.create().has(name.create("Bob")).has(age.create(22));
 
-            AggregateQuery<Number> nullQuery =
+            AggregateQuery<Value> nullQuery =
                     tx.graql().match(var("x").isa("person").has("rating", var("y"))).aggregate(sum("y"));
             assertNull(nullQuery.execute());
 
-            AggregateQuery<Boolean> askQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(ask());
-            assertTrue(askQuery.execute());
-
-            AggregateQuery<Long> countQuery =
+            AggregateQuery<Value> countQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count());
-            assertEquals(2L, countQuery.execute().longValue());
+            assertEquals(2L, countQuery.execute().number().longValue());
 
-            AggregateQuery<Number> sumAgeQuery =
+            AggregateQuery<Value> sumAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(sum("y"));
-            assertEquals(42, sumAgeQuery.execute().intValue());
+            assertEquals(42, sumAgeQuery.execute().number().intValue());
 
-            AggregateQuery<Number> minAgeQuery =
+            AggregateQuery<Value> minAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(min("y"));
-            assertEquals(20, minAgeQuery.execute().intValue());
+            assertEquals(20, minAgeQuery.execute().number().intValue());
 
-            AggregateQuery<Number> maxAgeQuery =
+            AggregateQuery<Value> maxAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(max("y"));
-            assertEquals(22, maxAgeQuery.execute().intValue());
+            assertEquals(22, maxAgeQuery.execute().number().intValue());
 
-            AggregateQuery<Number> meanAgeQuery =
+            AggregateQuery<Value> meanAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(mean("y"));
-            assertEquals(21.0d, meanAgeQuery.execute().doubleValue(), 0.01d);
+            assertEquals(21.0d, meanAgeQuery.execute().number().doubleValue(), 0.01d);
 
-            AggregateQuery<Number> medianAgeQuery =
+            AggregateQuery<Value> medianAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(median("y"));
-            assertEquals(21.0d, medianAgeQuery.execute().doubleValue(), 0.01d);
+            assertEquals(21.0d, medianAgeQuery.execute().number().doubleValue(), 0.01d);
 
-            AggregateQuery<Number> stdAgeQuery =
+            AggregateQuery<Value> stdAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(std("y"));
             int n = 2;
             double mean = (20 + 22) / n;
             double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
             double std = Math.sqrt(var);
-            assertEquals(std, stdAgeQuery.execute().doubleValue(), 0.0001d);
+            assertEquals(std, stdAgeQuery.execute().number().doubleValue(), 0.0001d);
 
             // TODO: Enabble the test below once we fix Group Aggregate response through GRPC
 //            AggregateQuery<Map<Concept, List<Answer>>> groupByAgeQuery =

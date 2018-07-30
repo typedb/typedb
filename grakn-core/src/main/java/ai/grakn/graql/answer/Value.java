@@ -23,23 +23,23 @@ import ai.grakn.graql.admin.Explanation;
 /**
  * A type of {@link Answer} object that contains a {@link Number}.
  */
-public class Numeric implements Answer<Numeric>{
+public class Value implements Answer<Value>{
 
-    private final Number value;
+    private final Number number;
     private final Explanation explanation;
 
-    public Numeric(Number value) {
-        this(value, null);
+    public Value(Number number) {
+        this(number, null);
     }
 
-    public Numeric(Number value, Explanation explanation) {
-        this.value = value;
+    public Value(Number number, Explanation explanation) {
+        this.number = number;
         this.explanation = explanation;
     }
 
 
     @Override
-    public Numeric get() {
+    public Value get() {
         return this;
     }
 
@@ -49,19 +49,19 @@ public class Numeric implements Answer<Numeric>{
     }
 
     public Number number() {
-        return value;
+        return number;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        Numeric a2 = (Numeric) obj;
-        return this.value.toString().equals(a2.value.toString());
+        Value a2 = (Value) obj;
+        return this.number.toString().equals(a2.number.toString());
     }
 
     @Override
     public int hashCode(){
-        return value.hashCode();
+        return number.hashCode();
     }
 }

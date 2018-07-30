@@ -24,6 +24,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -37,58 +38,51 @@ public class Aggregates {
     private Aggregates() {}
 
     /**
-     * Aggregate that checks if there are any results
-     */
-    public static Aggregate<Boolean> ask() {
-        return AskAggregate.get();
-    }
-
-    /**
      * Aggregate that counts results of a {@link Match}.
      */
-    public static Aggregate<Long> count() {
+    public static Aggregate<Value> count() {
         return new CountAggregate();
     }
 
     /**
      * Aggregate that sums results of a {@link Match}.
      */
-    public static Aggregate<Number> sum(Var varName) {
+    public static Aggregate<Value> sum(Var varName) {
         return new SumAggregate(varName);
     }
 
     /**
      * Aggregate that finds minimum of a {@link Match}.
      */
-    public static Aggregate<Number> min(Var varName) {
+    public static Aggregate<Value> min(Var varName) {
         return new MinAggregate(varName);
     }
 
     /**
      * Aggregate that finds maximum of a {@link Match}.
      */
-    public static Aggregate<Number> max(Var varName) {
+    public static Aggregate<Value> max(Var varName) {
         return new MaxAggregate(varName);
     }
 
     /**
      * Aggregate that finds mean of a {@link Match}.
      */
-    public static Aggregate<Number> mean(Var varName) {
+    public static Aggregate<Value> mean(Var varName) {
         return new MeanAggregate(varName);
     }
 
     /**
      * Aggregate that finds median of a {@link Match}.
      */
-    public static Aggregate<Number> median(Var varName) {
+    public static Aggregate<Value> median(Var varName) {
         return new MedianAggregate(varName);
     }
 
     /**
      * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
      */
-    public static Aggregate<Number> std(Var varName) {
+    public static Aggregate<Value> std(Var varName) {
         return new StdAggregate(varName);
     }
 

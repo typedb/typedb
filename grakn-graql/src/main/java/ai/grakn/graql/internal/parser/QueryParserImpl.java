@@ -252,7 +252,6 @@ public class QueryParserImpl implements QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, args -> Graql.count());
-        registerAggregate("ask", 0, args -> Graql.ask());
         registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
         registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
         registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));

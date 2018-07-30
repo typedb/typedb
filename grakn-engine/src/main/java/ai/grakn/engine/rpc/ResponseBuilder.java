@@ -33,7 +33,7 @@ import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.SessionProto;
@@ -280,8 +280,8 @@ public class ResponseBuilder {
                 answer.setConceptSetMeasure(conceptSetMeasure((ConceptSetMeasure) object));
             } else if (object instanceof ConceptSet) {
                 answer.setConceptSet(conceptSet((ConceptSet) object));
-            } else if (object instanceof Numeric) {
-                answer.setNumeric(numeric((Numeric) object));
+            } else if (object instanceof Value) {
+                answer.setValue(value((Value) object));
             }
 
             return answer.build();
@@ -341,13 +341,13 @@ public class ResponseBuilder {
             return conceptSetMeasureProto.build();
         }
 
-        static AnswerProto.Numeric numeric(Numeric answer) {
-            AnswerProto.Numeric.Builder numericProto = AnswerProto.Numeric.newBuilder();
-            numericProto.setNumber(number(answer.number()));
+        static AnswerProto.Value value(Value answer) {
+            AnswerProto.Value.Builder valueProto = AnswerProto.Value.newBuilder();
+            valueProto.setNumber(number(answer.number()));
             if (answer.explanation() != null && answer.explanation().getQuery() != null) {
-                numericProto.setExplanation(explanation(answer.explanation()));
+                valueProto.setExplanation(explanation(answer.explanation()));
             }
-            return numericProto.build();
+            return valueProto.build();
         }
 
         static AnswerProto.Number number(Number number) {

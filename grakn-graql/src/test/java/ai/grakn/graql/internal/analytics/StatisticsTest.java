@@ -33,7 +33,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
@@ -158,7 +158,7 @@ public class StatisticsTest {
 
     @Test
     public void testMinAndMax() throws Exception {
-        List<Numeric> result;
+        List<Value> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -250,7 +250,7 @@ public class StatisticsTest {
 
     @Test
     public void testSum() throws Exception {
-        List<Numeric> result;
+        List<Value> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -307,7 +307,7 @@ public class StatisticsTest {
 
     @Test
     public void testMean() throws Exception {
-        List<Numeric> result;
+        List<Value> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -363,7 +363,7 @@ public class StatisticsTest {
 
     @Test
     public void testStd() throws Exception {
-        List<Numeric> result;
+        List<Value> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -434,7 +434,7 @@ public class StatisticsTest {
 
     @Test
     public void testMedian() throws Exception {
-        List<Numeric> result;
+        List<Value> result;
 
         // resource-type has no instance
         addSchemaAndEntities();
@@ -542,7 +542,7 @@ public class StatisticsTest {
             tx.commit();
         }
 
-        Numeric result;
+        Value result;
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             // No need to test all statistics as most of them share the same vertex program

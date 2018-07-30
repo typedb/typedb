@@ -28,7 +28,7 @@ import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.rpc.proto.AnswerProto;
 import com.google.common.collect.ImmutableMap;
@@ -54,8 +54,8 @@ public class ResponseReader {
                 return conceptSet(res.getConceptSet());
             case CONCEPTSETMEASURE:
                 return conceptSetMeasure(res.getConceptSetMeasure());
-            case NUMERIC:
-                return numeric(res.getNumeric());
+            case VALUE:
+                return value(res.getValue());
             default:
             case ANSWER_NOT_SET:
                 throw new IllegalArgumentException("Unexpected " + res);
@@ -85,8 +85,8 @@ public class ResponseReader {
         );
     }
 
-    static Numeric numeric(AnswerProto.Numeric res) {
-        return new Numeric(number(res.getNumber()));
+    static Value value(AnswerProto.Value res) {
+        return new Value(number(res.getNumber()));
     }
 
     static Number number(AnswerProto.Number res) {

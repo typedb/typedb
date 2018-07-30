@@ -78,7 +78,6 @@ import static ai.grakn.SNB.$title;
 import static ai.grakn.SNB.BIRTHDAY;
 import static ai.grakn.SNB.BROWSER_USED;
 import static ai.grakn.SNB.CHILD_MESSAGE;
-import static ai.grakn.SNB.by;
 import static ai.grakn.SNB.CONTENT;
 import static ai.grakn.SNB.CREATION_DATE;
 import static ai.grakn.SNB.CREATOR;
@@ -88,12 +87,10 @@ import static ai.grakn.SNB.FORUM_MEMBER;
 import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
 import static ai.grakn.SNB.GROUP_FORUM;
-import static ai.grakn.SNB.has;
 import static ai.grakn.SNB.HAS_CREATOR;
 import static ai.grakn.SNB.HAS_MODERATOR;
 import static ai.grakn.SNB.IMAGE_FILE;
 import static ai.grakn.SNB.IS_LOCATED_IN;
-import static ai.grakn.SNB.key;
 import static ai.grakn.SNB.KNOWS;
 import static ai.grakn.SNB.LAST_NAME;
 import static ai.grakn.SNB.LOCATED;
@@ -114,10 +111,12 @@ import static ai.grakn.SNB.PRODUCT;
 import static ai.grakn.SNB.REGION;
 import static ai.grakn.SNB.REPLY;
 import static ai.grakn.SNB.REPLY_OF;
-import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.TITLE;
+import static ai.grakn.SNB.by;
+import static ai.grakn.SNB.has;
+import static ai.grakn.SNB.key;
+import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.toEpoch;
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 import static java.util.Comparator.comparing;
 
@@ -440,7 +439,7 @@ public class GraknShortQueryHandlers {
         private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
             return graph.graql().match(
                     var().rel(FRIEND, var().id(author1)).rel(FRIEND, var().id(author2)).isa(KNOWS)
-            ).aggregate(ask()).execute();
+            ).stream().findAny().isPresent();
         }
 
         private ConceptId conceptId(ConceptMap result, Var var) {

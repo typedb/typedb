@@ -32,11 +32,10 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
@@ -50,7 +49,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -89,10 +87,10 @@ public class GraqlTest {
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-            assertEquals(6, graph.graql().<ComputeQuery<Numeric>>parse("compute count;")
+            assertEquals(6, graph.graql().<ComputeQuery<Value>>parse("compute count;")
                     .execute().get(0).number().intValue());
 
-            assertEquals(3, graph.graql().<ComputeQuery<Numeric>>parse("compute count in [thingy, thingy];")
+            assertEquals(3, graph.graql().<ComputeQuery<Value>>parse("compute count in [thingy, thingy];")
                     .execute().get(0).number().intValue());
         }
     }
@@ -166,16 +164,16 @@ public class GraqlTest {
 
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             // use graql to compute various statistics
-            Numeric result = graph.graql().<ComputeQuery<Numeric>>parse("compute sum of my-resource;").execute().get(0);
+            Value result = graph.graql().<ComputeQuery<Value>>parse("compute sum of my-resource;").execute().get(0);
             assertEquals(6, result.number().intValue());
-            result = graph.graql().<ComputeQuery<Numeric>>parse("compute min of my-resource;").execute().get(0);
+            result = graph.graql().<ComputeQuery<Value>>parse("compute min of my-resource;").execute().get(0);
             assertEquals(1, result.number().intValue());
-            result = graph.graql().<ComputeQuery<Numeric>>parse("compute max of my-resource;").execute().get(0);
+            result = graph.graql().<ComputeQuery<Value>>parse("compute max of my-resource;").execute().get(0);
             assertEquals(3, result.number().intValue());
-            result = graph.graql().<ComputeQuery<Numeric>>parse("compute mean of my-resource;").execute().get(0);
+            result = graph.graql().<ComputeQuery<Value>>parse("compute mean of my-resource;").execute().get(0);
             assertNotNull(result.number());
             assertEquals(2.0, result.number().doubleValue(), 0.1);
-            result = graph.graql().<ComputeQuery<Numeric>>parse("compute median of my-resource;").execute().get(0);
+            result = graph.graql().<ComputeQuery<Value>>parse("compute median of my-resource;").execute().get(0);
             assertEquals(2, result.number().intValue());
         }
     }

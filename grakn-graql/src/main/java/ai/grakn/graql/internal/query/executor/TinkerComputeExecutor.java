@@ -38,7 +38,7 @@ import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
 import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
 import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
@@ -169,10 +169,10 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Stream<Numeric> runComputeMinMaxMedianOrSum() {
+    private Stream<Value> runComputeMinMaxMedianOrSum() {
         Number number = runComputeStatistics();
         if (number == null) return Stream.empty();
-        else return Stream.of(new Numeric(number));
+        else return Stream.of(new Value(number));
     }
 
     /**
@@ -180,12 +180,12 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Stream<Numeric> runComputeMean() {
+    private Stream<Value> runComputeMean() {
         Map<String, Double> meanPair = runComputeStatistics();
         if (meanPair == null) return Stream.empty();
 
         Double mean = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
-        return Stream.of(new Numeric(mean));
+        return Stream.of(new Value(mean));
     }
 
     /**
@@ -193,7 +193,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing a Number that represents the answer
      */
-    private Stream<Numeric> runComputeStd() {
+    private Stream<Value> runComputeStd() {
         Map<String, Double> stdTuple = runComputeStatistics();
         if (stdTuple == null)  return Stream.empty();
 
@@ -202,7 +202,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
         double count = stdTuple.get(StdMapReduce.COUNT);
         Double std = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
 
-        return Stream.of(new Numeric(std));
+        return Stream.of(new Value(std));
     }
 
     /**
@@ -304,10 +304,10 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
      *
      * @return a Answer object containing the count value
      */
-    private Stream<Numeric> runComputeCount() {
+    private Stream<Value> runComputeCount() {
         if (!scopeContainsInstance()) {
             LOG.debug("Count = 0");
-            return Stream.of(new Numeric(0));
+            return Stream.of(new Value(0));
         }
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(scopeTypeLabels());
@@ -330,7 +330,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
         }
 
         LOG.debug("Count = " + finalCount);
-        return Stream.of(new Numeric(finalCount));
+        return Stream.of(new Value(finalCount));
     }
 
     /**
@@ -519,7 +519,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
 //                mapReduce = new ClusterSizeMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 //            }
 //            Map<String, Long> result = memory.get(mapReduce.getClass().getName());
-//            return result.values().stream().map(Numeric::new);
+//            return result.values().stream().map(Value::new);
 //        }
     }
 

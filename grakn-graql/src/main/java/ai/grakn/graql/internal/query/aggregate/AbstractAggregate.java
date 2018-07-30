@@ -41,7 +41,7 @@ public abstract class AbstractAggregate<S> implements Aggregate<S> {
     /**
      * A Comparator class to compare the 2 numbers only if they have the same primitive type.
      */
-    protected static class NumberPrimitiveTypeComparator implements Comparator<Number> {
+    protected static class PrimitiveNumberComparator implements Comparator<Number> {
 
         @Override
         public int compare(Number a, Number b) {

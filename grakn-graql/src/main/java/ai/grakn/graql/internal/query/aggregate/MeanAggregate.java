@@ -22,6 +22,7 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -31,11 +32,11 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds mean of a {@link Match}.
  */
-class MeanAggregate extends AbstractAggregate<Number> {
+class MeanAggregate extends AbstractAggregate<Value> {
 
     private final Var varName;
     private final CountAggregate countAggregate;
-    private final Aggregate<Number> sumAggregate;
+    private final Aggregate<Value> sumAggregate;
 
     MeanAggregate(Var varName) {
         this.varName = varName;
@@ -44,16 +45,16 @@ class MeanAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends ConceptMap> stream) {
+    public Value apply(Stream<? extends ConceptMap> stream) {
         List<? extends ConceptMap> list = stream.collect(toList());
 
-        long count = countAggregate.apply(list.stream());
+        Number count = countAggregate.apply(list.stream()).number();
 
-        if (count == 0) {
+        if (count.intValue() == 0) {
             return null;
         } else {
-            Number sum = sumAggregate.apply(list.stream());
-            return sum.doubleValue() / count;
+            Number sum = sumAggregate.apply(list.stream()).number();
+            return new Value(sum.doubleValue() / count.longValue());
         }
     }
 

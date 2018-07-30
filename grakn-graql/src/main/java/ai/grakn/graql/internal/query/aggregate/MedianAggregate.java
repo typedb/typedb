@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -30,7 +31,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a {@link Match}.
  */
-class MedianAggregate extends AbstractAggregate<Number> {
+class MedianAggregate extends AbstractAggregate<Value> {
 
     private final Var varName;
 
@@ -39,7 +40,7 @@ class MedianAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends ConceptMap> stream) {
+    public Value apply(Stream<? extends ConceptMap> stream) {
         List<Number> results = stream
                 .map(result -> ((Number) result.get(varName).asAttribute().value()))
                 .sorted()
@@ -53,10 +54,10 @@ class MedianAggregate extends AbstractAggregate<Number> {
             return null;
         } else if (size % 2 == 1) {
             // Take exact middle result
-            return results.get(halveFloor);
+            return new Value(results.get(halveFloor));
         } else {
             // Take average of middle results
-            return (results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2;
+            return new Value((results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2);
         }
     }
 

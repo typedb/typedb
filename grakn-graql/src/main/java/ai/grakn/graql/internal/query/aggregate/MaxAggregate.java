@@ -21,13 +21,14 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
 import java.util.stream.Stream;
 
 /**
  * Aggregate that finds maximum of a {@link Match}.
  */
-class MaxAggregate extends AbstractAggregate<Number> {
+class MaxAggregate extends AbstractAggregate<Value> {
 
     private final Var varName;
 
@@ -36,9 +37,11 @@ class MaxAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends ConceptMap> stream) {
-        NumberPrimitiveTypeComparator comparator = new NumberPrimitiveTypeComparator();
-        return stream.map(this::getValue).max(comparator).orElse(null);
+    public Value apply(Stream<? extends ConceptMap> stream) {
+        PrimitiveNumberComparator comparator = new PrimitiveNumberComparator();
+        Number number = stream.map(this::getValue).max(comparator).orElse(null);
+        if (number == null) return null;
+        else return new Value(number);
     }
 
     @Override

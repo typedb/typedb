@@ -41,8 +41,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.Numeric;
-import ai.grakn.graql.internal.query.ComputeQueryImpl;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
@@ -392,7 +391,7 @@ public class ServerRPCTest {
         ComputeQuery countQuery = mock(ComputeQuery.class);
         when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
 
-        when(countQuery.execute()).thenReturn(Collections.singletonList(new Numeric(100)));
+        when(countQuery.execute()).thenReturn(Collections.singletonList(new Value(100)));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
@@ -404,7 +403,7 @@ public class ServerRPCTest {
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
                                     .setAnswer(AnswerProto.Answer.newBuilder()
-                                            .setNumeric(AnswerProto.Numeric.newBuilder()
+                                            .setValue(AnswerProto.Value.newBuilder()
                                                     .setNumber(AnswerProto.Number.newBuilder().setValue("100")))))).build();
 
             assertEquals(expected, tx.receive().ok());

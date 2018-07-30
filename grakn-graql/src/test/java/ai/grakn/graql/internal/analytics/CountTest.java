@@ -28,7 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
@@ -143,7 +143,7 @@ public class CountTest {
             graph.commit();
         }
 
-        Numeric count;
+        Value count;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             count = graph.graql().compute(COUNT).execute().get(0);
             assertEquals(1, count.number().intValue());
@@ -250,7 +250,7 @@ public class CountTest {
             graph.commit();
         }
 
-        Numeric count;
+        Value count;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
             count = graph.graql().compute(COUNT).execute().get(0);
             assertEquals(1, count.number().intValue());

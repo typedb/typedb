@@ -22,6 +22,7 @@ import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
@@ -37,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
@@ -66,14 +67,14 @@ public class JacksonPrinterTest {
     }
 
     @Test
-    public void whenGraqlQueryResultsInAnswer_EnsureConceptsInAnswerAreWrappedAndReturned() throws JsonProcessingException {
+    public void whenGraqlQueryReturnsConceptMap_EnsureConceptsInAnswerAreWrappedAndReturned() throws JsonProcessingException {
         ConceptMap answer = rule.tx().graql().match(var("x").isa("title").val("Godfather")).iterator().next();
         Answer answerWrapper = Answer.create(answer);
         assertWrappersMatch(answerWrapper, answer);
     }
 
     @Test
-    public void whenGraqlQueryResultsInAnswers_EnsureAnswersArwWrappedAndReturned() throws JsonProcessingException {
+    public void whenGraqlQueryReturnsConceptMaps_EnsureAnswersArwWrappedAndReturned() throws JsonProcessingException {
         Set<ConceptMap> answers = rule.tx().graql().
                 match(var("x").isa("title").val("Godfather")).stream().collect(Collectors.toSet());
         Set<Answer> answersWrapper = answers.stream().map(Answer::create).collect(Collectors.toSet());
@@ -81,9 +82,9 @@ public class JacksonPrinterTest {
     }
 
     @Test
-    public void whenGraqlQueryReturnsBoolean_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
-        Boolean bool = rule.tx().graql().match(var("x").isa("person")).aggregate(ask()).execute();
-        assertWrappersMatch(bool, bool);
+    public void whenGraqlQueryReturnsValue_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
+        Value count = rule.tx().graql().match(var("x").isa("person")).aggregate(count()).execute();
+        assertWrappersMatch(count.number(), count);
     }
 
     @Test

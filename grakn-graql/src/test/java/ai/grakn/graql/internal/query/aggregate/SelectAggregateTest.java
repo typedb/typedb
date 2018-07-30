@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.answer.Value;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -28,16 +29,16 @@ import static org.junit.Assert.assertNotEquals;
 
 public class SelectAggregateTest {
 
-    private ImmutableSet<NamedAggregate<? extends Long>> set1 =
+    private ImmutableSet<NamedAggregate<? extends Value>> set1 =
             ImmutableSet.of(count().as("a"));
 
-    private ImmutableSet<NamedAggregate<? extends Long>> set2 =
+    private ImmutableSet<NamedAggregate<? extends Value>> set2 =
             ImmutableSet.of(count().as("l"), count().as("c"));
 
     @Test
     public void selectAggregatesContainingTheSamePropertiesAreEqual() {
-        SelectAggregate<Long> aggregate1 = new SelectAggregate<>(set1);
-        SelectAggregate<Long> aggregate2 = new SelectAggregate<>(set1);
+        SelectAggregate<Value> aggregate1 = new SelectAggregate<>(set1);
+        SelectAggregate<Value> aggregate2 = new SelectAggregate<>(set1);
 
         assertEquals(aggregate1, aggregate2);
         assertEquals(aggregate1.hashCode(), aggregate2.hashCode());
@@ -45,8 +46,8 @@ public class SelectAggregateTest {
 
     @Test
     public void selectAggregatesContainingDifferentPropertiesAreDifferent() {
-        SelectAggregate<Long> aggregate1 = new SelectAggregate<>(set1);
-        SelectAggregate<Long> aggregate2 = new SelectAggregate<>(set2);
+        SelectAggregate<Value> aggregate1 = new SelectAggregate<>(set1);
+        SelectAggregate<Value> aggregate2 = new SelectAggregate<>(set2);
 
         assertNotEquals(aggregate1, aggregate2);
     }

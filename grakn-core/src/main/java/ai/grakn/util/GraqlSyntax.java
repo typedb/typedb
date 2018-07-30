@@ -23,7 +23,7 @@ import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Numeric;
+import ai.grakn.graql.answer.Value;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -243,13 +243,13 @@ public class GraqlSyntax {
          * @param <AnswerType> return type of ComputeQuery
          */
         public static class Method<AnswerType extends Answer> {
-            public final static Method<Numeric> COUNT = new Method<>("count");
-            public final static Method<Numeric> MIN = new Method<>("min");
-            public final static Method<Numeric> MAX = new Method<>("max");
-            public final static Method<Numeric> MEDIAN = new Method<>("median");
-            public final static Method<Numeric> MEAN = new Method<>("mean");
-            public final static Method<Numeric> STD = new Method<>("std");
-            public final static Method<Numeric> SUM = new Method<>("sum");
+            public final static Method<Value> COUNT = new Method<>("count");
+            public final static Method<Value> MIN = new Method<>("min");
+            public final static Method<Value> MAX = new Method<>("max");
+            public final static Method<Value> MEDIAN = new Method<>("median");
+            public final static Method<Value> MEAN = new Method<>("mean");
+            public final static Method<Value> STD = new Method<>("std");
+            public final static Method<Value> SUM = new Method<>("sum");
             public final static Method<ConceptList> PATH = new Method<>("path");
             public final static Method<ConceptSetMeasure> CENTRALITY = new Method<>("centrality");
             public final static Method<ConceptSet> CLUSTER = new Method<>("cluster");

@@ -124,9 +124,9 @@ class StringPrinter extends Printer<StringBuilder> {
         StringBuilder builder = new StringBuilder();
 
         if (bool) {
-            return builder.append(ANSI.color("True", ANSI.GREEN));
+            return builder.append(ANSI.color("true", ANSI.GREEN));
         } else {
-            return builder.append(ANSI.color("False", ANSI.RED));
+            return builder.append(ANSI.color("false", ANSI.RED));
         }
     }
 
