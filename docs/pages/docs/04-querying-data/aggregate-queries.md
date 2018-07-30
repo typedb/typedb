@@ -211,32 +211,6 @@ qb.match(
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-### Select
-
-Select and name multiple aggregates.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>
-    <li><a href="#java8" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell8">
-<pre class="language-graql"> <code>
-match $x isa person, has age $a, has gender $g; aggregate (min $a as minAge, max $g as maxGender);
-</code>
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java8">
-<pre class="language-java"> <code>
-qb.match(
-    var("x").isa("person").has("age", var("a")).has("gender", var("g")),
-).aggregate(select(min("a").as("minAge"), max("g").as("maxGender")));
-</code>
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
-
 ## When to Use `aggregate` and When to Use `compute`
 
 Aggregate queries are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent [compute query](../distributed-analytics/compute-queries).
