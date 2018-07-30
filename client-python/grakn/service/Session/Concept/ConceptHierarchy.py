@@ -241,7 +241,7 @@ class RelationshipType(Type):
         """ Create an instance of a relationship with this type """
         create_rel_inst_req = RequestBuilder.ConceptMethod.RelationType.create()
         method_response = self._tx_service.run_concept_method(self.id, create_rel_inst_req)
-        grpc_relationship_concept = method_response.relationshipType_create_res.relation
+        grpc_relationship_concept = method_response.relationType_create_res.relation
         return ConceptFactory.create_concept(self._tx_service, grpc_relationship_concept)
         
     def roles(self):

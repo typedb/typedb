@@ -73,6 +73,9 @@ class Transaction(object):
     def close(self):
         self._tx_service.close() # close the service
 
+    def is_closed(self):
+        return self._tx_service.is_closed()
+
     def get_concept(self, concept_id: str):
         return self._tx_service.get_concept(concept_id)
 

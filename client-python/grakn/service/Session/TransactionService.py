@@ -35,6 +35,9 @@ class TransactionService(object):
     def close(self):
         self._communicator.close()
 
+    def is_closed(self):
+        return self._communicator._closed
+
     def get_concept(self, concept_id: str): 
         request = RequestBuilder.get_concept(concept_id)
         response = self._communicator.send(request)
@@ -58,7 +61,7 @@ class TransactionService(object):
     def put_relationship_type(self, label: str):
         request = RequestBuilder.put_relationship_type(label)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.put_relationship_type(self, response.putRelationshipType_res)
+        return ResponseConverter.ResponseConverter.put_relationship_type(self, response.putRelationType_res)
 
     def put_attribute_type(self, label: str, data_type: enums.DataType):
         request = RequestBuilder.put_attribute_type(label, data_type)
@@ -96,7 +99,7 @@ class Communicator(object):
     def __init__(self, grpc_stream_constructor):
         self._queue = queue.Queue()
         self._response_iterator = grpc_stream_constructor(self)
-        self.closed = False
+        self._closed = False
 
     def _add_request(self, request):
         self._queue.put(request)
@@ -113,7 +116,7 @@ class Communicator(object):
         return self
 
     def send(self, request):
-        if self.closed:
+        if self._closed:
             #TODO specialize exception
             # TODO integrate this into TransactionService to throw a "Transaction is closed" rather than "connection is closed..."
             raise Exception("Connection is closed")
@@ -137,4 +140,4 @@ class Communicator(object):
         with self._queue.mutex: # probably don't even need the mutex
             self._queue.queue.clear()
         self._queue.put(None)
-        self.closed = True
+        self._closed = True

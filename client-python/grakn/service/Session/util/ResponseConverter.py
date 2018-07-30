@@ -259,8 +259,8 @@ class ResponseIterator(object):
     def __next__(self):
         # get next from server
         iter_response = self._tx_service.iterate(self.iterator_id)
-        print("Iterator response:")
-        print(iter_response)
+        # print("Iterator response:")
+        # print(iter_response)
         which_one = iter_response.WhichOneof("res")
         if which_one == 'done' and iter_response.done:
             raise StopIteration()
