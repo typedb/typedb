@@ -46,7 +46,6 @@ import java.util.List;
 import org.junit.BeforeClass;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -163,7 +162,6 @@ public class ResolutionPlanTest {
         checkPlanSanity(query);
     }
 
-    @Ignore
     @Test
     @Repeat( times = repeat )
     public void prioritiseNonResolvableRelations_OnlyAtomicQueriesPresent() {
@@ -224,7 +222,7 @@ public class ResolutionPlanTest {
                 "$x isa baseEntity;" +
                 "(someRole:$x, otherRole: $y) isa derivedRelation;" +
                 "$y isa someEntity;" +
-                "$w has resource 'test';" +
+                "$x has resource 'test';" +
                 "}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -572,7 +570,7 @@ public class ResolutionPlanTest {
         while(iterator.hasNext()){
             Atom next = iterator.next();
             Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            assertTrue("Disconnected plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
     }
@@ -585,7 +583,7 @@ public class ResolutionPlanTest {
         while(iterator.hasNext()){
             ReasonerQueryImpl next = iterator.next();
             Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            assertTrue("Disconnected query plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
     }
