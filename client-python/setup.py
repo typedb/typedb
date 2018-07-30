@@ -5,7 +5,7 @@ pep420_package_finder = PEP420PackageFinder()
 setup(
     name='grakn',
     packages=pep420_package_finder.find('.', include=['grakn*']),
-    version='1.2.1',
+    version='1.2.2',
     license='Apache-2.0',
     description='A Python client for Grakn',
     long_description=open('README.md').read(),

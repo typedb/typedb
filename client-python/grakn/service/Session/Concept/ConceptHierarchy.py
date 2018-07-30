@@ -70,7 +70,7 @@ class SchemaConcept(Concept):
     def is_implicit(self) -> bool:
         is_implicit_req = RequestBuilder.ConceptMethod.SchemaConcept.is_implicit()
         method_response = self._tx_service.run_concept_method(self.id, is_implicit_req)
-        return method_response.implicit
+        return method_response.schemaConcept_isImplicit_res.implicit
 
     def sup(self, super_concept=None) -> Optional[Concept]:
         if super_concept is None:
@@ -83,6 +83,7 @@ class SchemaConcept(Concept):
             if whichone == 'schemaConcept':
                 grpc_schema_concept = get_sup_response.schemaConcept
                 concept = ConceptFactory.create_concept(self._tx_service, grpc_schema_concept)
+                return concept
             elif whichone == 'null':
                 return None
             else:
@@ -127,6 +128,7 @@ class Type(SchemaConcept):
         return ResponseConverter.ResponseConverter.Type.instances(self._tx_service, method_response.type_instances_iter)
 
     def playing(self):
+        """ Retrieve iterator of roles played by this type """
         playing_req = RequestBuilder.ConceptMethod.Type.playing()
         method_response = self._tx_service.run_concept_method(self.id, playing_req)
         return ResponseConverter.ResponseConverter.Type.playing(self._tx_service, method_response.type_playing_iter)

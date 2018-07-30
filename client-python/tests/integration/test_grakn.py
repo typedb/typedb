@@ -1,6 +1,7 @@
 import unittest
 import grakn
 
+
 class test_PreDbSetup(unittest.TestCase):
     """ Tests Database interactions *before* anything needs to be inserted/created """
 
@@ -58,6 +59,11 @@ class test_PreDbSetup(unittest.TestCase):
             session.transaction('foo')
 
 
+
+# shared grakn instances and session for API testing 
+inst = grakn.Grakn('localhost:48555')
+session = inst.session('testkeyspace')
+
 class test_Base(unittest.TestCase):
     """ Sets up DB for use in tests """
 
@@ -65,8 +71,6 @@ class test_Base(unittest.TestCase):
     def setUpClass(cls):
         """ Make sure we have some sort of schema and data in DB, only done once """
         super(test_Base, cls).setUpClass()
-        inst = grakn.Grakn('localhost:48555')
-        session = inst.session('testkeyspace')
 
         # temp tx to set up DB, don't save it
         tx = session.transaction(grakn.TxType.WRITE)
@@ -83,13 +87,10 @@ class test_Base(unittest.TestCase):
         tx.commit()
 
     def setUp(self):
-        self.inst = grakn.Grakn('localhost:48555')
-        self.session = self.inst.session('testkeyspace')
-        self.tx = self.session.transaction(grakn.TxType.WRITE)
+        self.tx = session.transaction(grakn.TxType.WRITE)
 
     def tearDown(self):
         self.tx.close()
-        self.session.close()
 
 
 
@@ -140,7 +141,7 @@ class test_Transaction(test_Base):
         self.tx.query('insert $x isa person, has age 10;') 
         self.tx.commit()
         # need to open new tx after commit
-        tx = self.session.transaction(grakn.TxType.WRITE)
+        tx = session.transaction(grakn.TxType.WRITE)
         answers = tx.query('match $x isa person, has age 10; get;')
         jills_after = len(list(answers))
         self.assertGreater(jills_after, jills_before, msg="Number of entities did not increase after insert and commit")
@@ -253,6 +254,52 @@ class test_Transaction(test_Base):
 
             
 
+class test_Type(test_Base):
+    """ Tests concept API of things common to Type objects """
+
+    def test_is_abstract(self):
+        """ Tests get/set of is_abstract on types """
+        dog_type = self.tx.put_entity_type("dog")
+        abstract = dog.is_abstract()
+        self.assertFalse(abstract)
+
+        dog_type.is_abstract(True)
+        abstract = dog.is_abstract() #re-retrieve from server
+        self.assertTrue(abstract)
+
+        dog_type.is_abstract(False)
+        abstract = dog.is_abstract()
+        self.assertFalse(abstract)
+
+    def test_plays_methods(self):
+        """ Test get/set/delete plays ie. roles """
+        father = self.tx.put_role("father")
+        person_schema_type = self.get_schema_type("person")
+        person_plays = person_schema_type.playing()
+        # by default, they play 4 roles
+        self.assertEqual(len(list(person_plays)), 4)
+
+        person_schema_type.plays(father)
+        updated_person_plays = person_schema_type.playing()
+        labels = [role.label() for role in updated_person_plays]
+        self.assertEqual(len(labels), 5)
+        self.assertTrue("father" in labels)
+
+        # remove role/plays from person
+        person_schema_type.unplay(father)
+        update_person_plays = person_schema_type.playing()
+        labels = [role.labels() for role in updated_person_plays]
+        self.assertEqual(len(labels), 4)
+        self.assertFalse("father" in labels)
+
+    def test_attributes_methods(self):
+        """ Test get/set/delete attributes """
+        person = self.tx.get_schema_concept("person")
+        haircolor_attr = self.tx.put_attribute_type("haircolor", grakn.DataType.STRING)
+
+        current_attrs = person.attributes()
+        labels = [attr.label() for attr in current_attrs]
+        #-----todo----
 
 
 
