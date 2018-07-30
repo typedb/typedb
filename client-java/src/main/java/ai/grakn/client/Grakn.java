@@ -52,7 +52,6 @@ import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
 import ai.grakn.util.SimpleURI;
 import com.google.common.collect.AbstractIterator;
 import io.grpc.ManagedChannel;
