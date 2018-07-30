@@ -32,7 +32,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds mean of a {@link Match}.
  */
-class MeanAggregate extends AbstractAggregate<Value> {
+class MeanAggregate implements Aggregate<Value> {
 
     private final Var varName;
     private final CountAggregate countAggregate;

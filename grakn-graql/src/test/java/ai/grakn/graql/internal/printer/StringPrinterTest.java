@@ -88,7 +88,7 @@ public class StringPrinterTest {
 
         String result = printer.toString(match.iterator().next());
 
-        assertEquals("{$x val \"Godfather\" isa title;}", result.trim());
+        assertEquals("$x val \"Godfather\" isa title;", result.trim());
     }
 
     @Test

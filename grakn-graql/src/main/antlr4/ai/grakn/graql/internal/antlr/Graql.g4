@@ -77,12 +77,10 @@ computeArg                      : MIN_K         '='     INTEGER         # comput
                                 ;
 
 aggregate      : identifier argument*             # customAgg
-               | '(' namedAgg (',' namedAgg)* ')' # selectAgg
                ;
 argument       : VARIABLE  # variableArgument
                | aggregate # aggregateArgument
                ;
-namedAgg       : aggregate 'as' identifier ;
 
 patterns       : (pattern ';')+ ;
 pattern        : varPattern                    # varPatternCase

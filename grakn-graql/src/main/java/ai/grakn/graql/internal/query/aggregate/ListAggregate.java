@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.answer.ConceptMap;
 
@@ -28,7 +29,7 @@ import java.util.stream.Stream;
 /**
  * An aggregate that changes {@link Match} results into a list.
  */
-class ListAggregate extends AbstractAggregate<List<ConceptMap>> {
+class ListAggregate implements Aggregate<List<ConceptMap>> {
 
     @Override
     public List<ConceptMap> apply(Stream<? extends ConceptMap> stream) {

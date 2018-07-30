@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
@@ -30,7 +31,7 @@ import static java.lang.Math.sqrt;
 /**
  * Aggregate that finds the unbiased sample standard deviation of a {@link Match}.
  */
-class StdAggregate extends AbstractAggregate<Value> {
+class StdAggregate implements Aggregate<Value> {
 
     private final Var varName;
 

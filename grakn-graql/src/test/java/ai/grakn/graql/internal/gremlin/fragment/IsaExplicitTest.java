@@ -22,12 +22,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
@@ -112,8 +114,8 @@ public class IsaExplicitTest {
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
         QueryBuilder queryBuilder = tx.graql();
         queryBuilder.insert(x.isaExplicit(thingy)).execute();
-        assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
-        assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
+        assertEquals(1, queryBuilder.<AggregateQuery<Value>>parse("match $z isa! thingy; aggregate count;").execute().number().intValue());
+        assertEquals(2, queryBuilder.<AggregateQuery<Value>>parse("match $z isa thingy; aggregate count;").execute().number().intValue());
     }
 
     @Test

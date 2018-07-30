@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -28,8 +28,8 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.matcher.MovieMatchers;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,7 +46,6 @@ import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.mean;
 import static ai.grakn.graql.Graql.median;
 import static ai.grakn.graql.Graql.min;
-import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
@@ -101,23 +100,6 @@ public class AggregateTest {
                 .execute();
         Thing godfather = rule.tx().getAttributeType("title").attribute("Godfather").owner();
         assertEquals(9, groupCount.get(godfather).number().intValue());
-    }
-
-    @Test
-    public void testSelectCountAndGroup() {
-        Map<String, Object> results = qb.match(var("x").isa("movie"), var().rel("x").rel("y"))
-                .aggregate(select(count().as("c"), group("x").as("g"))).execute();
-
-        Value count = (Value) results.get("c");
-
-        // We can't guarantee the generic type is correct here
-        @SuppressWarnings("unchecked") Map<Concept, List<Map<String, Concept>>> groups = (Map) results.get("g");
-
-        Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
-
-        long groupedResults = groups.values().stream().mapToInt(List::size).sum();
-
-        assertEquals(groupedResults, count.number().longValue());
     }
 
     @Test

@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -43,7 +44,6 @@ import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
@@ -87,7 +87,6 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.regex;
-import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
@@ -607,18 +606,15 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseAggregate() {
-        AggregateQuery<?> expected = match(var("x").isa("movie"))
-                .aggregate(select(count().as("c"), group("x").as("g")));
-
-        AggregateQuery<Map<String, Object>> parsed =
-                parse("match $x isa movie; aggregate (count as c, group $x as g);");
+    public void testParseAggregateGroup() {
+        AggregateQuery<Map<Concept, List<ConceptMap>>> expected = match(var("x").isa("movie")).aggregate(group("x"));
+        AggregateQuery<Map<Concept, List<ConceptMap>>> parsed = parse("match $x isa movie; aggregate (count as c, group $x as g);");
 
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testParseStdev() {
+    public void testParseAggregateStd() {
         AggregateQuery<?> expected = match(var("x").isa("movie")).aggregate(std("x"));
 
         AggregateQuery<Map<String, Object>> parsed =
@@ -1145,7 +1141,7 @@ public class QueryParserTest {
         assertEquals(query, parse(query).toString());
     }
 
-    class GetAny extends AbstractAggregate<Concept> {
+    class GetAny implements Aggregate<Concept> {
 
         private final Var varName;
 

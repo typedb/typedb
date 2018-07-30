@@ -38,11 +38,4 @@ public interface Aggregate<T> {
     @CheckReturnValue
     T apply(Stream<? extends ConceptMap> stream);
 
-    /**
-     * Return a {@link NamedAggregate}. This is used when operating on a query with multiple aggregates.
-     * @param name the name of the aggregate
-     * @return a new named aggregate
-     */
-    @CheckReturnValue
-    NamedAggregate<T> as(String name);
 }

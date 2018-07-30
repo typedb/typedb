@@ -31,7 +31,6 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -55,7 +54,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -207,14 +205,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
-        Set aggregates = ctx.namedAgg().stream().map(this::visitNamedAgg).collect(toSet());
-
-        // We can't handle cases when the aggregate types are wrong, because the user can provide custom aggregates
-        return Graql.select(aggregates);
-    }
-
-    @Override
     public Var visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
         return getVariable(ctx.VARIABLE());
     }
@@ -222,12 +212,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
     @Override
     public Aggregate<?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
         return visitAggregate(ctx.aggregate());
-    }
-
-    @Override
-    public NamedAggregate<?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
-        String name = visitIdentifier(ctx.identifier());
-        return visitAggregate(ctx.aggregate()).as(name);
     }
 
     @Override

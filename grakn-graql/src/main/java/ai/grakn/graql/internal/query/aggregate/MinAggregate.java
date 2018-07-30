@@ -18,17 +18,19 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
+import ai.grakn.graql.internal.util.PrimitiveNumberComparator;
 
 import java.util.stream.Stream;
 
 /**
  * Aggregate that finds minimum of a {@link Match}.
  */
-class MinAggregate extends AbstractAggregate<Value> {
+class MinAggregate implements Aggregate<Value> {
 
     private final Var varName;
 

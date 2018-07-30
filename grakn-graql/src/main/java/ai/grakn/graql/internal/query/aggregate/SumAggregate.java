@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
@@ -28,7 +29,7 @@ import java.util.stream.Stream;
 /**
  * Aggregate that sums results of a {@link Match}.
  */
-class SumAggregate extends AbstractAggregate<Value> {
+class SumAggregate implements Aggregate<Value> {
 
     private final Var varName;
 

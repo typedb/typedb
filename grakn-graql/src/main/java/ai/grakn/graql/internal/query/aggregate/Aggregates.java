@@ -21,11 +21,9 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
 import java.util.Map;
@@ -107,13 +105,5 @@ public class Aggregates {
      */
     public static <T> Aggregate<Map<Concept, T>> group(Var varName, Aggregate<T> innerAggregate) {
         return new GroupAggregate<>(varName, innerAggregate);
-    }
-
-    /**
-     * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
-     * @param <T> the type of the aggregate results
-     */
-    public static <T> Aggregate<Map<String, T>> select(ImmutableSet<NamedAggregate<? extends T>> aggregates) {
-        return new SelectAggregate<>(aggregates);
     }
 }

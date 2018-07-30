@@ -16,38 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.util;
 
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.Value;
-
-import java.util.stream.Stream;
+import java.util.Comparator;
 
 /**
- * Aggregate that counts results of a {@link Match}.
+ * A Comparator class to compare the 2 numbers only if they have the same primitive type.
  */
-class CountAggregate implements Aggregate<Value> {
-    @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
-        return new Value(stream.count());
-    }
+public class PrimitiveNumberComparator implements Comparator<Number> {
 
     @Override
-    public String toString() {
-        return "count";
-    }
+    public int compare(Number a, Number b) {
+        if (((Object) a).getClass().equals(((Object) b).getClass()) && a instanceof Comparable) {
+            return ((Comparable) a).compareTo(b);
+        }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return 37;
+        throw new RuntimeException("Invalid attempt to compare non-comparable primitive type of Numbers in Aggregate function");
     }
 }

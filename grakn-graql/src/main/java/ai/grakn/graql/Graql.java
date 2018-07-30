@@ -21,16 +21,15 @@ package ai.grakn.graql;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.query.predicate.Predicates;
 import ai.grakn.graql.internal.util.AdminConverter;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
@@ -40,7 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
@@ -319,27 +317,6 @@ public class Graql {
     @CheckReturnValue
     public static <T> Aggregate<Map<Concept, T>> group(String var, Aggregate<T> aggregate) {
         return Aggregates.group(Graql.var(var), aggregate);
-    }
-
-    /**
-     * Create an aggregate that will collect together several named aggregates into a map.
-     * @param aggregates the aggregates to join together
-     * @param <T> the type that each aggregate returns
-     */
-    @CheckReturnValue
-    @SafeVarargs
-    public static <T> Aggregate<Map<String, T>> select(NamedAggregate<? extends T>... aggregates) {
-        return select(ImmutableSet.copyOf(aggregates));
-    }
-
-    /**
-     * Create an aggregate that will collect together several named aggregates into a map.
-     * @param aggregates the aggregates to join together
-     * @param <T> the type that each aggregate returns
-     */
-    @CheckReturnValue
-    public static <T> Aggregate<Map<String, T>> select(Set<NamedAggregate<? extends T>> aggregates) {
-        return Aggregates.select(ImmutableSet.copyOf(aggregates));
     }
 
 
