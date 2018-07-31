@@ -20,6 +20,7 @@ package ai.grakn.client.executor;
 
 import ai.grakn.ComputeExecutor;
 import ai.grakn.QueryExecutor;
+import ai.grakn.client.Grakn;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -30,10 +31,10 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.client.Grakn;
 import com.google.common.collect.Iterators;
 
-import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -78,10 +79,10 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public <T> T run(AggregateQuery<T> query) {
-        Iterator iterator = tx.query(query);
-        if (iterator.hasNext()) return (T) Iterators.getOnlyElement(iterator);
-        else return null;
+    public <T extends Answer> List<T> run(AggregateQuery<T> query) {
+        Iterable<T> iterable = () -> tx.query(query);
+        Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false);
+        return stream.collect(Collectors.toList());
     }
 
     @Override

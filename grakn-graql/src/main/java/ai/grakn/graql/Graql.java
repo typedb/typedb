@@ -18,11 +18,11 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -36,8 +36,6 @@ import com.google.common.collect.Sets;
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
@@ -304,7 +302,7 @@ public class Graql {
      * @param var the variable to group results by
      */
     @CheckReturnValue
-    public static Aggregate<Map<Concept, List<ConceptMap>>> group(String var) {
+    public static Aggregate<AnswerGroup<ConceptMap>> group(String var) {
         return group(var, Aggregates.list());
     }
 
@@ -315,7 +313,7 @@ public class Graql {
      * @param <T> the type the aggregate returns
      */
     @CheckReturnValue
-    public static <T> Aggregate<Map<Concept, T>> group(String var, Aggregate<T> aggregate) {
+    public static <T extends Answer> Aggregate<AnswerGroup<T>> group(String var, Aggregate<T> aggregate) {
         return Aggregates.group(Graql.var(var), aggregate);
     }
 

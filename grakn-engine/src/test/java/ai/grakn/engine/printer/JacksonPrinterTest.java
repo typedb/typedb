@@ -83,8 +83,8 @@ public class JacksonPrinterTest {
 
     @Test
     public void whenGraqlQueryReturnsValue_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
-        Value count = rule.tx().graql().match(var("x").isa("person")).aggregate(count()).execute();
-        assertWrappersMatch(count.number(), count);
+        List<Value> count = rule.tx().graql().match(var("x").isa("person")).aggregate(count()).execute();
+        assertWrappersMatch(count.get(0).number(), count.get(0));
     }
 
     @Test

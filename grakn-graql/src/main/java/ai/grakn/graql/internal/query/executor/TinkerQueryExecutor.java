@@ -118,14 +118,14 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public <T> T run(AggregateQuery<T> query) {
+    public <T extends Answer> List<T> run(AggregateQuery<T> query) {
         return query.aggregate().apply(query.match().stream());
     }
 
 
     @Override
     public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
-        return new TinkerComputeExecutor(tx, query);
+        return new TinkerComputeExecutor<>(tx, query);
     }
 
     private void deleteResult(ConceptMap result, Collection<? extends Var> vars) {

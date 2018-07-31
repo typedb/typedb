@@ -24,6 +24,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -38,11 +40,11 @@ class SumAggregate implements Aggregate<Value> {
     }
 
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         // initial value is set to null so that we can return null if there is no Answers to consume
         Number number = stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(null, this::add);
-        if (number == null) return null;
-        else return new Value(number);
+        if (number == null) return Collections.emptyList();
+        else return Collections.singletonList(new Value(number));
     }
 
     private Number add(Number x, Number y) {

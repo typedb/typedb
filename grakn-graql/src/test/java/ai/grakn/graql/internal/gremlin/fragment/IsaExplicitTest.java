@@ -114,8 +114,8 @@ public class IsaExplicitTest {
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
         QueryBuilder queryBuilder = tx.graql();
         queryBuilder.insert(x.isaExplicit(thingy)).execute();
-        assertEquals(1, queryBuilder.<AggregateQuery<Value>>parse("match $z isa! thingy; aggregate count;").execute().number().intValue());
-        assertEquals(2, queryBuilder.<AggregateQuery<Value>>parse("match $z isa thingy; aggregate count;").execute().number().intValue());
+        assertEquals(1, queryBuilder.<AggregateQuery<Value>>parse("match $z isa! thingy; aggregate count;").execute().get(0).number().intValue());
+        assertEquals(2, queryBuilder.<AggregateQuery<Value>>parse("match $z isa thingy; aggregate count;").execute().get(0).number().intValue());
     }
 
     @Test

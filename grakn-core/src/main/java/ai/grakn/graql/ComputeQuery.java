@@ -40,9 +40,9 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  * @param <T> return type of ComputeQuery
  */
-public interface ComputeQuery<T> extends Query<List<T>> {
+public interface ComputeQuery<T extends Answer> extends Query<List<T>>, Streamable<T> {
 
-    Stream<? extends Answer> stream();
+    Stream<T> stream();
 
     /**
      * @param tx the graph to execute the compute query on

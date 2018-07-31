@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.matcher.MovieMatchers;
@@ -38,7 +38,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
-import java.util.Map;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;
@@ -53,7 +52,7 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class AggregateTest {
 
@@ -72,34 +71,39 @@ public class AggregateTest {
 
     @Test
     public void testCount() {
-        Value count = qb.match(var("x").isa("movie")).aggregate(count()).execute();
-        Assert.assertEquals(MovieMatchers.movies.size(), count.number().intValue());
+        List<Value> count = qb.match(var("x").isa("movie")).aggregate(count()).execute();
+        Assert.assertEquals(MovieMatchers.movies.size(), count.get(0).number().intValue());
     }
 
     @Test
     public void testGroup() {
-        AggregateQuery<Map<Concept, List<ConceptMap>>> groupQuery =
+        AggregateQuery<AnswerGroup<ConceptMap>> groupQuery =
                 qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
 
-        Map<Concept, List<ConceptMap>> groups = groupQuery.execute();
+        List<AnswerGroup<ConceptMap>> groups = groupQuery.execute();
 
         Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 
-        groups.forEach((movie, results) -> {
-            results.forEach(result -> {
-                assertEquals(movie, result.get(Graql.var("x")));
-                Assert.assertEquals(rule.tx().getEntityType("person"), result.get(Graql.var("y")).asThing().type());
+        groups.forEach(group -> {
+            group.answers().forEach(conceptMap -> {
+                assertEquals(group.owner(), conceptMap.get(Graql.var("x")));
+                Assert.assertEquals(rule.tx().getEntityType("person"), conceptMap.get(Graql.var("y")).asThing().type());
             });
         });
     }
 
     @Test
     public void testGroupCount() {
-        Map<Concept, Value> groupCount = qb.match(var("x").isa("movie"), var("r").rel("x"))
+        List<AnswerGroup<Value>> groupCount = qb.match(var("x").isa("movie"), var("r").rel("x"))
                 .aggregate(group("x", count()))
                 .execute();
         Thing godfather = rule.tx().getAttributeType("title").attribute("Godfather").owner();
-        assertEquals(9, groupCount.get(godfather).number().intValue());
+        
+        groupCount.forEach(group -> {
+            if (group.owner().equals(godfather)) {
+                assertEquals(9, group.answers().get(0).number().intValue());
+            }
+        });
     }
 
     @Test
@@ -108,7 +112,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(sum("y"));
 
-        assertEquals(1940, query.execute().number().intValue());
+        assertEquals(1940, query.execute().get(0).number().intValue());
     }
 
     @Test
@@ -117,7 +121,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(sum("y"));
 
-        assertEquals(27.7d, query.execute().number().doubleValue(), 0.01d);
+        assertEquals(27.7d, query.execute().get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
@@ -127,7 +131,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(sum("y"));
 
-        assertNull(query.execute());
+        assertTrue(query.execute().isEmpty());
     }
 
     @Test
@@ -136,7 +140,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(max("y"));
 
-        assertEquals(1000, query.execute().number().intValue());
+        assertEquals(1000, query.execute().get(0).number().intValue());
     }
 
     @Test
@@ -145,7 +149,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
                 .aggregate(max("y"));
 
-        assertEquals(8.6d, query.execute().number().doubleValue(), 0.01d);
+        assertEquals(8.6d, query.execute().get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
@@ -155,7 +159,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(max("y"));
 
-        assertNull(query.execute());
+        assertTrue(query.execute().isEmpty());
     }
 
     @Test
@@ -164,7 +168,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(min("y"));
 
-        assertEquals(5, query.execute().number().intValue());
+        assertEquals(5, query.execute().get(0).number().intValue());
     }
 
     @Test
@@ -174,7 +178,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(min("y"));
 
-        assertNull(query.execute());
+        assertTrue(query.execute().isEmpty());
     }
 
     @Test
@@ -184,7 +188,7 @@ public class AggregateTest {
                 .aggregate(mean("y"));
 
         //noinspection OptionalGetWithoutIsPresent
-        assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().number().doubleValue(), 0.01d);
+        assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
@@ -194,7 +198,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(mean("y"));
 
-        assertNull(query.execute());
+        assertTrue(query.execute().isEmpty());
     }
 
     @Test
@@ -203,7 +207,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
                 .aggregate(median("y"));
 
-        assertEquals(400, query.execute().number().intValue());
+        assertEquals(400, query.execute().get(0).number().intValue());
     }
 
     @Test
@@ -213,7 +217,7 @@ public class AggregateTest {
                 .aggregate(median("y"));
 
         //noinspection OptionalGetWithoutIsPresent
-        assertEquals(8.0d, query.execute().number().doubleValue(), 0.01d);
+        assertEquals(8.0d, query.execute().get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
@@ -223,7 +227,7 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(median("y"));
 
-        assertNull(query.execute());
+        assertTrue(query.execute().isEmpty());
     }
 
     @Test
@@ -237,7 +241,7 @@ public class AggregateTest {
                 + pow(400d - mean, 2d) + pow(435d - mean, 2d) + pow(5d - mean, 2d)) / 4d;
         double expected = sqrt(variance);
 
-        assertEquals(expected, query.execute().number().doubleValue(), 0.01d);
+        assertEquals(expected, query.execute().get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
@@ -251,7 +255,7 @@ public class AggregateTest {
                 (pow(8.6d - mean, 2d) + pow(8.4d - mean, 2d) + pow(7.6d - mean, 2d) + pow(3.1d - mean, 2d)) / 3d;
         double expected = sqrt(variance);
 
-        assertEquals(expected, query.execute().number().doubleValue(), 0.01d);
+        assertEquals(expected, query.execute().get(0).number().doubleValue(), 0.01d);
     }
 
     @Test
@@ -261,12 +265,12 @@ public class AggregateTest {
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("random"))
                 .aggregate(std("y"));
 
-        assertNull(query.execute());
+        assertTrue(query.execute().isEmpty());
     }
 
     @Test
     public void testEmptyMatchCount() {
-        assertEquals(0L, rule.tx().graql().match(var().isa("runtime")).aggregate(count()).execute().number().longValue());
+        assertEquals(0L, rule.tx().graql().match(var().isa("runtime")).aggregate(count()).execute().get(0).number().longValue());
         rule.tx().graql().match(var()).aggregate(count()).execute();
     }
 

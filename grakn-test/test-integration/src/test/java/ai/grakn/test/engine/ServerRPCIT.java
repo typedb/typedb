@@ -41,6 +41,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
@@ -75,6 +76,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.mean;
@@ -433,31 +435,31 @@ public class ServerRPCIT {
 
             AggregateQuery<Value> nullQuery =
                     tx.graql().match(var("x").isa("person").has("rating", var("y"))).aggregate(sum("y"));
-            assertNull(nullQuery.execute());
+            assertTrue(nullQuery.execute().isEmpty());
 
             AggregateQuery<Value> countQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count());
-            assertEquals(2L, countQuery.execute().number().longValue());
+            assertEquals(2L, countQuery.execute().get(0).number().longValue());
 
             AggregateQuery<Value> sumAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(sum("y"));
-            assertEquals(42, sumAgeQuery.execute().number().intValue());
+            assertEquals(42, sumAgeQuery.execute().get(0).number().intValue());
 
             AggregateQuery<Value> minAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(min("y"));
-            assertEquals(20, minAgeQuery.execute().number().intValue());
+            assertEquals(20, minAgeQuery.execute().get(0).number().intValue());
 
             AggregateQuery<Value> maxAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(max("y"));
-            assertEquals(22, maxAgeQuery.execute().number().intValue());
+            assertEquals(22, maxAgeQuery.execute().get(0).number().intValue());
 
             AggregateQuery<Value> meanAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(mean("y"));
-            assertEquals(21.0d, meanAgeQuery.execute().number().doubleValue(), 0.01d);
+            assertEquals(21.0d, meanAgeQuery.execute().get(0).number().doubleValue(), 0.01d);
 
             AggregateQuery<Value> medianAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(median("y"));
-            assertEquals(21.0d, medianAgeQuery.execute().number().doubleValue(), 0.01d);
+            assertEquals(21.0d, medianAgeQuery.execute().get(0).number().doubleValue(), 0.01d);
 
             AggregateQuery<Value> stdAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(std("y"));
@@ -465,18 +467,29 @@ public class ServerRPCIT {
             double mean = (20 + 22) / n;
             double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
             double std = Math.sqrt(var);
-            assertEquals(std, stdAgeQuery.execute().number().doubleValue(), 0.0001d);
+            assertEquals(std, stdAgeQuery.execute().get(0).number().doubleValue(), 0.0001d);
 
-            // TODO: Enabble the test below once we fix Group Aggregate response through GRPC
-//            AggregateQuery<Map<Concept, List<Answer>>> groupByAgeQuery =
-//                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(group("y"));
-//            Map<Concept, List<Answer>> groups = groupByAgeQuery.execute();
-//            assertEquals(2, groups.keySet().size());
-//            groups.forEach((Concept attribute, List<Answer> answers) -> {
-//                answers.forEach(answer -> {
-//                    assertTrue(answer.get("x").asEntity().attributes(name).collect(toSet()).contains(attribute));
-//                });
-//            });
+            List<AnswerGroup<ConceptMap>> groups = tx.graql().match(var("x").isa("person").has("name", var("y")))
+                    .aggregate(group("y"))
+                    .execute();
+
+            assertEquals(12, groups.size());
+            groups.forEach(group -> {
+                group.answers().forEach(answer -> {
+                    assertTrue(answer.get("x").asEntity().attributes(name).collect(toSet()).contains(group.owner()));
+                });
+            });
+
+            List<AnswerGroup<Value>> counts = tx.graql().match(var("x").isa("person").has("name", var("y")))
+                    .aggregate(group("y", count()))
+                    .execute();
+
+            assertEquals(12, counts.size());
+            counts.forEach(group -> {
+                group.answers().forEach(answer -> {
+                    assertEquals(1, answer.number().intValue());
+                });
+            });
         }
     }
 

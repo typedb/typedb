@@ -28,6 +28,7 @@ import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -53,7 +54,7 @@ public interface QueryExecutor {
 
     void run(UndefineQuery query);
 
-    <T> T run(AggregateQuery<T> query);
+    <T extends Answer> List<T> run(AggregateQuery<T> query);
 
     <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query);
 }

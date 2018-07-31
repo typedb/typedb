@@ -23,6 +23,8 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -30,8 +32,8 @@ import java.util.stream.Stream;
  */
 class CountAggregate implements Aggregate<Value> {
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
-        return new Value(stream.count());
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
+        return Collections.singletonList(new Value(stream.count()));
     }
 
     @Override

@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MatchAdmin;
 
@@ -166,7 +167,7 @@ public interface Match extends Streamable<ConceptMap> {
      * @return a query that will yield the aggregate result
      */
     @CheckReturnValue
-    <T> AggregateQuery<T> aggregate(Aggregate<T> aggregate);
+    <T extends Answer> AggregateQuery<T> aggregate(Aggregate<T> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query
