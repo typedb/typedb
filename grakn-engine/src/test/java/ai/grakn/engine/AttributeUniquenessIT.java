@@ -122,10 +122,10 @@ public class AttributeUniquenessIT {
         // merge
         while (true) {
             System.out.println("triggering merge.");
-            int merged = triggerMerge(merge);
-            System.out.println(merged + " attributes removed");
-            if (merged == 0) {
-                System.out.println(merged + " no duplicates exist. merge finished");
+            int remainingAttributeInQueue = triggerMerge(merge);
+            System.out.println(remainingAttributeInQueue + " attributes removed");
+            if (remainingAttributeInQueue == 0) {
+                System.out.println(remainingAttributeInQueue + " no duplicates exist. merge finished");
                 break;
             }
         }
@@ -144,10 +144,10 @@ public class AttributeUniquenessIT {
         // merge
         while (true) {
             System.out.println("triggering merge.");
-            int merged = triggerMerge(merge);
-            System.out.println(merged + " attributes removed");
-            if (merged == 0) {
-                System.out.println(merged + " no duplicates exist. merge finished");
+            int remainingAttributeInQueue = triggerMerge(merge);
+            System.out.println(remainingAttributeInQueue + " attributes removed");
+            if (remainingAttributeInQueue == 0) {
+                System.out.println(remainingAttributeInQueue + " no duplicates exist. merge finished");
                 break;
             }
         }
@@ -161,6 +161,10 @@ public class AttributeUniquenessIT {
         }
     }
 
+    /**
+     * Attempts to trigger an attribute merge operation by sending a GET request to the supplied URL.
+     * Returns back the count of items still in the Queue queue after merge
+     */
     private int triggerMerge(String url) {
         try {
             URL obj = new URL(url);
