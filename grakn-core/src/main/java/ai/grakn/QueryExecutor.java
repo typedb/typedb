@@ -35,12 +35,8 @@ import java.util.stream.Stream;
  * Interface for executing queries and getting a result. Examples of possible implementations are: running the query
  * against a tinkerpop graph, or sending the query to some server to execute via gRPC or a REST API.
  *
- * <p>
  * This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
  * (here in {@link QueryExecutor}).
- * </p>
- *
- * @author Felix Chapman
  */
 public interface QueryExecutor {
 
@@ -48,11 +44,11 @@ public interface QueryExecutor {
 
     Stream<ConceptMap> run(InsertQuery query);
 
-    void run(DeleteQuery query);
+    Stream<ConceptMap> run(DeleteQuery query);
 
     Stream<ConceptMap> run(DefineQuery query);
 
-    void run(UndefineQuery query);
+    Stream<ConceptMap> run(UndefineQuery query);
 
     <T extends Answer> List<T> run(AggregateQuery<T> query);
 

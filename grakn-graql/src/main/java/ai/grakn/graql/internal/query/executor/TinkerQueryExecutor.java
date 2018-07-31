@@ -31,9 +31,9 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
@@ -94,9 +94,12 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public void run(DeleteQuery query) {
+    public Stream<ConceptMap> run(DeleteQuery query) {
         List<ConceptMap> results = query.admin().match().stream().collect(toList());
         results.forEach(result -> deleteResult(result, query.admin().vars()));
+
+        // TODO: return deleted concepts
+        return Stream.empty();
     }
 
     @Override
@@ -110,12 +113,15 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public void run(UndefineQuery query) {
+    public Stream<ConceptMap> run(UndefineQuery query) {
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
         QueryOperationExecutor.undefineAll(allPatterns, tx);
+
+        // TODO: Return undefined concepts
+        return Stream.empty();
     }
 
     @Override

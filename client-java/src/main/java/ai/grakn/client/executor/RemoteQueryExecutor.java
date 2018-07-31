@@ -63,8 +63,10 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public void run(DeleteQuery query) {
+    public Stream<ConceptMap> run(DeleteQuery query) {
         runVoid(query);
+        // TODO: Return deleted concepts
+        return Stream.empty();
     }
 
     @Override
@@ -74,8 +76,10 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public void run(UndefineQuery query) {
+    public Stream<ConceptMap> run(UndefineQuery query) {
         runVoid(query);
+        // TODO: Return undefined concepts
+        return Stream.empty();
     }
 
     @Override
