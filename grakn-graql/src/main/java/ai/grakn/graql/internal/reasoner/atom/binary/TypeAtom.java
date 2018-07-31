@@ -59,7 +59,7 @@ public abstract class TypeAtom extends Binary{
     public boolean isSelectable() {
         return getTypePredicate() == null
                 //disjoint atom
-                || !this.getNeighbours(Atom.class).findFirst().isPresent()
+                || !this.getImmediateNeighbours(Atom.class).findFirst().isPresent()
                 || getPotentialRules().findFirst().isPresent();
     }
 

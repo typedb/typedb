@@ -253,6 +253,62 @@ public class ResolutionPlanTest {
         checkPlanSanity(query);
     }
 
+    /**
+     * follows the following pattern
+     *
+     * [$start/...] ($start, $link) - ($link, $anotherlink) - ($anotherlink, $end)* [$anotherlink/...]
+     *
+     */
+    @Test
+    public void exploitDBRelationsAndConnectivity_relationLinkWithSubbedEndsAndRuleRelationAtEnd(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$start id 'someSampleId';" +
+                "$end id 'anotherSampleId';" +
+                "(someRole: $link, otherRole: $start) isa relation;" +
+                "(someRole: $anotherlink, otherRole: $link) isa anotherRelation;" +
+                "(someRole: $end, otherRole: $anotherlink) isa derivedRelation;" +
+                "$link isa someEntity;" +
+                "$end isa someOtherEntity;" +
+                "$anotherlink isa yetAnotherEntity;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
+
+        assertTrue(!resolutionQueryPlan.queries().get(0).isAtomic());
+        assertEquals(2, resolutionQueryPlan.queries().size());
+        checkPlanSanity(query);
+    }
+
+    /**
+     * follows the following pattern
+     *
+     * [$start/...] ($start, $link) - ($link, $anotherlink)* - ($anotherlink, $end)*
+     *              /                                                           |
+     *        resource $res                                                  resource $res
+     *    anotherResource 'someValue'
+     */
+    @Test
+    public void exploitDBRelationsAndConnectivity_relationLinkWithEndsSharingAResource(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$start id 'sampleId';" +
+                "$start isa someEntity;" +
+                "$start has anotherResource 'someValue';" +
+                "$start has resource $res;" +
+                "$end has resource $res;" +
+                "(someRole: $link, otherRole: $start) isa relation;" +
+                "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
+                "(someRole: $anotherlink, otherRole: $end) isa anotherDerivedRelation;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
+
+        assertTrue(!resolutionQueryPlan.queries().get(0).isAtomic());
+        //TODO still might produce disconnected plans
+        //checkPlanSanity(query);
+    }
+
     @Test
     @Repeat( times = repeat )
     public void makeSureIndirectTypeAtomsAreNotLostWhenPlanning(){
@@ -572,11 +628,11 @@ public class ResolutionPlanTest {
     }
 
     private void checkAtomPlanComplete(ReasonerQueryImpl query, ResolutionPlan plan){
-        assertEquals(query.selectAtoms(), Sets.newHashSet(plan.plan()) );
+        assertEquals(query.selectAtoms().collect(toSet()), Sets.newHashSet(plan.plan()) );
     }
 
     private void checkQueryPlanComplete(ReasonerQueryImpl query, ResolutionQueryPlan plan){
-        assertEquals(query.selectAtoms(), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
+        assertEquals(query.selectAtoms().collect(toSet()), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){

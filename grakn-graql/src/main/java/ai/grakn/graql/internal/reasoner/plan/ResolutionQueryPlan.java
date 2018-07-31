@@ -81,11 +81,18 @@ public class ResolutionQueryPlan {
                 }
                 queries.add(ReasonerQueries.atomic(top));
             } else {
+
                 nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
+                top.getAllNeighbours().stream()
+                        .filter(atoms::contains)
+                        .filter(at -> !at.isRuleResolvable())
+                        .peek(atoms::remove)
+                        .forEach(nonResolvableAtoms::add);
+                if (atoms.isEmpty()) {
+                    queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
+                }
             }
         }
-
         boolean refine = plan.size() != queries.size() && !query.requiresSchema();
         return refine? refine(queries) : ImmutableList.copyOf(queries);
     }

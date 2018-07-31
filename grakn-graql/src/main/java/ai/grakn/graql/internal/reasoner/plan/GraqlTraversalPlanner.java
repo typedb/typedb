@@ -85,7 +85,7 @@ public class GraqlTraversalPlanner {
     @Nullable
     private static Atom optimalCandidate(List<Atom> candidates){
         return candidates.stream()
-                .sorted(Comparator.comparing(at -> at.getNeighbours(RelationshipAtom.class).count()))
+                .sorted(Comparator.comparing(at -> at.getImmediateNeighbours(RelationshipAtom.class).count()))
                 .sorted(Comparator.comparing(at -> !at.isGround()))
                 .sorted(Comparator.comparing(at -> -at.getPredicates().count()))
                 .findFirst().orElse(null);

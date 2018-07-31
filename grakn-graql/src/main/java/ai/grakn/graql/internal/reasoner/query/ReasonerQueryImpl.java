@@ -58,9 +58,11 @@ import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
@@ -394,6 +396,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public Stream<Atom> selectAtoms() {
         return getAtoms(Atom.class).filter(Atomic::isSelectable);
+    }
+
+    /**
+     * @return map of atoms and their immediate neighbours
+     */
+    public Multimap<Atom, Atom> immediateAtomNeighbourMap(){
+        Multimap<Atom, Atom> neighbourMap = HashMultimap.create();
+        this.selectAtoms().forEach(at -> neighbourMap.putAll(at, at.getImmediateNeighbours(Atom.class).collect(Collectors.toSet())));
+        return neighbourMap;
     }
 
     /** Does id predicates -> answer conversion

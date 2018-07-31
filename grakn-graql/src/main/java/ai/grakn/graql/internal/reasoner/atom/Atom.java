@@ -37,17 +37,20 @@ import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
@@ -247,12 +250,39 @@ public abstract class Atom extends AtomicBase {
     /**
      * @param type the class of {@link Predicate} to return
      * @param <T> the type of neighbour {@link Atomic} to return
-     * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
+     * @return immediate neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
-    public <T extends Atomic> Stream<T> getNeighbours(Class<T> type){
+    public <T extends Atomic> Stream<T> getImmediateNeighbours(Class<T> type){
         return getParentQuery().getAtoms(type)
                 .filter(atom -> atom != this)
                 .filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Set<Atom> getAllNeighbours() {
+        Set<Atom> neighbours = new HashSet<>();
+        Set<Atom> visitedAtoms = new HashSet<>();
+        Stack<Atom> atomStack = new Stack<>();
+
+        Multimap<Atom, Atom> neighbourMap = ((ReasonerQueryImpl) getParentQuery()).immediateAtomNeighbourMap();
+
+        neighbourMap.get(this).forEach(atomStack::push);
+        while (!atomStack.isEmpty()) {
+            Atom atom = atomStack.pop();
+            if (!visitedAtoms.contains(atom)) {
+                neighbourMap.get(atom).stream()
+                        .peek(neighbours::add)
+                        .flatMap(q -> neighbourMap.get(q).stream())
+                        .filter(q -> !visitedAtoms.contains(q))
+                        .filter(q -> !atomStack.contains(q))
+                        .forEach(atomStack::add);
+                visitedAtoms.add(atom);
+            }
+        }
+        return neighbours;
     }
 
     /**
