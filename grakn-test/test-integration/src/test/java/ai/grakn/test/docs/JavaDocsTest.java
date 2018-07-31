@@ -95,13 +95,12 @@ public class JavaDocsTest {
 
     @BeforeClass
     public static void loadGroovyPrefix() throws IOException {
-        assumeTrue(GraknTestUtil.usingTinker());
         groovyPrefix = new String(Files.readAllBytes(Paths.get("src/test/java/ai/grakn/test/docs/prefix.groovy")));
     }
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (GraknTestUtil.usingTinker() && numFound < 8) {
+        if (numFound < 8) {
             fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
         }
     }
