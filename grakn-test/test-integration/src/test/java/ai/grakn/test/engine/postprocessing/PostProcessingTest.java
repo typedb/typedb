@@ -48,6 +48,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -90,6 +91,8 @@ public class PostProcessingTest {
         session.close();
     }
 
+    // TODO: must set INDEX=false in indices-composite.properties, before enabling this test. otherwise the test will fail since Janus will reject duplicate resource with a SchemaViolationException
+    @Ignore
     @Test
     public void whenCreatingDuplicateResources_EnsureTheyAreMergedInPost() throws InvalidKBException, InterruptedException, JsonProcessingException {
         String value = "1";
