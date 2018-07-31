@@ -26,11 +26,11 @@ import com.google.auto.value.AutoValue;
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
-public abstract class KeyspaceAndValue {
+public abstract class KeyspaceValuePair {
     public abstract Keyspace keyspace();
     public abstract String value();
 
-    public static KeyspaceAndValue create(Keyspace keyspace, String value) {
-        return new AutoValue_KeyspaceAndValue(keyspace, value);
+    public static KeyspaceValuePair create(Keyspace keyspace, String value) {
+        return new AutoValue_KeyspaceValuePair(keyspace, value);
     }
 }

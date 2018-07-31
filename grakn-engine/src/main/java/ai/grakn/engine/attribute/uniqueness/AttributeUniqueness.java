@@ -38,10 +38,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class AttributeMergerDaemon {
-    private static Logger LOG = LoggerFactory.getLogger(AttributeMergerDaemon.class);
+public class AttributeUniqueness {
+    private static Logger LOG = LoggerFactory.getLogger(AttributeUniqueness.class);
 
-    public static AttributeMergerDaemon singleton = create();
+    public static AttributeUniqueness singleton = create();
 
     public static final int QUEUE_GET_BATCH_MIN = 1;
     public static final int QUEUE_GET_BATCH_MAX = 1;
@@ -51,17 +51,22 @@ public class AttributeMergerDaemon {
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
     private boolean stopDaemon = false;
 
-    private static AttributeMergerDaemon create() {
-        AttributeMergerDaemon singleton = new AttributeMergerDaemon();
+    private static AttributeUniqueness create() {
+        AttributeUniqueness singleton = new AttributeUniqueness();
 //        singleton.startDaemon(); // TODO: enable
         return singleton;
     }
 
-    /**
-     * Stops the attribute merger daemon
-     */
-    public void stopDaemon() {
-        stopDaemon = true;
+    public void insertAttribute(Keyspace keyspace, String value, ConceptId conceptId) {
+        final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
+        LOG.info("insertAttribute(" + newAttribute + ")");
+        newAttributeQueue.insertAttribute(newAttribute);
+    }
+
+    public int mergeNow(int min, int max, int waitTimeLimitMs) {
+        Attributes newAttrs = newAttributeQueue.readAttributes(min, max, waitTimeLimitMs);
+        mergeAlgorithm.merge(newAttrs);
+        return newAttributeQueue.size();
     }
 
     /**
@@ -88,16 +93,11 @@ public class AttributeMergerDaemon {
         return daemon;
     }
 
-    public int mergeNow(int min, int max, int waitTimeLimitMs) {
-        Attributes newAttrs = newAttributeQueue.readAttributes(min, max, waitTimeLimitMs);
-        mergeAlgorithm.merge(newAttrs);
-        return newAttributeQueue.size();
-    }
-
-    public void add(Keyspace keyspace, String value, ConceptId conceptId) {
-        final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
-        LOG.info("add(" + newAttribute + ")");
-        newAttributeQueue.insertAttribute(newAttribute);
+    /**
+     * Stops the attribute merger daemon
+     */
+    public void stopDaemon() {
+        stopDaemon = true;
     }
 }
 

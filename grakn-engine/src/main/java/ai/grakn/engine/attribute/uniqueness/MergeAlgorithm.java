@@ -47,12 +47,12 @@ public class MergeAlgorithm {
     public void merge(Attributes newAttributes) {
         try {
             LOG.info("starting a new batch to process these new attributes: " + newAttributes);
-            Set<KeyspaceAndValue> duplicates = newAttributes.attributes().stream()
-                    .map(attr -> KeyspaceAndValue.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
-            for (KeyspaceAndValue keyspaceAndValue: duplicates) {
-                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceAndValue.keyspace(), "localhost:4567");
+            Set<KeyspaceValuePair> duplicates = newAttributes.attributes().stream()
+                    .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
+            for (KeyspaceValuePair keyspaceValuePair : duplicates) {
+                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceValuePair.keyspace(), "localhost:4567");
                      EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
-                    merge(tx, keyspaceAndValue.value());
+                    merge(tx, keyspaceValuePair.value());
                     tx.commitSubmitNoLogs();
                 }
             }

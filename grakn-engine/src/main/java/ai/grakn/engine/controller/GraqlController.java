@@ -25,7 +25,7 @@ import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.attribute.uniqueness.AttributeMergerDaemon;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -341,7 +341,7 @@ public class GraqlController implements HttpController {
         if (commitQuery) {
             tx.commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> AttributeMergerDaemon.singleton.add(commitLog.keyspace(), value, id))
+                            conceptIds.forEach(id -> AttributeUniqueness.singleton.insertAttribute(commitLog.keyspace(), value, id))
                     )
             );
         }

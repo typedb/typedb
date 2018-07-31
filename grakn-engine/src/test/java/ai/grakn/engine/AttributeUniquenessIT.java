@@ -27,7 +27,7 @@ import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
-public class AttributeMergerDaemonIT {
+public class AttributeUniquenessIT {
     // Unique Attribute
     // - merge
     // - optimise with janus unique index
