@@ -18,10 +18,12 @@
 
 package ai.grakn.graql.internal.reasoner.plan;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
+import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -29,15 +31,21 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
 
+import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
  * <p>
  * Class defining the resolution plan for a given {@link ReasonerQueryImpl} at an atom level.
- * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
+ * The plan is constructed using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
  * </p>
  *
  * @author Kasper Piskorski
@@ -50,7 +58,7 @@ public final class ResolutionPlan {
 
     public ResolutionPlan(ReasonerQueryImpl q){
         this.query = q;
-        this.plan = GraqlTraversalPlanner.plan(query);
+        this.plan = plan(query);
         validatePlan();
     }
 
@@ -103,5 +111,98 @@ public final class ResolutionPlan {
         }
     }
 
+    /**
+     *
+     * Refined plan procedure:
+     * - establish a list of starting atom candidates based on their substitutions
+     * - create a plan using {@link GreedyTraversalPlan}
+     * - if the graql plan picks an atom that is not a candidate
+     *   - pick an optimal candidate
+     *   - call the procedure on atoms with removed candidate
+     * - otherwise return
+     *
+     * @param query for which the plan should be constructed
+     * @return list of atoms in order they should be resolved using a refined {@link GraqlTraversal} procedure.
+     */
+    private static ImmutableList<Atom> plan(ReasonerQueryImpl query) {
+        return ImmutableList.copyOf(refinePlan(query));
+    }
+
+
+    private static Stream<Atom> optimiseAtoms(Stream<Atom> atoms){
+        return atoms
+                .sorted(Comparator.comparing(at -> !at.isGround()))
+                .sorted(Comparator.comparing(at -> -at.getPredicates().count()));
+    }
+
+    private static Stream<Atom> optimiseRelations(Stream<Atom> atoms){
+        return optimiseAtoms(
+                atoms
+                        .sorted(Comparator.comparing(at -> at.getImmediateNeighbours(Atom.class).filter(Atom::isSelectable).count()))
+                        .sorted(Comparator.comparing(Atom::isRuleResolvable))
+        );
+    }
+
+    /**
+     * optimise for:
+     * - atoms with highest number of substitutions
+     * - if an optimal atom is a relation, optimise for relations:
+     *      - prioritising with least number of selectable neighbours
+     *      - prioritising non-resolvable relations
+     * @param candidates list of candidates
+     * @return optimal candidate from the provided list according to the criteria above
+     */
+    @Nullable
+    private static Atom optimalCandidate(List<Atom> candidates){
+        Atom atom = optimiseAtoms(candidates.stream()).findFirst().orElse(null);
+        if (atom == null || !atom.isRelation()) return atom;
+        return optimiseRelations(candidates.stream().filter(Atom::isRelation)).findFirst().orElse(null);
+    }
+
+    private static String PLACEHOLDER_ID = "placeholderId";
+
+    private static List<Atom> refinePlan(ReasonerQueryImpl query){
+        List<Atom> atoms = query.getAtoms(Atom.class)
+                .filter(Atomic::isSelectable)
+                .collect(Collectors.toList());
+        Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
+
+        ImmutableList<Atom> initialPlan = GraqlTraversalPlanner.planFromTraversal(atoms, subs, query.tx());
+        return refinePlan(query, initialPlan, subs);
+    }
+
+    /**
+     * @param query top level query for which the plan is constructed
+     * @param subs extra substitutions
+     * @return an optimally ordered list of provided atoms
+     */
+    private static List<Atom> refinePlan(ReasonerQueryImpl query, List<Atom> initialPlan, Set<IdPredicate> subs){
+        List<Atom> candidates = subs.isEmpty()?
+                initialPlan :
+                initialPlan.stream()
+                        .filter(at -> at.getPredicates(IdPredicate.class).findFirst().isPresent())
+                        .collect(Collectors.toList());
+
+        Atom first = optimalCandidate(candidates);
+        List<Atom> atomsToPlan = new ArrayList<>(initialPlan);
+        if (first == null || first.equals(initialPlan.get(0))) {
+            return initialPlan;
+        } else {
+            atomsToPlan.remove(first);
+
+            Set<IdPredicate> extraSubs = first.getVarNames().stream()
+                    .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
+                    .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
+                    .collect(Collectors.toSet());
+
+            Set<IdPredicate> totalSubs = Sets.union(subs, extraSubs);
+            ImmutableList<Atom> partialPlan = GraqlTraversalPlanner.planFromTraversal(atomsToPlan, totalSubs, query.tx());
+
+            return Stream.concat(
+                    Stream.of(first),
+                    refinePlan(query, partialPlan, totalSubs).stream()
+            ).collect(Collectors.toList());
+        }
+    }
 }
 

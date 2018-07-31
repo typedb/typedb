@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  */
 public class QuerySet extends QueryCollection<Set<ReasonerQueryImpl>, Set<Equivalence.Wrapper<ReasonerQueryImpl>>> {
 
-    QuerySet(Collection<ReasonerQueryImpl> queries){
+    private QuerySet(Collection<ReasonerQueryImpl> queries){
         this.collection = new HashSet<>(queries);
         this.wrappedCollection = queries.stream().map(q -> equality().wrap(q)).collect(Collectors.toSet());
     }

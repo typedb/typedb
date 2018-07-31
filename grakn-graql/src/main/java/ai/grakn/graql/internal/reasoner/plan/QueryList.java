@@ -21,10 +21,15 @@ package ai.grakn.graql.internal.reasoner.plan;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Stack;
 import java.util.stream.Collectors;
+
+import static ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan.prioritise;
+
 
 /**
  *
@@ -37,7 +42,7 @@ import java.util.stream.Collectors;
  */
 class QueryList extends QueryCollection<List<ReasonerQueryImpl>, List<Equivalence.Wrapper<ReasonerQueryImpl>>> {
 
-    QueryList(){
+    private QueryList(){
         this.collection = new ArrayList<>();
         this.wrappedCollection = new ArrayList<>();
     }
@@ -45,5 +50,27 @@ class QueryList extends QueryCollection<List<ReasonerQueryImpl>, List<Equivalenc
     QueryList(Collection<ReasonerQueryImpl> queries){
         this.collection = new ArrayList<>(queries);
         this.wrappedCollection = queries.stream().map(q -> equality().wrap(q)).collect(Collectors.toList());
+    }
+
+    /**
+     * @return refined list of queries based on {@link ResolutionQueryPlan} priority function
+     */
+    public QueryList refine(){
+        QueryList plan = new QueryList();
+        Stack<ReasonerQueryImpl> queryStack = new Stack<>();
+
+        Lists.reverse(prioritise(this)).forEach(queryStack::push);
+        while(!plan.containsAll(this)) {
+            ReasonerQueryImpl query = queryStack.pop();
+
+            QuerySet candidates = this.getCandidates(query, plan);
+
+            if (!candidates.isEmpty() || this.size() - plan.size() == 1){
+                plan.add(query);
+                Lists.reverse(prioritise(candidates)).forEach(queryStack::push);
+            }
+        }
+
+        return plan;
     }
 }

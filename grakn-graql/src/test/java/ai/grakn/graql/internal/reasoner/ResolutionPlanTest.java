@@ -46,7 +46,6 @@ import java.util.List;
 import org.junit.BeforeClass;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -163,7 +162,6 @@ public class ResolutionPlanTest {
         checkPlanSanity(query);
     }
 
-    @Ignore
     @Test
     @Repeat( times = repeat )
     public void prioritiseNonResolvableRelations_OnlyAtomicQueriesPresent() {
@@ -211,6 +209,25 @@ public class ResolutionPlanTest {
                 getAtomOfType(query, "yetAnotherRelation", testTx),
                 getAtomOfType(query, "anotherRelation", testTx),
                 getAtomOfType(query, "relation", testTx)
+        );
+        checkOptimalAtomPlanProduced(query, correctPlan);
+        checkPlanSanity(query);
+    }
+
+    @Test
+    @Repeat( times = repeat )
+    public void prioritiseSpecificResourcesOverResolvableRelationsWithGuards(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$x isa baseEntity;" +
+                "(someRole:$x, otherRole: $y) isa derivedRelation;" +
+                "$y isa someEntity;" +
+                "$x has resource 'test';" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
+                getAtomOfType(query, "resource", testTx),
+                getAtomOfType(query, "derivedRelation", testTx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -596,7 +613,7 @@ public class ResolutionPlanTest {
     private void checkOptimalAtomPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         ImmutableList<Atom> atomPlan = resolutionPlan.plan();
-        assertEquals(atomPlan, desiredAtomPlan);
+        assertEquals(desiredAtomPlan, atomPlan);
         checkAtomPlanComplete(query, resolutionPlan);
         checkAtomPlanConnected(resolutionPlan);
     }
@@ -609,7 +626,7 @@ public class ResolutionPlanTest {
         while(iterator.hasNext()){
             Atom next = iterator.next();
             Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            assertTrue("Disconnected plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
     }
@@ -622,7 +639,7 @@ public class ResolutionPlanTest {
         while(iterator.hasNext()){
             ReasonerQueryImpl next = iterator.next();
             Set<Var> varNames = next.getVarNames();
-            assertTrue(!Sets.intersection(varNames, vars).isEmpty());
+            assertTrue("Disconnected query plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
     }
