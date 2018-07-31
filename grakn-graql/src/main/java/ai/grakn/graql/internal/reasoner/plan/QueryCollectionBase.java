@@ -130,7 +130,7 @@ public abstract class QueryCollectionBase{
      * @param plan current plan
      * @return set of candidate queries for this query
      */
-    public QuerySet getCandidates(ReasonerQueryImpl entryQuery, QueryList plan){
+    QuerySet getCandidates(ReasonerQueryImpl entryQuery, QueryList plan){
         Equivalence.Wrapper<ReasonerQueryImpl> query = equality().wrap(entryQuery);
         Set<Equivalence.Wrapper<ReasonerQueryImpl>> availableQueries = this.wrappedStream()
                 .filter(q -> !(plan.contains(q) || q.equals(query)))

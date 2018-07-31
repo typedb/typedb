@@ -604,7 +604,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
             Multimap<RelationshipType, Role> compatibleConfigurations = inferPossibleRelationConfigurations(sub);
             Set<Var> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
-            Set<RelationshipAtom> untypedNeighbours = getNeighbours(RelationshipAtom.class)
+            Set<RelationshipAtom> untypedNeighbours = getImmediateNeighbours(RelationshipAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
                     .collect(toSet());
 
