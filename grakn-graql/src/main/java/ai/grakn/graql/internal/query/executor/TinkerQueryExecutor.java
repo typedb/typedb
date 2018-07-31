@@ -100,12 +100,13 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public ConceptMap run(DefineQuery query) {
+    public Stream<ConceptMap> run(DefineQuery query) {
         ImmutableList<VarPatternAdmin> allPatterns = AdminConverter.getVarAdmins(query.varPatterns()).stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
-        return QueryOperationExecutor.defineAll(allPatterns, tx);
+        ConceptMap defined = QueryOperationExecutor.defineAll(allPatterns, tx);
+        return Stream.of(defined);
     }
 
     @Override

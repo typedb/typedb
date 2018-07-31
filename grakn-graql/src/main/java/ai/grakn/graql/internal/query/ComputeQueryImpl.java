@@ -82,7 +82,7 @@ import static java.util.stream.Collectors.joining;
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  * @param <T> return type of ComputeQuery
  */
-public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T> implements ComputeQuery<T> {
+public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
     private GraknTx tx;
     private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();

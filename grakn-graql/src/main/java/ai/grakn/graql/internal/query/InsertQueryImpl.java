@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMap> implements InsertQueryAdmin {
+abstract class InsertQueryImpl implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.

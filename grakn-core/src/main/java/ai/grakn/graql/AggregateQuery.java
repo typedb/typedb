@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.Nullable;
-import java.util.List;
 
 /**
  * An aggregate query produced from a {@link Match}.
@@ -31,7 +30,7 @@ import java.util.List;
  *
  * @author Grakn Warriors
  */
-public interface AggregateQuery<T extends Answer> extends Query<List<T>>, Streamable<T> {
+public interface AggregateQuery<T extends Answer> extends Query<T> {
 
     @Override
     AggregateQuery<T> withTx(GraknTx tx);

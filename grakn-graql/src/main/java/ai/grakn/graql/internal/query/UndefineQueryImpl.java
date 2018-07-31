@@ -21,11 +21,13 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,7 +37,7 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements UndefineQuery {
+abstract class UndefineQueryImpl implements UndefineQuery {
 
     static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
         return new AutoValue_UndefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
@@ -47,7 +49,13 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
     }
 
     @Override
-    public final Void execute() {
+    public Stream<ConceptMap> stream() {
+        execute();
+        return Stream.empty();
+    }
+
+    @Override
+    public final List<ConceptMap> execute() {
         executor().run(this);
         return null;
     }
@@ -60,12 +68,6 @@ abstract class UndefineQueryImpl extends AbstractQuery<Void, Void> implements Un
     @Override
     public String toString() {
         return "undefine " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    protected final Stream<Void> stream() {
-        execute();
-        return Stream.empty();
     }
 
     @Override

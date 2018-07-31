@@ -153,7 +153,7 @@ public class UndefineQueryTest {
 
     @Test
     public void whenUndefiningById_TheSchemaConceptIsDeleted() {
-        Type newType = qb.define(x.label(NEW_TYPE).sub(ENTITY)).execute().get(x).asType();
+        Type newType = qb.define(x.label(NEW_TYPE).sub(ENTITY)).execute().get(0).get(x).asType();
 
         assertNotNull(tx.getType(NEW_TYPE));
 

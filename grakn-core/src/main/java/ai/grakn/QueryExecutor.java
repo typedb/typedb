@@ -50,7 +50,7 @@ public interface QueryExecutor {
 
     void run(DeleteQuery query);
 
-    ConceptMap run(DefineQuery query);
+    Stream<ConceptMap> run(DefineQuery query);
 
     void run(UndefineQuery query);
 

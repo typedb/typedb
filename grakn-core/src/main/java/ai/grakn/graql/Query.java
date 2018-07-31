@@ -19,9 +19,14 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.QueryExecutor;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * A Graql query of any kind. May read and write to the graph.
@@ -30,7 +35,7 @@ import javax.annotation.Nullable;
  *
  * @author Grakn Warriors
  */
-public interface Query<T> {
+public interface Query<T extends Answer> extends Streamable<T> {
 
     /**
      * @param tx the graph to execute the query on
@@ -39,11 +44,19 @@ public interface Query<T> {
     @CheckReturnValue
     Query<T> withTx(GraknTx tx);
 
+    @CheckReturnValue
+    Stream<T> stream();
+
     /**
      * Execute the query against the graph (potentially writing to the graph) and return a result
      * @return the result of the query
      */
-    T execute();
+    List<T> execute();
+
+    default QueryExecutor executor() {
+        if (tx() == null) throw GraqlQueryException.noTx();
+        return tx().admin().queryExecutor();
+    }
 
     /**
      * Whether this query will modify the graph

@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * @param <T> the type of the aggregate result
  */
 @AutoValue
-abstract class AggregateQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T> implements AggregateQuery<T> {
+abstract class AggregateQueryImpl<T extends Answer> implements AggregateQuery<T> {
 
     public static <T extends Answer> AggregateQueryImpl<T> of(Match match, Aggregate<T> aggregate) {
         return new AutoValue_AggregateQueryImpl<>(match, aggregate);

@@ -23,10 +23,13 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -37,7 +40,7 @@ import static java.util.stream.Collectors.joining;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {
+abstract class DeleteQueryImpl implements DeleteQueryAdmin {
 
     /**
      * @param vars a collection of variables to delete
@@ -48,9 +51,15 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public final Void execute() {
+    public Stream<ConceptMap> stream() {
+        execute();
+        return Stream.empty();
+    }
+
+    @Override
+    public final List<ConceptMap> execute() {
         executor().run(this);
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
@@ -81,12 +90,6 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
         query.append(";");
 
         return query.toString();
-    }
-
-    @Override
-    protected final Stream<Void> stream() {
-        execute();
-        return Stream.empty();
     }
 
     @Override

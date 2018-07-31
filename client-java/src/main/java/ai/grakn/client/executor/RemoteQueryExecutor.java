@@ -31,7 +31,6 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
-import com.google.common.collect.Iterators;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,8 +68,9 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public ConceptMap run(DefineQuery query) {
-        return (ConceptMap) Iterators.getOnlyElement(tx.query(query));
+    public Stream<ConceptMap> run(DefineQuery query) {
+        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     @Override
