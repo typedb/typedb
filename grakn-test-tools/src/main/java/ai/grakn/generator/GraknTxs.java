@@ -18,9 +18,8 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -30,12 +29,14 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.engine.Server;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -113,7 +114,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system tx
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
-        GraknSession factory = Grakn.sessionInMemory(keyspace);
+        GraknSession factory = EmbeddedGraknSession.inMemory(keyspace);
 
         int size = status.size();
 
@@ -125,7 +126,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
         // Clear tx before retrieving
         tx = factory.transaction(GraknTxType.WRITE);
-        Grakn.Keyspace.deleteInMemory(tx.keyspace());
+        Server.Keyspace.deleteInMemory(tx.keyspace());
         tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {

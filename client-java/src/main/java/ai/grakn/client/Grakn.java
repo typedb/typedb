@@ -66,9 +66,8 @@ import java.util.stream.StreamSupport;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
- * Entry-point and client equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
- * In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
- * subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
+ * Entry-point which communicates with a running Grakn server using gRPC.
+ * For now, only a subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
  */
 public final class Grakn {
 

@@ -155,7 +155,7 @@ public class KeyspaceStoreTest {
 
         //Delete a tx entirely
         GraknTx deletedTx = txs.iterator().next();
-        Grakn.Keyspace.delete(deletedTx.keyspace());
+        Server.Keyspace.delete(deletedTx.keyspace());
         txs.remove(deletedTx);
 
         // Get system keyspaces
@@ -178,7 +178,7 @@ public class KeyspaceStoreTest {
 
         //Delete a keyspace entirely
         GraknTx deletedTx = txs.iterator().next();
-        Grakn.Keyspace.delete(deletedTx.keyspace());
+        Server.Keyspace.delete(deletedTx.keyspace());
         txs.remove(deletedTx);
 
         // Get system keyspaces

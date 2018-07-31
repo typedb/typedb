@@ -36,6 +36,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.engine.Server;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -844,7 +845,7 @@ public class ServerRPCIT {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
-            Grakn.Keyspace.delete(tx.keyspace());
+            Server.Keyspace.delete(tx.keyspace());
 
             assertTrue(tx.isClosed());
         }

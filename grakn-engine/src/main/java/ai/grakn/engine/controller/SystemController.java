@@ -71,8 +71,7 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 /**
  * <p> Controller Providing Configs for building Grakn Graphs </p>
  *
- * <p> When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location
- * this controller is accessed. The controller provides the necessary config needed in order to
+ * The controller provides the necessary config needed in order to
  * build a {@link GraknTx}.
  *
  * This controller also allows the retrieval of all {@link ai.grakn.Keyspace}s opened so far. </p>

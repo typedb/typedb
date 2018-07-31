@@ -18,10 +18,15 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -132,6 +137,34 @@ public class Server implements AutoCloseable {
 
     public LockProvider lockProvider(){
         return lockProvider;
+    }
+
+    /**
+     * Internal class used to handle keyspace related operations
+     */
+
+    public static class Keyspace{
+
+        public static void delete(ai.grakn.Keyspace keyspace){
+            EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(keyspace);
+            session.close();
+            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
+                tx.closeSession();
+                tx.clearGraph();
+                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+            }
+            KeyspaceStoreImpl.getInstance().deleteKeyspace(keyspace);
+        }
+
+        public static void deleteInMemory(ai.grakn.Keyspace keyspace){
+            EmbeddedGraknSession session = EmbeddedGraknSession.inMemory(keyspace);
+            session.close();
+            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
+                tx.closeSession();
+                tx.clearGraph();
+                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+            }
+        }
     }
 
 }

@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknComputer;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -85,6 +86,39 @@ public class EmbeddedGraknSession implements GraknSession {
     public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, GraknConfig config, TxFactoryBuilder txFactoryBuilder){
         return new EmbeddedGraknSession(keyspace, config,  txFactoryBuilder);
     }
+
+    public static EmbeddedGraknSession   createEngineSession(Keyspace keyspace, GraknConfig config){
+        return new EmbeddedGraknSession(keyspace, config,  GraknTxFactoryBuilder.getInstance());
+    }
+
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace){
+        return new EmbeddedGraknSession(keyspace, GraknConfig.create(),  GraknTxFactoryBuilder.getInstance());
+    }
+
+    public static EmbeddedGraknSession inMemory(Keyspace keyspace){
+        return createEngineSession(keyspace, getTxInMemoryConfig());
+    }
+
+    public static EmbeddedGraknSession inMemory(String keyspace){
+        return inMemory(Keyspace.of(keyspace));
+    }
+
+
+    /**
+     * Gets properties which let you build a toy in-memory {@link GraknTx}.
+     * This does not contact engine in any way and it can be run in an isolated manner
+     *
+     * @return the properties needed to build an in-memory {@link GraknTx}
+     */
+    private static GraknConfig getTxInMemoryConfig(){
+        GraknConfig config = GraknConfig.empty();
+        config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
+        config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, GraknTxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, GraknTxFactoryBuilder.IN_MEMORY);
+        return config;
+    }
+
 
 
     @Override

@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.kb.internal.log.CommitLogHandler;

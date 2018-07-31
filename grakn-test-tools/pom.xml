@@ -37,6 +37,10 @@
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-engine</artifactId>
+        </dependency>
 
         <!-- Needed so we can create rule contexts -->
         <dependency>

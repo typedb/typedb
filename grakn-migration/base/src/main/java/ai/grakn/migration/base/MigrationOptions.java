@@ -18,7 +18,6 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;

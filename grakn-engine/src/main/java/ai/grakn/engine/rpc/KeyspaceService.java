@@ -18,11 +18,10 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
+import ai.grakn.engine.Server;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import io.grpc.Status;
@@ -65,7 +64,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
-            Grakn.Keyspace.delete(args.getKeyspace());
+            Server.Keyspace.delete(args.getKeyspace());
 
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();

@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal.cache;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -106,7 +105,7 @@ public class TxCacheTest extends TxTestBase {
         RelationshipImpl relation = (RelationshipImpl) rt1.create().assign(r1, i1).assign(r2, i2);
 
         tx.commit();
-        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedCastings(), is(empty()));
 
@@ -119,7 +118,7 @@ public class TxCacheTest extends TxTestBase {
         EntityType t1 = tx.putEntityType("1");
 
         tx.commit();
-        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         Entity i1 = t1.create();
         assertThat(tx.txCache().getConceptCache().values(), hasItem(i1));
@@ -131,7 +130,7 @@ public class TxCacheTest extends TxTestBase {
         Entity i1 = t1.create();
 
         tx.commit();
-        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         assertThat(tx.txCache().getModifiedThings(), is(empty()));
 

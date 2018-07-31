@@ -18,7 +18,6 @@
 
 package ai.grakn.test.docs;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
@@ -26,6 +25,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
@@ -157,7 +158,8 @@ public class DocTestUtil {
 
     public static GraknSession getTestGraph(SimpleURI uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        GraknSession session = Grakn.session(keyspace);
+        GraknSession session = EmbeddedGraknSession.createEngineSession(keyspace);
+
 
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);

@@ -18,20 +18,16 @@
 
 package ai.grakn.test.batch;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.batch.BatchExecutorClient;
 import ai.grakn.batch.GraknClient;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
-import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import com.netflix.hystrix.HystrixCommand;
@@ -52,7 +48,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraknTestUtil.usingTinker;
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static java.util.stream.Stream.generate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

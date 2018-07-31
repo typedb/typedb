@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.factory;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;

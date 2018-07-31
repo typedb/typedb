@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.shell;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -265,7 +264,8 @@ public class GraqlShell implements AutoCloseable {
         String line = console.readLine();
         if (line != null && line.equals("confirm")) {
             console.println("Cleaning...");
-            Grakn.Keyspace.delete(tx.keyspace());
+            //TODO inject grakn client to use gRPC functionalities
+//            Server.Keyspace.delete(tx.keyspace());
             reopenTx();
         } else {
             console.println("Cancelling clean.");

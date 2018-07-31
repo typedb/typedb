@@ -18,9 +18,9 @@
 
 package ai.grakn.dist;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Query;
 import org.junit.After;
 import org.junit.Before;
@@ -39,11 +39,11 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        tx = Grakn.sessionInMemory( "mypokemongraph").transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory("mypokemongraph").transaction(GraknTxType.WRITE);
     }
 
     @After
-    public void close(){
+    public void close() {
         tx.commit();
         tx.close();
     }

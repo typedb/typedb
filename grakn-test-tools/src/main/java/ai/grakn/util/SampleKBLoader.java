@@ -18,7 +18,6 @@
 
 package ai.grakn.util;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -64,7 +63,7 @@ public class SampleKBLoader {
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
-        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(randomKeyspace(), GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
+        EmbeddedGraknSession session = EmbeddedGraknSession.inMemory(randomKeyspace());
         factory = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
         this.preLoad = preLoad;
     }
@@ -97,7 +96,7 @@ public class SampleKBLoader {
     public void rollback() {
         if (tx instanceof GraknTxTinker) {
             tx.close();
-            Grakn.Keyspace.deleteInMemory(tx.keyspace());
+            tx.clearGraph();
             graphLoaded = false;
         } else if (!tx.isClosed()) {
             tx.close();

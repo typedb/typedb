@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -181,7 +180,7 @@ public class ValidatorTest extends TxTestBase {
         }
 
         tx.commit();
-        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -195,7 +194,7 @@ public class ValidatorTest extends TxTestBase {
         godfather.delete();
 
         tx.commit();
-        tx = Grakn.sessionInMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 

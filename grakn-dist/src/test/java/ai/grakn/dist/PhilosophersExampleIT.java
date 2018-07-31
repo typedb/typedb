@@ -18,9 +18,9 @@
 
 package ai.grakn.dist;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -42,7 +42,7 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknTx tx = Grakn.sessionInMemory("mygraph").transaction(GraknTxType.WRITE);
+        GraknTx tx = EmbeddedGraknSession.inMemory("mygraph").transaction(GraknTxType.WRITE);
         qb = tx.graql();
         runQueries("src/examples/philosophers.gql");
     }

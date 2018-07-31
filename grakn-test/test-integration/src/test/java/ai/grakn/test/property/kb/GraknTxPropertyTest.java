@@ -18,9 +18,7 @@
 
 package ai.grakn.test.property.kb;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -28,9 +26,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -38,7 +36,6 @@ import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.FromTxGenerator.FromTx;
 import ai.grakn.generator.GraknTxs.Open;
-import ai.grakn.generator.MetaLabels;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
@@ -61,7 +58,6 @@ import java.util.stream.Stream;
 import static ai.grakn.generator.GraknTxs.allConceptsFrom;
 import static ai.grakn.generator.GraknTxs.allSchemaElementsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
-import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -71,11 +67,11 @@ import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
+
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknTxPropertyTest {
@@ -257,7 +253,7 @@ public class GraknTxPropertyTest {
 //    @Property
 //    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
 //        graph.admin().delete();
-//        graph = Grakn.sessionInMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
+//        graph = EmbeddedGraknSession.inMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
 //        List<Concept> concepts = allConceptsFrom(graph);
 //        concepts.forEach(concept -> {
 //            assertTrue(concept.isSchemaConcept());
@@ -269,7 +265,7 @@ public class GraknTxPropertyTest {
 //    @Property
 //    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
 //        graph.admin().delete();
-//        graph = Grakn.sessionInMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
+//        graph = EmbeddedGraknSession.inMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
 //        assertNotNull(graph.getSchemaConcept(label));
 //        graph.close();
 //    }

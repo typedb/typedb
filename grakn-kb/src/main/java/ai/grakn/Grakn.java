@@ -75,7 +75,7 @@ GraknTx graph3 = Grakn.session("keyspace").transaction(GraknTxType);}</pre>
  You can alternatively instantiate a 'toy' knowledge graph (which runs in-memory) for experimentation purposes.
  You can initialise an in memory graph without having the Grakn server running:
 
- <pre>{@code GraknTx tx = Grakn.sessionInMemory("keyspace").transaction();}</pre>
+ <pre>{@code GraknTx tx = EmbeddedGraknSession.inMemory("keyspace").transaction();}</pre>
  This in memory graph serves as a toy graph for you to become accustomed to the API without needing to setup a
  Grakn Server. It is also useful for testing purposes.
  </p>
@@ -105,17 +105,6 @@ public class Grakn {
     private static final Map<String, EmbeddedGraknSession> sessions = new ConcurrentHashMap<>();
 
 
-    public static EmbeddedGraknSession session(ai.grakn.Keyspace keyspace) {
-        return session(keyspace, GraknConfig.create());
-    }
-
-    public static EmbeddedGraknSession sessionInMemory(ai.grakn.Keyspace keyspace) {
-        return sessions.computeIfAbsent(keyspace.getValue(), k -> {
-            TxFactoryBuilder factoryBuilder = GraknTxFactoryBuilder.getInstance();
-            GraknConfig config = getTxInMemoryConfig();
-            return EmbeddedGraknSession.createEngineSession(keyspace, config, factoryBuilder);
-        });
-    }
 
     @CheckReturnValue
     public static EmbeddedGraknSession session(ai.grakn.Keyspace keyspace, GraknConfig config) {
@@ -127,51 +116,4 @@ public class Grakn {
         });
     }
 
-    @CheckReturnValue
-    public static EmbeddedGraknSession sessionInMemory(String keyspace) {
-        return sessionInMemory(ai.grakn.Keyspace.of(keyspace));
-    }
-
-    /**
-     * Gets properties which let you build a toy in-memory {@link GraknTx}.
-     * This does not contact engine in any way and it can be run in an isolated manner
-     *
-     * @return the properties needed to build an in-memory {@link GraknTx}
-     */
-    private static GraknConfig getTxInMemoryConfig(){
-        GraknConfig config = GraknConfig.empty();
-        config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
-        config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, GraknTxFactoryBuilder.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, GraknTxFactoryBuilder.IN_MEMORY);
-        return config;
-    }
-
-    /**
-     * Internal class used to handle keyspace related operations
-     */
-
-    public static class Keyspace{
-
-        public static void delete(ai.grakn.Keyspace keyspace){
-            EmbeddedGraknSession session = session(keyspace);
-            session.close();
-            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
-                tx.closeSession();
-                tx.clearGraph();
-                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-            }
-            KeyspaceStoreImpl.getInstance().deleteKeyspace(keyspace);
-        }
-
-        public static void deleteInMemory(ai.grakn.Keyspace keyspace){
-            EmbeddedGraknSession session = sessionInMemory(keyspace);
-            session.close();
-            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
-                tx.closeSession();
-                tx.clearGraph();
-                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-            }
-        }
-    }
 }

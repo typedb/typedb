@@ -18,7 +18,6 @@
 
 package ai.grakn.test.rule;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -97,21 +96,23 @@ public class EngineContext extends CompositeTestRule {
 
     private KeyspaceStore keyspaceStore;
 
-    public EngineGraknTxFactory factory() { return engineGraknTxFactory; }
+    public EngineGraknTxFactory factory() {
+        return engineGraknTxFactory;
+    }
 
     private EngineGraknTxFactory engineGraknTxFactory;
 
-    private EngineContext(){
+    private EngineContext() {
         config = createTestConfig();
         redis = InMemoryRedisContext.create();
     }
 
-    private EngineContext(GraknConfig config, InMemoryRedisContext redis){
+    private EngineContext(GraknConfig config, InMemoryRedisContext redis) {
         this.config = config;
         this.redis = redis;
     }
 
-    public static EngineContext create(GraknConfig config){
+    public static EngineContext create(GraknConfig config) {
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
         int redisPort = redisURI.getPort();
         InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
@@ -123,7 +124,7 @@ public class EngineContext extends CompositeTestRule {
      *
      * @return a new {@link EngineContext} for testing
      */
-    public static EngineContext create(){
+    public static EngineContext create() {
         return new EngineContext();
     }
 
@@ -161,6 +162,10 @@ public class EngineContext extends CompositeTestRule {
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
         return engineGraknTxFactory.tx(randomKeyspace(), GraknTxType.WRITE).session();
+    }
+
+    public EmbeddedGraknSession sessionForKeyspace(Keyspace keyspace) {
+        return engineGraknTxFactory.tx(keyspace, GraknTxType.WRITE).session();
     }
 
     @Override
@@ -226,7 +231,7 @@ public class EngineContext extends CompositeTestRule {
             }, "Error closing engine");
             jedisPool.close();
             sparkHttp.stop();
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
         }
     }
@@ -234,28 +239,28 @@ public class EngineContext extends CompositeTestRule {
     private static void clearGraphs(EngineGraknTxFactory factory) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = factory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try (GraknTx systemGraph = factory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .forEach(x -> x.concepts().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().value().toString());
                     }));
         }
 
-        keyspaceNames.forEach(name -> Grakn.Keyspace.delete(Keyspace.of(name)));
+        keyspaceNames.forEach(name -> Server.Keyspace.delete(Keyspace.of(name)));
         factory.refreshConnections();
     }
 
     private static void noThrow(RunnableWithExceptions fn, String errorMessage) {
         try {
             fn.run();
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             LOG.error(errorMessage + "\nThe exception was: " + getFullStackTrace(t));
         }
     }
 
     /**
      * Function interface that throws exception for use in the noThrow function
+     *
      * @param <E>
      */
     @FunctionalInterface
@@ -298,7 +303,7 @@ public class EngineContext extends CompositeTestRule {
 
 
         // post-processing
-        IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
+        IndexStorage indexStorage = RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);

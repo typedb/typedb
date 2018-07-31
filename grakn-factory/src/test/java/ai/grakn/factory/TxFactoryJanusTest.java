@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.InvalidKBException;
