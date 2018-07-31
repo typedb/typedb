@@ -18,7 +18,6 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
@@ -34,9 +33,9 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.engine.Server;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -77,11 +76,11 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
 public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
 
-    private static GraknTx lastGeneratedTx;
+    private static EmbeddedGraknTx lastGeneratedTx;
 
     private static StringBuilder txSummary;
 
-    private GraknTx tx;
+    private EmbeddedGraknTx tx;
     private Boolean open = null;
 
     public GraknTxs() {
@@ -114,7 +113,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system tx
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
-        GraknSession factory = EmbeddedGraknSession.inMemory(keyspace);
+        EmbeddedGraknSession factory = EmbeddedGraknSession.inMemory(keyspace);
 
         int size = status.size();
 
@@ -126,7 +125,8 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
         // Clear tx before retrieving
         tx = factory.transaction(GraknTxType.WRITE);
-        Server.Keyspace.deleteInMemory(tx.keyspace());
+        tx.clearGraph();
+        tx.close();
         tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
@@ -142,7 +142,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         return tx;
     }
 
-    private static void setLastGeneratedTx(GraknTx tx) {
+    private static void setLastGeneratedTx(EmbeddedGraknTx tx) {
         lastGeneratedTx = tx;
     }
 

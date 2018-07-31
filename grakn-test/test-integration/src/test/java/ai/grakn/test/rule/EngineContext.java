@@ -19,6 +19,7 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -60,7 +61,9 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +77,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 /**
  * <p>
  * Start the Grakn Engine server before each test class and stop after.
+ *
+ * NOTE: This Context only works with Janus profile and should only be used for Integration Tests.
  * </p>
  *
  * @author alexandraorth
@@ -161,11 +166,7 @@ public class EngineContext extends CompositeTestRule {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return engineGraknTxFactory.tx(randomKeyspace(), GraknTxType.WRITE).session();
-    }
-
-    public EmbeddedGraknSession sessionForKeyspace(Keyspace keyspace) {
-        return engineGraknTxFactory.tx(keyspace, GraknTxType.WRITE).session();
+        return EmbeddedGraknSession.createEngineSession(randomKeyspace(), config);
     }
 
     @Override
