@@ -31,22 +31,21 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
@@ -95,8 +94,16 @@ public class TinkerQueryExecutor implements QueryExecutor {
 
     @Override
     public void run(DeleteQuery query) {
-        List<ConceptMap> results = query.admin().match().stream().collect(toList());
-        results.forEach(result -> deleteResult(result, query.admin().vars()));
+        Stream<ConceptMap> answers = query.admin().match().stream().map(result -> result.project(query.admin().vars())).distinct();
+        // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
+        // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
+        Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).distinct().collect(Collectors.toSet());
+        conceptsToDelete.forEach(concept -> {
+            if (concept.isSchemaConcept()) {
+                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+            }
+            concept.delete();
+        });
     }
 
     @Override
@@ -126,19 +133,5 @@ public class TinkerQueryExecutor implements QueryExecutor {
     @Override
     public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
         return new TinkerComputeExecutor(tx, query);
-    }
-
-    private void deleteResult(ConceptMap result, Collection<? extends Var> vars) {
-        Collection<? extends Var> toDelete = vars.isEmpty() ? result.vars() : vars;
-
-        for (Var var : toDelete) {
-            Concept concept = result.get(var);
-
-            if (concept.isSchemaConcept()) {
-                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
-            }
-
-            concept.delete();
-        }
     }
 }

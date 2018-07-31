@@ -49,12 +49,11 @@ abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMa
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
-     *
-     * @param vars a collection of Vars to insert
-     * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
+     * @param match the {@link Match} to insert for each result
+     * @param vars a collection of Vars to insert
      */
-    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, MatchAdmin match, GraknTx tx) {
+    static InsertQueryImpl create(GraknTx tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {

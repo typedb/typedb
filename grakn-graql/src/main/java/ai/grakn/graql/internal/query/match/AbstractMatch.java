@@ -117,7 +117,6 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public GetQuery get(Set<Var> vars) {
         if (vars.isEmpty()) vars = getPattern().commonVars();
-
         return Queries.get(this, ImmutableSet.copyOf(vars));
     }
 
@@ -153,7 +152,6 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final DeleteQuery delete(Set<Var> vars) {
         if (vars.isEmpty()) vars = getPattern().commonVars();
-
         return Queries.delete(this, vars);
     }
 
