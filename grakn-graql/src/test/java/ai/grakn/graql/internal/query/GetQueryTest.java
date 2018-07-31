@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -73,7 +73,7 @@ public class GetQueryTest {
     @Test
     public void whenRunningExecute_ResultIsSameAsParallelStreamingToAList() {
         GetQuery query = qb.match(x.isa("movie")).get();
-        List<Answer> list = query.execute();
+        List<ConceptMap> list = query.execute();
         assertEquals(list, query.parallelStream().collect(toList()));
     }
 

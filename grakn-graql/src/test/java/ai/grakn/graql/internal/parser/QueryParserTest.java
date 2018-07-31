@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -36,13 +37,13 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
@@ -70,7 +71,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.define;
@@ -87,7 +87,6 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.parse;
 import static ai.grakn.graql.Graql.regex;
-import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
@@ -96,7 +95,6 @@ import static ai.grakn.graql.Order.desc;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.k;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument.size;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static com.google.common.collect.Lists.newArrayList;
@@ -371,16 +369,9 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenComparingPositiveAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
-        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(ask());
-        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Godfather'; aggregate ask;");
-        assertEquals(expected, parsed);
-    }
-
-    @Test
-    public void whenComparingNegativeAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
-        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Dogfather")).aggregate(ask());
-        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Dogfather'; aggregate ask;");
+    public void whenComparingCountQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Value> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(count());
+        AggregateQuery<Value> parsed = parse("match $x isa movie has title 'Godfather'; aggregate count;");
         assertEquals(expected, parsed);
     }
 
@@ -576,9 +567,9 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingQueryWithComments_TheyAreIgnored() {
-        AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
-        AggregateQuery<Boolean> parsed = parse(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate ask;"
+        AggregateQuery<Value> expected = match(var("x").isa("movie")).aggregate(count());
+        AggregateQuery<Value> parsed = parse(
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate count;"
         );
         assertEquals(expected, parsed);
     }
@@ -615,18 +606,23 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseAggregate() {
-        AggregateQuery<?> expected = match(var("x").isa("movie"))
-                .aggregate(select(count().as("c"), group("x").as("g")));
-
-        AggregateQuery<Map<String, Object>> parsed =
-                parse("match $x isa movie; aggregate (count as c, group $x as g);");
+    public void testParseAggregateGroup() {
+        AggregateQuery<Map<Concept, List<ConceptMap>>> expected = match(var("x").isa("movie")).aggregate(group("x"));
+        AggregateQuery<Map<Concept, List<ConceptMap>>> parsed = parse("match $x isa movie; aggregate group $x;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testParseStdev() {
+    public void testParseAggregateGroupCount() {
+        AggregateQuery<Map<Concept, Value>> expected = match(var("x").isa("movie")).aggregate(group("x", count()));
+        AggregateQuery<Map<Concept, Value>> parsed = parse("match $x isa movie; aggregate group $x count;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseAggregateStd() {
         AggregateQuery<?> expected = match(var("x").isa("movie")).aggregate(std("x"));
 
         AggregateQuery<Map<String, Object>> parsed =
@@ -637,7 +633,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x (count as c);";
+        String query = "match $x isa movie; aggregate group $x count;";
         assertEquals(query, parse(query).toString());
     }
 
@@ -674,35 +670,21 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseComputeClusterUsingCCWithMembers() {
-        assertParseEquivalence("compute cluster in [movie, person], using connected-component, where members=true;");
-    }
-
-    @Test
-    public void testParseComputeClusterUsingCCWithMembersThenSize() {
-        ComputeQuery expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(members(true), size(10));
+    public void testParseComputeClusterUsingCCWithSize() {
+        ComputeQuery expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10));
         ComputeQuery parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [members = true, size = 10];");
+                "compute cluster in [movie, person], using connected-component, where [size = 10];");
 
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testParseComputeClusterUsingCCWithSizeThenMembers() {
-        ComputeQuery expected = Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), members(true));
-        ComputeQuery parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [size = 10, members = true];");
-
-        assertEquals(expected, parsed);
-    }
-
-    @Test
-    public void testParseComputeClusterUsingCCWithSizeThenMembersThenSize() {
+    public void testParseComputeClusterUsingCCWithSizeTwice() {
         ComputeQuery expected =
-                Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), members(true), size(15));
+                Graql.compute(CLUSTER).using(CONNECTED_COMPONENT).in("movie", "person").where(size(10), size(15));
 
         ComputeQuery parsed = Graql.parse(
-                "compute cluster in [movie, person], using connected-component, where [size = 10, members = true, size = 15];");
+                "compute cluster in [movie, person], using connected-component, where [size = 10, size = 15];");
 
         assertEquals(expected, parsed);
     }
@@ -1167,7 +1149,7 @@ public class QueryParserTest {
         assertEquals(query, parse(query).toString());
     }
 
-    class GetAny extends AbstractAggregate<Concept> {
+    class GetAny implements Aggregate<Concept> {
 
         private final Var varName;
 
@@ -1177,7 +1159,7 @@ public class QueryParserTest {
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         @Override
-        public Concept apply(Stream<? extends Answer> stream) {
+        public Concept apply(Stream<? extends ConceptMap> stream) {
             return stream.findAny().get().get(varName);
         }
 

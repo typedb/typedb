@@ -23,10 +23,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
@@ -93,42 +93,42 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), warsaw));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), masovia));
-        Answer answer3 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
-        Answer answer4 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
+        ConceptMap answer1 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), warsaw));
+        ConceptMap answer2 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), masovia));
+        ConceptMap answer3 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
+        ConceptMap answer4 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), europe));
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         testExplanation(answers);
 
-        Answer queryAnswer1 = findAnswer(answer1, answers);
-        Answer queryAnswer2 = findAnswer(answer2, answers);
-        Answer queryAnswer3 = findAnswer(answer3, answers);
-        Answer queryAnswer4 = findAnswer(answer4, answers);
+        ConceptMap queryAnswer1 = findAnswer(answer1, answers);
+        ConceptMap queryAnswer2 = findAnswer(answer2, answers);
+        ConceptMap queryAnswer3 = findAnswer(answer3, answers);
+        ConceptMap queryAnswer4 = findAnswer(answer4, answers);
 
         assertEquals(queryAnswer1, answer1);
         assertEquals(queryAnswer2, answer2);
         assertEquals(queryAnswer3, answer3);
         assertEquals(queryAnswer4, answer4);
 
-        assertEquals(queryAnswer1.getPartialAnswers().size(), 1);
-        assertEquals(queryAnswer2.getPartialAnswers().size(), 3);
-        assertEquals(queryAnswer3.getPartialAnswers().size(), 5);
-        assertEquals(queryAnswer4.getPartialAnswers().size(), 7);
+        assertEquals(0, queryAnswer1.explanation().deductions().size());
+        assertEquals(2, queryAnswer2.explanation().deductions().size());
+        assertEquals(4, queryAnswer3.explanation().deductions().size());
+        assertEquals(6, queryAnswer4.explanation().deductions().size());
 
-        assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
+        assertTrue(queryAnswer1.explanation().isLookupExplanation());
 
-        assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
+        assertTrue(queryAnswer2.explanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
-        assertEquals(2, queryAnswer2.getExplicitPath().size());
+        assertEquals(2, queryAnswer2.explanation().explicit().size());
 
-        assertTrue(queryAnswer3.getExplanation().isRuleExplanation());
+        assertTrue(queryAnswer3.explanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
-        assertEquals(3, queryAnswer3.getExplicitPath().size());
+        assertEquals(3, queryAnswer3.explanation().explicit().size());
 
-        assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
+        assertTrue(queryAnswer4.explanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
-        assertEquals(4, queryAnswer4.getExplicitPath().size());
+        assertEquals(4, queryAnswer4.explanation().explicit().size());
     }
 
     @Test
@@ -137,30 +137,30 @@ public class ExplanationTest {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland'; get;";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(var("x"), uw, var("y"), poland));
+        ConceptMap answer1 = new ConceptMapImpl(ImmutableMap.of(var("x"), polibuda, var("y"), poland));
+        ConceptMap answer2 = new ConceptMapImpl(ImmutableMap.of(var("x"), uw, var("y"), poland));
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         testExplanation(answers);
 
-        Answer queryAnswer1 = findAnswer(answer1, answers);
-        Answer queryAnswer2 = findAnswer(answer2, answers);
+        ConceptMap queryAnswer1 = findAnswer(answer1, answers);
+        ConceptMap queryAnswer2 = findAnswer(answer2, answers);
         assertEquals(queryAnswer1, answer1);
         assertEquals(queryAnswer2, answer2);
 
-        assertTrue(queryAnswer1.getExplanation().isJoinExplanation());
-        assertTrue(queryAnswer2.getExplanation().isJoinExplanation());
+        assertTrue(queryAnswer1.explanation().isJoinExplanation());
+        assertTrue(queryAnswer2.explanation().isJoinExplanation());
 
         //(res), (uni, ctr) - (region, ctr)
         //                  - (uni, region) - {(city, region), (uni, city)
-        assertEquals(queryAnswer1.getPartialAnswers().size(), 6);
-        assertEquals(queryAnswer2.getPartialAnswers().size(), 6);
+        assertEquals(6, queryAnswer1.explanation().deductions().size());
+        assertEquals(6, queryAnswer2.explanation().deductions().size());
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
-        assertEquals(4, queryAnswer1.getExplicitPath().size());
+        assertEquals(4, queryAnswer1.explanation().explicit().size());
 
         assertEquals(4, getLookupExplanations(queryAnswer2).size());
-        assertEquals(4, queryAnswer2.getExplicitPath().size());
+        assertEquals(4, queryAnswer2.explanation().explicit().size());
     }
 
     @Test
@@ -171,14 +171,14 @@ public class ExplanationTest {
                 "$y id '" + europe.id() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 1);
 
-        Answer answer = answers.iterator().next();
-        assertTrue(answer.getExplanation().isRuleExplanation());
-        assertEquals(2, answer.getExplanation().getAnswers().size());
+        ConceptMap answer = answers.iterator().next();
+        assertTrue(answer.explanation().isRuleExplanation());
+        assertEquals(2, answer.explanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
-        assertEquals(4, answer.getExplicitPath().size());
+        assertEquals(4, answer.explanation().explicit().size());
         testExplanation(answers);
     }
 
@@ -192,7 +192,7 @@ public class ExplanationTest {
                 "get $y;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 1);
         testExplanation(answers);
     }
@@ -205,7 +205,7 @@ public class ExplanationTest {
                 "$y id '" + uw.id() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -214,8 +214,8 @@ public class ExplanationTest {
         String queryString = "match $x isa city, has name $n; get;";
 
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
-        answers.forEach(ans -> assertEquals(ans.getExplanation().isEmpty(), true));
+        List<ConceptMap> answers = query.execute();
+        answers.forEach(ans -> assertEquals(ans.explanation().isEmpty(), true));
     }
 
     @Test
@@ -231,7 +231,7 @@ public class ExplanationTest {
                 "$y id '" + a2.id() + "'; get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -246,7 +246,7 @@ public class ExplanationTest {
                 "$w has name $wName; get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         testExplanation(answers);
     }
 
@@ -261,14 +261,14 @@ public class ExplanationTest {
                 "get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         testExplanation(answers);
         answers.stream()
-                .filter(ans -> ans.getExplanations().stream().anyMatch(AnswerExplanation::isRuleExplanation))
+                .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
                 .forEach( inferredAnswer -> {
-                    Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
-                    assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 2);
-                    assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 4);
+                    Set<Explanation> explanations = inferredAnswer.explanations();
+                    assertEquals(explanations.stream().filter(Explanation::isRuleExplanation).count(), 2);
+                    assertEquals(explanations.stream().filter(Explanation::isLookupExplanation).count(), 4);
                 });
     }
 
@@ -280,14 +280,14 @@ public class ExplanationTest {
         String queryString = "match $x isa same-tag-column-link; get;";
 
         GetQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         testExplanation(answers);
         answers.stream()
-                .filter(ans -> ans.getExplanations().stream().anyMatch(AnswerExplanation::isRuleExplanation))
+                .filter(ans -> ans.explanations().stream().anyMatch(Explanation::isRuleExplanation))
                 .forEach( inferredAnswer -> {
-                    Set<AnswerExplanation> explanations = inferredAnswer.getExplanations();
-                    assertEquals(explanations.stream().filter(AnswerExplanation::isRuleExplanation).count(), 1);
-                    assertEquals(explanations.stream().filter(AnswerExplanation::isLookupExplanation).count(), 3);
+                    Set<Explanation> explanations = inferredAnswer.explanations();
+                    assertEquals(explanations.stream().filter(Explanation::isRuleExplanation).count(), 1);
+                    assertEquals(explanations.stream().filter(Explanation::isLookupExplanation).count(), 3);
                 });
     }
 
@@ -301,7 +301,7 @@ public class ExplanationTest {
                 "limit " + limit + ";"+
                 "get;";
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
 
         assertEquals(answers.size(), limit);
         answers.forEach(answer -> {
@@ -312,33 +312,33 @@ public class ExplanationTest {
                     "$y id '" + answer.get(var("y")).id().getValue() + "';" +
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
-            Answer specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            ConceptMap specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
             assertEquals(answer, specificAnswer);
             testExplanation(specificAnswer);
         });
     }
 
-    private void testExplanation(Collection<Answer> answers){
+    private void testExplanation(Collection<ConceptMap> answers){
         answers.forEach(this::testExplanation);
     }
 
-    private void testExplanation(Answer answer){
+    private void testExplanation(ConceptMap answer){
         answerHasConsistentExplanations(answer);
         checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
     }
 
     //ensures that each branch ends up with an lookup explanation
-    private void checkExplanationCompleteness(Answer answer){
+    private void checkExplanationCompleteness(ConceptMap answer){
         assertFalse("Non-lookup explanation misses children",
-                answer.getExplanations().stream()
+                answer.explanations().stream()
                 .filter(e -> !e.isLookupExplanation())
                 .anyMatch(e -> e.getAnswers().isEmpty())
         );
     }
 
-    private void checkAnswerConnectedness(Answer answer){
-        ImmutableList<Answer> answers = answer.getExplanation().getAnswers();
+    private void checkAnswerConnectedness(ConceptMap answer){
+        ImmutableList<ConceptMap> answers = answer.explanation().getAnswers();
         answers.forEach(a -> {
             assertTrue("Disconnected answer in explanation",
                     answers.stream()
@@ -348,9 +348,9 @@ public class ExplanationTest {
         });
     }
 
-    private void answerHasConsistentExplanations(Answer answer){
-        Set<Answer> answers = answer.getPartialAnswers().stream()
-                .filter(a -> !a.getExplanation().isJoinExplanation())
+    private void answerHasConsistentExplanations(ConceptMap answer){
+        Set<ConceptMap> answers = answer.explanation().deductions().stream()
+                .filter(a -> !a.explanation().isJoinExplanation())
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
@@ -361,23 +361,23 @@ public class ExplanationTest {
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
-    private Answer findAnswer(Answer a, List<Answer> list){
-        for(Answer ans : list) {
+    private ConceptMap findAnswer(ConceptMap a, List<ConceptMap> list){
+        for(ConceptMap ans : list) {
             if (ans.equals(a)) return ans;
         }
-        return new QueryAnswer();
+        return new ConceptMapImpl();
     }
 
-    private Set<AnswerExplanation> getRuleExplanations(Answer a){
-        return a.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).collect(Collectors.toSet());
+    private Set<Explanation> getRuleExplanations(ConceptMap a){
+        return a.explanations().stream().filter(Explanation::isRuleExplanation).collect(Collectors.toSet());
     }
 
-    private Set<AnswerExplanation> getLookupExplanations(Answer a){
-        return a.getExplanations().stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
+    private Set<Explanation> getLookupExplanations(ConceptMap a){
+        return a.explanations().stream().filter(Explanation::isLookupExplanation).collect(Collectors.toSet());
     }
 
-    private boolean explanationConsistentWithAnswer(Answer ans){
-        ReasonerQuery query = ans.getExplanation().getQuery();
+    private boolean explanationConsistentWithAnswer(ConceptMap ans){
+        ReasonerQuery query = ans.explanation().getQuery();
         Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
         return vars.containsAll(ans.map().keySet());
     }

@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -38,7 +38,7 @@ import static java.util.stream.Collectors.joining;
  * @author Grakn Warriors
  */
 @AutoValue
-public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
+public abstract class GetQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMap> implements GetQuery {
 
     public abstract ImmutableSet<Var> vars();
     public abstract Match match();
@@ -63,7 +63,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public final Stream<Answer> stream() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 
@@ -73,7 +73,7 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public final List<Answer> execute() {
+    public final List<ConceptMap> execute() {
         return stream().collect(Collectors.toList());
     }
 

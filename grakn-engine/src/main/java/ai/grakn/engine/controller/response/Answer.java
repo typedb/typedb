@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.controller.response;
 
+import ai.grakn.graql.answer.ConceptMap;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 
 /**
  * <p>
- *     Response wrapper for {@link ai.grakn.graql.admin.Answer}
+ *     Response wrapper for {@link ConceptMap}
  * </p>
  *
  * @author Filipe Peliz Pinto Teixeira
@@ -44,8 +45,8 @@ public abstract class Answer {
         return new AutoValue_Answer(conceptMap);
     }
 
-    public static Answer create(ai.grakn.graql.admin.Answer answer){
-        Map<String, Concept> conceptMap = answer.map().entrySet().stream().collect(Collectors.toMap(
+    public static Answer create(ConceptMap map){
+        Map<String, Concept> conceptMap = map.map().entrySet().stream().collect(Collectors.toMap(
                 entry -> entry.getKey().getValue(),
                 entry -> ConceptBuilder.build(entry.getValue())
         ));

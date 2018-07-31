@@ -601,7 +601,7 @@ public class GreedyTraversalPlan {
         node.getDependants().clear();
     }
 
-    // get edge fragment cost in order to get branch cost
+    // get edge fragment cost in order to map branch cost
     private static double getEdgeFragmentCost(Node node, Arborescence<Node> arborescence,
                                               Map<Node, Map<Node, Fragment>> edgeToFragment) {
 

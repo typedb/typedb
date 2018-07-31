@@ -24,7 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.kb.internal.structure.Shard;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -60,10 +60,10 @@ public class GraknMatchers {
     /**
      * Create a matcher to test against the results of a Graql query.
      */
-    public static Matcher<Streamable<? extends Answer>> results(
+    public static Matcher<Streamable<? extends ConceptMap>> results(
             Matcher<? extends Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>> matcher
     ) {
-        return new PropertyMatcher<Streamable<? extends Answer>, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
+        return new PropertyMatcher<Streamable<? extends ConceptMap>, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
 
             @Override
             public String getName() {
@@ -71,7 +71,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(Streamable<? extends Answer> item) {
+            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(Streamable<? extends ConceptMap> item) {
                 return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::of)).collect(toList());
             }
         };
@@ -80,10 +80,10 @@ public class GraknMatchers {
     /**
      * Create matcher to test against a particular variable on every result of a Graql query.
      */
-    public static Matcher<Streamable<? extends Answer>> variable(
+    public static Matcher<Streamable<? extends ConceptMap>> variable(
             Var var, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
     ) {
-        return new PropertyMatcher<Streamable<? extends Answer>, Iterable<? extends MatchableConcept>>(matcher) {
+        return new PropertyMatcher<Streamable<? extends ConceptMap>, Iterable<? extends MatchableConcept>>(matcher) {
 
             @Override
             public String getName() {
@@ -91,7 +91,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends MatchableConcept> transform(Streamable<? extends Answer> item) {
+            Iterable<? extends MatchableConcept> transform(Streamable<? extends ConceptMap> item) {
                 return item.stream().map(answer -> MatchableConcept.of(answer.get(var))).collect(toList());
             }
         };

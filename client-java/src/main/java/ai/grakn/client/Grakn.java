@@ -26,6 +26,7 @@ import ai.grakn.QueryExecutor;
 import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.client.rpc.ResponseReader;
 import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -225,7 +226,7 @@ public final class Grakn {
                     return Collections.emptyIterator();
                 case ID:
                     int iteratorId = txResponse.getQueryIter().getId();
-                    return new Iterator<>(this, iteratorId, response -> RequestBuilder.Answer.answer(response.getQueryIterRes().getAnswer(), this));
+                    return new Iterator<>(this, iteratorId, response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this));
                 default:
                     throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
             }
@@ -234,37 +235,49 @@ public final class Grakn {
         @Nullable
         @Override
         public <T extends Type> T getType(Label label) {
-            return getSchemaConcept(label);
+            SchemaConcept concept = getSchemaConcept(label);
+            if (concept == null || !concept.isType()) return null;
+            return (T) concept.asType();
         }
 
         @Nullable
         @Override
         public EntityType getEntityType(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isEntityType()) return null;
+            return concept.asEntityType();
         }
 
         @Nullable
         @Override
         public RelationshipType getRelationshipType(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isRelationshipType()) return null;
+            return concept.asRelationshipType();
         }
 
         @Nullable
         @Override
         public <V> AttributeType<V> getAttributeType(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isAttributeType()) return null;
+            return concept.asAttributeType();
         }
 
         @Nullable
         @Override
         public Role getRole(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isRole()) return null;
+            return concept.asRole();
         }
 
         @Nullable
         @Override
         public Rule getRule(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isRule()) return null;
+            return concept.asRule();
         }
 
         @Nullable
@@ -276,7 +289,7 @@ public final class Grakn {
                 case NULL:
                     return null;
                 default:
-                    return (T) RemoteConcept.of(response.getGetSchemaConceptRes().getSchemaConcept(), this);
+                    return (T) RemoteConcept.of(response.getGetSchemaConceptRes().getSchemaConcept(), this).asSchemaConcept();
             }
         }
 

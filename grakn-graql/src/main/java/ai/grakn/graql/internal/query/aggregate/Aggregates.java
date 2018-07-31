@@ -21,49 +21,81 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import com.google.common.collect.ImmutableSet;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
 import java.util.List;
 import java.util.Map;
 
 /**
  * Factory for making {@link Aggregate} implementations.
- *
- * @author Felix Chapman
  */
 public class Aggregates {
 
     private Aggregates() {}
 
     /**
-     * Aggregate that finds mean of a {@link Match}.
-     */
-    public static Aggregate<Number> mean(Var varName) {
-        return new MeanAggregate(varName);
-    }
-
-    /**
      * Aggregate that counts results of a {@link Match}.
      */
-    public static Aggregate<Long> count() {
+    public static Aggregate<Value> count() {
         return new CountAggregate();
     }
 
     /**
-     * Aggregate that checks if there are any results
+     * Aggregate that sums results of a {@link Match}.
      */
-    public static Aggregate<Boolean> ask() {
-        return AskAggregate.get();
+    public static Aggregate<Value> sum(Var varName) {
+        return new SumAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds minimum of a {@link Match}.
+     */
+    public static Aggregate<Value> min(Var varName) {
+        return new MinAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds maximum of a {@link Match}.
+     */
+    public static Aggregate<Value> max(Var varName) {
+        return new MaxAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds mean of a {@link Match}.
+     */
+    public static Aggregate<Value> mean(Var varName) {
+        return new MeanAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds median of a {@link Match}.
+     */
+    public static Aggregate<Value> median(Var varName) {
+        return new MedianAggregate(varName);
+    }
+
+    /**
+     * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
+     */
+    public static Aggregate<Value> std(Var varName) {
+        return new StdAggregate(varName);
+    }
+
+    /**
+     * An aggregate that changes {@link Match} results into a list.
+     */
+    public static Aggregate<List<ConceptMap>> list() {
+        return new ListAggregate();
     }
 
     /**
      * Aggregate that groups results of a {@link Match} by variable name
      * @param varName the variable name to group results by
      */
-    public static Aggregate<Map<Concept, List<Answer>>> group(Var varName) {
+    public static Aggregate<Map<Concept, List<ConceptMap>>> group(Var varName) {
         return group(varName, list());
     }
 
@@ -71,61 +103,7 @@ public class Aggregates {
      * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
-    public static <T> Aggregate<Map<Concept, T>> group(
-            Var varName, Aggregate<T> innerAggregate
-    ) {
+    public static <T> Aggregate<Map<Concept, T>> group(Var varName, Aggregate<T> innerAggregate) {
         return new GroupAggregate<>(varName, innerAggregate);
-    }
-
-    /**
-     * An aggregate that changes {@link Match} results into a list.
-     */
-    public static Aggregate<List<Answer>> list() {
-        return new ListAggregate();
-    }
-
-    /**
-     * Aggregate that finds maximum of a {@link Match}.
-     */
-    public static Aggregate<Number> max(Var varName) {
-        return new MaxAggregate(varName);
-    }
-
-    /**
-     * Aggregate that finds median of a {@link Match}.
-     */
-    public static Aggregate<Number> median(Var varName) {
-        return new MedianAggregate(varName);
-    }
-
-    /**
-     * Aggregate that finds the unbiased sample standard deviation of a {@link Match}
-     */
-    public static Aggregate<Number> std(Var varName) {
-        return new StdAggregate(varName);
-    }
-
-    /**
-     * Aggregate that finds minimum of a {@link Match}.
-     */
-    public static Aggregate<Number> min(Var varName) {
-        return new MinAggregate(varName);
-    }
-
-    /**
-     * An aggregate that combines several aggregates together into a map (where keys are the names of the aggregates)
-     * @param <T> the type of the aggregate results
-     */
-    public static <T> Aggregate<Map<String, T>> select(
-            ImmutableSet<NamedAggregate<? extends T>> aggregates
-    ) {
-        return new SelectAggregate<>(aggregates);
-    }
-
-    /**
-     * Aggregate that sums results of a {@link Match}.
-     */
-    public static Aggregate<Number> sum(Var varName) {
-        return new SumAggregate(varName);
     }
 }

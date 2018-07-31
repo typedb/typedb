@@ -16,11 +16,16 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.admin;
+package ai.grakn.graql.answer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.admin.MultiUnifier;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -30,15 +35,16 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 /**
- *
- * <p>
- * Interface for query result class.
- * </p>
- *
- * @author Kasper Piskorski
- *
+ * A type of Answer object that contains a {@link Map} of {@link Var} to {@link Concept}.
  */
-public interface Answer {
+public interface ConceptMap extends Answer<ConceptMap> {
+
+    @Override
+    @CheckReturnValue
+    ConceptMap get();
+
+    @CheckReturnValue
+    Map<Var, Concept> map();
 
     @CheckReturnValue
     Set<Var> vars();
@@ -46,13 +52,10 @@ public interface Answer {
     @CheckReturnValue
     Collection<Concept> concepts();
 
-    @CheckReturnValue
-    Set<Map.Entry<Var, Concept>> entrySet();
-
     /**
      * Return the {@link Concept} bound to the given variable name.
      *
-     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     Concept get(String var);
@@ -60,19 +63,16 @@ public interface Answer {
     /**
      * Return the {@link Concept} bound to the given {@link Var}.
      *
-     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     Concept get(Var var);
 
     @CheckReturnValue
-    Map<Var, Concept> map();
-
-    @CheckReturnValue
     boolean containsVar(Var var);
 
     @CheckReturnValue
-    boolean containsAll(Answer ans);
+    boolean containsAll(ConceptMap ans);
 
     @CheckReturnValue
     boolean isEmpty();
@@ -90,7 +90,7 @@ public interface Answer {
      * @return merged answer
      */
     @CheckReturnValue
-    Answer merge(Answer a2);
+    ConceptMap merge(ConceptMap a2);
 
     /**
      * perform an answer merge with optional explanation
@@ -101,7 +101,7 @@ public interface Answer {
      * @return merged answer
      */
     @CheckReturnValue
-    Answer merge(Answer a2, boolean explanation);
+    ConceptMap merge(ConceptMap a2, boolean explanation);
 
     /**
      * explain this answer by providing explanation with preserving the structure of dependent answers
@@ -109,59 +109,35 @@ public interface Answer {
      * @param exp explanation for this answer
      * @return explained answer
      */
-    Answer explain(AnswerExplanation exp);
+    ConceptMap explain(Explanation exp);
 
     /**
      * @param vars variables defining the projection
      * @return project the answer retaining the requested variables
      */
     @CheckReturnValue
-    Answer project(Set<Var> vars);
+    ConceptMap project(Set<Var> vars);
 
     /**
      * @param unifier set of mappings between variables
      * @return unified answer
      */
     @CheckReturnValue
-    Answer unify(Unifier unifier);
+    ConceptMap unify(Unifier unifier);
 
     /**
      * @param multiUnifier set of unifiers defining variable mappings
      * @return stream of unified answers
      */
     @CheckReturnValue
-    Stream<Answer> unify(MultiUnifier multiUnifier);
+    Stream<ConceptMap> unify(MultiUnifier multiUnifier);
 
     /**
      * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
      * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
-    Stream<Answer> expandHierarchies(Set<Var> toExpand);
-
-    /**
-     * @return an explanation object indicating how this answer was obtained
-     */
-    @CheckReturnValue
-    AnswerExplanation getExplanation();
-
-    /**
-     * @return set of answers corresponding to the explicit path
-     */
-    @CheckReturnValue
-    Set<Answer> getExplicitPath();
-
-    /**
-     * @return set of all answers taking part in the derivation of this answer
-     */
-    @CheckReturnValue
-    Set<Answer> getPartialAnswers();
-
-    /**
-     * @return all explanations taking part in the derivation of this answer
-     */
-    @CheckReturnValue
-    Set<AnswerExplanation> getExplanations();
+    Stream<ConceptMap> expandHierarchies(Set<Var> toExpand);
 
     /**
      * @param parent query context

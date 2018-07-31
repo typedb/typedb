@@ -15,7 +15,7 @@
         alias: 'string'
     },
     keyword: {
-        pattern: /((?:(?![-a-zA-Z_0-9]|\$).)|^|\s)(and|concat|do|boolean|double|long|string|date|group|label|graql|commit|match|select|ask|get|define|insert|delete|where|isa|sub|plays|relates|key|has|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|in|std|median|mean|max|min|sum|count|degrees|path|cluster|lhs|rhs|when|then|if|else|elseif|for|aggregate|asc|desc|from|to|val|contains|regex|distinct|not|noescp|null)(?![-a-zA-Z_0-9])/,
+        pattern: /((?:(?![-a-zA-Z_0-9]|\$).)|^|\s)(and|concat|do|boolean|double|long|string|date|group|label|graql|commit|match|select|get|define|insert|delete|where|isa|sub|plays|relates|key|has|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|in|std|median|mean|max|min|sum|count|degrees|path|cluster|lhs|rhs|when|then|if|else|elseif|for|aggregate|asc|desc|from|to|val|contains|regex|distinct|not|noescp|null)(?![-a-zA-Z_0-9])/,
         alias: 'keyword',
         lookbehind: true
     },

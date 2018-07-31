@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.predicate;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -84,7 +84,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
      * @param sub substitution to be checked against the predicate
      * @return true if provided subsitution satisfies the predicate
      */
-    public boolean isSatisfied(Answer sub) {
+    public boolean isSatisfied(ConceptMap sub) {
         return !sub.containsVar(getVarName())
                 || !sub.containsVar(getReferenceVarName())
                 || !sub.get(getVarName()).equals(sub.get(getReferenceVarName()));

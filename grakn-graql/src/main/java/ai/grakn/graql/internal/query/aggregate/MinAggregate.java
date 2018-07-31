@@ -18,16 +18,19 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
+import ai.grakn.graql.internal.util.PrimitiveNumberComparator;
 
 import java.util.stream.Stream;
 
 /**
  * Aggregate that finds minimum of a {@link Match}.
  */
-class MinAggregate extends AbstractAggregate<Number> {
+class MinAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
@@ -36,9 +39,11 @@ class MinAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends Answer> stream) {
-        NumberPrimitiveTypeComparator comparator = new NumberPrimitiveTypeComparator();
-        return stream.map(this::getValue).min(comparator).orElse(null);
+    public Value apply(Stream<? extends ConceptMap> stream) {
+        PrimitiveNumberComparator comparator = new PrimitiveNumberComparator();
+        Number number = stream.map(this::getValue).min(comparator).orElse(null);
+        if (number == null) return null;
+        else return new Value(number);
     }
 
     @Override
@@ -46,11 +51,11 @@ class MinAggregate extends AbstractAggregate<Number> {
         return "min " + varName;
     }
 
-    private Number getValue(Answer result) {
+    private Number getValue(ConceptMap result) {
         Object value = result.get(varName).asAttribute().value();
 
         if (value instanceof Number) return (Number) value;
-        else throw new RuntimeException("Invalid attempt to compare non-Numbers in Min Aggregate function");
+        else throw new RuntimeException("Invalid attempt to compare non-Numbers in Max Aggregate function");
     }
 
     @Override

@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 
 import javax.annotation.CheckReturnValue;
@@ -37,7 +37,7 @@ import java.util.List;
  *
  * @author Felix Chapman
  */
-public interface InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface InsertQuery extends Query<List<ConceptMap>>, Streamable<ConceptMap> {
 
     /**
      * @param tx the graph to execute the query on

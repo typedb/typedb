@@ -16,35 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.util;
 
-import ai.grakn.graql.admin.Answer;
-
-import java.util.stream.Stream;
+import java.util.Comparator;
 
 /**
- * Aggregate that checks if there are any results
- *
- * @author Felix Chapman
+ * A Comparator class to compare the 2 numbers only if they have the same primitive type.
  */
-public class AskAggregate extends AbstractAggregate<Boolean> {
-
-    private static final AskAggregate INSTANCE = new AskAggregate();
-
-    private AskAggregate() { }
-
-    // This class has no parameters and is immutable, so a singleton is good practice
-    public static AskAggregate get() {
-        return INSTANCE;
-    }
+public class PrimitiveNumberComparator implements Comparator<Number> {
 
     @Override
-    public Boolean apply(Stream<? extends Answer> stream) {
-        return stream.findAny().isPresent();
-    }
+    public int compare(Number a, Number b) {
+        if (((Object) a).getClass().equals(((Object) b).getClass()) && a instanceof Comparable) {
+            return ((Comparable) a).compareTo(b);
+        }
 
-    @Override
-    public String toString() {
-        return "ask";
+        throw new RuntimeException("Invalid attempt to compare non-comparable primitive type of Numbers in Aggregate function");
     }
 }

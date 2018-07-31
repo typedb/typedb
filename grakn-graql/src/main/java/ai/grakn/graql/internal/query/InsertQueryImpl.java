@@ -24,7 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
+abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMap> implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -79,7 +79,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final Stream<Answer> stream() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 
@@ -125,7 +125,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final List<Answer> execute() {
+    public final List<ConceptMap> execute() {
         return stream().collect(Collectors.toList());
     }
 

@@ -31,7 +31,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
 import ai.grakn.test.kbs.PathTreeKB;
@@ -368,13 +368,13 @@ public class BenchmarkTest {
         assertEquals(executeQuery(queryString, graph, "tree").size(), answers);
     }
 
-    private List<Answer> executeQuery(String queryString, GraknTx graph, String msg){
+    private List<ConceptMap> executeQuery(String queryString, GraknTx graph, String msg){
         return executeQuery(graph.graql().infer(true).parse(queryString), msg);
     }
 
-    private List<Answer> executeQuery(GetQuery query, String msg) {
+    private List<ConceptMap> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<ConceptMap> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

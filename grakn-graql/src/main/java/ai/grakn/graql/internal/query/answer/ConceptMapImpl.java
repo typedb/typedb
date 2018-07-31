@@ -16,21 +16,21 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
  */
 
-package ai.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query.answer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
+import ai.grakn.graql.internal.reasoner.explanation.QueryExplanation;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.ImmutableMap;
@@ -52,70 +52,61 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Wrapper for a query result class {@link Answer}.
+ * Wrapper for a query result class {@link ConceptMap}.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswer implements Answer {
+public class ConceptMapImpl implements ConceptMap {
 
     private final ImmutableMap<Var, Concept> map;
-    private final AnswerExplanation explanation;
+    private final Explanation explanation;
 
-    public QueryAnswer(){
+    public ConceptMapImpl(){
         this.map = ImmutableMap.of();
-        this.explanation = new Explanation();
+        this.explanation = new QueryExplanation();
     }
 
-    public QueryAnswer(Answer a){
-        this.map = ImmutableMap.<Var, Concept>builder().putAll(a.entrySet()).build();
-        this.explanation = a.getExplanation();
+    public ConceptMapImpl(ConceptMap map){
+        this.map = ImmutableMap.<Var, Concept>builder().putAll(map.map().entrySet()).build();
+        this.explanation = map.explanation();
     }
 
-    public QueryAnswer(Collection<Map.Entry<Var, Concept>> mappings, AnswerExplanation exp){
+    public ConceptMapImpl(Collection<Map.Entry<Var, Concept>> mappings, Explanation exp){
         this.map = ImmutableMap.<Var, Concept>builder().putAll(mappings).build();
         this.explanation = exp;
     }
 
-    public QueryAnswer(Map<Var, Concept> m, AnswerExplanation exp){
+    public ConceptMapImpl(Map<Var, Concept> m, Explanation exp){
         this.map = ImmutableMap.copyOf(m);
         this.explanation = exp;
     }
 
-    public QueryAnswer(Map<Var, Concept> m){
-        this(m, new Explanation());
+    public ConceptMapImpl(Map<Var, Concept> m){
+        this(m, new QueryExplanation());
     }
 
     @Override
-    public String toString(){
-        return entrySet().stream()
-                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
-                .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
+    public ConceptMap get() {
+        return this;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || !(obj instanceof Answer)) return false;
-        QueryAnswer a2 = (QueryAnswer) obj;
-        return map.equals(a2.map);
+    public Explanation explanation(){
+        return explanation;
     }
 
     @Override
-    public int hashCode(){ return map.hashCode();}
-
-    @Override
-    public ImmutableMap<Var, Concept> map() { return map;}
+    public ImmutableMap<Var, Concept> map() {
+        return map;
+    }
 
     @Override
     public Set<Var> vars(){ return map.keySet();}
 
     @Override
     public Collection<Concept> concepts(){ return map.values(); }
-
-    @Override
-    public Set<Map.Entry<Var, Concept>> entrySet(){ return map.entrySet();}
 
     @Override
     public Concept get(String var) {
@@ -133,7 +124,7 @@ public class QueryAnswer implements Answer {
     public boolean containsVar(Var var){ return map.containsKey(var);}
 
     @Override
-    public boolean containsAll(Answer ans){ return map.entrySet().containsAll(ans.entrySet());}
+    public boolean containsAll(ConceptMap map){ return this.map.entrySet().containsAll(map.map().entrySet());}
 
     @Override
     public boolean isEmpty(){ return map.isEmpty();}
@@ -142,20 +133,38 @@ public class QueryAnswer implements Answer {
     public int size(){ return map.size();}
 
     @Override
+    public String toString(){
+        return map.entrySet().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().getValue()))
+                .map(e -> "[" + e.getKey() + "/" + e.getValue().id() + "]").collect(Collectors.joining());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ConceptMapImpl a2 = (ConceptMapImpl) obj;
+        return map.equals(a2.map);
+    }
+
+    @Override
+    public int hashCode(){ return map.hashCode();}
+
+    @Override
     public void forEach(BiConsumer<Var, Concept> consumer) {
         map.forEach(consumer);
     }
 
     @Override
-    public Answer merge(Answer a2, boolean mergeExplanation){
-        if(a2.isEmpty()) return this;
-        if(this.isEmpty()) return a2;
+    public ConceptMap merge(ConceptMap map, boolean mergeExplanation){
+        if(map.isEmpty()) return this;
+        if(this.isEmpty()) return map;
 
-        Sets.SetView<Var> varUnion = Sets.union(this.vars(), a2.vars());
-        Set<Var> varIntersection = Sets.intersection(this.vars(), a2.vars());
+        Sets.SetView<Var> varUnion = Sets.union(this.vars(), map.vars());
+        Set<Var> varIntersection = Sets.intersection(this.vars(), map.vars());
         Map<Var, Concept> entryMap = Sets.union(
-                this.entrySet(),
-                a2.entrySet()
+                this.map.entrySet(),
+                map.map().entrySet()
         )
                 .stream()
                 .filter(e -> !varIntersection.contains(e.getKey()))
@@ -163,7 +172,7 @@ public class QueryAnswer implements Answer {
         varIntersection
                 .forEach(var -> {
                     Concept concept = this.get(var);
-                    Concept otherConcept = a2.get(var);
+                    Concept otherConcept = map.get(var);
                     if (concept.equals(otherConcept)) entryMap.put(var, concept);
                     else {
                         if (concept.isSchemaConcept()
@@ -181,72 +190,72 @@ public class QueryAnswer implements Answer {
                         }
                     }
                 });
-        if (!entryMap.keySet().equals(varUnion)) return new QueryAnswer();
+        if (!entryMap.keySet().equals(varUnion)) return new ConceptMapImpl();
 
-        return new QueryAnswer(
+        return new ConceptMapImpl(
                 entryMap,
-                mergeExplanation? this.mergeExplanation(a2) : this.getExplanation()
+                mergeExplanation? this.mergeExplanation(map) : this.explanation()
         );
     }
 
-    private AnswerExplanation mergeExplanation(Answer toMerge) {
-        List<Answer> partialAnswers = new ArrayList<>();
-        if (this.getExplanation().isJoinExplanation()) partialAnswers.addAll(this.getExplanation().getAnswers());
+    private Explanation mergeExplanation(ConceptMap toMerge) {
+        List<ConceptMap> partialAnswers = new ArrayList<>();
+        if (this.explanation().isJoinExplanation()) partialAnswers.addAll(this.explanation().getAnswers());
         else partialAnswers.add(this);
-        if (toMerge.getExplanation().isJoinExplanation()) partialAnswers.addAll(toMerge.getExplanation().getAnswers());
+        if (toMerge.explanation().isJoinExplanation()) partialAnswers.addAll(toMerge.explanation().getAnswers());
         else partialAnswers.add(toMerge);
         return new JoinExplanation(partialAnswers);
     }
 
     @Override
-    public Answer merge(Answer a2){ return this.merge(a2, false);}
+    public ConceptMap merge(ConceptMap a2){ return this.merge(a2, false);}
 
     @Override
-    public Answer explain(AnswerExplanation exp){
-        return new QueryAnswer(this.entrySet(), exp.childOf(this));
+    public ConceptMap explain(Explanation exp){
+        return new ConceptMapImpl(this.map.entrySet(), exp.childOf(this));
     }
 
     @Override
-    public Answer project(Set<Var> vars) {
-        return new QueryAnswer(
-                this.entrySet().stream()
+    public ConceptMap project(Set<Var> vars) {
+        return new ConceptMapImpl(
+                this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
                         .collect(Collectors.toSet()),
-                this.getExplanation()
+                this.explanation()
         );
     }
 
     @Override
-    public Answer unify(Unifier unifier){
+    public ConceptMap unify(Unifier unifier){
         if (unifier.isEmpty()) return this;
         Map<Var, Concept> unified = new HashMap<>();
 
-        for(Map.Entry<Var, Concept> e : this.entrySet()){
+        for(Map.Entry<Var, Concept> e : this.map.entrySet()){
             Var var = e.getKey();
             Concept con = e.getValue();
             Collection<Var> uvars = unifier.get(var);
             if (uvars.isEmpty() && !unifier.values().contains(var)) {
                 Concept put = unified.put(var, con);
-                if (put != null && !put.equals(con)) return new QueryAnswer();
+                if (put != null && !put.equals(con)) return new ConceptMapImpl();
             } else {
                 for(Var uv : uvars){
                     Concept put = unified.put(uv, con);
-                    if (put != null && !put.equals(con)) return new QueryAnswer();
+                    if (put != null && !put.equals(con)) return new ConceptMapImpl();
                 }
             }
         }
-        return new QueryAnswer(unified, this.getExplanation());
+        return new ConceptMapImpl(unified, this.explanation());
     }
 
     @Override
-    public Stream<Answer> unify(MultiUnifier multiUnifier) {
+    public Stream<ConceptMap> unify(MultiUnifier multiUnifier) {
         return multiUnifier.stream().map(this::unify);
     }
 
     @Override
-    public Stream<Answer> expandHierarchies(Set<Var> toExpand) {
+    public Stream<ConceptMap> expandHierarchies(Set<Var> toExpand) {
         if (toExpand.isEmpty()) return Stream.of(this);
-        List<Set<Pair<Var, Concept>>> entryOptions = entrySet().stream()
+        List<Set<Pair<Var, Concept>>> entryOptions = map.entrySet().stream()
                 .map(e -> {
                     Var var = e.getKey();
                     if (toExpand.contains(var)) {
@@ -261,36 +270,14 @@ public class QueryAnswer implements Answer {
                 }).collect(Collectors.toList());
 
         return Sets.cartesianProduct(entryOptions).stream()
-                .map(mappingList -> new QueryAnswer(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue)), this.getExplanation()))
-                .map(ans -> ans.explain(getExplanation()));
-    }
-
-    @Override
-    public AnswerExplanation getExplanation(){ return explanation;}
-
-    @Override
-    public Set<Answer> getExplicitPath(){
-        return getPartialAnswers().stream().filter(ans -> ans.getExplanation().isLookupExplanation()).collect(Collectors.toSet());
-    }
-
-    @Override
-    public Set<Answer> getPartialAnswers(){
-        Set<Answer> answers = Sets.newHashSet(this);
-        this.getExplanation().getAnswers().forEach(ans -> ans.getPartialAnswers().forEach(answers::add));
-        return answers;
-    }
-
-    @Override
-    public Set<AnswerExplanation> getExplanations(){
-        Set<AnswerExplanation> explanations = Sets.newHashSet(this.getExplanation());
-        this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
-        return explanations;
+                .map(mappingList -> new ConceptMapImpl(mappingList.stream().collect(Collectors.toMap(Pair::getKey, Pair::getValue)), this.explanation()))
+                .map(ans -> ans.explain(explanation()));
     }
 
     @Override
     public Set<Atomic> toPredicates(ReasonerQuery parent) {
         Set<Var> varNames = parent.getVarNames();
-        return entrySet().stream()
+        return map.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
                 .map(e -> IdPredicate.create(e.getKey(), e.getValue(), parent))
                 .collect(Collectors.toSet());

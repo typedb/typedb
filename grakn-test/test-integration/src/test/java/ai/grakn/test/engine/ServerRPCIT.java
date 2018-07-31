@@ -37,13 +37,15 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
@@ -67,13 +69,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.max;
@@ -86,7 +86,6 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.members;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
@@ -214,7 +213,7 @@ public class ServerRPCIT {
 
     @Test
     public void whenExecutingAQuery_ResultsAreReturned() throws InterruptedException {
-        List<Answer> answers;
+        List<ConceptMap> answers;
 
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             answers = tx.graql().match(var("x").sub("thing")).get().execute();
@@ -229,7 +228,7 @@ public class ServerRPCIT {
         assertThat(Sets.newHashSet(answers), hasSize(size));
 
         try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {
-            for (Answer answer : answers) {
+            for (ConceptMap answer : answers) {
                 assertThat(answer.vars(), contains(var("x")));
                 assertNotNull(tx.getConcept(answer.get("x").id()));
             }
@@ -246,8 +245,8 @@ public class ServerRPCIT {
         
         Grakn.Session reasonerRemoteSession = Grakn.session(engine.grpcUri(), reasonerLocalSession.keyspace());
 
-        List<Answer> remoteAnswers;
-        List<Answer> localAnswers;
+        List<ConceptMap> remoteAnswers;
+        List<ConceptMap> localAnswers;
 
         final long limit = 3;
         String queryString = "match " +
@@ -273,7 +272,7 @@ public class ServerRPCIT {
                     "(cousin: $x, cousin: $y) isa cousins;" +
                     "limit 1; get;";
 
-            Answer specificAnswer;
+            ConceptMap specificAnswer;
             try (Grakn.Transaction tx = reasonerRemoteSession.transaction(GraknTxType.READ)) {
                 specificAnswer = Iterables.getOnlyElement(tx.graql().infer(true).<GetQuery>parse(specificQuery).execute());
             }
@@ -282,23 +281,23 @@ public class ServerRPCIT {
         });
     }
 
-    private void testExplanation(Answer answer){
+    private void testExplanation(ConceptMap answer){
         answerHasConsistentExplanations(answer);
         checkExplanationCompleteness(answer);
         checkAnswerConnectedness(answer);
     }
 
     //ensures that each branch ends up with an lookup explanation
-    private void checkExplanationCompleteness(Answer answer){
+    private void checkExplanationCompleteness(ConceptMap answer){
         assertFalse("Non-lookup explanation misses children",
-                answer.getExplanations().stream()
+                answer.explanations().stream()
                         .filter(e -> !e.isLookupExplanation())
                         .anyMatch(e -> e.getAnswers().isEmpty())
         );
     }
 
-    private void checkAnswerConnectedness(Answer answer){
-        ImmutableList<Answer> answers = answer.getExplanation().getAnswers();
+    private void checkAnswerConnectedness(ConceptMap answer){
+        ImmutableList<ConceptMap> answers = answer.explanation().getAnswers();
         answers.forEach(a -> {
             TestCase.assertTrue("Disconnected answer in explanation",
                     answers.stream()
@@ -308,24 +307,24 @@ public class ServerRPCIT {
         });
     }
 
-    private void answerHasConsistentExplanations(Answer answer){
-        Set<Answer> answers = answer.getPartialAnswers().stream()
-                .filter(a -> !a.getExplanation().isJoinExplanation())
+    private void answerHasConsistentExplanations(ConceptMap answer){
+        Set<ConceptMap> answers = answer.explanation().deductions().stream()
+                .filter(a -> !a.explanation().isJoinExplanation())
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private boolean explanationConsistentWithAnswer(Answer ans){
-        ReasonerQuery query = ans.getExplanation().getQuery();
+    private boolean explanationConsistentWithAnswer(ConceptMap ans){
+        ReasonerQuery query = ans.explanation().getQuery();
         Set<Var> vars = query != null? query.getVarNames() : new HashSet<>();
         return vars.containsAll(ans.map().keySet());
     }
 
     @Test
     public void whenExecutingTwoSequentialQueries_ResultsAreTheSame() throws InterruptedException {
-        Set<Answer> answers1;
-        Set<Answer> answers2;
+        Set<ConceptMap> answers1;
+        Set<ConceptMap> answers2;
 
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             answers1 = tx.graql().match(var("x").sub("thing")).get().stream().collect(toSet());
@@ -340,8 +339,8 @@ public class ServerRPCIT {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             GetQuery query = tx.graql().match(var("x").sub("thing")).get();
 
-            Iterator<Answer> iterator1 = query.iterator();
-            Iterator<Answer> iterator2 = query.iterator();
+            Iterator<ConceptMap> iterator1 = query.iterator();
+            Iterator<ConceptMap> iterator2 = query.iterator();
 
             while (iterator1.hasNext() || iterator2.hasNext()) {
                 assertEquals(iterator1.next(), iterator2.next());
@@ -376,60 +375,51 @@ public class ServerRPCIT {
 
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.READ)) {
             // count
-            assertEquals(1L, tx.graql().compute(COUNT).in("animal").execute().getNumber().get());
+            assertEquals(1, tx.graql().compute(COUNT).in("animal").execute().get(0).number().intValue());
 
             // statistics
-            assertEquals(10L, tx.graql().compute(MIN).of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute(MAX).of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute(MEAN).of("age").in("human").execute().getNumber().get());
+            assertEquals(10, tx.graql().compute(MIN).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.graql().compute(MAX).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.graql().compute(MEAN).of("age").in("human").execute().get(0).number().intValue());
 
 
-            ComputeQuery.Answer answer = tx.graql().compute(STD).of("age").in("human").execute();
-            assertEquals(0L, answer.getNumber().get());
+            List<Value> answer = tx.graql().compute(STD).of("age").in("human").execute();
+            assertEquals(0, answer.get(0).number().intValue());
 
 
-            assertEquals(10L, tx.graql().compute(SUM).of("age").in("human").execute().getNumber().get());
-            assertEquals(10L, tx.graql().compute(MEDIAN).of("age").in("human").execute().getNumber().get());
+            assertEquals(10, tx.graql().compute(SUM).of("age").in("human").execute().get(0).number().intValue());
+            assertEquals(10, tx.graql().compute(MEDIAN).of("age").in("human").execute().get(0).number().intValue());
 
             // degree
-            Map<Long, Set<ConceptId>> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
-                    .of("animal").in("human", "animal", "pet-ownership").execute().getCentrality().get();
-            assertEquals(1L, centrality.size());
-            assertEquals(idCoco, centrality.get(1L).iterator().next());
+            List<ConceptSetMeasure> centrality = tx.graql().compute(CENTRALITY).using(DEGREE)
+                    .of("animal").in("human", "animal", "pet-ownership").execute();
+            assertEquals(1, centrality.size());
+            assertEquals(idCoco, centrality.get(0).set().iterator().next());
+            assertEquals(1, centrality.get(0).measurement().intValue());
 
             // coreness
-            assertTrue(tx.graql().compute(CENTRALITY).using(K_CORE).of("animal").execute().getCentrality().get().isEmpty());
+            assertTrue(tx.graql().compute(CENTRALITY).using(K_CORE).of("animal").execute().isEmpty());
 
             // path
-            List<List<ConceptId>> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute().getPaths().get();
+            List<ConceptList> paths = tx.graql().compute(PATH).to(idCoco).from(idMike).execute();
             assertEquals(1, paths.size());
-            assertEquals(idCoco, paths.get(0).get(2));
-            assertEquals(idMike, paths.get(0).get(0));
+            assertEquals(idCoco, paths.get(0).list().get(2));
+            assertEquals(idMike, paths.get(0).list().get(0));
 
-            // connected component size
-            List<Long> sizeList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership").execute().getClusterSizes().get();
-            assertEquals(1, sizeList.size());
-            assertTrue(sizeList.contains(3L));
-
-            // connected component member
-            Set<Set<ConceptId>> membersList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
-                    .in("human", "animal", "pet-ownership").where(members(true)).execute().getClusters().get();
-            assertEquals(1, membersList.size());
-            Set<ConceptId> memberSet = membersList.iterator().next();
-            assertEquals(3, memberSet.size());
-            assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), memberSet);
+            // connected component
+            List<ConceptSet> clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
+                    .in("human", "animal", "pet-ownership").execute();
+            assertEquals(1, clusterList.size());
+            assertEquals(3, clusterList.get(0).set().size());
+            assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), clusterList.get(0).set());
 
             // k-core
-            assertEquals(
-                    0,
-                    tx.graql().compute(CLUSTER).using(K_CORE)
-                    .in("human", "animal", "pet-ownership").execute().getClusters().get().size());
+            assertTrue(tx.graql().compute(CLUSTER).using(K_CORE).in("human", "animal", "pet-ownership").execute().isEmpty());
         }
     }
 
     @Test
-    public void whenExecutingAggregateQueries_theResultsAreCorrect() {
+    public void whenPerformingAggregateQueries_theResultsAreCorrect() {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.BATCH.WRITE)) {
             EntityType person = tx.putEntityType("person");
             AttributeType name = tx.putAttributeType("name", DataType.STRING);
@@ -441,45 +431,41 @@ public class ServerRPCIT {
             Entity alice = person.create().has(name.create("Alice")).has(age.create(20));
             Entity bob = person.create().has(name.create("Bob")).has(age.create(22));
 
-            AggregateQuery<Number> nullQuery =
+            AggregateQuery<Value> nullQuery =
                     tx.graql().match(var("x").isa("person").has("rating", var("y"))).aggregate(sum("y"));
             assertNull(nullQuery.execute());
 
-            AggregateQuery<Boolean> askQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(ask());
-            assertTrue(askQuery.execute());
-
-            AggregateQuery<Long> countQuery =
+            AggregateQuery<Value> countQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count());
-            assertEquals(2L, countQuery.execute().longValue());
+            assertEquals(2L, countQuery.execute().number().longValue());
 
-            AggregateQuery<Number> sumAgeQuery =
+            AggregateQuery<Value> sumAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(sum("y"));
-            assertEquals(42, sumAgeQuery.execute().intValue());
+            assertEquals(42, sumAgeQuery.execute().number().intValue());
 
-            AggregateQuery<Number> minAgeQuery =
+            AggregateQuery<Value> minAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(min("y"));
-            assertEquals(20, minAgeQuery.execute().intValue());
+            assertEquals(20, minAgeQuery.execute().number().intValue());
 
-            AggregateQuery<Number> maxAgeQuery =
+            AggregateQuery<Value> maxAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(max("y"));
-            assertEquals(22, maxAgeQuery.execute().intValue());
+            assertEquals(22, maxAgeQuery.execute().number().intValue());
 
-            AggregateQuery<Number> meanAgeQuery =
+            AggregateQuery<Value> meanAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(mean("y"));
-            assertEquals(21.0d, meanAgeQuery.execute().doubleValue(), 0.01d);
+            assertEquals(21.0d, meanAgeQuery.execute().number().doubleValue(), 0.01d);
 
-            AggregateQuery<Number> medianAgeQuery =
+            AggregateQuery<Value> medianAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(median("y"));
-            assertEquals(21.0d, medianAgeQuery.execute().doubleValue(), 0.01d);
+            assertEquals(21.0d, medianAgeQuery.execute().number().doubleValue(), 0.01d);
 
-            AggregateQuery<Number> stdAgeQuery =
+            AggregateQuery<Value> stdAgeQuery =
                     tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(std("y"));
             int n = 2;
             double mean = (20 + 22) / n;
             double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
             double std = Math.sqrt(var);
-            assertEquals(std, stdAgeQuery.execute().doubleValue(), 0.0001d);
+            assertEquals(std, stdAgeQuery.execute().number().doubleValue(), 0.0001d);
 
             // TODO: Enabble the test below once we fix Group Aggregate response through GRPC
 //            AggregateQuery<Map<Concept, List<Answer>>> groupByAgeQuery =
@@ -495,26 +481,13 @@ public class ServerRPCIT {
     }
 
     @Test
-    public void whenExecutingDeleteQueries_ConceptsAreDeleted() {
-        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
-            DeleteQuery deleteQuery = tx.graql().match(var("g").rel("x").rel("y").isa("has-genre")).delete("x", "y");
-            deleteQuery.execute();
-            assertTrue(tx.graql().match(var().rel("x").rel("y").isa("has-genre")).get("x", "y").execute().isEmpty());
-
-            deleteQuery = tx.graql().match(var("x").isa("person")).delete();
-            deleteQuery.execute();
-            assertTrue(tx.graql().match(var("x").isa("person")).get().execute().isEmpty());
-        }
-    }
-
-    @Test
     public void whenGettingAConcept_TheInformationOnTheConceptIsCorrect() {
         try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
              GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x")).get();
 
-            for (Answer answer : query) {
+            for (ConceptMap answer : query) {
                 Concept remoteConcept = answer.get("x");
                 Concept localConcept = localTx.getConcept(remoteConcept.id());
 
@@ -893,7 +866,7 @@ public class ServerRPCIT {
             Var x = var("x");
             Var y = var("y");
 
-            Collection<Answer> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
+            Collection<ConceptMap> result = qb.match(x.isa("company-123"), y.isa("person-123")).get(x, y).execute();
             assertEquals(6, result.size());
 
             result = qb.match(x.isa("company-123")).get(x).execute();

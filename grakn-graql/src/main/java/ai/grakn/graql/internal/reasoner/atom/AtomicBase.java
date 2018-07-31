@@ -21,9 +21,9 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
@@ -88,9 +88,9 @@ public abstract class AtomicBase implements Atomic {
     }
 
     @Override
-    public Atomic inferTypes(){ return inferTypes(new QueryAnswer()); }
+    public Atomic inferTypes(){ return inferTypes(new ConceptMapImpl()); }
 
-    public Atomic inferTypes(Answer sub){ return this; }
+    public Atomic inferTypes(ConceptMap sub){ return this; }
 
     /**
      * @return GraknTx this atomic is defined in

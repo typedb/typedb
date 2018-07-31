@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 
 import java.util.Collection;
 
@@ -27,12 +27,12 @@ import java.util.Collection;
  * A query for defining {@link SchemaConcept}s.
  * <p>
  *     The query will define all {@link SchemaConcept}s described in the {@link VarPattern}s provided and return an
- *     {@link Answer} containing bindings for all {@link Var}s in the {@link VarPattern}s.
+ *     {@link ConceptMap} containing bindings for all {@link Var}s in the {@link VarPattern}s.
  * </p>
  *
  * @author Felix Chapman
  */
-public interface DefineQuery extends Query<Answer> {
+public interface DefineQuery extends Query<ConceptMap> {
 
     /**
      * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.

@@ -18,6 +18,7 @@
 
 package ai.grakn.client.executor;
 
+import ai.grakn.ComputeExecutor;
 import ai.grakn.QueryExecutor;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -27,7 +28,8 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.client.Grakn;
 import com.google.common.collect.Iterators;
 
@@ -51,13 +53,13 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<Answer> run(GetQuery query) {
-        return runAnswerStream(query);
+    public Stream<ConceptMap> run(GetQuery query) {
+        return streamConceptMaps(query);
     }
 
     @Override
-    public Stream<Answer> run(InsertQuery query) {
-        return runAnswerStream(query);
+    public Stream<ConceptMap> run(InsertQuery query) {
+        return streamConceptMaps(query);
     }
 
     @Override
@@ -66,8 +68,8 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Answer run(DefineQuery query) {
-        return (Answer) Iterators.getOnlyElement(tx.query(query));
+    public ConceptMap run(DefineQuery query) {
+        return (ConceptMap) Iterators.getOnlyElement(tx.query(query));
     }
 
     @Override
@@ -82,20 +84,20 @@ public final class RemoteQueryExecutor implements QueryExecutor {
         else return null;
     }
 
-
     @Override
-    public ai.grakn.ComputeExecutor run(ComputeQuery query) {
-        ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(tx.query(query));
-        return RemoteComputeExecutor.of(answer);
+    public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
+        Iterable<T> iterable = () -> tx.query(query);
+        Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false);
+        return RemoteComputeExecutor.of(stream);
     }
 
     private void runVoid(Query<?> query) {
         tx.query(query).forEachRemaining(empty -> {});
     }
 
-    private Stream<Answer> runAnswerStream(Query<?> query) {
+    private Stream<ConceptMap> streamConceptMaps(Query<?> query) {
         Iterable<Object> iterable = () -> tx.query(query);
         Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(Answer.class::cast);
+        return stream.map(ConceptMap.class::cast);
     }
 }

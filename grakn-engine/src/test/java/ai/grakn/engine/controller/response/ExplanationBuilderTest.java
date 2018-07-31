@@ -21,7 +21,8 @@ package ai.grakn.engine.controller.response;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
@@ -59,9 +60,9 @@ public class ExplanationBuilderTest {
                     "(cousin: $x, cousin: $y) isa cousins; limit 1;get;";
 
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
-            ai.grakn.graql.admin.Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
+            ConceptMap specificAnswer = query.execute().stream().findFirst().orElse(new ConceptMapImpl());
 
-            Set<ConceptId> originalEntityIds = specificAnswer.getExplanation().getAnswers().stream()
+            Set<ConceptId> originalEntityIds = specificAnswer.explanation().getAnswers().stream()
                     .flatMap(ans -> ans.concepts().stream())
                     .map(ai.grakn.concept.Concept::id)
                     .collect(Collectors.toSet());

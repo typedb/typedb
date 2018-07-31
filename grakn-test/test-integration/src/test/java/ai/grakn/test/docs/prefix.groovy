@@ -23,7 +23,7 @@ import ai.grakn.batch.BatchExecutorClient
 import ai.grakn.concept.*
 import ai.grakn.engine.TaskId
 import ai.grakn.graql.*
-import ai.grakn.graql.admin.Answer
+import ai.grakn.graql.answer.ConceptMap
 import ai.grakn.migration.csv.CSVMigrator
 import mjson.Json
 
@@ -36,7 +36,7 @@ import static ai.grakn.graql.Graql.*
 //noinspection GroovyConstantIfStatement
 if (false) {
     label("hello")
-    Answer answer = null
+    ConceptMap answer = null
     Concept concept = null
     Var var = var()
     GraknSession session = null

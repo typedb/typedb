@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -43,7 +43,7 @@ class MatchInfer extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
         // If the tx is not embedded, treat it like there is no transaction
         // TODO: this is dodgy - when queries don't contain transactions this can be fixed
 
@@ -69,11 +69,11 @@ class MatchInfer extends MatchModifier {
             Conjunction<VarPatternAdmin> conj = conjIt.next();
             ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx);
             conjQuery.checkValid();
-            Stream<Answer> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
+            Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();
                 conjQuery = ReasonerQueries.create(conj, embeddedTx);
-                Stream<Answer> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
+                Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
                 answerStream = Stream.concat(answerStream, localStream);
             }
             return answerStream.map(result -> result.project(getSelectedNames()));

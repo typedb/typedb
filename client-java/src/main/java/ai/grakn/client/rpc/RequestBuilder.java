@@ -19,38 +19,19 @@
 package ai.grakn.client.rpc;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.client.Grakn;
-import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.query.ComputeQueryImpl;
-import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.util.CommonUtil;
-import com.google.common.collect.ImmutableMap;
-import mjson.Json;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -263,106 +244,6 @@ public class RequestBuilder {
             } else {
                 throw CommonUtil.unreachableStatement("Unrecognised " + dataType);
             }
-        }
-    }
-
-    /**
-     * An RPC Request Builder class for Answer messages
-     */
-    public static class Answer {
-
-        public static Object answer(AnswerProto.Answer answer, Grakn.Transaction tx) {
-            switch (answer.getAnswerCase()) {
-                case QUERYANSWER:
-                    return queryAnswer(answer.getQueryAnswer(), tx);
-                case COMPUTEANSWER:
-                    return computeAnswer(answer.getComputeAnswer());
-                case OTHERRESULT:
-                    return Json.read(answer.getOtherResult()).getValue();
-                default:
-                case ANSWER_NOT_SET:
-                    throw new IllegalArgumentException("Unexpected " + answer);
-            }
-        }
-
-        public static ai.grakn.graql.admin.Answer queryAnswer(AnswerProto.QueryAnswer queryAnswer, Grakn.Transaction tx) {
-            ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
-
-            queryAnswer.getQueryAnswerMap().forEach((grpcVar, AnswerProto) -> {
-                map.put(Graql.var(grpcVar), RemoteConcept.of(AnswerProto, tx));
-            });
-
-            return new QueryAnswer(map.build());
-        }
-
-        public static ComputeQuery.Answer computeAnswer(AnswerProto.ComputeAnswer computeAnswerRPC) {
-            switch (computeAnswerRPC.getComputeAnswerCase()) {
-                case NUMBER:
-                    try {
-                        Number result = NumberFormat.getInstance().parse(computeAnswerRPC.getNumber());
-                        return new ComputeQueryImpl.AnswerImpl().setNumber(result);
-                    } catch (ParseException e) {
-                        throw new RuntimeException(e);
-                    }
-                case PATHS:
-                    return new ComputeQueryImpl.AnswerImpl().setPaths(paths(computeAnswerRPC.getPaths()));
-                case CENTRALITY:
-                    return new ComputeQueryImpl.AnswerImpl().setCentrality(centrality(computeAnswerRPC.getCentrality()));
-                case CLUSTERS:
-                    return new ComputeQueryImpl.AnswerImpl().setClusters(clusters(computeAnswerRPC.getClusters()));
-                case CLUSTERSIZES:
-                    return new ComputeQueryImpl.AnswerImpl().setClusterSizes(clusterSizes(computeAnswerRPC.getClusterSizes()));
-                default:
-                case COMPUTEANSWER_NOT_SET:
-                    throw new IllegalArgumentException("Unexpected " + computeAnswerRPC);
-            }
-        }
-
-        public static List<List<ConceptId>> paths(AnswerProto.Paths pathsRPC) {
-            List<List<ConceptId>> paths = new ArrayList<>(pathsRPC.getPathsList().size());
-
-            for (AnswerProto.ConceptIds conceptIds : pathsRPC.getPathsList()) {
-                paths.add(
-                        conceptIds.getIdsList().stream()
-                                .map(ConceptId::of)
-                                .collect(toList())
-                );
-            }
-
-            return paths;
-        }
-
-        public static Map<Long, Set<ConceptId>> centrality(AnswerProto.Centrality centralityRPC) {
-            Map<Long, Set<ConceptId>> centrality = new HashMap<>();
-
-            for (Map.Entry<Long, AnswerProto.ConceptIds> entry : centralityRPC.getCentralityMap().entrySet()) {
-                centrality.put(
-                        entry.getKey(),
-                        entry.getValue().getIdsList().stream()
-                                .map(ConceptId::of)
-                                .collect(Collectors.toSet())
-                );
-            }
-
-            return centrality;
-        }
-
-        public static Set<Set<ConceptId>> clusters(AnswerProto.Clusters clustersRPC) {
-            Set<Set<ConceptId>> clusters = new HashSet<>();
-
-            for (AnswerProto.ConceptIds conceptIds : clustersRPC.getClustersList()) {
-                clusters.add(
-                        conceptIds.getIdsList().stream()
-                                .map(ConceptId::of)
-                                .collect(Collectors.toSet())
-                );
-            }
-
-            return clusters;
-        }
-
-        public static Set<Long> clusterSizes(AnswerProto.ClusterSizes clusterSizesRPC) {
-            return new HashSet<>(clusterSizesRPC.getClusterSizesList());
         }
     }
 

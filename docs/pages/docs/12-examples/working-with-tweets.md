@@ -247,7 +247,7 @@ public class AsyncTweetStreamProcessorHelper {
 }
 ```
 
-The first thing we need to do here is to create a `Configuration` object out of the Twitter credential settings. Let's write a dedicated method just for that and name it `createTwitterConfiguration`. Afterwards, use that method to create the `Configuration` object which we will need in `listenToTwitterStreamAsync`.
+The first thing we need to do here is to create a `Configuration` object out of the Twitter credential settings. Let's write a dedicated method just for that and name it `createTwitterConfiguration`. Afterwards, use that name to create the `Configuration` object which we will need in `listenToTwitterStreamAsync`.
 
 ```java-test-ignore
 public class AsyncTweetStreamProcessorHelper {
@@ -430,7 +430,7 @@ public static Relationship insertUserTweet(GraknTx tx, String screenName, String
 }
 ```
 
-We're done with tweet insertion functionality! Next step: querying the stored data. Before we proceed, let's add the method we've just defined to the main method as shown below.
+We're done with tweet insertion functionality! Next step: querying the stored data. Before we proceed, let's add the method we've just defined to the main name as shown below.
 
 ```java-test-ignore
 public static void main(String[] args) {

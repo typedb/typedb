@@ -18,18 +18,20 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
 import java.util.stream.Stream;
 
 /**
  * Aggregate that counts results of a {@link Match}.
  */
-class CountAggregate extends AbstractAggregate<Long> {
+class CountAggregate implements Aggregate<Value> {
     @Override
-    public Long apply(Stream<? extends Answer> stream) {
-        return stream.count();
+    public Value apply(Stream<? extends ConceptMap> stream) {
+        return new Value(stream.count());
     }
 
     @Override
