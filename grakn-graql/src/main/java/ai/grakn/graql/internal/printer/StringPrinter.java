@@ -151,10 +151,8 @@ class StringPrinter extends Printer<StringBuilder> {
     public StringBuilder conceptMap(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
-        if (answer.isEmpty()) builder.append("{}");
-        else answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
-
-        return builder;
+        answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
+        return new StringBuilder("{" + builder.toString().trim() + "}");
     }
 
     @Override

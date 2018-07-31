@@ -38,7 +38,6 @@ import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
@@ -49,6 +48,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -73,11 +73,6 @@ public class PostProcessingTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.create(config);
 
-    @BeforeClass
-    public static void onlyRunOnTinker() {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
-
     @Before
     public void setupPostProcessor() {
         MetricRegistry metricRegistry = new MetricRegistry();
@@ -96,6 +91,8 @@ public class PostProcessingTest {
         session.close();
     }
 
+    // TODO: must set INDEX=false in indices-composite.properties, before enabling this test. otherwise the test will fail since Janus will reject duplicate resource with a SchemaViolationException
+    @Ignore
     @Test
     public void whenCreatingDuplicateResources_EnsureTheyAreMergedInPost() throws InvalidKBException, InterruptedException, JsonProcessingException {
         String value = "1";
