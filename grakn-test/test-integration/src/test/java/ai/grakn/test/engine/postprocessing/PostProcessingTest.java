@@ -38,7 +38,6 @@ import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
@@ -72,11 +71,6 @@ public class PostProcessingTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.create(config);
-
-    @BeforeClass
-    public static void onlyRunOnTinker() {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Before
     public void setupPostProcessor() {
