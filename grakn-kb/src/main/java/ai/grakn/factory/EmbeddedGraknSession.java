@@ -29,7 +29,6 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
-import ai.grakn.kb.internal.log.CommitLogHandler;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -50,7 +49,6 @@ public class EmbeddedGraknSession implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknSession.class);
     private final Keyspace keyspace;
     private final GraknConfig config;
-    private final CommitLogHandler commitLogHandler;
 
     private final TxFactory<?> txFactory;
     private final TxFactory<?> computerTxFactory;
@@ -62,44 +60,40 @@ public class EmbeddedGraknSession implements GraknSession {
 
     /**
      * Instantiates {@link EmbeddedGraknSession}
+     *
      * @param keyspace to which keyspace the session should be bound to
-     * @param config config to be used. If null is supplied, it will be created
+     * @param config   config to be used. If null is supplied, it will be created
      */
-    EmbeddedGraknSession(Keyspace keyspace, @Nullable GraknConfig config, TxFactoryBuilder txFactoryBuilder){
+    EmbeddedGraknSession(Keyspace keyspace, @Nullable GraknConfig config, TxFactoryBuilder txFactoryBuilder) {
         Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace;
         this.config = config;
-        this.commitLogHandler = new CommitLogHandler(keyspace());
         this.txFactory = txFactoryBuilder.getFactory(this, false);
         this.computerTxFactory = txFactoryBuilder.getFactory(this, true);
-    }
-
-    public CommitLogHandler commitLogHandler(){
-        return commitLogHandler;
     }
 
     /**
      * Creates a {@link EmbeddedGraknSession} specific for internal use (within Engine),
      * using provided Grakn configuration
      */
-    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, GraknConfig config, TxFactoryBuilder txFactoryBuilder){
-        return new EmbeddedGraknSession(keyspace, config,  txFactoryBuilder);
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, GraknConfig config, TxFactoryBuilder txFactoryBuilder) {
+        return new EmbeddedGraknSession(keyspace, config, txFactoryBuilder);
     }
 
-    public static EmbeddedGraknSession   createEngineSession(Keyspace keyspace, GraknConfig config){
-        return new EmbeddedGraknSession(keyspace, config,  GraknTxFactoryBuilder.getInstance());
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, GraknConfig config) {
+        return new EmbeddedGraknSession(keyspace, config, GraknTxFactoryBuilder.getInstance());
     }
 
-    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace){
-        return new EmbeddedGraknSession(keyspace, GraknConfig.create(),  GraknTxFactoryBuilder.getInstance());
+    public static EmbeddedGraknSession createEngineSession(Keyspace keyspace) {
+        return new EmbeddedGraknSession(keyspace, GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
     }
 
-    public static EmbeddedGraknSession inMemory(Keyspace keyspace){
+    public static EmbeddedGraknSession inMemory(Keyspace keyspace) {
         return createEngineSession(keyspace, getTxInMemoryConfig());
     }
 
-    public static EmbeddedGraknSession inMemory(String keyspace){
+    public static EmbeddedGraknSession inMemory(String keyspace) {
         return inMemory(Keyspace.of(keyspace));
     }
 
@@ -110,7 +104,7 @@ public class EmbeddedGraknSession implements GraknSession {
      *
      * @return the properties needed to build an in-memory {@link GraknTx}
      */
-    private static GraknConfig getTxInMemoryConfig(){
+    private static GraknConfig getTxInMemoryConfig() {
         GraknConfig config = GraknConfig.empty();
         config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
         config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
@@ -120,10 +114,9 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
 
-
     @Override
     public EmbeddedGraknTx transaction(GraknTxType transactionType) {
-        switch (transactionType){
+        switch (transactionType) {
             case READ:
             case WRITE:
                 tx = txFactory.open(transactionType);
@@ -151,12 +144,12 @@ public class EmbeddedGraknSession implements GraknSession {
     @Override
     public void close() throws GraknTxOperationException {
         int openTransactions = openTransactions(tx) + openTransactions(txBatch);
-        if(openTransactions > 0){
+        if (openTransactions > 0) {
             LOG.warn(ErrorMessage.TXS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
-        if(tx != null) tx.closeSession();
-        if(txBatch != null) txBatch.closeSession();
+        if (tx != null) tx.closeSession();
+        if (txBatch != null) txBatch.closeSession();
     }
 
     @Override
@@ -174,8 +167,8 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
 
-    private int openTransactions(EmbeddedGraknTx<?> graph){
-        if(graph == null) return 0;
+    private int openTransactions(EmbeddedGraknTx<?> graph) {
+        if (graph == null) return 0;
         return graph.numOpenTx();
     }
 

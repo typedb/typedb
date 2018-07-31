@@ -107,13 +107,16 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static final @Nullable Constructor<?> queryBuilderConstructor = getQueryBuilderConstructor();
+    private static final @Nullable
+    Constructor<?> queryBuilderConstructor = getQueryBuilderConstructor();
 
-    private static final @Nullable Method queryExecutorFactory = getQueryExecutorFactory();
+    private static final @Nullable
+    Method queryExecutorFactory = getQueryExecutorFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
-    private @Nullable GraphTraversalSource graphTraversalSource = null;
+    private @Nullable
+    GraphTraversalSource graphTraversalSource = null;
 
     public EmbeddedGraknTx(EmbeddedGraknSession session, G graph) {
         this.session = session;
@@ -126,21 +129,21 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         //Initialise Graph
         txCache().openTx(GraknTxType.WRITE);
 
-        if (initialiseMetaConcepts()) close(true, false);
+        if (initialiseMetaConcepts()) commit();
     }
 
     @Override
-    public EmbeddedGraknSession session(){
+    public EmbeddedGraknSession session() {
         return session;
     }
 
     /**
-         * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
-         * so be sure to use the correct graph when performing the mapping.
-         *
-         * @param label The label to be converted to the id
-         * @return The matching type id
-         */
+     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
+     * so be sure to use the correct graph when performing the mapping.
+     *
+     * @param label The label to be converted to the id
+     * @return The matching type id
+     */
     public LabelId convertToId(Label label) {
         if (txCache().isLabelCached(label)) {
             return txCache().convertLabelToId(label);
@@ -186,12 +189,12 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Gets the config option which determines the number of instances a {@link Type} must have before the {@link Type}
-         * if automatically sharded.
-         *
-         * @return the number of instances a {@link Type} must have before it is shareded
-         */
-    public long shardingThreshold(){
+     * Gets the config option which determines the number of instances a {@link Type} must have before the {@link Type}
+     * if automatically sharded.
+     *
+     * @return the number of instances a {@link Type} must have before it is shareded
+     */
+    public long shardingThreshold() {
         return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
     }
 
@@ -226,30 +229,28 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         *
-         * @param <T> The type of the concept being built
-         * @param vertex A vertex which contains properties necessary to build a concept from.
-         * @return A concept built using the provided vertex
-         */
+     * @param <T>    The type of the concept being built
+     * @param vertex A vertex which contains properties necessary to build a concept from.
+     * @return A concept built using the provided vertex
+     */
     public <T extends Concept> T buildConcept(Vertex vertex) {
         return factory().buildConcept(vertex);
     }
 
     /**
-         *
-         * @param <T> The type of the {@link Concept} being built
-         * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
-         * @return A {@link Concept} built using the provided {@link Edge}
-         */
+     * @param <T>  The type of the {@link Concept} being built
+     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
+     * @return A {@link Concept} built using the provided {@link Edge}
+     */
     public <T extends Concept> T buildConcept(Edge edge) {
         return factory().buildConcept(edge);
     }
 
     /**
-         * A flag to check if batch loading is enabled and consistency checks are switched off
-         *
-         * @return true if batch loading is enabled
-         */
+     * A flag to check if batch loading is enabled and consistency checks are switched off
+     *
+     * @return true if batch loading is enabled
+     */
     public boolean isBatchTx() {
         return GraknTxType.BATCH.equals(txCache().txType());
     }
@@ -309,10 +310,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Utility function to get a read-only Tinkerpop traversal.
-         *
-         * @return A read-only Tinkerpop traversal for manually traversing the graph
-         */
+     * Utility function to get a read-only Tinkerpop traversal.
+     *
+     * @return A read-only Tinkerpop traversal for manually traversing the graph
+     */
     public GraphTraversalSource getTinkerTraversal() {
         operateOnOpenGraph(() -> null); //This is to check if the graph is open
         if (graphTraversalSource == null) {
@@ -338,11 +339,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         *
-         * @param key The concept property tp search by.
-         * @param value The value of the concept
-         * @return A concept with the matching key and value
-         */
+     * @param key   The concept property tp search by.
+     * @param value The value of the concept
+     * @return A concept with the matching key and value
+     */
     //----------------------------------------------General Functionality-----------------------------------------------
     public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
@@ -360,9 +360,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     @Override
     public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
-        Set<SchemaConcept> superSet= new HashSet<>();
+        Set<SchemaConcept> superSet = new HashSet<>();
 
-        while(schemaConcept != null) {
+        while (schemaConcept != null) {
             superSet.add(schemaConcept);
             schemaConcept = schemaConcept.sup();
         }
@@ -386,7 +386,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
 
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds){
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
         return factory().addVertexElement(baseType, conceptIds);
     }
 
@@ -427,18 +427,18 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      * This is a helper method which will either find or create a {@link SchemaConcept}.
      * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
      * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role)}.
-     *
+     * <p>
      * When an existing {@link SchemaConcept} is found it is build via it's get method such as
      * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
-     *
+     * <p>
      * Once the {@link SchemaConcept} is found or created a few checks for uniqueness and correct
      * {@link ai.grakn.util.Schema.BaseType} are performed.
      *
-     * @param label The {@link Label} of the {@link SchemaConcept} to find or create
-     * @param baseType The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
-     * @param isImplicit a flag indicating if the label we are creating is for an implicit {@link Type} or not
+     * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
+     * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link Type} or not
      * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
-     * @param <T> The type of {@link SchemaConcept} to return
+     * @param <T>               The type of {@link SchemaConcept} to return
      * @return a new or existing {@link SchemaConcept}
      */
     private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
@@ -447,14 +447,14 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         //Get the type if it already exists otherwise build a new one
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
-            if(!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())){
+            if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
                 throw GraknTxOperationException.invalidLabelStart(label);
             }
 
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
 
             //Mark it as implicit here so we don't have to pass it down the constructors
-            if(isImplicit){
+            if (isImplicit) {
                 vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
             }
 
@@ -470,8 +470,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     /**
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
-    private GraknTxOperationException labelTaken(SchemaConcept schemaConcept){
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) return GraknTxOperationException.reservedLabel(schemaConcept.label());
+    private GraknTxOperationException labelTaken(SchemaConcept schemaConcept) {
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label()))
+            return GraknTxOperationException.reservedLabel(schemaConcept.label());
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
 
@@ -608,7 +609,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
-        if(meta != null) return getSchemaConcept(meta.getId());
+        if (meta != null) return getSchemaConcept(meta.getId());
         return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
@@ -642,8 +643,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
 
-
-    //TODO move this outside Tx
     //This is overridden by vendors for more efficient clearing approaches
     public void clearGraph() {
         getTinkerPopGraph().traversal().V().drop().iterate();
@@ -666,44 +665,55 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      */
     @Override
     public void close() {
-        close(false, false);
+        if (isClosed()) {
+            return;
+        }
+        try {
+            txCache().writeToGraphCache(txType().equals(GraknTxType.READ));
+        } finally {
+            String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
+            closeTransaction(closeMessage);
+        }
     }
 
     /**
-     * Commits and close the transaction
+     * Commits and closes the transaction without returning CommitLog
+     *
      * @throws InvalidKBException
      */
     @Override
     public void commit() throws InvalidKBException {
-        close(true, false);
-    }
-
-    /**
-     * Close the transaction
-     * @param commitRequired indicates whether to commit the transaction
-     * @param trackLogs
-     * @return the {@link CommitLog}, if
-     */
-    private Optional<CommitLog> close(boolean commitRequired, boolean trackLogs) {
-        Optional<CommitLog> logs = Optional.empty();
         if (isClosed()) {
-            return logs;
+            return;
         }
-        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
-
+        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
         try {
-            if (commitRequired) {
-                closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
-                logs = commitWithLogs(trackLogs);
-                txCache().writeToGraphCache(true);
-            } else {
-                txCache().writeToGraphCache(txType().equals(GraknTxType.READ));
-            }
+            validateGraph();
+            commitTransactionInternal();
+            txCache().writeToGraphCache(true);
         } finally {
             closeTransaction(closeMessage);
         }
-        return logs;
     }
+
+    /**
+     * Commits, closes transaction and returns CommitLog.
+     *
+     * @return the commit log that would have been submitted if it is needed.
+     * @throws InvalidKBException when the graph does not conform to the object concept
+     */
+    public Optional<CommitLog> commitAndGetLogs() throws InvalidKBException {
+        if (isClosed()) {
+            return Optional.empty();
+        }
+        try {
+            return commitWithLogs();
+        } finally {
+            String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
+            closeTransaction(closeMessage);
+        }
+    }
+
 
     private void closeTransaction(String closedReason) {
         try {
@@ -715,45 +725,34 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    /**
-     * Commits to the graph without submitting any commit logs.
-     * @return the commit log that would have been submitted if it is needed.
-     * @throws InvalidKBException when the graph does not conform to the object concept
-     */
-    public Optional<CommitLog> commitSubmitNoLogs() throws InvalidKBException {
-        return close(true, false);
-    }
 
-    private Optional<CommitLog> commitWithLogs(boolean trackingNeeded) throws InvalidKBException {
+    private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
         Map<String, ConceptId> newAttributes = txCache().getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
-        LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransactionInternal();
 
-        LOG.trace("Graph committed.");
+        txCache().writeToGraphCache(true);
 
         //If we have logs to commit get them and add them
         if (logsExist) {
-            if(trackingNeeded) {
-                session().commitLogHandler().addNewInstances(newInstances);
-                session().commitLogHandler().addNewAttributes(newAttributes);
-            } else {
-                Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
-                        collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
-                return Optional.of(CommitLog.create(keyspace(), newInstances, attributes));
-            }
+            Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
+                    collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
+            return Optional.of(CommitLog.create(keyspace(), newInstances, attributes));
         }
+
 
         return Optional.empty();
     }
 
     void commitTransactionInternal() {
         try {
+            LOG.trace("Graph is valid. Committing graph . . . ");
             getTinkerPopGraph().tx().commit();
+            LOG.trace("Graph committed.");
         } catch (UnsupportedOperationException e) {
             //IGNORED
         }
@@ -766,6 +765,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
     }
+
 
     public boolean isValidElement(Element element) {
         return element != null;
@@ -793,11 +793,12 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Check if there are duplicate resources in the provided set of vertex IDs
-         * @param index index of the resource to find duplicates of
-         * @param resourceVertexIds vertex Ids containing potential duplicates
-         * @return true if there are duplicate resources and PostProcessing can proceed
-         */
+     * Check if there are duplicate resources in the provided set of vertex IDs
+     *
+     * @param index             index of the resource to find duplicates of
+     * @param resourceVertexIds vertex Ids containing potential duplicates
+     * @return true if there are duplicate resources and PostProcessing can proceed
+     */
     public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
         Optional<AttributeImpl<?>> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
@@ -805,15 +806,15 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Merges the provided duplicate resources
-         *
-         * @param resourceVertexIds The resource vertex ids which need to be merged.
-         * @return True if a commit is required.
-         */
+     * Merges the provided duplicate resources
+     *
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
+     * @return True if a commit is required.
+     */
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
         Optional<AttributeImpl<?>> mainResourceOp = this.getConcept(Schema.VertexProperty.INDEX, index);
-        if(!mainResourceOp.isPresent()){
+        if (!mainResourceOp.isPresent()) {
             LOG.debug(String.format("Could not post process concept with index {%s} due to not finding the concept", index));
             return false;
         }
@@ -845,8 +846,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-     * @param main          The main instance to possibly acquire a new relation
-     * @param other         The other instance which already posses the relation
+     * @param main              The main instance to possibly acquire a new relation
+     * @param other             The other instance which already posses the relation
      * @param otherRelationship The other relation to potentially be absorbed
      */
     private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship) {
@@ -894,9 +895,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Creates a new shard for the concept
-         * @param conceptId the id of the concept to shard
-         */
+     * Creates a new shard for the concept
+     *
+     * @param conceptId the id of the concept to shard
+     */
     public void shard(ConceptId conceptId) {
         ConceptImpl type = getConcept(conceptId);
         if (type == null) {
@@ -907,13 +909,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-         * Returns the current number of shards the provided {@link Type} has. This is used in creating more
-         * efficient query plans.
-         *
-         * @param concept The {@link Type} which may contain some shards.
-         * @return the number of Shards the {@link Type} currently has.
-         */
-    public long getShardCount(Type concept){
+     * Returns the current number of shards the provided {@link Type} has. This is used in creating more
+     * efficient query plans.
+     *
+     * @param concept The {@link Type} which may contain some shards.
+     * @return the number of Shards the {@link Type} currently has.
+     */
+    public long getShardCount(Type concept) {
         return TypeImpl.from(concept).shardCount();
     }
 
@@ -929,7 +931,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    private static @Nullable Constructor<?> getQueryBuilderConstructor() {
+    private static @Nullable
+    Constructor<?> getQueryBuilderConstructor() {
         try {
             return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
@@ -937,7 +940,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         }
     }
 
-    private static @Nullable Method getQueryExecutorFactory() {
+    private static @Nullable
+    Method getQueryExecutorFactory() {
         try {
             return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {

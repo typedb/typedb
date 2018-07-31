@@ -74,7 +74,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.client.rpc.RequestBuilder.Keyspace.delete;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.iterate;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
@@ -200,7 +199,7 @@ public class ServerRPCTest {
             tx.send(commit());
         }
 
-        verify(tx).commitSubmitNoLogs();
+        verify(tx).commit();
     }
 
     @Test
@@ -674,7 +673,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingFails_Throw() throws Throwable {
-        doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
+        doThrow(EXCEPTION).when(tx).commit();
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));

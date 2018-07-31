@@ -84,7 +84,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             if (attribute.owner() == null) {
                 tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).create().has(attribute);
             }
-            tx.commitSubmitNoLogs();
+            tx.commit();
 
             // add to cache
             existingKeyspaces.add(keyspace);
@@ -124,7 +124,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
             existingKeyspaces.remove(keyspace);
 
-            tx.commitSubmitNoLogs();
+            tx.commit();
         }
 
         return true;

@@ -152,7 +152,7 @@ public class CountPostProcessor {
 
                 try(EmbeddedGraknTx<?> tx = factory.tx(keyspace, GraknTxType.WRITE)) {
                     tx.shard(conceptId);
-                    tx.commitSubmitNoLogs();
+                    tx.commit();
                 }
                 //Update number of shards
                 countStorage.incrementShardCount(keyspace, conceptId, 1);

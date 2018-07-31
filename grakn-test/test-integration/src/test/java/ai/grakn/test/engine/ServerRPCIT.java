@@ -21,6 +21,7 @@ package ai.grakn.test.engine;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -36,7 +37,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.engine.Server;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -190,7 +190,7 @@ public class ServerRPCIT {
     }
 
     @Test
-    public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() throws InterruptedException {
+    public void whenExecutingAndCommittingAQuery_TheQueryIsCommitted() {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.graql().define(label("person").sub("entity")).execute();
             tx.commit();
@@ -202,7 +202,7 @@ public class ServerRPCIT {
     }
 
     @Test
-    public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() throws InterruptedException {
+    public void whenExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             tx.graql().define(label("flibflab").sub("entity")).execute();
         }
@@ -835,8 +835,14 @@ public class ServerRPCIT {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void whenDeletingAKeyspace_TheKeyspaceIsDeleted() {
+        Grakn client = new Grakn(engine.grpcUri());
+        GraknSession localSession = engine.sessionWithNewKeyspace();
+        Keyspace ks = localSession.keyspace();
+        Grakn.Session remoteSession = client.session(ks);
+
+
         try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
             tx.putEntityType("easter");
             tx.commit();
@@ -845,9 +851,9 @@ public class ServerRPCIT {
         try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
-            Server.Keyspace.delete(tx.keyspace());
+            client.keyspaces().delete(tx.keyspace());
 
-            assertTrue(tx.isClosed());
+//            assertTrue(tx.isClosed());
         }
 
         try (GraknTx tx = localSession.transaction(GraknTxType.READ)) {

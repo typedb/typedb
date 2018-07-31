@@ -107,7 +107,7 @@ public class PostProcessingTest {
         AttributeType<String> attributeType = tx.putAttributeType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.create(value);
-        tx.commitSubmitNoLogs();
+        tx.commit();
         tx = session.transaction(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());

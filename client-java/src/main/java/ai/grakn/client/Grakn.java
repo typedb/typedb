@@ -70,19 +70,25 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * For now, only a subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
  */
 public final class Grakn {
-
-    private static ManagedChannel channel;
-    private static KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
+
+    private ManagedChannel channel;
+    private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
+    private Keyspace keyspace;
 
 
     public Grakn(SimpleURI uri) {
         channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        keyspace = new Keyspace();
     }
 
     public Grakn.Session session(ai.grakn.Keyspace keyspace) {
         return new Session(keyspace);
+    }
+
+    public Grakn.Keyspace keyspaces(){
+        return keyspace;
     }
 
     /**
@@ -91,7 +97,7 @@ public final class Grakn {
      * @see Transaction
      * @see Grakn
      */
-    public static class Session implements GraknSession {
+    public class Session implements GraknSession {
 
         private final ai.grakn.Keyspace keyspace;
 
@@ -108,7 +114,7 @@ public final class Grakn {
         }
 
         @Override
-        public Transaction transaction(GraknTxType type) {
+        public Grakn.Transaction transaction(GraknTxType type) {
             return new Transaction(this, type);
         }
 
@@ -127,9 +133,9 @@ public final class Grakn {
      * Internal class used to handle keyspace related operations
      */
 
-    public static final class Keyspace {
+    public final class Keyspace {
 
-        public static void delete(ai.grakn.Keyspace keyspace){
+        public void delete(ai.grakn.Keyspace keyspace){
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
             keyspaceBlockingStub.delete(request);
         }
