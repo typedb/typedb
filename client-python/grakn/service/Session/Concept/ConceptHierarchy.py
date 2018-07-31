@@ -139,7 +139,7 @@ class Type(SchemaConcept):
         return
 
     def unplay(self, role_concept):
-        unplay_req = RequestBuilder.ConceptMethod.Type.unplays(role_concept)
+        unplay_req = RequestBuilder.ConceptMethod.Type.unplay(role_concept)
         method_response = self._tx_service.run_concept_method(self.id, unplay_req)
         return
     
@@ -192,6 +192,7 @@ class AttributeType(Type):
         return ConceptFactory.create_concept(self._tx_service, grpc_attribute_concept)
         
     def attribute(self, value):
+        """ Retrieve an attribute instance by value if it exist """
         self_data_type = self.data_type()
         get_attribute_req = RequestBuilder.ConceptMethod.AttributeType.attribute(value, self_data_type)
         method_response = self._tx_service.run_concept_method(self.id, get_attribute_req)
@@ -205,6 +206,7 @@ class AttributeType(Type):
             raise Exception("Unknown `res` key in AttributeType `attribute` response: {0}".format(whichone))
 
     def data_type(self):
+        """ Get the DataType enum corresponding to the type of this attribute """
         get_data_type_req = RequestBuilder.ConceptMethod.AttributeType.data_type()
         method_response = self._tx_service.run_concept_method(self.id, get_data_type_req)
         response = method_response.attributeType_dataType_res
@@ -225,6 +227,7 @@ class AttributeType(Type):
             raise Exception("Unknown datatype response for AttributeType: {0}".format(whichone))
 
     def regex(self, pattern: str = None):
+        """ Get or set regex """
         if pattern is None:
             get_regex_req = RequestBuilder.ConceptMethod.AttributeType.get_regex()
             method_response = self._tx_service.run_concept_method(self.id, get_regex_req)
@@ -247,19 +250,22 @@ class RelationshipType(Type):
         return ConceptFactory.create_concept(self._tx_service, grpc_relationship_concept)
         
     def roles(self):
+        """ Retrieve roles in this relationship schema type """
         get_roles = RequestBuilder.ConceptMethod.RelationType.roles()
         method_response = self._tx_service.run_concept_method(self.id, get_roles)
         return ResponseConverter.ResponseConverter.RelationshipType.roles(self._tx_service, method_response.relationType_roles_iter)
         
 
     def relates(self, role):
+        """ Set a role in this relationship schema type """
         relates_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
         method_response = self._tx_service.run_concept_method(self.id, relates_req)
         return
         
 
     def unrelate(self, role):
-        unrelate_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
+        """ Remove a role in this relationship schema type """
+        unrelate_req = RequestBuilder.ConceptMethod.RelationType.unrelate(role)
         method_response = self._tx_service.run_concept_method(self.id, unrelate_req)
         return
 
@@ -280,7 +286,7 @@ class Rule(SchemaConcept):
     def get_then(self):
         then_req = RequestBuilder.ConceptMethod.Rule.then()
         method_response = self._tx_service.run_concept_method(self.id, then_req)
-        response = method_response.rule.then_res
+        response = method_response.rule_then_res
         whichone = response.WhichOneof('res')
         if whichone == 'pattern':
             return response.pattern
@@ -292,6 +298,7 @@ class Rule(SchemaConcept):
 class Role(SchemaConcept):
 
     def relationships(self):
+        """ Find relationships that this role participates in """
         # NOTE: relations vs relationships here
         relations_req = RequestBuilder.ConceptMethod.Role.relations()
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
@@ -303,6 +310,7 @@ class Role(SchemaConcept):
                )
 
     def players(self):
+        """ Find entities that play this role """
         players_req = RequestBuilder.ConceptMethod.Role.players()
         method_response = self._tx_service.run_concept_method(self.id, players_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -316,16 +324,19 @@ class Role(SchemaConcept):
 class Thing(Concept):
 
     def is_inferred(self) -> bool:
+        """ Is this instance inferred """
         is_inferred_req = RequestBuilder.ConceptMethod.Thing.is_inferred()
         method_response = self._tx_service.run_concept_method(self.id, is_inferred_req)
         return method_response.thing_isInferred_res.inferred
 
     def type(self):
+        """ Get the type (schema concept) of this Thing """
         type_req = RequestBuilder.ConceptMethod.Thing.type()
         method_response = self._tx_service.run_concept_method(self.id, type_req)
         return ConceptFactory.create_concept(self._tx_service, method_response.thing_type_res.type)
 
     def relationships(self, *roles):
+        """ Get relationships of this Thing narrowed by the given roles """
         # NOTE `relations` rather than `relationships`
         relations_req = RequestBuilder.ConceptMethod.Thing.relations(roles)
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
@@ -337,6 +348,7 @@ class Thing(Concept):
                )
 
     def attributes(self, *attribute_types):
+        """ Retrieve attribute instances optionally narrowed by certain attribute types """
         attrs_req = RequestBuilder.ConceptMethod.Thing.attributes(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, attrs_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -368,12 +380,14 @@ class Thing(Concept):
 
 
     def has(self, attribute):
+        """ Attach an attribute instance to this Thing """
         has_req = RequestBuilder.ConceptMethod.Thing.has(attribute)
         method_response = self._tx_service.run_concept_method(self.id, has_req)
         return
 
 
     def unhas(self, attribute):
+        """ Remove an attribute instance from this Thing """
         unhas_req = RequestBuilder.ConceptMethod.Thing.unhas(attribute)
         method_response = self._tx_service.run_concept_method(self.id, unhas_req)
         return 
@@ -391,11 +405,12 @@ class Attribute(Thing):
         return ResponseConverter.ResponseConverter.from_grpc_value_object(grpc_value_object)
 
     def owners(self):
+        """ Retrieve entities that have this attribute """
         owners_req = RequestBuilder.ConceptMethod.Attribute.owners()
         method_response = self._tx_service.run_concept_method(self.id, owners_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
-                method_response.attribute_ownser_iter.id,
+                method_response.attribute_owners_iter.id,
                 lambda tx_service, iter_res:
                     ConceptFactory.create_concept(tx_service, iter_res.conceptMethod_iter_res.attribute_owners_iter_res.thing)
                )
@@ -405,12 +420,13 @@ class Relationship(Thing):
     # NOTE `relation` has replaced `relationship` in ResponseBuilder
 
     def role_players_map(self):
+        """ Retrieve role : set(players) (entity instances) mapping for this relationship """ 
         role_players_map_req = RequestBuilder.ConceptMethod.Relation.role_players_map()
         method_response = self._tx_service.run_concept_method(self.id, role_players_map_req)
 
         # create the iterator to obtain all the pairs of (role, player)
         def to_pair(tx_service, iter_res):
-            response = iter_res.conceptMethod_iter_res.relationship_rolePlayersMap_iter_res
+            response = iter_res.conceptMethod_iter_res.relation_rolePlayersMap_iter_res
             role = ConceptFactory.create_concept(tx_service, response.role)
             player = ConceptFactory.create_concept(tx_service, response.player)
             return (role, player)
@@ -431,32 +447,34 @@ class Relationship(Thing):
             role_id = role.id
             if role_id in id_mapping:
                 role_key = id_mapping[role_id]
-                # if role key is not in id_mapping, its also not in mapping!
-                mapping[role_key] = set()
             else:
                 id_mapping[role_id] = role
                 role_key = role
+                mapping[role_key] = set()
             mapping[role_key].add(player)
 
         return mapping
 
     def role_players(self, *roles):
-        role_players_req = RequestBuilder.ConceptMethod.Relation.role_players()
+        """ Retrieve role players filtered by roles """
+        role_players_req = RequestBuilder.ConceptMethod.Relation.role_players(roles)
         method_response = self._tx_service.run_concept_method(self.id, role_players_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
-                method_response.relation_rolePlayer_iter.id,
+                method_response.relation_rolePlayers_iter.id,
                 lambda tx_service, iter_res:
                     ConceptFactory.create_concept(tx_service, iter_res.conceptMethod_iter_res.relation_rolePlayers_iter_res.thing)
                )
 
 
     def assign(self, role, thing):
+        """ Assign an entity to a role on this relationship instance """
         assign_req = RequestBuilder.ConceptMethod.Relation.assign(role, thing)
         method_response = self._tx_service.run_concept_method(self.id, assign_req)
         return
 
     def unassign(self, role, thing):
+        """ Un-assign an entity from a role on this relationship instance """
         unassign_req = RequestBuilder.ConceptMethod.Relation.unassign(role, thing)
         method_response = self._tx_service.run_concept_method(self.id, unassign_req)
         return

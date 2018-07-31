@@ -67,7 +67,22 @@ class ResponseConverter(object):
         known_datatypes = [e.name.lower() for e in enums.DataType]
         if whichone.lower() not in known_datatypes:
             raise Exception("Unknown value object value key: {0}, not in {1}".format(whichone, known_datatypes))
-        return whichone
+        if whichone == 'string':
+            return grpc_value_object.string
+        elif whichone == 'boolean':
+            return grpc_value_object.boolean
+        elif whichone == 'integer':
+            return grpc_value_object.integer
+        elif whichone == 'long':
+            return grpc_value_object.long
+        elif whichone == 'float':
+            return grpc_value_object.float
+        elif whichone == 'double':
+            return grpc_value_object.double
+        elif whichone == 'date':
+            return grpc_value_object.date
+        else:
+            raise Exception("Unknown datatype in enum but not handled in from_grpc_value_object")
             
 
 
@@ -266,6 +281,13 @@ class ResponseIterator(object):
             raise StopIteration()
         else:
             return self._iter_resp_converter(self._tx_service, iter_response)
+
+    def collect_concepts(self):
+        """ Helper method to retrieve concepts from a query() method """
+        concepts = []
+        for answer in self:
+            concepts.extend(answer.get().values()) # get concept map => concepts
+        return concepts
 
 
 

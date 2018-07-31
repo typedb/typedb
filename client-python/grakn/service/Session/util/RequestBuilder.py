@@ -359,18 +359,18 @@ class RequestBuilder(object):
             def plays( role_concept):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
                 plays_req = concept_messages.Type.Plays.Req()
-                plays_req.attributeType.CopyFrom(grpc_concept)
+                plays_req.role.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.type_has_req.CopyFrom(plays_req)
                 return concept_method_req
 
             @staticmethod
-            def unplays(role_concept):
+            def unplay(role_concept):
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
-                unplays_req = concept_messages.Type.Unplays.Req()
-                unplays_req.attributeType.CopyFrom(grpc_concept)
+                unplay_req = concept_messages.Type.Unplay.Req()
+                unplay_req.role.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.type_has_req.CopyFrom(unplays_req)
+                concept_method_req.type_has_req.CopyFrom(unplay_req)
                 return concept_method_req
 
        
@@ -457,8 +457,9 @@ class RequestBuilder(object):
                 return concept_method_req
 
             @staticmethod
-            def set_regex(reg):
+            def set_regex(regex):
                 set_regex_req = concept_messages.AttributeType.SetRegex.Req()
+                set_regex_req.regex = regex
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.attributeType_setRegex_req.CopyFrom(set_regex_req)
                 return concept_method_req
@@ -487,9 +488,9 @@ class RequestBuilder(object):
                 attributes_req = concept_messages.Thing.Attributes.Req()
                 for attribute_type_concept in attribute_types:
                     grpc_attr_type_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_type_concept)
-                    attributes_req.attributeTypes.add(grpc_attr_type_concept)
+                    attributes_req.attributeTypes.extend([grpc_attr_type_concept])
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.thing_attibutes_req.CopyFrom(attributes_req)
+                concept_method_req.thing_attributes_req.CopyFrom(attributes_req)
                 return concept_method_req
 
             @staticmethod
@@ -498,7 +499,8 @@ class RequestBuilder(object):
                 relations_req = concept_messages.Thing.Relations.Req()
                 for role_concept in role_concepts:
                     grpc_role_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
-                    relations_req.roles.add(grpc_role_concept)
+                    # TODO this could use .add() if can be made to work...
+                    relations_req.roles.extend([grpc_role_concept])
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.thing_relations_req.CopyFrom(relations_req)
                 return concept_method_req
@@ -517,7 +519,7 @@ class RequestBuilder(object):
                 keys_req = concept_messages.Thing.Keys.Req()
                 for attribute_type_concept in attribute_types:
                     grpc_attr_type_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(attribute_type_concept)
-                    keys_req.attributeTypes.add(grpc_attr_type_concept)
+                    keys_req.attributeTypes.extend([grpc_attr_type_concept])
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.thing_keys_req.CopyFrom(keys_req)
                 return concept_method_req
@@ -556,7 +558,7 @@ class RequestBuilder(object):
                 role_players_req = concept_messages.Relation.RolePlayers.Req()
                 for role_concept in roles:
                     grpc_role_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(role_concept)
-                    role_players_req.roles.add(grpc_role_concept)
+                    role_players_req.roles.extend([grpc_role_concept])
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.relation_rolePlayers_req.CopyFrom(role_players_req)
                 return concept_method_req
