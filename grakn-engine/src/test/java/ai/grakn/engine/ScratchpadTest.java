@@ -125,4 +125,40 @@ public class ScratchpadTest {
             }
         }
     }
+
+    @Test
+    public void doInsertDuplicates() {
+        String grakn = "localhost:48555";
+        String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
+        System.out.println("keyspace name = '" + keyspaceFriendlyNameWithDate + "'");
+        Keyspace keyspace = Keyspace.of(keyspaceFriendlyNameWithDate);
+        String name = "John";
+        int duplicateCount = 180;
+
+        // TODO: check that we've turned off janus index and propertyUnique
+
+        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+            try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                tx.graql().define(
+                        label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
+                        label("parent").sub("role"),
+                        label("child").sub("role"),
+                        label("person").sub("entity").has("name").plays("parent").plays("child"),
+                        label("parentchild").sub("relationship").relates("parent").relates("child")
+                ).execute();
+                tx.commit();
+            }
+        }
+
+        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+            System.out.println("inserting a new name attribute with value '" + name + "'...");
+            for (int i = 0; i < duplicateCount; ++i) {
+                try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                    tx.graql().insert(var().isa("name").val(name)).execute();
+                    tx.commit();
+                }
+            }
+            System.out.println("done.");
+        }
+    }
 }

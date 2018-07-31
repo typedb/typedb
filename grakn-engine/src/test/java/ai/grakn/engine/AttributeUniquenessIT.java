@@ -120,14 +120,16 @@ public class AttributeUniquenessIT {
         }
 
         // merge
+        int mergeIter = 0;
         while (true) {
             System.out.println("triggering merge.");
-            int remainingAttributeInQueue = triggerMerge(merge);
-            System.out.println(remainingAttributeInQueue + " attributes removed");
-            if (remainingAttributeInQueue == 0) {
-                System.out.println(remainingAttributeInQueue + " no duplicates exist. merge finished");
+            triggerMerge(merge);
+            System.out.println("merge completed");
+            if (mergeIter >= duplicateCount) {
+                System.out.println("we've triggered the merge operation " + mergeIter + " times to merge " + duplicateCount + " duplicates. Soo... HOPEFULLY... there's no more duplicates exist. merge finished");
                 break;
             }
+            mergeIter++;
         }
 
         try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
@@ -142,14 +144,16 @@ public class AttributeUniquenessIT {
         }
 
         // merge
+        int mergeIter2 = 0;
         while (true) {
             System.out.println("triggering merge.");
             int remainingAttributeInQueue = triggerMerge(merge);
             System.out.println(remainingAttributeInQueue + " attributes removed");
-            if (remainingAttributeInQueue == 0) {
-                System.out.println(remainingAttributeInQueue + " no duplicates exist. merge finished");
+            if (mergeIter2 >= duplicateCount) {
+                System.out.println("we've triggered the merge operation " + mergeIter + " times to merge " + duplicateCount + " duplicates. Soo... HOPEFULLY... there's no more duplicates exist. merge finished");
                 break;
             }
+            mergeIter2++;
         }
 
         try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {

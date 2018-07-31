@@ -24,6 +24,7 @@ import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
 import ai.grakn.engine.attribute.uniqueness.queue.InMemoryQueue;
 import ai.grakn.engine.attribute.uniqueness.queue.Queue;
+import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class AttributeUniqueness {
     public static final int QUEUE_GET_BATCH_MAX = 1;
     public static final int QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS = 1000;
 
-    private Queue newAttributeQueue = new InMemoryQueue();
+    private Queue newAttributeQueue = new RocksDbQueue();
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
     private boolean stopDaemon = false;
 
@@ -63,10 +64,10 @@ public class AttributeUniqueness {
         newAttributeQueue.insertAttribute(newAttribute);
     }
 
-    public int mergeNow(int min, int max, int waitTimeLimitMs) {
+    public void mergeNow(int min, int max, int waitTimeLimitMs) {
         Attributes newAttrs = newAttributeQueue.readAttributes(min, max, waitTimeLimitMs);
         mergeAlgorithm.merge(newAttrs);
-        return newAttributeQueue.size();
+        newAttributeQueue.ackAttributes(newAttrs);
     }
 
     /**

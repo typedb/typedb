@@ -54,9 +54,4 @@ public class InMemoryQueue implements Queue {
     @Override
     public void ackAttributes(Attributes batch) {
     }
-
-    @Override
-    public int size() {
-        return newAttributeQueue.size();
-    }
 }

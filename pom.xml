@@ -111,6 +111,7 @@
         <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
+        <rocksdbjni.version>3.5.1</rocksdbjni.version>
     </properties>
 
     <organization>
@@ -640,6 +641,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdbjni.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
                 <version>${netty.version}</version>
@@ -1032,7 +1038,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>${rocksdbjni.version}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
