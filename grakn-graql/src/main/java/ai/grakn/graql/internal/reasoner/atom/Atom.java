@@ -270,9 +270,11 @@ public abstract class Atom extends AtomicBase {
         Multimap<Atom, Atom> neighbourMap = ((ReasonerQueryImpl) getParentQuery()).immediateAtomNeighbourMap();
 
         neighbourMap.get(this).forEach(atomStack::push);
+        visitedAtoms.add(this);
         while (!atomStack.isEmpty()) {
             Atom atom = atomStack.pop();
             if (!visitedAtoms.contains(atom)) {
+                neighbours.add(atom);
                 neighbourMap.get(atom).stream()
                         .peek(neighbours::add)
                         .flatMap(q -> neighbourMap.get(q).stream())

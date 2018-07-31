@@ -28,6 +28,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -277,6 +278,35 @@ public class ResolutionPlanTest {
      *
      */
     @Test
+    public void exploitDBRelationsAndConnectivity_relationLinkWithSubbedEndsAndRuleRelationInTheMiddle(){
+        EmbeddedGraknTx<?> testTx = testContext.tx();
+        String queryString = "{" +
+                "$start id 'someSampleId';" +
+                "$end id 'anotherSampleId';" +
+                "(someRole: $link, otherRole: $start) isa relation;" +
+                "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
+                "(someRole: $anotherlink, otherRole: $end) isa anotherRelation;" +
+                "$link isa someEntity;" +
+                "$end isa someOtherEntity;" +
+                "$anotherlink isa yetAnotherEntity;" +
+                "}";
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
+        ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
+
+        checkQueryPlanSanity(query);
+        assertTrue(resolutionQueryPlan.queries().get(0).getAtoms(IdPredicate.class).findFirst().isPresent());
+        assertEquals(2, resolutionQueryPlan.queries().size());
+        //TODO still might produce disconnected plans
+        //checkAtomPlanSanity(query);
+    }
+
+    /**
+     * follows the following pattern
+     *
+     * [$start/...] ($start, $link) - ($link, $anotherlink) - ($anotherlink, $end)* [$anotherlink/...]
+     *
+     */
+    @Test
     public void exploitDBRelationsAndConnectivity_relationLinkWithSubbedEndsAndRuleRelationAtEnd(){
         EmbeddedGraknTx<?> testTx = testContext.tx();
         String queryString = "{" +
@@ -292,9 +322,12 @@ public class ResolutionPlanTest {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
+        checkQueryPlanSanity(query);
+        assertTrue(resolutionQueryPlan.queries().get(0).getAtoms(IdPredicate.class).findFirst().isPresent());
         assertTrue(!resolutionQueryPlan.queries().get(0).isAtomic());
         assertEquals(2, resolutionQueryPlan.queries().size());
-        checkPlanSanity(query);
+        //TODO still might produce disconnected plans
+        //checkAtomPlanSanity(query);
     }
 
     /**
@@ -321,9 +354,11 @@ public class ResolutionPlanTest {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString, testTx), testTx);
         ResolutionQueryPlan resolutionQueryPlan = new ResolutionQueryPlan(query);
 
+        checkQueryPlanSanity(query);
+        assertTrue(resolutionQueryPlan.queries().get(0).getAtoms(IdPredicate.class).findFirst().isPresent());
         assertTrue(!resolutionQueryPlan.queries().get(0).isAtomic());
         //TODO still might produce disconnected plans
-        //checkPlanSanity(query);
+        //checkAtomPlanSanity(query);
     }
 
     @Test
@@ -640,6 +675,11 @@ public class ResolutionPlanTest {
             ReasonerQueryImpl next = iterator.next();
             Set<Var> varNames = next.getVarNames();
             assertTrue("Disconnected query plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
+            if (!next.isAtomic()) {
+                boolean isDisconnected = next.selectAtoms().noneMatch(Atom::isDisconnected);
+
+                assertTrue("Query plan produced boundlessly disconnected conjunction:\n" + plan, next.isBoundlesslyDisconnected());
+            }
             vars.addAll(varNames);
         }
     }
