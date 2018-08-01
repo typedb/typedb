@@ -139,33 +139,5 @@ public class Server implements AutoCloseable {
         return lockProvider;
     }
 
-    /**
-     * Internal class used to handle keyspace related operations
-     */
-
-    public static class Keyspace{
-
-        public static void delete(ai.grakn.Keyspace keyspace){
-            EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(keyspace);
-            session.close();
-            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
-                tx.closeSession();
-                tx.clearGraph();
-                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-            }
-            KeyspaceStoreImpl.getInstance().deleteKeyspace(keyspace);
-        }
-
-        public static void deleteInMemory(ai.grakn.Keyspace keyspace){
-            EmbeddedGraknSession session = EmbeddedGraknSession.inMemory(keyspace);
-            session.close();
-            try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
-                tx.closeSession();
-                tx.clearGraph();
-                tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
-            }
-        }
-    }
-
 }
 

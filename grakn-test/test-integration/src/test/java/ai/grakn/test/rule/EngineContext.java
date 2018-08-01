@@ -223,7 +223,7 @@ public class EngineContext extends CompositeTestRule {
                 LOG.info("stopping engine...");
 
                 // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-                clearGraphs(engineGraknTxFactory);
+                clearGraphs();
                 server.close();
 
                 LOG.info("engine stopped.");
@@ -237,18 +237,18 @@ public class EngineContext extends CompositeTestRule {
         }
     }
 
-    private static void clearGraphs(EngineGraknTxFactory factory) {
+    private void clearGraphs() {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try (GraknTx systemGraph = factory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+        try (GraknTx systemGraph = engineGraknTxFactory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .forEach(x -> x.concepts().forEach(y -> {
                         keyspaceNames.add(y.asAttribute().value().toString());
                     }));
         }
 
-        keyspaceNames.forEach(name -> Server.Keyspace.delete(Keyspace.of(name)));
-        factory.refreshConnections();
+        keyspaceNames.forEach(name -> keyspaceStore.deleteKeyspace(Keyspace.of(name)));
+        engineGraknTxFactory.refreshConnections();
     }
 
     private static void noThrow(RunnableWithExceptions fn, String errorMessage) {
@@ -297,7 +297,7 @@ public class EngineContext extends CompositeTestRule {
         // distributed locks
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
-        keyspaceStore = KeyspaceStoreImpl.getInstance();
+        keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);

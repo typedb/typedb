@@ -853,6 +853,7 @@ public class ServerRPCIT {
 
             client.keyspaces().delete(tx.keyspace());
 
+            //TODO fix in the following PR
 //            assertTrue(tx.isClosed());
         }
 

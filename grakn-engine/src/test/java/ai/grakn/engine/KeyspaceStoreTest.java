@@ -91,7 +91,7 @@ public class KeyspaceStoreTest {
 
     @BeforeClass
     public static void setup() throws IOException {
-        keyspaceStore = KeyspaceStoreImpl.getInstance();
+        keyspaceStore = new KeyspaceStoreImpl(config);
         keyspaceStore.loadSystemSchema();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
@@ -155,7 +155,7 @@ public class KeyspaceStoreTest {
 
         //Delete a tx entirely
         GraknTx deletedTx = txs.iterator().next();
-        Server.Keyspace.delete(deletedTx.keyspace());
+        keyspaceStore.deleteKeyspace(deletedTx.keyspace());
         txs.remove(deletedTx);
 
         // Get system keyspaces
@@ -178,7 +178,7 @@ public class KeyspaceStoreTest {
 
         //Delete a keyspace entirely
         GraknTx deletedTx = txs.iterator().next();
-        Server.Keyspace.delete(deletedTx.keyspace());
+        keyspaceStore.deleteKeyspace(deletedTx.keyspace());
         txs.remove(deletedTx);
 
         // Get system keyspaces

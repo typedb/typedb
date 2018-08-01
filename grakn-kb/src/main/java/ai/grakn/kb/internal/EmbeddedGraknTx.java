@@ -471,8 +471,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
     private GraknTxOperationException labelTaken(SchemaConcept schemaConcept) {
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label()))
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
             return GraknTxOperationException.reservedLabel(schemaConcept.label());
+        }
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
 

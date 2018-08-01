@@ -74,7 +74,7 @@ public class ServerFactory {
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
 
-        KeyspaceStore keyspaceStore = KeyspaceStoreImpl.getInstance();
+        KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
