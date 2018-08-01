@@ -64,7 +64,7 @@ class Transaction(object):
     def __init__(self, transaction_service: TransactionService):
         self._tx_service = transaction_service
 
-    def query(self, query: str):
+    def query(self, query: str, infer=True):
         return self._tx_service.query(query)
 
     def commit(self):
