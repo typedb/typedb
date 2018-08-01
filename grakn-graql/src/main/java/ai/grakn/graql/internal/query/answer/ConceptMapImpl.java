@@ -88,7 +88,7 @@ public class ConceptMapImpl implements ConceptMap {
     }
 
     @Override
-    public ConceptMap get() {
+    public ConceptMap asConceptMap() {
         return this;
     }
 

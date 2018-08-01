@@ -221,6 +221,26 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void testMatchGetRelationship() throws Exception {
+        assertShellMatches(
+                "define name sub attribute datatype string;",
+                anything(),
+                "define marriage sub relationship, relates spouse;",
+                anything(),
+                "define person sub entity, has name, plays spouse;",
+                anything(),
+                "insert isa person has name \"Bill Gates\";",
+                anything(),
+                "insert isa person has name \"Melinda Gates\";",
+                anything(),
+                "match $husband isa person has name \"Bill Gates\"; $wife isa person has name \"Melinda Gates\"; insert (spouse: $husband, spouse: $wife) isa marriage;",
+                anything(),
+                "match $x isa marriage; get;",
+                allOf(containsString("spouse"), containsString("isa"), containsString("marriage"))
+        );
+    }
+
+    @Test
     public void testInsertQuery() throws Exception {
         assertShellMatches(
                 "define entity2 sub entity;",

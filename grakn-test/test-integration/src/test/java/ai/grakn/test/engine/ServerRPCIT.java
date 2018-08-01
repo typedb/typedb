@@ -48,6 +48,7 @@ import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Value;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
@@ -234,6 +235,17 @@ public class ServerRPCIT {
             for (ConceptMap answer : answers) {
                 assertThat(answer.vars(), contains(var("x")));
                 assertNotNull(tx.getConcept(answer.get("x").id()));
+            }
+        }
+    }
+
+    @Test
+    public void testGetQueryForRelationship() {
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
+            List<ConceptMap> directorships = tx.graql().match(var("x").isa("directed-by")).get().execute();
+
+            for (ConceptMap directorship : directorships) {
+                System.out.println(Printer.stringPrinter(true).toString(directorship.get("x")));
             }
         }
     }

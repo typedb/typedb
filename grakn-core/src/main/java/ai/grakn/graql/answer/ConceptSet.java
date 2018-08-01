@@ -42,7 +42,7 @@ public class ConceptSet implements Answer<ConceptSet>{
     }
     
     @Override
-    public ConceptSet get() {
+    public ConceptSet asConceptSet() {
         return this;
     }
 

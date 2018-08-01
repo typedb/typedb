@@ -23,6 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -217,7 +218,7 @@ public class GraqlShell implements AutoCloseable {
         Printer<?> printer = outputFormat.getPrinter(displayAttributes);
 
         handleGraknExceptions(() -> {
-            Stream<Query<?>> queries = tx
+            Stream<Query<Answer>> queries = tx
                     .graql()
                     .infer(infer)
                     .parser()

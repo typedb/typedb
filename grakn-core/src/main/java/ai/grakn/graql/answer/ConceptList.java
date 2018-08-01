@@ -42,7 +42,7 @@ public class ConceptList implements Answer<ConceptList>{
     }
 
     @Override
-    public ConceptList get() {
+    public ConceptList asConceptList() {
         return this;
     }
 
