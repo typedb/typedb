@@ -90,7 +90,7 @@ class ResourcePriority extends BasePriority {
             priority += vpsPriority;
         }
 
-        boolean reifiesRelation = atom().getNeighbours(Atom.class)
+        boolean reifiesRelation = atom().getImmediateNeighbours(Atom.class)
                 .filter(Atom::isRelation)
                 .anyMatch(at -> at.getVarName().equals(atom().getVarName()));
 
