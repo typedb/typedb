@@ -45,10 +45,10 @@ public class GenealogyKB extends TestKB {
 
     @Override
     public Consumer<GraknTx> build(){
-        return (GraknTx graph) -> {
-            SampleKBLoader.loadFromFile(graph, schemaFile);
-            SampleKBLoader.loadFromFile(graph, dataFile);
-            SampleKBLoader.loadFromFile(graph, rulesFile);
+        return (GraknTx tx) -> {
+            SampleKBLoader.loadFromFile(tx, schemaFile);
+            SampleKBLoader.loadFromFile(tx, dataFile);
+            SampleKBLoader.loadFromFile(tx, rulesFile);
         };
     }
 }

@@ -80,9 +80,9 @@ public class SampleKBLoader {
         if(tx == null || tx.isClosed()){
             //Load the graph if we need to
             if(!graphLoaded) {
-                try(GraknTx graph = factory.open(GraknTxType.WRITE)){
-                    load(graph);
-                    graph.commit();
+                try(GraknTx tx = factory.open(GraknTxType.WRITE)){
+                    load(tx);
+                    tx.commit();
                     graphLoaded = true;
                 }
             }

@@ -114,7 +114,7 @@ public class GraqlControllerInsertTest {
         InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
-        inOrder.verify(tx, times(1)).commit();
+        inOrder.verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test
@@ -203,11 +203,11 @@ public class GraqlControllerInsertTest {
     public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled() {
         String query = "define thingy sub entity;";
 
-        verify(tx, times(0)).commit();
+        verify(tx, times(0)).commitAndGetLogs();
 
         sendRequest(query);
 
-        verify(tx, times(1)).commit();
+        verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test

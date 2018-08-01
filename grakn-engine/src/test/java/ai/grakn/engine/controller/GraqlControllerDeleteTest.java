@@ -87,7 +87,7 @@ public class GraqlControllerDeleteTest {
 
         sendRequest(query);
 
-        verify(tx, times(1)).commit();
+        verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test
@@ -140,7 +140,7 @@ public class GraqlControllerDeleteTest {
         InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
-        inOrder.verify(tx, times(1)).commit();
+        inOrder.verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test

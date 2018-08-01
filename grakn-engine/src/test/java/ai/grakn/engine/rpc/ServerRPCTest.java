@@ -199,7 +199,7 @@ public class ServerRPCTest {
             tx.send(commit());
         }
 
-        verify(tx).commit();
+        verify(tx).commitAndGetLogs();
     }
 
     @Test
@@ -673,7 +673,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingFails_Throw() throws Throwable {
-        doThrow(EXCEPTION).when(tx).commit();
+        doThrow(EXCEPTION).when(tx).commitAndGetLogs();
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
