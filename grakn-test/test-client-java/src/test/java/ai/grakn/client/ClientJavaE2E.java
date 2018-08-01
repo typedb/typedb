@@ -7,6 +7,8 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
+import ai.grakn.util.GraqlSyntax;
 import ai.grakn.util.SimpleURI;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -24,6 +26,7 @@ import static ai.grakn.client.ClientJavaE2EConstants.assertGraknRunning;
 import static ai.grakn.client.ClientJavaE2EConstants.assertGraknStopped;
 import static ai.grakn.client.ClientJavaE2EConstants.assertZipExists;
 import static ai.grakn.client.ClientJavaE2EConstants.unzipGrakn;
+import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,7 +80,7 @@ public class ClientJavaE2E {
         // assert schema
         try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(GraknTxType.READ)) {
-                List<String> definedSchema = getSchema(transaction).execute().stream()
+                List<String> definedSchema = getGatesFamilySchema(transaction).execute().stream()
                         .map(answer -> answer.get(var("t")).asType().label().getValue()).collect(Collectors.toList());
                 String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
                         "person", "marriage", "parentship", "@has-name", "name" };
@@ -99,6 +102,23 @@ public class ClientJavaE2E {
                 List<ConceptMap> people = getGatesFamilyMembers(transaction).execute();
                 List<String> insertedNames = people.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
                 assertThat(insertedNames, containsInAnyOrder(gatesFamilyNames()));
+            }
+        }
+
+        // match aggregate
+        try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
+            try (Grakn.Transaction transaction = session.transaction(GraknTxType.READ)) {
+                int aggregateCount = transaction.graql().match(var("p").isa("person")).aggregate(count()).execute().number().intValue();
+                assertThat(aggregateCount, equalTo(gatesFamilyNames().length));
+            }
+        }
+
+        // compute count
+        try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
+            try (Grakn.Transaction transaction = session.transaction(GraknTxType.READ)) {
+                int computeCount = transaction.graql().compute(GraqlSyntax.Compute.Method.COUNT).in("person")
+                        .execute().get(0).number().intValue();
+                assertThat(computeCount, equalTo(gatesFamilyNames().length));
             }
         }
     }
@@ -131,27 +151,6 @@ public class ClientJavaE2E {
 //     * TODO: match sibling via rule
 //     */
 //
-//
-//    /**
-//     * TODO: verify
-//     */
-//    @Test
-//    public void shouldBeAbleToPerformMatchAggregate() throws IOException, InterruptedException, TimeoutException {
-//        String matchGet = "match $p isa person; aggregate count;";
-//        commandExecutor
-//                .redirectInput(new ByteArrayInputStream(matchGet.getBytes(UTF_8)))
-//                .command("./graql", "console", "-k", "grakn").execute().outputUTF8();
-//    }
-//
-//    /**
-//     * TODO: verify
-//     */
-//    public void shouldBeAbleToPerformComputeCount() throws IOException, InterruptedException, TimeoutException {
-//        String matchGet = "compute count in person;";
-//        commandExecutor
-//                .redirectInput(new ByteArrayInputStream(matchGet.getBytes(UTF_8)))
-//                .command("./graql", "console", "-k", "grakn").execute().outputUTF8();
-//    }
 
     private DefineQuery defineGatesFamilySchema(Grakn.Transaction transaction) {
         return transaction.graql().define(
@@ -162,7 +161,7 @@ public class ClientJavaE2E {
         );
     }
 
-    private GetQuery getSchema(Grakn.Transaction transaction) {
+    private GetQuery getGatesFamilySchema(Grakn.Transaction transaction) {
         return transaction.graql().match(var("t").sub("thing")).get();
     }
 
