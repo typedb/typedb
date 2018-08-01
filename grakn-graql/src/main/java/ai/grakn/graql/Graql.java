@@ -21,14 +21,15 @@ package ai.grakn.graql;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import ai.grakn.graql.internal.query.predicate.Predicates;
 import ai.grakn.graql.internal.util.AdminConverter;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
@@ -38,7 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
 /**
@@ -135,7 +135,7 @@ public class Graql {
     }
 
     @CheckReturnValue
-    public static ComputeQuery compute(Method method) {
+    public static <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
         return withoutGraph().compute(method);
     }
 
@@ -239,18 +239,10 @@ public class Graql {
     // AGGREGATES
 
     /**
-     * Create an aggregate that will check if there are any results
-     */
-    @CheckReturnValue
-    public static Aggregate<Boolean> ask() {
-        return Aggregates.ask();
-    }
-
-    /**
      * Create an aggregate that will count the results of a query.
      */
     @CheckReturnValue
-    public static Aggregate<Long> count() {
+    public static Aggregate<Value> count() {
         return Aggregates.count();
     }
 
@@ -258,17 +250,8 @@ public class Graql {
      * Create an aggregate that will sum the values of a variable.
      */
     @CheckReturnValue
-    public static Aggregate<Number> sum(String var) {
+    public static Aggregate<Value> sum(String var) {
         return Aggregates.sum(Graql.var(var));
-    }
-
-    /**
-     * Create an aggregate that will find the maximum of a variable's values.
-     * @param var the variable to find the maximum of
-     */
-    @CheckReturnValue
-    public static Aggregate<Number> max(String var) {
-        return Aggregates.max(Graql.var(var));
     }
 
     /**
@@ -276,8 +259,17 @@ public class Graql {
      * @param var the variable to find the maximum of
      */
     @CheckReturnValue
-    public static Aggregate<Number> min(String var) {
+    public static Aggregate<Value> min(String var) {
         return Aggregates.min(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the maximum of a variable's values.
+     * @param var the variable to find the maximum of
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> max(String var) {
+        return Aggregates.max(Graql.var(var));
     }
 
     /**
@@ -285,7 +277,7 @@ public class Graql {
      * @param var the variable to find the mean of
      */
     @CheckReturnValue
-    public static Aggregate<Number> mean(String var) {
+    public static Aggregate<Value> mean(String var) {
         return Aggregates.mean(Graql.var(var));
     }
 
@@ -294,7 +286,7 @@ public class Graql {
      * @param var the variable to find the median of
      */
     @CheckReturnValue
-    public static Aggregate<Number> median(String var) {
+    public static Aggregate<Value> median(String var) {
         return Aggregates.median(Graql.var(var));
     }
 
@@ -303,7 +295,7 @@ public class Graql {
      * @param var the variable to find the standard deviation of
      */
     @CheckReturnValue
-    public static Aggregate<Number> std(String var) {
+    public static Aggregate<Value> std(String var) {
         return Aggregates.std(Graql.var(var));
     }
 
@@ -312,7 +304,7 @@ public class Graql {
      * @param var the variable to group results by
      */
     @CheckReturnValue
-    public static Aggregate<Map<Concept, List<Answer>>> group(String var) {
+    public static Aggregate<Map<Concept, List<ConceptMap>>> group(String var) {
         return group(var, Aggregates.list());
     }
 
@@ -323,30 +315,8 @@ public class Graql {
      * @param <T> the type the aggregate returns
      */
     @CheckReturnValue
-    public static <T> Aggregate<Map<Concept, T>> group(
-            String var, Aggregate<T> aggregate) {
+    public static <T> Aggregate<Map<Concept, T>> group(String var, Aggregate<T> aggregate) {
         return Aggregates.group(Graql.var(var), aggregate);
-    }
-
-    /**
-     * Create an aggregate that will collect together several named aggregates into a map.
-     * @param aggregates the aggregates to join together
-     * @param <T> the type that each aggregate returns
-     */
-    @CheckReturnValue
-    @SafeVarargs
-    public static <T> Aggregate<Map<String, T>> select(NamedAggregate<? extends T>... aggregates) {
-        return select(ImmutableSet.copyOf(aggregates));
-    }
-
-    /**
-     * Create an aggregate that will collect together several named aggregates into a map.
-     * @param aggregates the aggregates to join together
-     * @param <T> the type that each aggregate returns
-     */
-    @CheckReturnValue
-    public static <T> Aggregate<Map<String, T>> select(Set<NamedAggregate<? extends T>> aggregates) {
-        return Aggregates.select(ImmutableSet.copyOf(aggregates));
     }
 
 

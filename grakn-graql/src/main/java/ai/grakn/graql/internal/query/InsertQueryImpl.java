@@ -24,7 +24,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -45,16 +45,15 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
+abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMap> implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
-     *
-     * @param vars a collection of Vars to insert
-     * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
+     * @param match the {@link Match} to insert for each result
+     * @param vars a collection of Vars to insert
      */
-    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, MatchAdmin match, GraknTx tx) {
+    static InsertQueryImpl create(GraknTx tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
@@ -67,9 +66,9 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     @Override
     public final InsertQuery withTx(GraknTx tx) {
         if (match() != null) {
-            return Queries.insert(varPatterns(), match().withTx(tx).admin());
+            return Queries.insert(match().withTx(tx).admin(), varPatterns());
         } else {
-            return Queries.insert(varPatterns(), tx);
+            return Queries.insert(tx, varPatterns());
         }
     }
 
@@ -79,7 +78,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final Stream<Answer> stream() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 
@@ -125,7 +124,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final List<Answer> execute() {
+    public final List<ConceptMap> execute() {
         return stream().collect(Collectors.toList());
     }
 

@@ -35,7 +35,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
@@ -214,9 +214,9 @@ public class InsertQueryTest {
                 var("z").has("name", "xyz").isa("language")
         );
 
-        Set<Answer> results = insert.stream().collect(toSet());
+        Set<ConceptMap> results = insert.stream().collect(toSet());
         assertEquals(1, results.size());
-        Answer result = results.iterator().next();
+        ConceptMap result = results.iterator().next();
         assertEquals(ImmutableSet.of(var("x"), var("z")), result.vars());
         assertThat(result.concepts(), Matchers.everyItem(notNullValue(Concept.class)));
     }
@@ -231,12 +231,12 @@ public class InsertQueryTest {
         assertExists(qb, language2);
 
         InsertQuery query = qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
-        Iterator<Answer> results = query.iterator();
+        Iterator<ConceptMap> results = query.iterator();
 
         assertNotExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertNotExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
 
-        Answer result1 = results.next();
+        ConceptMap result1 = results.next();
         assertEquals(ImmutableSet.of(var("x")), result1.vars());
 
         boolean query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).iterator().hasNext();
@@ -247,7 +247,7 @@ public class InsertQueryTest {
         assertTrue("A match insert was not executed correctly for only one match", oneExists);
 
         //Check that both are inserted correctly
-        Answer result2 = results.next();
+        ConceptMap result2 = results.next();
         assertEquals(ImmutableSet.of(var("x")), result1.vars());
         assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
@@ -373,7 +373,7 @@ public class InsertQueryTest {
         // Note that two variables refer to the same type. They should both be in the result
         InsertQuery query = qb.insert(x.isa(type), type.label("movie"));
 
-        Answer result = Iterables.getOnlyElement(query);
+        ConceptMap result = Iterables.getOnlyElement(query);
         assertThat(result.vars(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
         assertEquals(result.get(type).asType().label(), Label.of("movie"));
@@ -386,7 +386,7 @@ public class InsertQueryTest {
                 w.isa("movie").has(title, x.val("My Movie"), y)
         );
 
-        Answer answer = Iterables.getOnlyElement(query.execute());
+        ConceptMap answer = Iterables.getOnlyElement(query.execute());
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
@@ -403,7 +403,7 @@ public class InsertQueryTest {
                 .match(w.isa("movie").has(title, x.val("The Muppets"), y))
                 .insert(x, w, y.has("provenance", z.val("Someone told me")));
 
-        Answer answer = Iterables.getOnlyElement(query.execute());
+        ConceptMap answer = Iterables.getOnlyElement(query.execute());
 
         Entity movie = answer.get(w).asEntity();
         Attribute<String> theTitle = answer.get(x).asAttribute();
@@ -511,7 +511,7 @@ public class InsertQueryTest {
 
     @Test
     public void whenInsertingMultipleRolePlayers_BothRolePlayersAreAdded() {
-        List<Answer> results = qb.match(
+        List<ConceptMap> results = qb.match(
                 var("g").has("title", "Godfather"),
                 var("m").has("title", "The Muppets")
         ).insert(
@@ -546,9 +546,9 @@ public class InsertQueryTest {
                 w.rel("friend", x).rel("friend", y).isa("maybe-friends")
         );
 
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
 
-        for (Answer answer : answers) {
+        for (ConceptMap answer : answers) {
             assertThat(
                     "Should contain only variables mentioned in the insert (so excludes `$z`)",
                     answer.vars(),

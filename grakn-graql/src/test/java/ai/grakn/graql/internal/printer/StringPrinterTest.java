@@ -24,8 +24,8 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
@@ -88,7 +88,7 @@ public class StringPrinterTest {
 
         String result = printer.toString(match.iterator().next());
 
-        assertEquals("$x val \"Godfather\" isa title;", result.trim());
+        assertEquals("{$x val \"Godfather\" isa title;}", result.trim());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class StringPrinterTest {
     public void testEmptyResult() {
         Printer<?> printer = Printer.stringPrinter(true);
 
-        Answer emptyResult = new QueryAnswer();
+        ConceptMap emptyResult = new ConceptMapImpl();
 
         assertEquals("{}", printer.toString(emptyResult));
     }

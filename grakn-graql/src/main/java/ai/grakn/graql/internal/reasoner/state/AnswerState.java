@@ -18,14 +18,14 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 /**
  *
  * <p>
- * Resolution state holding an answer ({@link Answer}) to the parent state.
+ * Resolution state holding an answer ({@link ConceptMap}) to the parent state.
  * </p>
  *
  * @author Kasper Piskorski
@@ -36,11 +36,11 @@ public class AnswerState extends ResolutionState {
     private final InferenceRule rule;
     private final Unifier unifier;
 
-    public AnswerState(Answer sub, Unifier u, QueryStateBase parent) {
+    public AnswerState(ConceptMap sub, Unifier u, QueryStateBase parent) {
         this(sub, u, parent, null);
     }
 
-    AnswerState(Answer sub, Unifier u, QueryStateBase parent, InferenceRule rule) {
+    AnswerState(ConceptMap sub, Unifier u, QueryStateBase parent, InferenceRule rule) {
         super(sub, parent);
         this.unifier = u;
         this.rule = rule;
@@ -58,5 +58,5 @@ public class AnswerState extends ResolutionState {
 
     Unifier getUnifier(){ return unifier;}
 
-    Answer getAnswer(){ return getParentState().consumeAnswer(this);}
+    ConceptMap getAnswer(){ return getParentState().consumeAnswer(this);}
 }

@@ -24,7 +24,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -301,7 +301,7 @@ public class ReasonerTest {
         //geoObject sub city always returns an empty set
         String queryString = "match ($x, $y) isa is-located-in;geoObject sub city; get;";
         QueryBuilder iqb = graph.graql().infer(true);
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertThat(answers, empty());
     }
 
@@ -476,8 +476,8 @@ public class ReasonerTest {
         GetQuery limitQuery = iqb.parse(limitQueryString);
         GetQuery query = iqb.parse(queryString);
 
-        List<Answer> limitedAnswers = limitQuery.execute();
-        List<Answer> answers = query.execute();
+        List<ConceptMap> limitedAnswers = limitQuery.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(limitedAnswers.size(), 5);
         assertTrue(answers.size() > limitedAnswers.size());
         assertTrue(answers.containsAll(limitedAnswers));
@@ -488,7 +488,7 @@ public class ReasonerTest {
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; get;";
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
 
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.iterator().next().get("a").asAttribute().value().toString(), "19");
     }
 
@@ -498,9 +498,9 @@ public class ReasonerTest {
         GetQuery query = nonMaterialisedSnbKB.tx().graql().infer(true).parse(queryString);
 
         final int offset = 4;
-        List<Answer> fullAnswers = query.execute();
-        List<Answer> answers = query.match().orderBy(Graql.var("a")).get().execute();
-        List<Answer> answers2 = query.match().orderBy(Graql.var("a")).offset(offset).get().execute();
+        List<ConceptMap> fullAnswers = query.execute();
+        List<ConceptMap> answers = query.match().orderBy(Graql.var("a")).get().execute();
+        List<ConceptMap> answers2 = query.match().orderBy(Graql.var("a")).offset(offset).get().execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);
@@ -549,8 +549,8 @@ public class ReasonerTest {
         QueryBuilder iqb = graph.graql().infer(true);
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
         assertTrue(answers2.containsAll(answers));
         assertEquals(2*answers.size(), answers2.size());
     }
@@ -581,9 +581,9 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
         assertQueriesEqual(query2, query3);
 
-        List<Answer> requeriedAnswers = query.execute();
-        List<Answer> requeriedAnswers2 = query2.execute();
-        List<Answer> requeriedAnswers3 = query3.execute();
+        List<ConceptMap> requeriedAnswers = query.execute();
+        List<ConceptMap> requeriedAnswers2 = query2.execute();
+        List<ConceptMap> requeriedAnswers3 = query3.execute();
 
         assertCollectionsEqual(requeriedAnswers, requeriedAnswers2);
         assertCollectionsEqual(requeriedAnswers2, requeriedAnswers3);

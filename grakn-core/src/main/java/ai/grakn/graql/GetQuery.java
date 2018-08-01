@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.List;
@@ -31,11 +31,11 @@ import java.util.Set;
  * The {@link GetQuery} is a pattern-matching query. The patterns are described in a declarative fashion,
  * then the {@link GetQuery} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * @see Answer
+ * @see ConceptMap
  *
  * @author Felix Chapman
  */
-public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface GetQuery extends Query<List<ConceptMap>>, Streamable<ConceptMap> {
 
     /**
      * @param tx the transaction to execute the query on

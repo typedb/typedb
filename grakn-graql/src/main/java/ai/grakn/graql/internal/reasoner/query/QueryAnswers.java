@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 
@@ -31,18 +31,18 @@ import javax.annotation.Nonnull;
 /**
  *
  * <p>
- * Wrapper class for a set of {@link Answer} objects providing higher level facilities.
+ * Wrapper class for a set of {@link ConceptMap} objects providing higher level facilities.
  *
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswers implements Iterable<Answer>{
+public class QueryAnswers implements Iterable<ConceptMap>{
 
-    private final HashSet<Answer> set = new HashSet<>();
+    private final HashSet<ConceptMap> set = new HashSet<>();
 
     @Nonnull
     @Override
-    public Iterator<Answer> iterator() { return set.iterator();}
+    public Iterator<ConceptMap> iterator() { return set.iterator();}
 
     @Override
     public boolean equals(Object obj){
@@ -58,19 +58,19 @@ public class QueryAnswers implements Iterable<Answer>{
     @Override
     public String toString(){ return set.toString();}
 
-    public Stream<Answer> stream(){ return set.stream();}
+    public Stream<ConceptMap> stream(){ return set.stream();}
 
     public QueryAnswers(){}
-    public QueryAnswers(Answer ans){ set.add(ans);}
-    public QueryAnswers(Collection<Answer> ans){ set.addAll(ans); }
+    public QueryAnswers(ConceptMap ans){ set.add(ans);}
+    public QueryAnswers(Collection<ConceptMap> ans){ set.addAll(ans); }
     private QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
-    public boolean add(Answer a){ return set.add(a);}
+    public boolean add(ConceptMap a){ return set.add(a);}
     public boolean addAll(QueryAnswers ans){ return set.addAll(ans.set);}
 
     public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
 
-    public boolean contains(Answer a){ return set.contains(a);}
+    public boolean contains(ConceptMap a){ return set.contains(a);}
     public boolean isEmpty(){ return set.isEmpty();}
 
     /**

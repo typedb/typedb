@@ -31,7 +31,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -39,7 +39,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -338,8 +338,8 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public Stream<Answer> materialise(){
-        Answer substitution = getParentQuery().getSubstitution();
+    public Stream<ConceptMap> materialise(){
+        ConceptMap substitution = getParentQuery().getSubstitution();
         AttributeType type = getSchemaConcept().asAttributeType();
         Concept owner = substitution.get(getVarName());
         Var resourceVariable = getPredicateVariable();
@@ -352,7 +352,7 @@ public abstract class ResourceAtom extends Binary{
         } else {
             Attribute attribute = AttributeTypeImpl.from(type).putAttributeInferred(Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().get());
             attachAttribute(owner, attribute);
-            return Stream.of(substitution.merge(new QueryAnswer(ImmutableMap.of(resourceVariable, attribute))));
+            return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
         }
     }
 

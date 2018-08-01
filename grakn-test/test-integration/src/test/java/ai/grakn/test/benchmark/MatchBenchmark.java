@@ -25,7 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SessionContext;
 import org.junit.Rule;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -78,7 +78,7 @@ public class MatchBenchmark extends BenchmarkTest {
                         .has(BENCHMARK_ATTRIBUTE_TYPE, "0")
         );
         GetQuery answers = match.get();
-        Optional<Answer> first = answers.stream().findFirst();
+        Optional<ConceptMap> first = answers.stream().findFirst();
         first.get();
     }
 }

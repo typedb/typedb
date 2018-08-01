@@ -24,12 +24,12 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -71,7 +71,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Stream<Answer> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
         if (tx == null) throw GraqlQueryException.noTx();
 
         validatePattern(tx);
@@ -88,7 +88,7 @@ public class MatchBase extends AbstractMatch {
      * @param graqlTraversal gral traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
-    public static Stream<Answer> streamWithTraversal(
+    public static Stream<ConceptMap> streamWithTraversal(
             Set<Var> commonVars, EmbeddedGraknTx<?> tx, GraqlTraversal graqlTraversal
     ) {
         Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
@@ -99,7 +99,7 @@ public class MatchBase extends AbstractMatch {
                 .map(elements -> makeResults(vars, tx, elements))
                 .distinct()
                 .sequential()
-                .map(QueryAnswer::new);
+                .map(ConceptMapImpl::new);
     }
 
     /**

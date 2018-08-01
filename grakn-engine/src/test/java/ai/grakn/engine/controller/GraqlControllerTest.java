@@ -202,11 +202,6 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenRunningAskQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseMatchesExpectedObject("match $x isa movie; aggregate ask;");
-    }
-
-    @Test
     public void whenMatchingRules_ResponseStatusIs200() {
         String queryString = "match $x sub " + Schema.MetaSchema.RULE.getLabel().getValue() + "; get;";
         Response resp = sendQuery(queryString, APPLICATION_JSON);

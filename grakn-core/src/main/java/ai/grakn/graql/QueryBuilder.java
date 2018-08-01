@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -92,7 +93,7 @@ public interface QueryBuilder {
      * @return a compute query builder for building analytics query
      */
     @CheckReturnValue
-    ComputeQuery compute(Method method);
+    <T extends Answer> ComputeQuery<T> compute(Method<T> method);
 
     /**
      * Get a {@link QueryParser} for parsing queries from strings

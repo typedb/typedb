@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
@@ -75,7 +75,7 @@ public class GenealogyTest {
     public void matchAllRelationsWithDocumentPlayingARole(){
         String queryString = "match $x isa document; ($x, $y); get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertTrue(answers.isEmpty());
     }
 
@@ -83,7 +83,7 @@ public class GenealogyTest {
     public void matchAllRelationsWithDocumentPlayingARole_redundantEntityBound(){
         String queryString = "match $x isa document; ($x, $y); $y isa entity; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertThat(answers, empty());
     }
 
@@ -94,13 +94,13 @@ public class GenealogyTest {
 
         Concept concept = Sets.newHashSet(genealogyKB.tx().graql().infer(false).<GetQuery>parse("match $x isa person; get;"))
                 .iterator().next()
-                .entrySet()
+                .map().entrySet()
                 .iterator().next().getValue();
         String genderOfSpecificPerson = "match $x id '" + concept.id() + "' has gender $g; get;";
 
-        List<Answer> females = iqb.<GetQuery>parse(specificGender).execute();
-        List<Answer> allPeople = iqb.<GetQuery>parse(generalGender).execute();
-        List<Answer> specificPerson = iqb.<GetQuery>parse(genderOfSpecificPerson).execute();
+        List<ConceptMap> females = iqb.<GetQuery>parse(specificGender).execute();
+        List<ConceptMap> allPeople = iqb.<GetQuery>parse(generalGender).execute();
+        List<ConceptMap> specificPerson = iqb.<GetQuery>parse(genderOfSpecificPerson).execute();
 
         assertEquals(specificPerson.size(), 1);
         assertEquals(females.size(), 32);
@@ -112,9 +112,9 @@ public class GenealogyTest {
         String firstnameString = "match $x isa person, has firstname $n; get;";
         String middlenameString = "match $x has identifier $i has middlename $mn; get;";
         String surnameString = "match $x isa person has surname $srn; get;";
-        List<Answer> firstnameAnswers = iqb.<GetQuery>parse(firstnameString).execute();
-        List<Answer> middlenameAnswers = iqb.<GetQuery>parse(middlenameString).execute();
-        List<Answer> surnameAnswers = iqb.<GetQuery>parse(surnameString).execute();
+        List<ConceptMap> firstnameAnswers = iqb.<GetQuery>parse(firstnameString).execute();
+        List<ConceptMap> middlenameAnswers = iqb.<GetQuery>parse(middlenameString).execute();
+        List<ConceptMap> surnameAnswers = iqb.<GetQuery>parse(surnameString).execute();
         assertEquals(firstnameAnswers.size(), noOfPeople);
         assertEquals(middlenameAnswers.size(), noOfPeople);
         assertEquals(surnameAnswers.size(), noOfPeople);
@@ -124,7 +124,7 @@ public class GenealogyTest {
     public void testParentship() {
         String queryString = "match (child: $c, parent: $p) isa parentship; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 76);
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertEquals(answer.size(), 2));
@@ -135,9 +135,9 @@ public class GenealogyTest {
         String queryString = "match (child: $x, $y) isa parentship;get $x;";
         String queryString2 = "match (child: $x) isa parentship; get;";
         String queryString3 = "match ($x, son: $y) isa parentship; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.<GetQuery>parse(queryString2).execute();
-        List<Answer> answers3 = iqb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers3 = iqb.<GetQuery>parse(queryString3).execute();
         answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertCollectionsEqual(answers, answers2);
         assertThat(answers3, empty());
@@ -151,7 +151,7 @@ public class GenealogyTest {
                 "(husband: $w, wife: $b);" +
                 "$a != $b;" +
                 "get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 1);
     }
@@ -163,7 +163,7 @@ public class GenealogyTest {
                     "($y, $z) isa marriage;" +
                     "$x != $z;" +
                      "get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers.size(), 4);
     }
@@ -171,7 +171,7 @@ public class GenealogyTest {
     @Test
     public void peopleMarriedToThemselves(){
         String queryString = "match (spouse: $x, spouse: $x) isa marriage; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertThat(answers, empty());
     }
 
@@ -188,11 +188,11 @@ public class GenealogyTest {
         String chainedMarriages = "match ($x, $y) isa marriage; ($y, $z) isa marriage; get;";
         iqb.parse(chainedMarriages).execute();
 
-        List<Answer> spousePairs = iqb.<GetQuery>parse(symmetricRoles).execute();
-        List<Answer> wifeHusbandPairs = iqb.<GetQuery>parse(specialisedRoles).execute();
-        List<Answer> marriageInstances = iqb.<GetQuery>parse(relationInstances).execute();
-        List<Answer> marriageInstancesWithRPs = iqb.<GetQuery>parse(relationInstancesWithRPs).execute();
-        List<Answer> marriageInstancesWithRPsandRoles = iqb.<GetQuery>parse(relationInstancesWithRPsandRoles).execute();
+        List<ConceptMap> spousePairs = iqb.<GetQuery>parse(symmetricRoles).execute();
+        List<ConceptMap> wifeHusbandPairs = iqb.<GetQuery>parse(specialisedRoles).execute();
+        List<ConceptMap> marriageInstances = iqb.<GetQuery>parse(relationInstances).execute();
+        List<ConceptMap> marriageInstancesWithRPs = iqb.<GetQuery>parse(relationInstancesWithRPs).execute();
+        List<ConceptMap> marriageInstancesWithRPsandRoles = iqb.<GetQuery>parse(relationInstancesWithRPsandRoles).execute();
 
         assertEquals(spousePairs.size(), noOfMarriageRelations);
         assertEquals(wifeHusbandPairs.size(), noOfMarriages);
@@ -213,7 +213,7 @@ public class GenealogyTest {
         String queryString = "match (sibling:$x, sibling:$y) isa siblings; get;";
         GetQuery query = iqb.parse(queryString);
 
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
     }
@@ -223,7 +223,7 @@ public class GenealogyTest {
         String queryString = "match ($x, $y) isa cousins; get;";
         GetQuery query = iqb.parse(queryString);
 
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));
     }
@@ -239,10 +239,10 @@ public class GenealogyTest {
         GetQuery query3 = iqb.parse(queryString3);
         GetQuery query4 = iqb.parse(queryString4);
 
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
-        List<Answer> answers3 = query3.execute();
-        List<Answer> answers4 = query4.execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
+        List<ConceptMap> answers3 = query3.execute();
+        List<ConceptMap> answers4 = query4.execute();
 
         //numbers do not add up because there are duplicate relations with specialised roles
         assertEquals(answers.size(), 22);
@@ -267,12 +267,12 @@ public class GenealogyTest {
         String sonQuery = "match (son: $x); get;";
         String daughterQuery = "match (daughter: $x); get;";
 
-        List<Answer> parents = iqb.<GetQuery>parse(parentQuery).execute();
-        List<Answer> children = iqb.<GetQuery>parse(childQuery).execute();
-        List<Answer> fathers = iqb.<GetQuery>parse(fatherQuery).execute();
-        List<Answer> mothers = iqb.<GetQuery>parse(motherQuery).execute();
-        List<Answer> sons = iqb.<GetQuery>parse(sonQuery).execute();
-        List<Answer> daughters = iqb.<GetQuery>parse(daughterQuery).execute();
+        List<ConceptMap> parents = iqb.<GetQuery>parse(parentQuery).execute();
+        List<ConceptMap> children = iqb.<GetQuery>parse(childQuery).execute();
+        List<ConceptMap> fathers = iqb.<GetQuery>parse(fatherQuery).execute();
+        List<ConceptMap> mothers = iqb.<GetQuery>parse(motherQuery).execute();
+        List<ConceptMap> sons = iqb.<GetQuery>parse(sonQuery).execute();
+        List<ConceptMap> daughters = iqb.<GetQuery>parse(daughterQuery).execute();
         assertEquals(parents.size(), noOfParents);
         assertEquals(children.size(), noOfChildren);
         assertCollectionsEqual(ReasonerUtils.listUnion(fathers, mothers), parents);
@@ -283,8 +283,8 @@ public class GenealogyTest {
     public void testFemaleFather() {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g == 'female'; get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 =  genealogyKB.tx().graql().infer(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 =  genealogyKB.tx().graql().infer(true).<GetQuery>parse(queryString).execute();
         assertThat(answers, empty());
         assertThat(answers2, empty());
     }
@@ -299,14 +299,14 @@ public class GenealogyTest {
                 "$x has gender $g;" +
                 "get;";
         GetQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(answers.size(), 18);
         assertTrue(checkResource(answers, "g", "female"));
     }
 
-    private boolean checkResource(List<Answer> answers, String var, String value){
+    private boolean checkResource(List<ConceptMap> answers, String var, String value){
         boolean isOk = true;
-        Iterator<Answer> it =  answers.iterator();
+        Iterator<ConceptMap> it =  answers.iterator();
         while (it.hasNext() && isOk){
             Concept c = it.next().get(Graql.var(var));
             isOk = c.asAttribute().value().equals(value);
@@ -314,13 +314,13 @@ public class GenealogyTest {
         return isOk;
     }
 
-    private boolean hasDuplicates(List<Answer> answers){
+    private boolean hasDuplicates(List<ConceptMap> answers){
         boolean hasDuplicates = false;
-        Iterator<Answer> it = answers.iterator();
+        Iterator<ConceptMap> it = answers.iterator();
         while(it.hasNext() && !hasDuplicates){
-            Answer answer = it.next();
+            ConceptMap answer = it.next();
             Set<Concept> existing = new HashSet<>();
-            hasDuplicates = answer.entrySet()
+            hasDuplicates = answer.map().entrySet()
                     .stream()
                     .filter(entry -> existing.add(entry.getValue()))
                     .count() != answer.size();

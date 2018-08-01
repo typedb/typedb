@@ -36,6 +36,7 @@ hs_err_pid*
 
 # Log files #
 logs/
+*.log
 
 # Analytics files #
 grakn-test/db/

@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -47,12 +47,12 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private int iter = 0;
     private long oldAns = 0;
     private final ReasonerQueryImpl query;
-    private final Set<Answer> answers = new HashSet<>();
+    private final Set<ConceptMap> answers = new HashSet<>();
 
     private final QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
     private final Stack<ResolutionState> states = new Stack<>();
 
-    private Answer nextAnswer = null;
+    private ConceptMap nextAnswer = null;
     private final boolean reiterationRequired;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
@@ -60,10 +60,10 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
         this.reiterationRequired = q.requiresReiteration();
-        states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
+        states.push(query.subGoal(new ConceptMapImpl(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
-    private Answer findNextAnswer(){
+    private ConceptMap findNextAnswer(){
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
 
@@ -81,7 +81,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     }
 
     @Override
-    public Answer next(){
+    public ConceptMap next(){
         if (nextAnswer == null) throw new NoSuchElementException();
         answers.add(nextAnswer);
         return nextAnswer;
@@ -102,7 +102,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (dAns != 0 || iter == 0) {
                 LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                 iter++;
-                states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
+                states.push(query.subGoal(new ConceptMapImpl(), new UnifierImpl(), null, new HashSet<>(), cache));
                 oldAns = answers.size();
                 return hasNext();
             }

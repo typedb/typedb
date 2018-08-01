@@ -25,7 +25,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -34,7 +34,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -118,9 +118,9 @@ public class AtomicQueryTest {
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
-        List<Answer> answers = new ArrayList<>();
+        List<ConceptMap> answers = new ArrayList<>();
 
-        answers.add(new QueryAnswer(
+        answers.add(new ConceptMapImpl(
                 ImmutableMap.of(
                         var("x"), getConceptByResourceValue(graph, "Warsaw"),
                         var("y"), getConceptByResourceValue(graph, "Poland")))
@@ -136,7 +136,7 @@ public class AtomicQueryTest {
     public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
         EmbeddedGraknTx<?> graph = materialisationTestSet.tx();
         ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity"), graph);
-        assertEquals(entityQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
+        assertEquals(entityQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
     }
 
     @Test
@@ -157,9 +157,9 @@ public class AtomicQueryTest {
 
         ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString), graph);
 
-        assertEquals(resourceQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
+        assertEquals(resourceQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
 
-        reuseResourceQuery.materialise(new QueryAnswer()).collect(Collectors.toList());
+        reuseResourceQuery.materialise(new ConceptMapImpl()).collect(Collectors.toList());
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
@@ -191,7 +191,7 @@ public class AtomicQueryTest {
                 graph
         );
 
-        assertEquals(relationQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
+        assertEquals(relationQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
     }
 
     @Test
@@ -214,18 +214,18 @@ public class AtomicQueryTest {
         QueryBuilder qb = graph.graql().infer(false);
         GetQuery childQuery = qb.parse(childString);
         GetQuery parentQuery = qb.parse(parentString);
-        Set<Answer> answers = childQuery.stream().collect(toSet());
-        Set<Answer> fullAnswers = parentQuery.stream().collect(toSet());
+        Set<ConceptMap> answers = childQuery.stream().collect(toSet());
+        Set<ConceptMap> fullAnswers = parentQuery.stream().collect(toSet());
         Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().admin().getPattern()), graph).getAtom();
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().admin().getPattern()), graph).getAtom();
 
         MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
-        Set<Answer> permutedAnswers = answers.stream()
+        Set<ConceptMap> permutedAnswers = answers.stream()
                 .flatMap(a -> multiUnifier.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
         MultiUnifier multiUnifier2 = childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
-        Set<Answer> permutedAnswers2 = answers.stream()
+        Set<ConceptMap> permutedAnswers2 = answers.stream()
                 .flatMap(a -> multiUnifier2.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
@@ -271,11 +271,11 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction(basePatternString), graph);
         ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction(basePatternString2), graph);
 
-        Answer xAnswer = new QueryAnswer(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
-        Answer flippedXAnswer = new QueryAnswer(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
+        ConceptMap xAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
+        ConceptMap flippedXAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
 
-        Answer yAnswer = new QueryAnswer(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
-        Answer flippedYAnswer = new QueryAnswer(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
+        ConceptMap yAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
+        ConceptMap flippedYAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
 
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);
@@ -1245,12 +1245,12 @@ public class AtomicQueryTest {
     private void queryUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality, boolean ignoreTypes){
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> unifiedAnswers = childAnswers.stream()
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
             Unifier inverse = parentQuery.getMultiUnifier(childQuery).getUnifier();
@@ -1267,8 +1267,8 @@ public class AtomicQueryTest {
             if(!ignoreTypes){
                 assertTrue(parentAnswers.containsAll(unifiedAnswers));
             } else {
-                List<Answer> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
-                List<Answer> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
                 assertTrue(projectedParentAnswers.containsAll(projectedUnified));
             }
 
@@ -1276,16 +1276,16 @@ public class AtomicQueryTest {
             Unifier inverse = unifier.inverse();
             if(!ignoreTypes) {
                 assertCollectionsEqual(parentAnswers, unifiedAnswers);
-                List<Answer> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+                List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
                 assertCollectionsEqual(parentToChild, childAnswers);
             } else {
                 Set<Var> childNonTypeVariables = Sets.difference(childQuery.getAtom().getVarNames(), Sets.newHashSet(childQuery.getAtom().getPredicateVariable()));
-                List<Answer> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
-                List<Answer> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
-                List<Answer> projectedChild = childAnswers.stream().map(ans -> ans.project(childNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedChild = childAnswers.stream().map(ans -> ans.project(childNonTypeVariables)).collect(Collectors.toList());
 
                 assertCollectionsEqual(projectedParentAnswers, projectedUnified);
-                List<Answer> projectedParentToChild = projectedParentAnswers.stream()
+                List<ConceptMap> projectedParentToChild = projectedParentAnswers.stream()
                         .map(a -> a.unify(inverse))
                         .map(ans -> ans.project(childNonTypeVariables))
                         .collect(Collectors.toList());

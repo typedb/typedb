@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MatchAdmin;
 
 import javax.annotation.CheckReturnValue;
@@ -32,13 +32,13 @@ import java.util.Set;
  * The {@link Match} is the pattern-matching part of a query. The patterns are described in a declarative fashion,
  * then the {@link Match} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * @see Answer
+ * @see ConceptMap
  *
  * @author Felix Chapman
  */
-public interface Match extends Streamable<Answer> {
+public interface Match extends Streamable<ConceptMap> {
     /**
-     * Get all {@link Var}s mentioned in the query
+     * Construct a get query with all all {@link Var}s mentioned in the query
      */
     @CheckReturnValue
     GetQuery get();
@@ -79,6 +79,12 @@ public interface Match extends Streamable<Answer> {
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
+     * Construct a delete query with all all {@link Var}s mentioned in the query
+     */
+    @CheckReturnValue
+    DeleteQuery delete();
+
+    /**
      * @param vars an array of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
@@ -90,14 +96,14 @@ public interface Match extends Streamable<Answer> {
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Var... vars);
+    DeleteQuery delete(Var var, Var... vars);
 
     /**
      * @param vars a collection of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Collection<? extends Var> vars);
+    DeleteQuery delete(Set<Var> vars);
 
     /**
      * Order the results by degree in ascending order

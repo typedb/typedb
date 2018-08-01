@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 
 import java.util.Comparator;
@@ -46,18 +46,18 @@ abstract class Ordering {
      * Order the stream
      * @param stream the stream to order
      */
-    Stream<Answer> orderStream(Stream<Answer> stream) {
+    Stream<ConceptMap> orderStream(Stream<ConceptMap> stream) {
         return stream.sorted(comparator());
     }
 
-    private Comparator<Answer> comparator() {
-        Comparator<Answer> comparator = Comparator.comparing(this::getOrderValue);
+    private Comparator<ConceptMap> comparator() {
+        Comparator<ConceptMap> comparator = Comparator.comparing(this::getOrderValue);
         return (order() == Order.desc) ? comparator.reversed() : comparator;
     }
 
     // All data types are comparable, so this is safe
     @SuppressWarnings("unchecked")
-    private Comparable<? super Comparable> getOrderValue(Answer result) {
+    private Comparable<? super Comparable> getOrderValue(ConceptMap result) {
         return (Comparable<? super Comparable>) result.get(var()).asAttribute().value();
     }
 

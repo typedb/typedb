@@ -20,7 +20,7 @@ package ai.grakn;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
 import com.ldbc.driver.ResultReporter;
@@ -78,7 +78,6 @@ import static ai.grakn.SNB.$title;
 import static ai.grakn.SNB.BIRTHDAY;
 import static ai.grakn.SNB.BROWSER_USED;
 import static ai.grakn.SNB.CHILD_MESSAGE;
-import static ai.grakn.SNB.by;
 import static ai.grakn.SNB.CONTENT;
 import static ai.grakn.SNB.CREATION_DATE;
 import static ai.grakn.SNB.CREATOR;
@@ -88,12 +87,10 @@ import static ai.grakn.SNB.FORUM_MEMBER;
 import static ai.grakn.SNB.FRIEND;
 import static ai.grakn.SNB.GENDER;
 import static ai.grakn.SNB.GROUP_FORUM;
-import static ai.grakn.SNB.has;
 import static ai.grakn.SNB.HAS_CREATOR;
 import static ai.grakn.SNB.HAS_MODERATOR;
 import static ai.grakn.SNB.IMAGE_FILE;
 import static ai.grakn.SNB.IS_LOCATED_IN;
-import static ai.grakn.SNB.key;
 import static ai.grakn.SNB.KNOWS;
 import static ai.grakn.SNB.LAST_NAME;
 import static ai.grakn.SNB.LOCATED;
@@ -114,10 +111,12 @@ import static ai.grakn.SNB.PRODUCT;
 import static ai.grakn.SNB.REGION;
 import static ai.grakn.SNB.REPLY;
 import static ai.grakn.SNB.REPLY_OF;
-import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.TITLE;
+import static ai.grakn.SNB.by;
+import static ai.grakn.SNB.has;
+import static ai.grakn.SNB.key;
+import static ai.grakn.SNB.resource;
 import static ai.grakn.SNB.toEpoch;
-import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.var;
 import static java.util.Comparator.comparing;
 
@@ -143,7 +142,7 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
-                Optional<Answer> answer = graph.graql().match(
+                Optional<ConceptMap> answer = graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
                         var().rel($person).rel($firstName).isa(has(FIRST_NAME)),
                         var().rel($person).rel($lastName).isa(has(LAST_NAME)),
@@ -157,7 +156,7 @@ public class GraknShortQueryHandlers {
                 ).get().stream().findAny();
 
                 if (answer.isPresent()) {
-                    Answer fres = answer.get();
+                    ConceptMap fres = answer.get();
 
                     LdbcShortQuery1PersonProfileResult result =
                             new LdbcShortQuery1PersonProfileResult(
@@ -193,17 +192,17 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
-                List<Answer> messageResults = graph.graql().match(
+                List<ConceptMap> messageResults = graph.graql().match(
                         $person.isa(PERSON).has(PERSON_ID, operation.personId()),
                         var().rel(CREATOR, $person).rel(PRODUCT, $message).isa(HAS_CREATOR),
                         var().rel($message).rel($date).isa(has(CREATION_DATE)),
                         var().rel($message).rel($messageId).isa(key(MESSAGE_ID))
                 ).orderBy($date, Order.desc).limit(operation.limit()).get().execute();
 
-                List<Answer> allResults = new ArrayList<>();
+                List<ConceptMap> allResults = new ArrayList<>();
                 messageResults.forEach(a -> {
 
-                    List<Answer> results = graph.graql().infer(true).match(
+                    List<ConceptMap> results = graph.graql().infer(true).match(
                             $message.id(a.get($message).id()),
                             var().rel($message).rel($date).isa(has(CREATION_DATE)),
                             var().rel($message).rel($messageId).isa(key(MESSAGE_ID)),
@@ -252,7 +251,7 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
-                List<Answer> results = graph.graql().match(
+                List<ConceptMap> results = graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
                         var().rel($person).rel($friend).isa(KNOWS).has(CREATION_DATE, $date),
                         $friend.has(PERSON_ID, $friendId).has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName)
@@ -286,14 +285,14 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
-                List<Answer> results = graph.graql().match(
+                List<ConceptMap> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
                         var().rel($message).rel($date).isa(has(CREATION_DATE)),
                         (var().rel($message).rel($content).isa(has(CONTENT))).or(var().rel($message).rel($content).isa(has(IMAGE_FILE)))
                 ).get().execute();
 
                 if (!results.isEmpty()) {
-                    Answer fres = results.get(0);
+                    ConceptMap fres = results.get(0);
 
                     LdbcShortQuery4MessageContentResult result = new LdbcShortQuery4MessageContentResult(
                             resource(fres, $content),
@@ -325,7 +324,7 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
-                List<Answer> results = graph.graql().match(
+                List<ConceptMap> results = graph.graql().match(
                         $message.has(MESSAGE_ID, operation.messageId()),
                         var().rel(PRODUCT, $message).rel(CREATOR, $person).isa(HAS_CREATOR),
                         var().rel($person).rel($firstName).isa(has(FIRST_NAME)),
@@ -334,7 +333,7 @@ public class GraknShortQueryHandlers {
                 ).get().execute();
 
                 if (!results.isEmpty()) {
-                    Answer fres = results.get(0);
+                    ConceptMap fres = results.get(0);
                     LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(
                             resource(fres, $personId),
                             resource(fres, $firstName),
@@ -364,7 +363,7 @@ public class GraknShortQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
-                List<Answer> results = graph.graql().infer(true).match(
+                List<ConceptMap> results = graph.graql().infer(true).match(
                         $message.has(MESSAGE_ID, operation.messageId()),
                         var().rel(MEMBER_MESSAGE, $message).rel(GROUP_FORUM, $forum).isa(FORUM_MEMBER),
                         $forum.has(FORUM_ID, $forumId).has(TITLE, $title),
@@ -373,7 +372,7 @@ public class GraknShortQueryHandlers {
                 ).get().execute();
 
                 if (!results.isEmpty()) {
-                    Answer fres = results.get(0);
+                    ConceptMap fres = results.get(0);
                     LdbcShortQuery6MessageForumResult result = new LdbcShortQuery6MessageForumResult(
                             resource(fres, $forumId),
                             resource(fres, $title),
@@ -406,7 +405,7 @@ public class GraknShortQueryHandlers {
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
 
 
-                List<Answer> results = graph.graql().match(
+                List<ConceptMap> results = graph.graql().match(
                         $message.isa(MESSAGE).has(MESSAGE_ID, operation.messageId()),
                         var().rel(PRODUCT, $message).rel(CREATOR, $author1).isa(HAS_CREATOR),
                         var().rel(ORIGINAL, $message).rel(REPLY, $comment).isa(REPLY_OF),
@@ -440,10 +439,10 @@ public class GraknShortQueryHandlers {
         private boolean checkIfFriends(ConceptId author1, ConceptId author2, GraknTx graph) {
             return graph.graql().match(
                     var().rel(FRIEND, var().id(author1)).rel(FRIEND, var().id(author2)).isa(KNOWS)
-            ).aggregate(ask()).execute();
+            ).stream().findAny().isPresent();
         }
 
-        private ConceptId conceptId(Answer result, Var var) {
+        private ConceptId conceptId(ConceptMap result, Var var) {
             return result.get(var).id();
         }
     }

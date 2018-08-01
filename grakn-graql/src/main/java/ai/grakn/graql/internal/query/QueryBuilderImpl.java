@@ -32,6 +32,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.internal.parser.QueryParserImpl;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.match.MatchBase;
@@ -114,7 +115,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
-        return Queries.insert(varAdmins, tx);
+        return Queries.insert(tx, varAdmins);
     }
 
     @Override
@@ -139,8 +140,8 @@ public class QueryBuilderImpl implements QueryBuilder {
         return UndefineQueryImpl.of(admins, tx);
     }
 
-    public ComputeQuery compute(Method method) {
-        return new ComputeQueryImpl(tx, method);
+    public <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
+        return new ComputeQueryImpl<>(tx, method);
     }
 
     @Override

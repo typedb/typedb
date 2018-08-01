@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
@@ -66,7 +66,7 @@ class StructuralCache<Q extends ReasonerQueryImpl>{
      * @param query to be retrieved
      * @return answer stream of provided query
      */
-    public Stream<Answer> get(Q query){
+    public Stream<ConceptMap> get(Q query){
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
         EmbeddedGraknTx<?> tx = query.tx();
 

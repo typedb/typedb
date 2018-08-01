@@ -37,7 +37,7 @@ import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
@@ -172,12 +172,12 @@ public class TransactionTest {
                 .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                         .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                 .setAnswer(AnswerProto.Answer.newBuilder()
-                                        .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))))).build();
+                                        .setConceptMap(AnswerProto.ConceptMap.newBuilder().putMap("x", v123))))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.iterate(ITERATOR), iteratorNext);
 
-        List<Answer> answers;
+        List<ConceptMap> answers;
         int numAnswers = 10;
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
@@ -187,7 +187,7 @@ public class TransactionTest {
 
         assertEquals(10, answers.size());
 
-        for (Answer answer : answers) {
+        for (ConceptMap answer : answers) {
             assertEquals(answer.vars(), ImmutableSet.of(var("x")));
             assertEquals(ConceptId.of("V123"), answer.get(var("x")).id());
         }
