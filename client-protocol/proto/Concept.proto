@@ -108,8 +108,8 @@ message Method {
             Type.Keys.Iter type_keys_iter = 503;
             Type.Attributes.Iter type_attributes_iter = 504;
             Type.Playing.Iter type_playing_iter = 505;
-            Type.Has.Res type_has_res_iter = 506;
-            Type.Key.Res type_key_res_iter = 507;
+            Type.Has.Res type_has_res = 506;
+            Type.Key.Res type_key_res = 507;
             Type.Plays.Res type_plays_res = 508;
             Type.Unhas.Res type_unhas_res = 509;
             Type.Unkey.Res type_unkey_res = 510;
