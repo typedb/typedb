@@ -22,10 +22,13 @@ class RequestBuilder(object):
 
     # --- Top level functionality ---
     @staticmethod
-    def open_tx(keyspace, tx_type):
+    def open_tx(keyspace, tx_type, credentials):
         open_request = transaction_messages.Transaction.Open.Req()
         open_request.keyspace = keyspace
         open_request.type = tx_type.value
+        if credentials is not None:
+            open_request.username = credentials['username']
+            open_request.password = credentials['password']
 
         transaction_req = transaction_messages.Transaction.Req()
         transaction_req.open_req.CopyFrom(open_request)
@@ -216,6 +219,7 @@ class RequestBuilder(object):
             def set_sup(concept): 
                 grpc_concept = RequestBuilder.ConceptMethod._concept_to_grpc_concept(concept)
                 set_sup_req = concept_messages.SchemaConcept.SetSup.Req()
+                set_sup_req.schemaConcept.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.schemaConcept_setSup_req.CopyFrom(set_sup_req)
                 return concept_method_req
@@ -336,7 +340,7 @@ class RequestBuilder(object):
                 key_req = concept_messages.Type.Key.Req()
                 key_req.attributeType.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.type_has_req.CopyFrom(key_req)
+                concept_method_req.type_key_req.CopyFrom(key_req)
                 return concept_method_req
 
             @staticmethod
@@ -345,7 +349,7 @@ class RequestBuilder(object):
                 unkey_req = concept_messages.Type.Unkey.Req()
                 unkey_req.attributeType.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.type_has_req.CopyFrom(unkey_req)
+                concept_method_req.type_unkey_req.CopyFrom(unkey_req)
                 return concept_method_req
 
             @staticmethod
@@ -361,7 +365,7 @@ class RequestBuilder(object):
                 plays_req = concept_messages.Type.Plays.Req()
                 plays_req.role.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.type_has_req.CopyFrom(plays_req)
+                concept_method_req.type_plays_req.CopyFrom(plays_req)
                 return concept_method_req
 
             @staticmethod
@@ -370,7 +374,7 @@ class RequestBuilder(object):
                 unplay_req = concept_messages.Type.Unplay.Req()
                 unplay_req.role.CopyFrom(grpc_concept)
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.type_has_req.CopyFrom(unplay_req)
+                concept_method_req.type_unplay_req.CopyFrom(unplay_req)
                 return concept_method_req
 
        
@@ -506,8 +510,7 @@ class RequestBuilder(object):
                 return concept_method_req
             
             @staticmethod
-            def plays():
-                # NOTE uses `roles` not `plays`
+            def roles():
                 roles_req = concept_messages.Thing.Roles.Req()
                 concept_method_req = concept_messages.Method.Req()
                 concept_method_req.thing_roles_req.CopyFrom(roles_req)
@@ -582,7 +585,7 @@ class RequestBuilder(object):
                 unassign_req.role.CopyFrom(grpc_role_concept)
                 unassign_req.player.CopyFrom(grpc_player_concept)
                 concept_method_req = concept_messages.Method.Req()
-                concept_method_req.relation_assign_req.CopyFrom(unassign_req)
+                concept_method_req.relation_unassign_req.CopyFrom(unassign_req)
                 return concept_method_req
 
         class Attribute(object):

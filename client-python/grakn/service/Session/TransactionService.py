@@ -8,14 +8,15 @@ from grakn.service.Session.util import enums
 
 class TransactionService(object):
 
-    def __init__(self, keyspace, tx_type: enums.TxType, transaction_endpoint):
+    def __init__(self, keyspace, tx_type: enums.TxType, credentials, transaction_endpoint):
         self.keyspace = keyspace
         self.tx_type = tx_type.value
+        self.credentials = credentials
 
         self._communicator = Communicator(transaction_endpoint)
 
         # open the transaction with an 'open' message
-        open_req = RequestBuilder.open_tx(keyspace, tx_type)
+        open_req = RequestBuilder.open_tx(keyspace, tx_type, credentials)
         self._communicator.send(open_req)
 
 
@@ -128,7 +129,7 @@ class Communicator(object):
             # on any GRPC exception, close the stream
             self.close()
             # TODO specialize exception
-            raise Exception("Server/network error: {0}".format(e))
+            raise Exception("Server/network error: {0}\n\n generated from request: {1}".format(e, request))
 
         if response is None:
             # TODO specialize exception

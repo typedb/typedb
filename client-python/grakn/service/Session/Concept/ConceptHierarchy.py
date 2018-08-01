@@ -97,7 +97,7 @@ class SchemaConcept(Concept):
     def subs(self):
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
         method_response = self._tx_service.run_concept_method(self.id, subs_req)
-        return ResponseConverter.ResponseConverter.SchemaConcept.subs_iterator(self._tx_service, method_response.schemaConcept_sups_iter) 
+        return ResponseConverter.ResponseConverter.SchemaConcept.subs_iterator(self._tx_service, method_response.schemaConcept_subs_iter) 
 
     def sups(self):
         sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
@@ -358,14 +358,14 @@ class Thing(Concept):
                     ConceptFactory.create_concept(tx_service, iter_res.conceptMethod_iter_res.thing_attributes_iter_res.attribute)
                )
 
-    def plays(self):
-        plays_req = RequestBuilder.ConceptMethod.Thing.plays()
-        method_response = self._tx_service.run_concept_method(self.id, plays_req)
+    def roles(self):
+        roles_req = RequestBuilder.ConceptMethod.Thing.roles()
+        method_response = self._tx_service.run_concept_method(self.id, roles_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
                 self._tx_service,
-                method_response.thing_plays_iter.id,
+                method_response.thing_roles_iter.id,
                 lambda tx_service, iter_res:
-                    ConceptFactory.create_concept(tx_service, iter_res.conceptMethod_iter_res.thing_plays_iter_res.role)
+                    ConceptFactory.create_concept(tx_service, iter_res.conceptMethod_iter_res.thing_roles_iter_res.role)
                )
 
     def keys(self, *attribute_types):

@@ -289,8 +289,8 @@ class test_Type(test_Base):
         with self.subTest(i=2): 
             # remove role/plays from person
             person_schema_type.unplay(father)
-            update_person_plays = person_schema_type.playing()
-            labels = [role.labels() for role in updated_person_plays]
+            updated_person_plays = person_schema_type.playing()
+            labels = [role.label() for role in updated_person_plays]
             self.assertEqual(len(labels), 6)
             self.assertFalse("father" in labels)
 
@@ -459,7 +459,7 @@ class test_Rule(test_Base):
         self.assertEqual(rule.get_then(), then)
 
     def test_none_when_then(self):
-        """ Test get when/then for nonexistant rule """
+        """ Test get when/then for rule with null when/then """
         rule = self.tx.get_schema_concept('rule')
         self.assertIsNone(rule.get_when())
         self.assertIsNone(rule.get_then())
