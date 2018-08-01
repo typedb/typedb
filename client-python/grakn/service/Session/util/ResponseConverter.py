@@ -1,6 +1,9 @@
 from grakn.service.Session.util import enums
 from grakn.service.Session.Concept import ConceptFactory
 
+
+# TODO this file is a bit of a mess -- clean up
+
 class ResponseConverter(object):
     
     @staticmethod
@@ -183,13 +186,14 @@ class ResponseConverter(object):
                         iter_res.conceptMethod_iter_res.role_relations_iter_res.relationType))
 
 class Explanation(object):
-    def __init__(self, query_pattern, answers):
+    def __init__(self, query_pattern, list_of_concept_maps):
         self._query_pattern = query_pattern
-        self._answers = answers
+        self._concept_maps = list_of_concept_maps
     def query_pattern(self):
         return self._query_pattern
+
     def answers(self):
-        return self._answers
+        return self._concept_maps
 
 class Answer(object):
     def __init__(self, answer_map, explanation: Explanation):
@@ -216,52 +220,79 @@ class AnswerConverter(object):
     def convert(tx_service, grpc_answer):
         which_one = grpc_answer.WhichOneof('answer')
 
-        if which_one == 'queryAnswer':
-           return AnswerConverter._create_query_answer(tx_service, grpc_answer.queryAnswer) 
-        elif which_one == 'computeAnswer':
-            return AnswerConverter._create_compute_answer(grpc_answer.computeAnswer)
-        elif which_one == 'otherResult':
-            return AnswerConverter._create_other_result(grpc_answer.otherResult)
+        if which_one == 'conceptMap':
+           return AnswerConverter._create_concept_map(tx_service, grpc_answer.conceptMap) 
+        elif which_one == 'conceptList':
+            return AnswerConverter._create_concept_list(tx_service, grpc_answer.conceptList)
+        elif which_one == 'conceptSet':
+            return AnswerConverter._create_concept_set(tx_service, grpc_answer.conceptSet)
+        elif which_one == 'conceptSetMeasure':
+            return AnswerConverter._create_concept_set_measure(tx_service, grpc_answer.conceptSetMeasure)
+        elif which_one == 'value':
+            return AnswerConverter._create_value(tx_service, grpc_answer.value)
         else:
             # TODO refine exception
             raise Exception('Unknown Answer.answer message type: {0}'.format(which_one))
-    
+   
     @staticmethod
-    def _create_query_answer(tx_service, grpc_query_answer):
-        """ Create grpc QueryAnswer message into object """
-        var_concept_map = grpc_query_answer.queryAnswer
-        # build the answer concepts
+    def _create_concept_map(tx_service, grpc_concept_map_msg):
+        """ Create a Concept Dictionary from the grpc response """
+        var_concept_map = grpc_concept_map_msg.map
         answer_map = {}
         for (variable, grpc_concept) in var_concept_map.items():
             answer_map[variable] = ConceptFactory.create_concept(tx_service, grpc_concept)
 
-        # build the explanation
-        explanation = AnswerConverter._create_explanation(tx_service, grpc_query_answer.explanation)
+        # build explanation
+        explanation = AnswerConverter._create_explanation(tx_service, grpc_concept_map_msg.explanation)
         return Answer(answer_map, explanation)
+
+    @staticmethod
+    def _create_concept_list(tx_service, grpc_concept_list_msg):
+        ids_list = list(grpc_concept_list_msg.list.ids)
+        
+        # build explanation
+        explanation = AnswerConverter._create_explanation(tx_service, grpc_concept_list_msg.explanation)
+
+
+    @staticmethod
+    def _create_concept_set(tx_service, grpc_concept_set_msg):
+        ids_set = set(grpc_concept_set_msg.list.ids)
+
+        # build explanation
+        explanation = AnswerConverter._create_explanation(tx_service, grpc_concept_set_msg.explanation)
+
+    @staticmethod
+    def _create_concept_set_measure(tx_service, grpc_concept_set_measure):
+        concept_ids = list(grpc_concept_set_measure.set.ids)
+        number = grpc_concept_set_measure.measurement.value # TODO cast string to number
+        explanation = AnswerConverter._create_explanation(tx_service, grpc_concept_set_measure.explanation)
+
+
+
+    @staticmethod
+    def _create_value(tx_service, grpc_value_msg):
+        number = grpc_value_msg.number.value # TODO cast string to number
+
+        # build explanation
+        explanation = AnswerConverter._create_explanation(tx_service, grpc_value_msg.explanation)
+
+
+
 
     @staticmethod
     def _create_explanation(tx_service, grpc_explanation):
         """ Convert grpc Explanation message into object """
-        query_pattern = grpc_explanation.queryPattern
-        grpc_answers = grpc_explanation.queryAnswer
-        answers = [] 
-        for grpc_ans in grpc_answers:
-            answers.append(AnswerConverter._create_query_answer(tx_service, grpc_ans))
-        return Explanation(query_pattern, answers)
-
-    @staticmethod
-    def _create_compute_answer(grpc_compute_answer):
-        # TODO
-        pass
-
-    @staticmethod
-    def _create_other_result(grpc_other_result):
-        # TODO
-        pass
+        query_pattern = grpc_explanation.pattern
+        grpc_list_of_concept_maps = grpc_explanation.explanation
+        native_list_of_concept_maps = []
+        for grpc_concept_map in grpc_list_of_concept_maps:
+            native_list_of_concept_maps.append(AnswerConverter._create_concept_map(tx_service, grpc_concept_map))
+        return Explanation(query_pattern, native_list_of_concept_maps)
 
 
 
 class ResponseIterator(object):
+    """ Retrieves next value in the sequence """
 
     def __init__(self, tx_service , iterator_id, iter_resp_converter):
         self._tx_service = tx_service  
