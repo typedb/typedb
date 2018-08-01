@@ -27,11 +27,11 @@ import static org.hamcrest.Matchers.equalTo;
  * Grakn end to end test suite which verifies bootup functionalities, including:
  * - 'grakn server start, stop, and clean'
  * - 'graql console'
- * If you are testing functionalities which needs a running Grakn, add it in {@link DistributionWithARunningGraknE2E} instead.
+ * If you are testing functionalities which needs a running Grakn, add it in {@link GraknGraqlCommands_WithARunningGraknE2E} instead.
  * @author Ganeshwara Herawan Hananda
  */
 
-public class DistributionE2E {
+public class GraknGraqlCommandsE2E {
     private ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
             .redirectOutput(System.out)
