@@ -3,11 +3,7 @@ package ai.grakn.client;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.Value;
 import ai.grakn.util.GraqlSyntax;
 import ai.grakn.util.SimpleURI;
 import org.apache.commons.io.FileUtils;
@@ -72,7 +68,12 @@ public class ClientJavaE2E {
         Keyspace keyspace = Keyspace.of("grakn");
         try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
-                defineGatesFamilySchema(transaction).execute();
+                transaction.graql().define(
+                        label("marriage").sub("relationship").relates("spouse"),
+                        label("parentship").sub("relationship").relates("parent").relates("child"),
+                        label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
+                        label("person").sub("entity").has("name").plays("spouse").plays("child")
+                ).execute();
                 transaction.commit();
             }
         }
@@ -80,7 +81,7 @@ public class ClientJavaE2E {
         // assert schema
         try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(GraknTxType.READ)) {
-                List<String> definedSchema = getGatesFamilySchema(transaction).execute().stream()
+                List<String> definedSchema = transaction.graql().match(var("t").sub("thing")).get().execute().stream()
                         .map(answer -> answer.get(var("t")).asType().label().getValue()).collect(Collectors.toList());
                 String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
                         "person", "marriage", "parentship", "@has-name", "name" };
@@ -91,7 +92,14 @@ public class ClientJavaE2E {
         // insert
         try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
-                insertGatesFamilyMembers(transaction).execute();
+                String[] familyMembers = gatesFamilyNames();
+                transaction.graql().insert(
+                        var().isa("person").has("name").val(familyMembers[0]),
+                        var().isa("person").has("name").val(familyMembers[1]),
+                        var().isa("person").has("name").val(familyMembers[2]),
+                        var().isa("person").has("name").val(familyMembers[3]),
+                        var().isa("person").has("name").val(familyMembers[4])
+                ).execute();
                 transaction.commit();
             }
         }
@@ -99,9 +107,21 @@ public class ClientJavaE2E {
         // match get
         try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(GraknTxType.READ)) {
-                List<ConceptMap> people = getGatesFamilyMembers(transaction).execute();
+                List<ConceptMap> people = transaction.graql().match(var("p").isa("person").has("name", var("n"))).get().execute();
                 List<String> insertedNames = people.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
                 assertThat(insertedNames, containsInAnyOrder(gatesFamilyNames()));
+            }
+        }
+
+        // match insert
+        try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
+            try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
+                List<ConceptMap> insertedMarriage = transaction.graql()
+                        .match(var("husband").isa("person").has("name").val("Bill Gates"),
+                                var("wife").isa("person").has("name").val("Melinda Gates"))
+                        .insert(var().isa("marriage").rel("spouse", var("husband"))
+                                .rel("spouse", var("wife"))).execute();
+                assertThat(insertedMarriage, hasSize(1));
             }
         }
 
@@ -121,64 +141,21 @@ public class ClientJavaE2E {
                 assertThat(computeCount, equalTo(gatesFamilyNames().length));
             }
         }
+
+        // match delete
+        try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
+            try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
+                transaction.graql().match(var("m").isa("marriage")).delete(var("m")).execute();
+                List<ConceptMap> marriages = transaction.graql().match(var("m").isa("marriage")).get().execute();
+                assertThat(marriages, hasSize(0));
+            }
+        }
     }
 
-//
-//    /**
-//     TODO: verify
-//     */
-//    @Test
-//    public void shouldBeAbleToPerformMatchInsert() throws IOException, InterruptedException, TimeoutException {
-//        String matchInsert = "match $p isa person, has name \"Melinda Gates\"; insert $p has name \"Melinda Ann French\";";
-//        commandExecutor
-//                .redirectInput(new ByteArrayInputStream(matchInsert.getBytes(UTF_8)))
-//                .command("./graql", "console", "-k", "grakn").execute().outputUTF8();
-//    }
-//
-//    /**
-//     * TODO: verify
-//     */
-//    @Test
-//    public void shouldBeAbleToPerformMatchDelete() throws IOException, InterruptedException, TimeoutException {
-//        String matchDelete = "match $n isa name \"Melinda Ann French\"; delete $n;";
-//        commandExecutor
-//                .redirectInput(new ByteArrayInputStream(matchDelete.getBytes(UTF_8)))
-//                .command("./graql", "console", "-k", "grakn").execute().outputUTF8();
-//    }
-//
-//
 //    /**
 //     * TODO: match sibling via rule
 //     */
 //
-
-    private DefineQuery defineGatesFamilySchema(Grakn.Transaction transaction) {
-        return transaction.graql().define(
-                label("marriage").sub("relationship").relates("spouse"),
-                label("parentship").sub("relationship").relates("parent").relates("child"),
-                label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
-                label("person").sub("entity").has("name").plays("spouse").plays("child")
-        );
-    }
-
-    private GetQuery getGatesFamilySchema(Grakn.Transaction transaction) {
-        return transaction.graql().match(var("t").sub("thing")).get();
-    }
-
-    private InsertQuery insertGatesFamilyMembers(Grakn.Transaction transaction) {
-        String[] familyMembers = gatesFamilyNames();
-        return transaction.graql().insert(
-                var().isa("person").has("name").val(familyMembers[0]),
-                var().isa("person").has("name").val(familyMembers[1]),
-                var().isa("person").has("name").val(familyMembers[2]),
-                var().isa("person").has("name").val(familyMembers[3]),
-                var().isa("person").has("name").val(familyMembers[4])
-        );
-    }
-
-    private GetQuery getGatesFamilyMembers(Grakn.Transaction transaction) {
-        return transaction.graql().match(var("p").isa("person").has("name", var("n"))).get();
-    }
 
     private String[] gatesFamilyNames() {
         return new String[] { "Bill Gates", "Melinda Gates", "Jennifer Katharine Gates",
