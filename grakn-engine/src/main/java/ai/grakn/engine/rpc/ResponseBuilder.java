@@ -71,13 +71,9 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res queryIterator(int iteratorId) {
-            SessionProto.Transaction.Query.Iter.Builder iterator = SessionProto.Transaction.Query.Iter.newBuilder();
-            if (iteratorId == -1) {
-                iterator.setNull(ConceptProto.Null.getDefaultInstance());
-            } else {
-                iterator.setId(iteratorId);
-            }
-            return SessionProto.Transaction.Res.newBuilder().setQueryIter(iterator).build();
+            return SessionProto.Transaction.Res.newBuilder()
+                    .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(iteratorId))
+                    .build();
         }
 
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable ai.grakn.concept.Concept concept) {

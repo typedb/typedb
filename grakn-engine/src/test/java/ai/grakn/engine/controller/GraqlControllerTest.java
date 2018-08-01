@@ -26,8 +26,8 @@ import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -191,9 +191,9 @@ public class GraqlControllerTest {
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
 
-        System.out.println(Json.nil());
+        System.out.println(Json.array());
         System.out.println(resp.asString());
-        assertEquals(Json.nil(), Json.read(resp.asString()));
+        assertEquals(Json.array(), Json.read(resp.asString()));
     }
 
     @Test

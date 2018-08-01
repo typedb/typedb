@@ -84,6 +84,7 @@ import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -416,14 +417,18 @@ public class ServerRPCTest {
         DeleteQuery deleteQuery = mock(DeleteQuery.class);
         when(tx.graql().parse(DELETE_QUERY)).thenReturn(deleteQuery);
 
-        when(deleteQuery.execute()).thenReturn(null);
+        when(deleteQuery.execute()).thenReturn(Collections.emptyList());
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(query(DELETE_QUERY, false));
-            assertEquals(ResponseBuilder.Transaction.queryIterator(-1), tx.receive().ok());
+
+            Transaction.Res expected = Transaction.Res.newBuilder()
+                    .setQueryIter(Transaction.Query.Iter.newBuilder().setId(1))
+                    .build();
+            assertEquals(expected, tx.receive().ok());
         }
     }
 
