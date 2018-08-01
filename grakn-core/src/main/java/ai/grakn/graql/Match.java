@@ -19,13 +19,15 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.MatchAdmin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * a part of a query used for finding data in a knowledge base that matches the given patterns.
@@ -37,7 +39,23 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public interface Match extends Streamable<ConceptMap> {
+public interface Match extends Iterable<ConceptMap> {
+
+    /**
+     * @return iterator over match results
+     */
+    @Override
+    @CheckReturnValue
+    default Iterator<ConceptMap> iterator() {
+        return stream().iterator();
+    }
+
+    /**
+     * @return a stream of match results
+     */
+    @CheckReturnValue
+    Stream<ConceptMap> stream();
+
     /**
      * Construct a get query with all all {@link Var}s mentioned in the query
      */

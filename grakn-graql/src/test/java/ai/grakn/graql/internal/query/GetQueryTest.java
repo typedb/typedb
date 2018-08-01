@@ -74,7 +74,7 @@ public class GetQueryTest {
     public void whenRunningExecute_ResultIsSameAsParallelStreamingToAList() {
         GetQuery query = qb.match(x.isa("movie")).get();
         List<ConceptMap> list = query.execute();
-        assertEquals(list, query.parallelStream().collect(toList()));
+        assertEquals(list, query.stream().parallel().collect(toList()));
     }
 
     @Test

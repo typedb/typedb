@@ -25,6 +25,7 @@ import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -35,7 +36,7 @@ import java.util.stream.Stream;
  *
  * @author Grakn Warriors
  */
-public interface Query<T extends Answer> extends Streamable<T> {
+public interface Query<T extends Answer> extends Iterable<T> {
 
     /**
      * @param tx the graph to execute the query on
@@ -43,6 +44,12 @@ public interface Query<T extends Answer> extends Streamable<T> {
      */
     @CheckReturnValue
     Query<T> withTx(GraknTx tx);
+
+    @Override
+    @CheckReturnValue
+    default Iterator<T> iterator() {
+        return stream().iterator();
+    }
 
     @CheckReturnValue
     Stream<T> stream();

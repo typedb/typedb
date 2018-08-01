@@ -23,7 +23,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.Streamable;
 import ai.grakn.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -225,14 +224,7 @@ public class GraqlShell implements AutoCloseable {
                     .parseList(queryString);
 
             Iterable<String> results = () -> queries
-                    .flatMap(query -> {
-                        //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
-                        if (query instanceof Streamable) {
-                            return printer.toStream(((Streamable<?>) query).stream());
-                        } else {
-                            return Stream.of(printer.toString(query.execute()));
-                        }
-                    }).iterator();
+                    .flatMap(query -> printer.toStream(query.stream())).iterator();
 
             for (String result : results) {
                 console.println(result);
