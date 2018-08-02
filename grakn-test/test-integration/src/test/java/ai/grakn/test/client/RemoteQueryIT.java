@@ -451,7 +451,7 @@ public class RemoteQueryIT {
             assertTrue(nullQuery.execute().isEmpty());
 
             AggregateQuery<Value> countQuery =
-                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count());
+                    tx.graql().match(var("x").isa("person").has("age", var("y"))).aggregate(count("y"));
             assertEquals(2L, countQuery.execute().get(0).number().longValue());
 
             AggregateQuery<Value> sumAgeQuery =
