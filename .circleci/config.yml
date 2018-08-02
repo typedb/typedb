@@ -285,8 +285,9 @@ jobs:
         - run: cd client-nodejs && yarn install && yarn run test
 
   client-python-e2e:
-      docker:
-      - image: circleci/python:3.6-jessie
+      #docker:
+      #- image: circleci/python:3.6-jessie
+      machine: true
       working_directory: ~/grakn
       steps:
         - attach_workspace:
@@ -295,8 +296,11 @@ jobs:
             name: Restore maven m2 cache
             key: grakn-cache-m2-version-8
         - run:
+            name: Install python deps
+            command: sudo apt-get install python3-pip
+        - run:
             name: Install protobuf and grpc
-            command: pip3 install protobuf grpcio --user
+            command: pip install protobuf grpcio --user
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
         - run: cd client-python && python3 -m unittest discover tests/integration/ -v
 
