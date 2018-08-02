@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,11 +49,6 @@ abstract class DefineQueryImpl implements DefineQuery {
     @Override
     public final Stream<ConceptMap> stream() {
         return executor().run(this);
-    }
-
-    @Override
-    public final List<ConceptMap> execute() {
-        return stream().collect(Collectors.toList());
     }
 
     @Override

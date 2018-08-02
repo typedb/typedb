@@ -23,13 +23,11 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -51,15 +49,8 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public Stream<ConceptMap> stream() {
-        execute();
-        return Stream.empty();
-    }
-
-    @Override
-    public final List<ConceptMap> execute() {
-        executor().run(this);
-        return Collections.emptyList();
+    public Stream<ConceptSet> stream() {
+        return executor().run(this);
     }
 
     @Override

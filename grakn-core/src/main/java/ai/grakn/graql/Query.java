@@ -27,6 +27,7 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -45,37 +46,52 @@ public interface Query<T extends Answer> extends Iterable<T> {
     @CheckReturnValue
     Query<T> withTx(GraknTx tx);
 
+    /**
+     * @return a {@link Stream} of T, where T is a special type of {@link Answer}
+     */
+    @CheckReturnValue
+    Stream<T> stream();
+
+    /**
+     * @return a {@link List} of T, where T is a special type of {@link Answer}
+     */
+    @CheckReturnValue
+    default List<T> execute() {
+        return stream().collect(Collectors.toList());
+    }
+
+    /**
+     * @return an {@link Iterator} of T, where T is a special type of {@link Answer}
+     */
     @Override
     @CheckReturnValue
     default Iterator<T> iterator() {
         return stream().iterator();
     }
 
-    @CheckReturnValue
-    Stream<T> stream();
-
     /**
-     * Execute the query against the graph (potentially writing to the graph) and return a result
-     * @return the result of the query
+     * @return the special type of {@link QueryExecutor}, depending on whether the query is executed on the client or
+     * server side.
      */
-    List<T> execute();
-
     default QueryExecutor executor() {
         if (tx() == null) throw GraqlQueryException.noTx();
         return tx().admin().queryExecutor();
     }
 
     /**
-     * Whether this query will modify the graph
+     * @return boolean that indicates whether this query will modify the graph
      */
     @CheckReturnValue
     boolean isReadOnly();
 
     /**
-     * Get the transaction associated with this query
+     * @return the transaction {@link GraknTx} associated with this query
      */
     @Nullable
     GraknTx tx();
 
+    /**
+     * @return boolean that indicates whether this query will perform rule-based inference during execution
+     */
     Boolean inferring();
 }

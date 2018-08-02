@@ -132,16 +132,11 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         runningJobs.add(job);
 
         try {
-            return job.get();
+            return job.stream();
         } finally {
             runningJobs.remove(job);
         }
 
-    }
-
-    @Override
-    public final List<T> execute() {
-        return stream().collect(Collectors.toList());
     }
 
     @Override

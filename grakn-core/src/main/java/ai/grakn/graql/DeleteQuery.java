@@ -20,7 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 
 import javax.annotation.CheckReturnValue;
 
@@ -36,7 +36,7 @@ import javax.annotation.CheckReturnValue;
  *
  * @author Felix Chapman
  */
-public interface DeleteQuery extends Query<ConceptMap> {
+public interface DeleteQuery extends Query<ConceptSet> {
 
     /**
      * @param tx the graph to execute the query on
