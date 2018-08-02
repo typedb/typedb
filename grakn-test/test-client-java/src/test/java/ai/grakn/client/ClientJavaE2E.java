@@ -23,6 +23,7 @@ import static ai.grakn.client.ClientJavaE2EConstants.assertGraknRunning;
 import static ai.grakn.client.ClientJavaE2EConstants.assertGraknStopped;
 import static ai.grakn.client.ClientJavaE2EConstants.assertZipExists;
 import static ai.grakn.client.ClientJavaE2EConstants.unzipGrakn;
+import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.label;
@@ -88,8 +89,18 @@ public class ClientJavaE2E {
                     label("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
                     label("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
                     label("parentship").sub("relationship").relates("parent").relates("child"),
+
                     label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring")
+                    label("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
+
+                    label("infer-parentship-from-mating-and-child-bearing").sub("rule")
+                            .when(and(
+                                    var().rel("male-partner", var("male")).rel("female-partner", var("female")).isa("mating"),
+                                    var("childbearing").rel("child-bearer").rel("offspring", var("offspring")).isa("child-bearing")
+                            ))
+                            .then(and(
+                                    var().rel("parent", var("male")).rel("parent", var("female")).rel("child", var("offspring"))
+                            ))
             ).execute();
             tx.commit();
         });
