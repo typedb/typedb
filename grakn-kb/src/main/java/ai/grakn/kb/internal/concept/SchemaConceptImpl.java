@@ -221,19 +221,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Adds another sub to this {@link SchemaConcept}
-     *
-     * @param concept The sub concept of this {@link SchemaConcept}
-     * @return The {@link SchemaConcept} itself
-     */
-    @API
-    public T sub(T concept){
-        //noinspection unchecked
-        ((SchemaConceptImpl) concept).sup(this);
-        return getThis();
-    }
-
-    /**
      *
      * @param newSuperType This type's super type
      * @return The Type itself

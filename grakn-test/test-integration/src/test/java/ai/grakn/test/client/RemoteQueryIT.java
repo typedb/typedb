@@ -760,7 +760,7 @@ public class RemoteQueryIT {
             EntityType animal = tx.putEntityType("animal");
             EntityType dog = tx.putEntityType("dog").sup(animal);
             EntityType cat = tx.putEntityType("cat");
-            animal.sub(cat);
+            cat.sup(animal);
 
             cat.label(Label.of("feline"));
             dog.isAbstract(true).isAbstract(false);

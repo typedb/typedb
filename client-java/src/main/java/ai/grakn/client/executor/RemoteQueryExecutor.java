@@ -100,9 +100,8 @@ public final class RemoteQueryExecutor implements QueryExecutor {
         tx.query(query).forEachRemaining(empty -> {});
     }
 
-    private Stream<ConceptMap> streamConceptMaps(Query<?> query) {
-        Iterable<Object> iterable = () -> tx.query(query);
-        Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(ConceptMap.class::cast);
+    private Stream<ConceptMap> streamConceptMaps(Query<ConceptMap> query) {
+        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 }
