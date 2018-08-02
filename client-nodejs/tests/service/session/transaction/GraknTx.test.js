@@ -23,7 +23,7 @@ describe("Transaction methods", () => {
   test("getConcept", async () => {
     await tx.query("define person sub entity;");
     const iterator = await tx.query("insert $x isa person;");
-    const person = (await iterator.next()).get().get('x');
+    const person = (await iterator.next()).map().get('x');
     const personId = person.id;
 
     const samePerson = await tx.getConcept(personId);
@@ -51,6 +51,101 @@ describe("Transaction methods", () => {
     const emptyArray = await result.collect();
     expect(emptyArray).toHaveLength(0);
   });
+
+  test("execute compute count on empty graph - Answer of Value", async () => {
+    const result = await tx.query("compute count;");
+    const answer = await(result.next());
+    expect(answer.number()).toBe(0);
+  });
+
+  test.only("execute aggregate count on empty graph - Answer of Value", async () => {
+    const result = await tx.query("match $x; aggregate count;");
+    const answer = await(result.next());
+    expect(answer.number()).toBe(6);
+  });
+
+  async function buildParentship(localTx){
+    const relationshipType = await localTx.putRelationshipType('parentship');
+    const relationship = await relationshipType.create();
+    const parentRole = await localTx.putRole('parent');
+    const childRole = await localTx.putRole('child');
+    await relationshipType.relates(childRole);
+    await relationshipType.relates(parentRole);
+    const personType = await localTx.putEntityType('person');
+    await personType.plays(parentRole);
+    await personType.plays(childRole);
+    const parent = await personType.create();
+    const child = await personType.create();
+    await relationship.assign(childRole, child);
+    await relationship.assign(parentRole, parent);
+    await localTx.commit();
+    return {child: child.id, parent: parent.id, rel: relationship.id};
+  }
+
+  test("shortest path - Answer of conceptList", async ()=>{
+    const localSession = env.sessionForKeyspace('shortestpathks');
+    let localTx = await localSession.transaction(env.txType().WRITE);
+    const parentshipMap = await buildParentship(localTx);
+    localTx = await localSession.transaction(env.txType.WRITE);
+    const result = await localTx.query(`compute path from ${parentshipMap.parent}, to ${parentshipMap.child};`);
+    const answer = await(result.next());
+    expect(answer.list()).toHaveLength(3);
+    expect(answer.list().includes(parentshipMap.child)).toBeTruthy();
+    expect(answer.list().includes(parentshipMap.parent)).toBeTruthy();
+    expect(answer.list().includes(parentshipMap.rel)).toBeTruthy();
+    localTx.close();
+    localSession.close();
+    env.graknClient.keyspace.delete('shortestpathks');
+  });
+
+  test("cluster connected components - Answer of conceptSet", async ()=>{
+    const localSession = env.sessionForKeyspace('clusterkeyspace');
+    let localTx = await localSession.transaction(env.txType().WRITE);
+    const parentshipMap = await buildParentship(localTx);
+    localTx = await localSession.transaction(env.txType.WRITE);
+    const result = await localTx.query("compute cluster in [person, parentship], using connected-component;");
+    const answer = await(result.next());
+    expect(answer.set().size).toBe(3);
+    expect(answer.set().has(parentshipMap.child)).toBeTruthy();
+    expect(answer.set().has(parentshipMap.parent)).toBeTruthy();
+    expect(answer.set().has(parentshipMap.rel)).toBeTruthy();
+    localTx.close();
+    localSession.close();
+    env.graknClient.keyspace.delete('clusterkeyspace');
+  });
+
+  test("compute centrality - Answer of conceptSetMeasure", async ()=>{
+    const localSession = env.sessionForKeyspace('computecentralityks');
+    let localTx = await localSession.transaction(env.txType().WRITE);
+    const parentshipMap = await buildParentship(localTx);
+    localTx = await localSession.transaction(env.txType.WRITE);
+    const result = await localTx.query("compute centrality in [person, parentship], using degree;");
+    const answer = await(result.next());
+    expect(answer.measurement()).toBe(1);
+    expect(answer.set().has(parentshipMap.child)).toBeTruthy();
+    expect(answer.set().has(parentshipMap.parent)).toBeTruthy();
+    localTx.close();
+    localSession.close();
+    env.graknClient.keyspace.delete('computecentralityks');
+  });
+
+  test("compute aggregate group - Answer of answerGroup", async ()=>{
+    const localSession = env.sessionForKeyspace('groupks');
+    let localTx = await localSession.transaction(env.txType().WRITE);
+    const parentshipMap = await buildParentship(localTx);
+    localTx = await localSession.transaction(env.txType.WRITE);
+    const result = await localTx.query("match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; aggregate group $x;");
+    const answer = await(result.next());
+    expect(answer.owner().id).toBe(parentshipMap.parent);
+    expect(answer.answers()[0].map().size).toBe(2);
+    expect(answer.answers()[0].map().get('x').id).toBe(parentshipMap.parent);
+    expect(answer.answers()[0].map().get('y').id).toBe(parentshipMap.child);
+
+    localTx.close();
+    localSession.close();
+    env.graknClient.keyspace.delete('groupks');
+  });
+
 
   test("getSchemaConcept", async () => {
     await tx.query("define person sub entity;");

@@ -97,7 +97,7 @@ on every iterator the following methods are available:
 | ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | async `next()`            | *IteratorElement* or *null* | Retrieves next element or returns null when no more elements are available                                                                                                                                                                                                |
 | async `collect()`         | Array of *IteratorElement*  | Consumes the iterator and collect all the elements into an array                                                                                                                                                                                                          |
-| async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator returned by transaction.query() method**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
+| async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator returned by transaction.query() method when executing a MATCH query.**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
 
 **IteratorElement**
 
@@ -105,11 +105,65 @@ Element handled by iterators, depending on the type of iterator this can be a ty
 
 **Answer**
 
-This object represents a query answer and it is contained in the Iterator returned by `transaction.query()` method, the following methods are available:
+This object represents a query answer and it is contained in the Iterator returned by `transaction.query()` method.     
+There are **different types of Answer**, based on the type of query executed a different type of Answer will be returned:   
+
+| Query Type                           | Answer Type       |
+|--------------------------------------|-------------------|
+| `define`                               | ConceptMap        |
+| `undefine`                             | ConceptMap        |
+| `get`                                  | ConceptMap        |
+| `insert`                               | ConceptMap        |
+| `delete`                               | ConceptMap        |
+| `aggregate count/min/max/sum/mean/std` |  Value            |
+| `aggregate group`                      | AnswerGroup       |
+| `compute count/min/max/sum/mean/std`   | Value             |
+| `compute path`                         | ConceptList       |
+| `compute cluster`                      | ConceptSet        |
+| `compute centrality`                  | ConceptSetMeasure |
+
+**ConceptMap**
 
 | Method          | Return type              | Description                                                                                     |
 | --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
-| `get()`         | Map<*String*, *Concept*> | Returns result map in which every variable name (key) is linked to a Concept.                   |
+| `map()`         | Map<*String*, *Concept*> | Returns result map in which every variable name (key) is linked to a Concept.                   |
+| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
+
+**Value**
+
+| Method          | Return type              | Description                                                                                     |
+| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `number()`      | Number                   | Returns numeric value of the Answer.                                                            |
+| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
+
+**ConceptList**
+
+| Method          | Return type              | Description                                                                                     |
+| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `list()`        | Array of *String*        | Returns list of Concept IDs.                                                                    |
+| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
+
+**ConceptSet**
+
+| Method          | Return type              | Description                                                                                     |
+| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `set()`         | Set of *String*          | Returns a set containing Concept IDs.                                                           |
+| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
+
+**ConceptSetMeasure**
+
+| Method          | Return type              | Description                                                                                     |
+| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `measurement()` | Number                   | Returns numeric value that is associated to the set of Concepts contained in the current Answer.|
+| `set()`         | Set of *String*          | Returns a set containing Concept IDs.                                                           |
+| `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
+
+**AnswerGroup**
+
+| Method          | Return type              | Description                                                                                     |
+| --------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `owner()`       | *Concept*                | Returns the Concepts which is the group owner.                                                  |
+| `answers()`     | Array of *Answer*        | Returns list of Answers that belongs to this group.                                             |
 | `explanation()` | *Explanation* or *null*  | Returns an Explanation object if the current Answer contains inferred Concepts, null otherwise. |
 
 **Explanation**
@@ -118,6 +172,7 @@ This object represents a query answer and it is contained in the Iterator return
 | ---------------- | ----------------- | ------------------------------------------------------------------------------------------- |
 | `queryPattern()` | String            | Returns a query pattern that describes how the owning answer was retrieved.                 |
 | `answers()`      | Array of *Answer* | Set of deducted/factual answers that allowed us to determine that the owning answer is true |
+
 
 
 **Concepts hierarchy** 
@@ -192,7 +247,7 @@ A `SchemaConcept` concept has all the `Concept` methods plus the following:
  | async `type()`                       | *Type*                     | Returns a Type which is the type of this Thing. This Thing is an instance of that type.                                                                                           |
  | async `relationships(...Role)`       | Iterator of *Relationship* | Returns Relationships which this Thing takes part in, which may **optionally** be narrowed to a particular set according to the Roles you are interested in                       |
  | async `attributes(...AttributeType)` | Iterator of *Attribute*    | Returns Attributes attached to this Thing, which may **optionally** be narrowed to a particular set according to the AttributeTypes you are interested in                         |
- | async `plays()`                      | Iterator of *Role*         | Returns the Roles that this Thing is currently playing                                                                                                                            |
+ | async `roles()`                      | Iterator of *Role*         | Returns the Roles that this Thing is currently playing                                                                                                                            |
  | async `keys(...Attributetype)`       | Iterator of *Attribute*    | Returns a collection of Attribute attached to this Thing as a key, which may **optionally** be narrowed to a particular set according to the AttributeTypes you are interested in |
  | async `has(Attribute)`               | *void*                     | Attaches the provided Attribute to this Thing                                                                                                                                     |
  | async `unhas(Attribute)`             | *void*                     | Removes the provided Attribute from this Thing                                                                                                                                    |
