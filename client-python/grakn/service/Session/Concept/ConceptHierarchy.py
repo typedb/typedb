@@ -3,7 +3,8 @@ from typing import Union, Optional
 from grakn.service.Session.util import enums
 from grakn.service.Session.util.RequestBuilder import RequestBuilder
 # from grakn.service.Session.util.ResponseConverter import ResponseConverter # cannot get name from module because circular imports
-import grakn.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
+# import grakn.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
+from grakn.service.Session.util import ResponseConverter
 from grakn.service.Session.Concept import ConceptFactory
 
 
@@ -22,36 +23,47 @@ class Concept(object):
         return
 
     def is_schema_concept(self) -> bool:
+        """ Check if this concept is a schema concept """
         return isinstance(self, SchemaConcept)
 
     def is_type(self) -> bool:
+        """ Check if this concept is a Type concept """
         return isinstance(self, Type)
 
     def is_thing(self) -> bool:
+        """ Check if this concept is a Thing concept """
         return isinstance(self, Thing)
 
     def is_attribute_type(self) -> bool:
+        """ Check if this concept is an AttributeType concept """
         return isinstance(self, AttributeType)
 
     def is_entity_type(self) -> bool:
+        """ Check if this concept is an EntityType concept """
         return isinstance(self, EntityType)
 
     def is_relationship_type(self) -> bool:
+        """ Check if this concept is a RelationshipType concept """
         return isinstance(self, RelationshipType)
 
     def is_role(self) -> bool:
+        """ Check if this concept is a Role """
         return isinstance(self, Role)
 
     def is_rule(self) -> bool:
+        """ Check if this concept is a Rule concept """
         return isinstance(self, Rule)
 
     def is_attribute(self) -> bool:
+        """ Check if this concept is an Attribute concept """
         return isinstance(self, Attribute)
 
     def is_entity(self) -> bool:
+        """ Check if this concept is an Entity concept """
         return isinstance(self, Entity)
 
     def is_relationship(self) -> bool:
+        """ Check if this concept is a Relationship concept """
         return isinstance(self, Relationship)
 
 
