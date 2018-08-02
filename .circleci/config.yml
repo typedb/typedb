@@ -225,6 +225,35 @@ jobs:
       - store_test_results:
           path: ~/grakn-surefire-reports/
 
+  client-java-e2e:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      ##############################################################################
+      # - attach to workspace
+      # - restore .m2 cache to speed up build
+      # - run tests
+      ##############################################################################
+      - attach_workspace:
+          at: ~/grakn
+      - restore_cache:
+          name: Restore maven m2 cache
+          key: grakn-cache-m2-version-8
+      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+
+      ##############################################################################
+      # make and store reports
+      ##############################################################################
+      - run:
+          name: Save test results
+          command: |
+              mkdir -p ~/grakn-surefire-reports/
+              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+          when: always
+      - store_artifacts:
+          path: ~/grakn-surefire-reports/
+      - store_test_results:
+          path: ~/grakn-surefire-reports/
   snb-e2e:
     machine: true
     working_directory: ~/grakn
