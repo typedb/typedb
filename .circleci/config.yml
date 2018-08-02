@@ -327,6 +327,9 @@ workflows:
       - distribution-e2e:
           requires:
             - build
+      - client-java-e2e:
+          requires:
+            - build
       - snb-e2e:
           requires:
             - build
