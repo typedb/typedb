@@ -5,7 +5,7 @@ pep420_package_finder = PEP420PackageFinder()
 setup(
     name='grakn',
     packages=pep420_package_finder.find('.', include=['grakn*']),
-    version='1.2.3',
+    version='1.2.4.4',
     license='Apache-2.0',
     description='A Python client for Grakn',
     long_description=open('README.md').read(),
@@ -15,6 +15,6 @@ setup(
     url='https://github.com/flyingsilverfin/grakn/tree/client-python-dev',
 #    download_url='https://github.com/graknlabs/grakn-python/archive/v0.8.1.tar.gz',
     keywords=['grakn', 'database', 'graph', 'knowledgebase', 'knowledge-engineering'],
-    python_requires='>=3.6.0',
+    python_requires='>=3.4.0',
     install_requires=['grpcio', 'protobuf']
 )
