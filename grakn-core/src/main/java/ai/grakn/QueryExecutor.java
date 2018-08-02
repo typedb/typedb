@@ -27,8 +27,8 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -40,17 +40,17 @@ import java.util.stream.Stream;
  */
 public interface QueryExecutor {
 
-    Stream<ConceptMap> run(GetQuery query);
-
-    Stream<ConceptMap> run(InsertQuery query);
-
-    Stream<ConceptMap> run(DeleteQuery query);
-
     Stream<ConceptMap> run(DefineQuery query);
 
     Stream<ConceptMap> run(UndefineQuery query);
 
-    <T extends Answer> List<T> run(AggregateQuery<T> query);
+    Stream<ConceptMap> run(GetQuery query);
+
+    Stream<ConceptMap> run(InsertQuery query);
+
+    Stream<ConceptSet> run(DeleteQuery query);
+
+    <T extends Answer> Stream<T> run(AggregateQuery<T> query);
 
     <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query);
 }

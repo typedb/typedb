@@ -39,7 +39,7 @@ final class RemoteComputeExecutor<T extends Answer> implements ComputeExecutor<T
     }
 
     @Override
-    public Stream<T> get() {
+    public Stream<T> stream() {
         return result;
     }
 

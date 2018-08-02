@@ -47,7 +47,7 @@ public class AnswerGroup<T extends Answer> implements Answer<AnswerGroup<T>> {
 
 
     @Override
-    public AnswerGroup<T> get() {
+    public AnswerGroup<T> asAnswerGroup() {
         return this;
     }
 

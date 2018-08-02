@@ -25,7 +25,6 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.answer.Answer;
 import com.google.auto.value.AutoValue;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -46,11 +45,6 @@ abstract class AggregateQueryImpl<T extends Answer> implements AggregateQuery<T>
 
     @Override
     public final Stream<T> stream() {
-        return execute().stream();
-    }
-
-    @Override
-    public final List<T> execute() {
         return executor().run(this);
     }
 

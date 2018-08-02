@@ -39,6 +39,8 @@ import java.util.Collection;
 import java.util.Objects;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static java.util.stream.Collectors.toSet;
+
 /**
  * Main class containing static methods for creating Graql queries.
  *
@@ -240,8 +242,8 @@ public class Graql {
      * Create an aggregate that will count the results of a query.
      */
     @CheckReturnValue
-    public static Aggregate<Value> count() {
-        return Aggregates.count();
+    public static Aggregate<Value> count(String... vars) {
+        return Aggregates.count(Arrays.stream(vars).map(Graql::var).collect(toSet()));
     }
 
     /**

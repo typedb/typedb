@@ -26,6 +26,10 @@ import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Factory for making {@link Aggregate} implementations.
  */
@@ -36,8 +40,12 @@ public class Aggregates {
     /**
      * Aggregate that counts results of a {@link Match}.
      */
-    public static Aggregate<Value> count() {
-        return new CountAggregate();
+    public static Aggregate<Value> count(Var... vars) {
+        return new CountAggregate(new HashSet<>(Arrays.asList(vars)));
+    }
+
+    public static Aggregate<Value> count(Set<Var> vars) {
+        return new CountAggregate(vars);
     }
 
     /**

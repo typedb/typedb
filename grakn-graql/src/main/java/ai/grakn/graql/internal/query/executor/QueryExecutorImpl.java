@@ -34,19 +34,19 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
@@ -54,16 +54,16 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * @author Grakn Warriors
  */
 @SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
-public class TinkerQueryExecutor implements QueryExecutor {
+public class QueryExecutorImpl implements QueryExecutor {
 
     private final EmbeddedGraknTx<?> tx;
 
-    private TinkerQueryExecutor(EmbeddedGraknTx<?> tx) {
+    private QueryExecutorImpl(EmbeddedGraknTx<?> tx) {
         this.tx = tx;
     }
 
-    public static TinkerQueryExecutor create(EmbeddedGraknTx<?> tx) {
-        return new TinkerQueryExecutor(tx);
+    public static QueryExecutorImpl create(EmbeddedGraknTx<?> tx) {
+        return new QueryExecutorImpl(tx);
     }
 
     @Override
@@ -94,11 +94,11 @@ public class TinkerQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<ConceptMap> run(DeleteQuery query) {
+    public Stream<ConceptSet> run(DeleteQuery query) {
         Stream<ConceptMap> answers = query.admin().match().stream().map(result -> result.project(query.admin().vars())).distinct();
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
-        Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).distinct().collect(Collectors.toSet());
+        Set<Concept> conceptsToDelete = answers.flatMap(answer -> answer.concepts().stream()).collect(toSet());
         conceptsToDelete.forEach(concept -> {
             if (concept.isSchemaConcept()) {
                 throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
@@ -106,8 +106,8 @@ public class TinkerQueryExecutor implements QueryExecutor {
             concept.delete();
         });
 
-        // TODO: return deleted concepts
-        return Stream.empty();
+        // TODO: return deleted Concepts instead of ConceptIds
+        return Stream.of(new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet())));
     }
 
     @Override
@@ -126,20 +126,18 @@ public class TinkerQueryExecutor implements QueryExecutor {
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .collect(toImmutableList());
 
-        QueryOperationExecutor.undefineAll(allPatterns, tx);
-
-        // TODO: Return undefined concepts
-        return Stream.empty();
+        ConceptMap undefined = QueryOperationExecutor.undefineAll(allPatterns, tx);
+        return Stream.of(undefined);
     }
 
     @Override
-    public <T extends Answer> List<T> run(AggregateQuery<T> query) {
-        return query.aggregate().apply(query.match().stream());
+    public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
+        return query.aggregate().apply(query.match().stream()).stream();
     }
 
 
     @Override
     public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
-        return new TinkerComputeExecutor<>(tx, query);
+        return new ComputeExecutorImpl<>(tx, query);
     }
 }

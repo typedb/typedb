@@ -60,6 +60,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -193,7 +194,7 @@ public class GraqlControllerTest {
 
         System.out.println(Json.array());
         System.out.println(resp.asString());
-        assertEquals(Json.array(), Json.read(resp.asString()));
+        assertEquals(Json.array(Json.array(id)), Json.read(resp.asString()));
     }
 
     @Test

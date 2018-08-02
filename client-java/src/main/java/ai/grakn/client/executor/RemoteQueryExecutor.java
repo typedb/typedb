@@ -31,9 +31,8 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -53,6 +52,17 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
+    public Stream<ConceptMap> run(DefineQuery query) {
+        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+    @Override
+    public Stream<ConceptMap> run(UndefineQuery query) {
+        return streamConceptMaps(query);
+    }
+
+    @Override
     public Stream<ConceptMap> run(GetQuery query) {
         return streamConceptMaps(query);
     }
@@ -63,30 +73,14 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<ConceptMap> run(DeleteQuery query) {
-        runVoid(query);
-        // TODO: Return deleted concepts
-        return Stream.empty();
+    public Stream<ConceptSet> run(DeleteQuery query) {
+        return streamConceptSets(query);
     }
 
     @Override
-    public Stream<ConceptMap> run(DefineQuery query) {
-        Iterable<ConceptMap> iterable = () -> tx.query(query);
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
-    @Override
-    public Stream<ConceptMap> run(UndefineQuery query) {
-        runVoid(query);
-        // TODO: Return undefined concepts
-        return Stream.empty();
-    }
-
-    @Override
-    public <T extends Answer> List<T> run(AggregateQuery<T> query) {
+    public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
         Iterable<T> iterable = () -> tx.query(query);
-        Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.collect(Collectors.toList());
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     @Override
@@ -96,13 +90,15 @@ public final class RemoteQueryExecutor implements QueryExecutor {
         return RemoteComputeExecutor.of(stream);
     }
 
-    private void runVoid(Query<?> query) {
-        tx.query(query).forEachRemaining(empty -> {});
+    // Helper methods
+
+    private Stream<ConceptMap> streamConceptMaps(Query<ConceptMap> query) {
+        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    private Stream<ConceptMap> streamConceptMaps(Query<?> query) {
-        Iterable<Object> iterable = () -> tx.query(query);
-        Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(ConceptMap.class::cast);
+    private Stream<ConceptSet> streamConceptSets(Query<ConceptSet> query) {
+        Iterable<ConceptSet> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 }

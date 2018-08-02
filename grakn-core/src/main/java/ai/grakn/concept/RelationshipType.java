@@ -65,14 +65,6 @@ public interface RelationshipType extends Type {
     RelationshipType sup(RelationshipType type);
 
     /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this {@link RelationshipType}
-     * @return The {@link RelationshipType} itself
-     */
-    RelationshipType sub(RelationshipType type);
-
-    /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.

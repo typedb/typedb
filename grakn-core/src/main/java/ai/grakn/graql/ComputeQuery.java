@@ -28,7 +28,6 @@ import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
@@ -40,8 +39,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
  * @param <T> return type of ComputeQuery
  */
 public interface ComputeQuery<T extends Answer> extends Query<T> {
-
-    Stream<T> stream();
 
     /**
      * @param tx the graph to execute the compute query on

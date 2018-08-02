@@ -71,7 +71,10 @@ public class AggregateTest {
 
     @Test
     public void testCount() {
-        List<Value> count = qb.match(var("x").isa("movie")).aggregate(count()).execute();
+        List<Value> count = qb.match(var("x").isa("movie"), var("y").isa("person"), var("r").rel("x").rel("y")).aggregate(count()).execute();
+        Assert.assertEquals(14, count.get(0).number().intValue());
+
+        count = qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(count("x")).execute();
         Assert.assertEquals(MovieMatchers.movies.size(), count.get(0).number().intValue());
     }
 

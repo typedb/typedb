@@ -25,9 +25,9 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -63,12 +63,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within {@link Query}s.
- *
- * <p>
- *     Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
- * </p>
- *
- * @author Felix Chapman
+ * Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
  */
 public class QueryOperationExecutor {
 
@@ -119,8 +114,8 @@ public class QueryOperationExecutor {
         return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMapImpl());
     }
 
-    static void undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
-        create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMapImpl());
+    static ConceptMap undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
+        return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMapImpl());
     }
 
     private static QueryOperationExecutor create(
