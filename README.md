@@ -48,17 +48,9 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 - Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
+- Yarn (in order to build Dashboard)
 
-**This repo uses submodules**, so clone using:
-```
-$ git clone --recurse-submodules https://github.com/graknlabs/grakn.git
-```
-Or if you have already cloned:
-```
-$ git submodule update --init --recursive
-```
-
-Then you can build Grakn using Maven:
+You can build Grakn using Maven:
 ```
 $ mvn package -DskipTests
 ```
