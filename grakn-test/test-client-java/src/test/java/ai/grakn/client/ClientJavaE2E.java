@@ -24,6 +24,7 @@ import static ai.grakn.client.ClientJavaE2EConstants.assertGraknStopped;
 import static ai.grakn.client.ClientJavaE2EConstants.assertZipExists;
 import static ai.grakn.client.ClientJavaE2EConstants.unzipGrakn;
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,10 +69,11 @@ public class ClientJavaE2E {
         // define a schema
         localGraknTx(tx -> {
             tx.graql().define(
-                    label("marriage").sub("relationship").relates("spouse"),
+                    label("child-bearing").sub("relationship").relates("offspring").relates("child-bearer"),
+                    label("mating").sub("relationship").relates("male-partner").relates("female-partner").plays("child-bearer"),
                     label("parentship").sub("relationship").relates("parent").relates("child"),
                     label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("person").sub("entity").has("name").plays("spouse").plays("child")
+                    label("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring")
             ).execute();
             tx.commit();
         });
@@ -81,66 +83,66 @@ public class ClientJavaE2E {
             List<String> definedSchema = tx.graql().match(var("t").sub("thing")).get().execute().stream()
                     .map(answer -> answer.get(var("t")).asType().label().getValue()).collect(Collectors.toList());
             String[] correctSchema = new String[] { "thing", "entity", "relationship", "attribute",
-                    "person", "marriage", "parentship", "@has-name", "name" };
+                    "lion", "mating", "parentship", "child-bearing", "@has-name", "name" };
             assertThat(definedSchema, hasItems(correctSchema));
         });
 
         // insert
         localGraknTx(tx -> {
-            String[] familyMembers = gatesFamilyNames();
+            String[] names = lionNames();
             tx.graql().insert(
-                    var().isa("person").has("name").val(familyMembers[0]),
-                    var().isa("person").has("name").val(familyMembers[1]),
-                    var().isa("person").has("name").val(familyMembers[2]),
-                    var().isa("person").has("name").val(familyMembers[3]),
-                    var().isa("person").has("name").val(familyMembers[4])
+                    var().isa("lion").has("name").val(names[0]),
+                    var().isa("lion").has("name").val(names[1]),
+                    var().isa("lion").has("name").val(names[2]),
+                    var().isa("lion").has("name").val(names[3]),
+                    var().isa("lion").has("name").val(names[4])
             ).execute();
             tx.commit();
         });
 
         // match get
         localGraknTx(tx -> {
-            List<ConceptMap> people = tx.graql().match(var("p").isa("person").has("name", var("n"))).get().execute();
+            List<ConceptMap> people = tx.graql().match(var("p").isa("lion").has("name", var("n"))).get().execute();
             List<String> insertedNames = people.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
-            assertThat(insertedNames, containsInAnyOrder(gatesFamilyNames()));
+            assertThat(insertedNames, containsInAnyOrder(lionNames()));
         });
 
         // match insert
         localGraknTx(tx -> {
-            String[] familyMembers = gatesFamilyNames();
-            List<ConceptMap> insertedMarriage = tx.graql()
+            String[] familyMembers = lionNames();
+            List<ConceptMap> insertedMating = tx.graql()
                     .match(
-                            var("husband").isa("person").has("name").val(familyMembers[0]),
-                            var("wife").isa("person").has("name").val(familyMembers[1]))
-                    .insert(var().isa("marriage").rel("spouse", var("husband")).rel("spouse", var("wife")))
+                            var("male-partner").isa("lion").has("name").val(familyMembers[0]),
+                            var("female-partner").isa("lion").has("name").val(familyMembers[1]))
+                    .insert(var().isa("mating").rel("male-partner", var("male-partner")).rel("female-partner", var("female-partner")))
                     .execute();
-            assertThat(insertedMarriage, hasSize(1));
+            assertThat(insertedMating, hasSize(1));
         });
 
         // match aggregate
         localGraknTx(tx -> {
-            int aggregateCount = tx.graql().match(var("p").isa("person")).aggregate(count()).execute().number().intValue();
-            assertThat(aggregateCount, equalTo(gatesFamilyNames().length));
+            int aggregateCount = tx.graql().match(var("p").isa("lion")).aggregate(count()).execute().number().intValue();
+            assertThat(aggregateCount, equalTo(lionNames().length));
         });
 
         // compute count
         localGraknTx(tx -> {
-            int computeCount = tx.graql().compute(GraqlSyntax.Compute.Method.COUNT).in("person")
+            int computeCount = tx.graql().compute(GraqlSyntax.Compute.Method.COUNT).in("lion")
                     .execute().get(0).number().intValue();
-            assertThat(computeCount, equalTo(gatesFamilyNames().length));
+            assertThat(computeCount, equalTo(lionNames().length));
         });
 
         // match delete
         localGraknTx(tx -> {
-            tx.graql().match(var("m").isa("marriage")).delete(var("m")).execute();
-            List<ConceptMap> marriages = tx.graql().match(var("m").isa("marriage")).get().execute();
-            assertThat(marriages, hasSize(0));
+            tx.graql().match(var("m").isa("mating")).delete(var("m")).execute();
+            List<ConceptMap> matings = tx.graql().match(var("m").isa("mating")).get().execute();
+            assertThat(matings, hasSize(0));
         });
     }
 
-    private String[] gatesFamilyNames() {
-        return new String[] { "Bill Gates", "Melinda Gates", "Jennifer Katharine Gates",
-                "Phoebe Adele Gates", "Rory John Gates" };
+    private String[] lionNames() {
+        return new String[] { "male-partner", "female-partner", "young-lion-1",
+                "young-lion-2", "young-lion-3" };
     }
 
     private void localGraknTx(Consumer<Grakn.Transaction> fn) {
