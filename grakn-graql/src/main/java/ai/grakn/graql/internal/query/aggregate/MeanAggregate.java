@@ -24,6 +24,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -38,23 +39,23 @@ class MeanAggregate implements Aggregate<Value> {
     private final CountAggregate countAggregate;
     private final Aggregate<Value> sumAggregate;
 
-    MeanAggregate(Var varName) {
-        this.varName = varName;
-        countAggregate = new CountAggregate();
-        sumAggregate = Aggregates.sum(varName);
+    MeanAggregate(Var var) {
+        this.varName = var;
+        countAggregate = new CountAggregate(Collections.singleton(var));
+        sumAggregate = Aggregates.sum(var);
     }
 
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         List<? extends ConceptMap> list = stream.collect(toList());
 
-        Number count = countAggregate.apply(list.stream()).number();
+        Number count = countAggregate.apply(list.stream()).get(0).number();
 
         if (count.intValue() == 0) {
-            return null;
+            return Collections.emptyList();
         } else {
-            Number sum = sumAggregate.apply(list.stream()).number();
-            return new Value(sum.doubleValue() / count.longValue());
+            Number sum = sumAggregate.apply(list.stream()).get(0).number();
+            return Collections.singletonList(new Value(sum.doubleValue() / count.longValue()));
         }
     }
 

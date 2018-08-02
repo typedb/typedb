@@ -40,7 +40,7 @@ public class ConceptSetMeasure extends ConceptSet{
     }
 
     @Override
-    public ConceptSetMeasure get() {
+    public ConceptSetMeasure asConceptSetMeasure() {
         return this;
     }
 

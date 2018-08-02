@@ -26,10 +26,8 @@ import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
 import static ai.grakn.util.GraqlSyntax.Compute.Argument;
@@ -40,9 +38,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  * @param <T> return type of ComputeQuery
  */
-public interface ComputeQuery<T> extends Query<List<T>> {
-
-    Stream<? extends Answer> stream();
+public interface ComputeQuery<T extends Answer> extends Query<T> {
 
     /**
      * @param tx the graph to execute the compute query on

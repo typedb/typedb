@@ -24,6 +24,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
@@ -40,7 +42,7 @@ class StdAggregate implements Aggregate<Value> {
     }
 
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().value().doubleValue());
 
         Iterable<Double> data = numStream::iterator;
@@ -60,9 +62,9 @@ class StdAggregate implements Aggregate<Value> {
         }
 
         if (n < 2) {
-            return null;
+            return Collections.emptyList();
         } else {
-            return new Value(sqrt(M2 / (double) (n - 1)));
+            return Collections.singletonList(new Value(sqrt(M2 / (double) (n - 1))));
         }
     }
 

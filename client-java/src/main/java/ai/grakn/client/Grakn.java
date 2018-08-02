@@ -221,16 +221,12 @@ public final class Grakn {
         public java.util.Iterator query(Query<?> query) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
-
-            switch (txResponse.getQueryIter().getIterCase()) {
-                case NULL:
-                    return Collections.emptyIterator();
-                case ID:
-                    int iteratorId = txResponse.getQueryIter().getId();
-                    return new Iterator<>(this, iteratorId, response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this));
-                default:
-                    throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
-            }
+            int iteratorId = txResponse.getQueryIter().getId();
+            return new Iterator<>(
+                    this,
+                    iteratorId,
+                    response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this)
+            );
         }
 
         @Nullable

@@ -110,14 +110,14 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
  *
  * @author Grakn Warriors
  */
-class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
+class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
 
     private final ComputeQuery<T> query;
 
-    private static final Logger LOG = LoggerFactory.getLogger(TinkerComputeExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutorImpl.class);
     private final EmbeddedGraknTx<?> tx;
 
-    public TinkerComputeExecutor(EmbeddedGraknTx<?> tx, ComputeQuery query) {
+    public ComputeExecutorImpl(EmbeddedGraknTx<?> tx, ComputeQuery query) {
         this.tx = tx;
         this.query = query;
     }
@@ -128,7 +128,7 @@ class TinkerComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
     }
 
     @Override
-    public Stream<T> get() {
+    public Stream<T> stream() {
         GraqlSyntax.Compute.Method<?> method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return (Stream<T>) runComputeMinMaxMedianOrSum();

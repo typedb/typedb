@@ -39,7 +39,7 @@ public class Value implements Answer<Value>{
 
 
     @Override
-    public Value get() {
+    public Value asValue() {
         return this;
     }
 

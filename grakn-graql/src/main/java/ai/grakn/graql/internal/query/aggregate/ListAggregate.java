@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 /**
  * An aggregate that changes {@link Match} results into a list.
  */
-class ListAggregate implements Aggregate<List<ConceptMap>> {
+public class ListAggregate implements Aggregate<ConceptMap> {
 
     @Override
     public List<ConceptMap> apply(Stream<? extends ConceptMap> stream) {

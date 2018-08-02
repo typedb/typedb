@@ -34,7 +34,6 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.Streamable;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
@@ -275,12 +274,7 @@ public class GraqlController implements HttpController {
             } else {
                 // If acceptType is 'application/text' add new line after every result
                 if (APPLICATION_TEXT.equals(acceptType)) {
-                    //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
-                    if (query instanceof Streamable) {
-                        formatted = printer.toStream(((Streamable<?>) query).stream()).collect(Collectors.joining("\n"));
-                    } else {
-                        formatted = printer.toString(query.execute());
-                    }
+                    formatted = printer.toStream(query.stream()).collect(Collectors.joining("\n"));
                 } else {
                     // If acceptType is 'application/json' map results to JSON representation
                     formatted = printer.toString(executeAndMonitor(query));

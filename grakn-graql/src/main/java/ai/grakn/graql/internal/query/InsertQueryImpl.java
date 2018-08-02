@@ -24,17 +24,16 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,7 +44,7 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMap> implements InsertQueryAdmin {
+abstract class InsertQueryImpl implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -121,11 +120,6 @@ abstract class InsertQueryImpl extends AbstractQuery<List<ConceptMap>, ConceptMa
         builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
 
         return builder.toString();
-    }
-
-    @Override
-    public final List<ConceptMap> execute() {
-        return stream().collect(Collectors.toList());
     }
 
     @Override

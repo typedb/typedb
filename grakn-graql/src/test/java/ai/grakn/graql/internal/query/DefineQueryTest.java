@@ -283,7 +283,7 @@ public class DefineQueryTest {
         // Note that two variables refer to the same type. They should both be in the result
         DefineQuery query = qb.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
-        ConceptMap result = query.execute();
+        ConceptMap result = query.execute().get(0);
         assertThat(result.vars(), containsInAnyOrder(type, type2));
         assertEquals(result.get(type), result.get(type2));
     }

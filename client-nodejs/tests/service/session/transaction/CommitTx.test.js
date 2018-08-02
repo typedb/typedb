@@ -69,7 +69,7 @@ describe('Integration test', () => {
         const tx = await localSession.transaction(env.txType().WRITE);
         const iterator = await tx.query("match $x isa cousins; offset 0; limit 1; get;");
         const answer = await iterator.next();
-        expect(answer.get().size).toBe(1);
+        expect(answer.map().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);
         await tx.close()
         await localSession.close();

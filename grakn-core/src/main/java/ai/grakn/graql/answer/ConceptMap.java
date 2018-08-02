@@ -39,10 +39,6 @@ import java.util.stream.Stream;
  */
 public interface ConceptMap extends Answer<ConceptMap> {
 
-    @Override
-    @CheckReturnValue
-    ConceptMap get();
-
     @CheckReturnValue
     Map<Var, Concept> map();
 

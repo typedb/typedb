@@ -40,7 +40,7 @@ GrpcIteratorFactory.prototype.createQueryIterator = function (iteratorId) {
   }
   const iterator = new Iterator(this.conceptFactory, this.communicator, RequestBuilder.nextReq(iteratorId), mapResponse);
   // Extend iterator with helper method collectConcepts()
-  iterator.collectConcepts = async function () { return (await this.collect()).map(a => Array.from(a.get().values())).reduce((a, c) => a.concat(c), []); };
+  iterator.collectConcepts = async function () { return (await this.collect()).map(a => Array.from(a.map().values())).reduce((a, c) => a.concat(c), []); };
   return iterator;
 };
 

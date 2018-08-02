@@ -477,12 +477,6 @@ public class RemoteConceptIT {
     }
 
     @Test
-    public void whenSettingSubType_TypeBecomesSubtype() {
-        man.sub(boy);
-        assertTrue(man.subs().anyMatch(c -> c.equals(boy)));
-    }
-
-    @Test
     public void whenSettingTypeLabel_LabelIsSetToType() {
         Label lady = Label.of("lady");
         EntityType type = tx.putEntityType(lady);

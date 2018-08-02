@@ -25,6 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
@@ -47,6 +48,8 @@ public class ResponseReader {
 
     public static Answer answer(AnswerProto.Answer res, Grakn.Transaction tx) {
         switch (res.getAnswerCase()) {
+            case ANSWERGROUP:
+                return answerGroup(res.getAnswerGroup(), tx);
             case CONCEPTMAP:
                 return conceptMap(res.getConceptMap(), tx);
             case CONCEPTLIST:
@@ -63,6 +66,12 @@ public class ResponseReader {
         }
     }
 
+    static AnswerGroup<?> answerGroup(AnswerProto.AnswerGroup res, Grakn.Transaction tx) {
+        return new AnswerGroup<>(
+                RemoteConcept.of(res.getOwner(), tx),
+                res.getAnswersList().stream().map(answer -> answer(answer, tx)).collect(toList())
+        );
+    }
     static ConceptMap conceptMap(AnswerProto.ConceptMap res, Grakn.Transaction tx) {
         ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
         res.getMapMap().forEach((resVar, resConcept) -> {

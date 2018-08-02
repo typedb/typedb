@@ -68,17 +68,6 @@ public interface EntityType extends Type{
     EntityType sup(EntityType type);
 
     /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this entity type
-     * @return The EntityType itself
-     *
-     * @throws GraknTxOperationException if the sub type is a meta type
-     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
-     */
-    EntityType sub(EntityType type);
-
-    /**
      * Sets the Role which instances of this EntityType may play.
      *
      * @param role The Role Type which the instances of this EntityType are allowed to play.

@@ -29,12 +29,13 @@ import com.google.common.collect.ImmutableList;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Implementation for {@link DefineQuery}
  */
 @AutoValue
-abstract class DefineQueryImpl extends AbstractExecutableQuery<ConceptMap> implements DefineQuery {
+abstract class DefineQueryImpl implements DefineQuery {
 
     static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
         return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
@@ -46,7 +47,7 @@ abstract class DefineQueryImpl extends AbstractExecutableQuery<ConceptMap> imple
     }
 
     @Override
-    public final ConceptMap execute() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 

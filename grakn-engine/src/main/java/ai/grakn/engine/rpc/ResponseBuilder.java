@@ -29,6 +29,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
@@ -70,13 +71,9 @@ public class ResponseBuilder {
         }
 
         static SessionProto.Transaction.Res queryIterator(int iteratorId) {
-            SessionProto.Transaction.Query.Iter.Builder iterator = SessionProto.Transaction.Query.Iter.newBuilder();
-            if (iteratorId == -1) {
-                iterator.setNull(ConceptProto.Null.getDefaultInstance());
-            } else {
-                iterator.setId(iteratorId);
-            }
-            return SessionProto.Transaction.Res.newBuilder().setQueryIter(iterator).build();
+            return SessionProto.Transaction.Res.newBuilder()
+                    .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder().setId(iteratorId))
+                    .build();
         }
 
         static SessionProto.Transaction.Res getSchemaConcept(@Nullable ai.grakn.concept.Concept concept) {
@@ -272,7 +269,9 @@ public class ResponseBuilder {
         public static AnswerProto.Answer answer(Object object) {
             AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
 
-            if (object instanceof ConceptMap) {
+            if (object instanceof AnswerGroup){
+                answer.setAnswerGroup(answerGroup((AnswerGroup) object));
+            } else if (object instanceof ConceptMap) {
                 answer.setConceptMap(conceptMap((ConceptMap) object));
             } else if (object instanceof ConceptList) {
                 answer.setConceptList(conceptList((ConceptList) object));
@@ -296,6 +295,18 @@ public class ResponseBuilder {
                     .build();
         }
 
+        static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
+            AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()
+                    .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
+                    .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
+
+            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
+            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+                answerGroupProto.setExplanation(explanation(answer.explanation()));
+            }
+            return answerGroupProto.build();
+        }
+
         static AnswerProto.ConceptMap conceptMap(ConceptMap answer) {
             AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
             answer.map().forEach((var, concept) -> {
@@ -307,7 +318,6 @@ public class ResponseBuilder {
             if (answer.explanation() != null && answer.explanation().getQuery() != null) {
                 conceptMapProto.setExplanation(explanation(answer.explanation()));
             }
-
             return conceptMapProto.build();
         }
 
@@ -315,16 +325,18 @@ public class ResponseBuilder {
             AnswerProto.ConceptList.Builder conceptListProto = AnswerProto.ConceptList.newBuilder();
             conceptListProto.setList(conceptIds(answer.list()));
 
+            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
             if (answer.explanation() != null && answer.explanation().getQuery() != null) {
                 conceptListProto.setExplanation(explanation(answer.explanation()));
             }
-
             return conceptListProto.build();
         }
 
         static AnswerProto.ConceptSet conceptSet(ConceptSet answer) {
             AnswerProto.ConceptSet.Builder conceptSetProto = AnswerProto.ConceptSet.newBuilder();
             conceptSetProto.setSet(conceptIds(answer.set()));
+
+            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
             if (answer.explanation() != null && answer.explanation().getQuery() != null) {
                 conceptSetProto.setExplanation(explanation(answer.explanation()));
             }
@@ -344,6 +356,8 @@ public class ResponseBuilder {
         static AnswerProto.Value value(Value answer) {
             AnswerProto.Value.Builder valueProto = AnswerProto.Value.newBuilder();
             valueProto.setNumber(number(answer.number()));
+
+            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
             if (answer.explanation() != null && answer.explanation().getQuery() != null) {
                 valueProto.setExplanation(explanation(answer.explanation()));
             }

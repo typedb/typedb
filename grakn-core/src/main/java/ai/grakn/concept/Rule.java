@@ -25,16 +25,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     A {@link SchemaConcept} used to model and categorise {@link Rule}s.
- * </p>
- *
- * <p>
- *     A {@link SchemaConcept} used to define different types of {@link Rule}.
- *     A {@link Rule}
- * </p>
- *
- * @author fppt
+ * A {@link SchemaConcept} used to model and categorise {@link Rule}s.
  */
 public interface Rule extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
@@ -102,14 +93,6 @@ public interface Rule extends SchemaConcept {
      */
     @Override
     Stream<Rule> sups();
-
-    /**
-     * Adds another subtype to this {@link Rule}
-     *
-     * @param type The sub of this {@link Rule}
-     * @return The {@link Rule} itself
-     */
-    Rule sub(Rule type);
 
     /**
      *

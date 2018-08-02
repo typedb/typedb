@@ -29,6 +29,7 @@ import java.util.Set;
  */
 public class ConceptSet implements Answer<ConceptSet>{
 
+    // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
     private final Set<ConceptId> set;
     private final Explanation explanation;
 
@@ -42,7 +43,7 @@ public class ConceptSet implements Answer<ConceptSet>{
     }
     
     @Override
-    public ConceptSet get() {
+    public ConceptSet asConceptSet() {
         return this;
     }
 

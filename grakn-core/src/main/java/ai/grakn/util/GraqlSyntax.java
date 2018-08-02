@@ -241,9 +241,9 @@ public class GraqlSyntax {
 
         /**
          * Graql compute method types to determine the type of calculation to execute
-         * @param <AnswerType> return type of ComputeQuery
+         * @param <T> return type of ComputeQuery
          */
-        public static class Method<AnswerType extends Answer> {
+        public static class Method<T extends Answer> {
             public final static Method<Value> COUNT = new Method<>("count");
             public final static Method<Value> MIN = new Method<>("min");
             public final static Method<Value> MAX = new Method<>("max");

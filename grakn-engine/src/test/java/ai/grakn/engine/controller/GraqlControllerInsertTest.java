@@ -26,6 +26,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
@@ -87,7 +88,7 @@ public class GraqlControllerInsertTest {
         when(printer.toString(any())).thenReturn(Json.object().toString());
 
         // Describe expected response to a typical query
-        Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
+        Query<ConceptMap> query = tx.graql().parser().parseQuery("insert $x isa person;");
         Concept person = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(person.id()).thenReturn(ConceptId.of("V123"));
         when(person.isThing()).thenReturn(true);

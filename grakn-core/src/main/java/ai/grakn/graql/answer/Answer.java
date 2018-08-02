@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.answer;
 
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.admin.Explanation;
 import com.google.common.collect.Sets;
@@ -32,11 +33,29 @@ import java.util.Set;
  */
 public interface Answer<T> {
 
-    /**
-     * @return a specific type of Answer, down-casted from this Answer class
-     */
-    @CheckReturnValue
-    T get();
+    default AnswerGroup asAnswerGroup() {
+        throw GraknTxOperationException.invalidCasting(this, AnswerGroup.class);
+    }
+
+    default ConceptList asConceptList() {
+        throw GraknTxOperationException.invalidCasting(this, ConceptList.class);
+    }
+
+    default ConceptMap asConceptMap() {
+        throw GraknTxOperationException.invalidCasting(this, ConceptMap.class);
+    }
+
+    default ConceptSet asConceptSet() {
+        throw GraknTxOperationException.invalidCasting(this, ConceptSet.class);
+    }
+
+    default ConceptSetMeasure asConceptSetMeasure() {
+        throw GraknTxOperationException.invalidCasting(this, ConceptSetMeasure.class);
+    }
+
+    default Value asValue() {
+        throw GraknTxOperationException.invalidCasting(this, Value.class);
+    }
 
     /**
      * @return an explanation object indicating how this answer was obtained

@@ -18,9 +18,11 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.graql.Streamable;
 import com.google.common.collect.ImmutableSet;
+
 import javax.annotation.CheckReturnValue;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
 /**
  *
@@ -33,7 +35,22 @@ import javax.annotation.CheckReturnValue;
  * @author Kasper Piskorski
  *
  */
-public interface MultiUnifier extends Iterable<Unifier>, Streamable<Unifier> {
+public interface MultiUnifier extends Iterable<Unifier> {
+
+    /**
+     * @return iterator over unifiers
+     */
+    @Override
+    @CheckReturnValue
+    default Iterator<Unifier> iterator() {
+        return stream().iterator();
+    }
+
+    /**
+     * @return a stream of unifiers
+     */
+    @CheckReturnValue
+    Stream<Unifier> stream();
 
     /**
      * @return true if the multiunifier is empty

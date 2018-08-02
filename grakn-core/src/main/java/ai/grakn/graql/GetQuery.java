@@ -22,20 +22,14 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
-import java.util.List;
 import java.util.Set;
 
 /**
- * a query used for finding data in a knowledge base that matches the given patterns.
- * <p>
- * The {@link GetQuery} is a pattern-matching query. The patterns are described in a declarative fashion,
- * then the {@link GetQuery} will traverse the knowledge base in an efficient fashion to find any matching answers.
- * <p>
- * @see ConceptMap
- *
- * @author Felix Chapman
+ * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
+ * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
+ * the knowledge base in an efficient fashion to find any matching answers.
  */
-public interface GetQuery extends Query<List<ConceptMap>>, Streamable<ConceptMap> {
+public interface GetQuery extends Query<ConceptMap> {
 
     /**
      * @param tx the transaction to execute the query on

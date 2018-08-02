@@ -18,15 +18,14 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.API;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.cache.Cache;
@@ -218,19 +217,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     private void deleteCachedDirectedSubType(T oldSubType){
         cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
-    }
-
-    /**
-     * Adds another sub to this {@link SchemaConcept}
-     *
-     * @param concept The sub concept of this {@link SchemaConcept}
-     * @return The {@link SchemaConcept} itself
-     */
-    @API
-    public T sub(T concept){
-        //noinspection unchecked
-        ((SchemaConceptImpl) concept).sup(this);
-        return getThis();
     }
 
     /**

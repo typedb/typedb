@@ -33,10 +33,10 @@ public interface ComputeExecutor<T> {
      *
      * @throws RuntimeException if the job is killed
      */
-    Stream<T> get();
+    Stream<T> stream();
 
     /**
-     * Stop the job executing. Any calls to {@link #get()} will throw.
+     * Stop the job executing. Any calls to {@link #stream()} will throw.
      */
     void kill();
 }

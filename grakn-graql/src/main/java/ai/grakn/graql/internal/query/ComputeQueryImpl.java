@@ -82,7 +82,7 @@ import static java.util.stream.Collectors.joining;
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  * @param <T> return type of ComputeQuery
  */
-public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T> implements ComputeQuery<T> {
+public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
     private GraknTx tx;
     private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
@@ -100,7 +100,7 @@ public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQueryImpl(GraknTx tx, Method method) {
+    public ComputeQueryImpl(GraknTx tx, Method<T> method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
@@ -132,16 +132,11 @@ public class ComputeQueryImpl<T extends Answer> extends AbstractQuery<List<T>, T
         runningJobs.add(job);
 
         try {
-            return job.get();
+            return job.stream();
         } finally {
             runningJobs.remove(job);
         }
 
-    }
-
-    @Override
-    public final List<T> execute() {
-        return stream().collect(Collectors.toList());
     }
 
     @Override

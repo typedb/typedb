@@ -47,15 +47,6 @@ abstract class RemoteSchemaConcept<SomeSchemaConcept extends SchemaConcept> exte
         return asCurrentBaseType(this);
     }
 
-    public final SomeSchemaConcept sub(SomeSchemaConcept type) {
-        ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
-                .setSchemaConceptSetSupReq(ConceptProto.SchemaConcept.SetSup.Req.newBuilder()
-                        .setSchemaConcept(RequestBuilder.Concept.concept(this))).build();
-
-        runMethod(type.id(), method);
-        return asCurrentBaseType(this);
-    }
-
     @Override
     public final Label label() {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
