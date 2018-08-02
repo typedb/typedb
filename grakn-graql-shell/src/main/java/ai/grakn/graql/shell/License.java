@@ -37,7 +37,7 @@ public class License {
             "This is free software, and you are welcome to redistribute it \n" +
             "under certain conditions; type 'license' for details.\n";
 
-    private static final String LICENSE_LOCATION = "LICENSE.txt";
+    private static final String LICENSE_LOCATION = "LICENSE";
 
     public License() {
     }

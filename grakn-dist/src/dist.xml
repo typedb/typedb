@@ -39,7 +39,7 @@
             <outputDirectory>${file.separator}</outputDirectory>
             <directory>${main.basedir}</directory>
             <includes>
-                <include>LICENSE.txt</include>
+                <include>LICENSE</include>
                 <include>README.md</include>
             </includes>
         </fileSet>
