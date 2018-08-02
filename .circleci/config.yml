@@ -284,6 +284,20 @@ jobs:
         - run: cd grakn-dist/target/grakn-dist-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: cd client-nodejs && yarn install && yarn run test
 
+client-python-e2e:
+      docker:
+      - image: circleci/python:3.6-jessie
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - run:
+            name: Install protobuf and grpc
+            command: pip3 install protobuf grpcio
+        - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+        - run: cd client-python &&i python3 -m unittest discover tests/integration/ -v
+
+
 workflows:
   version: 2
   run-all-tests:
@@ -305,5 +319,8 @@ workflows:
           requires:
             - build
       - client-nodejs-e2e:
+          requires:
+            - build
+      - client-python-e2e:
           requires:
             - build
