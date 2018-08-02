@@ -68,6 +68,7 @@ public class Queries {
     }
 
     public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+        //TODO: validate vars in aggregate query
         return AggregateQueryImpl.of(match, aggregate);
     }
 

@@ -100,7 +100,7 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQueryImpl(GraknTx tx, Method method) {
+    public ComputeQueryImpl(GraknTx tx, Method<T> method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 

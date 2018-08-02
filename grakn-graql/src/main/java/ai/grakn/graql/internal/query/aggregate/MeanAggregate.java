@@ -39,10 +39,10 @@ class MeanAggregate implements Aggregate<Value> {
     private final CountAggregate countAggregate;
     private final Aggregate<Value> sumAggregate;
 
-    MeanAggregate(Var varName) {
-        this.varName = varName;
-        countAggregate = new CountAggregate();
-        sumAggregate = Aggregates.sum(varName);
+    MeanAggregate(Var var) {
+        this.varName = var;
+        countAggregate = new CountAggregate(Collections.singleton(var));
+        sumAggregate = Aggregates.sum(var);
     }
 
     @Override
