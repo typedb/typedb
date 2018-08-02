@@ -7,7 +7,7 @@ let Grakn;
 let graknClient;
 if(process.env.TEST_ENV === 'dist'){
     Grakn = require("../../dist/Grakn");
-    graknClient = new DistGrakn(DEFAULT_URI);
+    graknClient = new Grakn(DEFAULT_URI);
 }else {
     Grakn = require("../../src/Grakn");
     graknClient = new Grakn(DEFAULT_URI);
