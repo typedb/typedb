@@ -97,13 +97,25 @@ class SchemaConcept(Concept):
     def subs(self):
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
         method_response = self._tx_service.run_concept_method(self.id, subs_req)
-        return ResponseConverter.ResponseConverter.SchemaConcept.subs_iterator(self._tx_service, method_response.schemaConcept_subs_iter) 
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                    self._tx_service,
+                    method_response.schemaConcept_subs_iter.id,
+                    lambda tx_serv, iter_res: 
+                        ConceptFactory.create_concept(tx_serv,  
+                        iter_res.conceptMethod_iter_res.schemaConcept_subs_iter_res.schemaConcept)
+                    )
 
     def sups(self):
         sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
         method_response = self._tx_service.run_concept_method(self.id, sups_req)
-        return ResponseConverter.ResponseConverter.SchemaConcept.sups_iterator(self._tx_service, method_response.schemaConcept_sups_iter)
-
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                self._tx_service,
+                method_response.schemaConcept_sups_iter.id,
+                lambda tx_serv, iter_res:
+                    ConceptFactory.create_concept(tx_serv, 
+                    iter_res.conceptMethod_iter_res.schemaConcept_sups_iter_res.schemaConcept)
+                )
+ 
 class Type(SchemaConcept):
 
     def is_abstract(self, value: bool = None) -> Optional[bool]:
@@ -120,18 +132,36 @@ class Type(SchemaConcept):
     def attributes(self):
         attributes_req = RequestBuilder.ConceptMethod.Type.attributes()
         method_response = self._tx_service.run_concept_method(self.id, attributes_req)
-        return ResponseConverter.ResponseConverter.Type.attributes(self._tx_service, method_response.type_attributes_iter)
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                self._tx_service,
+                method_response.type_attributes_iter.id,
+                lambda tx_serv, iter_res: 
+                    ConceptFactory.create_concept(tx_serv,
+                    iter_res.conceptMethod_iter_res.type_attributes_iter_res.attributeType)
+                )
 
     def instances(self):
         instances_req = RequestBuilder.ConceptMethod.Type.instances()
         method_response = self._tx_service.run_concept_method(self.id, instances_req)
-        return ResponseConverter.ResponseConverter.Type.instances(self._tx_service, method_response.type_instances_iter)
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                self._tx_service,
+                method_response.type_instances_iter.id,
+                lambda tx_serv, iter_res: 
+                    ConceptFactory.create_concept(tx_serv,
+                    iter_res.conceptMethod_iter_res.type_instances_iter_res.thing)
+                )
 
     def playing(self):
         """ Retrieve iterator of roles played by this type """
         playing_req = RequestBuilder.ConceptMethod.Type.playing()
         method_response = self._tx_service.run_concept_method(self.id, playing_req)
-        return ResponseConverter.ResponseConverter.Type.playing(self._tx_service, method_response.type_playing_iter)
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                self._tx_service,
+                method_response.type_playing_iter.id,
+                lambda tx_serv, iter_res:
+                    ConceptFactory.create_concept(tx_serv,
+                    iter_res.conceptMethod_iter_res.type_playing_iter_res.role)
+                )
 
     def plays(self, role_concept):
         plays_req = RequestBuilder.ConceptMethod.Type.plays(role_concept)
@@ -157,7 +187,13 @@ class Type(SchemaConcept):
     def keys(self):
         keys_req = RequestBuilder.ConceptMethod.Type.keys()
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
-        return ResponseConverter.ResponseConverter.Type.keys(self._tx_service, method_response.type_keys_iter) 
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                self._tx_service,
+                method_response.type_keys_iter.id,
+                lambda tx_serv, iter_res:
+                    ConceptFactory.create_concept(tx_serv,
+                    iter_res.conceptMethod_iter_res.type_keys_iter_res.attributeType)
+                )
 
 
     def key(self, attribute_concept_type):
@@ -253,7 +289,13 @@ class RelationshipType(Type):
         """ Retrieve roles in this relationship schema type """
         get_roles = RequestBuilder.ConceptMethod.RelationType.roles()
         method_response = self._tx_service.run_concept_method(self.id, get_roles)
-        return ResponseConverter.ResponseConverter.RelationshipType.roles(self._tx_service, method_response.relationType_roles_iter)
+        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+                self._tx_service,
+                method_response.relationType_roles_iter.id,
+                lambda tx_serv, iter_res:
+                    ConceptFactory.create_concept(tx_serv,
+                    iter_res.conceptMethod_iter_res.relationType_roles_iter_res.role)
+                )
         
 
     def relates(self, role):

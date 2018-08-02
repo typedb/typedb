@@ -5,6 +5,7 @@ from grakn.service.Session.util.RequestBuilder import RequestBuilder
 # from src.service.Session.util.ResponseConverter import ResponseConverter
 import grakn.service.Session.util.ResponseConverter as ResponseConverter
 from grakn.service.Session.util import enums
+from grakn.exception.ClientError import ClientError
 
 class TransactionService(object):
 
@@ -118,22 +119,18 @@ class Communicator(object):
 
     def send(self, request):
         if self._closed:
-            #TODO specialize exception
             # TODO integrate this into TransactionService to throw a "Transaction is closed" rather than "connection is closed..."
-            raise Exception("Connection is closed")
-
+            raise ClientError("This connection is closed")
         try:
             self._add_request(request)
             response = next(self._response_iterator)
-        except Exception as e: # TODO specialize exception
+        except Exception as e: # specialize into different gRPC exceptions?
             # on any GRPC exception, close the stream
             self.close()
-            # TODO specialize exception
-            raise Exception("Server/network error: {0}\n\n generated from request: {1}".format(e, request))
+            raise ClientError("Server/network error: {0}\n\n generated from request: {1}".format(e, request))
 
         if response is None:
-            # TODO specialize exception
-            raise Exception("No response from connection")
+            raise ClientError("No response received")
         
         return response
 

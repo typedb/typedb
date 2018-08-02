@@ -1,6 +1,7 @@
 import abc
 from grakn.service.Session.util import enums
 from grakn.service.Session.Concept import ConceptFactory
+from grakn.exception.ClientError import ClientError
 
 
 # TODO this file is a bit of a mess -- clean up
@@ -24,7 +25,7 @@ class ResponseConverter(object):
         elif which_one == "null":
             return None
         else:
-            raise Exception("Unknown getConcept response: {0}".format(which_one))
+            raise ClientError("Unknown get_concept response: {0}".format(which_one))
 
     @staticmethod
     def get_schema_concept(tx_service, grpc_get_concept):
@@ -35,7 +36,7 @@ class ResponseConverter(object):
         elif which_one == "null":
             return None
         else:
-            raise Exception("Unknown getSchemaConcept response: {0}".format(which_one))
+            raise ClientError("Unknown get_schema_concept response: {0}".format(which_one))
 
     @staticmethod
     def get_attributes_by_value(tx_service, grpc_get_attrs_iter):
@@ -70,7 +71,7 @@ class ResponseConverter(object):
         # check the one is in the known datatypes
         known_datatypes = [e.name.lower() for e in enums.DataType]
         if whichone.lower() not in known_datatypes:
-            raise Exception("Unknown value object value key: {0}, not in {1}".format(whichone, known_datatypes))
+            raise ClientError("Unknown value object value key: {0}, not in {1}".format(whichone, known_datatypes))
         if whichone == 'string':
             return grpc_value_object.string
         elif whichone == 'boolean':
@@ -86,11 +87,7 @@ class ResponseConverter(object):
         elif whichone == 'date':
             return grpc_value_object.date
         else:
-            raise Exception("Unknown datatype in enum but not handled in from_grpc_value_object")
-            
-
-
-
+            raise ClientError("Unknown datatype in enum but not handled in from_grpc_value_object")
         
 
     # --- concept method helpers ---
@@ -99,92 +96,6 @@ class ResponseConverter(object):
     # TODO refactor all iterators to use this directly, much more compact & still easy to read
     def iter_res_to_iterator(tx_service, iterator_id, next_iteration_handler):
         return ResponseIterator(tx_service, iterator_id, next_iteration_handler)
-
-
-    class SchemaConcept(object):
-        @staticmethod
-        def subs_iterator(tx_service, grpc_subs_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_subs_iter.id,
-                    lambda tx_serv, iter_res: 
-                        ConceptFactory.create_concept(tx_serv,  
-                        iter_res.conceptMethod_iter_res.schemaConcept_subs_iter_res.schemaConcept)
-                    )
-    
-        @staticmethod
-        def sups_iterator(tx_service, grpc_sups_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_sups_iter.id,
-                    lambda tx_serv, iter_res:
-                        ConceptFactory.create_concept(tx_serv, 
-                        iter_res.conceptMethod_iter_res.schemaConcept_sups_iter_res.schemaConcept)
-                    )
-    
-    class Type(object):                                        
-        @staticmethod
-        def attributes(tx_service, grpc_type_attributes_iter): 
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_type_attributes_iter.id,
-                    lambda tx_serv, iter_res: 
-                        ConceptFactory.create_concept(tx_serv,
-                        iter_res.conceptMethod_iter_res.type_attributes_iter_res.attributeType)
-                    )
-    
-        @staticmethod
-        def instances(tx_service, grpc_type_instances_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_type_instances_iter.id,
-                    lambda tx_serv, iter_res: 
-                        ConceptFactory.create_concept(tx_serv,
-                        iter_res.conceptMethod_iter_res.type_instances_iter_res.thing)
-                    )
-        
-        @staticmethod
-        def playing(tx_service, grpc_playing_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_playing_iter.id,
-                    lambda tx_serv, iter_res:
-                        ConceptFactory.create_concept(tx_serv,
-                        iter_res.conceptMethod_iter_res.type_playing_iter_res.role)
-                    )
-
-        @staticmethod
-        def keys(tx_service, grpc_keys_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_keys_iter.id,
-                    lambda tx_serv, iter_res:
-                        ConceptFactory.create_concept(tx_serv,
-                        iter_res.conceptMethod_iter_res.type_keys_iter_res.attributeType)
-                    )
-                                        
-    class RelationshipType(object):
-                                            
-        @staticmethod
-        def roles(tx_service, grpc_roles_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_roles_iter.id,
-                    lambda tx_serv, iter_res:
-                        ConceptFactory.create_concept(tx_serv,
-                        iter_res.conceptMethod_iter_res.relationType_roles_iter_res.role)
-                    )
-
-    class Role(object):
-
-        @staticmethod
-        def relations(tx_service, grpc_relations_iter):
-            return ResponseConverter.iter_res_to_iterator(
-                    tx_service,
-                    grpc_relations_iter.id,
-                    lambda tx_serv, iter_res:
-                        ConceptFactory.create_concept(tx_serv,
-                        iter_res.conceptMethod_iter_res.role_relations_iter_res.relationType))
 
 class Explanation(object):
     def __init__(self, query_pattern, list_of_concept_maps):
@@ -239,7 +150,7 @@ class ConceptMap(Answer):
         else:
             if var not in self._concept_map:
                 # TODO specialize exception
-                raise Exception("{0} is not in the ConceptMap".format(var))
+                raise ClientError("Variable {0} is not in the ConceptMap".format(var))
             return self._concept_map[var]
             """ Return ConceptMap """
             return self
@@ -288,6 +199,18 @@ class ConceptSet(Answer):
         """ Return the set of Concept IDs within this ConceptSet """
         return self._concept_id_set
 
+class ConceptSetMeasure(ConceptSet):
+
+    def __init__(self, concept_id_set, number, explanation: Explanation):
+        super().__init__(concept_id_set, explanation)
+        self._measurement = number
+
+    def measurement(self):
+        return self._measurement
+
+
+
+
 class Value(Answer):
 
     def __init__(self, number, explanation: Explanation):
@@ -300,10 +223,7 @@ class Value(Answer):
 
     def number(self):
         """ Get as number (float or int) """
-        try:
-            return int(self._number)
-        except ValueError:
-            return float(self._number)
+        return self.number
 
 
 class AnswerConverter(object):
@@ -324,8 +244,7 @@ class AnswerConverter(object):
         elif which_one == 'value':
             return AnswerConverter._create_value(tx_service, grpc_answer.value)
         else:
-            # TODO refine exception
-            raise Exception('Unknown Answer.answer message type: {0}'.format(which_one))
+            raise ClientError('Unknown gRPC Answer.answer message type: {0}'.format(which_one))
    
     @staticmethod
     def _create_concept_map(tx_service, grpc_concept_map_msg):
@@ -356,15 +275,16 @@ class AnswerConverter(object):
     @staticmethod
     def _create_concept_set_measure(tx_service, grpc_concept_set_measure):
         concept_ids = list(grpc_concept_set_measure.set.ids)
-        number = grpc_concept_set_measure.measurement.value # TODO cast string to number
+        number = grpc_concept_set_measure.measurement.value 
         explanation = AnswerConverter._create_explanation(tx_service, grpc_concept_set_measure.explanation)
+        return ConceptSetMeasure(concept_ids, AnswerConverter._number_string_to_native(number), explanation)
 
     @staticmethod
     def _create_value(tx_service, grpc_value_msg):
-        number = grpc_value_msg.number.value # TODO cast string to number
+        number = grpc_value_msg.number.value 
         # build explanation
         explanation = AnswerConverter._create_explanation(tx_service, grpc_value_msg.explanation)
-        return Value(number, explanation)
+        return Value(AnswerConverter._number_string_to_native(number), explanation)
 
     @staticmethod
     def _create_explanation(tx_service, grpc_explanation):
@@ -375,6 +295,13 @@ class AnswerConverter(object):
         for grpc_concept_map in grpc_list_of_concept_maps:
             native_list_of_concept_maps.append(AnswerConverter._create_concept_map(tx_service, grpc_concept_map))
         return Explanation(query_pattern, native_list_of_concept_maps)
+
+    @staticmethod
+    def _number_string_to_native(number):
+        try:
+            return int(number)
+        except ValueError:
+            return float(number)
 
 
 
