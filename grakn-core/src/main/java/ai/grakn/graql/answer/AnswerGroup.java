@@ -18,54 +18,67 @@
 
 package ai.grakn.graql.answer;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.Explanation;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.Set;
+import javax.annotation.Nullable;
+import java.util.List;
 
 /**
- * A type of {@link Answer} object that contains a {@link Set}.
+ * A type of {@link Answer} object that contains a {@link List} of {@link Answer}s as the members and a {@link Concept}
+ * as the owner.
+ * @param <T> the type of {@link Answer} being grouped
  */
-public class ConceptSet implements Answer<ConceptSet>{
+public class AnswerGroup<T extends Answer> implements Answer<AnswerGroup<T>> {
 
-    // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
-    private final Set<ConceptId> set;
+    private final Concept owner;
+    private final List<T> answers;
     private final Explanation explanation;
 
-    public ConceptSet(Set<ConceptId> set) {
-        this(set, null);
+    public AnswerGroup(Concept owner, List<T> answers) {
+        this(owner, answers, null);
     }
 
-    public ConceptSet(Set<ConceptId> set, Explanation explanation) {
-        this.set = ImmutableSet.copyOf(set);
+    public AnswerGroup(Concept owner, List<T> answers, Explanation explanation) {
+        this.owner = owner;
+        this.answers = answers;
         this.explanation = explanation;
     }
-    
+
+
     @Override
-    public ConceptSet asConceptSet() {
+    public AnswerGroup<T> asAnswerGroup() {
         return this;
     }
 
+    @Nullable
     @Override
     public Explanation explanation() {
         return explanation;
     }
 
-    public Set<ConceptId> set() {
-        return set;
+    public Concept owner() {
+        return this.owner;
+    }
+
+    public List<T> answers() {
+        return this.answers;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        ConceptSet a2 = (ConceptSet) obj;
-        return this.set.equals(a2.set);
+        AnswerGroup a2 = (AnswerGroup) obj;
+        return this.owner.equals(a2.owner) &&
+                this.answers.equals(a2.answers);
     }
 
     @Override
     public int hashCode(){
-        return set.hashCode();
+        int hash = owner.hashCode();
+        hash = 31 * hash + answers.hashCode();
+
+        return hash;
     }
 }

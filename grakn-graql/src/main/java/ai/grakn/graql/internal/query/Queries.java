@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.Answer;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -66,7 +67,8 @@ public class Queries {
         return DeleteQueryImpl.of(vars, match);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+    public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+        //TODO: validate vars in aggregate query
         return AggregateQueryImpl.of(match, aggregate);
     }
 

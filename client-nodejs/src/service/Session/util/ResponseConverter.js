@@ -252,7 +252,6 @@ ResponseConverter.prototype.getAttributesByValue = function (resp) {
 
 ResponseConverter.prototype.executeQuery = function (resp) {
     const iterRes = resp.getQueryIter();
-    if (iterRes.hasNull()) return null;
     return this.iteratorFactory.createQueryIterator(iterRes.getId());
 };
 

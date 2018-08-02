@@ -30,13 +30,11 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import org.junit.After;
@@ -58,7 +56,6 @@ import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItemInArray;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -153,7 +150,7 @@ public class UndefineQueryTest {
 
     @Test
     public void whenUndefiningById_TheSchemaConceptIsDeleted() {
-        Type newType = qb.define(x.label(NEW_TYPE).sub(ENTITY)).execute().get(x).asType();
+        Type newType = qb.define(x.label(NEW_TYPE).sub(ENTITY)).execute().get(0).get(x).asType();
 
         assertNotNull(tx.getType(NEW_TYPE));
 
@@ -333,14 +330,10 @@ public class UndefineQueryTest {
     @Test
     public void whenGettingResultsString_ResultIsEmptyAndQueryExecutes() {
         qb.define(label(NEW_TYPE).sub(ENTITY)).execute();
+        Type newType = tx.getType(NEW_TYPE);
+        assertNotNull(newType);
 
-        assertNotNull(tx.getType(NEW_TYPE));
-
-        UndefineQuery query = qb.undefine(label(NEW_TYPE).sub(ENTITY));
-        String output = Printer.stringPrinter(false).toString(query.execute());
-
+        qb.undefine(label(NEW_TYPE).sub(ENTITY)).execute();
         assertNull(tx.getType(NEW_TYPE));
-
-        assertThat(output, isEmptyString());
     }
 }

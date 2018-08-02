@@ -77,14 +77,6 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> sup(AttributeType<D> type);
 
     /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this {@link AttributeType}
-     * @return The {@link AttributeType} itself
-     */
-    AttributeType<D> sub(AttributeType<D> type);
-
-    /**
      * Sets the Role which instances of this {@link AttributeType} may play.
      *
      * @param role The Role Type which the instances of this {@link AttributeType} are allowed to play.

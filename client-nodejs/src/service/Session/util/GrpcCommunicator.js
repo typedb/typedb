@@ -22,6 +22,7 @@ function GrpcCommunicator(stream) {
 }
 
 GrpcCommunicator.prototype.send = async function (request) {
+  if(!this.stream.writable) throw "Transaction is already closed.";
   return new Promise((resolve, reject) => {
     this.pending.push({ resolve, reject });
     this.stream.write(request);

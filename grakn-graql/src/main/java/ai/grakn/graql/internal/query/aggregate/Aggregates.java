@@ -18,15 +18,17 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Factory for making {@link Aggregate} implementations.
@@ -38,8 +40,12 @@ public class Aggregates {
     /**
      * Aggregate that counts results of a {@link Match}.
      */
-    public static Aggregate<Value> count() {
-        return new CountAggregate();
+    public static Aggregate<Value> count(Var... vars) {
+        return new CountAggregate(new HashSet<>(Arrays.asList(vars)));
+    }
+
+    public static Aggregate<Value> count(Set<Var> vars) {
+        return new CountAggregate(vars);
     }
 
     /**
@@ -87,7 +93,7 @@ public class Aggregates {
     /**
      * An aggregate that changes {@link Match} results into a list.
      */
-    public static Aggregate<List<ConceptMap>> list() {
+    public static Aggregate<ConceptMap> list() {
         return new ListAggregate();
     }
 
@@ -95,15 +101,15 @@ public class Aggregates {
      * Aggregate that groups results of a {@link Match} by variable name
      * @param varName the variable name to group results by
      */
-    public static Aggregate<Map<Concept, List<ConceptMap>>> group(Var varName) {
-        return group(varName, list());
+    public static Aggregate<AnswerGroup<ConceptMap>> group(Var varName) {
+        return group(varName, new ListAggregate());
     }
 
     /**
      * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
-    public static <T> Aggregate<Map<Concept, T>> group(Var varName, Aggregate<T> innerAggregate) {
+    public static <T extends Answer> Aggregate<AnswerGroup<T>> group(Var varName, Aggregate<T> innerAggregate) {
         return new GroupAggregate<>(varName, innerAggregate);
     }
 }

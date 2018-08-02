@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.answer.ConceptMap;
 
 import java.util.Collection;
 
@@ -31,7 +32,7 @@ import java.util.Collection;
  *
  * @author Felix Chapman
  */
-public interface UndefineQuery extends Query<Void> {
+public interface UndefineQuery extends Query<ConceptMap> {
 
     @Override
     UndefineQuery withTx(GraknTx tx);

@@ -19,11 +19,9 @@
 package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -33,13 +31,13 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
@@ -66,7 +64,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -90,7 +87,6 @@ import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
@@ -607,26 +603,24 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateGroup() {
-        AggregateQuery<Map<Concept, List<ConceptMap>>> expected = match(var("x").isa("movie")).aggregate(group("x"));
-        AggregateQuery<Map<Concept, List<ConceptMap>>> parsed = parse("match $x isa movie; aggregate group $x;");
+        AggregateQuery<AnswerGroup<ConceptMap>> expected = match(var("x").isa("movie")).aggregate(group("x"));
+        AggregateQuery<AnswerGroup<ConceptMap>> parsed = parse("match $x isa movie; aggregate group $x;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseAggregateGroupCount() {
-        AggregateQuery<Map<Concept, Value>> expected = match(var("x").isa("movie")).aggregate(group("x", count()));
-        AggregateQuery<Map<Concept, Value>> parsed = parse("match $x isa movie; aggregate group $x count;");
+        AggregateQuery<AnswerGroup<Value>> expected = match(var("x").isa("movie")).aggregate(group("x", count()));
+        AggregateQuery<AnswerGroup<Value>> parsed = parse("match $x isa movie; aggregate group $x count;");
 
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testParseAggregateStd() {
-        AggregateQuery<?> expected = match(var("x").isa("movie")).aggregate(std("x"));
-
-        AggregateQuery<Map<String, Object>> parsed =
-                parse("match $x isa movie; aggregate std $x;");
+        AggregateQuery<Value> expected = match(var("x").isa("movie")).aggregate(std("x"));
+        AggregateQuery<Value> parsed = parse("match $x isa movie; aggregate std $x;");
 
         assertEquals(expected, parsed);
     }
@@ -635,20 +629,6 @@ public class QueryParserTest {
     public void testParseAggregateToString() {
         String query = "match $x isa movie; aggregate group $x count;";
         assertEquals(query, parse(query).toString());
-    }
-
-    @Test
-    public void testCustomAggregate() {
-        QueryBuilder qb = withoutGraph();
-
-        QueryParser parser = qb.parser();
-
-        parser.registerAggregate("get-any", args -> new GetAny((Var) args.get(0)));
-
-        AggregateQuery<Concept> expected = qb.match(var("x").isa("movie")).aggregate(new GetAny(Graql.var("x")));
-        AggregateQuery<Concept> parsed = qb.parse("match $x isa movie; aggregate get-any $x;");
-
-        assertEquals(expected, parsed);
     }
 
     // ===============================================================================================================//
@@ -1147,35 +1127,5 @@ public class QueryParserTest {
 
     private static void assertParseEquivalence(String query) {
         assertEquals(query, parse(query).toString());
-    }
-
-    class GetAny implements Aggregate<Concept> {
-
-        private final Var varName;
-
-        GetAny(Var varName) {
-            this.varName = varName;
-        }
-
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
-        @Override
-        public Concept apply(Stream<? extends ConceptMap> stream) {
-            return stream.findAny().get().get(varName);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            GetAny getAny = (GetAny) o;
-
-            return varName.equals(getAny.varName);
-        }
-
-        @Override
-        public int hashCode() {
-            return varName.hashCode();
-        }
     }
 }

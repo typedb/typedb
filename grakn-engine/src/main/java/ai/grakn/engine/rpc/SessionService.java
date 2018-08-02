@@ -31,11 +31,9 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -234,28 +232,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))
                     .parse(request.getQuery());
 
-            Stream<Transaction.Res> responseStream;
-            int iteratorId;
-            Transaction.Res response;
-            if (query instanceof Streamable) {
-                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction.Iter::query);
-                iteratorId = iterators.add(responseStream.iterator());
-            }
-            else if (query instanceof ComputeQuery<?>) {
-                responseStream = ((ComputeQuery<?>) query).stream().map(ResponseBuilder.Transaction.Iter::query);
-                iteratorId = iterators.add(responseStream.iterator());
-            }
-            else {
-                Object result = query.execute();
-                if (result == null) {
-                    iteratorId = -1;
-                } else {
-                    responseStream = Stream.of(ResponseBuilder.Transaction.Iter.query(result));
-                    iteratorId = iterators.add(responseStream.iterator());
-                }
-            }
-
-            response = ResponseBuilder.Transaction.queryIterator(iteratorId);
+            Stream<Transaction.Res> responseStream = query.stream().map(ResponseBuilder.Transaction.Iter::query);
+            Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
             responseSender.onNext(response);
         }
 

@@ -24,6 +24,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -41,7 +42,7 @@ class MedianAggregate implements Aggregate<Value> {
     }
 
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         List<Number> results = stream
                 .map(result -> ((Number) result.get(varName).asAttribute().value()))
                 .sorted()
@@ -52,13 +53,14 @@ class MedianAggregate implements Aggregate<Value> {
         int halveCeiling = (int) Math.ceil((size - 1) / 2.0);
 
         if (size == 0) {
-            return null;
+            return Collections.emptyList();
         } else if (size % 2 == 1) {
             // Take exact middle result
-            return new Value(results.get(halveFloor));
+            return Collections.singletonList(new Value(results.get(halveFloor)));
         } else {
             // Take average of middle results
-            return new Value((results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2);
+            Number result = (results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2;
+            return Collections.singletonList(new Value(result));
         }
     }
 
