@@ -239,7 +239,7 @@ jobs:
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
-      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
+      - run: mvn verify -pl :test-client-java -Dtest="ai.grakn.client.ClientJavaE2E" --also-make -DfailIfNoTests=false
 
       ##############################################################################
       # make and store reports
