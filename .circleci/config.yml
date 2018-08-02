@@ -284,7 +284,7 @@ jobs:
         - run: cd grakn-dist/target/grakn-dist-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: cd client-nodejs && yarn install && yarn run test
 
-client-python-e2e:
+  client-python-e2e:
       docker:
       - image: circleci/python:3.6-jessie
       working_directory: ~/grakn
