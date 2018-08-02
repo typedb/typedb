@@ -1,5 +1,6 @@
 import unittest
 import grakn
+from grakn.exception.ClientError import ClientError
 
 
 # run-once per testing
@@ -23,9 +24,8 @@ class test_Base(unittest.TestCase):
         try:
             # define parentship roles to test agains
             tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-        except Exception as e: # TODO specialize exception
-            print(e)
-            pass
+        except ClientException as ce: 
+            print(ce)
 
         answers = list(tx.query("match $x isa person, has age 20; get;"))
         if len(answers) == 0:
@@ -68,8 +68,7 @@ class test_Concept(test_Base):
         none_car = self.tx.get_concept(car.id)
         self.assertIsNone(none_car)
 
-        # TODO refine exception
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             car.delete()
 
     
@@ -112,11 +111,11 @@ class test_SchemaConcept(test_Base):
 
         with self.subTest(i=2):
             bike_type = self.tx.get_schema_concept("bike")
-            #TODO specialize exception
-            with self.assertRaises(Exception):
+            with self.assertRaises(AttributeError):
                 bike_type.label("")
-            with self.assertRaises(Exception):
+            with self.assertRaises(AttributeError):
                 bike_type.label(100)
+            self.assertIsNone(bike_type)
 
     def test_is_implicit(self):
         """ Test implicit schema concepts """

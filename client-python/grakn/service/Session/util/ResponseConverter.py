@@ -332,8 +332,7 @@ class ResponseIterator(object):
         concepts = []
         for answer in self:
             if type(answer) != ConceptMap:
-                # TODO specialize exception
-                raise Exception("Only use .collect_concepts on ConceptMaps returned by query()")
+                raise ClientError("Only use .collect_concepts on ConceptMaps returned by query()")
             concepts.extend(answer.map().values()) # get concept map => concepts
         return concepts
 

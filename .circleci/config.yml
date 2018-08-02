@@ -291,6 +291,9 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
+        - restore_cache:
+            name: Restore maven m2 cache
+            key: grakn-cache-m2-version-8
         - run:
             name: Install protobuf and grpc
             command: pip3 install protobuf grpcio --user

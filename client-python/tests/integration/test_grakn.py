@@ -1,5 +1,6 @@
 import unittest
 import grakn
+from grakn.exception.ClientError import ClientError
 
 
 class test_PreDbSetup(unittest.TestCase):
@@ -13,8 +14,7 @@ class test_PreDbSetup(unittest.TestCase):
 
     def test_grakn_init_invalid_uri(self):
         """ Test invalid URI """
-        # TODO specialize exception
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             inst = grakn.Grakn('localhost:1000')
             session = inst.session('testkeyspace')
             session.transaction(grakn.TxType.READ)
@@ -31,9 +31,8 @@ class test_PreDbSetup(unittest.TestCase):
         with self.assertRaises(TypeError):
             session = inst.session(123)
             tx = session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
-        # TODO specialize exception
         inst2 = grakn.Grakn('localhost:48555')
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             session = inst2.session('')
             tx = session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
 
@@ -41,8 +40,7 @@ class test_PreDbSetup(unittest.TestCase):
         inst = grakn.Grakn('localhost:48555')
         session = inst.session('test')
         session.close()
-        # TODO specialize exception
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             session.transaction(grakn.TxType.READ)
 
     # --- Test grakn session transactions that are pre-DB setup ---
@@ -77,9 +75,8 @@ class test_Base(unittest.TestCase):
         try:
             # define parentship roles to test agains
             tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-        except Exception as e: # TODO specialize exception
-            print(e)
-            pass
+        except ClientError as ce:
+            print(ce)
 
         answers = list(tx.query("match $x isa person, has age 20; get;"))
         if len(answers) == 0:
@@ -112,10 +109,9 @@ class test_Transaction(test_Base):
 
     def test_query_invalid_syntax(self):
         """ Invalid syntax -- expected behavior is an exception & closed transaction """
-        # TODO specialize exception
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             answers = self.tx.query("match $x bob marley; get")
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             # should be closed
             self.tx.query("match $x isa person; get;")
         self.assertTrue(self.tx.is_closed(), msg="Tx is not closed after invalid syntax")
@@ -123,9 +119,7 @@ class test_Transaction(test_Base):
 
     def test_query_tx_already_closed(self):
         self.tx.close()
-        
-        # TODO specialize exception
-        with self.assertRaises(Exception):
+        with self.assertRaises(ClientError):
             self.tx.query("match $x isa person; get;")
             
         self.assertTrue(self.tx.is_closed(), msg="Tx is not closed after close()")
