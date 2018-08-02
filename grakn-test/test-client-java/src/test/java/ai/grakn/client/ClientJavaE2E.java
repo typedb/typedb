@@ -64,6 +64,22 @@ public class ClientJavaE2E {
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
 
+    /**
+     * Performs various queries with the client-java library
+     * define a schema, define a rule, match; get;, match; insert;, match; delete;, match; aggregate;, and compute count
+     *
+     * The tests are highly interconnected hence why they are grouped into a single test.
+     * If you split them into multiple tests, there is no guarantee that they are ran in the order they are defined,
+     * and there is a chance that the match; get; test is performed before the define a schema test, which would cause it to fail.
+     *
+     * The schema describes a lion family which consists of a lion, lioness, and the offspring - three young lions. The mating
+     * relationship captures the mating act between the male and female partners (ie., the lion and lioness). The child-bearing
+     * relationship captures the child-bearing act which results from the mating act.
+     *
+     * The rule is one such that if there is an offspring which is the result of a certain child-bearing act, then
+     * that offspring is the child of the male and female partners which are involved in the mating act.
+     *
+     */
     @Test
     public void clientJavaE2E() {
         // define a schema
