@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.util;
@@ -86,10 +86,11 @@ public class GraqlSyntax {
         }
 
         public static Command of(String value) {
-            for (Command c : Command.values())
+            for (Command c : Command.values()) {
                 if (c.command.equals(value)) {
                     return c;
                 }
+            }
             return null;
         }
     }
@@ -273,10 +274,11 @@ public class GraqlSyntax {
             }
 
             public static Method<?> of(String name) {
-                for (Method<?> m : Method.values())
+                for (Method<?> m : Method.values()) {
                     if (m.name.equals(name)) {
                         return m;
                     }
+                }
                 return null;
             }
 
@@ -321,10 +323,11 @@ public class GraqlSyntax {
             }
 
             public static Condition of(String value) {
-                for (Condition c : Condition.values())
+                for (Condition c : Condition.values()) {
                     if (c.condition.equals(value)) {
                         return c;
                     }
+                }
                 return null;
             }
         }
@@ -349,10 +352,11 @@ public class GraqlSyntax {
             }
 
             public static Algorithm of(String value) {
-                for (Algorithm a : Algorithm.values())
+                for (Algorithm a : Algorithm.values()) {
                     if (a.algorithm.equals(value)) {
                         return a;
                     }
+                }
                 return null;
             }
         }
@@ -378,10 +382,11 @@ public class GraqlSyntax {
             }
 
             public static Parameter of(String value) {
-                for (Parameter p : Parameter.values())
+                for (Parameter p : Parameter.values()) {
                     if (p.param.equals(value)) {
                         return p;
                     }
+                }
                 return null;
             }
         }
