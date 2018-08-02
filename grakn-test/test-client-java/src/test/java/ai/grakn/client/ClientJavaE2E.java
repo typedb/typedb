@@ -3,6 +3,7 @@ package ai.grakn.client;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.GraqlSyntax;
 import ai.grakn.util.SimpleURI;
@@ -99,7 +100,7 @@ public class ClientJavaE2E {
                                     var("childbearing").rel("child-bearer").rel("offspring", var("offspring")).isa("child-bearing")
                             ))
                             .then(and(
-                                    var().rel("parent", var("male")).rel("parent", var("female")).rel("child", var("offspring"))
+                                    var().rel("parent", var("male")).rel("parent", var("female")).rel("child", var("offspring")).isa("parentship")
                             ))
             ).execute();
             tx.commit();
@@ -120,18 +121,9 @@ public class ClientJavaE2E {
             tx.graql().insert(
                     var().isa("lion").has("name").val(names[0]),
                     var().isa("lion").has("name").val(names[1]),
-                    var().isa("lion").has("name").val(names[2]),
-                    var().isa("lion").has("name").val(names[3]),
-                    var().isa("lion").has("name").val(names[4])
+                    var().isa("lion").has("name").val(names[2])
             ).execute();
             tx.commit();
-        });
-
-        // match get
-        localGraknTx(tx -> {
-            List<ConceptMap> people = tx.graql().match(var("p").isa("lion").has("name", var("n"))).get().execute();
-            List<String> insertedNames = people.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
-            assertThat(insertedNames, containsInAnyOrder(lionNames()));
         });
 
         // match insert
@@ -139,11 +131,48 @@ public class ClientJavaE2E {
             String[] familyMembers = lionNames();
             List<ConceptMap> insertedMating = tx.graql()
                     .match(
-                            var("male-partner").isa("lion").has("name").val(familyMembers[0]),
-                            var("female-partner").isa("lion").has("name").val(familyMembers[1]))
-                    .insert(var().isa("mating").rel("male-partner", var("male-partner")).rel("female-partner", var("female-partner")))
+                            var("lion").isa("lion").has("name").val(familyMembers[0]),
+                            var("lioness").isa("lion").has("name").val(familyMembers[1]))
+                    .insert(var().isa("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")))
                     .execute();
+
+            List<ConceptMap> insertedChildBearing = tx.graql()
+                    .match(
+                            var("lion").isa("lion").has("name").val(familyMembers[0]),
+                            var("lioness").isa("lion").has("name").val(familyMembers[1]),
+                            var("offspring").isa("lion").has("name").val(familyMembers[2]),
+                            var("mating").rel("male-partner", var("lion")).rel("female-partner", var("lioness")).isa("mating")
+                    )
+                    .insert(var("childbearing").rel("child-bearer", var("mating")).rel("offspring", var("offspring")).isa("child-bearing"))
+                    .execute();
+
+            tx.commit();
+
             assertThat(insertedMating, hasSize(1));
+            assertThat(insertedChildBearing, hasSize(1));
+        });
+
+
+        // match get
+        localGraknTx(tx -> {
+            List<ConceptMap> insertedPeople = tx.graql().match(var("p").isa("lion").has("name", var("n"))).get().execute();
+            List<String> insertedNames = insertedPeople.stream().map(answer -> answer.get("n").asAttribute().value().toString()).collect(Collectors.toList());
+            assertThat(insertedNames, containsInAnyOrder(lionNames()));
+
+            List<ConceptMap> insertedMating = tx.graql().match(var().isa("mating")).get().execute();
+            assertThat(insertedMating, hasSize(1));
+
+            List<ConceptMap> insertedChildBearing = tx.graql().match(var().isa("child-bearing")).get().execute();
+            assertThat(insertedChildBearing, hasSize(1));
+        });
+
+
+        // match rule
+        localGraknTx(tx -> {
+            List<ConceptMap> parentship = tx.graql().match(
+                    var("parentship").isa("parentship").rel("parent", var("parent")).rel("child", var("child")))
+                    .get().execute();
+            assertThat(parentship, hasSize(2));
         });
 
         // match aggregate
@@ -168,8 +197,7 @@ public class ClientJavaE2E {
     }
 
     private String[] lionNames() {
-        return new String[] { "male-partner", "female-partner", "young-lion-1",
-                "young-lion-2", "young-lion-3" };
+        return new String[] { "male-partner", "female-partner", "young-lion" };
     }
 
     private void localGraknTx(Consumer<Grakn.Transaction> fn) {
