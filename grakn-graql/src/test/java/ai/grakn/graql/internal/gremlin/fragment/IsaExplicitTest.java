@@ -71,9 +71,9 @@ public class IsaExplicitTest {
         EntityType entityType2 = graph.putEntityType(thingy2);
         EntityType entityType3 = graph.putEntityType(thingy3);
 
-        EntityType superType1 = graph.putEntityType(thingy)
-                .sub(entityType0)
-                .sub(entityType1);
+        EntityType superType1 = graph.putEntityType(thingy);
+        entityType0.sup(superType1);
+        entityType1.sup(superType1);
 
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");

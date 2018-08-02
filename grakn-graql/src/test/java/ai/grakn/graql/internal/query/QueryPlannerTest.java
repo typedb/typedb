@@ -79,9 +79,9 @@ public class QueryPlannerTest {
         AttributeType<String> attributeType = graph.putAttributeType(resourceType, AttributeType.DataType.STRING);
         entityType4.has(attributeType);
 
-        EntityType superType1 = graph.putEntityType(thingy)
-                .sub(entityType0)
-                .sub(entityType1);
+        EntityType superType1 = graph.putEntityType(thingy);
+        entityType0.sup(superType1);
+        entityType1.sup(superType1);
 
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
