@@ -62,7 +62,7 @@ public class SampleKBLoader {
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
-        EmbeddedGraknSession session = EmbeddedGraknSession.inMemory(randomKeyspace());
+        EmbeddedGraknSession session = GraknTestUtil.usingTinker() ? EmbeddedGraknSession.inMemory(randomKeyspace()) : EmbeddedGraknSession.createEngineSession(randomKeyspace());
         factory = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
         this.preLoad = preLoad;
     }
