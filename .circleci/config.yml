@@ -299,6 +299,7 @@ jobs:
         - run:
             name: Install protobuf and grpc
             command: pip install protobuf grpcio --user
+        - run: cd client-python && make protobuf
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
         - run: cd client-python && python -m unittest discover tests/integration/ -v
 
