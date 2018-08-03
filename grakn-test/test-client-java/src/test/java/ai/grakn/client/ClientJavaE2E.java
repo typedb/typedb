@@ -228,7 +228,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - match aggregate...");
             AggregateQuery<Value> aggregateQuery = tx.graql().match(var("p").isa("lion")).aggregate(count());
             LOG.info("clientJavaE2E() - '" + aggregateQuery + "'");
-            int aggregateCount = aggregateQuery.execute().number().intValue();
+            int aggregateCount = aggregateQuery.execute().get(0).number().intValue();
             assertThat(aggregateCount, equalTo(lionNames().length));
             LOG.info("clientJavaE2E() - done.");
         });
