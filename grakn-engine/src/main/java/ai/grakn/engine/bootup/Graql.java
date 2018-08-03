@@ -18,12 +18,9 @@
 
 package ai.grakn.engine.bootup;
 
-import ai.grakn.engine.GraknConfig;
-import ai.grakn.graql.shell.GraknSessionProvider;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.graql.shell.GraqlShellOptionsFactory;
-import ai.grakn.graql.shell.SessionProvider;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
@@ -48,12 +45,10 @@ import java.util.Arrays;
 public class Graql {
 
     private final GraqlShellOptionsFactory graqlShellOptionsFactory;
-    private SessionProvider sessionProvider;
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
 
-    public Graql(SessionProvider sessionProvider, GraqlShellOptionsFactory graqlShellOptionsFactory) {
-        this.sessionProvider = sessionProvider;
+    public Graql(GraqlShellOptionsFactory graqlShellOptionsFactory) {
         this.graqlShellOptionsFactory = graqlShellOptionsFactory;
     }
 
@@ -64,10 +59,9 @@ public class Graql {
      * @param args
      */
     public static void main(String[] args) throws IOException, InterruptedException {
-        GraknSessionProvider sessionProvider = new GraknSessionProvider(GraknConfig.create());
         GraqlShellOptionsFactory graqlShellOptionsFactory = GraqlShellOptions::create;
 
-        new Graql(sessionProvider, graqlShellOptionsFactory).run(args);
+        new Graql(graqlShellOptionsFactory).run(args);
     }
 
     public void run(String[] args) throws IOException, InterruptedException {
@@ -84,7 +78,7 @@ public class Graql {
                     return;
                 }
 
-                GraqlConsole.start(options, sessionProvider, HISTORY_FILENAME, System.out, System.err);
+                GraqlConsole.start(options, HISTORY_FILENAME, System.out, System.err);
                 break;
             case "migrate":
                 migrate(valuesFrom(args, 1));

@@ -18,9 +18,8 @@
 
 package ai.grakn.graql.shell;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
@@ -48,7 +47,7 @@ import static ai.grakn.graql.shell.GraqlShell.loadQuery;
 public class GraqlConsole {
 
     public static boolean start(
-            GraqlShellOptions options, SessionProvider sessionProvider, String historyFile,
+            GraqlShellOptions options, String historyFile,
             PrintStream sout, PrintStream serr
     ) throws InterruptedException, IOException {
 
@@ -109,9 +108,14 @@ public class GraqlConsole {
 
         boolean infer = options.shouldInfer();
         ConsoleReader console = new ConsoleReader(System.in, sout);
-        GraknSession  session = sessionProvider.getSession(options, console);
+        SimpleURI defaultGrpcUri = ai.grakn.client.Grakn.DEFAULT_URI;
+        SimpleURI location = options.getUri();
 
-        try (GraqlShell shell = new GraqlShell(historyFile, session, console, serr, outputFormat, infer)) {
+        SimpleURI uri = location != null ? location : defaultGrpcUri;
+        Keyspace keyspace = options.getKeyspace();
+        Grakn client = new Grakn(uri);
+
+        try (GraqlShell shell = new GraqlShell(historyFile, client, keyspace, console, serr, outputFormat, infer)) {
             List<Path> filePaths = options.getFiles();
             if (filePaths != null) {
                 queries = loadQueries(filePaths);

@@ -18,8 +18,6 @@
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.engine.GraknConfig;
-import ai.grakn.graql.shell.GraknSessionProvider;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.EngineContext;
@@ -661,14 +659,14 @@ public class GraqlShellIT {
         assertThat(outputLines, contains(matcherList));
     }
 
-    private String runShellWithoutErrors(String input, String... args) throws Exception {
+    private String runShellWithoutErrors(String input, String... args) {
         ShellResponse response = runShell(input, args);
         String errMessage = response.err();
         assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
         return response.out();
     }
 
-    private ShellResponse runShell(String input, String... args) throws Exception {
+    private ShellResponse runShell(String input, String... args) {
         args = addKeyspaceAndUriParams(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
@@ -689,14 +687,13 @@ public class GraqlShellIT {
         PrintStream err = new PrintStream(terr);
 
         Boolean success = null;
-        GraknConfig config = GraknConfig.create();
 
         try {
             System.setIn(in);
 
             GraqlShellOptions options = GraqlShellOptions.create(args);
 
-            success = GraqlConsole.start(options,new GraknSessionProvider(config), historyFile, out, err);
+            success = GraqlConsole.start(options, historyFile, out, err);
         } catch (Exception e) {
             e.printStackTrace();
             err.flush();
