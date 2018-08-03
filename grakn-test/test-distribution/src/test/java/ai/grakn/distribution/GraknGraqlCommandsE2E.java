@@ -1,3 +1,21 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package ai.grakn.distribution;
 
 import ai.grakn.util.GraknVersion;
@@ -27,11 +45,11 @@ import static org.hamcrest.Matchers.equalTo;
  * Grakn end to end test suite which verifies bootup functionalities, including:
  * - 'grakn server start, stop, and clean'
  * - 'graql console'
- * If you are testing functionalities which needs a running Grakn, add it in {@link DistributionWithARunningGraknE2E} instead.
+ * If you are testing functionalities which needs a running Grakn, add it in {@link GraknGraqlCommands_WithARunningGraknE2E} instead.
  * @author Ganeshwara Herawan Hananda
  */
 
-public class DistributionE2E {
+public class GraknGraqlCommandsE2E {
     private ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
             .redirectOutput(System.out)
