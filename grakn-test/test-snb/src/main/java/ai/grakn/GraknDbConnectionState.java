@@ -22,7 +22,6 @@ import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
 import com.ldbc.driver.DbConnectionState;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
