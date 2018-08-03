@@ -1114,8 +1114,8 @@
                         <id>validate</id>
                         <phase>validate</phase>
                         <configuration>
-                            <configLocation>checks/checkstyle.xml</configLocation>
-                            <suppressionsLocation>checks/checkstyle-suppressions.xml</suppressionsLocation>
+                            <configLocation>build/checkstyle/checkstyle.xml</configLocation>
+                            <suppressionsLocation>build/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                             <consoleOutput>true</consoleOutput>
                             <failsOnError>true</failsOnError>
                         </configuration>
@@ -1130,7 +1130,7 @@
                 <artifactId>findbugs-maven-plugin</artifactId>
                 <version>3.0.4</version>
                 <configuration>
-                    <excludeFilterFile>checks/findbugs-exclude.xml</excludeFilterFile>
+                    <excludeFilterFile>build/findbugs/findbugs-exclude.xml</excludeFilterFile>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
                 </configuration>
@@ -1167,7 +1167,7 @@
                         <exclude>**/ai/grakn/engine/controller/DashboardController.java</exclude>
                     </excludes>
                     <rulesets>
-                        <ruleset>${user.dir}/checks/pmd-rules.xml</ruleset>
+                        <ruleset>${user.dir}/build/pmd/pmd-rules.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>
