@@ -29,6 +29,7 @@ import java.util.List;
  */
 public class ConceptList implements Answer<ConceptList>{
 
+    // TODO: change to store List<Concept> once we are able to construct Concept without a database look up
     private final List<ConceptId> list;
     private final Explanation explanation;
 
@@ -42,7 +43,7 @@ public class ConceptList implements Answer<ConceptList>{
     }
 
     @Override
-    public ConceptList get() {
+    public ConceptList asConceptList() {
         return this;
     }
 

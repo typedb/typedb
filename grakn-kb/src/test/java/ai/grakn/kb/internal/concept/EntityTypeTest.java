@@ -127,10 +127,10 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
-        EntityType child = tx.putEntityType("child");
-        EntityType p2 = tx.putEntityType("p2").sub(child);
-        EntityType p3 = tx.putEntityType("p3").sub(p2);
-        EntityType p4 = tx.putEntityType("p4").sub(p3);
+        EntityType p4 = tx.putEntityType("p4");
+        EntityType p3 = tx.putEntityType("p3").sup(p4);
+        EntityType p2 = tx.putEntityType("p2").sup(p3);
+        EntityType child = tx.putEntityType("child").sup(p2);
         EntityType entity = tx.getMetaEntityType();
         Type thing = tx.getMetaConcept();
 

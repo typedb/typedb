@@ -142,23 +142,6 @@ public class TransactionTest {
         }
     }
 
-    @Test
-    public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
-        Query<?> query = match(var("x").isa("person")).delete("x");
-        String queryString = query.toString();
-
-        Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder()
-                        .setNull(ConceptProto.Null.getDefaultInstance())).build();
-
-        server.setResponse(RequestBuilder.Transaction.query(query), response);
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requestListener()).onNext(any()); // The open request
-            assertNull(tx.graql().parse(queryString).execute());
-        }
-    }
-
     @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         Transaction.Res queryIterator = SessionProto.Transaction.Res.newBuilder()

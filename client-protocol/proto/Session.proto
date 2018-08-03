@@ -95,10 +95,7 @@ message Transaction {
             // We use enum INFER instead, because the default value is index 0 (TRUE)
         }
         message Iter {
-            oneof iter {
-                int32 id = 1;
-                Null null = 2;
-            }
+            int32 id = 1;
             message Res {
                 Answer answer = 1;
             }

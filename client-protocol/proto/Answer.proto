@@ -9,17 +9,24 @@ package session;
 
 message Answer {
     oneof answer {
-        ConceptMap conceptMap = 1;
-        ConceptList conceptList = 2;
-        ConceptSet conceptSet = 3;
-        ConceptSetMeasure conceptSetMeasure = 4;
-        Value value = 5;
+        AnswerGroup answerGroup = 1;
+        ConceptMap conceptMap = 2;
+        ConceptList conceptList = 3;
+        ConceptSet conceptSet = 4;
+        ConceptSetMeasure conceptSetMeasure = 5;
+        Value value = 6;
     }
 }
 
 message Explanation {
     string pattern = 1;
     repeated ConceptMap answers = 2;
+}
+
+message AnswerGroup {
+    Concept owner = 1;
+    repeated Answer answers = 2;
+    Explanation explanation = 3;
 }
 
 message ConceptMap {

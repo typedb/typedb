@@ -25,6 +25,8 @@ import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.util.PrimitiveNumberComparator;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -39,11 +41,11 @@ class MinAggregate implements Aggregate<Value> {
     }
 
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         PrimitiveNumberComparator comparator = new PrimitiveNumberComparator();
         Number number = stream.map(this::getValue).min(comparator).orElse(null);
-        if (number == null) return null;
-        else return new Value(number);
+        if (number == null) return Collections.emptyList();
+        else return Collections.singletonList(new Value(number));
     }
 
     @Override

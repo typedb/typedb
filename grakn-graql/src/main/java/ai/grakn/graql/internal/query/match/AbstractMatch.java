@@ -29,6 +29,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -92,7 +93,7 @@ abstract class AbstractMatch implements MatchAdmin {
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<S> aggregate) {
+    public final <S extends Answer> AggregateQuery<S> aggregate(Aggregate<S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 

@@ -52,14 +52,6 @@ public interface Role extends SchemaConcept {
      */
     Role sup(Role type);
 
-    /**
-     * Adds another sub to this type
-     *
-     * @param type The sub type of this role type
-     * @return The Role itself
-     */
-    Role sub(Role type);
-
     //------------------------------------- Accessors ----------------------------------
     /**
      * Returns the super of this Role.

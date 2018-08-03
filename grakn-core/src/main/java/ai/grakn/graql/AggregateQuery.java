@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.Nullable;
 
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
  *
  * @author Grakn Warriors
  */
-public interface AggregateQuery<T> extends Query<T> {
+public interface AggregateQuery<T extends Answer> extends Query<T> {
 
     @Override
     AggregateQuery<T> withTx(GraknTx tx);

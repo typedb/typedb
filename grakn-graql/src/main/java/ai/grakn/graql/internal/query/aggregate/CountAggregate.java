@@ -20,18 +20,33 @@ package ai.grakn.graql.internal.query.aggregate;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * Aggregate that counts results of a {@link Match}.
  */
 class CountAggregate implements Aggregate<Value> {
+
+    private final Set<Var> vars;
+
+    public CountAggregate(Set<Var> vars) {
+        this.vars = vars;
+    }
+
     @Override
-    public Value apply(Stream<? extends ConceptMap> stream) {
-        return new Value(stream.count());
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
+        long count;
+        if (vars.isEmpty()) count = stream.distinct().count();
+        else count = stream.map(res -> res.project(vars)).distinct().count();
+
+        return Collections.singletonList(new Value(count));
     }
 
     @Override
