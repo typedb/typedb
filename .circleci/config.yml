@@ -285,8 +285,6 @@ jobs:
         - run: cd client-nodejs && yarn install && yarn run test
 
   client-python-e2e:
-      #docker:
-      #- image: circleci/python:3.6-jessie
       machine: true
       working_directory: ~/grakn
       steps:
@@ -297,12 +295,12 @@ jobs:
             key: grakn-cache-m2-version-8
         - run:
             name: Install python deps
-            command: sudo apt-get install python3-pip
+            command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
         - run:
             name: Install protobuf and grpc
             command: pip install protobuf grpcio --user
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
-        - run: cd client-python && python3 -m unittest discover tests/integration/ -v
+        - run: cd client-python && python -m unittest discover tests/integration/ -v
 
 
 workflows:
