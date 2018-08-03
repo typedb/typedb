@@ -264,7 +264,7 @@ class test_Transaction(test_Base):
 
     def test_close_check_closed(self):
         """ Close then confirm closed """
-        # attempt to perform a query/put etc
+        # attempt to perform a query/put etc 
         self.tx.close()
         with self.assertRaises(Exception):
             self.tx.query("match $x isa person; get;")
