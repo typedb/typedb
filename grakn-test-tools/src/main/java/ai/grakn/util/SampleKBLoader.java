@@ -22,7 +22,6 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknConfig;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.factory.TxFactory;

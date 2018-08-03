@@ -41,11 +41,6 @@ public class GraknDbConnectionState extends DbConnectionState {
      */
     public GraknDbConnectionState(Map<String, String> properties) {
 
-        String uri;
-
-        uri = properties.get("ai.grakn.uri");
-
-
         String keyspace;
 
         keyspace = properties.get("ai.grakn.keyspace");
@@ -54,7 +49,7 @@ public class GraknDbConnectionState extends DbConnectionState {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close(){
         session.close();
     }
 

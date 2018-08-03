@@ -313,7 +313,7 @@ public class EngineContext extends CompositeTestRule {
 
         io.grpc.Server server = ServerBuilder.forPort(0)
                 .addService(new SessionService(requestOpener, postProcessor))
-                .addService(new KeyspaceService(requestOpener, keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         GraknTestUtil.allocateSparkPort(config);

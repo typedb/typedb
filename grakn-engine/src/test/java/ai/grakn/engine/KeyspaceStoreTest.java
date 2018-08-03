@@ -97,7 +97,7 @@ public class KeyspaceStoreTest {
         OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .addService(new SessionService(requestOpener, mockedPostProcessor))
-                .addService(new KeyspaceService(requestOpener, keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);
         rpcServerRPC.start();

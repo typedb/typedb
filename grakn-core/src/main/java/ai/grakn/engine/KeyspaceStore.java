@@ -20,7 +20,6 @@ package ai.grakn.engine;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Label;
-import ai.grakn.kb.admin.GraknAdmin;
 
 import java.util.Set;
 

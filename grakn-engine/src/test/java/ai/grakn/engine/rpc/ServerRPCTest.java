@@ -133,7 +133,7 @@ public class ServerRPCTest {
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .addService(new SessionService(requestOpener, mockedPostProcessor))
-                .addService(new KeyspaceService(requestOpener, mockedKeyspaceStore))
+                .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);
         rpcServerRPC.start();

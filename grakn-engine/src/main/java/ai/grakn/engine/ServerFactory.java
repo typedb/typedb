@@ -132,7 +132,7 @@ public class ServerFactory {
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, postProcessor))
-                .addService(new KeyspaceService(requestOpener, keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
         return ServerRPC.create(grpcServer);

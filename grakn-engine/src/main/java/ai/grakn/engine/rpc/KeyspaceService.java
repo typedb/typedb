@@ -21,7 +21,6 @@ package ai.grakn.engine.rpc;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
-import ai.grakn.engine.Server;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import io.grpc.Status;
@@ -35,11 +34,9 @@ import java.util.stream.Collectors;
  */
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
-    private final OpenRequest requestOpener;
     private final KeyspaceStore keyspaceStore;
 
-    public KeyspaceService(OpenRequest requestOpener, KeyspaceStore keyspaceStore) {
-        this.requestOpener = requestOpener;
+    public KeyspaceService(KeyspaceStore keyspaceStore) {
         this.keyspaceStore = keyspaceStore;
     }
 

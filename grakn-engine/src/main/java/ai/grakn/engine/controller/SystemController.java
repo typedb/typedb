@@ -20,7 +20,6 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerStatus;
@@ -50,7 +49,6 @@ import spark.Service;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

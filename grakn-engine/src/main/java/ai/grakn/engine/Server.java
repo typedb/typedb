@@ -18,15 +18,10 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTxType;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
