@@ -93,7 +93,6 @@ class ResponseConverter(object):
     # --- concept method helpers ---
 
     @staticmethod
-    # TODO refactor all iterators to use this directly, much more compact & still easy to read
     def iter_res_to_iterator(tx_service, iterator_id, next_iteration_handler):
         return ResponseIterator(tx_service, iterator_id, next_iteration_handler)
 
@@ -135,6 +134,23 @@ class Answer(object):
             recursive_explanation_set = concept_map.explanations()
             explanations = explanations.union(recursive_explanation_set)
         return explanations
+
+class AnswerGroup(Answer):
+
+    def __init__(self, owner_concept, answer_list, explanation):
+        super().__init__(explanation)
+        self._owner_concept = owner_concept
+        self._answer_list = answer_list
+
+    def get(self):
+        return self
+
+    def owner(self):
+        return self._owner_concept
+
+    def answers(self):
+        return self._answer_list
+
 
 
 class ConceptMap(Answer):
@@ -209,8 +225,6 @@ class ConceptSetMeasure(ConceptSet):
         return self._measurement
 
 
-
-
 class Value(Answer):
 
     def __init__(self, number, explanation: Explanation):
@@ -223,7 +237,7 @@ class Value(Answer):
 
     def number(self):
         """ Get as number (float or int) """
-        return self.number
+        return self._number
 
 
 class AnswerConverter(object):
@@ -235,6 +249,8 @@ class AnswerConverter(object):
 
         if which_one == 'conceptMap':
            return AnswerConverter._create_concept_map(tx_service, grpc_answer.conceptMap) 
+        elif which_one == 'answerGroup':
+            return AnswerConverter._create_answer_group(tx_service, grpc_answer.answerGroup)
         elif which_one == 'conceptList':
             return AnswerConverter._create_concept_list(tx_service, grpc_answer.conceptList)
         elif which_one == 'conceptSet':
@@ -259,6 +275,15 @@ class AnswerConverter(object):
         return ConceptMap(answer_map, explanation)
 
     @staticmethod
+    def _create_answer_group(tx_service, grpc_answer_group):
+        grpc_owner_concept = grpc_answer_group.owner
+        owner_concept = ConceptFactory.create_concept(tx_service, grpc_owner_concept)
+        grpc_answers = list(grpc_answer_group.answers)
+        answer_list = [AnswerConverter.convert(tx_service, grpc_answer) for grpc_answer in grpc_answers]
+        explanation = AnswerConverter._create_explanation(tx_service, grpc_answer_group.explanation)
+        return AnswerGroup(owner_concept, answer_list, explanation)
+
+    @staticmethod
     def _create_concept_list(tx_service, grpc_concept_list_msg):
         ids_list = list(grpc_concept_list_msg.list.ids)
         # build explanation
@@ -267,7 +292,7 @@ class AnswerConverter(object):
 
     @staticmethod
     def _create_concept_set(tx_service, grpc_concept_set_msg):
-        ids_set = set(grpc_concept_set_msg.list.ids)
+        ids_set = set(grpc_concept_set_msg.set.ids)
         # build explanation
         explanation = AnswerConverter._create_explanation(tx_service, grpc_concept_set_msg.explanation)
         return ConceptSet(ids_set, explanation)
@@ -306,7 +331,7 @@ class AnswerConverter(object):
 
 
 class ResponseIterator(object):
-    """ Retrieves next value in the sequence """
+    """ Retrieves next value in the Grakn response iterator """
 
     def __init__(self, tx_service , iterator_id, iter_resp_converter):
         self._tx_service = tx_service  

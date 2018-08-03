@@ -24,8 +24,9 @@ class TransactionService(object):
     # --- Passthrough targets ---
     # targets of top level Transaction class
 
-    def query(self, query: str):
-        request = RequestBuilder.query(query)
+    def query(self, query: str, infer=True):
+        request = RequestBuilder.query(query, infer=infer)
+        # print("Query request: {0}".format(request))
         response = self._communicator.send(request)
         # convert `response` into a python iterator
         return ResponseConverter.ResponseConverter.query(self, response.query_iter) 

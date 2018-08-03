@@ -65,7 +65,7 @@ class Transaction(object):
 
     def query(self, query: str, infer=True):
         """ Execute a Graql query, inference is optionally enabled """
-        return self._tx_service.query(query)
+        return self._tx_service.query(query, infer)
 
     def commit(self):
         """ Commit and close this transaction, persisting changes to Grakn """

@@ -7,10 +7,6 @@ from grakn.exception.ClientError import ClientError
 inst = grakn.Grakn("localhost:48555")
 session = inst.session("testkeyspace")
 
-# shared grakn instances and session for API testing 
-inst = grakn.Grakn("localhost:48555")
-session = inst.session("testkeyspace")
-
 class test_Base(unittest.TestCase):
     """ Sets up DB for use in tests """
 
@@ -24,7 +20,7 @@ class test_Base(unittest.TestCase):
         try:
             # define parentship roles to test agains
             tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-        except ClientException as ce: 
+        except ClientError as ce: 
             print(ce)
 
         answers = list(tx.query("match $x isa person, has age 20; get;"))
@@ -691,29 +687,6 @@ class test_Relationship(test_Base):
         self.assertEqual(len(double_filter_role_players), 2)
 
         
-
-
-
-
-
-    
-
-
-        
-
-            
-            
-
-
-
-
-
-
-
-
-
-
-
 
     
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import unittest
 import grakn
 from grakn.exception.ClientError import ClientError
+from grakn.service.Session.util.ResponseConverter import Answer, Value, ConceptList, ConceptSet, ConceptSetMeasure, AnswerGroup
 
 
 class test_PreDbSetup(unittest.TestCase):
@@ -9,56 +10,55 @@ class test_PreDbSetup(unittest.TestCase):
     # --- Test grakn client instantiation for one URI ---
     def test_grakn_init_valid(self):
         """ Test valid URI """
-        inst = grakn.Grakn('localhost:48555')
+        a_inst = grakn.Grakn('localhost:48555')
         self.assertIsInstance(inst, grakn.Grakn)
 
     def test_grakn_init_invalid_uri(self):
         """ Test invalid URI """
         with self.assertRaises(ClientError):
-            inst = grakn.Grakn('localhost:1000')
-            session = inst.session('testkeyspace')
-            session.transaction(grakn.TxType.READ)
+            a_inst = grakn.Grakn('localhost:1000')
+            a_session = a_inst.session('testkeyspace')
+            a_session.transaction(grakn.TxType.READ)
 
     # --- Test grakn session for different keyspaces ---
     def test_grakn_session_valid_keyspace(self):
         """ Test OK uri and keyspace """
-        inst = grakn.Grakn('localhost:48555')
-        session = inst.session('test')
-        self.assertIsInstance(session, grakn.Session)
+        a_inst = grakn.Grakn('localhost:48555')
+        a_session = a_inst.session('test')
+        self.assertIsInstance(a_session, grakn.Session)
 
     def test_grakn_session_invalid_keyspace(self):
         inst = grakn.Grakn('localhost:48555')
         with self.assertRaises(TypeError):
-            session = inst.session(123)
-            tx = session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
+            a_session = inst.session(123)
+            tx = a_session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
         inst2 = grakn.Grakn('localhost:48555')
         with self.assertRaises(ClientError):
-            session = inst2.session('')
-            tx = session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
+            a_session = inst2.session('')
+            tx = a_session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
 
     def test_grakn_session_close(self):
         inst = grakn.Grakn('localhost:48555')
-        session = inst.session('test')
-        session.close()
+        a_session = inst.session('test')
+        a_session.close()
         with self.assertRaises(ClientError):
-            session.transaction(grakn.TxType.READ)
+            a_session.transaction(grakn.TxType.READ)
 
     # --- Test grakn session transactions that are pre-DB setup ---
     def test_grakn_tx_valid_enum(self):
         inst = grakn.Grakn('localhost:48555')
-        session = inst.session('test')
-        tx = session.transaction(grakn.TxType.READ)
+        a_session = inst.session('test')
+        tx = a_session.transaction(grakn.TxType.READ)
         self.assertIsInstance(tx, grakn.Transaction)
 
     def test_grakn_tx_invalid_enum(self):
         inst = grakn.Grakn('localhost:48555')
-        session = inst.session('test')
+        a_session = inst.session('test')
         with self.assertRaises(Exception):
-            session.transaction('foo')
+            a_session.transaction('foo')
 
 
 
-# shared grakn instances and session for API testing 
 inst = grakn.Grakn('localhost:48555')
 session = inst.session('testkeyspace')
 
@@ -69,6 +69,7 @@ class test_Base(unittest.TestCase):
     def setUpClass(cls):
         """ Make sure we have some sort of schema and data in DB, only done once """
         super(test_Base, cls).setUpClass()
+        # shared grakn instances and session for API testing 
 
         # temp tx to set up DB, don't save it
         tx = session.transaction(grakn.TxType.WRITE)
@@ -119,10 +120,124 @@ class test_Transaction(test_Base):
 
     def test_query_tx_already_closed(self):
         self.tx.close()
-        with self.assertRaises(ClientError):
+        with self.assertRaises(ClientError) :
             self.tx.query("match $x isa person; get;")
             
         self.assertTrue(self.tx.is_closed(), msg="Tx is not closed after close()")
+
+    def test_no_metatype_duplicates(self):
+        concepts = self.tx.query("match $x sub entity; get;").collect_concepts()
+        self.assertEqual(len(concepts), 2) # entity and person
+        id_set = set(concepts)
+        self.assertEqual(len(id_set), 2) # entity and person, not the same
+
+    def test_compute_count_empty_graph_anwer_Value(self):
+        self.tx.put_entity_type("foo")
+        result = self.tx.query("compute count in foo;")
+        answer = next(result)
+        self.assertIsInstance(answer, Value) # specific type of Answer
+        self.assertEqual(answer.number(), 0)
+
+    def test_aggr_count_empty_graph_anwer_Value(self):
+        result = self.tx.query("match $x sub entity; aggregate count;")
+        answer = next(result)
+        self.assertIsInstance(answer, Value)
+        self.assertEqual(answer.number(), 2)
+
+
+    @staticmethod
+    def _build_parentship(tx):
+        """ Helper to set up some state to test answers in a tx/keyspace """
+        parentship_type = tx.put_relationship_type("parentship")
+        parentship = parentship_type.create()
+        parent_role = tx.put_role("parent")
+        child_role = tx.put_role("child")
+        parentship_type.relates(parent_role)
+        parentship_type.relates(child_role)
+        person_type = tx.put_entity_type("person")
+        person_type.plays(parent_role)
+        person_type.plays(child_role)
+        parent = person_type.create()
+        child = person_type.create()
+        parentship.assign(child_role, child)
+        parentship.assign(parent_role, parent)
+        tx.commit() # closes the tx
+        return {'child': child.id, 'parent': parent.id, 'parentship': parentship.id}
+
+    def test_shortest_path_answer_ConceptList(self):
+        """ Test shortest path which returns a ConceptList """
+        local_session = inst.session("shortestpath")
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        parentship_map = test_Transaction._build_parentship(tx) # this closes the tx
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        result = tx.query('compute path from "{0}", to "{1}";'.format(parentship_map['parent'], parentship_map['child']))
+        answer = next(result)
+        self.assertIsInstance(answer, ConceptList)
+        self.assertEqual(len(answer.list()), 3)
+        self.assertTrue(parentship_map['parent'] in answer.list())
+        self.assertTrue(parentship_map['child'] in answer.list())
+        self.assertTrue(parentship_map['parentship'] in answer.list())
+
+        tx.close()
+        local_session.close()
+        inst.keyspace.delete("shortestpath")
+
+    def test_cluster_anwer_ConceptSet(self):
+        """ Test clustering with connected components response as ConceptSet """ 
+        local_session = inst.session("clusterkeyspace")
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        parentship_map = test_Transaction._build_parentship(tx) # this closes the tx
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        result = tx.query("compute cluster in [person, parentship], using connected-component;")
+        concept_set_answer = next(result)
+        self.assertIsInstance(concept_set_answer, ConceptSet)
+        self.assertEqual(len(concept_set_answer.set()), 3)
+        self.assertTrue(parentship_map['parent'] in concept_set_answer.set())
+        self.assertTrue(parentship_map['child'] in concept_set_answer.set())
+        self.assertTrue(parentship_map['parentship'] in concept_set_answer.set())
+        tx.close()
+        local_session.close()
+        inst.keyspace.delete("clusterkeyspace")
+
+
+    def test_compute_centrality_answer_ConceptSetMeasure(self):
+        """ Test compute centrality, response type ConceptSetMeasure """
+        local_session = inst.session("centralitykeyspace")
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        parentship_map = test_Transaction._build_parentship(tx) # this closes the tx
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        result = tx.query("compute centrality in [person, parentship], using degree;")
+        concept_set_measure_answer = next(result)
+        self.assertIsInstance(concept_set_measure_answer, ConceptSetMeasure)
+        self.assertEqual(concept_set_measure_answer.measurement(), 1)
+        self.assertTrue(parentship_map['parent'] in concept_set_measure_answer.set())
+        self.assertTrue(parentship_map['child'] in concept_set_measure_answer.set())
+        tx.close()
+        local_session.close()
+        inst.keyspace.delete("centralitykeyspace")
+
+
+    def test_compute_aggregate_group_answer_AnswerGroup(self):
+        """ Test compute aggreate count, response type AnwerGroup """
+        local_session = inst.session("aggregategroup")
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        parentship_map = test_Transaction._build_parentship(tx) # this closes the tx
+        tx = local_session.transaction(grakn.TxType.WRITE)
+        result = tx.query("match $x isa person; $y isa person; (parent: $x, child: $y) isa parentship; aggregate group $x;")
+        answer_group = next(result)
+        self.assertIsInstance(answer_group, AnswerGroup)
+        self.assertEqual(answer_group.owner().id, parentship_map['parent'])
+        self.assertEqual(answer_group.answers()[0].get('x').id, parentship_map['parent'])
+        self.assertEqual(answer_group.answers()[0].map()['y'].id, parentship_map['child'])
+        tx.close()
+        local_session.close()
+        inst.keyspace.delete("aggregategroup")
+
+
+
+    # --- test different Answers and their APIs ---
+
+
 
     # --- commit tests --- 
     def test_commit_no_error_thrown(self):

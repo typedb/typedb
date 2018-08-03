@@ -6,6 +6,7 @@ from grakn.service.Session.util.RequestBuilder import RequestBuilder
 # import grakn.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
 from grakn.service.Session.util import ResponseConverter
 from grakn.service.Session.Concept import ConceptFactory
+from grakn.exception.ClientError import ClientError 
 
 
 
@@ -99,8 +100,7 @@ class SchemaConcept(Concept):
             elif whichone == 'null':
                 return None
             else:
-                # TODO specialize exception
-                raise Exception("Unknown response concent for getting super schema concept: {0}".format(whichone))
+                raise ClientError("Unknown response concent for getting super schema concept: {0}".format(whichone))
         else:
             # set direct super SchemaConcept of this SchemaConcept
             set_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.set_sup(super_concept)
@@ -251,7 +251,7 @@ class AttributeType(Type):
         elif whichone == 'null':
             return None
         else:
-            raise Exception("Unknown `res` key in AttributeType `attribute` response: {0}".format(whichone))
+            raise ClientError("Unknown `res` key in AttributeType `attribute` response: {0}".format(whichone))
 
     def data_type(self):
         """ Get the DataType enum corresponding to the type of this attribute """
@@ -266,13 +266,11 @@ class AttributeType(Type):
                     return e
             else:
                 # loop exited normally
-                # didn't find datatype...
-                # TODO specialize exception
-                raise Exception("Reported datatype NOT in enum: {0}".format(response.dataType))
+                raise ClientError("Reported datatype NOT in enum: {0}".format(response.dataType))
         elif whichone == 'null':
             return None
         else:
-            raise Exception("Unknown datatype response for AttributeType: {0}".format(whichone))
+            raise ClientError("Unknown datatype response for AttributeType: {0}".format(whichone))
 
     def regex(self, pattern: str = None):
         """ Get or set regex """
@@ -335,7 +333,7 @@ class Rule(SchemaConcept):
         elif whichone == 'null':
             return None
         else:
-            raise Exception("Unknown field in get_when of `rule`: {0}".format(whichone))
+            raise ClientError("Unknown field in get_when of `rule`: {0}".format(whichone))
 
     def get_then(self):
         then_req = RequestBuilder.ConceptMethod.Rule.then()
@@ -347,7 +345,7 @@ class Rule(SchemaConcept):
         elif whichone == 'null':
             return None
         else:
-            raise Exception("Unknown field in get_then or `rule`: {0}".format(whichone))
+            raise ClientError("Unknown field in get_then or `rule`: {0}".format(whichone))
 
 class Role(SchemaConcept):
 

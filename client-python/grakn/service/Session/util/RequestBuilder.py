@@ -35,14 +35,11 @@ class RequestBuilder(object):
         return transaction_req
 
     @staticmethod
-    def query(query, options=None):
+    def query(query, infer=True):
         query_message = transaction_messages.Transaction.Query.Req()
         query_message.query = query
-        if options is not None:
-            if 'infer' in options:
-                query_message.infer = transaction_messages.Transaction.Query.INFER.TRUE if options['infer'] else \
-                                      transaction_messages.Transaction.Query.INFER.FALSE
-
+        query_message.infer = transaction_messages.Transaction.Query.INFER.Value("TRUE") if infer else \
+                              transaction_messages.Transaction.Query.INFER.Value("FALSE")
         transaction_req = transaction_messages.Transaction.Req()
         transaction_req.query_req.CopyFrom(query_message)
         return transaction_req
