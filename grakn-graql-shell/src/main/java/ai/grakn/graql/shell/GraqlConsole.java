@@ -108,7 +108,7 @@ public class GraqlConsole {
 
         boolean infer = options.shouldInfer();
         ConsoleReader console = new ConsoleReader(System.in, sout);
-        SimpleURI defaultGrpcUri = ai.grakn.client.Grakn.DEFAULT_URI;
+        SimpleURI defaultGrpcUri = Grakn.DEFAULT_URI;
         SimpleURI location = options.getUri();
 
         SimpleURI uri = location != null ? location : defaultGrpcUri;

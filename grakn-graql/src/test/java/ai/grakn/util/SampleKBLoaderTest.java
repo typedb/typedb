@@ -70,7 +70,7 @@ public class SampleKBLoaderTest {
         }
     }
 
-    @Test @Ignore // TODO: Y U FAIL WITH JANUS?
+    @Test @Ignore // TODO: investigate failure
     public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
         try(GraknTx graph = SampleKBLoader.empty().tx()){
             //String comparison is used here because we do not have the class available at compile time
