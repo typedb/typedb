@@ -298,10 +298,10 @@ jobs:
             command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
         - run:
             name: Install protobuf and grpc
-            command: pip install protobuf grpcio --user
-        - run: cd client-python && make protobuf
+            command: pip install protobuf grpcio grpcio-tools --user
         - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
-        - run: cd client-python && python -m unittest discover tests/integration/ -v
+        - run: cd client-python && make protobuf
+        - run: python -m unittest discover tests/integration/ -v
 
 
 workflows:
