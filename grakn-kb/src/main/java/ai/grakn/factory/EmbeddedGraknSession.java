@@ -36,7 +36,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Builds a {@link TxFactory}. This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
@@ -57,6 +59,15 @@ public class EmbeddedGraknSession implements GraknSession {
     //References so we don't have to open a tx just to check the count of the transactions
     private EmbeddedGraknTx<?> tx = null;
     private EmbeddedGraknTx<?> txBatch = null;
+
+    //This map is needed to store in memory session - we need to cache them because in Tinker there i not concept of session o Tx
+    // everything is a graph, if we don't save the session/tx->graph somwhere, other threads won't be able to access the content in memory.
+    //Example:
+    // Thread A opens in memory session and loads data on keyspace K
+    // Thread B opens in memory session and expects to find data in keyspace K
+    // If the above is not true - some tests that are using Tinker profile will fail
+    private static final Map<String, EmbeddedGraknSession> inMemorySessions = new ConcurrentHashMap<>();
+
 
     /**
      * Instantiates {@link EmbeddedGraknSession}
@@ -90,7 +101,7 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
     public static EmbeddedGraknSession inMemory(Keyspace keyspace) {
-        return createEngineSession(keyspace, getTxInMemoryConfig());
+        return inMemorySessions.computeIfAbsent(keyspace.getValue(), k -> createEngineSession(keyspace, getTxInMemoryConfig()));
     }
 
     public static EmbeddedGraknSession inMemory(String keyspace) {
