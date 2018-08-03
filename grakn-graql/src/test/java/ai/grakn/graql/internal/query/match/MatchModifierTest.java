@@ -22,11 +22,9 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -165,9 +163,8 @@ public class MatchModifierTest {
         match.get(ImmutableSet.of(y));
     }
 
-    private <T extends Comparable<T>> void assertResultsOrderedByValue(
-            Streamable<Answer> streamable, Var var, boolean asc) {
-        Stream<T> values = streamable.stream().map(result -> result.get(var).<T>asAttribute().value());
+    private <T extends Comparable<T>> void assertResultsOrderedByValue(Match match, Var var, boolean asc) {
+        Stream<T> values = match.stream().map(result -> result.get(var).<T>asAttribute().value());
         assertResultsOrdered(values, asc);
     }
 

@@ -32,6 +32,7 @@ import com.google.auto.value.AutoValue;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -63,7 +64,7 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
             if (rolePlayerMap.containsKey(role)) {
                 rolePlayerMap.get(role).add(player);
             } else {
-                rolePlayerMap.put(role, Collections.singleton(player));
+                rolePlayerMap.put(role, new HashSet<>(Collections.singletonList(player)));
             }
         }
 

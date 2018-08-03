@@ -18,25 +18,28 @@
 
 package ai.grakn.client.executor;
 
+import ai.grakn.ComputeExecutor;
+import ai.grakn.graql.answer.Answer;
+
+import java.util.stream.Stream;
+
 /**
  * Represents a compute query executing on a gRPC server.
- *
- * @param <T> The returned result of the compute job
  */
-final class RemoteComputeExecutor<T> implements ai.grakn.ComputeExecutor {
+final class RemoteComputeExecutor<T extends Answer> implements ComputeExecutor<T> {
 
-    private final T result;
+    private final Stream<T> result;
 
-    private RemoteComputeExecutor(T result) {
+    private RemoteComputeExecutor(Stream<T> result) {
         this.result = result;
     }
 
-    public static <T> RemoteComputeExecutor<T> of(T result) {
+    public static <T extends Answer> RemoteComputeExecutor<T> of(Stream<T> result) {
         return new RemoteComputeExecutor<>(result);
     }
 
     @Override
-    public T get() {
+    public Stream<T> stream() {
         return result;
     }
 

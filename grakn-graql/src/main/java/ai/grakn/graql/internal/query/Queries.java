@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.Answer;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class Queries {
     }
 
     public static InsertQueryAdmin insert(GraknTx tx, Collection<VarPatternAdmin> vars) {
-        return InsertQueryImpl.create(vars, null, tx);
+        return InsertQueryImpl.create(tx, null, vars);
     }
 
     /**
@@ -58,7 +59,7 @@ public class Queries {
      * @param varPattern  a collection of Vars to insert
      */
     public static InsertQueryAdmin insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
-        return InsertQueryImpl.create(varPattern, match, match.tx());
+        return InsertQueryImpl.create(match.tx(), match, varPattern);
     }
 
     public static DeleteQueryAdmin delete(MatchAdmin match, Set<Var> vars) {
@@ -66,7 +67,8 @@ public class Queries {
         return DeleteQueryImpl.of(vars, match);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+    public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+        //TODO: validate vars in aggregate query
         return AggregateQueryImpl.of(match, aggregate);
     }
 

@@ -87,7 +87,7 @@ for (Map<String, Concept> result : query) {
 ## Aggregate Queries
 
 ```java
-if (qb.match(var().isa("person").has("firstname", "Bob")).aggregate(ask()).execute()) {
+if (qb.match(var().isa("person").has("firstname", "Bob")).stream().findAny().isPresent()) {
   System.out.println("There is someone called Bob!");
 }
 ```
@@ -122,12 +122,8 @@ The `QueryBuilder` also allows the user to parse Graql query strings into Java G
 objects:
 
 ```java
-for (Answer a : qb.<GetQuery>parse("match $x isa person; get;")) {
+for (ConceptMap a : qb.<GetQuery>parse("match $x isa person; get;").execute()) {
     System.out.println(a);
-}
-
-if (qb.<AggregateQuery<Boolean>>parse("match has name 'Bob' isa person; aggregate ask;").execute()) {
-  System.out.println("There is someone called Bob!");
 }
 
 qb.parse("insert isa person, has firstname 'Alice';").execute();

@@ -132,10 +132,10 @@ public class GraqlShellIT {
 
     @Test
     public void testExecuteOption() throws Exception {
-        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
+        String result = runShellWithoutErrors("", "-e", "match $x isa entity; limit 1; get;");
 
         // When using '-e', only results should be printed, no prompt or query
-        assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
+        assertThat(result, allOf(not(containsString(">>>")), not(containsString("match"))));
     }
 
     @Test
@@ -163,8 +163,8 @@ public class GraqlShellIT {
         runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
 
         assertShellMatches(ImmutableList.of("-k", "grakn"),
-                "match im-in-the-default-keyspace sub entity; aggregate ask;",
-                containsString("True")
+                "match im-in-the-default-keyspace sub entity; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -173,14 +173,14 @@ public class GraqlShellIT {
         runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
         runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
 
-        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
-        assertThat(fooFooinFoo, containsString("True"));
-        assertThat(fooFooInBar, containsString("False"));
-        assertThat(barBarInFoo, containsString("False"));
-        assertThat(barBarInBar, containsString("True"));
+        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate count;\n", "-k", "foo");
+        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate count;\n", "-k", "bar");
+        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate count;\n", "-k", "foo");
+        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate count;\n", "-k", "bar");
+        assertThat(fooFooinFoo, containsString("1"));
+        assertThat(fooFooInBar, containsString("0"));
+        assertThat(barBarInFoo, containsString("0"));
+        assertThat(barBarInBar, containsString("1"));
     }
 
     @Test
@@ -194,8 +194,8 @@ public class GraqlShellIT {
         assertShellMatches(
                 "load src/test/graql/shell test(weird name).gql",
                 anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
+                "match movie sub entity; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -204,8 +204,8 @@ public class GraqlShellIT {
         assertShellMatches(
                 "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
                 anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
+                "match movie sub entity; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -221,10 +221,22 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testAskQuery() throws Exception {
+    public void testMatchGetRelationship() throws Exception {
         assertShellMatches(
-                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; aggregate ask;",
-                containsString("False")
+                "define name sub attribute datatype string;",
+                anything(),
+                "define marriage sub relationship, relates spouse;",
+                anything(),
+                "define person sub entity, has name, plays spouse;",
+                anything(),
+                "insert isa person has name \"Bill Gates\";",
+                anything(),
+                "insert isa person has name \"Melinda Gates\";",
+                anything(),
+                "match $husband isa person has name \"Bill Gates\"; $wife isa person has name \"Melinda Gates\"; insert (spouse: $husband, spouse: $wife) isa marriage;",
+                anything(),
+                "match $x isa marriage; get;",
+                allOf(containsString("spouse"), containsString("isa"), containsString("marriage"))
         );
     }
 
@@ -233,12 +245,12 @@ public class GraqlShellIT {
         assertShellMatches(
                 "define entity2 sub entity;",
                 anything(),
-                "match $x isa entity2; aggregate ask;",
-                containsString("False"),
+                "match $x isa entity2; aggregate count;",
+                containsString("0"),
                 "insert $x isa entity2;",
                 anything(),
-                "match $x isa entity2; aggregate ask;",
-                containsString("True")
+                "match $x isa entity2; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -565,8 +577,8 @@ public class GraqlShellIT {
         runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
 
         assertShellMatches(ImmutableList.of("-k", "batch"),
-                "match $x isa movie; aggregate ask;",
-                containsString("True")
+                "match $x isa movie; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -574,11 +586,11 @@ public class GraqlShellIT {
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
         ShellResponse response = runShell(
                 "match $x sub concet; aggregate count;\n" +
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n"
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;\n"
         );
 
         assertThat(response.err(), not(containsString("error")));
-        assertThat(response.out(), containsString("True"));
+        assertThat(response.out(), containsString("1"));
     }
 
     @Test

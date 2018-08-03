@@ -22,16 +22,19 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.answer.Answer;
 import com.google.auto.value.AutoValue;
+
+import java.util.stream.Stream;
 
 /**
  * Implementation of AggregateQuery
  * @param <T> the type of the aggregate result
  */
 @AutoValue
-abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
+abstract class AggregateQueryImpl<T extends Answer> implements AggregateQuery<T> {
 
-    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<T> aggregate) {
+    public static <T extends Answer> AggregateQueryImpl<T> of(Match match, Aggregate<T> aggregate) {
         return new AutoValue_AggregateQueryImpl<>(match, aggregate);
     }
 
@@ -41,7 +44,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public final T execute() {
+    public final Stream<T> stream() {
         return executor().run(this);
     }
 

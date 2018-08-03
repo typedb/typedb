@@ -25,13 +25,13 @@ import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
@@ -63,12 +63,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within {@link Query}s.
- *
- * <p>
- *     Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
- * </p>
- *
- * @author Felix Chapman
+ * Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
  */
 public class QueryOperationExecutor {
 
@@ -103,24 +98,24 @@ public class QueryOperationExecutor {
     /**
      * Insert all the Vars
      */
-    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph, ExecutionType.INSERT).insertAll(new QueryAnswer());
+    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+        return create(patterns, graph, ExecutionType.INSERT).insertAll(new ConceptMapImpl());
     }
 
     /**
      * Insert all the Vars
      * @param results the result after inserting
      */
-    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
+    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, ConceptMap results) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
     }
 
-    static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph, ExecutionType.DEFINE).insertAll(new QueryAnswer());
+    static ConceptMap defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+        return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMapImpl());
     }
 
-    static void undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
-        create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new QueryAnswer());
+    static ConceptMap undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
+        return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMapImpl());
     }
 
     private static QueryOperationExecutor create(
@@ -251,8 +246,8 @@ public class QueryOperationExecutor {
         return composed;
     }
 
-    private Answer insertAll(Answer results) {
-        concepts.putAll(results.map());
+    private ConceptMap insertAll(ConceptMap map) {
+        concepts.putAll(map.map());
 
         for (VarAndProperty property : sortProperties()) {
             property.executor().execute(this);
@@ -268,7 +263,7 @@ public class QueryOperationExecutor {
         }
 
         Map<Var, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Var::isUserDefinedName);
-        return new QueryAnswer(namedConcepts);
+        return new ConceptMapImpl(namedConcepts);
     }
 
     private Concept buildConcept(Var var, ConceptBuilder builder) {

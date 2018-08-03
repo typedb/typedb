@@ -311,8 +311,6 @@ An aggregate begins with an aggregate name followed by zero or more arguments. A
 
 Examples of [aggregates](#aggregate) are:
 
-- `ask`
-  - Return whether there are any [answers](../querying-data/overview#answer).
 - `count`
 - `group <variable> (<aggregate>)`
   - Group the [answers](../querying-data/overview#answer) by a [variable](../querying-data/overview#variable) and optionally apply an

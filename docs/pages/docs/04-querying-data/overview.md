@@ -96,7 +96,7 @@ The following list Graql's reserved keywords:
 #### Querying and query modifiers
 
 ```graql-test-ignore
-aggregate, asc, ask
+aggregate, asc
 by
 compute, contains
 delete, desc, distinct

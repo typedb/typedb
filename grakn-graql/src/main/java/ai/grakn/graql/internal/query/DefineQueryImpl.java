@@ -22,33 +22,32 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Implementation for {@link DefineQuery}
- *
- * @author Grakn Warriors
  */
 @AutoValue
-abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {
+abstract class DefineQueryImpl implements DefineQuery {
 
     static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
         return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
-    public Query<Answer> withTx(GraknTx tx) {
+    public Query<ConceptMap> withTx(GraknTx tx) {
         return DefineQueryImpl.of(varPatterns(), tx);
     }
 
     @Override
-    public final Answer execute() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 

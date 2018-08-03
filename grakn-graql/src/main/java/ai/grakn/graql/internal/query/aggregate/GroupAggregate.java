@@ -23,10 +23,13 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.AnswerGroup;
+import ai.grakn.graql.answer.ConceptMap;
 
 import javax.annotation.Nonnull;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -38,7 +41,7 @@ import static java.util.stream.Collectors.toList;
  * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-class GroupAggregate<T> extends AbstractAggregate<Map<Concept, T>> {
+class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T>> {
 
     private final Var varName;
     private final Aggregate<T> innerAggregate;
@@ -49,14 +52,18 @@ class GroupAggregate<T> extends AbstractAggregate<Map<Concept, T>> {
     }
 
     @Override
-    public Map<Concept, T> apply(Stream<? extends Answer> stream) {
-        Collector<Answer, ?, T> applyAggregate =
+    public List<AnswerGroup<T>> apply(Stream<? extends ConceptMap> conceptMaps) {
+        Collector<ConceptMap, ?, List<T>> applyAggregate =
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
-        return stream.collect(groupingBy(this::getConcept, applyAggregate));
+        List<AnswerGroup<T>> answerGroups = new ArrayList<>();
+        conceptMaps.collect(groupingBy(this::getConcept, applyAggregate))
+                .forEach( (key, values) -> answerGroups.add(new AnswerGroup<>(key, values)));
+
+        return answerGroups;
     }
 
-    private @Nonnull Concept getConcept(Answer result) {
+    private @Nonnull Concept getConcept(ConceptMap result) {
         Concept concept = result.get(varName);
         if (concept == null) {
             throw GraqlQueryException.varNotInQuery(varName);

@@ -20,9 +20,10 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.util.CommonUtil;
 import mjson.Json;
 
@@ -97,10 +98,16 @@ class JsonPrinter extends Printer<Json> {
         return json;
     }
 
-    //TODO: Implement JsonPrinter for ComputeAnswer properly!
     @Override
-    public Json computeAnswer(ComputeQuery.Answer computeAnswer) {
-        return object(computeAnswer);
+    protected Json conceptMap(ConceptMap answer) {
+        return map(answer.map());
+    }
+
+    @Override
+    protected Json conceptSetMeasure(ConceptSetMeasure answer) {
+        Json json = Json.object();
+        json.set(answer.measurement().toString(), collection(answer.set()));
+        return json;
     }
 
     @Override

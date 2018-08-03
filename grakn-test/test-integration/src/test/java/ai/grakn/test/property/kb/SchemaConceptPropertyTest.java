@@ -151,7 +151,7 @@ public class SchemaConceptPropertyTest {
 
     @Ignore("Test fails due to incorrect error message") // TODO
     @Property
-    public void whenSettingTheDirectSuperToAnIndirectSub_Throw(
+    public void whenSettingTheDirectSuperToAnIndirectSuper_Throw(
             @NonMeta SchemaConcept concept, long seed) {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
@@ -175,44 +175,6 @@ public class SchemaConceptPropertyTest {
         setDirectSuper(subConcept, superConcept);
 
         assertEquals(superConcept, subConcept.sup());
-    }
-
-    @Property
-    public void whenAddingADirectSubThatIsAMetaConcept_Throw(
-            SchemaConcept superConcept, @Meta @FromTx SchemaConcept subConcept) {
-        assumeTrue(sameSchemaConcept(subConcept, superConcept));
-
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.label()).getMessage());
-        addDirectSub(superConcept, subConcept);
-    }
-
-    @Ignore("Test fails due to incorrect error message") // TODO
-    @Property
-    public void whenAddingADirectSubWhichIsAnIndirectSuper_Throw(
-            @NonMeta SchemaConcept newSubConcept, long seed) {
-        SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
-
-        //Check if the mutation can be performed in a valid manner
-        if(concept.isType()) assumeThat(concept.asType().playing().collect(Collectors.toSet()), is(empty()));
-
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());
-        addDirectSub(concept, newSubConcept);
-    }
-
-    @Property
-    public void whenAddingADirectSub_TheDirectSubIsAdded(
-            SchemaConcept superConcept, @NonMeta @FromTx SchemaConcept subConcept) {
-        assumeTrue(sameSchemaConcept(subConcept, superConcept));
-        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
-
-        //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
-
-        addDirectSub(superConcept, subConcept);
-
-        assertThat(PropertyUtil.directSubs(superConcept), hasItem(subConcept));
     }
 
     @Ignore // TODO: Find a way to generate linked rules
@@ -255,22 +217,6 @@ public class SchemaConceptPropertyTest {
             subConcept.asAttributeType().sup(superConcept.asAttributeType());
         } else if (subConcept.isRule()) {
             subConcept.asRule().sup(superConcept.asRule());
-        } else {
-            fail("unreachable");
-        }
-    }
-
-    private void addDirectSub(SchemaConcept superConcept, SchemaConcept subConcept) {
-        if (superConcept.isEntityType()) {
-            superConcept.asEntityType().sub(subConcept.asEntityType());
-        } else if (superConcept.isRelationshipType()) {
-            superConcept.asRelationshipType().sub(subConcept.asRelationshipType());
-        } else if (superConcept.isRole()) {
-            superConcept.asRole().sub(subConcept.asRole());
-        } else if (superConcept.isAttributeType()) {
-            superConcept.asAttributeType().sub(subConcept.asAttributeType());
-        } else if (superConcept.isRule()) {
-            superConcept.asRule().sub(subConcept.asRule());
         } else {
             fail("unreachable");
         }

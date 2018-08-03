@@ -19,12 +19,15 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * a part of a query used for finding data in a knowledge base that matches the given patterns.
@@ -32,11 +35,27 @@ import java.util.Set;
  * The {@link Match} is the pattern-matching part of a query. The patterns are described in a declarative fashion,
  * then the {@link Match} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * @see Answer
+ * @see ConceptMap
  *
  * @author Felix Chapman
  */
-public interface Match extends Streamable<Answer> {
+public interface Match extends Iterable<ConceptMap> {
+
+    /**
+     * @return iterator over match results
+     */
+    @Override
+    @CheckReturnValue
+    default Iterator<ConceptMap> iterator() {
+        return stream().iterator();
+    }
+
+    /**
+     * @return a stream of match results
+     */
+    @CheckReturnValue
+    Stream<ConceptMap> stream();
+
     /**
      * Construct a get query with all all {@link Var}s mentioned in the query
      */
@@ -166,7 +185,7 @@ public interface Match extends Streamable<Answer> {
      * @return a query that will yield the aggregate result
      */
     @CheckReturnValue
-    <T> AggregateQuery<T> aggregate(Aggregate<T> aggregate);
+    <T extends Answer> AggregateQuery<T> aggregate(Aggregate<T> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

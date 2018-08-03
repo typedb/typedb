@@ -224,7 +224,7 @@ public class DeleteQueryTest {
 
     @Test
     public void whenDeletingASchemaConcept_Throw() {
-        SchemaConcept newType = qb.define(x.label("new-type").sub(ENTITY)).execute().get(x).asSchemaConcept();
+        SchemaConcept newType = qb.define(x.label("new-type").sub(ENTITY)).execute().get(0).get(x).asSchemaConcept();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.deleteSchemaConcept(newType).getMessage());

@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -35,7 +35,7 @@ import java.util.List;
  * @author Kasper Piskorski
  *
  */
-public class RuleExplanation extends Explanation {
+public class RuleExplanation extends QueryExplanation {
 
     private final InferenceRule rule;
 
@@ -43,19 +43,19 @@ public class RuleExplanation extends Explanation {
         super(q);
         this.rule = rl;
     }
-    private RuleExplanation(ReasonerQuery q, List<Answer> answers, InferenceRule rl){
+    private RuleExplanation(ReasonerQuery q, List<ConceptMap> answers, InferenceRule rl){
         super(q, answers);
         this.rule = rl;
     }
 
     @Override
-    public AnswerExplanation setQuery(ReasonerQuery q){
+    public Explanation setQuery(ReasonerQuery q){
         return new RuleExplanation(q, getRule());
     }
 
     @Override
-    public AnswerExplanation childOf(Answer ans) {
-        AnswerExplanation explanation = ans.getExplanation();
+    public Explanation childOf(ConceptMap ans) {
+        Explanation explanation = ans.explanation();
         return new RuleExplanation(getQuery(),
                 ReasonerUtils.listUnion(this.getAnswers(), explanation.isLookupExplanation()?
                         Collections.singletonList(ans) :

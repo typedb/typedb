@@ -19,6 +19,11 @@
 package ai.grakn.util;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Value;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -27,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
@@ -50,7 +56,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
 import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MEMBERS;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
 import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
 
@@ -119,7 +124,7 @@ public class GraqlSyntax {
      */
     public static class Compute {
 
-        public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Arrays.asList(Method.values()));
+        public final static Collection<Method> METHODS_ACCEPTED = ImmutableList.copyOf(Method.values());
 
         public final static Map<Method, Collection<Condition>> CONDITIONS_REQUIRED = conditionsRequired();
         public final static Map<Method, Collection<Condition>> CONDITIONS_OPTIONAL = conditionsOptional();
@@ -194,7 +199,7 @@ public class GraqlSyntax {
             accepted.put(CENTRALITY, ImmutableMap.of(K_CORE, ImmutableSet.of(MIN_K)));
             accepted.put(CLUSTER, ImmutableMap.of(
                     K_CORE, ImmutableSet.of(K),
-                    CONNECTED_COMPONENT, ImmutableSet.of(SIZE, MEMBERS, CONTAINS)
+                    CONNECTED_COMPONENT, ImmutableSet.of(SIZE, CONTAINS)
             ));
 
             return ImmutableMap.copyOf(accepted);
@@ -204,10 +209,7 @@ public class GraqlSyntax {
             Map<Method, Map<Algorithm, Map<Parameter, Object>>> defaults = new HashMap<>();
 
             defaults.put(CENTRALITY, ImmutableMap.of(K_CORE, ImmutableMap.of(MIN_K, Argument.DEFAULT_MIN_K)));
-            defaults.put(CLUSTER, ImmutableMap.of(
-                    K_CORE, ImmutableMap.of(K, Argument.DEFAULT_K),
-                    CONNECTED_COMPONENT, ImmutableMap.of(MEMBERS, Argument.DEFAULT_MEMBERS)
-            ));
+            defaults.put(CLUSTER, ImmutableMap.of(K_CORE, ImmutableMap.of(K, Argument.DEFAULT_K)));
 
             return ImmutableMap.copyOf(defaults);
         }
@@ -238,37 +240,62 @@ public class GraqlSyntax {
 
         /**
          * Graql compute method types to determine the type of calculation to execute
+         * @param <T> return type of ComputeQuery
          */
-        public enum Method {
-            COUNT("count"),
-            MIN("min"),
-            MAX("max"),
-            MEDIAN("median"),
-            MEAN("mean"),
-            STD("std"),
-            SUM("sum"),
-            PATH("path"),
-            CENTRALITY("centrality"),
-            CLUSTER("cluster");
+        public static class Method<T extends Answer> {
+            public final static Method<Value> COUNT = new Method<>("count");
+            public final static Method<Value> MIN = new Method<>("min");
+            public final static Method<Value> MAX = new Method<>("max");
+            public final static Method<Value> MEDIAN = new Method<>("median");
+            public final static Method<Value> MEAN = new Method<>("mean");
+            public final static Method<Value> STD = new Method<>("std");
+            public final static Method<Value> SUM = new Method<>("sum");
+            public final static Method<ConceptList> PATH = new Method<>("path");
+            public final static Method<ConceptSetMeasure> CENTRALITY = new Method<>("centrality");
+            public final static Method<ConceptSet> CLUSTER = new Method<>("cluster");
 
-            private final String method;
+            private final static List<Method> list = Arrays.asList(COUNT, MIN, MAX, MEDIAN, MEAN, STD, SUM, PATH, CENTRALITY, CLUSTER);
+            private final String name;
 
-            Method(String method) {
-                this.method = method;
+            Method(String name) {
+                this.name = name;
+            }
+
+            private static List<Method> values() { return list; }
+
+            public String name() {
+                return this.name;
             }
 
             @Override
             public String toString() {
-                return this.method;
+                return this.name;
             }
 
-            public static Method of(String value) {
-                for (Method m : Method.values())
-                    if (m.method.equals(value)) {
+            public static Method<?> of(String name) {
+                for (Method<?> m : Method.values())
+                    if (m.name.equals(name)) {
                         return m;
                     }
                 return null;
             }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Method<?> that = (Method<?>) o;
+
+                return (this.name().equals(that.name()));
+            }
+
+            @Override
+            public int hashCode() {
+                int result = 31 * name.hashCode();
+                return result;
+            }
+
         }
 
         /**
@@ -337,7 +364,6 @@ public class GraqlSyntax {
             MIN_K("min-k"),
             K("k"),
             CONTAINS("contains"),
-            MEMBERS("members"),
             SIZE("size");
 
             private final String param;
@@ -370,7 +396,6 @@ public class GraqlSyntax {
 
             public final static long DEFAULT_MIN_K = 2L;
             public final static long DEFAULT_K = 2L;
-            public final static boolean DEFAULT_MEMBERS = false;
 
             private Parameter param;
             private T arg;
@@ -398,10 +423,6 @@ public class GraqlSyntax {
 
             public static Argument<Long> size(long size) {
                 return new Argument<>(SIZE, size);
-            }
-
-            public static Argument<Boolean> members(boolean members) {
-                return new Argument<>(MEMBERS, members);
             }
 
             public static Argument<ConceptId> contains(ConceptId conceptId) {

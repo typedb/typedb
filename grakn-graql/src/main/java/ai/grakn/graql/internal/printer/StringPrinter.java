@@ -24,8 +24,8 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.util.StringUtil;
 
@@ -124,9 +124,9 @@ class StringPrinter extends Printer<StringBuilder> {
         StringBuilder builder = new StringBuilder();
 
         if (bool) {
-            return builder.append(ANSI.color("True", ANSI.GREEN));
+            return builder.append(ANSI.color("true", ANSI.GREEN));
         } else {
-            return builder.append(ANSI.color("False", ANSI.RED));
+            return builder.append(ANSI.color("false", ANSI.RED));
         }
     }
 
@@ -136,7 +136,7 @@ class StringPrinter extends Printer<StringBuilder> {
 
         builder.append("{");
         collection.stream().findFirst().ifPresent(item -> builder.append(build(item)));
-        collection.stream().skip(1).forEach(item -> builder.append(",\n").append(build(item)));
+        collection.stream().skip(1).forEach(item -> builder.append(", ").append(build(item)));
         builder.append("}");
 
         return builder;
@@ -148,35 +148,17 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder queryAnswer(Answer answer) {
+    public StringBuilder conceptMap(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
-        answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
 
+        answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));
         return new StringBuilder("{" + builder.toString().trim() + "}");
     }
 
-    //TODO: implement StringPrinter for ComputeAnswer properly!
     @Override
-    protected StringBuilder computeAnswer(ComputeQuery.Answer computeAnswer) {
+    protected StringBuilder conceptSetMeasure(ConceptSetMeasure answer) {
         StringBuilder builder = new StringBuilder();
-
-        if (computeAnswer.getNumber().isPresent()) {
-            builder.append(computeAnswer.getNumber().get());
-        }
-        else if (computeAnswer.getCentrality().isPresent()) {
-            builder.append(map(computeAnswer.getCentrality().get()));
-        }
-        else if (computeAnswer.getClusters().isPresent()) {
-            builder.append(collection(computeAnswer.getClusters().get()));
-        }
-        else if (computeAnswer.getClusterSizes().isPresent()) {
-            builder.append(collection(computeAnswer.getClusterSizes().get()));
-        }
-        else if (computeAnswer.getPaths().isPresent()) {
-            builder.append(collection(computeAnswer.getPaths().get()));
-        }
-
-        return builder;
+        return builder.append(answer.measurement()).append(": ").append(collection(answer.set()));
     }
 
     @Override

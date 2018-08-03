@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -55,11 +55,11 @@ public class NeqComplementState extends AtomicState {
     private final ResolutionState complementState;
     private boolean visited = false;
 
-    private final Answer neqPredicateSub;
+    private final ConceptMap neqPredicateSub;
     private final Set<NeqPredicate> neqPredicates;
 
     NeqComplementState(ReasonerAtomicQuery q,
-                       Answer sub,
+                       ConceptMap sub,
                        Unifier u,
                        QueryStateBase parent,
                        Set<ReasonerAtomicQuery> subGoals,
@@ -75,7 +75,7 @@ public class NeqComplementState extends AtomicState {
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer fullAnswer = state.getSubstitution().merge(neqPredicateSub);
+        ConceptMap fullAnswer = state.getSubstitution().merge(neqPredicateSub);
 
         boolean isNeqSatisfied = neqPredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));

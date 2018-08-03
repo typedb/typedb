@@ -34,10 +34,9 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.Streamable;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -138,7 +137,7 @@ public class GraqlController implements HttpController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
-                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
+                ConceptMap answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new ConceptMapImpl());
                 return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer));
             }
         });
@@ -275,12 +274,7 @@ public class GraqlController implements HttpController {
             } else {
                 // If acceptType is 'application/text' add new line after every result
                 if (APPLICATION_TEXT.equals(acceptType)) {
-                    //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
-                    if (query instanceof Streamable) {
-                        formatted = printer.toStream(((Streamable<?>) query).stream()).collect(Collectors.joining("\n"));
-                    } else {
-                        formatted = printer.toString(query.execute());
-                    }
+                    formatted = printer.toStream(query.stream()).collect(Collectors.joining("\n"));
                 } else {
                     // If acceptType is 'application/json' map results to JSON representation
                     formatted = printer.toString(executeAndMonitor(query));

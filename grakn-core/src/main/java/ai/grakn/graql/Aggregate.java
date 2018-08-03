@@ -18,9 +18,11 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -29,20 +31,13 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public interface Aggregate<T> {
+public interface Aggregate<T extends Answer> {
     /**
      * The function to apply to the stream of results to produce the aggregate result.
      * @param stream a stream of query results
      * @return the result of the aggregate operation
      */
     @CheckReturnValue
-    T apply(Stream<? extends Answer> stream);
+    List<T> apply(Stream<? extends ConceptMap> stream);
 
-    /**
-     * Return a {@link NamedAggregate}. This is used when operating on a query with multiple aggregates.
-     * @param name the name of the aggregate
-     * @return a new named aggregate
-     */
-    @CheckReturnValue
-    NamedAggregate<T> as(String name);
 }

@@ -18,16 +18,20 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
  * Aggregate that sums results of a {@link Match}.
  */
-class SumAggregate extends AbstractAggregate<Number> {
+class SumAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
@@ -36,9 +40,11 @@ class SumAggregate extends AbstractAggregate<Number> {
     }
 
     @Override
-    public Number apply(Stream<? extends Answer> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         // initial value is set to null so that we can return null if there is no Answers to consume
-        return stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(null, this::add);
+        Number number = stream.map(result -> (Number) result.get(varName).asAttribute().value()).reduce(null, this::add);
+        if (number == null) return Collections.emptyList();
+        else return Collections.singletonList(new Value(number));
     }
 
     private Number add(Number x, Number y) {
@@ -46,8 +52,12 @@ class SumAggregate extends AbstractAggregate<Number> {
         if (x == null) x = 0;
 
         // This method is necessary because Number doesn't support '+' because java!
-        if (x instanceof Long || y instanceof Long) {
+        if (x instanceof Long && y instanceof Long) {
             return x.longValue() + y.longValue();
+        } else if (x instanceof Long) {
+            return x.longValue() + y.doubleValue();
+        } else if (y instanceof Long) {
+            return x.doubleValue() + y.longValue();
         } else {
             return x.doubleValue() + y.doubleValue();
         }

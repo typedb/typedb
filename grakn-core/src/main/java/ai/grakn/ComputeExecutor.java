@@ -20,12 +20,11 @@ package ai.grakn;
 
 import ai.grakn.graql.ComputeQuery;
 
+import java.util.stream.Stream;
+
 /**
  * Class representing a job executing a {@link ComputeQuery} against a knowledge base.
- *
- * @author Felix Chapman
- *
- * @param <T> The returned result of the compute job
+ * @param <T> return type of ComputeQuery
  */
 public interface ComputeExecutor<T> {
 
@@ -34,10 +33,10 @@ public interface ComputeExecutor<T> {
      *
      * @throws RuntimeException if the job is killed
      */
-    T get();
+    Stream<T> stream();
 
     /**
-     * Stop the job executing. Any calls to {@link #get()} will throw.
+     * Stop the job executing. Any calls to {@link #stream()} will throw.
      */
     void kill();
 }

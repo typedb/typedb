@@ -21,8 +21,10 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -31,29 +33,29 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds mean of a {@link Match}.
  */
-class MeanAggregate extends AbstractAggregate<Number> {
+class MeanAggregate implements Aggregate<Value> {
 
     private final Var varName;
     private final CountAggregate countAggregate;
-    private final Aggregate<Number> sumAggregate;
+    private final Aggregate<Value> sumAggregate;
 
-    MeanAggregate(Var varName) {
-        this.varName = varName;
-        countAggregate = new CountAggregate();
-        sumAggregate = Aggregates.sum(varName);
+    MeanAggregate(Var var) {
+        this.varName = var;
+        countAggregate = new CountAggregate(Collections.singleton(var));
+        sumAggregate = Aggregates.sum(var);
     }
 
     @Override
-    public Number apply(Stream<? extends Answer> stream) {
-        List<? extends Answer> list = stream.collect(toList());
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
+        List<? extends ConceptMap> list = stream.collect(toList());
 
-        long count = countAggregate.apply(list.stream());
+        Number count = countAggregate.apply(list.stream()).get(0).number();
 
-        if (count == 0) {
-            return null;
+        if (count.intValue() == 0) {
+            return Collections.emptyList();
         } else {
-            Number sum = sumAggregate.apply(list.stream());
-            return sum.doubleValue() / count;
+            Number sum = sumAggregate.apply(list.stream()).get(0).number();
+            return Collections.singletonList(new Value(sum.doubleValue() / count.longValue()));
         }
     }
 

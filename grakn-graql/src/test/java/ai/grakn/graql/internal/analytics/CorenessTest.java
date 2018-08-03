@@ -31,6 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import org.junit.Before;
@@ -39,7 +40,6 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,7 +81,7 @@ public class CorenessTest {
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -91,7 +91,7 @@ public class CorenessTest {
         try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             graph.putEntityType(thing).create();
             graph.putEntityType(anotherThing).create();
-            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -121,7 +121,7 @@ public class CorenessTest {
                     .assign(role3, entity1)
                     .assign(role4, entity2);
 
-            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -131,17 +131,20 @@ public class CorenessTest {
         addSchemaAndEntities();
 
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            Map<Long, Set<ConceptId>> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.get(3L).size());
+            assertEquals(4, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
 
-            result = graph.graql().compute(CENTRALITY).using(K_CORE).of(thing).execute().getCentrality().get();
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).of(thing).execute();
             assertEquals(1, result.size());
-            assertEquals(2, result.get(3L).size());
+            assertEquals(2, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
 
-            result = graph.graql().compute(CENTRALITY).using(K_CORE).in(thing, anotherThing, related).execute().getCentrality().get();
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).in(thing, anotherThing, related).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.get(2L).size());
+            assertEquals(4, result.get(0).set().size());
+            assertEquals(2, result.get(0).measurement().intValue());
         }
     }
 
@@ -170,17 +173,22 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<Long, Set<ConceptId>> result;
+        List<ConceptSetMeasure> result;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             System.out.println("result = " + result);
             assertEquals(2, result.size());
-            assertEquals(5, result.get(4L).size());
-            assertEquals(1, result.get(3L).size());
 
-            result = graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(4L)).execute().getCentrality().get();
+            assertEquals(1, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
+
+            assertEquals(5, result.get(1).set().size());
+            assertEquals(4, result.get(1).measurement().intValue());
+
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(4L)).execute();
             assertEquals(1, result.size());
-            assertEquals(5, result.get(4L).size());
+            assertEquals(5, result.get(0).set().size());
+            assertEquals(4, result.get(0).measurement().intValue());
         }
     }
 
@@ -261,16 +269,21 @@ public class CorenessTest {
             graph.commit();
         }
 
-        Map<Long, Set<ConceptId>> result;
+        List<ConceptSetMeasure> result;
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-            result = graph.graql().compute(CENTRALITY).using(K_CORE).execute().getCentrality().get();
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertEquals(2, result.size());
-            assertEquals(8, result.get(3L).size());
-            assertEquals(1, result.get(2L).size());
 
-            result = graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(3L)).execute().getCentrality().get();
+            assertEquals(1, result.get(0).set().size());
+            assertEquals(2, result.get(0).measurement().intValue());
+
+            assertEquals(8, result.get(1).set().size());
+            assertEquals(3, result.get(1).measurement().intValue());
+
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(3L)).execute();
             assertEquals(1, result.size());
-            assertEquals(8, result.get(3L).size());
+            assertEquals(8, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
         }
     }
 
@@ -286,15 +299,16 @@ public class CorenessTest {
             list.add(i);
         }
 
-        Set<Map<Long, Set<ConceptId>>> result = list.parallelStream().map(i -> {
+        Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-                return Graql.compute(CENTRALITY).withTx(graph).using(K_CORE).where(min_k(3L)).execute().getCentrality().get();
+                return Graql.compute(CENTRALITY).withTx(graph).using(K_CORE).where(min_k(3L)).execute();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(4, map.get(3L).size());
+            assertEquals(4, map.get(0).set().size());
+            assertEquals(3, map.get(0).measurement().intValue());
         });
     }
 

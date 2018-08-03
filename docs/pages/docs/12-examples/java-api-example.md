@@ -169,7 +169,7 @@ for (Thing p: tx.getEntityType("person").instances()) {
 It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java
-for (Answer a: tx.graql().match(var("x").isa("person"))) {
+for (ConceptMap a: tx.graql().match(var("x").isa("person")).get().execute()) {
     System.out.println(" " + a);
 }
 ```

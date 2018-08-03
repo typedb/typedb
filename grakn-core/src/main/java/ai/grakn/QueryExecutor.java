@@ -25,7 +25,9 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 
 import java.util.stream.Stream;
 
@@ -33,26 +35,22 @@ import java.util.stream.Stream;
  * Interface for executing queries and getting a result. Examples of possible implementations are: running the query
  * against a tinkerpop graph, or sending the query to some server to execute via gRPC or a REST API.
  *
- * <p>
  * This class allows us to decouple query representation (in {@link ai.grakn.graql.Query}) from query execution
  * (here in {@link QueryExecutor}).
- * </p>
- *
- * @author Felix Chapman
  */
 public interface QueryExecutor {
 
-    Stream<Answer> run(GetQuery query);
+    Stream<ConceptMap> run(DefineQuery query);
 
-    Stream<Answer> run(InsertQuery query);
+    Stream<ConceptMap> run(UndefineQuery query);
 
-    void run(DeleteQuery query);
+    Stream<ConceptMap> run(GetQuery query);
 
-    Answer run(DefineQuery query);
+    Stream<ConceptMap> run(InsertQuery query);
 
-    void run(UndefineQuery query);
+    Stream<ConceptSet> run(DeleteQuery query);
 
-    <T> T run(AggregateQuery<T> query);
+    <T extends Answer> Stream<T> run(AggregateQuery<T> query);
 
-    ComputeExecutor<ComputeQuery.Answer> run(ComputeQuery query);
+    <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query);
 }
