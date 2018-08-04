@@ -20,10 +20,11 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -64,8 +65,12 @@ public class CSVMigratorMainTest {
     @Before
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = new Grakn(engine.grpcUri()).session(keyspace);
+        factory = EmbeddedGraknSession.createEngineSession(keyspace);
         load(factory, getFile("csv", "pets/schema.gql"));
+    }
+    @After
+    public void closeSession(){
+        factory.close();
     }
 
     @Test

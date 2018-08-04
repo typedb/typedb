@@ -18,7 +18,6 @@
 
 package ai.grakn.test.migration.csv;
 
-import ai.grakn.client.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -26,31 +25,35 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.rule.EngineContext;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
-import static ai.grakn.test.migration.MigratorTestUtils.load;
 import ai.grakn.util.SampleKBLoader;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import junit.framework.TestCase;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class CSVMigratorTest {
 
@@ -67,13 +70,18 @@ public class CSVMigratorTest {
     @Before
     public void setup() {
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = new Grakn(engine.grpcUri()).session(keyspace);
+        factory = EmbeddedGraknSession.createEngineSession(keyspace);
         defaultMigrator = new MigratorBuilder()
                 .setUri(engine.uri())
                 .setKeyspace(keyspace)
                 .setRetries(0)
                 .setFailFast(false)
                 .build();
+    }
+
+    @After
+    public void closeSession(){
+        factory.close();
     }
 
     @Test

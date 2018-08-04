@@ -22,16 +22,17 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -70,9 +71,13 @@ public class JsonMigratorMainTest {
     @Before
     public void setup() {
         keyspace = SampleKBLoader.randomKeyspace();
-        session = new Grakn(engine.grpcUri()).session(keyspace);
+        session = EmbeddedGraknSession.createEngineSession(keyspace);
 
         load(session, getFile("json", "simple-schema/schema.gql"));
+    }
+    @After
+    public void closeSession(){
+        session.close();
     }
 
     @Test

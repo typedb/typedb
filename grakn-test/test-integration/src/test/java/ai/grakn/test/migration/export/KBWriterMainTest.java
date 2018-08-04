@@ -24,6 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.EngineContext;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -55,6 +56,11 @@ public class KBWriterMainTest {
             tx.commit();
         }
     }
+    @AfterClass
+    public static void closeSession(){
+        session.close();
+    }
+
 
     @Test
     public void exportCalledWithSchemaFlag_DataPrintedToSystemOut(){
