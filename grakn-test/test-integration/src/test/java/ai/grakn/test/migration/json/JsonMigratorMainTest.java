@@ -35,6 +35,7 @@ import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
@@ -115,7 +116,7 @@ public class JsonMigratorMainTest {
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
-    @Test
+    @Test @Ignore
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
         run("-d", "-u", engine.uri().toString(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrongkeyspace");
         String expectedMessage = GraknBackendException.noSuchKeyspace(Keyspace.of("wrongkeyspace")).getMessage();

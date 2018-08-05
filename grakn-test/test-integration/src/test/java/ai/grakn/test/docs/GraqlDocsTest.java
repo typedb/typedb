@@ -48,7 +48,6 @@ import static ai.grakn.test.docs.DocTestUtil.getLineNumber;
 import static ai.grakn.test.docs.DocTestUtil.markdownOrHtml;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 

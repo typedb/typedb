@@ -52,7 +52,7 @@ We will look at the same schema as is covered in the [Basic Schema documentation
 First we need a [knowledge graph](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java
-GraknSession session = Grakn.session(keyspace);
+GraknSession session = new Grakn("localhost:48555").session(keyspace);
 GraknTx tx = session.transaction(GraknTxType.WRITE)
 ```
 

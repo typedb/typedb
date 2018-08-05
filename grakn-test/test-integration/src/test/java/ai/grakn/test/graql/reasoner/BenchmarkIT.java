@@ -25,11 +25,11 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.batch.BatchExecutorClient;
 import ai.grakn.batch.GraknClient;
-import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -74,7 +74,7 @@ public class BenchmarkIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = new Grakn(engine.grpcUri()).session(keyspace);
+        this.session = EmbeddedGraknSession.createEngineSession(keyspace);
     }
 
     private void loadOntology(String fileName, GraknSession session){
