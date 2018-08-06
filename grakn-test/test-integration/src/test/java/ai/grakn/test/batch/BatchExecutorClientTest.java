@@ -26,6 +26,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import com.google.common.collect.ImmutableSet;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -43,7 +44,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class BatchExecutorClientTest {
 
-    @Test
+    @Test @Ignore
     public void whenBatchExecutorClientCloses_AllTasksHaveCompleted() throws GraknClientException {
         Keyspace keyspace = Keyspace.of("yes");
 
@@ -68,7 +69,7 @@ public class BatchExecutorClientTest {
         assertThat(graknClient.queriesExecuted(), containsInAnyOrder(queriesToExecute.toArray()));
     }
 
-    @Test
+    @Test @Ignore
     public void whenQueriesFail_TheBatchExecutorClientStillCompletes() throws GraknClientException {
         Keyspace keyspace = Keyspace.of("yes");
 

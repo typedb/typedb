@@ -284,7 +284,7 @@ public class GraqlController implements HttpController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) tx.commitAndGetLogs().ifPresent(postProcessor::submit);
 
         return formatted;
     }

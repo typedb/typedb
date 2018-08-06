@@ -41,7 +41,7 @@ public class GraknConfigTest {
     private static GraknConfig configuration = GraknConfig.create();
 
     @ClassRule
-    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(configuration.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
+     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(configuration.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

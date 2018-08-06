@@ -18,15 +18,12 @@
 
 package ai.grakn.util;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknConfig;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
-import ai.grakn.factory.GraknSessionLocal;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -65,7 +62,7 @@ public class SampleKBLoader {
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
-        EmbeddedGraknSession session = GraknSessionLocal.create(randomKeyspace(), Grakn.IN_MEMORY, GraknConfig.create());
+        EmbeddedGraknSession session = GraknTestUtil.usingTinker() ? EmbeddedGraknSession.inMemory(randomKeyspace()) : EmbeddedGraknSession.createEngineSession(randomKeyspace());
         factory = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
         this.preLoad = preLoad;
     }
@@ -82,9 +79,9 @@ public class SampleKBLoader {
         if(tx == null || tx.isClosed()){
             //Load the graph if we need to
             if(!graphLoaded) {
-                try(GraknTx graph = factory.open(GraknTxType.WRITE)){
-                    load(graph);
-                    graph.commit();
+                try(GraknTx tx = factory.open(GraknTxType.WRITE)){
+                    load(tx);
+                    tx.commit();
                     graphLoaded = true;
                 }
             }
@@ -97,7 +94,8 @@ public class SampleKBLoader {
 
     public void rollback() {
         if (tx instanceof GraknTxTinker) {
-            tx.admin().delete();
+            tx.close();
+            tx.clearGraph();
             graphLoaded = false;
         } else if (!tx.isClosed()) {
             tx.close();

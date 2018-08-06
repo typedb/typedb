@@ -14,20 +14,10 @@ This example shows how to use Java in a basic example that can be extended as a 
 All Grakn applications have the following Maven dependency:
 
 ```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-kb</artifactId>
-<version>${project.version}</version>
-</dependency>
-```
-
-This dependency will give you access to the Core API. Your Java application will also require the following dependency:
-
-```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-factory</artifactId>
-<version>${project.version}</version>
+ <dependency>
+   <groupId>ai.grakn</groupId>
+   <artifactId>client-java</artifactId>
+   <version>${project.version}</version>
 </dependency>
 ```
 
@@ -51,15 +41,15 @@ We will look at the same schema as is covered in the [Basic Schema documentation
 
 First we need a [knowledge graph](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
 
-```java
-GraknSession session = Grakn.session(uri, keyspace);
+```java-test-ignore
+GraknSession session = new Grakn("localhost:48555").session(keyspace);
 GraknTx tx = session.transaction(GraknTxType.WRITE)
 ```
 
 
 Building the schema is covered in `writeSchema()`. First, the method adds the attribute types using putAttributeType():
 
-```java
+```java-test-ignore
 identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
 name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING).sup(name);
@@ -73,7 +63,7 @@ gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 
 Then it adds roles using `putRole()`:
 
-```java
+```java-test-ignore
 spouse = tx.putRole("spouse");
 spouse1 = tx.putRole("spouse1").sup(spouse);
 spouse2 = tx.putRole("spouse2").sup(spouse);
@@ -83,7 +73,7 @@ child = tx.putRole("child");
 
 Then to add the relationship types, `putRelationshipType()`, which is followed by `relates()` to set the roles associated with the relationship and attribute() to state that it has a date attribute:
 
-```java
+```java-test-ignore
 marriage = tx.putRelationshipType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
 marriage.has(eventDate);
@@ -93,7 +83,7 @@ parentship.relates(parent).relates(child);
 
 Finally, entity types are added using `putEntityType()`, `plays()` and `attribute()`:
 
-```java
+```java-test-ignore
 person = tx.putEntityType("person");
 person.plays(spouse1).plays(spouse2).plays(parent).plays(child);
 person.has(gender);
@@ -107,7 +97,7 @@ person.has(surname);
 
 Now to commit the schema:
 
-```java
+```java-test-ignore
 tx.commit();
 ```
 
@@ -116,7 +106,7 @@ Now that we have created the schema, we can load in some data using the Java API
 
 The example project does this in `writeSampleRelation_Marriage()`. First it creates a person entity named homer:
 
-```java
+```java-test-ignore
 // After committing we need to open a new transaction
 tx = session.transaction(GraknTxType.WRITE)
 
@@ -140,7 +130,7 @@ insert $x isa person has firstname "John", has surname "Niesz" has gender "male"
 
 The code goes on to create another `person` entity, named `maryYoung`, and then marries them:
 
-```java
+```java-test-ignore
 Entity maryYoung = person.create();
 
 Relationship theMarriage = marriage.create().assign(spouse1, johnNiesz).assign(spouse2, maryYoung);
@@ -158,7 +148,7 @@ match $x isa person; get;
 
 In Java:
 
-```java
+```java-test-ignore
 for (Thing p: tx.getEntityType("person").instances()) {
     System.out.println(" " + p);
 }
@@ -168,7 +158,7 @@ for (Thing p: tx.getEntityType("person").instances()) {
 
 It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
-```java
+```java-test-ignore
 for (ConceptMap a: tx.graql().match(var("x").isa("person")).get().execute()) {
     System.out.println(" " + a);
 }
@@ -186,7 +176,7 @@ Manipulation, such as insertions into the knowledge graph.
 **QueryBuilder — the “Java Graql” API**
 This is best for advanced querying where traversals are involved. For example “Who is married to Homer?” is too complex a query for the Java API. Using a `QueryBuilder`:
 
-```java
+```java-test-ignore
 GetQuery query = tx.graql().match(
   var("x").has("firstname", "John").isa("person"),
   var("y").has("firstname", var("y_name")).isa("person"),

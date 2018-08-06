@@ -22,10 +22,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStoreFake;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.controller.response.Keyspace;
-import ai.grakn.engine.controller.response.Keyspaces;
 import com.codahale.metrics.MetricRegistry;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
@@ -63,7 +60,7 @@ import static org.mockito.Mockito.mock;
 public class SystemControllerTest {
     private static final ServerStatus status = mock(ServerStatus.class);
     private static final MetricRegistry metricRegistry = new MetricRegistry();
-    private static final KeyspaceStoreFake systemKeyspace = KeyspaceStoreFake.of();
+    private static final KeyspaceStoreFake keyspaceStore = KeyspaceStoreFake.of();
 
     private static final String INDEX_CONTENTS = "<html>hello world!</html>";
 
@@ -72,7 +69,7 @@ public class SystemControllerTest {
     @ClassRule
     public static final SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         SystemControllerTest.config = config;
-        new SystemController(config, systemKeyspace, status, metricRegistry).start(spark);
+        new SystemController(config, keyspaceStore, status, metricRegistry).start(spark);
     });
 
     @BeforeClass
@@ -83,7 +80,7 @@ public class SystemControllerTest {
 
     @Before
     public void setUp() {
-        systemKeyspace.clear();
+        keyspaceStore.clear();
     }
 
     @Test
@@ -142,17 +139,9 @@ public class SystemControllerTest {
     }
 
     @Test
-    public void whenCallingPutKBEndpoint_Return200_AndConfigInBody() throws JsonProcessingException {
-        when().put("/kb/myks").then()
-                .statusCode(SC_OK)
-                .contentType(ContentType.JSON)
-                .body(is(new ObjectMapper().writeValueAsString(config)));
-    }
-
-    @Test
     public void whenCallingGETKBKeyspaceEndpoint_EnsureSpecificKeyspaceReturned(){
         Keyspace expected = Keyspace.of(ai.grakn.Keyspace.of("myks"));
-        RestAssured.put(expected.id());
+        keyspaceStore.addKeyspace(ai.grakn.Keyspace.of("myks"));
 
         Response response = when().get(expected.id());
         assertEquals(SC_OK, response.statusCode());
@@ -161,31 +150,18 @@ public class SystemControllerTest {
         assertEquals(expected, foundKeyspace);
     }
 
-    @Test
-    public void whenCallingPutKBEndpointOnNonExistentKeyspace_KeyspaceAppearsInList() throws IOException {
-        RestAssured.put("/kb/myks");
-        Keyspaces keyspaces = when().get("/kb").as(Keyspaces.class);
-        assertThat(keyspaces.keyspaces(), not(empty()));
-    }
 
-    @Test
-    public void whenCallingPutKBEndpointTwice_NothingHappens() {
-        RestAssured.put("/kb/myks");
-        RestAssured.put("/kb/myks");
-
-        when().get("/kb").then().body("", not(empty()));
-    }
 
     @Test
     public void whenCallingDeleteKBEndpointOnExistingKeyspace_Return204() {
-        RestAssured.put("/kb/myks");
+        keyspaceStore.addKeyspace(ai.grakn.Keyspace.of("myks"));
 
         when().delete("/kb/myks").then().statusCode(SC_NO_CONTENT).body(isEmptyString());
     }
 
     @Test
     public void whenCallingDeleteKBEndpointOnExistingKeyspace_KeyspaceDisappearsFromList() {
-        RestAssured.put("/kb/myks");
+        keyspaceStore.addKeyspace(ai.grakn.Keyspace.of("myks"));
 
         RestAssured.delete("/kb/myks");
 

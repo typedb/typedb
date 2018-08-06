@@ -17,9 +17,9 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.client.Grakn;
 import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;
@@ -46,8 +46,8 @@ public class Main {
             throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
-        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.READ)) {
-            KBWriter graphWriter = new KBWriter(graph);
+        try(GraknTx tx = new Grakn(options.getUri()).session(options.getKeyspace()).transaction(GraknTxType.READ)) {
+            KBWriter graphWriter = new KBWriter(tx);
 
             if (options.exportSchema()) {
                 System.out.println(graphWriter.dumpSchema());

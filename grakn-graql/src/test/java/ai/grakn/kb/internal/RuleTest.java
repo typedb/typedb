@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -28,6 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.exception.InvalidKBException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -45,6 +45,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 
+
 //NOTE: This test is inside the graql module due to the inability to have graql constructs inside the graph module
 public class RuleTest {
     @org.junit.Rule
@@ -57,8 +58,8 @@ public class RuleTest {
 
     @Before
     public void setupRules(){
-        session = Grakn.session(Grakn.IN_MEMORY, "absd");
-        graknTx = Grakn.session(Grakn.IN_MEMORY, "absd").transaction(GraknTxType.WRITE);
+        session = EmbeddedGraknSession.inMemory( "absd");
+        graknTx = EmbeddedGraknSession.inMemory( "absd").transaction(GraknTxType.WRITE);
     }
 
     @After

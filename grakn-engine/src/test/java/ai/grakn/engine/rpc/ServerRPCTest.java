@@ -75,7 +75,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.client.rpc.RequestBuilder.Keyspace.delete;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.iterate;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
@@ -134,7 +133,7 @@ public class ServerRPCTest {
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .addService(new SessionService(requestOpener, mockedPostProcessor))
-                .addService(new KeyspaceService(requestOpener, mockedKeyspaceStore))
+                .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);
         rpcServerRPC.start();
@@ -202,7 +201,7 @@ public class ServerRPCTest {
             tx.send(commit());
         }
 
-        verify(tx).commitSubmitNoLogs();
+        verify(tx).commitAndGetLogs();
     }
 
     @Test
@@ -682,7 +681,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingFails_Throw() throws Throwable {
-        doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
+        doThrow(EXCEPTION).when(tx).commitAndGetLogs();
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
@@ -762,13 +761,6 @@ public class ServerRPCTest {
             tx.send(iterate(iterator2));
             tx.receive().ok();
         }
-    }
-
-    @Test
-    public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
-        keyspaceBlockingStub.delete(delete(MYKS.getValue()));
-
-        verify(tx).delete();
     }
 
     @Test

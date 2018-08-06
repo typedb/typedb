@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -87,7 +88,7 @@ public class PostProcessingTest {
     }
 
     @After
-    public void takeDown() throws InterruptedException {
+    public void takeDown(){
         session.close();
     }
 
@@ -103,7 +104,7 @@ public class PostProcessingTest {
         AttributeType<String> attributeType = tx.putAttributeType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.create(value);
-        tx.commitSubmitNoLogs();
+        tx.commit();
         tx = session.transaction(GraknTxType.WRITE);
 
         assertEquals(1, attributeType.instances().count());
@@ -182,37 +183,37 @@ public class PostProcessingTest {
 
     @Test
     public void whenShardingThresholdIsBreached_ShardTypes() {
-        Keyspace keyspace = SampleKBLoader.randomKeyspace();
+        Keyspace keyspace = session.keyspace();
         EntityType et1;
         EntityType et2;
 
         //Create Simple GraknTx
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
+        try (GraknTx graknTx = session.transaction(GraknTxType.WRITE)) {
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");
-            graknTx.commitSubmitNoLogs();
+            graknTx.commit();
         }
 
-        checkShardCount(keyspace, et1, 1);
-        checkShardCount(keyspace, et2, 1);
+        checkShardCount(et1, 1);
+        checkShardCount(et2, 1);
 
         //Add new counts
         createAndUploadCountCommitLog(keyspace, et1.id(), 99_999L);
         createAndUploadCountCommitLog(keyspace, et2.id(), 99_999L);
 
-        checkShardCount(keyspace, et1, 1);
-        checkShardCount(keyspace, et2, 1);
+        checkShardCount(et1, 1);
+        checkShardCount(et2, 1);
 
         //Add new counts
         createAndUploadCountCommitLog(keyspace, et1.id(), 2L);
         createAndUploadCountCommitLog(keyspace, et2.id(), 1L);
 
-        checkShardCount(keyspace, et1, 2);
-        checkShardCount(keyspace, et2, 1);
+        checkShardCount(et1, 2);
+        checkShardCount(et2, 1);
     }
 
-    private void checkShardCount(Keyspace keyspace, Concept concept, int expectedValue) {
-        try (EmbeddedGraknTx<?> graknTx = EmbeddedGraknSession.create(keyspace, engine.uri().toString()).transaction(GraknTxType.WRITE)) {
+    private void checkShardCount(Concept concept, int expectedValue) {
+        try (EmbeddedGraknTx<?> graknTx = session.transaction(GraknTxType.WRITE)) {
             int shards = graknTx.getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.id().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();

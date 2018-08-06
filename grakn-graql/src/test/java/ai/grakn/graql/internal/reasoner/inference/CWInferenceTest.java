@@ -117,4 +117,5 @@ public class CWInferenceTest {
                 "get;";
         assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
+
 }
