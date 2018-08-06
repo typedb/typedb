@@ -14,20 +14,10 @@ This example shows how to use Java in a basic example that can be extended as a 
 All Grakn applications have the following Maven dependency:
 
 ```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-kb</artifactId>
-<version>${project.version}</version>
-</dependency>
-```
-
-This dependency will give you access to the Core API. Your Java application will also require the following dependency:
-
-```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-factory</artifactId>
-<version>${project.version}</version>
+ <dependency>
+   <groupId>ai.grakn</groupId>
+   <artifactId>client-java</artifactId>
+   <version>${project.version}</version>
 </dependency>
 ```
 
@@ -51,7 +41,7 @@ We will look at the same schema as is covered in the [Basic Schema documentation
 
 First we need a [knowledge graph](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
 
-```java
+```java-test-ignore
 GraknSession session = new Grakn("localhost:48555").session(keyspace);
 GraknTx tx = session.transaction(GraknTxType.WRITE)
 ```
