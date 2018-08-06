@@ -38,12 +38,14 @@ class test_PreDbSetup(unittest.TestCase):
             a_inst = grakn.Grakn('localhost:1000')
             a_session = a_inst.session('testkeyspace')
             a_session.transaction(grakn.TxType.READ)
-        # test the `with` statements...
+
         with self.assertRaises(ClientError):
             a_inst = grakn.Grakn('localhost:1000')
-            with a_inst.session('testkeyspace') as a_session:
-                with a_session.transaction(grakn.TxType.READ):
+            with a_inst.session("test") as s:
+                with s.transaction(grakn.TxType.READ) as tx:
                     pass
+            
+
 
     # --- Test grakn session for different keyspaces ---
     def test_grakn_session_valid_keyspace(self):
@@ -101,17 +103,18 @@ class test_Base(unittest.TestCase):
         # shared grakn instances and session for API testing 
 
         # temp tx to set up DB, don't save it
-        tx = session.transaction(grakn.TxType.WRITE)
-        try:
-            # define parentship roles to test agains
-            tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-        except ClientError as ce:
-            print(ce)
-
-        answers = list(tx.query("match $x isa person, has age 20; get;"))
-        if len(answers) == 0:
-            tx.query("insert $x isa person, has age 20;")
-        tx.commit()
+        with session.transaction(grakn.TxType.WRITE) as tx:
+            tx = session.transaction(grakn.TxType.WRITE)
+            try:
+                # define parentship roles to test agains
+                tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
+            except ClientError as ce:
+                print(ce)
+    
+            answers = list(tx.query("match $x isa person, has age 20; get;"))
+            if len(answers) == 0:
+                tx.query("insert $x isa person, has age 20;")
+            tx.commit()
 
     def setUp(self):
         self.tx = session.transaction(grakn.TxType.WRITE)

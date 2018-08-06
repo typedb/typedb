@@ -339,24 +339,24 @@ workflows:
   run-all-tests:
     jobs:
       - build
-#      - unit-it-test-1:
-#          requires:
-#            - build
-#      - unit-it-test-2:
-#          requires:
-#            - build
-#      - distribution-e2e:
-#          requires:
-#            - build
-#      - snb-e2e:
-#          requires:
-#            - build
-#      - biomed-e2e:
-#          requires:
-#            - build
-#      - client-nodejs-e2e:
-#          requires:
-#            - build
+      - unit-it-test-1:
+          requires:
+            - build
+      - unit-it-test-2:
+          requires:
+            - build
+      - distribution-e2e:
+          requires:
+            - build
+      - snb-e2e:
+          requires:
+            - build
+      - biomed-e2e:
+          requires:
+            - build
+      - client-nodejs-e2e:
+          requires:
+            - build
       - client-python-e2e:
           requires:
             - build

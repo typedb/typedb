@@ -83,12 +83,13 @@ class Session(object):
         return self
 
     def __exit__(self, type, value, tb):
+        self.close()
         if tb is None:
             # No exception
-            self.close()
+            pass
         else:
-            print(tb)
-            raise value
+            #print("Closing Session due to exception: {0} \n traceback: \n {1}".format(type, tb))
+            return False
 
 
 class Transaction(object):
@@ -101,12 +102,13 @@ class Transaction(object):
         return self
 
     def __exit__(self, type, value, tb):
+        self.close()
         if tb is None:
             # No exception
-            self.close()
+            pass
         else:
-            print(tb)
-            raise value
+            #print("Closing Transaction due to exception: {0} \n traceback: \n {1}".format(type, tb))
+            return False
 
     def query(self, query: str, infer=True):
         """ Execute a Graql query, inference is optionally enabled """
