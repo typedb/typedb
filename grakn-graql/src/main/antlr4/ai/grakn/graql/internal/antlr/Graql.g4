@@ -21,7 +21,6 @@ aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 variables      : VARIABLE (',' VARIABLE)* ;
 
 // GRAQL COMPUTE QUERY: OVERALL SYNTAX GRAMMAR =========================================================================
-// Author: Haikal Pribadi
 //
 // A compute query is composed of 3 things:
 // the 'compute' keyword, followed by a compute method, and a set of conditions (that may be optional)
@@ -53,7 +52,6 @@ computeCondition                : FROM      computeFromID
                                 ;
 
 // GRAQL COMPUTE QUERY: CONDITIONS GRAMMAR =============================================================================
-// Author: Haikal Pribadi
 //
 // The following are definitions of computeConditions for the Graql Compute Query
 // computeFromID and computeToID takes in a concept ID
