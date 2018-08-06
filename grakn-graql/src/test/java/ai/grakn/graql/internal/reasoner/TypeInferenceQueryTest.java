@@ -63,7 +63,7 @@ import static org.junit.Assert.assertTrue;
 public class TypeInferenceQueryTest {
 
     @ClassRule
-    public final SampleKBContext testContext = SampleKBContext.load("typeInferenceTest.gql");
+    public static final SampleKBContext testContext = SampleKBContext.load("typeInferenceTest.gql");
 
     @Test
     public void testTypeInference_singleGuard() {
