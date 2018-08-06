@@ -21,9 +21,7 @@ package ai.grakn.migration.base;
 import ai.grakn.Keyspace;
 import ai.grakn.batch.BatchExecutorClient;
 import ai.grakn.batch.GraknClient;
-import ai.grakn.batch.GraknClientException;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
@@ -123,7 +121,6 @@ public class Migrator {
 
             subscribeToReportOutcome(failFast, loader, queriesExecuted);
 
-            checkKeyspace(graknClient);
             Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
             if (maxLines > -1) {
                 queryStream = queryStream.limit(maxLines);
@@ -155,16 +152,6 @@ public class Migrator {
                         .migrationFailure(error.getMessage());
             }
         });
-    }
-
-    private void checkKeyspace(GraknClient graknClient) {
-        try {
-            if (!graknClient.keyspace(keyspace.getValue()).isPresent()) {
-                throw GraknBackendException.noSuchKeyspace(keyspace);
-            }
-        } catch (GraknClientException e) {
-            throw GraknServerException.internalError(e.getMessage());
-        }
     }
 
     /**

@@ -18,9 +18,8 @@
 
 package ai.grakn.test.migration.json;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
@@ -28,12 +27,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,7 +57,7 @@ import static org.junit.Assert.assertTrue;
 public class JsonMigratorTest {
 
     private Migrator migrator;
-    private GraknSession factory;
+    private GraknSession session;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
@@ -64,7 +65,7 @@ public class JsonMigratorTest {
     @Before
     public void setup(){
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        session = EmbeddedGraknSession.createEngineSession(keyspace);
         migrator = new MigratorBuilder()
                 .setUri(engine.uri())
                 .setKeyspace(keyspace)
@@ -73,9 +74,14 @@ public class JsonMigratorTest {
                 .build();
     }
 
+    @After
+    public void closeSession(){
+        session.close();
+    }
+
     @Test
     public void whenMigratorExecutedOverSimpleJson_DataIsPersistedInGraph() {
-        load(factory, getFile("json", "simple-schema/schema.gql"));
+        load(session, getFile("json", "simple-schema/schema.gql"));
 
         String template = "  \n" +
                 "insert " +
@@ -103,7 +109,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "simple-schema/data.json");
 
-        try(GraknTx graph = factory.transaction(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
             assertEquals(1, personType.instances().count());
 
@@ -137,7 +143,7 @@ public class JsonMigratorTest {
 
     @Test
     public void whenMigratorExecutedOverDataWithAllDataTypes_AllDataIsPersistedInGraph() throws FileNotFoundException {
-        load(factory, getFile("json", "all-types/schema.gql"));
+        load(session, getFile("json", "all-types/schema.gql"));
 
         String template = "" +
                 "insert $x isa thingy\n" +
@@ -151,7 +157,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "all-types/data.json");
 
-        try(GraknTx graph = factory.transaction(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType rootType = graph.getEntityType("thingy");
             Set<Entity> things = rootType.instances().collect(toSet());
             assertEquals(1, things.size());
@@ -176,7 +182,7 @@ public class JsonMigratorTest {
 
     @Test
     public void whenMigratorExecutedOverJsonDirectory_AllDataIsPersistedInGraph(){
-        load(factory, getFile("json", "string-or-object/schema.gql"));
+        load(session, getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
@@ -185,7 +191,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        try(GraknTx graph = factory.transaction(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
             assertEquals(2, theThing.instances().count());
 
@@ -201,7 +207,7 @@ public class JsonMigratorTest {
 
     @Test
     public void whenMigratorExecutedWithConditionalTemplate_DataIsPersistedInGraph(){
-        load(factory, getFile("json", "string-or-object/schema.gql"));
+        load(session, getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
@@ -210,7 +216,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        try(GraknTx graph = factory.transaction(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
             assertEquals(2, theThing.instances().count());
         }
@@ -218,11 +224,11 @@ public class JsonMigratorTest {
 
     @Test
     public void whenMigratorExecutedOverMissingData_ErrorIsNotThrownAndMissingObjectsAreSkipped(){
-        load(factory, getFile("json", "string-or-object/schema.gql"));
+        load(session, getFile("json", "string-or-object/schema.gql"));
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
         declareAndLoad(template, "string-or-object/data");
 
-        try(GraknTx graph = factory.transaction(GraknTxType.READ)) {
+        try(GraknTx graph = session.transaction(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
             assertEquals(1, theThing.instances().count());
         }

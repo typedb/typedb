@@ -154,7 +154,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
 
     private JanusGraph configureGraph(boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
-                set(STORAGE_HOSTNAME, session().uri()).
+                set(STORAGE_HOSTNAME, session().config().uri()).
                 set(STORAGE_KEYSPACE, session().keyspace().getValue()).
                 set(STORAGE_BATCH_LOADING, batchLoading);
 
@@ -179,7 +179,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
 
 
 
-        LOG.debug("Opening graph on {}", session().uri());
+        LOG.debug("Opening graph {}", session().keyspace().getValue());
         return builder.open();
     }
 

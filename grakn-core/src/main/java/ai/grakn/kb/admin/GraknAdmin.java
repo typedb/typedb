@@ -115,11 +115,6 @@ public interface GraknAdmin extends GraknTx{
     @CheckReturnValue
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
-    /**
-     * Immediately closes the session and deletes the graph.
-     * Should be used with caution as this will invalidate any pending transactions
-     */
-    void delete();
 
     QueryExecutor queryExecutor();
 }

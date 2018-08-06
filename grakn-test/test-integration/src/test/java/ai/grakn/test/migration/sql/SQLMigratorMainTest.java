@@ -18,9 +18,9 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
@@ -62,12 +62,13 @@ public class SQLMigratorMainTest {
     @Before
     public void setup() throws SQLException {
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = EmbeddedGraknSession.createEngineSession(keyspace);
         connection = setupExample(factory, "pets");
     }
 
     @After
     public void stop() throws SQLException {
+        factory.close();
         connection.close();
     }
 

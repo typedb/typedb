@@ -476,17 +476,6 @@ public class TransactionTest {
         assertTransactionClosedAfterAction(GraknTx::abort);
     }
 
-    @Test
-    public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
-        KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(KEYSPACE.getValue());
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            tx.admin().delete();
-        }
-
-        verify(server.keyspaceService()).delete(eq(request), any());
-    }
-
     private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){
         Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
         assertFalse(tx.isClosed());

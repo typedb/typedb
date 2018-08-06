@@ -22,7 +22,6 @@ package ai.grakn.client;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
 import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.executor.RemoteQueryExecutor;
@@ -69,16 +68,29 @@ import java.util.stream.StreamSupport;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
- * Entry-point and client equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
- * In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
- * subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
+ * Entry-point which communicates with a running Grakn server using gRPC.
+ * For now, only a subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
  */
 public final class Grakn {
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
 
-    private Grakn() {}
+    private ManagedChannel channel;
+    private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
+    private Keyspace keyspace;
 
-    public static Grakn.Session session(SimpleURI uri, Keyspace keyspace) {
-        return new Session(uri, keyspace);
+
+    public Grakn(SimpleURI uri) {
+        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+        keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        keyspace = new Keyspace();
+    }
+
+    public Grakn.Session session(ai.grakn.Keyspace keyspace) {
+        return new Session(keyspace);
+    }
+
+    public Grakn.Keyspace keyspaces(){
+        return keyspace;
     }
 
     /**
@@ -87,16 +99,12 @@ public final class Grakn {
      * @see Transaction
      * @see Grakn
      */
-    public static class Session implements GraknSession {
+    public class Session implements GraknSession {
 
-        private final Keyspace keyspace;
-        private final SimpleURI uri;
-        private final ManagedChannel channel;
+        private final ai.grakn.Keyspace keyspace;
 
-        private Session(SimpleURI uri, Keyspace keyspace) {
+        private Session(ai.grakn.Keyspace keyspace) {
             this.keyspace = keyspace;
-            this.uri = uri;
-            this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
         SessionServiceGrpc.SessionServiceStub sessionStub() {
@@ -108,7 +116,7 @@ public final class Grakn {
         }
 
         @Override
-        public Transaction transaction(GraknTxType type) {
+        public Grakn.Transaction transaction(GraknTxType type) {
             return new Transaction(this, type);
         }
 
@@ -118,13 +126,20 @@ public final class Grakn {
         }
 
         @Override
-        public String uri() {
-            return uri.toString();
-        }
-
-        @Override
-        public Keyspace keyspace() {
+        public ai.grakn.Keyspace keyspace() {
             return keyspace;
+        }
+    }
+
+    /**
+     * Internal class used to handle keyspace related operations
+     */
+
+    public final class Keyspace {
+
+        public void delete(ai.grakn.Keyspace keyspace){
+            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
+            keyspaceBlockingStub.delete(request);
         }
     }
 
@@ -180,13 +195,6 @@ public final class Grakn {
             return RemoteQueryExecutor.create(this);
         }
 
-        @Override // TODO: Move out of Transaction class
-        public void delete() {
-            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
-            KeyspaceServiceGrpc.KeyspaceServiceBlockingStub stub = session.keyspaceBlockingStub();
-            stub.delete(request);
-            close();
-        }
 
         private SessionProto.Transaction.Res responseOrThrow() {
             Transceiver.Response response;

@@ -103,7 +103,7 @@ public class IndexPostProcessor {
                             });
 
                     // persist merged concepts
-                    tx.commitSubmitNoLogs();
+                    tx.commit();
                 }
             } finally {
                 indexLock.unlock();

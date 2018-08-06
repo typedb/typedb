@@ -59,12 +59,15 @@ public class GraknConfig {
 
     protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn", "grakn-ascii.txt"));
 
+    private static GraknConfig defaultConfig = null;
+
     public static GraknConfig empty() {
         return GraknConfig.of(new Properties());
     }
 
     public static GraknConfig create() {
-        return GraknConfig.read(CONFIG_FILE_PATH.toFile());
+        if(defaultConfig == null){ defaultConfig = GraknConfig.read(CONFIG_FILE_PATH.toFile()); }
+        return defaultConfig;
     }
 
     public static GraknConfig read(File path) {

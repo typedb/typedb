@@ -48,7 +48,6 @@ import static ai.grakn.test.docs.DocTestUtil.getLineNumber;
 import static ai.grakn.test.docs.DocTestUtil.markdownOrHtml;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -113,7 +112,7 @@ public class GraqlDocsTest {
 
         String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
 
-        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.grpcUri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
             executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
 
             // TODO: Fix issue with this test when template expects data in a certain format

@@ -487,9 +487,9 @@ public class InsertQueryTest {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
+        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Not Right Now")).execute();
+        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
     }
 
     @Test

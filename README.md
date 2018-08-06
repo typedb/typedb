@@ -1,4 +1,4 @@
-![GRAKN.AI](https://grakn.ai/img/Grakn%20logo%20-%20transparent.png)
+![GRAKN.AI](https://grakn.ai/assets/img/Grakn%20logo%20-%20transparent.png)
 
 ---
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)

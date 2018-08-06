@@ -83,11 +83,11 @@ public class GraqlControllerDeleteTest {
     public void DELETEGraqlDelete_GraphCommitSubmitNoLogsCalled(){
         String query = "match $x isa person; limit 1; delete $x;";
 
-        verify(tx, times(0)).commitSubmitNoLogs();
+        verify(tx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(tx, times(1)).commitSubmitNoLogs();
+        verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test
@@ -140,7 +140,7 @@ public class GraqlControllerDeleteTest {
         InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
-        inOrder.verify(tx, times(1)).commitSubmitNoLogs();
+        inOrder.verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test
