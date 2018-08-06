@@ -1,3 +1,21 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package ai.grakn.distribution;
 
 import org.apache.commons.io.FileUtils;
@@ -23,11 +41,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 /**
- * A suite to put tests which needs a running Grakn.
+ * Contains tests which must be ran against a running Grakn instance.
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class DistributionWithARunningGraknE2E {
+public class GraknGraqlCommands_WithARunningGraknE2E {
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
@@ -59,8 +77,6 @@ public class DistributionWithARunningGraknE2E {
         String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
         String graql = "define person sub entity; insert $x isa person; match $x isa person; get;\n";
 
-        String expected = "{}";
-
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(graql.getBytes(StandardCharsets.UTF_8)))
                 .command("./graql", "console", "-k", randomKeyspace).execute().outputUTF8();
@@ -79,41 +95,6 @@ public class DistributionWithARunningGraknE2E {
         String output = commandExecutor.command("./graql", "console", "-k", randomKeyspace, "-e", graql).execute().outputUTF8();
 
         assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
-    }
-
-    /**
-     * test aggregate queries on marriage data
-     */
-    @Test
-    public void graql_testAggregateQueries_onMarriageData() throws IOException, InterruptedException, TimeoutException {
-        String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
-        String insert = "define person sub entity, has identifier; identifier sub attribute, datatype string;\n" +
-                "define spouse1 sub role; spouse2 sub role; person plays spouse1; person plays spouse2;\n" +
-                "define marriage sub relationship, relates spouse1, relates spouse2, has \"date\"; \"date\" sub attribute datatype string;\n" +
-                "commit;\n" +
-                "\n" +
-                "insert isa person, has identifier \"Andrew Smith\";\n" +
-                "insert isa person, has identifier \"Catherine Shaw\";\n" +
-                "insert isa person, has identifier \"Paula Carter\";\n" +
-                "insert isa person, has identifier \"Scott Jones\";\n" +
-                "commit;\n" +
-                "match $s1 has identifier \"Andrew Smith\"; $s2 has identifier \"Catherine Shaw\"; insert (spouse1: $s1, spouse2: $s2) isa marriage has \"date\" \"01-01-1980\";\n" +
-                "commit;\n";
-        String countPerson = "match $p isa person, has identifier $i; aggregate count;\n";
-        String countMarriage = "match (spouse1: $x, spouse2: $y) isa marriage, has \"date\" $d; $x has identifier $xi; $y has identifier $yi; aggregate count;\n";
-
-        String queries = insert + countPerson + countMarriage;
-
-        String output = commandExecutor
-                .redirectInput(new ByteArrayInputStream(queries.getBytes(StandardCharsets.UTF_8)))
-                .command("./graql", "console", "-k", randomKeyspace).execute().outputUTF8();
-
-        String[] split = output.split("\n");
-        Long aggregateCountPerson = Long.parseLong(split[split.length-4]);
-        Long aggregateCountMarriage = Long.parseLong(split[split.length-2]);
-
-        assertThat(aggregateCountPerson, equalTo(4L));
-        assertThat(aggregateCountMarriage, equalTo(1L));
     }
 
     /**
