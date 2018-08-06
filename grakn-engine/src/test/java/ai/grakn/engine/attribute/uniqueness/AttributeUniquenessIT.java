@@ -1,4 +1,4 @@
-package ai.grakn.engine;
+package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;

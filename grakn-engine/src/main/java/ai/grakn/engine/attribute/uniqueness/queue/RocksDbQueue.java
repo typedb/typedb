@@ -37,6 +37,7 @@ import org.rocksdb.WriteOptions;
 
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseId;
+import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserializeStringUtf8;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseId;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
@@ -48,16 +49,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class RocksDbQueue implements Queue {
     private final RocksDB queueDb;
-    private AtomicLong lastId;
 
     public RocksDbQueue() {
         try {
             Options options = new Options().setCreateIfMissing(true);
             Path path = Paths.get("./queue");
             queueDb = RocksDB.open(options, path.toAbsolutePath().toString());
-
-            Long lastId = restoreLastInsertedId(queueDb);
-            this.lastId = lastId != null ? new AtomicLong(lastId) : new AtomicLong(0L);
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
@@ -66,10 +63,9 @@ public class RocksDbQueue implements Queue {
 
     //    @Override
     public void insertAttribute(Attribute attribute) {
-        long currentId = lastId.incrementAndGet();
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
-            queueDb.put(syncWrite, serialiseId(currentId), serialiseAttributeUtf8(attribute));
+            queueDb.put(syncWrite, serialiseStringUtf8(attribute.conceptId().getValue()), serialiseAttributeUtf8(attribute));
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
@@ -77,14 +73,14 @@ public class RocksDbQueue implements Queue {
     }
 
     //    @Override
-    public Attributes readAttributes(int min, int max, long maxWaitMs) {
+    public Attributes readAttributes(int min, int limit, long maxWaitMs) {
         List<Attribute> result = new LinkedList<>();
 
         int count = 0;
         RocksIterator it = queueDb.newIterator();
         it.seekToFirst();
-        while (it.isValid() && count <= max) {
-            long id = deserialiseId(it.key());
+        while (it.isValid() && count < limit) {
+            String id = deserializeStringUtf8(it.key());
             Attribute attr = deserialiseAttributeUtf8(it.value());
             System.out.println("id = " + id + ", attr = " + attr);
             result.add(attr);
@@ -109,6 +105,10 @@ public class RocksDbQueue implements Queue {
         catch (RocksDBException e) {
             throw new QueueException(e);
         }
+    }
+
+    public void close() {
+        queueDb.close();
     }
 
     // @Nullable
