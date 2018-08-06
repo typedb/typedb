@@ -22,7 +22,7 @@ class Grakn(object):
         self.credentials = credentials
 
     def session(self, keyspace: str):
-        """ Open a session for a specific  keyspace """
+        """ Open a session for a specific  keyspace. Can be used as `with Grakn('localhost:48555').session(keyspace='test') as session: ... ` or as normal assignment"""
         return Session(self.uri, keyspace, self.credentials)
 
 
@@ -42,6 +42,10 @@ class Session(object):
     def transaction(self, tx_type):
         """ Open a transaction to Grakn on this keyspace
 
+        Can be used as `with session.transaction(grakn.TxType.READ) as tx: ...`
+        Don't forget to commit within the `with`!
+        Alternatively you can still do `tx = session.transaction(...); ...; tx.close()`
+
         :param grakn.TxType tx_type: The type of transaction to open as indicated by the tx_type enum
         """
         if self._closed:
@@ -55,6 +59,17 @@ class Session(object):
         """ Close this keyspace session """
         self._closed = True
         self._channel.close()
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        if tb is None:
+            # No exception
+            self.close()
+        else:
+            print(tb)
+            raise value
 
 
 class Transaction(object):
@@ -62,6 +77,17 @@ class Transaction(object):
 
     def __init__(self, transaction_service: TransactionService):
         self._tx_service = transaction_service
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        if tb is None:
+            # No exception
+            self.close()
+        else:
+            print(tb)
+            raise value
 
     def query(self, query: str, infer=True):
         """ Execute a Graql query, inference is optionally enabled """
