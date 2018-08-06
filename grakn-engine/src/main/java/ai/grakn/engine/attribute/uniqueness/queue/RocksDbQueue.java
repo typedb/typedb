@@ -18,12 +18,10 @@
 
 package ai.grakn.engine.attribute.uniqueness.queue;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
@@ -36,10 +34,8 @@ import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
-import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseId;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserializeStringUtf8;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
-import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseId;
 import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -111,18 +107,6 @@ public class RocksDbQueue implements Queue {
         queueDb.close();
     }
 
-    // @Nullable
-    private static Long restoreLastInsertedId(RocksDB db) {
-        RocksIterator it = db.newIterator();
-        it.seekToLast();
-        if (it.isValid()) {
-            return deserialiseId(it.key());
-        }
-        else {
-            return null;
-        }
-    }
-
     static class SerialisationUtils {
         public static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(
@@ -139,19 +123,6 @@ public class RocksDbQueue implements Queue {
             String value = json.at("attribute-value").asString();
             String conceptId = json.at("attribute-concept-id").asString();
             return Attribute.create(Keyspace.of(keyspace), value, ConceptId.of(conceptId));
-        }
-
-        public static byte[] serialiseId(long x) {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.putLong(x);
-            return buffer.array();
-        }
-
-        public static long deserialiseId(byte[] bytes) {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.put(bytes);
-            buffer.flip();//need flip
-            return buffer.getLong();
         }
 
         public static String deserializeStringUtf8(byte[] bytes) {
