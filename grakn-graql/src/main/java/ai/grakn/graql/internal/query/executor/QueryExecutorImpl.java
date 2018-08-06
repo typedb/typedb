@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableList;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -90,7 +91,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         Set<Var> projectedVars = Sets.intersection(varsInMatch, varsInInsert);
 
         Stream<ConceptMap> answers = match.get(projectedVars).stream();
-        return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer));
+        return answers.map(answer -> QueryOperationExecutor.insertAll(varPatterns, tx, answer)).collect(toList()).stream();
     }
 
     @Override
