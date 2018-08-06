@@ -71,6 +71,7 @@ describe('Integration test', () => {
         const answer = await iterator.next();
         expect(answer.map().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);
+        expect(answer.explanation().queryPattern()).toBe("{$x isa cousins;}");
         await tx.close()
         await localSession.close();
     });
