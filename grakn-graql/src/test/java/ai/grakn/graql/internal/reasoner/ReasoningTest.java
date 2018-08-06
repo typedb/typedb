@@ -27,10 +27,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -52,7 +50,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+
 import org.apache.commons.math3.util.CombinatoricsUtils;
 
 /**
@@ -164,11 +162,6 @@ public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,

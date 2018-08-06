@@ -42,18 +42,14 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -68,7 +64,6 @@ import static ai.grakn.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
 
@@ -84,28 +79,18 @@ public class AtomicQueryTest {
     @ClassRule
     public static final SampleKBContext unificationWithTypesSet = SampleKBContext.load("unificationWithTypesTest.gql");
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void setUpClass() {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
-
-    @Test
+    @Test (expected = GraqlQueryException.class)
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         EmbeddedGraknTx<?> graph = geoKB.tx();
         String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
-        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
     }
 
-    @Test
+    @Test (expected = GraqlQueryException.class)
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String patternString = "{$x isa someType;}";
-        exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), graph);
     }
 

@@ -34,7 +34,6 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -49,7 +48,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class QueryCacheTest {
 
@@ -65,7 +63,6 @@ public class QueryCacheTest {
 
     @Before
     public void onStartup(){
-        assumeTrue(GraknTestUtil.usingTinker());
         graph = testContext.tx();
         String recordPatternString = "{(role1: $x, role2: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(role1: $p1, role2: $p2) isa reifiable-relation;}";

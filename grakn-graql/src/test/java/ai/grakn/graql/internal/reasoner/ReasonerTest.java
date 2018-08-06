@@ -35,12 +35,9 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Set;
@@ -52,7 +49,6 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Suite of tests focused on reasoning expressivity and various edge cases.
@@ -79,14 +75,6 @@ public class ReasonerTest {
 
     @ClassRule
     public static final SampleKBContext geoKB3 = GeoKB.context();
-
-    @org.junit.Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {

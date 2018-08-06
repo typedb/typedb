@@ -23,14 +23,12 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.CWKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
-import static org.junit.Assume.assumeTrue;
 
 public class CWInferenceTest {
     private static QueryBuilder qb;
@@ -43,8 +41,7 @@ public class CWInferenceTest {
     public static SampleKBContext cwKB2 = CWKB.context();
 
     @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
+    public static void onStartup(){
         qb = cwKB.tx().graql().infer(false);
         iqb = cwKB.tx().graql().infer(true);
     }

@@ -29,26 +29,18 @@ import ai.grakn.test.kbs.SNBKB;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class SNBInferenceTest {
 
-    @Rule
-    public final SampleKBContext snbGraph = SNBKB.context();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext snbGraph = SNBKB.context();
 
     /**
      * Tests transitivity
