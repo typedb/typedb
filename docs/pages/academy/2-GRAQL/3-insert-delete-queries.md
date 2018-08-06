@@ -95,7 +95,7 @@ How do we delete things that we don’t want in the knowledge graph? With a dele
 A delete query has the same form as a get query that uses `delete` as the action keyword. There is no difference in syntax. Try this, for example:
 
 ```graql
-match $x isa company has name "Grakn"; delete;
+match $x isa company has name "Grakn"; delete $x;
 ```
 
 Did it work? No? Of course not.
@@ -115,7 +115,7 @@ Did you notice that we did not had to specify the "UK" in the above query? When 
 
 At this point you are free to run
 ```graql
-match $x isa company has name "Grakn"; delete;
+match $x isa company has name "Grakn"; delete $x;
 ```
 Then commit, and everything will be returned like it was at the beginning of this lesson.
 

@@ -39,7 +39,7 @@ public class JoinExplanation extends QueryExplanation {
 
     public JoinExplanation(List<ConceptMap> answers){ super(answers);}
     public JoinExplanation(ReasonerQueryImpl q, ConceptMap mergedAnswer){
-        super(q, q.selectAtoms().stream()
+        super(q, q.selectAtoms()
                 .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
                 .map(ReasonerQueries::atomic)
                 .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(aq)))
