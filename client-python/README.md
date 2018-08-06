@@ -21,11 +21,24 @@ import grakn
 ```
 
 You can then instantiate a client, open a session, and create transactions:
-
 ```
-client = grakn.Grakn("localhost:48555")
-session = client.session("mykeyspace")
+client = grakn.Grakn(uri="localhost:48555")
+session = client.session(keyspace="mykeyspace")
 tx = session.transaction(grakn.TxType.WRITE)
+```
+
+Alternatively, you can also use `with` statements as follows:
+```
+client = grakn.Grakn(uri="localhost:48555")
+with client.session(keyspace="mykeyspace") as session:
+    with session.transaction(grakn.TxType.READ):
+        ...
+```
+to automatically close sessions and transactions.
+
+Credentials can be passed into the initial constructor as a dictionary:
+```
+client = grakn.Grakn(uri='localhost:48555', credentials={'username': 'xxxx', 'password': 'yyyy'})
 ```
 
 You can execute Graql queries and iterate through the answers as follows:
@@ -138,6 +151,8 @@ All Concepts are bound to the transaction that has been used to retrieve them.
 If for any reason a trasaction gets closed all the concepts bound to it won't be able to
 communicate with the database anymore, so all the methods won't work and the user will have to re-query
 for the needed concepts.
+
+All setters return the same concept object (`self`) to facilitate chaining setters (e.g. `person.has(name).has(age)`).
 
 ---
 

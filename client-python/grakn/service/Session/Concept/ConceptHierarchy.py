@@ -70,7 +70,11 @@ class Concept(object):
 
 class SchemaConcept(Concept):
 
-    def label(self, value=None) -> Optional[str]:
+    def label(self, value=None):
+        """ 
+        Get or set label of this schema concept. 
+        If used as setter returns self 
+        """
         if value is None:
             get_label_req = RequestBuilder.ConceptMethod.SchemaConcept.get_label()
             method_response = self._tx_service.run_concept_method(self.id, get_label_req)
@@ -78,14 +82,19 @@ class SchemaConcept(Concept):
         else:
             set_label_req = RequestBuilder.ConceptMethod.SchemaConcept.set_label(value)
             method_response = self._tx_service.run_concept_method(self.id, set_label_req)
-            return
+            return self
 
-    def is_implicit(self) -> bool:
+    def is_implicit(self):
+        """ Check if this schema concept is implicit """
         is_implicit_req = RequestBuilder.ConceptMethod.SchemaConcept.is_implicit()
         method_response = self._tx_service.run_concept_method(self.id, is_implicit_req)
         return method_response.schemaConcept_isImplicit_res.implicit
 
-    def sup(self, super_concept=None) -> Optional[Concept]:
+    def sup(self, super_concept=None):
+        """ 
+        Get or set super schema concept.
+        If used as a setter returns self
+        """
         if super_concept is None:
             # get direct super schema concept
             get_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.get_sup()
@@ -105,8 +114,10 @@ class SchemaConcept(Concept):
             # set direct super SchemaConcept of this SchemaConcept
             set_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.set_sup(super_concept)
             method_response = self._tx_service.run_concept_method(self.id, set_sup_req)
+            return self
 
     def subs(self):
+        """ Retrieve the sub schema concepts of this schema concept, as an iterator """
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
         method_response = self._tx_service.run_concept_method(self.id, subs_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -118,6 +129,7 @@ class SchemaConcept(Concept):
                     )
 
     def sups(self):
+        """ Retrieve the all supertypes (direct and higher level) of this schema concept as an iterator """
         sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
         method_response = self._tx_service.run_concept_method(self.id, sups_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -131,6 +143,10 @@ class SchemaConcept(Concept):
 class Type(SchemaConcept):
 
     def is_abstract(self, value: bool = None) -> Optional[bool]:
+        """
+        Get/Set whether this schema Type object is abstract.
+        When used as a setter returns `self` 
+        """
         if value is None:
             # return True/False if the type is set to abstract
             is_abstract_req = RequestBuilder.ConceptMethod.Type.is_abstract()
@@ -139,9 +155,10 @@ class Type(SchemaConcept):
         else:
             set_abstract_req = RequestBuilder.ConceptMethod.Type.set_abstract(value)
             method_response = self._tx_service.run_concept_method(self.id, set_abstract_req)
-            return 
+            return self
 
     def attributes(self):
+        """ Retrieve all attributes attached to this Type as an iterator """
         attributes_req = RequestBuilder.ConceptMethod.Type.attributes()
         method_response = self._tx_service.run_concept_method(self.id, attributes_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -153,6 +170,7 @@ class Type(SchemaConcept):
                 )
 
     def instances(self):
+        """ Retrieve all instances of this Type as an iterator """
         instances_req = RequestBuilder.ConceptMethod.Type.instances()
         method_response = self._tx_service.run_concept_method(self.id, instances_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -176,27 +194,31 @@ class Type(SchemaConcept):
                 )
 
     def plays(self, role_concept):
+        """ Set a role that is played by this Type """
         plays_req = RequestBuilder.ConceptMethod.Type.plays(role_concept)
         method_response = self._tx_service.run_concept_method(self.id, plays_req)
-        return
+        return self
 
     def unplay(self, role_concept):
+        """ Remove a role that is played by this Type """
         unplay_req = RequestBuilder.ConceptMethod.Type.unplay(role_concept)
         method_response = self._tx_service.run_concept_method(self.id, unplay_req)
         return
     
     def has(self, attribute_concept_type):
-        """ Attach a attributeType concept to the type """
+        """ Attach an attributeType concept to the type """
         has_req = RequestBuilder.ConceptMethod.Type.has(attribute_concept_type)
         method_response = self._tx_service.run_concept_method(self.id, has_req)
-        return
+        return self
         
     def unhas(self, attribute_concept_type):
+        """ Remove an attribute type concept from this type """
         unhas_req = RequestBuilder.ConceptMethod.Type.unhas(attribute_concept_type)
         method_response = self._tx_service.run_concept_method(self.id, unhas_req)
-        return 
+        return self
 
     def keys(self):
+        """ Retrieve an iterator of attribute types that this Type uses as keys """
         keys_req = RequestBuilder.ConceptMethod.Type.keys()
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -209,14 +231,16 @@ class Type(SchemaConcept):
 
 
     def key(self, attribute_concept_type):
+        """ Add an attribute type to be a key for this Type """
         key_req = RequestBuilder.ConceptMethod.Type.key(attribute_concept_type)
         method_response = self._tx_service.run_concept_method(self.id, key_req)
-        return
+        return self
 
     def unkey(self, attribute_concept_type):
+        """ Remove an attribute type from this Type from being a key """
         unkey_req = RequestBuilder.ConceptMethod.Type.unkey(attribute_concept_type)
         method_response = self._tx_service.run_concept_method(self.id, unkey_req)
-        return
+        return self
 
 
 
@@ -240,7 +264,7 @@ class AttributeType(Type):
         return ConceptFactory.create_concept(self._tx_service, grpc_attribute_concept)
         
     def attribute(self, value):
-        """ Retrieve an attribute instance by value if it exist """
+        """ Retrieve an attribute instance by value if it exists """
         self_data_type = self.data_type()
         get_attribute_req = RequestBuilder.ConceptMethod.AttributeType.attribute(value, self_data_type)
         method_response = self._tx_service.run_concept_method(self.id, get_attribute_req)
@@ -254,7 +278,7 @@ class AttributeType(Type):
             raise ClientError("Unknown `res` key in AttributeType `attribute` response: {0}".format(whichone))
 
     def data_type(self):
-        """ Get the DataType enum corresponding to the type of this attribute """
+        """ Get the DataType enum (grakn.DataType) corresponding to the type of this attribute """
         get_data_type_req = RequestBuilder.ConceptMethod.AttributeType.data_type()
         method_response = self._tx_service.run_concept_method(self.id, get_data_type_req)
         response = method_response.attributeType_dataType_res
@@ -281,7 +305,7 @@ class AttributeType(Type):
         else:
             set_regex_req = RequestBuilder.ConceptMethod.AttributeType.set_regex(pattern)
             method_response = self._tx_service.run_concept_method(self.id, set_regex_req)
-            return
+            return self
 
 
 class RelationshipType(Type):
@@ -312,18 +336,18 @@ class RelationshipType(Type):
         """ Set a role in this relationship schema type """
         relates_req = RequestBuilder.ConceptMethod.RelationType.relates(role)
         method_response = self._tx_service.run_concept_method(self.id, relates_req)
-        return
-        
+        return self       
 
     def unrelate(self, role):
         """ Remove a role in this relationship schema type """
         unrelate_req = RequestBuilder.ConceptMethod.RelationType.unrelate(role)
         method_response = self._tx_service.run_concept_method(self.id, unrelate_req)
-        return
+        return self
 
 class Rule(SchemaConcept):
 
     def get_when(self):
+        """ Retrieve the `when` clause for this rule """
         when_req = RequestBuilder.ConceptMethod.Rule.when()
         method_response = self._tx_service.run_concept_method(self.id, when_req)
         response = method_response.rule_when_res
@@ -336,6 +360,7 @@ class Rule(SchemaConcept):
             raise ClientError("Unknown field in get_when of `rule`: {0}".format(whichone))
 
     def get_then(self):
+        """ Retrieve the `then` clause for this rule """
         then_req = RequestBuilder.ConceptMethod.Rule.then()
         method_response = self._tx_service.run_concept_method(self.id, then_req)
         response = method_response.rule_then_res
@@ -350,7 +375,7 @@ class Rule(SchemaConcept):
 class Role(SchemaConcept):
 
     def relationships(self):
-        """ Find relationships that this role participates in """
+        """ Retrieve relationships that this role participates in, as an iterator """
         # NOTE: relations vs relationships here
         relations_req = RequestBuilder.ConceptMethod.Role.relations()
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
@@ -362,7 +387,7 @@ class Role(SchemaConcept):
                )
 
     def players(self):
-        """ Find entities that play this role """
+        """ Retrieve an iterator of entities that play this role """
         players_req = RequestBuilder.ConceptMethod.Role.players()
         method_response = self._tx_service.run_concept_method(self.id, players_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -388,7 +413,7 @@ class Thing(Concept):
         return ConceptFactory.create_concept(self._tx_service, method_response.thing_type_res.type)
 
     def relationships(self, *roles):
-        """ Get relationships of this Thing narrowed by the given roles """
+        """ Get iterator this Thing's relationships, filtered to the optionally provided roles """
         # NOTE `relations` rather than `relationships`
         relations_req = RequestBuilder.ConceptMethod.Thing.relations(roles)
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
@@ -400,7 +425,7 @@ class Thing(Concept):
                )
 
     def attributes(self, *attribute_types):
-        """ Retrieve attribute instances optionally narrowed by certain attribute types """
+        """ Retrieve iterator of this Thing's attributes, filtered by optionally provided attribute types """
         attrs_req = RequestBuilder.ConceptMethod.Thing.attributes(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, attrs_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -411,6 +436,7 @@ class Thing(Concept):
                )
 
     def roles(self):
+        """ Retrieve iterator of roles this Thing plays """
         roles_req = RequestBuilder.ConceptMethod.Thing.roles()
         method_response = self._tx_service.run_concept_method(self.id, roles_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -421,6 +447,7 @@ class Thing(Concept):
                )
 
     def keys(self, *attribute_types):
+        """ Retrieve iterator of keys (i.e. actual attributes) of this Thing, filtered by the optionally provided attribute types """
         keys_req = RequestBuilder.ConceptMethod.Thing.keys(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -451,13 +478,14 @@ class Entity(Thing):
 class Attribute(Thing):
 
     def value(self):
+        """ Retrieve the value contained in this Attribute instance """
         value_req = RequestBuilder.ConceptMethod.Attribute.value()
         method_response = self._tx_service.run_concept_method(self.id, value_req)
         grpc_value_object = method_response.attribute_value_res.value
         return ResponseConverter.ResponseConverter.from_grpc_value_object(grpc_value_object)
 
     def owners(self):
-        """ Retrieve entities that have this attribute """
+        """ Retrieve entities that have this attribute value """
         owners_req = RequestBuilder.ConceptMethod.Attribute.owners()
         method_response = self._tx_service.run_concept_method(self.id, owners_req)
         return ResponseConverter.ResponseConverter.iter_res_to_iterator(
@@ -472,7 +500,7 @@ class Relationship(Thing):
     # NOTE `relation` has replaced `relationship` in ResponseBuilder
 
     def role_players_map(self):
-        """ Retrieve role : set(players) (entity instances) mapping for this relationship """ 
+        """ Retrieve dictionary {role : set(players)} for this relationship """ 
         role_players_map_req = RequestBuilder.ConceptMethod.Relation.role_players_map()
         method_response = self._tx_service.run_concept_method(self.id, role_players_map_req)
 
@@ -523,10 +551,10 @@ class Relationship(Thing):
         """ Assign an entity to a role on this relationship instance """
         assign_req = RequestBuilder.ConceptMethod.Relation.assign(role, thing)
         method_response = self._tx_service.run_concept_method(self.id, assign_req)
-        return
+        return self
 
     def unassign(self, role, thing):
         """ Un-assign an entity from a role on this relationship instance """
         unassign_req = RequestBuilder.ConceptMethod.Relation.unassign(role, thing)
         method_response = self._tx_service.run_concept_method(self.id, unassign_req)
-        return
+        return self

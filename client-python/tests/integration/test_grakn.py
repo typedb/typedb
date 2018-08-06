@@ -19,6 +19,12 @@ class test_PreDbSetup(unittest.TestCase):
             a_inst = grakn.Grakn('localhost:1000')
             a_session = a_inst.session('testkeyspace')
             a_session.transaction(grakn.TxType.READ)
+        # test the `with` statements...
+        with self.assertRaises(ClientError):
+            a_inst = grakn.Grakn('localhost:1000')
+            with a_inst.session('testkeyspace') as a_session:
+                with a_session.transaction(grakn.TxType.READ):
+                    pass
 
     # --- Test grakn session for different keyspaces ---
     def test_grakn_session_valid_keyspace(self):
@@ -26,6 +32,10 @@ class test_PreDbSetup(unittest.TestCase):
         a_inst = grakn.Grakn('localhost:48555')
         a_session = a_inst.session('test')
         self.assertIsInstance(a_session, grakn.Session)
+
+        # test the `with` statement
+        with a_inst.session('test') as session:
+            self.assertIsInstance(session, grakn.Session)
 
     def test_grakn_session_invalid_keyspace(self):
         inst = grakn.Grakn('localhost:48555')
