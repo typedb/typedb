@@ -18,11 +18,12 @@
 
 package ai.grakn.engine.attribute.uniqueness.queue;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
@@ -34,6 +35,11 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
+import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
+import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseId;
+import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
+import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseId;
+import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -41,43 +47,46 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @author Ganeshwara Herawan Hananda
  */
 public class RocksDbQueue implements Queue {
-    private final RocksDB db;
-    public static final Path location = Paths.get("./queue.db");
-    private final Options options = new Options()
-            .setCreateIfMissing(true);
+    private final RocksDB queueDb;
+    private AtomicLong lastId;
 
     public RocksDbQueue() {
         try {
-            db = RocksDB.open(options, location.toAbsolutePath().toString());
+            Options options = new Options().setCreateIfMissing(true);
+            Path path = Paths.get("./queue");
+            queueDb = RocksDB.open(options, path.toAbsolutePath().toString());
+
+            Long lastId = restoreLastInsertedId(queueDb);
+            this.lastId = lastId != null ? new AtomicLong(lastId) : new AtomicLong(0L);
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
         }
     }
 
-    @Override
+    //    @Override
     public void insertAttribute(Attribute attribute) {
-        byte[] id = attribute.conceptId().getValue().getBytes(UTF_8);
-        byte[] attr = serialiseAttributeUtf8(attribute);
+        long currentId = lastId.incrementAndGet();
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
-            db.put(syncWrite, id, attr);
+            queueDb.put(syncWrite, serialiseId(currentId), serialiseAttributeUtf8(attribute));
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
         }
     }
 
-    @Override
+    //    @Override
     public Attributes readAttributes(int min, int max, long maxWaitMs) {
         List<Attribute> result = new LinkedList<>();
 
         int count = 0;
-        RocksIterator it = db.newIterator();
+        RocksIterator it = queueDb.newIterator();
         it.seekToFirst();
         while (it.isValid() && count <= max) {
-            String id = new String(it.key(), UTF_8);
+            long id = deserialiseId(it.key());
             Attribute attr = deserialiseAttributeUtf8(it.value());
+            System.out.println("id = " + id + ", attr = " + attr);
             result.add(attr);
             it.next();
             count++;
@@ -86,37 +95,71 @@ public class RocksDbQueue implements Queue {
         return new Attributes(result);
     }
 
-    @Override
+    //    @Override
     public void ackAttributes(Attributes attributes) {
         WriteBatch acks = new WriteBatch();
         // set to false for better performance. at the moment we're setting it to true as the algorithm is untested and we prefer correctness over speed
         WriteOptions writeOptions = new WriteOptions().setSync(true);
         for (Attribute attr: attributes.attributes()) {
-            acks.remove(attr.conceptId().getValue().getBytes(UTF_8));
+            acks.remove(serialiseStringUtf8(attr.conceptId().getValue()));
         }
         try {
-            db.write(writeOptions, acks);
+            queueDb.write(writeOptions, acks);
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
         }
     }
 
-    private byte[] serialiseAttributeUtf8(Attribute attribute) {
-        Json json = Json.object(
-                "attribute-keyspace", attribute.keyspace().getValue(),
-                "attribute-value", attribute.value(),
-                "attribute-concept-id", attribute.conceptId().getValue()
-        );
-        return json.toString().getBytes(UTF_8);
+    // @Nullable
+    private static Long restoreLastInsertedId(RocksDB db) {
+        RocksIterator it = db.newIterator();
+        it.seekToLast();
+        if (it.isValid()) {
+            return deserialiseId(it.key());
+        }
+        else {
+            return null;
+        }
     }
 
+    static class SerialisationUtils {
+        public static byte[] serialiseAttributeUtf8(Attribute attribute) {
+            Json json = Json.object(
+                    "attribute-keyspace", attribute.keyspace().getValue(),
+                    "attribute-value", attribute.value(),
+                    "attribute-concept-id", attribute.conceptId().getValue()
+            );
+            return serialiseStringUtf8(json.toString());
+        }
 
-    private Attribute deserialiseAttributeUtf8(byte[] attribute) {
-        Json json = Json.read(new String(attribute, UTF_8));
-        String keyspace = json.at("attribute-keyspace").asString();
-        String value = json.at("attribute-value").asString();
-        String conceptId = json.at("attribute-concept-id").asString();
-        return Attribute.create(Keyspace.of(keyspace), value, ConceptId.of(conceptId));
+        public static Attribute deserialiseAttributeUtf8(byte[] attribute) {
+            Json json = Json.read(deserializeStringUtf8(attribute));
+            String keyspace = json.at("attribute-keyspace").asString();
+            String value = json.at("attribute-value").asString();
+            String conceptId = json.at("attribute-concept-id").asString();
+            return Attribute.create(Keyspace.of(keyspace), value, ConceptId.of(conceptId));
+        }
+
+        public static byte[] serialiseId(long x) {
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.putLong(x);
+            return buffer.array();
+        }
+
+        public static long deserialiseId(byte[] bytes) {
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.put(bytes);
+            buffer.flip();//need flip
+            return buffer.getLong();
+        }
+
+        public static String deserializeStringUtf8(byte[] bytes) {
+            return new String(bytes, UTF_8);
+        }
+
+        public static byte[] serialiseStringUtf8(String string) {
+            return string.getBytes(UTF_8);
+        }
     }
 }
