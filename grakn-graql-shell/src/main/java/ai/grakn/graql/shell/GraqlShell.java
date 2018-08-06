@@ -21,6 +21,8 @@ package ai.grakn.graql.shell;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.answer.Answer;
@@ -77,6 +79,7 @@ public class GraqlShell implements AutoCloseable {
             LICENSE_COMMAND, CLEAN_COMMAND
     );
 
+    private final Keyspace keyspace;
     private final OutputFormat outputFormat;
     private final boolean infer;
     private ConsoleReader console;
@@ -84,6 +87,7 @@ public class GraqlShell implements AutoCloseable {
 
     private final HistoryFile historyFile;
 
+    private final Grakn client;
     private final GraknSession session;
     private GraknTx tx;
     private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
@@ -101,21 +105,21 @@ public class GraqlShell implements AutoCloseable {
      * Create a new Graql shell
      */
     public GraqlShell(
-            String historyFilename, GraknSession session, ConsoleReader console, PrintStream serr,
+            String historyFilename, Grakn client, Keyspace keyspace, ConsoleReader console, PrintStream serr,
             OutputFormat outputFormat, boolean infer
-
     ) throws IOException {
-
+        this.keyspace = keyspace;
         this.outputFormat = outputFormat;
         this.infer = infer;
         this.console = console;
-        this.session = session;
+        this.client = client;
+        this.session = client.session(keyspace);
         this.serr = serr;
         this.graqlCompleter = GraqlCompleter.create(session);
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = client.session(keyspace).transaction(GraknTxType.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -257,7 +261,7 @@ public class GraqlShell implements AutoCloseable {
         String line = console.readLine();
         if (line != null && line.equals("confirm")) {
             console.println("Cleaning...");
-            tx.admin().delete();
+            client.keyspaces().delete(keyspace);
             reopenTx();
         } else {
             console.println("Cancelling clean.");

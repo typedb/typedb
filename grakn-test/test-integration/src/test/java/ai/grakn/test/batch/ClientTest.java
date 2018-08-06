@@ -18,12 +18,12 @@
 
 package ai.grakn.test.batch;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.batch.Client;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.test.rule.EngineContext;
+import ai.grakn.util.SimpleURI;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNotNull;
 public class ClientTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
+    private static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:4567");
 
     @Test
     public void whenGraknEngineIsRunning_ClientCanConnect() throws Throwable {
@@ -48,7 +49,7 @@ public class ClientTest {
 
     @Test
     public void whenGraknEngineIsNotRunningOnSpecifiedURI_ClientCannotConnect() throws Exception {
-        boolean running = Client.serverIsRunning(Grakn.DEFAULT_URI);
+        boolean running = Client.serverIsRunning(DEFAULT_URI);
         assertFalse(running);
     }
 }

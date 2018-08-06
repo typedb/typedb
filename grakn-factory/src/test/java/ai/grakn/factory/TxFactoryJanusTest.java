@@ -18,7 +18,6 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.exception.InvalidKBException;
@@ -59,7 +58,6 @@ public class TxFactoryJanusTest extends JanusTestBase {
     @BeforeClass
     public static void setupClass() throws InterruptedException {
         sharedGraph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
-        when(session.uri()).thenReturn(Grakn.IN_MEMORY);
         when(session.config()).thenReturn(TEST_CONFIG);
     }
 

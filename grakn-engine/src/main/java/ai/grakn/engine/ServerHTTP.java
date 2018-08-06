@@ -20,7 +20,6 @@ package ai.grakn.engine;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.HttpController;
@@ -92,7 +91,6 @@ public class ServerHTTP {
         new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
         new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
-        new CommitLogController(postProcessor).start(spark);
 
         additionalCollaborators.forEach(httpController -> httpController.start(spark));
     }

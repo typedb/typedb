@@ -18,19 +18,20 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.sql.SQLMigrator;
-import ai.grakn.test.rule.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
+import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
 import org.jooq.exception.DataAccessException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -61,9 +62,14 @@ public class SQLMigratorTest {
     @Before
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = EmbeddedGraknSession.createEngineSession(keyspace);
         migrator = new MigratorBuilder().setUri(engine.uri()).setKeyspace(keyspace)
                 .build();
+    }
+
+    @After
+    public void closeSession(){
+        factory.close();
     }
 
     @Test

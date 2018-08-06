@@ -18,7 +18,6 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;
@@ -43,6 +42,7 @@ public class MigrationOptions {
     public static final String MAX_DELAY_DEFAULT_VALUE = "1000";
     public static final String RETRY_DEFAULT_VALUE = "5";
     public static final String LINES_DEFAULT_VALUE = "-1";
+    private static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -94,7 +94,7 @@ public class MigrationOptions {
     }
 
     public SimpleURI getUri() {
-        return command.hasOption("u") ? new SimpleURI(command.getOptionValue("u")) : Grakn.DEFAULT_URI;
+        return command.hasOption("u") ? new SimpleURI(command.getOptionValue("u")) : DEFAULT_URI;
     }
 
     public Options getOptions() {

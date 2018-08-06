@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.factory.EmbeddedGraknSession;
@@ -42,12 +41,12 @@ public class TxTestBase {
 
     @Before
     public void setUpTx() {
-        session = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY);
+        session = EmbeddedGraknSession.inMemory(keyspace);
         getTx(false);
     }
 
     @After
-    public void closeSession() throws Exception {
+    public void closeSession() {
         closeTxIfOpen(tx);
         closeTxIfOpen(txBatch);
         session.close();
@@ -65,14 +64,14 @@ public class TxTestBase {
         if(isBatch){
             if(newTxNeeded(txBatch)){
                 closeTxIfOpen(tx);
-                return txBatch = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.BATCH);
+                return txBatch = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.BATCH);
             } else {
                 return txBatch;
             }
         } else {
             if(newTxNeeded(tx)){
                 closeTxIfOpen(txBatch);
-                return tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+                return tx = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.WRITE);
             } else {
                 return tx;
             }

@@ -24,8 +24,7 @@ import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
-import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
@@ -41,7 +40,6 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.factory.KeyspaceSession;
 import ai.grakn.engine.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
@@ -76,8 +74,7 @@ public class ServerFactory {
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
 
-        KeyspaceSession keyspaceSession = new KeyspaceSessionImpl(config);
-        KeyspaceStore keyspaceStore = KeyspaceStoreImpl.create(keyspaceSession);
+        KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
@@ -135,7 +132,7 @@ public class ServerFactory {
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, postProcessor))
-                .addService(new KeyspaceService(requestOpener, keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
         return ServerRPC.create(grpcServer);

@@ -108,7 +108,7 @@ public class CWInferenceTest {
         Pattern R6_LHS = and(tx.graql().parser().parsePatterns("$x isa region;"));
         Pattern R6_RHS = and(tx.graql().parser().parsePatterns("$x isa country;"));
         tx.putRule("R6: If something is a region it is a country", R6_LHS, R6_RHS);
-        tx.commitSubmitNoLogs();
+        tx.commit();
 
         String queryString = "match $p isa criminal; get;";
         String explicitQuery = "match $p isa person has name 'colonelWest'; get;";

@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.factory;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -43,10 +41,6 @@ import java.util.concurrent.locks.Lock;
  * <p>
  * <p>
  *     This internal factory is used to produce {@link GraknTx}s.
- *
- *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
- *     {@link GraknTxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
- *     are actually the same graphs.
  * </p>
  *
  * @author fppt
@@ -92,7 +86,7 @@ public class EngineGraknTxFactory {
      */
     private EmbeddedGraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig, GraknTxFactoryBuilder.getInstance()));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineConfig, GraknTxFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
@@ -128,7 +122,4 @@ public class EngineGraknTxFactory {
         return keyspaceStore;
     }
 
-    private String engineURI() {
-        return engineConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + engineConfig.getProperty(GraknConfigKey.SERVER_PORT);
-    }
 }

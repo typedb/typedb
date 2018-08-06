@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.keyspace;
+package ai.grakn.keyspace;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -26,12 +26,14 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStore;
-import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.factory.KeyspaceSession;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,25 +43,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Default implementation of {@link KeyspaceStore} that uses a {@link EngineGraknTxFactory} to access a knowledge
+ * Default implementation of {@link KeyspaceStore} that uses an {@link EmbeddedGraknSession} to access a knowledge
  * base and store keyspace information.
  *
  * @author Felix Chapman
  */
 public class KeyspaceStoreImpl implements KeyspaceStore {
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
+    private final static Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
 
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceStore.class);
     private final Set<Keyspace> existingKeyspaces;
-    private final KeyspaceSession session;
+    private final EmbeddedGraknSession systemKeyspaceSession;
+    private final GraknConfig config;
 
-    private KeyspaceStoreImpl(KeyspaceSession session){
-        this.session = session;
+    public KeyspaceStoreImpl(GraknConfig config){
+        this.config = config;
+        this.systemKeyspaceSession = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, config, GraknTxFactoryBuilder.getInstance());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
-    }
-
-    public static KeyspaceStore create(KeyspaceSession session) {
-        return new KeyspaceStoreImpl(session);
     }
 
     /**
@@ -71,7 +72,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     public void addKeyspace(Keyspace keyspace){
         if(containsKeyspace(keyspace)) return;
 
-        try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> tx = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
@@ -80,7 +81,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             if (attribute.owner() == null) {
                 tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).create().has(attribute);
             }
-            tx.commitSubmitNoLogs();
+            tx.commit();
 
             // add to cache
             existingKeyspaces.add(keyspace);
@@ -96,8 +97,8 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             return true;
         }
 
-        try (GraknTx graph = session.tx(GraknTxType.READ)) {
-            boolean keyspaceExists = (graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
+        try (GraknTx tx = systemKeyspaceSession.transaction(GraknTxType.READ)) {
+            boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
             if(keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
         }
@@ -109,7 +110,19 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
            return false;
         }
 
-        try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
+        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(keyspace, config);
+        session.close();
+        try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
+            tx.closeSession();
+            tx.clearGraph();
+            tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
+        }
+
+        return deleteReferenceInSystemKeyspace(keyspace);
+    }
+
+    private boolean deleteReferenceInSystemKeyspace(Keyspace keyspace){
+        try (EmbeddedGraknTx<?> tx = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.attribute(keyspace.getValue());
 
@@ -120,15 +133,14 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
             existingKeyspaces.remove(keyspace);
 
-            tx.commitSubmitNoLogs();
+            tx.commit();
         }
-
         return true;
     }
 
     @Override
     public Set<Keyspace> keyspaces() {
-        try (GraknTx graph = session.tx(GraknTxType.WRITE)) {
+        try (GraknTx graph = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
@@ -142,13 +154,13 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     @Override
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (EmbeddedGraknTx<?> tx = session.tx(GraknTxType.WRITE)) {
+        try (EmbeddedGraknTx<?> tx = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }
             LOG.info("Loading schema");
             loadSystemSchema(tx);
-            tx.commitSubmitNoLogs();
+            tx.commit();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (RuntimeException e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
