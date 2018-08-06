@@ -210,6 +210,15 @@ public abstract class Atom extends AtomicBase {
     public boolean requiresRoleExpansion(){ return false; }
 
     /**
+     * @return if this atom requires decomposition into a set of atoms
+     */
+    public boolean requiresDecomposition(){
+        return this.getPotentialRules()
+                .map(r -> tx().ruleCache().getRule(r, () -> new InferenceRule(r, tx())))
+                .anyMatch(InferenceRule::isAppendRule);
+    }
+
+    /**
      * @return corresponding type if any
      */
     public abstract SchemaConcept getSchemaConcept();
@@ -292,13 +301,6 @@ public abstract class Atom extends AtomicBase {
     public Atom addType(SchemaConcept type){ return this;}
 
     public Stream<ConceptMap> materialise(){ return Stream.empty();}
-
-    /**
-     * @return if this atom requires decomposition into a set of atoms
-     */
-    public boolean requiresDecomposition(){
-        return this.getPotentialRules().map(r -> new InferenceRule(r, tx())).anyMatch(InferenceRule::isAppendRule);
-    }
 
     /**
      * @return set of atoms this atom can be decomposed to
