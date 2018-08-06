@@ -22,6 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
@@ -45,6 +48,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class RocksDbQueue implements Queue {
     private final RocksDB queueDb;
+    private AtomicLong queueSize = new AtomicLong(0L);
 
     public RocksDbQueue() {
         try {
@@ -62,6 +66,8 @@ public class RocksDbQueue implements Queue {
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
             queueDb.put(syncWrite, serialiseStringUtf8(attribute.conceptId().getValue()), serialiseAttributeUtf8(attribute));
+            queueSize.incrementAndGet();
+            notifyAll();
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
@@ -69,7 +75,10 @@ public class RocksDbQueue implements Queue {
     }
 
     //    @Override
-    public Attributes readAttributes(int min, int limit, long maxWaitMs) {
+    public Attributes readAttributes(int limit) throws InterruptedException {
+        // blocks until the queue contains at least 1 element
+        while (queueSize.get() == 0) { wait(); }
+
         List<Attribute> result = new LinkedList<>();
 
         int count = 0;
@@ -97,6 +106,8 @@ public class RocksDbQueue implements Queue {
         }
         try {
             queueDb.write(writeOptions, acks);
+            long decrementBy = -1L * attributes.attributes().size();
+            queueSize.getAndAdd(decrementBy);
         }
         catch (RocksDBException e) {
             throw new QueueException(e);

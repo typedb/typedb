@@ -39,10 +39,10 @@ public class InMemoryQueue implements Queue {
     }
 
     @Override
-    public Attributes readAttributes(int min, int max, long timeLimit) {
+    public Attributes readAttributes(int max) {
         List<Attribute> batch = new LinkedList<>();
 
-        for (int i = 0; i < max && batch.size() <= max; ++i) {
+        for (int i = 0; i < max && batch.size() < max; ++i) {
             Attribute e = newAttributeQueue.poll();
             if (e != null) batch.add(e);
         }

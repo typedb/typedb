@@ -46,7 +46,6 @@ public class AttributeUniqueness {
 
     public static final int QUEUE_GET_BATCH_MIN = 1;
     public static final int QUEUE_GET_BATCH_MAX = 1;
-    public static final int QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS = 1000;
 
     private Queue newAttributeQueue = new RocksDbQueue();
     private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
@@ -64,10 +63,15 @@ public class AttributeUniqueness {
         newAttributeQueue.insertAttribute(newAttribute);
     }
 
-    public void mergeNow(int min, int max, int waitTimeLimitMs) {
-        Attributes newAttrs = newAttributeQueue.readAttributes(min, max, waitTimeLimitMs);
-        mergeAlgorithm.merge(newAttrs);
-        newAttributeQueue.ackAttributes(newAttrs);
+    public void mergeNow(int max) {
+        try {
+            Attributes newAttrs = newAttributeQueue.readAttributes(max);
+            mergeAlgorithm.merge(newAttrs);
+            newAttributeQueue.ackAttributes(newAttrs);
+        }
+        catch (InterruptedException e) {
+            LOG.error("mergeNow() failed with an exception. ", e);
+        }
     }
 
     /**
@@ -80,7 +84,7 @@ public class AttributeUniqueness {
         CompletableFuture<Void> daemon = CompletableFuture.supplyAsync(() -> {
             LOG.info("startDaemon() - start");
             while (!stopDaemon) {
-                mergeNow(QUEUE_GET_BATCH_MIN, QUEUE_GET_BATCH_MAX, QUEUE_GET_BATCH_WAIT_TIME_LIMIT_MS);
+                mergeNow(QUEUE_GET_BATCH_MAX);
             }
             LOG.info("startDaemon() - stop");
             return null;

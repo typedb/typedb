@@ -25,7 +25,7 @@ public class RocksDbQueueIT {
     }
 
     @Test
-    public void shouldBeAbleToInsertNewAttributes() {
+    public void shouldBeAbleToInsertNewAttributes() throws InterruptedException {
         RocksDbQueue queue = new RocksDbQueue();
         List<Attribute> attributes = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -38,13 +38,13 @@ public class RocksDbQueueIT {
         for (Attribute a: attributes) {
             queue.insertAttribute(a);
         }
-        Attributes insertedAttributes = queue.readAttributes(0, attributes.size(), 0);
+        Attributes insertedAttributes = queue.readAttributes(attributes.size());
         assertThat(insertedAttributes.attributes(), equalTo(attributes));
         queue.close();
     }
 
     @Test
-    public void unackedAttributesShouldStillBeAvailableForAReRead() {
+    public void unackedAttributesShouldStillBeAvailableForAReRead() throws InterruptedException {
         RocksDbQueue queue = new RocksDbQueue();
         List<Attribute> attributes = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -57,15 +57,15 @@ public class RocksDbQueueIT {
         for (Attribute a: attributes) {
             queue.insertAttribute(a);
         }
-        Attributes insertedAttributes = queue.readAttributes(0, Integer.MAX_VALUE, 0);
+        Attributes insertedAttributes = queue.readAttributes(Integer.MAX_VALUE);
         assertThat(insertedAttributes.attributes(), equalTo(attributes));
-        Attributes remainingAttributes = queue.readAttributes(0, Integer.MAX_VALUE, 0);
+        Attributes remainingAttributes = queue.readAttributes(Integer.MAX_VALUE);
         assertThat(remainingAttributes.attributes(), equalTo(attributes));
         queue.close();
     }
 
     @Test
-    public void shouldBeAbleToAckReadAttributes() {
+    public void shouldBeAbleToAckReadAttributes() throws InterruptedException {
         RocksDbQueue queue = new RocksDbQueue();
         List<Attribute> attributes = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -78,15 +78,15 @@ public class RocksDbQueueIT {
         for (Attribute a: attributes) {
             queue.insertAttribute(a);
         }
-        Attributes insertedAttributes = queue.readAttributes(0, Integer.MAX_VALUE, 0);
+        Attributes insertedAttributes = queue.readAttributes(Integer.MAX_VALUE);
         queue.ackAttributes(insertedAttributes);
-        Attributes remainingAttributes = queue.readAttributes(0, Integer.MAX_VALUE, 0);
+        Attributes remainingAttributes = queue.readAttributes(Integer.MAX_VALUE);
         assertThat(remainingAttributes.attributes(), emptyIterable());
         queue.close();
     }
 
     @Test
-    public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() {
+    public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException {
         RocksDbQueue queue = new RocksDbQueue();
         List<Attribute> attributes1 = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -100,9 +100,9 @@ public class RocksDbQueueIT {
 
         Stream.concat(attributes1.stream(), attributes2.stream()).forEach(a -> queue.insertAttribute(a));
 
-        Attributes insertedAttributes1 = queue.readAttributes(0, attributes1.size(), 0);
+        Attributes insertedAttributes1 = queue.readAttributes(attributes1.size());
         queue.ackAttributes(insertedAttributes1);
-        Attributes insertedAttributes2 = queue.readAttributes(0, Integer.MAX_VALUE, 0);
+        Attributes insertedAttributes2 = queue.readAttributes(Integer.MAX_VALUE);
         assertThat(insertedAttributes2.attributes(), equalTo(attributes2));
         queue.close();
     }

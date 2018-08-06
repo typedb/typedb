@@ -30,14 +30,12 @@ public interface Queue {
     void insertAttribute(Attribute attribute);
 
     /**
-     * get n attributes where min <= n <= max. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
+     * get n attributes where min <= n < limit. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
      *
-     * @param min minimum number of items to be returned. the method will block until it is reached.
-     * @param max the maximum number of items to be returned.
-     * @param maxWaitMs specifies the maximum waiting time where the method will immediately return the items it has if larger than what is specified in the min param.
+     * @param limit the maximum number of items to be returned.
      * @return an {@link Attributes} instance containing a list of duplicates
      */
-    Attributes readAttributes(int min, int max, long maxWaitMs);
+    Attributes readAttributes(int limit) throws InterruptedException;
 
     void ackAttributes(Attributes batch);
 }
