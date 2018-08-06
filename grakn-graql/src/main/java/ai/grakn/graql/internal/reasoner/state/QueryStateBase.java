@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Set;
 
@@ -37,9 +37,9 @@ public abstract class QueryStateBase extends ResolutionState {
 
     private final Unifier unifier;
     private final Set<ReasonerAtomicQuery> visitedSubGoals;
-    private final QueryCache<ReasonerAtomicQuery> cache;
+    private final SimpleQueryCache<ReasonerAtomicQuery> cache;
 
-    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
         super(sub, parent);
         this.unifier = u;
         this.visitedSubGoals = subGoals;
@@ -54,7 +54,7 @@ public abstract class QueryStateBase extends ResolutionState {
     /**
      * @return query cache
      */
-    QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
+    SimpleQueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
 
     /**
      * @return unifier of this state with parent state

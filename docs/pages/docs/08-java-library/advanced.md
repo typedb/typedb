@@ -19,27 +19,28 @@ The following would result in an exception because the first transaction `tx1` w
 
 <!-- Ignored because this is designed to crash! -->
 ```java-test-ignore
-tx1 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
-tx2 = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn.Transaction tx1 = session.transaction(GraknTxType.WRITE)
+Grakn.Transaction tx2 = session.transaction(GraknTxType.WRITE)
 ```
 
 If you require multiple transactions open at the same time then you must do this on different threads. This is best illustrated with an example. Let's say that you wish to create 100 entities of a specific type concurrently.  The following will achieve that:
 
 <!-- Ignored because it contains a Java lambda, which Groovy doesn't support -->
 ```java-test-ignore
-GraknSession session = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
 Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
 //Create sample schema
-GraknTx tx = session.open(GraknTxType.WRITE);
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
 EntityType entityType = tx.putEntityType("Some Entity Type");
 tx.commit();
 
 //Load the data concurrently
 for(int i = 0; i < 100; i ++){
     futures.add(pool.submit(() -> {
-        GraknTx innerTx = session.open(GraknTxType.WRITE);
+        Grakn.Transaction innerTx = session.transaction(GraknTxType.WRITE);
         entityType.addEntity();
         innerTx.commit();
     }));
