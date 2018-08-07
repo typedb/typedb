@@ -69,7 +69,8 @@ public class ConceptMapImpl implements ConceptMap {
     }
 
     public ConceptMapImpl(ConceptMap map){
-        this(map.map().entrySet(), map.explanation());
+        this.map = ImmutableMap.<Var, Concept>builder().putAll(map.map().entrySet()).build();
+        this.explanation = map.explanation();
     }
 
     public ConceptMapImpl(Collection<Map.Entry<Var, Concept>> mappings, Explanation exp){
@@ -78,7 +79,8 @@ public class ConceptMapImpl implements ConceptMap {
     }
 
     public ConceptMapImpl(Map<Var, Concept> m, Explanation exp){
-        this(m.entrySet(), exp);
+        this.map = ImmutableMap.copyOf(m);
+        this.explanation = exp;
     }
 
     public ConceptMapImpl(Map<Var, Concept> m){

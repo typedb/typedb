@@ -18,84 +18,171 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.admin.MultiUnifier;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
+import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import java.util.Set;
-import java.util.stream.Stream;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
  * <p>
- * Generic interface query caches.
- *
- * Defines two basic operations:
- * - GET(Query)
- * - RECORD(Query, Answer).
- *
+ * Container class for storing performed query resolutions.
  * </p>
  *
  * @param <Q> the type of query that is being cached
- * @param <S> the type of answer being cached
  *
  * @author Kasper Piskorski
  *
  */
-public interface QueryCache<Q extends ReasonerQueryImpl, S extends Iterable<ConceptMap>>{
+public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswers> {
+
+    public QueryCache(){
+        super();
+    }
+
+    @Override
+    public QueryAnswers record(Q query, QueryAnswers answers) {
+        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+        if (match != null) {
+            Q equivalentQuery = match.query();
+            QueryAnswers unifiedAnswers = answers.unify(query.getMultiUnifier(equivalentQuery));
+            this.getEntry(query).cachedElement().addAll(unifiedAnswers);
+            return getAnswers(query);
+        }
+        this.putEntry(query, answers);
+        return answers;
+    }
+
+    @Override
+    public Stream<ConceptMap> record(Q query, Stream<ConceptMap> answerStream) {
+        //NB: stream collection!
+        QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
+        return record(query, newAnswers).stream();
+    }
 
     /**
-     * record answer iterable for a specific query and retrieve the updated answers
-     * @param query to be recorded
-     * @param answers to this query
-     * @return updated answer iterable
-     */
-    S record(Q query, S answers);
-
-    /**
-     * record answer stream for a specific query and retrieve the updated stream
-     * @param query to be recorded
-     * @param answers answer stream of the query
-     * @return updated answer stream
-     */
-    Stream<ConceptMap> record(Q query, Stream<ConceptMap> answers);
-
-    /**
-     * record single answer to a specific query
-     * @param query of interest
-     * @param answer to this query
+     * record a specific answer to a given query
+     * @param query to which an answer is to be recorded
+     * @param answer specific answer to the query
      * @return recorded answer
      */
-    ConceptMap record(Q query, ConceptMap answer);
+    public ConceptMap recordAnswer(Q query, ConceptMap answer){
+        return recordAnswer(query, answer, null);
+    }
 
     /**
-     * retrieve (possibly) cached answers for provided query
-     * @param query for which to retrieve answers
-     * @return unified cached answers
+     * record a specific answer to a given query with a known cache unifier
+     * @param query to which an answer is to be recorded
+     * @param answer answer specific answer to the query
+     * @param unifier between the cached and input query
+     * @return recorded answer
      */
-    S getAnswers(Q query);
+    public ConceptMap recordAnswer(Q query, ConceptMap answer, @Nullable MultiUnifier unifier){
+        if(answer.isEmpty()) return answer;
+        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+        if (match != null) {
+            Q equivalentQuery = match.query();
+            QueryAnswers answers = match.cachedElement();
+            MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery) : unifier;
 
-    Stream<ConceptMap> getAnswerStream(Q query);
+            Set<Var> cacheVars = answers.isEmpty()? new HashSet<>() : answers.iterator().next().vars();
+            multiUnifier.stream()
+                    .map(answer::unify)
+                    .peek(ans -> {
+                        if (!ans.vars().containsAll(cacheVars)){
+                            throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery);
+                        }
+                    })
+                    .forEach(answers::add);
+        } else {
+            this.putEntry(query, new QueryAnswers(answer));
+        }
+        return answer;
+    }
+
+    @Override
+    public QueryAnswers getAnswers(Q query) {
+        return getAnswersWithUnifier(query).getKey();
+    }
+
+    @Override
+    public Stream<ConceptMap> getAnswerStream(Q query) {
+        return getAnswerStreamWithUnifier(query).getKey();
+    }
+
+    @Override
+    public Pair<QueryAnswers, MultiUnifier> getAnswersWithUnifier(Q query) {
+        Pair<Stream<ConceptMap>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
+        return new Pair<>(
+                new QueryAnswers(answerStreamWithUnifier.getKey().collect(Collectors.toSet())),
+                answerStreamWithUnifier.getValue()
+        );
+    }
+
+    @Override
+    public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
+        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+        if (match != null) {
+            Q equivalentQuery = match.query();
+            QueryAnswers answers = match.cachedElement();
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+
+            //NB: this is not lazy
+            //lazy version would be answers.stream().flatMap(ans -> ans.unify(multiUnifier))
+            return new Pair<>(answers.unify(multiUnifier).stream(), multiUnifier);
+        }
+        return new Pair<>(
+                structuralCache().get(query),
+                new MultiUnifierImpl()
+        );
+    }
+
 
     /**
-     * Query cache containment check
-     * @param query to be checked for containment
-     * @return true if cache contains the query
+     * find specific answer to a query in the cache
+     * @param query input query
+     * @param ans sought specific answer to the query
+     * @return found answer if any, otherwise empty answer
      */
-    boolean contains(Q query);
+    public ConceptMap getAnswer(Q query, ConceptMap ans){
+        if(ans.isEmpty()) return ans;
+        CacheEntry<Q, QueryAnswers> match =  this.getEntry(query);
+        if (match != null) {
+            Q equivalentQuery = match.query();
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
 
-    /**
-     * @return all queries contained in this cache
-     */
-    Set<Q> getQueries();
+            //NB: only used when checking for materialised answer duplicates
+            ConceptMap answer = match.cachedElement().stream()
+                    .flatMap(a -> a.unify(multiUnifier))
+                    .filter(a -> a.containsAll(ans))
+                    .findFirst().orElse(null);
+            if (answer != null) return answer;
+        }
 
-    /**
-     * Perform cache union
-     * @param c2 union right operand
-     */
-    void merge(QueryCacheBase<Q, S> c2);
+        //TODO should it create a cache entry?
+        List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute();
+        return answers.isEmpty()? new ConceptMapImpl() : answers.iterator().next();
+    }
 
-    /**
-     * Clear the cache
-     */
-    void clear();
+    @Override
+    public void remove(Cache<Q, QueryAnswers> c2, Set<Q> queries) {
+        c2.getQueries().stream()
+                .filter(queries::contains)
+                .filter(this::contains)
+                .forEach( q -> this.getEntry(q).cachedElement().removeAll(c2.getAnswers(q)));
+    }
+
 }

@@ -35,44 +35,15 @@ derivedRelation sub relationship
     relates someRole
     relates otherRole;
 
-anotherDerivedRelation sub relationship
-    relates someRole
-    relates otherRole;
-
-
 resource sub attribute datatype string;
 anotherResource sub attribute datatype string;
-yetAnotherResource sub attribute datatype string;
-derivedResource sub attribute datatype string;
-anotherDerivedResource sub attribute datatype string;
+
 
 simple-relation-rule
 when {
 (someRole: $x, otherRole: $y) isa relation;},
 then {
 (someRole: $x, otherRole: $y) isa derivedRelation;};
-
-another-relation-rule
-when {
-(someRole: $x, otherRole: $y) isa anotherRelation;},
-then {
-(someRole: $x, otherRole: $y) isa anotherDerivedRelation;};
-
-simple-resource-rule
-when{
-$x has resource $r;
-},
-then {
-$x has derivedResource $r;
-};
-
-another-resource-rule
-when{
-$x has anotherResource $r;
-},
-then {
-$x has anotherDerivedResource $r;
-};
 
 insert
 

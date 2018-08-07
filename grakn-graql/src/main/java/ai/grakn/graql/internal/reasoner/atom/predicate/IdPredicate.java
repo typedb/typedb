@@ -80,18 +80,6 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public boolean isStructurallyEquivalent(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
-        return true;
-    }
-
-    @Override
-    public int structuralEquivalenceHashCode() {
-        return 1;
-    }
-
-    @Override
     public Atomic copy(ReasonerQuery parent){
         return create(this, parent);
     }

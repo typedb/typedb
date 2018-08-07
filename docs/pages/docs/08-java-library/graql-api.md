@@ -10,21 +10,34 @@ folder: docs
 
 As well as the Graql shell, users can also construct and execute Graql queries programmatically in Java. The Java Graql API expresses the concepts and functionality of the Graql language in the syntax of Java. It is useful if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression.
 
-To use the API, add the following to your imports:
+To use the API, add the following to your `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>ai.grakn</groupId>
+  <artifactId>grakn-graql</artifactId>
+  <version>1.2.0</version>
+</dependency>
+```
+
+and add the following to your imports.
 
 ```java-test-ignore
 import ai.grakn.graql.QueryBuilder;
-import static ai.grakn.graql.Graql.*;
 ```
 
 ## QueryBuilder
 
+`Graql` contains several useful static methods such as `var` and `eq`, so it's recommended that you use a static import:
+
+```java-test-ignore
+import static ai.grakn.graql.Graql.*;
+```
+
 A `QueryBuilder` is constructed from a `GraknTx`:
 
 ```java-test-ignore
-Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
-Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
-
+GraknTx tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
 QueryBuilder qb = tx.graql();
 ```
 

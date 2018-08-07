@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -31,7 +32,8 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
@@ -39,12 +41,12 @@ import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,22 +71,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         super(pattern, tx);
-        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
-        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     ReasonerAtomicQuery(Atom at) {
         super(at);
-        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     ReasonerAtomicQuery(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
         super(atoms, tx);
-        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     @Override
@@ -125,6 +127,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return atom;
     }
 
+    @Override
+    public Set<Atom> selectAtoms() {
+        Set<Atom> selectedAtoms = super.selectAtoms();
+        if (selectedAtoms.size() != 1) {
+            throw GraqlQueryException.nonAtomicQuery(this);
+        }
+        return selectedAtoms;
+    }
+
     /**
      * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
      */
@@ -161,7 +172,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
@@ -174,7 +185,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setQuery(this)))
@@ -188,10 +199,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subGoalIterator = Collections.emptyIterator();
         } else {
             visitedSubGoals.add(this);
-            subGoalIterator = cache.ruleCache().getRuleStream(this.getAtom())
+            subGoalIterator = this.getRuleStream()
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }
+
+    /**
+     * @return stream of all rules applicable to this atomic query including permuted cases when the role types are meta roles
+     */
+    private Stream<Pair<InferenceRule, Unifier>> getRuleStream(){
+        return getAtom().getApplicableRules()
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
+                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
+    }
+
 }

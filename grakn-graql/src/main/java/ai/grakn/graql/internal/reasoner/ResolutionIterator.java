@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -49,13 +49,13 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ReasonerQueryImpl query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
-    private final SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
+    private final QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;
     private final boolean reiterationRequired;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
@@ -67,8 +67,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
 
-            LOG.trace("state: " + state);
-
             if (state.isAnswerState() && state.isTopState()) {
                 return state.getSubstitution();
             }
@@ -77,8 +75,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
-            } else {
-                LOG.trace("new state: NULL");
             }
         }
         return null;

@@ -70,12 +70,12 @@ public class GraqlTraversalPlanner {
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using a refined {@link GraqlTraversal} procedure.
      */
-    public static ImmutableList<Atom> plan(ReasonerQueryImpl query) {
+    public static ImmutableList<Atom> refinedPlan(ReasonerQueryImpl query) {
         List<Atom> startCandidates = query.getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
                 .collect(Collectors.toList());
         Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
-        return ImmutableList.copyOf(refinePlan(query, startCandidates, subs));
+        return ImmutableList.copyOf(refinedPlan(query, startCandidates, subs));
     }
 
     @Nullable
@@ -86,15 +86,13 @@ public class GraqlTraversalPlanner {
                 .findFirst().orElse(null);
     }
 
-    private static String PLACEHOLDER_ID = "placeholderId";
-
     /**
      * @param query top level query for which the plan is constructed
      * @param atoms list of current atoms of interest
      * @param subs extra substitutions
      * @return an optimally ordered list of provided atoms
      */
-    private static List<Atom> refinePlan(ReasonerQueryImpl query, List<Atom> atoms, Set<IdPredicate> subs){
+    private static List<Atom> refinedPlan(ReasonerQueryImpl query, List<Atom> atoms, Set<IdPredicate> subs){
         List<Atom> candidates = subs.isEmpty()?
                 atoms :
                 atoms.stream()
@@ -113,15 +111,15 @@ public class GraqlTraversalPlanner {
 
                 Set<IdPredicate> extraSubs = first.getVarNames().stream()
                         .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
+                        .map(v -> IdPredicate.create(v, ConceptId.of("placeholderId"), query))
                         .collect(Collectors.toSet());
 
                 return Stream.concat(
                         Stream.of(first),
-                        refinePlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
+                        refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
                 ).collect(Collectors.toList());
             } else {
-                return refinePlan(query, atomsToPlan, subs);
+                return refinedPlan(query, atomsToPlan, subs);
             }
         }
     }
@@ -149,7 +147,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, EmbeddedGraknTx<?> tx){
+    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, EmbeddedGraknTx<?> tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))

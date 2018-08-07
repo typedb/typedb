@@ -24,10 +24,10 @@ Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) 
 Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge graph is small enough.
 Recommended production settings are at least 4GB machine with 3GB heap.
 
-To start Grakn, navigate to the `bin` directory of your distribution and run the grakn executable:
+Start Grakn with:
 
 ```
-./grakn server start
+grakn server start
 ```
 
 By default Grakn stores your data under `$GRAKN_HOME/db/` and log files under `$GRAKN_HOME/logs/`. It can be changed by updating the `data-dir` and `log.dirs` properties within `conf/grakn.properties`, respectively.
