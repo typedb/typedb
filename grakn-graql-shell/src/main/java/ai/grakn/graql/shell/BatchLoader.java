@@ -24,7 +24,6 @@ import ai.grakn.batch.GraknClient;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Charsets;
-import jline.internal.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
