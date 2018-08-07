@@ -20,10 +20,10 @@
 import abc
 from grakn.service.Session.util import enums
 from grakn.service.Session.Concept import ConceptFactory
-from grakn.exception.ClientError import ClientError
+from grakn.exception.GraknError import GraknError 
 
 
-class ResponseConverter(object):
+class ResponseReader(object):
     
     @staticmethod
     def query(tx_service, grpc_query_iter):
@@ -42,7 +42,7 @@ class ResponseConverter(object):
         elif which_one == "null":
             return None
         else:
-            raise ClientError("Unknown get_concept response: {0}".format(which_one))
+            raise GraknError("Unknown get_concept response: {0}".format(which_one))
 
     @staticmethod
     def get_schema_concept(tx_service, grpc_get_concept):
@@ -53,7 +53,7 @@ class ResponseConverter(object):
         elif which_one == "null":
             return None
         else:
-            raise ClientError("Unknown get_schema_concept response: {0}".format(which_one))
+            raise GraknError("Unknown get_schema_concept response: {0}".format(which_one))
 
     @staticmethod
     def get_attributes_by_value(tx_service, grpc_get_attrs_iter):
@@ -88,7 +88,7 @@ class ResponseConverter(object):
         # check the one is in the known datatypes
         known_datatypes = [e.name.lower() for e in enums.DataType]
         if whichone.lower() not in known_datatypes:
-            raise ClientError("Unknown value object value key: {0}, not in {1}".format(whichone, known_datatypes))
+            raise GraknError("Unknown value object value key: {0}, not in {1}".format(whichone, known_datatypes))
         if whichone == 'string':
             return grpc_value_object.string
         elif whichone == 'boolean':
@@ -104,7 +104,7 @@ class ResponseConverter(object):
         elif whichone == 'date':
             return grpc_value_object.date
         else:
-            raise ClientError("Unknown datatype in enum but not handled in from_grpc_value_object")
+            raise GraknError("Unknown datatype in enum but not handled in from_grpc_value_object")
         
 
     # --- concept method helpers ---
@@ -183,7 +183,7 @@ class ConceptMap(Answer):
         else:
             if var not in self._concept_map:
                 # TODO specialize exception
-                raise ClientError("Variable {0} is not in the ConceptMap".format(var))
+                raise GraknError("Variable {0} is not in the ConceptMap".format(var))
             return self._concept_map[var]
             """ Return ConceptMap """
             return self
@@ -277,7 +277,7 @@ class AnswerConverter(object):
         elif which_one == 'value':
             return AnswerConverter._create_value(tx_service, grpc_answer.value)
         else:
-            raise ClientError('Unknown gRPC Answer.answer message type: {0}'.format(which_one))
+            raise GraknError('Unknown gRPC Answer.answer message type: {0}'.format(which_one))
    
     @staticmethod
     def _create_concept_map(tx_service, grpc_concept_map_msg):
@@ -374,7 +374,7 @@ class ResponseIterator(object):
         concepts = []
         for answer in self:
             if type(answer) != ConceptMap:
-                raise ClientError("Only use .collect_concepts on ConceptMaps returned by query()")
+                raise GraknError("Only use .collect_concepts on ConceptMaps returned by query()")
             concepts.extend(answer.map().values()) # get concept map => concepts
         return concepts
 
