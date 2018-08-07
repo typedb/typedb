@@ -29,7 +29,7 @@ beforeAll(() => {
 
 afterAll(async () => {
     await session.close();
-    graknClient.keyspace.delete("testcommit");
+    graknClient.keyspaces().delete("testcommit");
     env.tearDown();
 });
 

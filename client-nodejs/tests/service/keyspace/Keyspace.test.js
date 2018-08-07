@@ -34,11 +34,11 @@ describe("Keyspace methods", () => {
         const session = graknClient.session("retrievetest");
         const tx = await session.transaction(env.txType().WRITE);
         tx.close();
-        const keyspaces = await graknClient.keyspace.retrieve();
+        const keyspaces = await graknClient.keyspaces().retrieve();
         expect(keyspaces.length).toBeGreaterThan(0);
         expect(keyspaces.includes('retrievetest')).toBeTruthy;
-        await graknClient.keyspace.delete('retrievetest');
-        const keyspacesAfterDeletion = await graknClient.keyspace.retrieve();
+        await graknClient.keyspaces().delete('retrievetest');
+        const keyspacesAfterDeletion = await graknClient.keyspaces().retrieve();
         expect(keyspacesAfterDeletion.includes('retrievetest')).toBeFalsy();
         session.close();
     });

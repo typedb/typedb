@@ -19,7 +19,8 @@ The following would result in an exception because the first transaction `tx1` w
 
 <!-- Ignored because this is designed to crash! -->
 ```java-test-ignore
-Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
 Grakn.Transaction tx1 = session.transaction(GraknTxType.WRITE)
 Grakn.Transaction tx2 = session.transaction(GraknTxType.WRITE)
 ```
@@ -28,7 +29,8 @@ If you require multiple transactions open at the same time then you must do this
 
 <!-- Ignored because it contains a Java lambda, which Groovy doesn't support -->
 ```java-test-ignore
-Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
 Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
