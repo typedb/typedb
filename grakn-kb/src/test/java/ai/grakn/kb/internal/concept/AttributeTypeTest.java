@@ -18,13 +18,13 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.TxTestBase;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
@@ -53,21 +53,21 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenCreatingStringResourceTypeWithValidRegex_EnsureNoErrorsThrown(){
+    public void whenCreatingStringResourceTypeWithValidRegex_EnsureNoErrorsThrown() {
         assertNull(attributeType.regex());
         attributeType.regex("[abc]");
         assertEquals(attributeType.regex(), "[abc]");
     }
 
     @Test
-    public void whenCreatingStringResourceTypeWithInvalidRegex_Throw(){
+    public void whenCreatingStringResourceTypeWithInvalidRegex_Throw() {
         assertNull(attributeType.regex());
         expectedException.expect(PatternSyntaxException.class);
         attributeType.regex("[");
     }
 
     @Test
-    public void whenSettingRegexOnNonStringResourceType_Throw(){
+    public void whenSettingRegexOnNonStringResourceType_Throw() {
         AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.cannotSetRegex(thing).getMessage());
@@ -75,7 +75,7 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenAddingResourceWhichDoesNotMatchRegex_Throw(){
+    public void whenAddingResourceWhichDoesNotMatchRegex_Throw() {
         attributeType.regex("[abc]");
         attributeType.create("a");
         expectedException.expect(GraknTxOperationException.class);
@@ -84,7 +84,7 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw(){
+    public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw() {
         attributeType.create("1");
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
@@ -92,7 +92,7 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenGettingTheResourceFromAResourceType_ReturnTheResource(){
+    public void whenGettingTheResourceFromAResourceType_ReturnTheResource() {
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING);
 
@@ -107,7 +107,7 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
+    public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked() {
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).regex("[b]");
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
 
@@ -121,7 +121,7 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources(){
+    public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources() {
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).regex("[b]");
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]");
 
@@ -134,7 +134,7 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
+    public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied() {
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
         t2.create("a");
@@ -152,7 +152,7 @@ public class AttributeTypeTest extends TxTestBase {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
+        try (GraknSession session = EmbeddedGraknSession.inMemory("somethingmorerandom")) {
             try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
@@ -163,7 +163,7 @@ public class AttributeTypeTest extends TxTestBase {
         // offset the time to GMT where the colleague is working
         TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
         // the colleague extracts the LocalTime which should be the same
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
+        try (GraknSession session = EmbeddedGraknSession.inMemory("somethingmorerandom")) {
             try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();

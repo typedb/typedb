@@ -27,7 +27,10 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SampleKBContext;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -39,6 +42,7 @@ import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -87,6 +91,9 @@ public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext freshRelationDerivation = SampleKBContext.load("freshRelationDerivation.gql");
+
+    @ClassRule
+    public static final SampleKBContext appendingRPsContext = SampleKBContext.load("appendingRPsTest.gql");
 
     @ClassRule
     public static final SampleKBContext test7 = SampleKBContext.load("testSet7.gql");
@@ -320,7 +327,7 @@ public class ReasoningTest {
         QueryBuilder qb = test8.tx().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertThat(answers.stream().collect(toSet()), empty());
+        assertThat(answers, empty());
     }
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
@@ -328,7 +335,7 @@ public class ReasoningTest {
         QueryBuilder qb = test9.tx().graql().infer(true);
         String queryString = "match (role1:$x, role1:$y) isa relation2; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertThat(answers.stream().collect(toSet()), empty());
+        assertThat(answers, empty());
     }
 
     @Test //Expected result: The query should return a single match
@@ -823,7 +830,8 @@ public class ReasoningTest {
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
 
-    /* Should find the possible relation configurations:
+    /**
+       Should find the possible relation configurations:
          (x, z) - (z, z1) - (z1, z)
                 - (z, z2) - (z2, z)
                 - (z, y)  - { (y,z) (y, x) }
@@ -856,6 +864,40 @@ public class ReasoningTest {
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 7);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
+    }
+
+    @Test //when rule are defined to append new RPs no new relation instances should be created
+    public void whenAppendingRolePlayers_noNewRelationsAreCreated(){
+        QueryBuilder qb = appendingRPsContext.tx().graql();
+
+        List<ConceptMap> answers = qb.infer(false).<GetQuery>parse("match $r isa relation; get;").execute();
+        List<ConceptMap> inferredAnswers = qb.infer(true).<GetQuery>parse("match $r isa relation; get;").execute();
+        assertEquals(answers, inferredAnswers);
+    }
+
+
+    @Test
+    public void whenQueryingAppendedRelations_rulesAreMatchedCorrectly(){
+        QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
+        Set<ConceptMap> variants = Stream.of(
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;").execute()),
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, inferredRole: $z ); $x has resource 'value'; get;").execute()),
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;").execute()),
+                Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (anotherRole: $x, andYetAnotherRole: $y); get;").execute())
+        )
+                .map(ans-> ans.project(Sets.newHashSet(var("r"))))
+                .collect(Collectors.toSet());
+
+        List<ConceptMap> answers = qb.<GetQuery>parse("match $r isa relation; get;").execute();
+        assertCollectionsEqual(variants, answers);
+    }
+
+    @Test
+    public void whenRuleContainsRelationRequiringAppend_bodyIsRewrittenCorrectly(){
+        QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
+
+        List<ConceptMap> answers = qb.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;").execute();
+        assertEquals(2, answers.size());
     }
 
     @Test //tests a query containing a neq predicate bound to a recursive relation

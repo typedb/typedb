@@ -77,7 +77,7 @@ describe("Transaction methods", () => {
     expect(answer.number()).toBe(0);
   });
 
-  test.only("execute aggregate count on empty graph - Answer of Value", async () => {
+  test("execute aggregate count on empty graph - Answer of Value", async () => {
     const result = await tx.query("match $x; aggregate count;");
     const answer = await(result.next());
     expect(answer.number()).toBe(6);

@@ -37,7 +37,7 @@ AnswerFactory.prototype.createAnswer = function (grpcAnswer) {
 AnswerFactory.prototype.buildExplanation = function (grpcExplanation) {
     if (!grpcExplanation) return null;
     return {
-        queryPattern: () => grpcExplanation.getQuerypattern(),
+        queryPattern: () => grpcExplanation.getPattern(),
         answers: () => grpcExplanation.getAnswersList().map(a => this.createConceptmap(a))
     }
 }

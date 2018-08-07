@@ -1,0 +1,9 @@
+\.DS_Store
+.idea
+**/__pycache__
+*_pb2*.py
+.*.swp
+build
+dist/
+grakn.egg-info
+

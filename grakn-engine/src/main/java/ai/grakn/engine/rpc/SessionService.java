@@ -223,7 +223,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void commit() {
-            tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
+            tx().commitAndGetLogs().ifPresent(postProcessor::submit);
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
 

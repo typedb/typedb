@@ -20,7 +20,6 @@ package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerStatus;
@@ -50,7 +49,6 @@ import spark.Service;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -69,13 +67,9 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 
 
 /**
- * <p> Controller Providing Configs for building Grakn Graphs </p>
  *
- * <p> When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location
- * this controller is accessed. The controller provides the necessary config needed in order to
- * build a {@link GraknTx}.
- *
- * This controller also allows the retrieval of all {@link ai.grakn.Keyspace}s opened so far. </p>
+ * This controller allows to get information about existing {@link ai.grakn.Keyspace}s
+ * and check status of Grakn Server, collects Metrics and return Dashboard index page.
  *
  * @author Filipe Peliz Pinto Teixeira
  */
@@ -121,10 +115,8 @@ public class SystemController implements HttpController {
     public void start(Service spark) {
 
         spark.get(REST.WebPath.ROOT, this::getRoot);
-
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
-        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
         spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
         spark.get(REST.WebPath.METRICS, this::getMetrics);
         spark.get(REST.WebPath.STATUS, (req, res) -> getStatus());
@@ -189,16 +181,6 @@ public class SystemController implements HttpController {
             response.status(HttpServletResponse.SC_NOT_FOUND);
             return "";
         }
-    }
-
-    @PUT
-    @Path("/kb/{keyspace}")
-    private String putKeyspace(Request request, Response response) throws JsonProcessingException {
-        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        keyspaceStore.addKeyspace(keyspace);
-        response.status(HttpServletResponse.SC_OK);
-        response.type(APPLICATION_JSON);
-        return objectMapper.writeValueAsString(config);
     }
 
     @DELETE

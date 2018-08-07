@@ -56,7 +56,7 @@ describe("Concept methods", () => {
         expect(nullConcept).toBeNull();
     });
 
-    test.only("delete concept already deleted", async () => {
+    test("delete concept already deleted", async () => {
         const personType = await tx.putEntityType('person');
         const person = await personType.create();
         await person.delete();

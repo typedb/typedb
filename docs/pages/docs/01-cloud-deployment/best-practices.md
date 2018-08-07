@@ -2,7 +2,7 @@
 title: Deployment Best Practices
 keywords: cloud, deployment, google
 tags: [getting-started, deployment, cloud]
-summary: "Best Practices for deploying Grakn on Google Cloud"
+summary: "Best Practices for deploying Grakn on Google Cloud Platform"
 sidebar: documentation_sidebar
 permalink: /docs/cloud-deployment/best-practices
 folder: docs

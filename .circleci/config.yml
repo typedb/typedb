@@ -313,6 +313,27 @@ jobs:
         - run: cd grakn-dist/target/grakn-dist-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: cd client-nodejs && yarn install && yarn run test
 
+  client-python-e2e:
+      machine: true
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - restore_cache:
+            name: Restore maven m2 cache
+            key: grakn-cache-m2-version-8
+        - run:
+            name: Install python deps
+            command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
+        - run:
+            name: Install protobuf and grpc
+            command: pip install protobuf grpcio grpcio-tools --user
+        - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+        - run: cd client-python && make protobuf
+        - run: cd client-python && python -m unittest discover ./tests/integration/ -v
+
+
+
 workflows:
   version: 2
   run-all-tests:
@@ -327,9 +348,6 @@ workflows:
       - distribution-e2e:
           requires:
             - build
-      - client-java-e2e:
-          requires:
-            - build
       - snb-e2e:
           requires:
             - build
@@ -337,5 +355,8 @@ workflows:
           requires:
             - build
       - client-nodejs-e2e:
+          requires:
+            - build
+      - client-python-e2e:
           requires:
             - build

@@ -18,7 +18,6 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
@@ -30,6 +29,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -74,7 +74,7 @@ public class BenchmarkIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = Grakn.session(engine.uri(), keyspace);
+        this.session = EmbeddedGraknSession.createEngineSession(keyspace);
     }
 
     private void loadOntology(String fileName, GraknSession session){

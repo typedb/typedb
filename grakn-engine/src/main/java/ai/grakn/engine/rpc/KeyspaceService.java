@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
@@ -35,11 +34,9 @@ import java.util.stream.Collectors;
  */
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
-    private final OpenRequest requestOpener;
     private final KeyspaceStore keyspaceStore;
 
-    public KeyspaceService(OpenRequest requestOpener, KeyspaceStore keyspaceStore) {
-        this.requestOpener = requestOpener;
+    public KeyspaceService(KeyspaceStore keyspaceStore) {
         this.keyspaceStore = keyspaceStore;
     }
 
@@ -64,12 +61,11 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
-            try (GraknTx tx = requestOpener.open(args)) {
-                tx.admin().delete();
+            keyspaceStore.deleteKeyspace(args.getKeyspace());
 
-                response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
-                response.onCompleted();
-            }
+            response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
+            response.onCompleted();
+
         } catch (RuntimeException e) {
             response.onError(ResponseBuilder.exception(e));
         }

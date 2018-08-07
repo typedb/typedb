@@ -34,11 +34,13 @@ import static ai.grakn.client.ClientJavaE2EConstants.assertZipExists;
 import static ai.grakn.client.ClientJavaE2EConstants.unzipGrakn;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
 
 /**
  *
@@ -263,7 +265,7 @@ public class ClientJavaE2E {
         SimpleURI graknHost = new SimpleURI("localhost", 48555);
         Keyspace keyspace = Keyspace.of("grakn");
 
-        try (Grakn.Session session = Grakn.session(graknHost, keyspace)) {
+        try (Grakn.Session session = new Grakn(graknHost).session(keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
                 fn.accept(transaction);
             }

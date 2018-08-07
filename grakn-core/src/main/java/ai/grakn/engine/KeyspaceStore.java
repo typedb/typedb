@@ -20,7 +20,6 @@ package ai.grakn.engine;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Label;
-import ai.grakn.kb.admin.GraknAdmin;
 
 import java.util.Set;
 
@@ -69,7 +68,6 @@ public interface KeyspaceStore {
     boolean containsKeyspace(Keyspace keyspace);
 
     /**
-     * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
      * This removes the keyspace of the deleted graph from the system graph
      *
      * @param keyspace the {@link Keyspace} to be removed from the system graph

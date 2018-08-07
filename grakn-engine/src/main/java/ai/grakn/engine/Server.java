@@ -134,6 +134,5 @@ public class Server implements AutoCloseable {
         return lockProvider;
     }
 
-    public KeyspaceStore systemKeyspace() { return keyspaceStore; }
 }
 

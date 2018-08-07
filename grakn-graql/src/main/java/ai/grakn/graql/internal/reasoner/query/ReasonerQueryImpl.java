@@ -45,9 +45,9 @@ import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
-import ai.grakn.graql.internal.reasoner.plan.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
@@ -62,8 +62,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -71,8 +69,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -97,8 +93,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private final ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
-
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
         this.tx = tx;
@@ -182,10 +176,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public String toString(){
         return "{\n\t" +
-                getAtoms(Atom.class)
-                        .map(Atomic::toString)
-                        .collect(Collectors.joining(";\n\t")) +
-                "\n}\n";
+                getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
+                "\n}";
     }
 
     public ReasonerQuery copy() {
@@ -240,13 +232,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public boolean isRuleResolvable() {
-        return selectAtoms().stream().anyMatch(Atom::isRuleResolvable);
+        return selectAtoms().anyMatch(Atom::isRuleResolvable);
     }
+
+    /**
+     * @return true if this query contains disconnected atoms that are unbounded
+     */
+    public boolean isBoundlesslyDisconnected(){
+        return !isAtomic()
+                && selectAtoms()
+                .filter(at -> !at.isBounded())
+                .anyMatch(Atom::isDisconnected);
+    }
+
+    /**
+     * @return true if the query requires direct schema lookups
+     */
+    public boolean requiresSchema(){ return selectAtoms().anyMatch(Atom::requiresSchema);}
 
     /**
      * @return true if this query is atomic
      */
-    boolean isAtomic() {
+    public boolean isAtomic() {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
@@ -383,34 +390,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * atom selection function
      * @return selected atoms
      */
-    public Set<Atom> selectAtoms() {
-        Set<Atom> atomsToSelect = getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toSet());
-        if (atomsToSelect.size() <= 2) return atomsToSelect;
-
-        Set<Atom> orderedSelection = new LinkedHashSet<>();
-
-        Atom atom = atomsToSelect.stream()
-                .filter(at -> at.getNeighbours(Atom.class).findFirst().isPresent())
-                .findFirst().orElse(null);
-        while(!atomsToSelect.isEmpty() && atom != null) {
-            orderedSelection.add(atom);
-            atomsToSelect.remove(atom);
-            atom = atom.getNeighbours(Atom.class)
-                    .filter(atomsToSelect::contains)
-                    .findFirst().orElse(null);
-        }
-        //if disjoint select at random
-        if (!atomsToSelect.isEmpty()) orderedSelection.addAll(atomsToSelect);
-
-        if (orderedSelection.isEmpty()) {
-            throw GraqlQueryException.noAtomsSelected(this);
-        }
-        return orderedSelection;
+    public Stream<Atom> selectAtoms() {
+        return getAtoms(Atom.class).filter(Atomic::isSelectable);
     }
 
     /** Does id predicates -> answer conversion
@@ -456,6 +439,25 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
+    /**
+     * @return true if this query requires atom decomposition
+     */
+    public boolean requiresDecomposition(){
+        return this.selectAtoms().anyMatch(Atom::requiresDecomposition);
+    }
+    /**
+     * @return rewritten (decomposed) version of the query
+     */
+    public ReasonerQueryImpl rewrite(){
+        if (!requiresDecomposition()) return this;
+        return new ReasonerQueryImpl(
+                this.selectAtoms()
+                        .flatMap(at -> at.rewriteToAtoms().stream())
+                        .collect(Collectors.toList()),
+                tx()
+        );
+    }
+
     @Override
     public Stream<ConceptMap> resolve() {
         return new ResolutionIterator(this).hasStream();
@@ -469,7 +471,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoal formed from this query
      */
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
         return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
@@ -481,7 +483,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
         return getQueryStream(sub)
                 .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
     }
@@ -499,7 +501,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return query state iterator (db iter + unifier + state iter) for this query
      */
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
         Iterator<AnswerState> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
 
@@ -511,14 +513,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             subGoalIterator = Collections.emptyIterator();
         } else {
             dbIterator = Collections.emptyIterator();
-            LinkedList<ReasonerQueryImpl> subQueries = new ResolutionPlan(this).queryPlan();
 
-            LOG.trace("CQ plan:\n" + subQueries.stream()
-                    .map(sq -> sq.toString() + (sq.isRuleResolvable()? "*" : ""))
-                    .collect(Collectors.joining("\n"))
-            );
-
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(subQueries, new ConceptMapImpl(), parent.getUnifier(), parent, subGoals, cache));
+            ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMapImpl(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }
@@ -531,7 +528,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean requiresReiteration() {
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
-        return RuleUtils.subGraphIsCyclical(dependentRules, tx())
+        return RuleUtils.subGraphIsCyclical(dependentRules)
                || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }
