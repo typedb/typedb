@@ -20,7 +20,6 @@ package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
-import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
@@ -33,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,7 +54,6 @@ public class MergeAlgorithm {
                     tx.commitSubmitNoLogs();
                 }
             }
-//                    newAttributes.markProcessed(); // TODO: enable after readAttributes is changed to processBatch()
             LOG.info("new attributes processed.");
         } catch (RuntimeException e) {
             LOG.error("An exception has occurred in the AttributeMergerDaemon. ", e);
@@ -88,15 +85,5 @@ public class MergeAlgorithm {
                 LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
             }
         }
-    }
-
-    // TODO
-    private void lock(List<Attribute> attributes) {
-        System.out.println(attributes); // PMD HACK TODO
-    }
-
-    // TODO
-    private void unlock(List<Attribute> attributes) {
-        System.out.println(attributes); // PMD HACK TODO
     }
 }

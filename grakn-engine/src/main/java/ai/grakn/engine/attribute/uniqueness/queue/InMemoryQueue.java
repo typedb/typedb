@@ -18,9 +18,6 @@
 
 package ai.grakn.engine.attribute.uniqueness.queue;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,7 +27,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author Ganeshwara Herawan Hananda
  */
 public class InMemoryQueue implements Queue {
-    private static Logger LOG = LoggerFactory.getLogger(InMemoryQueue.class);
     private java.util.Queue<Attribute> newAttributeQueue = new LinkedBlockingQueue<>();
 
     @Override

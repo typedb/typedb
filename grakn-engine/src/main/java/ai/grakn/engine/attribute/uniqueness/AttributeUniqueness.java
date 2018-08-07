@@ -44,7 +44,6 @@ public class AttributeUniqueness {
 
     public static AttributeUniqueness singleton = create();
 
-    public static final int QUEUE_GET_BATCH_MIN = 1;
     public static final int QUEUE_GET_BATCH_MAX = 1;
 
     private Queue newAttributeQueue = new RocksDbQueue();
@@ -53,7 +52,7 @@ public class AttributeUniqueness {
 
     private static AttributeUniqueness create() {
         AttributeUniqueness singleton = new AttributeUniqueness();
-//        singleton.startDaemon(); // TODO: enable
+        singleton.startDaemon(); // TODO: enable
         return singleton;
     }
 
