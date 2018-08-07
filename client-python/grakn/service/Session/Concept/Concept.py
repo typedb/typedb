@@ -21,11 +21,9 @@ from typing import Union, Optional
 
 from grakn.service.Session.util import enums
 from grakn.service.Session.util.RequestBuilder import RequestBuilder
-# from grakn.service.Session.util.ResponseConverter import ResponseConverter # cannot get name from module because circular imports
-# import grakn.service.Session.util.ResponseConverter as ResponseConverter # toplevel only allowed
-from grakn.service.Session.util import ResponseConverter
+from grakn.service.Session.util import ResponseReader # must be imported this way to avoid circular import issue
 from grakn.service.Session.Concept import ConceptFactory
-from grakn.exception.ClientError import ClientError 
+from grakn.exception.GraknError import GraknError 
 
 
 
@@ -128,7 +126,7 @@ class SchemaConcept(Concept):
             elif whichone == 'null':
                 return None
             else:
-                raise ClientError("Unknown response concent for getting super schema concept: {0}".format(whichone))
+                raise GraknError("Unknown response concent for getting super schema concept: {0}".format(whichone))
         else:
             # set direct super SchemaConcept of this SchemaConcept
             set_sup_req = RequestBuilder.ConceptMethod.SchemaConcept.set_sup(super_concept)
@@ -139,7 +137,7 @@ class SchemaConcept(Concept):
         """ Retrieve the sub schema concepts of this schema concept, as an iterator """
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
         method_response = self._tx_service.run_concept_method(self.id, subs_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                     self._tx_service,
                     method_response.schemaConcept_subs_iter.id,
                     lambda tx_serv, iter_res: 
@@ -151,7 +149,7 @@ class SchemaConcept(Concept):
         """ Retrieve the all supertypes (direct and higher level) of this schema concept as an iterator """
         sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
         method_response = self._tx_service.run_concept_method(self.id, sups_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.schemaConcept_sups_iter.id,
                 lambda tx_serv, iter_res:
@@ -180,7 +178,7 @@ class Type(SchemaConcept):
         """ Retrieve all attributes attached to this Type as an iterator """
         attributes_req = RequestBuilder.ConceptMethod.Type.attributes()
         method_response = self._tx_service.run_concept_method(self.id, attributes_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_attributes_iter.id,
                 lambda tx_serv, iter_res: 
@@ -192,7 +190,7 @@ class Type(SchemaConcept):
         """ Retrieve all instances of this Type as an iterator """
         instances_req = RequestBuilder.ConceptMethod.Type.instances()
         method_response = self._tx_service.run_concept_method(self.id, instances_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_instances_iter.id,
                 lambda tx_serv, iter_res: 
@@ -204,7 +202,7 @@ class Type(SchemaConcept):
         """ Retrieve iterator of roles played by this type """
         playing_req = RequestBuilder.ConceptMethod.Type.playing()
         method_response = self._tx_service.run_concept_method(self.id, playing_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_playing_iter.id,
                 lambda tx_serv, iter_res:
@@ -240,7 +238,7 @@ class Type(SchemaConcept):
         """ Retrieve an iterator of attribute types that this Type uses as keys """
         keys_req = RequestBuilder.ConceptMethod.Type.keys()
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_keys_iter.id,
                 lambda tx_serv, iter_res:
@@ -294,7 +292,7 @@ class AttributeType(Type):
         elif whichone == 'null':
             return None
         else:
-            raise ClientError("Unknown `res` key in AttributeType `attribute` response: {0}".format(whichone))
+            raise GraknError("Unknown `res` key in AttributeType `attribute` response: {0}".format(whichone))
 
     def data_type(self):
         """ Get the DataType enum (grakn.DataType) corresponding to the type of this attribute """
@@ -309,11 +307,11 @@ class AttributeType(Type):
                     return e
             else:
                 # loop exited normally
-                raise ClientError("Reported datatype NOT in enum: {0}".format(response.dataType))
+                raise GraknError("Reported datatype NOT in enum: {0}".format(response.dataType))
         elif whichone == 'null':
             return None
         else:
-            raise ClientError("Unknown datatype response for AttributeType: {0}".format(whichone))
+            raise GraknError("Unknown datatype response for AttributeType: {0}".format(whichone))
 
     def regex(self, pattern: str = None):
         """ Get or set regex """
@@ -342,7 +340,7 @@ class RelationshipType(Type):
         """ Retrieve roles in this relationship schema type """
         get_roles = RequestBuilder.ConceptMethod.RelationType.roles()
         method_response = self._tx_service.run_concept_method(self.id, get_roles)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.relationType_roles_iter.id,
                 lambda tx_serv, iter_res:
@@ -376,7 +374,7 @@ class Rule(SchemaConcept):
         elif whichone == 'null':
             return None
         else:
-            raise ClientError("Unknown field in get_when of `rule`: {0}".format(whichone))
+            raise GraknError("Unknown field in get_when of `rule`: {0}".format(whichone))
 
     def get_then(self):
         """ Retrieve the `then` clause for this rule """
@@ -389,7 +387,7 @@ class Rule(SchemaConcept):
         elif whichone == 'null':
             return None
         else:
-            raise ClientError("Unknown field in get_then or `rule`: {0}".format(whichone))
+            raise GraknError("Unknown field in get_then or `rule`: {0}".format(whichone))
 
 class Role(SchemaConcept):
 
@@ -398,7 +396,7 @@ class Role(SchemaConcept):
         # NOTE: relations vs relationships here
         relations_req = RequestBuilder.ConceptMethod.Role.relations()
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.role_relations_iter.id,
                 lambda tx_service, iter_res:
@@ -409,7 +407,7 @@ class Role(SchemaConcept):
         """ Retrieve an iterator of entities that play this role """
         players_req = RequestBuilder.ConceptMethod.Role.players()
         method_response = self._tx_service.run_concept_method(self.id, players_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.role_players_iter.id,
                 lambda tx_service, iter_res:
@@ -436,7 +434,7 @@ class Thing(Concept):
         # NOTE `relations` rather than `relationships`
         relations_req = RequestBuilder.ConceptMethod.Thing.relations(roles)
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_relations_iter.id,
                 lambda tx_service, iter_res:
@@ -447,7 +445,7 @@ class Thing(Concept):
         """ Retrieve iterator of this Thing's attributes, filtered by optionally provided attribute types """
         attrs_req = RequestBuilder.ConceptMethod.Thing.attributes(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, attrs_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_attributes_iter.id,
                 lambda tx_service, iter_res:
@@ -458,7 +456,7 @@ class Thing(Concept):
         """ Retrieve iterator of roles this Thing plays """
         roles_req = RequestBuilder.ConceptMethod.Thing.roles()
         method_response = self._tx_service.run_concept_method(self.id, roles_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_roles_iter.id,
                 lambda tx_service, iter_res:
@@ -469,7 +467,7 @@ class Thing(Concept):
         """ Retrieve iterator of keys (i.e. actual attributes) of this Thing, filtered by the optionally provided attribute types """
         keys_req = RequestBuilder.ConceptMethod.Thing.keys(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_keys_iter.id,
                 lambda tx_service, iter_res:
@@ -501,13 +499,13 @@ class Attribute(Thing):
         value_req = RequestBuilder.ConceptMethod.Attribute.value()
         method_response = self._tx_service.run_concept_method(self.id, value_req)
         grpc_value_object = method_response.attribute_value_res.value
-        return ResponseConverter.ResponseConverter.from_grpc_value_object(grpc_value_object)
+        return ResponseReader.ResponseReader.from_grpc_value_object(grpc_value_object)
 
     def owners(self):
         """ Retrieve entities that have this attribute value """
         owners_req = RequestBuilder.ConceptMethod.Attribute.owners()
         method_response = self._tx_service.run_concept_method(self.id, owners_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.attribute_owners_iter.id,
                 lambda tx_service, iter_res:
@@ -530,7 +528,7 @@ class Relationship(Thing):
             player = ConceptFactory.create_concept(tx_service, response.player)
             return (role, player)
 
-        iterator = ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        iterator = ResponseReader.ResponseReader.iter_res_to_iterator(
                     self._tx_service,
                     method_response.relation_rolePlayersMap_iter.id,
                     to_pair)
@@ -558,7 +556,7 @@ class Relationship(Thing):
         """ Retrieve role players filtered by roles """
         role_players_req = RequestBuilder.ConceptMethod.Relation.role_players(roles)
         method_response = self._tx_service.run_concept_method(self.id, role_players_req)
-        return ResponseConverter.ResponseConverter.iter_res_to_iterator(
+        return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.relation_rolePlayers_iter.id,
                 lambda tx_service, iter_res:

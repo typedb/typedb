@@ -19,7 +19,7 @@
 
 import unittest
 import grakn
-from grakn.exception.ClientError import ClientError
+from grakn.exception.GraknError import GraknError
 
 
 # run-once per testing
@@ -39,7 +39,7 @@ class test_Base(unittest.TestCase):
         try:
             # define parentship roles to test agains
             tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-        except ClientError as ce: 
+        except GraknError as ce: 
             print(ce)
 
         answers = list(tx.query("match $x isa person, has age 20; get;"))
@@ -83,7 +83,7 @@ class test_Concept(test_Base):
         none_car = self.tx.get_concept(car.id)
         self.assertIsNone(none_car)
 
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             car.delete()
 
     

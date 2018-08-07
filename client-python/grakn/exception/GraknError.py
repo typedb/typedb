@@ -17,5 +17,5 @@
 # under the License.
 #
 
-class ClientError(Exception):
+class GraknError(Exception):
     pass
