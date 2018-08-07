@@ -41,7 +41,7 @@ module.exports = {
     sessionForKeyspace: (keyspace) => graknClient.session(keyspace),
     tearDown: async () => {
         await session.close();
-        // await graknClient.keyspace.delete(TEST_KEYSPACE);
+        // await graknClient.keyspaces().delete(TEST_KEYSPACE);
     },
     dataType: () => Grakn.dataType,
     txType: () => Grakn.txType,
