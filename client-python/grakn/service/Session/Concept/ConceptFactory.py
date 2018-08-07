@@ -18,7 +18,7 @@
 #
 
 from grakn.service.Session.Concept import BaseTypeMapping
-from grakn.service.Session.Concept.ConceptHierarchy import EntityType, RelationshipType, AttributeType, Role, Rule, Entity, Relationship, Attribute, Type
+from grakn.service.Session.Concept.Concept import EntityType, RelationshipType, AttributeType, Role, Rule, Entity, Relationship, Attribute, Type
 
 
 # map names to ConceptHierarchy types

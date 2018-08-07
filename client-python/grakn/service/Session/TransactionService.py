@@ -21,9 +21,9 @@ import queue
 from typing import Type
 
 from grakn.service.Session.util.RequestBuilder import RequestBuilder
-import grakn.service.Session.util.ResponseConverter as ResponseConverter # for circular import issue
+import grakn.service.Session.util.ResponseReader as ResponseReader # for circular import issue
 from grakn.service.Session.util import enums
-from grakn.exception.ClientError import ClientError
+from grakn.exception.GraknError import GraknError
 
 class TransactionService(object):
 
@@ -47,7 +47,7 @@ class TransactionService(object):
         # print("Query request: {0}".format(request))
         response = self._communicator.send(request)
         # convert `response` into a python iterator
-        return ResponseConverter.ResponseConverter.query(self, response.query_iter) 
+        return ResponseReader.ResponseReader.query(self, response.query_iter) 
 
     def commit(self):
         request = RequestBuilder.commit()
@@ -62,42 +62,42 @@ class TransactionService(object):
     def get_concept(self, concept_id: str): 
         request = RequestBuilder.get_concept(concept_id)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.get_concept(self, response.getConcept_res)
+        return ResponseReader.ResponseReader.get_concept(self, response.getConcept_res)
 
     def get_schema_concept(self, label: str): 
         request = RequestBuilder.get_schema_concept(label)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.get_schema_concept(self, response.getSchemaConcept_res)
+        return ResponseReader.ResponseReader.get_schema_concept(self, response.getSchemaConcept_res)
 
     def get_attributes_by_value(self, attribute_value, data_type: enums.DataType):
         request = RequestBuilder.get_attributes_by_value(attribute_value, data_type)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.get_attributes_by_value(self, response.getAttributes_iter)
+        return ResponseReader.ResponseReader.get_attributes_by_value(self, response.getAttributes_iter)
 
     def put_entity_type(self, label: str):
         request = RequestBuilder.put_entity_type(label)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.put_entity_type(self, response.putEntityType_res)
+        return ResponseReader.ResponseReader.put_entity_type(self, response.putEntityType_res)
 
     def put_relationship_type(self, label: str):
         request = RequestBuilder.put_relationship_type(label)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.put_relationship_type(self, response.putRelationType_res)
+        return ResponseReader.ResponseReader.put_relationship_type(self, response.putRelationType_res)
 
     def put_attribute_type(self, label: str, data_type: enums.DataType):
         request = RequestBuilder.put_attribute_type(label, data_type)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.put_attribute_type(self, response.putAttributeType_res)
+        return ResponseReader.ResponseReader.put_attribute_type(self, response.putAttributeType_res)
 
     def put_role(self, label: str):
         request = RequestBuilder.put_role(label)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.put_role(self, response.putRole_res)
+        return ResponseReader.ResponseReader.put_role(self, response.putRole_res)
 
     def put_rule(self, label: str, when: str, then: str):
         request = RequestBuilder.put_rule(label, when, then)
         response = self._communicator.send(request)
-        return ResponseConverter.ResponseConverter.put_rule(self, response.putRule_res)
+        return ResponseReader.ResponseReader.put_rule(self, response.putRule_res)
 
     # --- Transaction Messages ---
 
@@ -139,17 +139,17 @@ class Communicator(object):
     def send(self, request):
         if self._closed:
             # TODO integrate this into TransactionService to throw a "Transaction is closed" rather than "connection is closed..."
-            raise ClientError("This connection is closed")
+            raise GraknError("This connection is closed")
         try:
             self._add_request(request)
             response = next(self._response_iterator)
         except Exception as e: # specialize into different gRPC exceptions?
             # on any GRPC exception, close the stream
             self.close()
-            raise ClientError("Server/network error: {0}\n\n generated from request: {1}".format(e, request))
+            raise GraknError("Server/network error: {0}\n\n generated from request: {1}".format(e, request))
 
         if response is None:
-            raise ClientError("No response received")
+            raise GraknError("No response received")
         
         return response
 
