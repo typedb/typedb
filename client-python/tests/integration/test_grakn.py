@@ -19,8 +19,8 @@
 
 import unittest
 import grakn
-from grakn.exception.ClientError import ClientError
-from grakn.service.Session.util.ResponseConverter import Answer, Value, ConceptList, ConceptSet, ConceptSetMeasure, AnswerGroup
+from grakn.exception.GraknError import GraknError
+from grakn.service.Session.util.ResponseReader import Answer, Value, ConceptList, ConceptSet, ConceptSetMeasure, AnswerGroup
 
 
 class test_PreDbSetup(unittest.TestCase):
@@ -34,12 +34,12 @@ class test_PreDbSetup(unittest.TestCase):
 
     def test_grakn_init_invalid_uri(self):
         """ Test invalid URI """
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             a_inst = grakn.Grakn('localhost:1000')
             a_session = a_inst.session('testkeyspace')
             a_session.transaction(grakn.TxType.READ)
 
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             a_inst = grakn.Grakn('localhost:1000')
             with a_inst.session("test") as s:
                 with s.transaction(grakn.TxType.READ) as tx:
@@ -64,7 +64,7 @@ class test_PreDbSetup(unittest.TestCase):
             a_session = inst.session(123)
             tx = a_session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
         inst2 = grakn.Grakn('localhost:48555')
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             a_session = inst2.session('')
             tx = a_session.transaction(grakn.TxType.READ) # won't fail until opening a transaction
 
@@ -72,7 +72,7 @@ class test_PreDbSetup(unittest.TestCase):
         inst = grakn.Grakn('localhost:48555')
         a_session = inst.session('test')
         a_session.close()
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             a_session.transaction(grakn.TxType.READ)
 
     # --- Test grakn session transactions that are pre-DB setup ---
@@ -108,7 +108,7 @@ class test_Base(unittest.TestCase):
             try:
                 # define parentship roles to test agains
                 tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-            except ClientError as ce:
+            except GraknError as ce:
                 print(ce)
     
             answers = list(tx.query("match $x isa person, has age 20; get;"))
@@ -142,9 +142,9 @@ class test_Transaction(test_Base):
 
     def test_query_invalid_syntax(self):
         """ Invalid syntax -- expected behavior is an exception & closed transaction """
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             answers = self.tx.query("match $x bob marley; get")
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             # should be closed
             self.tx.query("match $x isa person; get;")
         self.assertTrue(self.tx.is_closed(), msg="Tx is not closed after invalid syntax")
@@ -152,7 +152,7 @@ class test_Transaction(test_Base):
 
     def test_query_tx_already_closed(self):
         self.tx.close()
-        with self.assertRaises(ClientError) :
+        with self.assertRaises(GraknError) :
             self.tx.query("match $x isa person; get;")
             
         self.assertTrue(self.tx.is_closed(), msg="Tx is not closed after close()")
@@ -212,7 +212,7 @@ class test_Transaction(test_Base):
 
         tx.close()
         local_session.close()
-        inst.keyspace.delete("shortestpath")
+        inst.keyspaces.delete("shortestpath")
 
     def test_cluster_anwer_ConceptSet(self):
         """ Test clustering with connected components response as ConceptSet """ 
@@ -229,7 +229,7 @@ class test_Transaction(test_Base):
         self.assertTrue(parentship_map['parentship'] in concept_set_answer.set())
         tx.close()
         local_session.close()
-        inst.keyspace.delete("clusterkeyspace")
+        inst.keyspaces.delete("clusterkeyspace")
 
 
     def test_compute_centrality_answer_ConceptSetMeasure(self):
@@ -246,7 +246,7 @@ class test_Transaction(test_Base):
         self.assertTrue(parentship_map['child'] in concept_set_measure_answer.set())
         tx.close()
         local_session.close()
-        inst.keyspace.delete("centralitykeyspace")
+        inst.keyspaces.delete("centralitykeyspace")
 
 
     def test_compute_aggregate_group_answer_AnswerGroup(self):
@@ -263,7 +263,7 @@ class test_Transaction(test_Base):
         self.assertEqual(answer_group.answers()[0].map()['y'].id, parentship_map['child'])
         tx.close()
         local_session.close()
-        inst.keyspace.delete("aggregategroup")
+        inst.keyspaces.delete("aggregategroup")
 
 
 
