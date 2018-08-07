@@ -35,12 +35,9 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Set;
@@ -52,7 +49,6 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Suite of tests focused on reasoning expressivity and various edge cases.
@@ -60,33 +56,20 @@ import static org.junit.Assume.assumeTrue;
 public class ReasonerTest {
 
     @ClassRule
-    public static final SampleKBContext snbKB = SNBKB.context();
-
-    @ClassRule
     public static final SampleKBContext testGeoKB = GeoKB.context();
-
-    @ClassRule
-    public static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
-
-    @ClassRule
-    public static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
 
     @ClassRule
     public static final SampleKBContext geoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext geoKB2 = GeoKB.context();
+    public static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext geoKB3 = GeoKB.context();
+    public static final SampleKBContext snbKB = SNBKB.context();
 
-    @org.junit.Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
+    
 
     @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
@@ -571,19 +554,28 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation_requeryingDoesntCreateDuplicates(){
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x isa is-located-in; get;";
         String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; get $x;";
         String queryString3 = "match $x ($x1, $x2) isa is-located-in; get $x;";
-        GetQuery query = geoKB.tx().graql().infer(true).parse(queryString);
-        GetQuery query2 = geoKB2.tx().graql().infer(true).parse(queryString2);
-        GetQuery query3 = geoKB3.tx().graql().infer(true).parse(queryString3);
+        GetQuery query = iqb.parse(queryString);
+        GetQuery query2 = iqb.parse(queryString2);
+        GetQuery query3 = iqb.parse(queryString3);
 
-        assertQueriesEqual(query, query2);
-        assertQueriesEqual(query2, query3);
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
+        List<ConceptMap> answers3 = query3.execute();
+
+        assertCollectionsEqual(answers, answers2);
+        assertCollectionsEqual(answers2, answers3);
 
         List<ConceptMap> requeriedAnswers = query.execute();
         List<ConceptMap> requeriedAnswers2 = query2.execute();
         List<ConceptMap> requeriedAnswers3 = query3.execute();
+
+        assertCollectionsEqual(answers, requeriedAnswers);
+        assertCollectionsEqual(answers2, requeriedAnswers2);
+        assertCollectionsEqual(answers3, requeriedAnswers3);
 
         assertCollectionsEqual(requeriedAnswers, requeriedAnswers2);
         assertCollectionsEqual(requeriedAnswers2, requeriedAnswers3);

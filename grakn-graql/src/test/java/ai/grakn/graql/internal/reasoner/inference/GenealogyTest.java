@@ -60,7 +60,7 @@ public class GenealogyTest {
     public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
+    public static void setUpClass(){
         iqb = genealogyKB.tx().graql().infer(true);
     }
 
