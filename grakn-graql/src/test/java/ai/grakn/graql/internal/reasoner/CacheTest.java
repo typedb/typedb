@@ -19,7 +19,13 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Unifier;
@@ -27,17 +33,21 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.kb.internal.cache.TxRuleCache;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -51,12 +61,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class QueryCacheTest {
+public class CacheTest {
 
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
 
-    private static EmbeddedGraknTx<?> graph;
     private static ReasonerAtomicQuery recordQuery;
     private static ReasonerAtomicQuery retrieveQuery;
     private static ConceptMap singleAnswer;
@@ -66,7 +75,7 @@ public class QueryCacheTest {
     @Before
     public void onStartup(){
         assumeTrue(GraknTestUtil.usingTinker());
-        graph = testContext.tx();
+        EmbeddedGraknTx<?> graph = testContext.tx();
         String recordPatternString = "{(role1: $x, role2: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(role1: $p1, role2: $p2) isa reifiable-relation;}";
         Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, graph);
@@ -86,7 +95,7 @@ public class QueryCacheTest {
 
     @Test
     public void recordRetrieveAnswers(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         QueryAnswers record = cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
         assertEquals(record, cache.getAnswers(retrieveQuery).unify(retrieveToRecordUnifier));
         assertEquals(record, cache.getAnswers(recordQuery));
@@ -94,16 +103,16 @@ public class QueryCacheTest {
 
     @Test
     public void recordUpdateRetrieveAnswers(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         cache.record(recordQuery, new QueryAnswers(recordQuery.getQuery().execute()));
-        cache.recordAnswer(recordQuery, singleAnswer);
+        cache.record(recordQuery, singleAnswer);
         assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
         assertTrue(cache.getAnswers(retrieveQuery).contains(singleAnswer.unify(recordToRetrieveUnifier)));
     }
 
     @Test
     public void recordRetrieveAnswerStream(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         Set<ConceptMap> record = cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet());
         assertEquals(record, cache.getAnswerStream(retrieveQuery).map(ans -> ans.unify(retrieveToRecordUnifier)).collect(Collectors.toSet()));
         assertEquals(record, cache.record(recordQuery, recordQuery.getQuery().stream()).collect(Collectors.toSet()));
@@ -111,9 +120,9 @@ public class QueryCacheTest {
 
     @Test
     public void recordUpdateRetrieveAnswerStream(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         cache.record(recordQuery, recordQuery.getQuery().stream());
-        cache.recordAnswer(recordQuery, singleAnswer);
+        cache.record(recordQuery, singleAnswer);
 
         assertTrue(cache.getAnswerStream(recordQuery).anyMatch(ans -> ans.equals(singleAnswer)));
         assertTrue(cache.getAnswerStream(retrieveQuery).anyMatch(ans -> ans.equals(singleAnswer.unify(recordToRetrieveUnifier))));
@@ -121,38 +130,38 @@ public class QueryCacheTest {
 
     @Test
     public void getRetrieveAnswerStream() {
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         ConceptMap answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
 
         Stream<ConceptMap> recordStream = cache.getAnswerStream(recordQuery);
         Stream<ConceptMap> retrieveStream = cache.getAnswerStream(retrieveQuery);
 
-        QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
+        QueryAnswers records = new QueryAnswers(recordStream.collect(Collectors.toSet()));
         QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
 
-        assertTrue(recordAnswers.contains(answer));
+        assertTrue(records.contains(answer));
         assertTrue(retrieveAnswers.contains(retrieveAnswer));
     }
 
     @Test
     public void getUpdateRetrieveAnswerStream() {
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         ConceptMap answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
         ConceptMap retrieveSingleAnswer = singleAnswer.unify(recordToRetrieveUnifier);
         Stream<ConceptMap> recordStream = cache.getAnswerStream(recordQuery);
         Stream<ConceptMap> retrieveStream = cache.getAnswerStream(retrieveQuery);
 
-        cache.recordAnswer(recordQuery, singleAnswer);
+        cache.record(recordQuery, singleAnswer);
 
-        QueryAnswers recordAnswers = new QueryAnswers(recordStream.collect(Collectors.toSet()));
+        QueryAnswers records = new QueryAnswers(recordStream.collect(Collectors.toSet()));
         QueryAnswers retrieveAnswers = new QueryAnswers(retrieveStream.collect(Collectors.toSet()));
 
         //NB: not expecting the update in the stream
-        assertTrue(recordAnswers.contains(answer));
+        assertTrue(records.contains(answer));
         assertTrue(retrieveAnswers.contains(retrieveAnswer));
-        assertFalse(recordAnswers.contains(singleAnswer));
+        assertFalse(records.contains(singleAnswer));
         assertFalse(retrieveAnswers.contains(retrieveSingleAnswer));
 
         assertTrue(cache.getAnswers(recordQuery).contains(singleAnswer));
@@ -161,10 +170,10 @@ public class QueryCacheTest {
 
     @Test
     public void recordRetrieveSingleAnswer(){
-        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
         ConceptMap answer = recordQuery.getQuery().stream().findFirst().orElse(null);
         ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
-        cache.recordAnswer(recordQuery, answer);
+        cache.record(recordQuery, answer);
 
         assertEquals(cache.getAnswer(recordQuery, new ConceptMapImpl()), new ConceptMapImpl());
         assertEquals(cache.getAnswer(recordQuery, answer), answer);
@@ -242,6 +251,78 @@ public class QueryCacheTest {
 
         assertTrue(cache.getAnswers(recordQuery).stream().anyMatch(ans -> ans.equals(singleAnswer)));
         assertTrue(cache.getAnswers(retrieveQuery).stream().anyMatch(ans -> ans.equals(retrieveSingleAnswer)));
+    }
+
+    /**
+     * ##################################
+     *
+     *      Rule cache tests
+     *
+     * ##################################
+     */
+
+    @Test
+    public void whenGettingRulesWithType_correctRulesAreObtained(){
+        EmbeddedGraknTx<?> tx = testContext.tx();
+        TxRuleCache ruleCache = tx.ruleCache();
+
+        SchemaConcept reifyingRelation = tx.getSchemaConcept(Label.of("reifying-relation"));
+        SchemaConcept ternary = tx.getSchemaConcept(Label.of("ternary"));
+        Set<Rule> rulesWithBinary = ruleCache.getRulesWithType(reifyingRelation).collect(toSet());
+        Set<Rule> rulesWithTernary = ruleCache.getRulesWithType(ternary).collect(toSet());
+
+        assertEquals(2, rulesWithBinary.size());
+        assertEquals(2, rulesWithTernary.size());
+
+        rulesWithBinary.stream()
+                .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
+                .forEach(r -> assertEquals(reifyingRelation, r.getHead().getAtom().getSchemaConcept()));
+        rulesWithTernary.stream()
+                .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
+                .forEach(r -> assertEquals(ternary, r.getHead().getAtom().getSchemaConcept()));
+    }
+
+    @Test
+    public void whenAddingARule_cacheContainsUpdatedEntry(){
+        EmbeddedGraknTx<?> tx = testContext.tx();
+
+        Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
+        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Rule dummyRule = tx.putRule("dummyRule", when, then);
+
+        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
+        Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+        assertTrue(cachedRules.contains(dummyRule));
+    }
+
+    @Test
+    public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
+        EmbeddedGraknTx<?> oldTx = testContext.tx();
+        EmbeddedGraknSession session = testContext.tx().session();
+        oldTx.close();
+        EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE);
+
+        Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
+        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Rule dummyRule = tx.putRule("dummyRule", when, then);
+
+        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
+
+        Set<Rule> commitedRules = binary.thenRules().collect(Collectors.toSet());
+        Set<Rule> cachedRules = tx.ruleCache().getRulesWithType(binary).collect(toSet());
+        assertEquals(Sets.union(commitedRules, Sets.newHashSet(dummyRule)), cachedRules);
+    }
+
+    //TODO: currently we do not acknowledge deletions
+    @Ignore
+    @Test
+    public void whenDeletingARule_cacheContainsUpdatedEntry(){
+        EmbeddedGraknTx<?> tx = testContext.tx();
+        tx.graql().parse("undefine $x sub rule label 'rule-0';").execute();
+
+        SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
+        Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
+        assertTrue(rules.isEmpty());
     }
 
 

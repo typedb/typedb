@@ -52,6 +52,9 @@ public abstract class OntologicalAtom extends TypeAtom {
     }
 
     @Override
+    public Stream<Rule> getPotentialRules(){ return Stream.empty();}
+
+    @Override
     public Stream<InferenceRule> getApplicableRules() { return Stream.empty();}
 
     @Override

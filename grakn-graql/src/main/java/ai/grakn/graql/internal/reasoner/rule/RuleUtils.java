@@ -21,17 +21,18 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 
-import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -50,8 +51,7 @@ public class RuleUtils {
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(GraknTx graph) {
-        return graph.admin().getMetaRule().subs().
-                filter(sub -> !sub.equals(graph.admin().getMetaRule()));
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRules();
     }
 
     /**
@@ -68,20 +68,16 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        if (type == null) return getRules(graph);
-        Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        if (type.isImplicit()) types.add(graph.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
-        return types.stream().flatMap(SchemaConcept::thenRules);
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRulesWithType(type, direct);
     }
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
-     * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops
      */
-    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, GraknTx graph){
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
         Iterator<Rule> ruleIterator = rules.stream()
-                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
+                .map(InferenceRule::getRule)
                 .iterator();
         boolean cyclical = false;
         while (ruleIterator.hasNext() && !cyclical){
@@ -117,24 +113,19 @@ public class RuleUtils {
      * @return all rules that are reachable from the entry types
      */
     public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
-        final Equivalence<Atom> equivalence = new Equivalence<Atom>(){
-            @Override
-            protected boolean doEquivalent(Atom a1, Atom a2) {return a1.isAlphaEquivalent(a2);}
-            @Override
-            protected int doHash(Atom a) {return a.alphaEquivalenceHashCode();}
-        };
+        final Equivalence<Atomic> equivalence = AtomicEquivalence.AlphaEquivalence;
 
         Set<InferenceRule> rules = new HashSet<>();
         Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();
         Stack<Equivalence.Wrapper<Atom>> atoms = new Stack<>();
-        query.selectAtoms().stream().map(equivalence::wrap).forEach(atoms::push);
+        query.selectAtoms().map(equivalence::wrap).forEach(atoms::push);
         while(!atoms.isEmpty()) {
             Equivalence.Wrapper<Atom> wrappedAtom = atoms.pop();
              Atom atom = wrappedAtom.get();
             if (!visitedAtoms.contains(wrappedAtom) && atom != null){
                 atom.getApplicableRules()
                         .peek(rules::add)
-                        .flatMap(rule -> rule.getBody().selectAtoms().stream())
+                        .flatMap(rule -> rule.getBody().selectAtoms())
                         .map(equivalence::wrap)
                         .filter(at -> !visitedAtoms.contains(at))
                         .filter(at -> !atoms.contains(at))

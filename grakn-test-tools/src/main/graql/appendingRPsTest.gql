@@ -1,0 +1,110 @@
+define
+
+relation sub relationship,
+    relates someRole
+    relates anotherRole
+    relates yetAnotherRole
+    relates andYetAnotherRole
+    relates inferredRole;
+
+derivedRelation sub relationship
+    relates inferredRole;
+
+someRole sub role;
+anotherRole sub role;
+yetAnotherRole sub role;
+andYetAnotherRole sub role;
+inferredRole sub role;
+
+baseEntity sub entity,
+    plays someRole
+    plays anotherRole
+    plays yetAnotherRole
+    plays andYetAnotherRole
+    has resource;
+
+someEntity sub baseEntity
+    plays inferredRole;
+
+resource sub attribute datatype string;
+
+appendRole sub rule
+when {
+    $r(
+    someRole: $x
+    ) isa relation;
+    $z isa someEntity;
+}
+then {
+    $r(
+    inferredRole: $z
+    ) isa relation;
+};
+
+degenerateRole sub rule
+when {
+    $r(
+    someRole: $x,
+    anotherRole: $y
+    ) isa relation;
+    $z isa someEntity;
+}
+then {
+    $r(
+    anotherRole: $z
+    ) isa relation;
+};
+
+degenerateRolePlayer sub rule
+when {
+    $r (
+    someRole: $x,
+    andYetAnotherRole: $y
+    ) isa relation;
+}
+then {
+    $r (
+    yetAnotherRole: $y
+    ) isa relation;
+};
+
+degenerateRole-RolePlayer sub rule
+when {
+    $r (
+    anotherRole: $y,
+    andYetAnotherRole: $z
+    ) isa relation;
+}
+then {
+    $r (
+    anotherRole: $y
+    ) isa relation;
+};
+
+defineAppendAsAnotherRelation sub rule
+when {
+    (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z) isa relation;
+}
+then {
+    (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
+};
+
+defineAppendAsAnotherRelationConj sub rule
+when {
+    (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;
+    $y has resource 'value';
+}
+then {
+    (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation;
+};
+
+insert
+
+$x isa baseEntity;
+$y isa baseEntity, has resource 'value';
+$z isa someEntity;
+
+(someRole: $y) isa relation;                                   # -> (someRole: $x, inferredRole: $z )
+(someRole: $x, anotherRole: $y) isa relation;                  # -> (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z)
+(someRole: $x, andYetAnotherRole: $y) isa relation;            # -> (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z)
+(anotherRole: $x, andYetAnotherRole: $y) isa relation;         # -> (anotherRole: $x, andYetAnotherRole: $y)
