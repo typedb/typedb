@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.printer;
@@ -21,7 +21,9 @@ package ai.grakn.engine.printer;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.test.rule.SampleKBContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.ask;
+import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
@@ -65,29 +67,29 @@ public class JacksonPrinterTest {
     }
 
     @Test
-    public void whenGraqlQueryResultsInAnswer_EnsureConceptsInAnswerAreWrappedAndReturned() throws JsonProcessingException {
-        ai.grakn.graql.admin.Answer answer = rule.tx().graql().match(var("x").isa("title").val("Godfather")).iterator().next();
+    public void whenGraqlQueryReturnsConceptMap_EnsureConceptsInAnswerAreWrappedAndReturned() throws JsonProcessingException {
+        ConceptMap answer = rule.tx().graql().match(var("x").isa("title").val("Godfather")).iterator().next();
         Answer answerWrapper = Answer.create(answer);
         assertWrappersMatch(answerWrapper, answer);
     }
 
     @Test
-    public void whenGraqlQueryResultsInAnswers_EnsureAnswersArwWrappedAndReturned() throws JsonProcessingException {
-        Set<ai.grakn.graql.admin.Answer> answers = rule.tx().graql().
+    public void whenGraqlQueryReturnsConceptMaps_EnsureAnswersArwWrappedAndReturned() throws JsonProcessingException {
+        Set<ConceptMap> answers = rule.tx().graql().
                 match(var("x").isa("title").val("Godfather")).stream().collect(Collectors.toSet());
         Set<Answer> answersWrapper = answers.stream().map(Answer::create).collect(Collectors.toSet());
         assertWrappersMatch(answersWrapper, answers);
     }
 
     @Test
-    public void whenGraqlQueryReturnsBoolean_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
-        Boolean bool = rule.tx().graql().match(var("x").isa("person")).aggregate(ask()).execute();
-        assertWrappersMatch(bool, bool);
+    public void whenGraqlQueryReturnsValue_EnsureNativeBooleanRepresentationIsReturned() throws JsonProcessingException {
+        List<Value> count = rule.tx().graql().match(var("x").isa("person")).aggregate(count()).execute();
+        assertWrappersMatch(count.get(0).number(), count.get(0));
     }
 
     @Test
     public void whenPrintingMap_MapGraqlStringOverKeyAndValues() {
-        QueryAnswer ans = new QueryAnswer();
+        ConceptMapImpl ans = new ConceptMapImpl();
 
         Map<?, ?> map = ImmutableMap.of(ans, ImmutableList.of(ans));
 

@@ -1,26 +1,24 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.generator;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
-import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -30,12 +28,14 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -76,11 +76,11 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
 public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
 
-    private static GraknTx lastGeneratedGraph;
+    private static EmbeddedGraknTx lastGeneratedTx;
 
     private static StringBuilder txSummary;
 
-    private GraknTx tx;
+    private EmbeddedGraknTx tx;
     private Boolean open = null;
 
     public GraknTxs() {
@@ -88,7 +88,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     public static GraknTx lastGeneratedGraph() {
-        return lastGeneratedGraph;
+        return lastGeneratedTx;
     }
 
     /**
@@ -113,7 +113,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system tx
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
-        GraknSession factory = Grakn.session(Grakn.IN_MEMORY, keyspace);
+        EmbeddedGraknSession factory = EmbeddedGraknSession.inMemory(keyspace);
 
         int size = status.size();
 
@@ -121,33 +121,34 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
         txSummary.append("size: ").append(size).append("\n");
 
-        closeGraph(lastGeneratedGraph);
+        closeTx(lastGeneratedTx);
 
         // Clear tx before retrieving
         tx = factory.transaction(GraknTxType.WRITE);
-        tx.admin().delete();
+        tx.clearGraph();
+        tx.close();
         tx = factory.transaction(GraknTxType.WRITE);
 
         for (int i = 0; i < size; i++) {
             mutateOnce();
         }
 
-        // Close graphs randomly, unless parameter is set
+        // Close transactions randomly, unless parameter is set
         boolean shouldOpen = open != null ? open : random.nextBoolean();
 
         if (!shouldOpen) tx.close();
 
-        setLastGeneratedGraph(tx);
+        setLastGeneratedTx(tx);
         return tx;
     }
 
-    private static void setLastGeneratedGraph(GraknTx graph) {
-        lastGeneratedGraph = graph;
+    private static void setLastGeneratedTx(EmbeddedGraknTx tx) {
+        lastGeneratedTx = tx;
     }
 
-    private void closeGraph(GraknTx graph){
-        if(graph != null && !graph.isClosed()){
-            graph.close();
+    private void closeTx(GraknTx tx){
+        if(tx != null && !tx.isClosed()){
+            tx.close();
         }
     }
 

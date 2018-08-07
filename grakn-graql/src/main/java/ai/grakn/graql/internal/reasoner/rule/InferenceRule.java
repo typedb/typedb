@@ -1,28 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -36,7 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -67,24 +66,24 @@ import static java.util.stream.Collectors.toSet;
 public class InferenceRule {
 
     private final EmbeddedGraknTx<?> tx;
-    private final ConceptId ruleId;
+    private final Rule rule;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
-    private int priority = Integer.MAX_VALUE;
+    private long priority = Long.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.ruleId = rule.id();
+        this.rule = rule;
         //TODO simplify once changes propagated to rule objects
         this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
         this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, EmbeddedGraknTx<?> tx){
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.ruleId = ruleId;
+        this.rule = rule;
         this.head = head;
         this.body = body;
     }
@@ -113,9 +112,10 @@ public class InferenceRule {
     /**
      * @return the priority with which the rule should be fired
      */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            priority = -RuleUtils.getDependentRules(getBody()).size();
+    public long resolutionPriority(){
+        if (priority == Long.MAX_VALUE) {
+            //NB: only checking locally as checking full tree (getDependentRules) is expensive
+            priority = -getBody().selectAtoms().flatMap(Atom::getApplicableRules).count();
         }
         return priority;
     }
@@ -127,12 +127,12 @@ public class InferenceRule {
         return Patterns.conjunction(vars);
     }
 
-    public ConceptId getRuleId(){ return ruleId;}
+    public Rule getRule(){ return rule;}
 
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
-    public boolean hasDisconnectedHead(){
+    private boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 
@@ -243,7 +243,7 @@ public class InferenceRule {
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
                 ReasonerQueries.create(bodyAtoms, tx),
-                ruleId,
+                rule,
                 tx
         );
     }
@@ -253,7 +253,7 @@ public class InferenceRule {
             return new InferenceRule(
                     ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
                     ReasonerQueries.create(getBody().getAtoms(), tx),
-                    ruleId,
+                    rule,
                     tx
             );
         }
@@ -291,14 +291,14 @@ public class InferenceRule {
                     }).forEach(bodyRewrites::add);
 
             ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
-            return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
+            return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
         }
         return this;
     }
 
     private InferenceRule rewriteBodyAtoms(){
         if (getBody().requiresDecomposition()) {
-            return new InferenceRule(getHead(), getBody().rewrite(), ruleId, tx);
+            return new InferenceRule(getHead(), getBody().rewrite(), rule, tx);
         }
         return this;
     }
@@ -323,11 +323,11 @@ public class InferenceRule {
      * @param cache query cache
      * @return resolution subGoal formed from this rule
      */
-    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta
-        Answer partialSubPrime = parentAtom.getParentQuery()
+        ConceptMap partialSubPrime = parentAtom.getParentQuery()
                 .getSubstitution()
                 .unify(ruleUnifierInverse);
 

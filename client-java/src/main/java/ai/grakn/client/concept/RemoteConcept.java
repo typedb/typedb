@@ -1,19 +1,20 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package ai.grakn.client.concept;
@@ -35,6 +36,34 @@ import java.util.stream.StreamSupport;
  * @param <SomeConcept> represents the actual class of object to downcast to
  */
 public abstract class RemoteConcept<SomeConcept extends Concept> implements Concept {
+
+    public static Concept of(ConceptProto.Concept concept, Grakn.Transaction tx) {
+        ConceptId id = ConceptId.of(concept.getId());
+
+        switch (concept.getBaseType()) {
+            case ENTITY:
+                return RemoteEntity.construct(tx, id);
+            case RELATION:
+                return RemoteRelationship.construct(tx, id);
+            case ATTRIBUTE:
+                return RemoteAttribute.construct(tx, id);
+            case ENTITY_TYPE:
+                return RemoteEntityType.construct(tx, id);
+            case RELATION_TYPE:
+                return RemoteRelationshipType.construct(tx, id);
+            case ATTRIBUTE_TYPE:
+                return RemoteAttributeType.construct(tx, id);
+            case ROLE:
+                return RemoteRole.construct(tx, id);
+            case RULE:
+                return RemoteRule.construct(tx, id);
+            case META_TYPE:
+                return RemoteMetaType.construct(tx, id);
+            default:
+            case UNRECOGNIZED:
+                throw new IllegalArgumentException("Unrecognised " + concept);
+        }
+    }
 
     abstract Grakn.Transaction tx();
 
@@ -64,7 +93,7 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
             (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
 
         Iterable<? extends  Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> ConceptReader.concept(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
+                tx(), iteratorId, res -> of(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);

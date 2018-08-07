@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller;
@@ -34,10 +34,9 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.Streamable;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -138,7 +137,7 @@ public class GraqlController implements HttpController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
-                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
+                ConceptMap answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new ConceptMapImpl());
                 return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer));
             }
         });
@@ -275,12 +274,7 @@ public class GraqlController implements HttpController {
             } else {
                 // If acceptType is 'application/text' add new line after every result
                 if (APPLICATION_TEXT.equals(acceptType)) {
-                    //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
-                    if (query instanceof Streamable) {
-                        formatted = printer.toStream(((Streamable<?>) query).stream()).collect(Collectors.joining("\n"));
-                    } else {
-                        formatted = printer.toString(query.execute());
-                    }
+                    formatted = printer.toStream(query.stream()).collect(Collectors.joining("\n"));
                 } else {
                     // If acceptType is 'application/json' map results to JSON representation
                     formatted = printer.toString(executeAndMonitor(query));
@@ -290,7 +284,7 @@ public class GraqlController implements HttpController {
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) tx.commitAndGetLogs().ifPresent(postProcessor::submit);
 
         return formatted;
     }

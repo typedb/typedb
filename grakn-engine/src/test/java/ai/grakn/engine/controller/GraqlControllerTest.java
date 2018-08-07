@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller;
@@ -26,8 +26,8 @@ import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.printer.JacksonPrinter;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -60,6 +60,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -191,19 +192,14 @@ public class GraqlControllerTest {
         resp = sendQuery("match $x id \"" + id + "\"; delete $x; ");
         resp.then().statusCode(200);
 
-        System.out.println(Json.nil());
+        System.out.println(Json.array());
         System.out.println(resp.asString());
-        assertEquals(Json.nil(), Json.read(resp.asString()));
+        assertEquals(Json.array(Json.array(id)), Json.read(resp.asString()));
     }
 
     @Test
     public void whenRunningAggregateQuery_JsonResponseIsTheSameAsJava() {
         assertResponseMatchesExpectedObject("match $x isa movie; aggregate count;");
-    }
-
-    @Test
-    public void whenRunningAskQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseMatchesExpectedObject("match $x isa movie; aggregate ask;");
     }
 
     @Test

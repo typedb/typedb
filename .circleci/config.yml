@@ -225,6 +225,35 @@ jobs:
       - store_test_results:
           path: ~/grakn-surefire-reports/
 
+  client-java-e2e:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      ##############################################################################
+      # - attach to workspace
+      # - restore .m2 cache to speed up build
+      # - run tests
+      ##############################################################################
+      - attach_workspace:
+          at: ~/grakn
+      - restore_cache:
+          name: Restore maven m2 cache
+          key: grakn-cache-m2-version-8
+      - run: mvn verify -pl :test-client-java -Dtest="ai.grakn.client.ClientJavaE2E" --also-make -DfailIfNoTests=false
+
+      ##############################################################################
+      # make and store reports
+      ##############################################################################
+      - run:
+          name: Save test results
+          command: |
+              mkdir -p ~/grakn-surefire-reports/
+              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+          when: always
+      - store_artifacts:
+          path: ~/grakn-surefire-reports/
+      - store_test_results:
+          path: ~/grakn-surefire-reports/
   snb-e2e:
     machine: true
     working_directory: ~/grakn
@@ -251,6 +280,60 @@ jobs:
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/load.sh
       - run: PATH=$PATH:./grakn-dist/target/grakn-dist-test ./grakn-test/test-biomed/validate.sh
 
+  client-nodejs-e2e:
+      machine: true
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - restore_cache:
+            name: Restore maven m2 cache
+            key: grakn-cache-m2-version-8
+        - run:
+            name: Install nvm and node
+            command: |
+              curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+              export NVM_DIR="/opt/circleci/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              nvm install v10.5.0
+              nvm alias default v10.5.0
+              echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+              echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+        - run:
+            name: Prepare apt repositories
+            command: |
+              curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+              echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+              sudo apt-get install apt-transport-https
+              sudo apt-get update
+        - run:
+            name: Install yarn
+            command: sudo apt-get -y install yarn
+        - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+        - run: cd grakn-dist/target/grakn-dist-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
+        - run: cd client-nodejs && yarn install && yarn run test
+
+  client-python-e2e:
+      machine: true
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - restore_cache:
+            name: Restore maven m2 cache
+            key: grakn-cache-m2-version-8
+        - run:
+            name: Install python deps
+            command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
+        - run:
+            name: Install protobuf and grpc
+            command: pip install protobuf grpcio grpcio-tools --user
+        - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
+        - run: cd client-python && make protobuf
+        - run: cd client-python && python -m unittest discover ./tests/integration/ -v
+
+
+
 workflows:
   version: 2
   run-all-tests:
@@ -269,5 +352,11 @@ workflows:
           requires:
             - build
       - biomed-e2e:
+          requires:
+            - build
+      - client-nodejs-e2e:
+          requires:
+            - build
+      - client-python-e2e:
           requires:
             - build

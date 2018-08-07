@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -24,17 +24,16 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,16 +44,15 @@ import java.util.stream.Stream;
  * @author Grakn Warriors
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
+abstract class InsertQueryImpl implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
-     *
-     * @param vars a collection of Vars to insert
-     * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
+     * @param match the {@link Match} to insert for each result
+     * @param vars a collection of Vars to insert
      */
-    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, MatchAdmin match, GraknTx tx) {
+    static InsertQueryImpl create(GraknTx tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
@@ -67,9 +65,9 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     @Override
     public final InsertQuery withTx(GraknTx tx) {
         if (match() != null) {
-            return Queries.insert(varPatterns(), match().withTx(tx).admin());
+            return Queries.insert(match().withTx(tx).admin(), varPatterns());
         } else {
-            return Queries.insert(varPatterns(), tx);
+            return Queries.insert(tx, varPatterns());
         }
     }
 
@@ -79,7 +77,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final Stream<Answer> stream() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 
@@ -122,11 +120,6 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
         builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
 
         return builder.toString();
-    }
-
-    @Override
-    public final List<Answer> execute() {
-        return stream().collect(Collectors.toList());
     }
 
     @Override

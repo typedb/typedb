@@ -9,44 +9,57 @@ package session;
 
 message Answer {
     oneof answer {
-        QueryAnswer queryAnswer = 1;
-        ComputeAnswer computeAnswer = 2;
-        string otherResult = 3;
-        // otherResult is used to represent `aggregate` query results.
-        // Due to the many different output formats, we are just returning them as JSON for now.
+        AnswerGroup answerGroup = 1;
+        ConceptMap conceptMap = 2;
+        ConceptList conceptList = 3;
+        ConceptSet conceptSet = 4;
+        ConceptSetMeasure conceptSetMeasure = 5;
+        Value value = 6;
     }
 }
 
-message QueryAnswer {
-    map<string, Concept> queryAnswer = 1;
+message Explanation {
+    string pattern = 1;
+    repeated ConceptMap answers = 2;
 }
 
-message ComputeAnswer {
-    oneof computeAnswer {
-        string number = 1; // number is stored as string  to accomodate numerics of any type (int, long, float, double)
-        Paths paths = 2;
-        Centrality centrality = 3;
-        Clusters clusters = 4;
-        ClusterSizes clusterSizes = 5;
-    }
+message AnswerGroup {
+    Concept owner = 1;
+    repeated Answer answers = 2;
+    Explanation explanation = 3;
 }
 
-message Paths {
-    repeated ConceptIds paths = 1;
+message ConceptMap {
+    map<string, Concept> map = 1;
+    Explanation explanation = 2;
 }
 
-message Centrality {
-    map<int64, ConceptIds> centrality = 1;
+message ConceptList {
+    ConceptIds list = 1;
+    Explanation explanation = 2;
 }
 
-message Clusters {
-    repeated ConceptIds clusters = 1;
+message ConceptSet {
+    ConceptIds set = 1;
+    Explanation explanation = 2;
 }
 
-message ClusterSizes {
-    repeated int64 clusterSizes = 1;
+message ConceptSetMeasure {
+    ConceptIds set = 1;
+    Number measurement = 2;
+    Explanation explanation = 3;
+}
+
+message Value {
+    Number number = 1;
+    Explanation explanation = 2;
 }
 
 message ConceptIds {
     repeated string ids = 1;
+}
+
+message Number {
+    string value = 1;
+    // We use a string to contain the full representation of a number
 }

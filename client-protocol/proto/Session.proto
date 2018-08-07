@@ -8,8 +8,8 @@ import "Answer.proto";
 
 package session;
 
-service Session {
-    // Represents a full transaction. The stream of `TxRequest`s must begin with a `Open` message.
+service SessionService {
+    // Represents a full transaction. The stream of `Transaction.Req`s must begin with a `Open` message.
     // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
     rpc transaction (stream Transaction.Req) returns (stream Transaction.Res);
 }
@@ -26,7 +26,7 @@ message Transaction {
             GetAttributes.Req getAttributes_req = 7;
             PutEntityType.Req putEntityType_req = 8;
             PutAttributeType.Req putAttributeType_req = 9;
-            PutRelationshipType.Req putRelationshipType_req = 10;
+            PutRelationType.Req putRelationType_req = 10;
             PutRole.Req putRole_req = 11;
             PutRule.Req putRule_req = 12;
             ConceptMethod.Req conceptMethod_req = 13;
@@ -43,7 +43,7 @@ message Transaction {
             GetAttributes.Iter getAttributes_iter = 7;
             PutEntityType.Res putEntityType_res = 8;
             PutAttributeType.Res putAttributeType_res = 9;
-            PutRelationshipType.Res putRelationshipType_res = 10;
+            PutRelationType.Res putRelationType_res = 10;
             PutRole.Res putRole_res = 11;
             PutRule.Res putRule_res = 12;
             ConceptMethod.Res conceptMethod_res = 13;
@@ -64,15 +64,22 @@ message Transaction {
         }
     }
 
+    enum Type {
+        READ = 0;
+        WRITE = 1;
+        BATCH = 2;
+    }
+
     message Open {
         message Req {
             string keyspace = 1;
-            int32 txType = 2;
+            Type type = 2;
             /* Fields ignored in the open-source version. */
             string username = 3;
             string password = 4;
         }
         message Res {}
+
     }
 
     message Commit {
@@ -83,16 +90,20 @@ message Transaction {
     message Query {
         message Req {
             string query = 1;
-            bool infer = 2; // If this is not present, leave at server default.
+            INFER infer = 2;
+            // We cannot use bool for `infer` because GRPC's default value for bool is FALSE
+            // We use enum INFER instead, because the default value is index 0 (TRUE)
         }
         message Iter {
-            oneof iter {
-                int32 id = 1;
-                Null null = 2;
-            }
+            int32 id = 1;
             message Res {
                 Answer answer = 1;
             }
+        }
+        enum INFER {
+            TRUE = 0;
+            FALSE = 1;
+            // The default value of this enum is 0 (TRUE)
         }
     }
 
@@ -102,7 +113,7 @@ message Transaction {
         }
         message Res {
             oneof res {
-                Concept concept = 1;
+                Concept schemaConcept = 1;
                 Null null = 2;
             }
         }
@@ -127,7 +138,7 @@ message Transaction {
         message Iter {
             int32 id = 1;
             message Res {
-                Concept concept = 1;
+                Concept attribute = 1;
             }
         }
     }
@@ -137,7 +148,7 @@ message Transaction {
             string label = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept entityType = 1;
         }
     }
 
@@ -147,16 +158,16 @@ message Transaction {
             AttributeType.DATA_TYPE dataType = 2;
         }
         message Res {
-            Concept concept = 1;
+            Concept attributeType = 1;
         }
     }
 
-    message PutRelationshipType {
+    message PutRelationType {
         message Req {
             string label = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept relationType = 1;
         }
     }
 
@@ -165,7 +176,7 @@ message Transaction {
             string label = 1;
         }
         message Res {
-            Concept concept = 1;
+            Concept role = 1;
         }
     }
 
@@ -176,7 +187,7 @@ message Transaction {
             string then = 3;
         }
         message Res {
-            Concept concept = 1;
+            Concept rule = 1;
         }
     }
 

@@ -1,24 +1,24 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -31,8 +31,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
@@ -46,7 +45,6 @@ import com.google.common.collect.Sets;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,7 +91,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
-    public ReasonerAtomicQuery withSubstitution(Answer sub){
+    public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
         return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), sub.toPredicates(this)), this.tx());
     }
 
@@ -157,20 +155,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param answer to be materialised
      * @return stream of materialised answers
      */
-    public Stream<Answer> materialise(Answer answer) {
+    public Stream<ConceptMap> materialise(ConceptMap answer) {
         return this.withSubstitution(answer)
                 .getAtom()
                 .materialise()
-                .map(ans -> ans.explain(answer.getExplanation()));
+                .map(ans -> ans.explain(answer.explanation()));
     }
 
     @Override
-    public ResolutionState subGoal(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
         return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
     @Override
-    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+    protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
         Atom atom = getAtom();
         return atom.getSchemaConcept() == null?
                 atom.atomOptions(sub).stream().map(ReasonerAtomicQuery::new) :
@@ -178,10 +176,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        Pair<Stream<Answer>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
-                .map(a -> a.explain(a.getExplanation().setQuery(this)))
+                .map(a -> a.explain(a.explanation().setQuery(this)))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 
@@ -192,20 +190,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subGoalIterator = Collections.emptyIterator();
         } else {
             visitedSubGoals.add(this);
-            subGoalIterator = this.getRuleStream()
+            subGoalIterator = cache.ruleCache().getRuleStream(this.getAtom())
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }
-
-    /**
-     * @return stream of all rules applicable to this atomic query including permuted cases when the role types are meta roles
-     */
-    private Stream<Pair<InferenceRule, Unifier>> getRuleStream(){
-        return getAtom().getApplicableRules()
-                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
-                .sorted(Comparator.comparing(rt -> -rt.getKey().resolutionPriority()));
-    }
-
 }

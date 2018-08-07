@@ -1,29 +1,31 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -31,7 +33,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a {@link Match}.
  */
-class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
+class MedianAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
@@ -40,7 +42,7 @@ class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
     }
 
     @Override
-    public Optional<Number> apply(Stream<? extends Answer> stream) {
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
         List<Number> results = stream
                 .map(result -> ((Number) result.get(varName).asAttribute().value()))
                 .sorted()
@@ -51,13 +53,14 @@ class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
         int halveCeiling = (int) Math.ceil((size - 1) / 2.0);
 
         if (size == 0) {
-            return Optional.empty();
+            return Collections.emptyList();
         } else if (size % 2 == 1) {
             // Take exact middle result
-            return Optional.of(results.get(halveFloor));
+            return Collections.singletonList(new Value(results.get(halveFloor)));
         } else {
             // Take average of middle results
-            return Optional.of((results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2);
+            Number result = (results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2;
+            return Collections.singletonList(new Value(result));
         }
     }
 

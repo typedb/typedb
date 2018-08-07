@@ -1,29 +1,26 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.bootup;
 
-import ai.grakn.engine.GraknConfig;
-import ai.grakn.graql.shell.GraknSessionProvider;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.graql.shell.GraqlShellOptionsFactory;
-import ai.grakn.graql.shell.SessionProvider;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
@@ -48,12 +45,10 @@ import java.util.Arrays;
 public class Graql {
 
     private final GraqlShellOptionsFactory graqlShellOptionsFactory;
-    private SessionProvider sessionProvider;
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
 
-    public Graql(SessionProvider sessionProvider, GraqlShellOptionsFactory graqlShellOptionsFactory) {
-        this.sessionProvider = sessionProvider;
+    public Graql(GraqlShellOptionsFactory graqlShellOptionsFactory) {
         this.graqlShellOptionsFactory = graqlShellOptionsFactory;
     }
 
@@ -64,10 +59,9 @@ public class Graql {
      * @param args
      */
     public static void main(String[] args) throws IOException, InterruptedException {
-        GraknSessionProvider sessionProvider = new GraknSessionProvider(GraknConfig.create());
         GraqlShellOptionsFactory graqlShellOptionsFactory = GraqlShellOptions::create;
 
-        new Graql(sessionProvider, graqlShellOptionsFactory).run(args);
+        new Graql(graqlShellOptionsFactory).run(args);
     }
 
     public void run(String[] args) throws IOException, InterruptedException {
@@ -84,7 +78,7 @@ public class Graql {
                     return;
                 }
 
-                GraqlConsole.start(options, sessionProvider, HISTORY_FILENAME, System.out, System.err);
+                GraqlConsole.start(options, HISTORY_FILENAME, System.out, System.err);
                 break;
             case "migrate":
                 migrate(valuesFrom(args, 1));

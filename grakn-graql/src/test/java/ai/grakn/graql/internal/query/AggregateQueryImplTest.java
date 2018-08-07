@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import org.junit.Test;
 
@@ -35,8 +35,8 @@ public class AggregateQueryImplTest {
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
-    private final Aggregate<Object, Long> aggregate1 = Aggregates.count();
-    private final Aggregate<Answer, Number> aggregate2 = Aggregates.sum(Graql.var("x"));
+    private final Aggregate<Value> aggregate1 = Aggregates.count();
+    private final Aggregate<Value> aggregate2 = Aggregates.sum(Graql.var("x"));
 
     @Test
     public void aggregateQueriesWithTheSameMatchAndAggregatesAreEqual() {

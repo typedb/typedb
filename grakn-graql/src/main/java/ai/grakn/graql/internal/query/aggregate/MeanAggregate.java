@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query.aggregate;
@@ -21,10 +21,11 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -32,29 +33,29 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds mean of a {@link Match}.
  */
-class MeanAggregate extends AbstractAggregate<Answer, Optional<Double>> {
+class MeanAggregate implements Aggregate<Value> {
 
     private final Var varName;
     private final CountAggregate countAggregate;
-    private final Aggregate<Answer, Number> sumAggregate;
+    private final Aggregate<Value> sumAggregate;
 
-    MeanAggregate(Var varName) {
-        this.varName = varName;
-        countAggregate = new CountAggregate();
-        sumAggregate = Aggregates.sum(varName);
+    MeanAggregate(Var var) {
+        this.varName = var;
+        countAggregate = new CountAggregate(Collections.singleton(var));
+        sumAggregate = Aggregates.sum(var);
     }
 
     @Override
-    public Optional<Double> apply(Stream<? extends Answer> stream) {
-        List<? extends Answer> list = stream.collect(toList());
+    public List<Value> apply(Stream<? extends ConceptMap> stream) {
+        List<? extends ConceptMap> list = stream.collect(toList());
 
-        long count = countAggregate.apply(list.stream());
+        Number count = countAggregate.apply(list.stream()).get(0).number();
 
-        if (count == 0) {
-            return Optional.empty();
+        if (count.intValue() == 0) {
+            return Collections.emptyList();
         } else {
-            Number sum = sumAggregate.apply(list.stream());
-            return Optional.of(sum.doubleValue() / count);
+            Number sum = sumAggregate.apply(list.stream()).get(0).number();
+            return Collections.singletonList(new Value(sum.doubleValue() / count.longValue()));
         }
     }
 

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.client;
@@ -21,9 +21,9 @@ package ai.grakn.client;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
-import ai.grakn.rpc.proto.SessionGrpc.SessionImplBase;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc.SessionServiceImplBase;
 import ai.grakn.test.rule.CompositeTestRule;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -70,7 +70,7 @@ public final class ServerRPCMock extends CompositeTestRule {
     private int iteratorIdCounter = 0;
     private final ServerIteratorsMock rpcIterators = ServerIteratorsMock.create();
     private final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
-    private final SessionImplBase sessionService = mock(SessionImplBase.class);
+    private final SessionServiceImplBase sessionService = mock(SessionServiceImplBase.class);
     private final KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
 
     private @Nullable StreamObserver<Transaction.Res> serverResponses = null;
@@ -89,7 +89,7 @@ public final class ServerRPCMock extends CompositeTestRule {
         return serverRule.getChannel();
     }
 
-    SessionImplBase sessionService() {
+    SessionServiceImplBase sessionService() {
         return sessionService;
     }
 

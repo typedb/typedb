@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.printer;
@@ -21,12 +21,14 @@ package ai.grakn.engine.printer;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
-import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.internal.printer.Printer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,14 +61,13 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public Object queryAnswer(ai.grakn.graql.admin.Answer answer) {
+    public Object conceptMap(ConceptMap answer) {
         return Answer.create(answer);
     }
 
-    //TODO: implement JacksonPrinter for ComputeAnswer properly!
     @Override
-    public Object computeAnswer(ComputeQuery.Answer computeAnswer) {
-        return object(computeAnswer);
+    protected Object conceptSetMeasure(ConceptSetMeasure answer) {
+        return new HashMap.SimpleEntry<>(answer.measurement(), answer.set());
     }
 
     @Override

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine;
@@ -24,8 +24,7 @@ import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
-import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
@@ -41,7 +40,6 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.factory.KeyspaceSession;
 import ai.grakn.engine.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
@@ -76,8 +74,7 @@ public class ServerFactory {
         LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
 
 
-        KeyspaceSession keyspaceSession = new KeyspaceSessionImpl(config);
-        KeyspaceStore keyspaceStore = KeyspaceStoreImpl.create(keyspaceSession);
+        KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
         EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
@@ -135,7 +132,7 @@ public class ServerFactory {
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, postProcessor))
-                .addService(new KeyspaceService(requestOpener, keyspaceStore))
+                .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
         return ServerRPC.create(grpcServer);

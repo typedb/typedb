@@ -1,26 +1,26 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.SampleKBLoader;
@@ -62,12 +62,13 @@ public class SQLMigratorMainTest {
     @Before
     public void setup() throws SQLException {
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = EmbeddedGraknSession.createEngineSession(keyspace);
         connection = setupExample(factory, "pets");
     }
 
     @After
     public void stop() throws SQLException {
+        factory.close();
         connection.close();
     }
 

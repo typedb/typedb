@@ -36,7 +36,7 @@ migrator.load(String uri, String keyspace, int batchSize, int numberActiveTasks,
 
 ## Termination
 
-Some migrators have a `close` method that should be called after loading has completed. As the `load` method blocks the calling thread, this is easily done. A quick example of JSON migration performed from java:
+Some migrators have a `close` method that should be called after loading has completed. As the `load` name blocks the calling thread, this is easily done. A quick example of JSON migration performed from java:
 
 ```java-test-ignore
 CSVMigrator migrator = new CSVMigrator("insert $x isa person has name <name>", new File("people.csv"));

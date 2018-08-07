@@ -1,19 +1,20 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package ai.grakn.client.concept;
@@ -43,7 +44,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
                 .setTypeInstancesReq(ConceptProto.Type.Instances.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getTypeInstancesIter().getId();
-        return conceptStream(iteratorId, res -> res.getTypeInstancesIterRes().getConcept()).map(this::asInstance);
+        return conceptStream(iteratorId, res -> res.getTypeInstancesIterRes().getThing()).map(this::asInstance);
     }
 
     @Override
@@ -70,7 +71,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
                 .setTypeKeysReq(ConceptProto.Type.Keys.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getTypeKeysIter().getId();
-        return conceptStream(iteratorId, res -> res.getTypeKeysIterRes().getConcept()).map(Concept::asAttributeType);
+        return conceptStream(iteratorId, res -> res.getTypeKeysIterRes().getAttributeType()).map(Concept::asAttributeType);
     }
 
     @Override
@@ -79,7 +80,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
                 .setTypeAttributesReq(ConceptProto.Type.Attributes.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getTypeAttributesIter().getId();
-        return conceptStream(iteratorId, res -> res.getTypeAttributesIterRes().getConcept()).map(Concept::asAttributeType);
+        return conceptStream(iteratorId, res -> res.getTypeAttributesIterRes().getAttributeType()).map(Concept::asAttributeType);
     }
 
     @Override
@@ -88,14 +89,14 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
                 .setTypePlayingReq(ConceptProto.Type.Playing.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getTypePlayingIter().getId();
-        return conceptStream(iteratorId, res -> res.getTypePlayingIterRes().getConcept()).map(Concept::asRole);
+        return conceptStream(iteratorId, res -> res.getTypePlayingIterRes().getRole()).map(Concept::asRole);
     }
 
     @Override
     public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeKeyReq(ConceptProto.Type.Key.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
+                        .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -105,7 +106,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType has(AttributeType attributeType) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeHasReq(ConceptProto.Type.Has.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
+                        .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -115,7 +116,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType plays(Role role) throws GraknTxOperationException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypePlaysReq(ConceptProto.Type.Plays.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(role))).build();
+                        .setRole(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -125,7 +126,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType unkey(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeUnkeyReq(ConceptProto.Type.Unkey.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
+                        .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -135,7 +136,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType unhas(AttributeType attributeType) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeUnhasReq(ConceptProto.Type.Unhas.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(attributeType))).build();
+                        .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);
@@ -145,7 +146,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     public final SomeType unplay(Role role) {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeUnplayReq(ConceptProto.Type.Unplay.Req.newBuilder()
-                        .setConcept(RequestBuilder.Concept.concept(role))).build();
+                        .setRole(RequestBuilder.Concept.concept(role))).build();
 
         runMethod(method);
         return asCurrentBaseType(this);

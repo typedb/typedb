@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
@@ -26,14 +26,14 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -144,13 +144,13 @@ public abstract class IsaAtom extends IsaAtomBase {
         return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
     }
 
-    private IsaAtom inferEntityType(Answer sub){
+    private IsaAtom inferEntityType(ConceptMap sub){
         if (getTypePredicate() != null) return this;
         if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
         return this;
     }
 
-    private ImmutableList<SchemaConcept> inferPossibleTypes(Answer sub){
+    private ImmutableList<SchemaConcept> inferPossibleTypes(ConceptMap sub){
         if (getSchemaConcept() != null) return ImmutableList.of(this.getSchemaConcept());
         if (sub.containsVar(getPredicateVariable())) return ImmutableList.of(sub.get(getPredicateVariable()).asType());
 
@@ -183,16 +183,16 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public IsaAtom inferTypes(Answer sub) {
+    public IsaAtom inferTypes(ConceptMap sub) {
         return this
                 .inferEntityType(sub);
     }
 
     @Override
-    public ImmutableList<SchemaConcept> getPossibleTypes() { return inferPossibleTypes(new QueryAnswer()); }
+    public ImmutableList<SchemaConcept> getPossibleTypes() { return inferPossibleTypes(new ConceptMapImpl()); }
 
     @Override
-    public List<Atom> atomOptions(Answer sub) {
+    public List<Atom> atomOptions(ConceptMap sub) {
         return this.inferPossibleTypes(sub).stream()
                 .map(this::addType)
                 .sorted(Comparator.comparing(Atom::isRuleResolvable))
@@ -200,11 +200,11 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public Stream<Answer> materialise(){
+    public Stream<ConceptMap> materialise(){
         EntityType entityType = getSchemaConcept().asEntityType();
         return Stream.of(
                 getParentQuery().getSubstitution()
-                        .merge(new QueryAnswer(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred())))
+                        .merge(new ConceptMapImpl(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred())))
         );
     }
 

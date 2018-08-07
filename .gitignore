@@ -6,7 +6,7 @@
 *.iml
 *.geany
 
-# VS Code #
+# VS Code files #
 .vscode/
 .settings/
 .project
@@ -17,7 +17,7 @@ out/
 target/
 *.class
 
-# Mobile Tools for Java (J2ME)
+# Mobile Tools for Java (J2ME) files #
 .mtj.tmp/
 
 # Package Files #
@@ -31,11 +31,12 @@ dep.tree
 # Databases #
 db/
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml #
 hs_err_pid*
 
 # Log files #
 logs/
+*.log
 
 # Analytics files #
 grakn-test/db/
@@ -54,3 +55,8 @@ hadoop
 parameters_bi.log
 parameters_interactive.log
 social_network
+
+# client-python files # 
+\.DS_Store
+**/__pycache__
+*_pb2*.py

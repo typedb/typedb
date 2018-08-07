@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -22,33 +22,32 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Implementation for {@link DefineQuery}
- *
- * @author Grakn Warriors
  */
 @AutoValue
-abstract class DefineQueryImpl extends AbstractExecutableQuery<Answer> implements DefineQuery {
+abstract class DefineQueryImpl implements DefineQuery {
 
     static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
         return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
-    public Query<Answer> withTx(GraknTx tx) {
+    public Query<ConceptMap> withTx(GraknTx tx) {
         return DefineQueryImpl.of(varPatterns(), tx);
     }
 
     @Override
-    public final Answer execute() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package ai.grakn.graql.internal.reasoner.atom;
 
@@ -22,14 +22,14 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -194,7 +194,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, tx()))
+                    .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -211,6 +211,15 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom requires role expansion
      */
     public boolean requiresRoleExpansion(){ return false; }
+
+    /**
+     * @return if this atom requires decomposition into a set of atoms
+     */
+    public boolean requiresDecomposition(){
+        return this.getPotentialRules()
+                .map(r -> tx().ruleCache().getRule(r, () -> new InferenceRule(r, tx())))
+                .anyMatch(InferenceRule::isAppendRule);
+    }
 
     /**
      * @return corresponding type if any
@@ -301,10 +310,10 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
+    public Atom inferTypes(){ return inferTypes(new ConceptMapImpl()); }
 
     @Override
-    public Atom inferTypes(Answer sub){ return this; }
+    public Atom inferTypes(ConceptMap sub){ return this; }
 
     /**
      * @return list of types this atom can take
@@ -315,7 +324,7 @@ public abstract class Atom extends AtomicBase {
      * @param sub partial substitution
      * @return list of possible atoms obtained by applying type inference
      */
-    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes(sub));}
+    public List<Atom> atomOptions(ConceptMap sub){ return Lists.newArrayList(inferTypes(sub));}
 
     /**
      * @param type to be added to this {@link Atom}
@@ -323,14 +332,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
-    public Stream<Answer> materialise(){ return Stream.empty();}
-
-    /**
-     * @return if this atom requires decomposition into a set of atoms
-     */
-    public boolean requiresDecomposition(){
-        return this.getPotentialRules().map(r -> new InferenceRule(r, tx())).anyMatch(InferenceRule::isAppendRule);
-    }
+    public Stream<ConceptMap> materialise(){ return Stream.empty();}
 
     /**
      * @return set of atoms this atom can be decomposed to

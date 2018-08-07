@@ -17,7 +17,7 @@ It is possible for batches of insert queries to fail upon insertion. By default,
 
 To use the loader client API, add the following to your imports:
 
-```java
+```
 import ai.grakn.client.BatchExecutorClient;
 ```
 

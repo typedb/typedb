@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.docs;
@@ -24,10 +24,8 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Query;
 import ai.grakn.test.rule.EngineContext;
-import ai.grakn.util.GraknTestUtil;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +48,6 @@ import static ai.grakn.test.docs.DocTestUtil.getLineNumber;
 import static ai.grakn.test.docs.DocTestUtil.markdownOrHtml;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -97,14 +94,9 @@ public class GraqlDocsTest {
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (GraknTestUtil.usingTinker() && numFound < 10) {
+        if (numFound < 10) {
             fail("Only found " + numFound + " Graql examples. Perhaps the regex is wrong?");
         }
-    }
-
-    @BeforeClass
-    public static void onlyRunOnTinker(){
-        assumeTrue(GraknTestUtil.usingTinker());
     }
 
     @Test
@@ -120,7 +112,7 @@ public class GraqlDocsTest {
 
         String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
 
-        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.grpcUri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
             executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
 
             // TODO: Fix issue with this test when template expects data in a certain format

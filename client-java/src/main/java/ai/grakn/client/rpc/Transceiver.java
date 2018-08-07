@@ -1,26 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package ai.grakn.client.rpc;
 
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
@@ -57,7 +58,7 @@ public class Transceiver implements AutoCloseable {
         this.responseListener = responseListener;
     }
 
-    public static Transceiver create(SessionGrpc.SessionStub stub) {
+    public static Transceiver create(SessionServiceGrpc.SessionServiceStub stub) {
         ResponseListener responseListener = new ResponseListener();
         StreamObserver<Transaction.Req> requestSender = stub.transaction(responseListener);
         return new Transceiver(requestSender, responseListener);

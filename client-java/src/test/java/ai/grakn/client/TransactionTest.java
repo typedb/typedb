@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.client;
@@ -21,7 +21,7 @@ package ai.grakn.client;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.concept.ConceptReader;
+import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.rpc.RequestBuilder;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
@@ -37,14 +37,14 @@ import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionGrpc;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
+import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -92,7 +92,7 @@ public class TransactionTest {
 
     @Before
     public void setUp() {
-        when(session.sessionStub()).thenReturn(SessionGrpc.newStub(server.channel()));
+        when(session.sessionStub()).thenReturn(SessionServiceGrpc.newStub(server.channel()));
         when(session.keyspaceBlockingStub()).thenReturn(KeyspaceServiceGrpc.newBlockingStub(server.channel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
@@ -142,23 +142,6 @@ public class TransactionTest {
         }
     }
 
-    @Test
-    public void whenExecutingAQueryWithAVoidResult_GetANullBack() {
-        Query<?> query = match(var("x").isa("person")).delete("x");
-        String queryString = query.toString();
-
-        Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
-                .setQueryIter(SessionProto.Transaction.Query.Iter.newBuilder()
-                        .setNull(ConceptProto.Null.getDefaultInstance())).build();
-
-        server.setResponse(RequestBuilder.Transaction.query(query), response);
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            verify(server.requestListener()).onNext(any()); // The open request
-            assertNull(tx.graql().parse(queryString).execute());
-        }
-    }
-
     @Test(timeout = 5_000)
     public void whenStreamingAQueryWithInfiniteAnswers_Terminate() {
         Transaction.Res queryIterator = SessionProto.Transaction.Res.newBuilder()
@@ -172,12 +155,12 @@ public class TransactionTest {
                 .setIterateRes(SessionProto.Transaction.Iter.Res.newBuilder()
                         .setQueryIterRes(SessionProto.Transaction.Query.Iter.Res.newBuilder()
                                 .setAnswer(AnswerProto.Answer.newBuilder()
-                                        .setQueryAnswer(AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", v123))))).build();
+                                        .setConceptMap(AnswerProto.ConceptMap.newBuilder().putMap("x", v123))))).build();
 
         server.setResponse(RequestBuilder.Transaction.query(query), queryIterator);
         server.setResponse(RequestBuilder.Transaction.iterate(ITERATOR), iteratorNext);
 
-        List<Answer> answers;
+        List<ConceptMap> answers;
         int numAnswers = 10;
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
@@ -187,7 +170,7 @@ public class TransactionTest {
 
         assertEquals(10, answers.size());
 
-        for (Answer answer : answers) {
+        for (ConceptMap answer : answers) {
             assertEquals(answer.vars(), ImmutableSet.of(var("x")));
             assertEquals(ConceptId.of("V123"), answer.get(var("x")).id());
         }
@@ -292,10 +275,10 @@ public class TransactionTest {
                     .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder().setPutEntityTypeRes(SessionProto.Transaction.PutEntityType.Res.newBuilder()
-                    .setConcept(protoConcept)).build();
+                    .setEntityType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putEntityType(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putEntityType(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putEntityType(label));
         }
     }
 
@@ -308,14 +291,14 @@ public class TransactionTest {
             verify(server.requestListener()).onNext(any()); // The open request
 
             ConceptProto.Concept protoConcept = ConceptProto.Concept.newBuilder()
-                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATIONSHIP_TYPE).build();
+                    .setId(id.getValue()).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION_TYPE).build();
 
             Transaction.Res response = Transaction.Res.newBuilder()
-                    .setPutRelationshipTypeRes(SessionProto.Transaction.PutRelationshipType.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                    .setPutRelationTypeRes(SessionProto.Transaction.PutRelationType.Res.newBuilder()
+                            .setRelationType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRelationshipType(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRelationshipType(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRelationshipType(label));
         }
     }
 
@@ -333,10 +316,10 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutAttributeTypeRes(SessionProto.Transaction.PutAttributeType.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setAttributeType(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putAttributeType(label, dataType), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putAttributeType(label, dataType));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putAttributeType(label, dataType));
         }
     }
 
@@ -353,10 +336,10 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRoleRes(SessionProto.Transaction.PutRole.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setRole(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRole(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRole(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRole(label));
         }
     }
 
@@ -375,10 +358,10 @@ public class TransactionTest {
 
             Transaction.Res response = Transaction.Res.newBuilder()
                     .setPutRuleRes(SessionProto.Transaction.PutRule.Res.newBuilder()
-                            .setConcept(protoConcept)).build();
+                            .setRule(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.putRule(label, when, then), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.putRule(label, when, then));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.putRule(label, when, then));
         }
     }
 
@@ -397,7 +380,7 @@ public class TransactionTest {
                             .setConcept(protoConcept)).build();
             server.setResponse(RequestBuilder.Transaction.getConcept(id), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.getConcept(id));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.getConcept(id));
         }
     }
 
@@ -431,11 +414,11 @@ public class TransactionTest {
 
             SessionProto.Transaction.Res response = SessionProto.Transaction.Res.newBuilder()
                     .setGetSchemaConceptRes(SessionProto.Transaction.GetSchemaConcept.Res.newBuilder()
-                            .setConcept(protoConcept))
+                            .setSchemaConcept(protoConcept))
                     .build();
             server.setResponse(RequestBuilder.Transaction.getSchemaConcept(label), response);
 
-            assertEquals(ConceptReader.concept(protoConcept, tx), tx.getSchemaConcept(label));
+            assertEquals(RemoteConcept.of(protoConcept, tx), tx.getSchemaConcept(label));
         }
     }
 
@@ -491,17 +474,6 @@ public class TransactionTest {
     @Test
     public void whenAbortingTheTransaction_EnsureItIsFlaggedAsClosed(){
         assertTransactionClosedAfterAction(GraknTx::abort);
-    }
-
-    @Test
-    public void whenDeletingTheTransaction_CallDeleteOverGrpc(){
-        KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(KEYSPACE.getValue());
-
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-            tx.admin().delete();
-        }
-
-        verify(server.keyspaceService()).delete(eq(request), any());
     }
 
     private void assertTransactionClosedAfterAction(Consumer<GraknTx> action){

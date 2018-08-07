@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -25,7 +25,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Iterables;
@@ -186,8 +186,8 @@ public class ReasoningTest {
         QueryBuilder qb = reflexiveRelation.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$x) isa relation1; get;";
         String queryString2 = "match (role1:$x, role2:$y) isa relation1; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(1, answers.size());
         assertEquals(4, answers2.size());
@@ -201,8 +201,8 @@ public class ReasoningTest {
         QueryBuilder qb = reflexiveSymmetricRelation.tx().graql().infer(true);
         String queryString = "match (symmetricRole: $x, symmetricRole: $x) isa relation1; get;";
         String queryString2 = "match (symmetricRole: $x, symmetricRole: $y) isa relation1; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(2, answers.size());
         assertEquals(8, answers2.size());
@@ -215,7 +215,7 @@ public class ReasoningTest {
     public void generatingMultipleIsaEdges() {
         QueryBuilder qb = typeDerivation.tx().graql().infer(true);
         String queryString = "match $x isa derivedEntity; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
@@ -225,9 +225,9 @@ public class ReasoningTest {
         String queryString = "match $x isa derivedEntity; get;";
         String queryString2 = "match $x isa! derivedEntity; get;";
         String queryString3 = "match $x isa directDerivedEntity; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 2);
         assertEquals(answers3.size(), 1);
@@ -239,9 +239,9 @@ public class ReasoningTest {
         String queryString = "match ($x, $y) isa derivedRelation; get;";
         String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
         String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 2);
         assertEquals(answers3.size(), 1);
@@ -251,7 +251,7 @@ public class ReasoningTest {
     public void queryingForGenericType_ruleDefinesNewType() {
         QueryBuilder qb = typeDerivation.tx().graql().infer(true);
         String queryString = "match $x isa $type; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 4);
         answers.forEach(ans -> assertEquals(ans.size(), 2));
     }
@@ -261,8 +261,8 @@ public class ReasoningTest {
         QueryBuilder qb = typeDerivationFromRelations.tx().graql().infer(true);
         String queryString = "match $x isa baseEntity; get;";
         String queryString2 = "match $x isa derivedEntity; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), 2);
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
@@ -273,8 +273,8 @@ public class ReasoningTest {
         QueryBuilder qb = typeDerivationFromAttribute.tx().graql().infer(true);
         String queryString = "match $x isa baseEntity; get;";
         String queryString2 = "match $x isa derivedEntity; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), 1);
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
@@ -287,8 +287,8 @@ public class ReasoningTest {
         QueryBuilder qb = freshEntityDerivation.tx().graql().infer(true);
         String queryString = "match $x isa baseEntity; get;";
         String queryString2 = "match $x isa derivedEntity; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), answers2.size());
         assertFalse(answers.containsAll(answers2));
         assertFalse(answers2.containsAll(answers));
@@ -302,8 +302,8 @@ public class ReasoningTest {
         QueryBuilder iqb = freshEntityDerivationFromRelations.tx().graql().infer(true);
         String queryString = "match $x isa derivedEntity; get;";
         String explicitQuery = "match $x isa baseEntity; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(explicitQuery).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitQuery).execute();
 
         assertEquals(answers2.size(), 3);
         assertTrue(!answers2.containsAll(answers));
@@ -315,7 +315,7 @@ public class ReasoningTest {
     public void generatingFreshRelation() {
         QueryBuilder qb = freshRelationDerivation.tx().graql().infer(true);
         String queryString = "match $x isa baseRelation; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 3);
     }
 
@@ -324,7 +324,7 @@ public class ReasoningTest {
         QueryBuilder iqb = test7.tx().graql().infer(true);
         QueryBuilder qb = test7.tx().graql().infer(false);
         String queryString = "match $x isa relation1; limit 10; get;";
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 10);
         assertEquals(answers.size(), qb.<GetQuery>parse(queryString).execute().size());
     }
@@ -333,23 +333,23 @@ public class ReasoningTest {
     public void roleUnificationWithRoleHierarchiesInvolved() {
         QueryBuilder qb = test8.tx().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertThat(answers.stream().collect(toSet()), empty());
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        assertThat(answers, empty());
     }
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRepeatingRoleTypes() {
         QueryBuilder qb = test9.tx().graql().infer(true);
         String queryString = "match (role1:$x, role1:$y) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        assertThat(answers.stream().collect(toSet()), empty());
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        assertThat(answers, empty());
     }
 
     @Test //Expected result: The query should return a single match
     public void roleUnificationWithLessRelationPlayersInQueryThanHead() {
         QueryBuilder qb = test9.tx().graql().infer(true);
         String queryString = "match (role1:$x) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
@@ -361,7 +361,7 @@ public class ReasoningTest {
     public void transRelationWithEntityGuardsAtBothEnds() {
         QueryBuilder qb = test10.tx().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
@@ -376,7 +376,7 @@ public class ReasoningTest {
     public void circularRuleDependencies() {
         QueryBuilder qb = test12.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
     }
 
@@ -384,7 +384,7 @@ public class ReasoningTest {
     public void rulesInteractingWithTypeHierarchy() {
         QueryBuilder qb = test13.tx().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
@@ -393,9 +393,9 @@ public class ReasoningTest {
         QueryBuilder qb = test14.tx().graql().infer(true);
 
         String queryString = "match $x isa entity1, has resource $y; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         String queryString2 = "match $x isa resource; get;";
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 1);
@@ -406,7 +406,7 @@ public class ReasoningTest {
         QueryBuilder qb = test14.tx().graql().infer(true);
 
         String queryString = "match $x isa entity1;($x, $y); get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
         assertEquals(answers.size(), 3);
         assertEquals(answers.stream().filter(answer -> answer.get("y").isAttribute()).count(), 2);
@@ -418,15 +418,15 @@ public class ReasoningTest {
     public void reusingResources_usingExistingResourceToDefineSubResource() {
         QueryBuilder qb = test14.tx().graql().infer(true);
         String queryString = "match $x isa entity1, has subResource $y;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
 
         String queryString2 = "match $x isa subResource;";
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 1);
         assertTrue(answers2.iterator().next().get(var("x")).isAttribute());
         String queryString3 = "match $x isa resource; $y isa subResource;";
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
         assertEquals(answers3.size(), 1);
 
         assertTrue(answers3.iterator().next().get(var("x")).isAttribute());
@@ -438,7 +438,7 @@ public class ReasoningTest {
         QueryBuilder qb = test14.tx().graql().infer(true);
 
         VarPattern has = var("x").has(Label.of("resource"), var("y"), var("r"));
-        List<Answer> answers = qb.match(has).get().execute();
+        List<ConceptMap> answers = qb.match(has).get().execute();
         assertEquals(answers.size(), 3);
         answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));
     }
@@ -458,8 +458,8 @@ public class ReasoningTest {
         ).get();
 
 
-        Set<Answer> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
-        Set<Answer> resultsWithInference = query.apply(withInference).stream().collect(toSet());
+        Set<ConceptMap> resultsWithoutInference = query.apply(withoutInference).stream().collect(toSet());
+        Set<ConceptMap> resultsWithInference = query.apply(withInference).stream().collect(toSet());
 
         assertThat(resultsWithoutInference, not(empty()));
         assertThat(Sets.difference(resultsWithoutInference, resultsWithInference), empty());
@@ -470,7 +470,7 @@ public class ReasoningTest {
         QueryBuilder qb = test14.tx().graql().infer(true);
 
         String queryString = "match $x isa entity1, has resource $y; $z isa relation; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
         answers.forEach(ans ->
                 {
@@ -481,7 +481,7 @@ public class ReasoningTest {
         );
 
         String queryString2 = "match $x isa relation, has resource $y; get;";
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
                 {
@@ -495,7 +495,7 @@ public class ReasoningTest {
     public void reusingResources_definingResourceThroughOtherResourceWithConditionalValue() {
         QueryBuilder qb = test15.tx().graql().infer(true);
         String queryString = "match $x has boolean-resource $r; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
@@ -506,9 +506,9 @@ public class ReasoningTest {
         String queryString2 = "match $x has resource $r; get;";
         GetQuery query = qb.parse(queryString);
         GetQuery query2 = qb.parse(queryString2);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
-        List<Answer> requeriedAnswers = query.execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
+        List<ConceptMap> requeriedAnswers = query.execute();
         assertEquals(answers.size(), 2);
         assertEquals(answers.size(), answers2.size());
         assertEquals(answers.size(), requeriedAnswers.size());
@@ -533,12 +533,12 @@ public class ReasoningTest {
         GetQuery query5 = qb.parse(queryString5);
         GetQuery query6 = qb.parse(queryString6);
 
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
-        List<Answer> answers3 = query3.execute();
-        List<Answer> answers4 = query4.execute();
-        List<Answer> answers5 = query5.execute();
-        List<Answer> answers6 = query6.execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
+        List<ConceptMap> answers3 = query3.execute();
+        List<ConceptMap> answers4 = query4.execute();
+        List<ConceptMap> answers5 = query5.execute();
+        List<ConceptMap> answers6 = query6.execute();
 
         assertEquals(answers.size(), 2);
         assertEquals(answers2.size(), 1);
@@ -566,12 +566,12 @@ public class ReasoningTest {
         GetQuery query5 = qb.parse(queryString5);
         GetQuery query6 = qb.parse(queryString6);
 
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
-        List<Answer> answers3 = query3.execute();
-        List<Answer> answers4 = query4.execute();
-        List<Answer> answers5 = query5.execute();
-        List<Answer> answers6 = query6.execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
+        List<ConceptMap> answers3 = query3.execute();
+        List<ConceptMap> answers4 = query4.execute();
+        List<ConceptMap> answers5 = query5.execute();
+        List<ConceptMap> answers6 = query6.execute();
 
         assertEquals(answers.size(), 3);
         assertEquals(answers2.size(), 3);
@@ -589,9 +589,9 @@ public class ReasoningTest {
                 "$y isa entity1;" +
                 "(role1: $x, role2: $y) isa relation1;";
         String queryString2 = queryString + "$y has name 'a';";
-        List<Answer> answers = qb.<GetQuery>parse(queryString + " get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + " get;").execute();
         assertEquals(answers.size(), 2);
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
         assertEquals(answers2.size(), 2);
     }
 
@@ -604,9 +604,9 @@ public class ReasoningTest {
                 "(role1: $x, role2: $y) isa relation1;";
         String queryString2 = queryString + "$y has name 'a';";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + " get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + " get;").execute();
         assertEquals(answers.size(), 1);
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
         assertEquals(answers2.size(), 1);
     }
 
@@ -619,9 +619,9 @@ public class ReasoningTest {
                 "(role1: $x, role2: $y) isa relation1;";
         String queryString2 = queryString + "$y has name 'a';";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
         assertEquals(answers.size(), 2);
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2 + "get;").execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2 + "get;").execute();
         assertEquals(answers2.size(), 2);
     }
 
@@ -633,9 +633,9 @@ public class ReasoningTest {
                 "$y isa entity1;" +
                 "(role1: $x, role2: $y) isa relation1;";
         String queryString2 = queryString + "$y has name 'a';";
-        List<Answer> answers = qb.<GetQuery>parse(queryString + " get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + " get;").execute();
         assertEquals(answers.size(), 2);
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
         assertEquals(answers2.size(), 2);
     }
 
@@ -648,9 +648,9 @@ public class ReasoningTest {
                 "(role1: $x, role2: $y) isa relation1;";
         String queryString2 = queryString + "$y has name 'a';";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + " get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + " get;").execute();
         assertEquals(answers.size(), 1);
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
         assertEquals(answers2.size(), 1);
     }
 
@@ -663,9 +663,9 @@ public class ReasoningTest {
                 "(role1: $x, role2: $y) isa relation1;";
         String queryString2 = queryString + "$y has name 'a';";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + " get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + " get;").execute();
         assertEquals(answers.size(), 2);
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2 + " get;").execute();
         assertEquals(answers2.size(), 2);
     }
 
@@ -674,8 +674,8 @@ public class ReasoningTest {
         QueryBuilder qb = test20.tx().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
         String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), 1);
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
@@ -686,8 +686,8 @@ public class ReasoningTest {
         QueryBuilder qb = test21.tx().graql().infer(true);
         String queryString = "match $x isa entity1; get;";
         String queryString2 = "match $x isa sub-entity1; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers.size(), 1);
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
@@ -697,7 +697,7 @@ public class ReasoningTest {
     public void reasoningWithRepeatingRoles(){
         QueryBuilder qb = test22.tx().graql().infer(true);
         String queryString = "match (friend:$x1, friend:$x2) isa knows-trans; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 16);
     }
 
@@ -705,9 +705,9 @@ public class ReasoningTest {
     public void reasoningWithLimitHigherThanNumberOfResults_ReturnsConsistentResults(){
         QueryBuilder qb = test23.tx().graql().infer(true);
         String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60; get;";
-        List<Answer> oldAnswers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> oldAnswers = qb.<GetQuery>parse(queryString).execute();
         for(int i = 0; i < 5 ; i++) {
-            List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
             assertEquals(answers.size(), 6);
             assertTrue(answers.containsAll(oldAnswers));
             assertTrue(oldAnswers.containsAll(answers));
@@ -719,8 +719,8 @@ public class ReasoningTest {
         QueryBuilder qb = test24.tx().graql().infer(true);
         QueryBuilder qbm = test24.tx().graql().infer(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation1; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qbm.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qbm.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 9);
         assertEquals(answers2.size(), 9);
         assertTrue(answers.containsAll(answers2));
@@ -731,7 +731,7 @@ public class ReasoningTest {
     public void reasoningWithEntityTypes_WithNeqProperty() {
         QueryBuilder qb = test24.tx().graql().infer(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 6);
     }
 
@@ -739,7 +739,7 @@ public class ReasoningTest {
     public void reasoningWithResourceValueComparison() {
         QueryBuilder qb = test25.tx().graql().infer(true);
         String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 10);
     }
 
@@ -748,7 +748,7 @@ public class ReasoningTest {
     public void reasoningWithReifiedRelations() {
         QueryBuilder qb = test26.tx().graql().infer(true);
         String queryString = "match (role1: $x1, role2: $x2) isa relation2; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
 
         String queryString2 = "match " +
@@ -758,7 +758,7 @@ public class ReasoningTest {
                 "$rel1 (role1: $p, role2: $b) isa relation1;" +
                 "$rel2 has res2 'value2';" +
                 "$rel2 (role1: $c, role2: $b) isa relation1; get;";
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 2);
         Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
         answers2.forEach(ans -> assertTrue(ans.vars().containsAll(vars)));
@@ -769,8 +769,8 @@ public class ReasoningTest {
         QueryBuilder qb = test27.tx().graql().infer(true);
         String queryString = "match (related-state: $s) isa holds; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> exact = qb.<GetQuery>parse("match $s isa state, has name 's2'; get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> exact = qb.<GetQuery>parse("match $s isa state, has name 's2'; get;").execute();
         assertTrue(answers.containsAll(exact));
         assertTrue(exact.containsAll(answers));
     }
@@ -807,7 +807,7 @@ public class ReasoningTest {
                 "($b, $c);" +
                 "get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 4);
         answers.forEach(ans -> assertEquals(ans.size(), 3));
     }
@@ -822,17 +822,17 @@ public class ReasoningTest {
                 pattern +
                 pattern2 +
                 "get;";
-        List<Answer> partialAnswers = qb.match(Graql.parser().parsePatterns(pattern)).get().execute();
+        List<ConceptMap> partialAnswers = qb.match(Graql.parser().parsePatterns(pattern)).get().execute();
 
         //single relation that satisfies the types
         assertEquals(partialAnswers.size(), 1);
 
-        List<Answer> partialAnswers2 = qb.match(Graql.parser().parsePatterns(pattern2)).get().execute();
+        List<ConceptMap> partialAnswers2 = qb.match(Graql.parser().parsePatterns(pattern2)).get().execute();
         //(4 db relations  + 1 inferred + 1 resource) x 2 for variable swap
         assertEquals(partialAnswers2.size(), 12);
 
         //1 relation satisfying ($a, $b) with types x (4 db relations + 1 inferred + 1 resource) x 2 for var change
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), partialAnswers.size() * partialAnswers2.size());
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
@@ -852,7 +852,7 @@ public class ReasoningTest {
                 "($a, $b);" +
                 "};";
 
-        List<Answer> entryAnswers = qb.match(Graql.parser().parsePatterns(entryPattern)).get().execute();
+        List<ConceptMap> entryAnswers = qb.match(Graql.parser().parsePatterns(entryPattern)).get().execute();
         assertEquals(entryAnswers.size(), 3);
 
         String partialPattern = "{" +
@@ -861,14 +861,14 @@ public class ReasoningTest {
                 "($b, $c);" +
                 "};";
 
-        List<Answer> partialAnswers = qb.match(Graql.parser().parsePatterns(partialPattern)).get().execute();
+        List<ConceptMap> partialAnswers = qb.match(Graql.parser().parsePatterns(partialPattern)).get().execute();
         assertEquals(partialAnswers.size(), 4);
         String queryString = "match " +
                 partialPattern +
                 "($c, $d);" +
                 "get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 7);
         answers.forEach(ans -> assertEquals(ans.size(), 4));
     }
@@ -877,8 +877,8 @@ public class ReasoningTest {
     public void whenAppendingRolePlayers_noNewRelationsAreCreated(){
         QueryBuilder qb = appendingRPsContext.tx().graql();
 
-        List<Answer> answers = qb.infer(false).<GetQuery>parse("match $r isa relation; get;").execute();
-        List<Answer> inferredAnswers = qb.infer(true).<GetQuery>parse("match $r isa relation; get;").execute();
+        List<ConceptMap> answers = qb.infer(false).<GetQuery>parse("match $r isa relation; get;").execute();
+        List<ConceptMap> inferredAnswers = qb.infer(true).<GetQuery>parse("match $r isa relation; get;").execute();
         assertEquals(answers, inferredAnswers);
     }
 
@@ -886,7 +886,7 @@ public class ReasoningTest {
     @Test
     public void whenQueryingAppendedRelations_rulesAreMatchedCorrectly(){
         QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
-        Set<Answer> variants = Stream.of(
+        Set<ConceptMap> variants = Stream.of(
                 Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;").execute()),
                 Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, inferredRole: $z ); $x has resource 'value'; get;").execute()),
                 Iterables.getOnlyElement(qb.<GetQuery>parse("match $r (someRole: $x, yetAnotherRole: $y, andYetAnotherRole: $y, inferredRole: $z); get;").execute()),
@@ -895,7 +895,7 @@ public class ReasoningTest {
                 .map(ans-> ans.project(Sets.newHashSet(var("r"))))
                 .collect(Collectors.toSet());
 
-        List<Answer> answers = qb.<GetQuery>parse("match $r isa relation; get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse("match $r isa relation; get;").execute();
         assertCollectionsEqual(variants, answers);
     }
 
@@ -903,7 +903,7 @@ public class ReasoningTest {
     public void whenRuleContainsRelationRequiringAppend_bodyIsRewrittenCorrectly(){
         QueryBuilder qb = appendingRPsContext.tx().graql().infer(true);
 
-        List<Answer> answers = qb.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;").execute();
         assertEquals(2, answers.size());
     }
 
@@ -915,7 +915,7 @@ public class ReasoningTest {
                 "$x != $y;";
         String queryString = baseQueryString + "$y has name 'c'; get;";
 
-        List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+        List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
         assertEquals(baseAnswers.size(), 6);
         baseAnswers.forEach(ans -> {
             assertEquals(ans.size(), 2);
@@ -927,8 +927,8 @@ public class ReasoningTest {
                 "$y has name 'c';" +
                 "{$x has name 'a';} or {$x has name 'b';}; get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(explicitString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(explicitString).execute();
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
     }
@@ -951,7 +951,7 @@ public class ReasoningTest {
                 "(role1: $x, role2: $z) isa binary-base;" +
                 "$y != $z;";
 
-        List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+        List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
         assertEquals(baseAnswers.size(), 18);
         baseAnswers.forEach(ans -> {
             assertEquals(ans.size(), 3);
@@ -968,8 +968,8 @@ public class ReasoningTest {
                 "{$y has name 'c';$z has name 'a';} or " +
                 "{$y has name 'c';$z has name 'b';};";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + "get;").execute();
-        List<Answer> answers2 = qb.infer(false).<GetQuery>parse(explicitString + "get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+        List<ConceptMap> answers2 = qb.infer(false).<GetQuery>parse(explicitString + "get;").execute();
         assertTrue(baseAnswers.containsAll(answers));
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
@@ -993,7 +993,7 @@ public class ReasoningTest {
                 "(role1: $y, role2: $z) isa binary-base;" +
                 "$x != $z;";
 
-        List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+        List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
         assertEquals(baseAnswers.size(), 18);
         baseAnswers.forEach(ans -> {
             assertEquals(ans.size(), 3);
@@ -1011,8 +1011,8 @@ public class ReasoningTest {
                 "{$y has name 'c';$z has name 'c';} or " +
                 "{$y has name 'c';$z has name 'b';};";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + "get;").execute();
-        List<Answer> answers2 = qb.infer(false).<GetQuery>parse(explicitString + "get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+        List<ConceptMap> answers2 = qb.infer(false).<GetQuery>parse(explicitString + "get;").execute();
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
     }
@@ -1043,7 +1043,7 @@ public class ReasoningTest {
                 "$y1 != $z1;" +
                 "$y2 != $z2;";
 
-        List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+        List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
         assertEquals(baseAnswers.size(), 108);
         baseAnswers.forEach(ans -> {
             assertEquals(ans.size(), 5);
@@ -1053,7 +1053,7 @@ public class ReasoningTest {
 
         String queryString = baseQueryString + "$x has name 'a';";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
         assertEquals(answers.size(), 36);
         answers.forEach(ans -> {
             assertEquals(ans.size(), 5);
@@ -1082,7 +1082,7 @@ public class ReasoningTest {
                 "(role1: $x, role2: $z1) isa binary-base;" +
                 "(role1: $y, role2: $z2) isa binary-base;";
 
-        List<Answer> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
+        List<ConceptMap> baseAnswers = qb.<GetQuery>parse(baseQueryString + "get;").execute();
         assertEquals(baseAnswers.size(), 36);
         baseAnswers.forEach(ans -> {
             assertEquals(ans.size(), 4);
@@ -1092,7 +1092,7 @@ public class ReasoningTest {
 
         String queryString = baseQueryString + "$x has name 'a';";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString + "get;").execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString + "get;").execute();
         assertEquals(answers.size(), 12);
         answers.forEach(ans -> {
             assertEquals(ans.size(), 4);
@@ -1123,9 +1123,9 @@ public class ReasoningTest {
                 "$y has name 'a';" +
                 "get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
 
         assertEquals(answers.size(), 3);
         answers.forEach(ans -> {
@@ -1163,16 +1163,16 @@ public class ReasoningTest {
                 "$b has name 'b';" +
                 "get;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 27);
 
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 9);
 
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
         assertEquals(answers3.size(), 12);
 
-        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        List<ConceptMap> answers4 = qb.<GetQuery>parse(queryString4).execute();
         assertEquals(answers4.size(), 4);
     }
 
@@ -1190,8 +1190,8 @@ public class ReasoningTest {
                 "$r1 label 'role1';" +
                 "get $a, $b, $r2;";
 
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
-        List<Answer> equivalentAnswers = qb.<GetQuery>parse(equivalentQueryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> equivalentAnswers = qb.<GetQuery>parse(equivalentQueryString).execute();
         assertEquals(answers.size(), 18);
         assertTrue(CollectionUtils.isEqualCollection(answers, equivalentAnswers));
 
@@ -1205,8 +1205,8 @@ public class ReasoningTest {
                 "$r1 label 'role';" +
                 "get $a, $b, $r2;";
 
-        List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        List<Answer> equivalentAnswers2 = qb.<GetQuery>parse(equivalentQueryString2).execute();
+        List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> equivalentAnswers2 = qb.<GetQuery>parse(equivalentQueryString2).execute();
         assertEquals(answers2.size(), 27);
         assertTrue(CollectionUtils.isEqualCollection(answers2, equivalentAnswers2));
 
@@ -1221,8 +1221,8 @@ public class ReasoningTest {
                 "(role1: $a, role2: $b) isa binary-base;" +
                 "get;";
 
-        List<Answer> answers3 = qb.<GetQuery>parse(queryString3).execute();
-        List<Answer> equivalentAnswers3 = qb.<GetQuery>parse(equivalentQueryString3).execute();
+        List<ConceptMap> answers3 = qb.<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> equivalentAnswers3 = qb.<GetQuery>parse(equivalentQueryString3).execute();
         assertEquals(answers3.size(), 9);
         assertTrue(CollectionUtils.isEqualCollection(answers3, equivalentAnswers3));
 
@@ -1231,7 +1231,7 @@ public class ReasoningTest {
                 "($r1: $a, $r2: $b) isa binary-base;" +
                 "get;";
 
-        List<Answer> answers4 = qb.<GetQuery>parse(queryString4).execute();
+        List<ConceptMap> answers4 = qb.<GetQuery>parse(queryString4).execute();
         assertEquals(answers4.size(), 63);
     }
 
@@ -1304,11 +1304,11 @@ public class ReasoningTest {
         for(int i = 2; i <= arity ; i++) pattern = pattern.rel(var("r" + i), "a" + i);
         pattern = pattern.isa(label);
 
-        List<Answer> answers = qb.match(pattern.and(resourcePattern)).get().execute();
+        List<ConceptMap> answers = qb.match(pattern.and(resourcePattern)).get().execute();
         assertEquals(answers.size(), answerCombinations(arity-1, conceptDOF));
 
         //We get extra conceptDOF degrees of freedom by removing the resource constraint on $a1 and the set is symmetric.
-        List<Answer> answers2 = qb.match(pattern).get().execute();
+        List<ConceptMap> answers2 = qb.match(pattern).get().execute();
         assertEquals(answers2.size(), answerCombinations(arity-1, conceptDOF) * conceptDOF);
 
 
@@ -1317,7 +1317,7 @@ public class ReasoningTest {
         for(int i = 1; i <= arity ; i++) generalPattern = generalPattern.rel(var("r" + i), "a" + i);
         generalPattern = generalPattern.isa(label);
 
-        List<Answer> answers3 = qb.match(generalPattern).get().execute();
+        List<ConceptMap> answers3 = qb.match(generalPattern).get().execute();
         assertEquals(answers3.size(), answerCombinations(arity, conceptDOF));
     }
 
@@ -1369,7 +1369,7 @@ public class ReasoningTest {
         QueryBuilder qb = test30.tx().graql().infer(true);
 
         String queryString = "match $p isa pair, has name 'ff'; get;";
-        List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 16);
     }
 }

@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.factory;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
@@ -47,7 +46,6 @@ public class GraknTxFactoryBuilderTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
-    private final static String ENGINE_URL = Grakn.IN_MEMORY;
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule
@@ -67,7 +65,6 @@ public class GraknTxFactoryBuilderTest {
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
         //Factory 1 & 2 Definition
         when(session.keyspace()).thenReturn(KEYSPACE);
-        when(session.uri()).thenReturn(ENGINE_URL);
         when(session.config()).thenReturn(TEST_CONFIG);
         TxFactory mgf1 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
         TxFactory mgf2 = GraknTxFactoryBuilder.getInstance().getFactory(session, false);

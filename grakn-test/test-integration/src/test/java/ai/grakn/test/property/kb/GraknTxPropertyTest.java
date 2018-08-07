@@ -1,26 +1,24 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.property.kb;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -28,9 +26,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -38,7 +36,6 @@ import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.FromTxGenerator.FromTx;
 import ai.grakn.generator.GraknTxs.Open;
-import ai.grakn.generator.MetaLabels;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
@@ -61,7 +58,6 @@ import java.util.stream.Stream;
 import static ai.grakn.generator.GraknTxs.allConceptsFrom;
 import static ai.grakn.generator.GraknTxs.allSchemaElementsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
-import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -71,11 +67,11 @@ import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
+
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknTxPropertyTest {
@@ -247,31 +243,32 @@ public class GraknTxPropertyTest {
         assertEquals(graph, graph.admin());
     }
 
-    @Property
-    public void whenCallingClear_TheGraphCloses(@Open GraknTx graph) {
-        graph.admin().delete();
-        assertTrue(graph.isClosed());
-    }
-
-    @Property
-    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
-        graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).transaction(GraknTxType.WRITE);
-        List<Concept> concepts = allConceptsFrom(graph);
-        concepts.forEach(concept -> {
-            assertTrue(concept.isSchemaConcept());
-            assertTrue(isMetaLabel(concept.asSchemaConcept().label()));
-        });
-        graph.close();
-    }
-
-    @Property
-    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
-        graph.admin().delete();
-        graph = Grakn.session(Grakn.IN_MEMORY, graph.keyspace()).transaction(GraknTxType.WRITE);
-        assertNotNull(graph.getSchemaConcept(label));
-        graph.close();
-    }
+    //TODO: move the following 3 tests to Grakn.Keyspace tests!
+//    @Property
+//    public void whenCallingDelete_TheTransactionCloses(@Open GraknTx graph) {
+//        graph.admin().delete();
+//        assertTrue(graph.isClosed());
+//    }
+//
+//    @Property
+//    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknTx graph) {
+//        graph.admin().delete();
+//        graph = EmbeddedGraknSession.inMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
+//        List<Concept> concepts = allConceptsFrom(graph);
+//        concepts.forEach(concept -> {
+//            assertTrue(concept.isSchemaConcept());
+//            assertTrue(isMetaLabel(concept.asSchemaConcept().label()));
+//        });
+//        graph.close();
+//    }
+//
+//    @Property
+//    public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknTx graph, @From(MetaLabels.class) Label label) {
+//        graph.admin().delete();
+//        graph = EmbeddedGraknSession.inMemory( graph.keyspace()).transaction(GraknTxType.WRITE);
+//        assertNotNull(graph.getSchemaConcept(label));
+//        graph.close();
+//    }
 
     @Property
     public void whenCallingIsClosedOnAClosedGraph_ReturnTrue(@Open(false) GraknTx graph) {

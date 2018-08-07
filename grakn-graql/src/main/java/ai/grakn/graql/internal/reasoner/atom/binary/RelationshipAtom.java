@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
@@ -33,7 +33,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -44,7 +44,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
@@ -200,7 +200,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public String toString(){
         String typeString = getSchemaConcept() != null?
                 getSchemaConcept().label().getValue() :
-                "{" + inferPossibleTypes(new QueryAnswer()).stream().map(rt -> rt.label().getValue()).collect(Collectors.joining(", ")) + "}";
+                "{" + inferPossibleTypes(new ConceptMapImpl()).stream().map(rt -> rt.label().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
                 (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
@@ -236,10 +236,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .collect(Collectors.toSet());
     }
 
-    private Answer getRoleSubstitution(){
+    private ConceptMap getRoleSubstitution(){
         Map<Var, Concept> roleSub = new HashMap<>();
         getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
-        return new QueryAnswer(roleSub);
+        return new ConceptMapImpl(roleSub);
     }
 
     @Override
@@ -519,11 +519,11 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
+
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof RelationshipAtom)) return false;
-
         RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
-        RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new QueryAnswer());
+        RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
 
         //rule head atom is applicable if it is unifiable
         return headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
@@ -544,7 +544,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    private Set<Type> inferPossibleEntityTypePlayers(Answer sub){
+    private Set<Type> inferPossibleEntityTypePlayers(ConceptMap sub){
         return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
                 .flatMap(e -> {
                     Set<Role> rs = e.getKey().roles().collect(toSet());
@@ -556,7 +556,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     /**
      * @return a map of relationships and corresponding roles that could be played by this atom
      */
-    private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(Answer sub){
+    private Multimap<RelationshipType, Role> inferPossibleRelationConfigurations(ConceptMap sub){
         Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(toSet());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
@@ -589,7 +589,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public ImmutableList<SchemaConcept> getPossibleTypes(){ return inferPossibleTypes(new QueryAnswer());}
+    public ImmutableList<SchemaConcept> getPossibleTypes(){ return inferPossibleTypes(new ConceptMapImpl());}
 
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
@@ -598,7 +598,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
      * @return list of {@link RelationshipType}s this atom can have ordered by the number of compatible {@link Role}s
      */
-    private ImmutableList<SchemaConcept> inferPossibleTypes(Answer sub) {
+    private ImmutableList<SchemaConcept> inferPossibleTypes(ConceptMap sub) {
         if (possibleTypes == null) {
             if (getSchemaConcept() != null) return ImmutableList.of(getSchemaConcept());
 
@@ -653,7 +653,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * @param sub extra instance information to aid entity type inference
      * @return either this if relation type can't be inferred or a fresh relationship with inferred relationship type
      */
-    private RelationshipAtom inferRelationshipType(Answer sub){
+    private RelationshipAtom inferRelationshipType(ConceptMap sub){
         if (getTypePredicate() != null) return this;
         if (sub.containsVar(getPredicateVariable())) return addType(sub.get(getPredicateVariable()).asType());
         List<SchemaConcept> relationshipTypes = inferPossibleTypes(sub);
@@ -662,14 +662,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public RelationshipAtom inferTypes(Answer sub) {
+    public RelationshipAtom inferTypes(ConceptMap sub) {
         return this
                 .inferRelationshipType(sub)
                 .inferRoles(sub);
     }
 
     @Override
-    public List<Atom> atomOptions(Answer sub) {
+    public List<Atom> atomOptions(ConceptMap sub) {
         return this.inferPossibleTypes(sub).stream()
                 .map(this::addType)
                 .map(at -> at.inferRoles(sub))
@@ -708,7 +708,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      * attempt to infer role types of this relation and return a fresh relationship with inferred role types
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
      */
-    private RelationshipAtom inferRoles(Answer sub){
+    private RelationshipAtom inferRoles(ConceptMap sub){
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
@@ -984,10 +984,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public Stream<Answer> materialise(){
+    public Stream<ConceptMap> materialise(){
         RelationshipType relationType = getSchemaConcept().asRelationshipType();
         Multimap<Role, Var> roleVarMap = getRoleVarMap();
-        Answer substitution = getParentQuery().getSubstitution();
+        ConceptMap substitution = getParentQuery().getSubstitution();
 
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
         Relationship relationship = substitution.containsVar(getVarName())?
@@ -996,10 +996,10 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
 
-        Answer relationSub = getRoleSubstitution().merge(
+        ConceptMap relationSub = getRoleSubstitution().merge(
                 getVarName().isUserDefinedName()?
-                        new QueryAnswer(ImmutableMap.of(getVarName(), relationship)) :
-                        new QueryAnswer()
+                        new ConceptMapImpl(ImmutableMap.of(getVarName(), relationship)) :
+                        new ConceptMapImpl()
         );
 
         return Stream.of(substitution.merge(relationSub));

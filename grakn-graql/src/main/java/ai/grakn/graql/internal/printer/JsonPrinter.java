@@ -1,28 +1,29 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.util.CommonUtil;
 import mjson.Json;
 
@@ -97,10 +98,16 @@ class JsonPrinter extends Printer<Json> {
         return json;
     }
 
-    //TODO: Implement JsonPrinter for ComputeAnswer properly!
     @Override
-    public Json computeAnswer(ComputeQuery.Answer computeAnswer) {
-        return object(computeAnswer);
+    protected Json conceptMap(ConceptMap answer) {
+        return map(answer.map());
+    }
+
+    @Override
+    protected Json conceptSetMeasure(ConceptSetMeasure answer) {
+        Json json = Json.object();
+        json.set(answer.measurement().toString(), collection(answer.set()));
+        return json;
     }
 
     @Override
