@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.inference;
@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.rule.SampleKBContext;
@@ -132,11 +132,11 @@ public class SNBInferenceTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get;";
 
         long startTime = System.nanoTime();
-        List<Answer> limitedAnswers = limitedQuery.execute();
+        List<ConceptMap> limitedAnswers = limitedQuery.execute();
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
         assertCollectionsEqual(answers, qb.<GetQuery>parse(explicitQuery).execute());
         assertTrue(answers.containsAll(limitedAnswers));
@@ -303,8 +303,8 @@ public class SNBInferenceTest {
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; get $x, $z;";
         Unifier unifier = new UnifierImpl(ImmutableMap.of(Graql.var("z"), Graql.var("y")));
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 =  iqb.<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 =  iqb.<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
         assertCollectionsEqual(answers, answers2);
     }
 

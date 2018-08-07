@@ -21,7 +21,6 @@ aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 variables      : VARIABLE (',' VARIABLE)* ;
 
 // GRAQL COMPUTE QUERY: OVERALL SYNTAX GRAMMAR =========================================================================
-// Author: Haikal Pribadi
 //
 // A compute query is composed of 3 things:
 // the 'compute' keyword, followed by a compute method, and a set of conditions (that may be optional)
@@ -53,7 +52,6 @@ computeCondition                : FROM      computeFromID
                                 ;
 
 // GRAQL COMPUTE QUERY: CONDITIONS GRAMMAR =============================================================================
-// Author: Haikal Pribadi
 //
 // The following are definitions of computeConditions for the Graql Compute Query
 // computeFromID and computeToID takes in a concept ID
@@ -72,18 +70,15 @@ computeArgs                     : computeArgsArray | computeArg ;
 computeArgsArray                : '[' computeArg (',' computeArg)* ']' ;
 computeArg                      : MIN_K         '='     INTEGER         # computeArgMinK
                                 | K             '='     INTEGER         # computeArgK
-                                | MEMBERS       '='     bool            # computeArgMembers
                                 | SIZE          '='     INTEGER         # computeArgSize
                                 | CONTAINS      '='     id              # computeArgContains
                                 ;
 
 aggregate      : identifier argument*             # customAgg
-               | '(' namedAgg (',' namedAgg)* ')' # selectAgg
                ;
 argument       : VARIABLE  # variableArgument
                | aggregate # aggregateArgument
                ;
-namedAgg       : aggregate 'as' identifier ;
 
 patterns       : (pattern ';')+ ;
 pattern        : varPattern                    # varPatternCase
@@ -150,7 +145,7 @@ identifier     : ID | STRING
                | MIN | MAX| MEDIAN | MEAN | STD | SUM | COUNT | PATH | CLUSTER
                | FROM | TO | OF | IN
                | DEGREE | K_CORE | CONNECTED_COMPONENT
-               | MIN_K | K | CONTAINS | MEMBERS | SIZE | WHERE
+               | MIN_K | K | CONTAINS | SIZE | WHERE
                ;
 
 datatype       : LONG_TYPE | DOUBLE_TYPE | STRING_TYPE | BOOLEAN_TYPE | DATE_TYPE ;
@@ -178,7 +173,6 @@ CONNECTED_COMPONENT : 'connected-component' ;
 MIN_K          : 'min-k' ;
 K              : 'k' ;
 CONTAINS       : 'contains' ;
-MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 USING          : 'using' ;
 WHERE          : 'where' ;

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.shell;
@@ -21,9 +21,11 @@ package ai.grakn.graql.shell;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.Streamable;
+import ai.grakn.graql.answer.Answer;
 import ai.grakn.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -77,6 +79,7 @@ public class GraqlShell implements AutoCloseable {
             LICENSE_COMMAND, CLEAN_COMMAND
     );
 
+    private final Keyspace keyspace;
     private final OutputFormat outputFormat;
     private final boolean infer;
     private ConsoleReader console;
@@ -84,6 +87,7 @@ public class GraqlShell implements AutoCloseable {
 
     private final HistoryFile historyFile;
 
+    private final Grakn client;
     private final GraknSession session;
     private GraknTx tx;
     private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
@@ -101,21 +105,21 @@ public class GraqlShell implements AutoCloseable {
      * Create a new Graql shell
      */
     public GraqlShell(
-            String historyFilename, GraknSession session, ConsoleReader console, PrintStream serr,
+            String historyFilename, Grakn client, Keyspace keyspace, ConsoleReader console, PrintStream serr,
             OutputFormat outputFormat, boolean infer
-
     ) throws IOException {
-
+        this.keyspace = keyspace;
         this.outputFormat = outputFormat;
         this.infer = infer;
         this.console = console;
-        this.session = session;
+        this.client = client;
+        this.session = client.session(keyspace);
         this.serr = serr;
         this.graqlCompleter = GraqlCompleter.create(session);
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = client.session(keyspace).transaction(GraknTxType.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -218,21 +222,14 @@ public class GraqlShell implements AutoCloseable {
         Printer<?> printer = outputFormat.getPrinter(displayAttributes);
 
         handleGraknExceptions(() -> {
-            Stream<Query<?>> queries = tx
+            Stream<Query<Answer>> queries = tx
                     .graql()
                     .infer(infer)
                     .parser()
                     .parseList(queryString);
 
             Iterable<String> results = () -> queries
-                    .flatMap(query -> {
-                        //TODO: remove this if check once all queries becomes streamable (nb: have stream() not implement Streamable<>)
-                        if (query instanceof Streamable) {
-                            return printer.toStream(((Streamable<?>) query).stream());
-                        } else {
-                            return Stream.of(printer.toString(query.execute()));
-                        }
-                    }).iterator();
+                    .flatMap(query -> printer.toStream(query.stream())).iterator();
 
             for (String result : results) {
                 console.println(result);
@@ -264,7 +261,7 @@ public class GraqlShell implements AutoCloseable {
         String line = console.readLine();
         if (line != null && line.equals("confirm")) {
             console.println("Cleaning...");
-            tx.admin().delete();
+            client.keyspaces().delete(keyspace);
             reopenTx();
         } else {
             console.println("Cancelling clean.");

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.parser;
@@ -31,7 +31,6 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -55,7 +54,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -207,14 +205,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Aggregate<? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
-        Set aggregates = ctx.namedAgg().stream().map(this::visitNamedAgg).collect(toSet());
-
-        // We can't handle cases when the aggregate types are wrong, because the user can provide custom aggregates
-        return Graql.select(aggregates);
-    }
-
-    @Override
     public Var visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
         return getVariable(ctx.VARIABLE());
     }
@@ -222,12 +212,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
     @Override
     public Aggregate<?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
         return visitAggregate(ctx.aggregate());
-    }
-
-    @Override
-    public NamedAggregate<?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
-        String name = visitIdentifier(ctx.identifier());
-        return visitAggregate(ctx.aggregate()).as(name);
     }
 
     @Override
@@ -699,9 +683,6 @@ class GraqlConstructor extends GraqlBaseVisitor {
 
             } else if (argContext instanceof GraqlParser.ComputeArgKContext) {
                 argList.add(Argument.k(getInteger(((GraqlParser.ComputeArgKContext) argContext).INTEGER())));
-
-            } else if (argContext instanceof GraqlParser.ComputeArgMembersContext) {
-                argList.add(Argument.members(visitBool(((GraqlParser.ComputeArgMembersContext) argContext).bool())));
 
             } else if (argContext instanceof GraqlParser.ComputeArgSizeContext) {
                 argList.add(Argument.size(getInteger(((GraqlParser.ComputeArgSizeContext) argContext).INTEGER())));

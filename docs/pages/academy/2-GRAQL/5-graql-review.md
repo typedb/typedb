@@ -42,9 +42,6 @@ Check in the graph visualiser that the bond has been correctly added. Double cli
 ### Exercise 4: Delete queries
 Delete the bond you have inserted in Exercise 3 from the knowledge graph.
 
-### Exercise 5: Ask
-Write a query that tells you whether a country named "Burundi" is in the knowledge graph.
-
 ### Exercise 6: Statistics
 Write a query to find the maximum risk value of a bond.
 Write both a `compute` query and an `aggregate` for the task.

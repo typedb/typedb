@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.migration.base;
@@ -21,9 +21,7 @@ package ai.grakn.migration.base;
 import ai.grakn.Keyspace;
 import ai.grakn.batch.BatchExecutorClient;
 import ai.grakn.batch.GraknClient;
-import ai.grakn.batch.GraknClientException;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
@@ -123,7 +121,6 @@ public class Migrator {
 
             subscribeToReportOutcome(failFast, loader, queriesExecuted);
 
-            checkKeyspace(graknClient);
             Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
             if (maxLines > -1) {
                 queryStream = queryStream.limit(maxLines);
@@ -155,16 +152,6 @@ public class Migrator {
                         .migrationFailure(error.getMessage());
             }
         });
-    }
-
-    private void checkKeyspace(GraknClient graknClient) {
-        try {
-            if (!graknClient.keyspace(keyspace.getValue()).isPresent()) {
-                throw GraknBackendException.noSuchKeyspace(keyspace);
-            }
-        } catch (GraknClientException e) {
-            throw GraknServerException.internalError(e.getMessage());
-        }
     }
 
     /**

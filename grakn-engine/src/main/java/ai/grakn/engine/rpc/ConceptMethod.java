@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.rpc;
@@ -359,20 +359,26 @@ public class ConceptMethod {
 
             private Transaction.Res when() {
                 Pattern pattern = concept.asRule().when();
+                ConceptProto.Rule.When.Res.Builder whenRes = ConceptProto.Rule.When.Res.newBuilder();
+
+                if (pattern == null) whenRes.setNull(ConceptProto.Null.getDefaultInstance());
+                else whenRes.setPattern(pattern.toString());
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRuleWhenRes(ConceptProto.Rule.When.Res.newBuilder()
-                                .setPattern(pattern.toString())).build();
+                        .setRuleWhenRes(whenRes).build();
 
                 return transactionRes(response);
             }
 
             private Transaction.Res then() {
                 Pattern pattern = concept.asRule().then();
+                ConceptProto.Rule.Then.Res.Builder thenRes = ConceptProto.Rule.Then.Res.newBuilder();
+
+                if (pattern == null) thenRes.setNull(ConceptProto.Null.getDefaultInstance());
+                else thenRes.setPattern(pattern.toString());
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
-                        .setRuleThenRes(ConceptProto.Rule.Then.Res.newBuilder()
-                                .setPattern(pattern.toString())).build();
+                        .setRuleThenRes(thenRes).build();
 
                 return transactionRes(response);
             }

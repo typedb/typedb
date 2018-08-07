@@ -14,9 +14,9 @@ To get set up to use this API, please read through our [Setup Guide](../get-star
 
 ## Core API
 
-On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient.
+On this page we will focus primarily on the methods provided by the `Grakn.Transaction` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `Grakn.Transaction` interface will be sufficient.
 
-It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
+It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `Grakn.Transaction::graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
 
 ## Building a Schema with the Core API
 
@@ -26,7 +26,8 @@ First we need a knowledge graph. For this example we will just use an
 [in-memory knowledge graph](./setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java-test-ignore
-GraknTx tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
@@ -160,7 +161,8 @@ insert $x isa person has firstname "John";
 Now the equivalent Core API:    
 
 ```java-test-ignore
-tx = RemoteGrakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn")).open(GraknTxType.WRITE);
+Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 
 Attribute johnName = firstname.putAttribute("John"); //Create the attribute
 person.create().has(johnName); //Link it to an entity
@@ -272,7 +274,7 @@ Pattern rule2when = and(
 Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
-If we have a specific `GraknTx tx` already defined, we can use the Graql pattern parser:
+If we have a specific `Grakn.Transaction tx` already defined, we can use the Graql pattern parser:
 
 ```java-test-ignore
 rule1when = and(tx.graql().parser().parsePatterns("(parent: $p, child: $c) isa Parent;"));

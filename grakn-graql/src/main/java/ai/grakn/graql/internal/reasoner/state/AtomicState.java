@@ -1,28 +1,28 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -44,11 +44,11 @@ import java.util.Set;
 class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
     AtomicState(ReasonerAtomicQuery query,
-                Answer sub,
+                ConceptMap sub,
                 Unifier u,
                 QueryStateBase parent,
                 Set<ReasonerAtomicQuery> subGoals,
-                QueryCache<ReasonerAtomicQuery> cache) {
+                SimpleQueryCache<ReasonerAtomicQuery> cache) {
         super(ReasonerQueries.atomic(query, sub),
                 sub,
                 u,
@@ -60,7 +60,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
-        Answer answer = state.getAnswer();
+        ConceptMap answer = state.getAnswer();
         ReasonerAtomicQuery query = getQuery();
         if (answer.isEmpty()) return null;
 
@@ -71,10 +71,10 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
     }
 
     @Override
-    Answer consumeAnswer(AnswerState state) {
-        Answer answer;
+    ConceptMap consumeAnswer(AnswerState state) {
+        ConceptMap answer;
         ReasonerAtomicQuery query = getQuery();
-        Answer baseAnswer = state.getSubstitution();
+        ConceptMap baseAnswer = state.getSubstitution();
         InferenceRule rule = state.getRule();
         Unifier unifier = state.getUnifier();
         if (rule == null) answer = state.getSubstitution();
@@ -83,12 +83,12 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                     materialisedAnswer(baseAnswer, rule, unifier) :
                     ruleAnswer(baseAnswer, rule, unifier);
         }
-        return getCache().recordAnswer(query, answer, getCacheUnifier());
+        return getCache().record(query, answer, getCacheUnifier());
     }
 
-    private Answer ruleAnswer(Answer baseAnswer, InferenceRule rule, Unifier unifier){
+    private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
         ReasonerAtomicQuery query = getQuery();
-        Answer answer = baseAnswer
+        ConceptMap answer = baseAnswer
                 .merge(rule.getHead().getRoleSubstitution())
                 .unify(unifier);
         if (answer.isEmpty()) return answer;
@@ -99,10 +99,10 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                 .explain(new RuleExplanation(query, rule));
     }
 
-    private Answer materialisedAnswer(Answer baseAnswer, InferenceRule rule, Unifier unifier){
-        Answer answer = baseAnswer;
+    private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
+        ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        QueryCache<ReasonerAtomicQuery> cache = getCache();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = getCache();
 
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
@@ -114,21 +114,21 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
         boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
 
         //check if the specific answer to ruleHead already in cache/db
-        Answer headAnswer = cache
+        ConceptMap headAnswer = cache
                 .getAnswer(ruleHead, answer)
                 .project(queryVars)
                 .unify(unifier);
 
         //if not and query different than rule head do the same with the query
-        Answer queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
+        ConceptMap queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
                 cache.getAnswer(query, answer) :
-                new QueryAnswer();
+                new ConceptMapImpl();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db
         if (headAnswer.isEmpty()
                 && queryAnswer.isEmpty()) {
-            Answer materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
-            if (!queryEquivalentToHead) cache.recordAnswer(ruleHead, materialisedSub);
+            ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
+            if (!queryEquivalentToHead) cache.record(ruleHead, materialisedSub);
             answer = materialisedSub
                     .project(queryVars)
                     .unify(unifier);

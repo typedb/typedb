@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.factory.EmbeddedGraknSession;
@@ -42,12 +41,12 @@ public class TxTestBase {
 
     @Before
     public void setUpTx() {
-        session = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY);
+        session = EmbeddedGraknSession.inMemory(keyspace);
         getTx(false);
     }
 
     @After
-    public void closeSession() throws Exception {
+    public void closeSession() {
         closeTxIfOpen(tx);
         closeTxIfOpen(txBatch);
         session.close();
@@ -65,14 +64,14 @@ public class TxTestBase {
         if(isBatch){
             if(newTxNeeded(txBatch)){
                 closeTxIfOpen(tx);
-                return txBatch = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.BATCH);
+                return txBatch = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.BATCH);
             } else {
                 return txBatch;
             }
         } else {
             if(newTxNeeded(tx)){
                 closeTxIfOpen(txBatch);
-                return tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).transaction(GraknTxType.WRITE);
+                return tx = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.WRITE);
             } else {
                 return tx;
             }

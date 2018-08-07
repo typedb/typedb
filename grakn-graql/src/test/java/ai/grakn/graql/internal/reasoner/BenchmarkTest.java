@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -31,7 +31,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.LinearTransitivityMatrixKB;
 import ai.grakn.test.kbs.PathTreeKB;
@@ -40,7 +40,6 @@ import ai.grakn.test.kbs.TransitivityMatrixKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 public class BenchmarkTest {
 
     //Needed to start cass depending on profile
@@ -368,13 +366,13 @@ public class BenchmarkTest {
         assertEquals(executeQuery(queryString, graph, "tree").size(), answers);
     }
 
-    private List<Answer> executeQuery(String queryString, GraknTx graph, String msg){
+    private List<ConceptMap> executeQuery(String queryString, GraknTx graph, String msg){
         return executeQuery(graph.graql().infer(true).parse(queryString), msg);
     }
 
-    private List<Answer> executeQuery(GetQuery query, String msg) {
+    private List<ConceptMap> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<ConceptMap> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

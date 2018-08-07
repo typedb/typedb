@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.rpc;
@@ -40,9 +40,9 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.query.ComputeQueryImpl;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
@@ -68,13 +68,13 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.client.rpc.RequestBuilder.Keyspace.delete;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.iterate;
 import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
@@ -83,6 +83,7 @@ import static ai.grakn.rpc.GrpcTestUtil.hasStatus;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -132,7 +133,7 @@ public class ServerRPCTest {
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .addService(new SessionService(requestOpener, mockedPostProcessor))
-                .addService(new KeyspaceService(requestOpener, mockedKeyspaceStore))
+                .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);
         rpcServerRPC.start();
@@ -145,7 +146,7 @@ public class ServerRPCTest {
         when(qb.parse(QUERY)).thenReturn(query);
         when(qb.infer(anyBoolean())).thenReturn(qb);
 
-        when(query.execute()).thenAnswer(params -> Stream.of(new QueryAnswer()));
+        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMapImpl()));
 
         Set<Keyspace> keyspaceSet = new HashSet<>(Arrays.asList(Keyspace.of("testkeyspace1"), Keyspace.of("testkeyspace2")));
         when(mockedKeyspaceStore.keyspaces()).thenReturn(keyspaceSet);
@@ -200,7 +201,7 @@ public class ServerRPCTest {
             tx.send(commit());
         }
 
-        verify(tx).commitSubmitNoLogs();
+        verify(tx).commitAndGetLogs();
     }
 
     @Test
@@ -300,9 +301,9 @@ public class ServerRPCTest {
         when(conceptY.isAttribute()).thenReturn(true);
         when(conceptY.asAttribute().type().label()).thenReturn(Label.of("L456"));
 
-        ImmutableList<Answer> answers = ImmutableList.of(
-                new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
+        ImmutableList<ConceptMap> answers = ImmutableList.of(
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         when(query.stream()).thenAnswer(params -> answers.stream());
@@ -319,12 +320,12 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcX =
                     ConceptProto.Concept.newBuilder().setId(V123).setBaseType(ConceptProto.Concept.BASE_TYPE.RELATION).build();
-            AnswerProto.QueryAnswer.Builder answerX = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("x", rpcX);
-            AnswerProto.Answer.Builder resultX = AnswerProto.Answer.newBuilder().setQueryAnswer(answerX);
+            AnswerProto.ConceptMap.Builder conceptMapX = AnswerProto.ConceptMap.newBuilder().putMap("x", rpcX);
+            AnswerProto.Answer.Builder answerX = AnswerProto.Answer.newBuilder().setConceptMap(conceptMapX);
             Transaction.Res resX = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(resultX))).build();
+                                    .setAnswer(answerX))).build();
             assertEquals(resX, response1);
 
             tx.send(iterate(iterator));
@@ -332,12 +333,12 @@ public class ServerRPCTest {
 
             ConceptProto.Concept rpcY =
                     ConceptProto.Concept.newBuilder().setId(V456).setBaseType(ConceptProto.Concept.BASE_TYPE.ATTRIBUTE).build();
-            AnswerProto.QueryAnswer.Builder answerY = AnswerProto.QueryAnswer.newBuilder().putQueryAnswer("y", rpcY);
-            AnswerProto.Answer.Builder resultY = AnswerProto.Answer.newBuilder().setQueryAnswer(answerY);
+            AnswerProto.ConceptMap.Builder conceptMapY = AnswerProto.ConceptMap.newBuilder().putMap("y", rpcY);
+            AnswerProto.Answer.Builder answerY = AnswerProto.Answer.newBuilder().setConceptMap(conceptMapY);
             Transaction.Res resY = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(resultY))).build();
+                                    .setAnswer(answerY))).build();
             assertEquals(resY, response2);
 
             tx.send(iterate(iterator));
@@ -360,9 +361,9 @@ public class ServerRPCTest {
         when(conceptY.isEntity()).thenReturn(true);
         when(conceptY.asEntity().type().label()).thenReturn(Label.of("L456"));
 
-        ImmutableList<Answer> answers = ImmutableList.of(
-                new QueryAnswer(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new QueryAnswer(ImmutableMap.of(Graql.var("y"), conceptY))
+        ImmutableList<ConceptMap> answers = ImmutableList.of(
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate
@@ -390,7 +391,7 @@ public class ServerRPCTest {
         ComputeQuery countQuery = mock(ComputeQuery.class);
         when(tx.graql().parse(COUNT_QUERY)).thenReturn(countQuery);
 
-        when(countQuery.execute()).thenReturn(new ComputeQueryImpl.AnswerImpl().setNumber(100L));
+        when(countQuery.execute()).thenReturn(Collections.singletonList(new Value(100)));
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
@@ -401,7 +402,9 @@ public class ServerRPCTest {
             Transaction.Res expected = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
                             .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(AnswerProto.Answer.newBuilder().setOtherResult("100")))).build();
+                                    .setAnswer(AnswerProto.Answer.newBuilder()
+                                            .setValue(AnswerProto.Value.newBuilder()
+                                                    .setNumber(AnswerProto.Number.newBuilder().setValue("100")))))).build();
 
             assertEquals(expected, tx.receive().ok());
         }
@@ -413,14 +416,18 @@ public class ServerRPCTest {
         DeleteQuery deleteQuery = mock(DeleteQuery.class);
         when(tx.graql().parse(DELETE_QUERY)).thenReturn(deleteQuery);
 
-        when(deleteQuery.execute()).thenReturn(null);
+        when(deleteQuery.execute()).thenReturn(Collections.emptyList());
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
             tx.receive();
 
             tx.send(query(DELETE_QUERY, false));
-            assertEquals(ResponseBuilder.Transaction.queryIterator(-1), tx.receive().ok());
+
+            Transaction.Res expected = Transaction.Res.newBuilder()
+                    .setQueryIter(Transaction.Query.Iter.newBuilder().setId(1))
+                    .build();
+            assertEquals(expected, tx.receive().ok());
         }
     }
 
@@ -674,7 +681,7 @@ public class ServerRPCTest {
 
     @Test
     public void whenCommittingFails_Throw() throws Throwable {
-        doThrow(EXCEPTION).when(tx).commitSubmitNoLogs();
+        doThrow(EXCEPTION).when(tx).commitAndGetLogs();
 
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, GraknTxType.WRITE));
@@ -754,13 +761,6 @@ public class ServerRPCTest {
             tx.send(iterate(iterator2));
             tx.receive().ok();
         }
-    }
-
-    @Test
-    public void whenSendingDeleteRequest_CallDeleteOnEmbeddedTx() {
-        keyspaceBlockingStub.delete(delete(MYKS.getValue()));
-
-        verify(tx).delete();
     }
 
     @Test

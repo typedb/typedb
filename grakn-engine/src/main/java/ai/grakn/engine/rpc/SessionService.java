@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.rpc;
@@ -34,7 +34,6 @@ import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.Streamable;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
@@ -224,7 +223,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void commit() {
-            tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
+            tx().commitAndGetLogs().ifPresent(postProcessor::submit);
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
 
@@ -233,23 +232,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))
                     .parse(request.getQuery());
 
-            Stream<Transaction.Res> responseStream;
-            int iteratorId;
-            Transaction.Res response;
-            if (query instanceof Streamable) {
-                responseStream = ((Streamable<?>) query).stream().map(ResponseBuilder.Transaction.Iter::query);
-                iteratorId = iterators.add(responseStream.iterator());
-            } else {
-                Object result = query.execute();
-                if (result == null) {
-                    iteratorId = -1;
-                } else {
-                    responseStream = Stream.of(ResponseBuilder.Transaction.Iter.query(result));
-                    iteratorId = iterators.add(responseStream.iterator());
-                }
-            }
-
-            response = ResponseBuilder.Transaction.queryIterator(iteratorId);
+            Stream<Transaction.Res> responseStream = query.stream().map(ResponseBuilder.Transaction.Iter::query);
+            Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
             responseSender.onNext(response);
         }
 

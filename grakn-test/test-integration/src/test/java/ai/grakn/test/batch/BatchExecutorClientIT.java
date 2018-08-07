@@ -1,35 +1,33 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.batch;
 
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.batch.BatchExecutorClient;
 import ai.grakn.batch.GraknClient;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
-import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.EngineContext;
 import ai.grakn.util.GraknTestUtil;
 import com.netflix.hystrix.HystrixCommand;
@@ -50,7 +48,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraknTestUtil.usingTinker;
-import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import static java.util.stream.Stream.generate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,22 +57,20 @@ import static org.mockito.Mockito.spy;
 public class BatchExecutorClientIT {
 
     public static final int MAX_DELAY = 100;
-    private EmbeddedGraknSession session;
+    private GraknSession session;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.create();
-    private Keyspace keyspace;
 
     @Before
     public void setupSession() {
         // Because we think tinkerpop is not thread-safe and batch-loading uses multiple threads
         assumeFalse(usingTinker());
 
-        keyspace = randomKeyspace();
-        this.session = EmbeddedGraknSession.create(keyspace, engine.uri().toString());
+        this.session = engine.sessionWithNewKeyspace();
     }
 
     @Ignore("This test stops and restart server - this is not supported yet by gRPC [https://github.com/grpc/grpc/issues/7031] - fix when gRPC 1.1 is released")
@@ -89,7 +84,7 @@ public class BatchExecutorClientIT {
             // Engine goes down
             engine.server().getHttpHandler().stopHTTP();
             // Most likely the first call doesn't find the server but it's retried
-            generate(this::query).limit(1).forEach(q -> loader.add(q, keyspace));
+            generate(this::query).limit(1).forEach(q -> loader.add(q, session.keyspace()));
             engine.server().getHttpHandler().startHTTP();
         }
 
@@ -107,7 +102,7 @@ public class BatchExecutorClientIT {
 
             // Load some queries
             generate(this::query).limit(1).forEach(q ->
-                    loader.add(q, keyspace)
+                    loader.add(q, session.keyspace())
             );
         }
 
@@ -121,7 +116,7 @@ public class BatchExecutorClientIT {
 
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             generate(this::query).limit(100).forEach(q ->
-                    loader.add(q, keyspace)
+                    loader.add(q, session.keyspace())
             );
         }
         try (GraknTx graph = session.transaction(GraknTxType.READ)) {
@@ -140,7 +135,7 @@ public class BatchExecutorClientIT {
 
             int n = 100;
             generate(this::query).limit(n).forEach(q ->
-                    loader.add(q, keyspace)
+                    loader.add(q, session.keyspace())
             );
 
             everythingLoaded.await();
@@ -168,7 +163,7 @@ public class BatchExecutorClientIT {
 
         try (BatchExecutorClient loader = loader(MAX_DELAY)) {
             for (int i = 0; i < n; i++) {
-                loader.add(query(), keyspace);
+                loader.add(query(), session.keyspace());
 
                 if (i % 5 == 0) {
                     Thread.sleep(200);
@@ -189,19 +184,19 @@ public class BatchExecutorClientIT {
 
     private BatchExecutorClient loader(int maxDelay) {
         // load schema
-        try (EmbeddedGraknTx<?> graph = session.transaction(GraknTxType.WRITE)) {
-            Role role = graph.putRole("some-role");
-            graph.putRelationshipType("some-relationship").relates(role);
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+            Role role = tx.putRole("some-role");
+            tx.putRelationshipType("some-relationship").relates(role);
 
-            EntityType nameTag = graph.putEntityType("name_tag");
-            AttributeType<String> nameTagString = graph
+            EntityType nameTag = tx.putEntityType("name_tag");
+            AttributeType<String> nameTagString = tx
                     .putAttributeType("name_tag_string", AttributeType.DataType.STRING);
-            AttributeType<String> nameTagId = graph
+            AttributeType<String> nameTagId = tx
                     .putAttributeType("name_tag_id", AttributeType.DataType.STRING);
 
             nameTag.has(nameTagString);
             nameTag.has(nameTagId);
-            graph.commitSubmitNoLogs();
+            tx.commit();
 
             GraknClient graknClient = GraknClient.of(engine.uri());
             return spy(

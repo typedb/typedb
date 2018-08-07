@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -22,12 +22,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -38,7 +36,7 @@ import static java.util.stream.Collectors.joining;
  * @author Grakn Warriors
  */
 @AutoValue
-public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> implements GetQuery {
+public abstract class GetQueryImpl implements GetQuery {
 
     public abstract ImmutableSet<Var> vars();
     public abstract Match match();
@@ -63,18 +61,13 @@ public abstract class GetQueryImpl extends AbstractQuery<List<Answer>, Answer> i
     }
 
     @Override
-    public final Stream<Answer> stream() {
+    public final Stream<ConceptMap> stream() {
         return executor().run(this);
     }
 
     @Override
     public String toString() {
         return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
-    }
-
-    @Override
-    public final List<Answer> execute() {
-        return stream().collect(Collectors.toList());
     }
 
     @Override

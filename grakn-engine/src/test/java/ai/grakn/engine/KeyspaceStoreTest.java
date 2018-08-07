@@ -1,37 +1,41 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine;
 
-import ai.grakn.Grakn;
+import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.controller.SparkContext;
-import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.keyspace.KeyspaceStoreImpl;
-import ai.grakn.engine.keyspace.KeyspaceSessionImpl;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.rpc.KeyspaceService;
+import ai.grakn.engine.rpc.OpenRequest;
+import ai.grakn.engine.rpc.ServerOpenRequest;
+import ai.grakn.engine.rpc.SessionService;
+import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.SessionContext;
-import com.codahale.metrics.MetricRegistry;
+import ai.grakn.util.SimpleURI;
+import io.grpc.ServerBuilder;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -39,6 +43,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -55,19 +60,14 @@ import static org.mockito.Mockito.when;
 
 public class KeyspaceStoreTest {
 
+    private static final int PORT = 6666;
+
     private static final GraknConfig config = GraknConfig.create();
-    private static final ServerStatus status = mock(ServerStatus.class);
-    private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final LockProvider lockProvider = mock(LockProvider.class);
     private static EngineGraknTxFactory graknFactory;
     private static KeyspaceStore keyspaceStore;
+    private static Grakn graknClient;
 
-    //Needed so that Grakn.session() can return a session
-    //Note: This is a rule rather than a class rule because we need to ensure that cass is started up first and then
-    // the keyspaceStore is initialised. If we make this a ClassRule that load order is broken and this test fails with
-    // the janus profile.
-    @Rule
-    public final SparkContext sparkContext = SparkContext.withControllers(new SystemController(config, keyspaceStore, status, metricRegistry)).host("0.0.0.0").port(4567);
 
     //Needed to start cass depending on profile
     @ClassRule
@@ -77,15 +77,32 @@ public class KeyspaceStoreTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     private final Function<String, GraknTx> engineFactoryKBProvider = (k) -> graknFactory.tx(Keyspace.of(k), GraknTxType.WRITE);
-    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(sparkContext.uri(), k).transaction(GraknTxType.WRITE);
+    private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> graknClient.session(Keyspace.of(k)).transaction(GraknTxType.WRITE);
 
     private final Set<GraknTx> transactions = new HashSet<>();
 
+    private static ServerRPC rpcServerRPC;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    private final static PostProcessor mockedPostProcessor = mock(PostProcessor.class);
+
+
     @BeforeClass
-    public static void setup(){
-        keyspaceStore = KeyspaceStoreImpl.create(new KeyspaceSessionImpl(config));
+    public static void setup() throws IOException {
+        keyspaceStore = new KeyspaceStoreImpl(config);
         keyspaceStore.loadSystemSchema();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
+        OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
+        io.grpc.Server server = ServerBuilder.forPort(PORT)
+                .addService(new SessionService(requestOpener, mockedPostProcessor))
+                .addService(new KeyspaceService(keyspaceStore))
+                .build();
+        rpcServerRPC = ServerRPC.create(server);
+        rpcServerRPC.start();
+
+        graknClient = new Grakn(new SimpleURI(config.getProperty(GraknConfigKey.SERVER_HOST_NAME)+":"+PORT));
 
         Lock lock = mock(Lock.class);
         when(lockProvider.getLock(any())).thenReturn(lock);
@@ -137,9 +154,9 @@ public class KeyspaceStoreTest {
         txs.forEach(GraknTx::close);
 
         //Delete a tx entirely
-        GraknTx deletedGraph = txs.iterator().next();
-        deletedGraph.admin().delete();
-        txs.remove(deletedGraph);
+        GraknTx deletedTx = txs.iterator().next();
+        keyspaceStore.deleteKeyspace(deletedTx.keyspace());
+        txs.remove(deletedTx);
 
         // Get system keyspaces
         Set<String> systemKeyspaces = getSystemKeyspaces();
@@ -148,7 +165,7 @@ public class KeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(keyspaceStore.containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(keyspaceStore.containsKeyspace(deletedTx.keyspace()));
     }
 
     @Test
@@ -159,10 +176,10 @@ public class KeyspaceStoreTest {
         Set<GraknTx> txs = buildTxs(engineFactoryKBProvider, keyspaces);
         txs.forEach(GraknTx::close);
 
-        //Delete a tx entirely
-        GraknTx deletedGraph = txs.iterator().next();
-        deletedGraph.admin().delete();
-        txs.remove(deletedGraph);
+        //Delete a keyspace entirely
+        GraknTx deletedTx = txs.iterator().next();
+        keyspaceStore.deleteKeyspace(deletedTx.keyspace());
+        txs.remove(deletedTx);
 
         // Get system keyspaces
         Set<String> systemKeyspaces = getSystemKeyspaces();
@@ -171,7 +188,7 @@ public class KeyspaceStoreTest {
         for(GraknTx tx:txs){
             assertTrue("Contains correct keyspace", systemKeyspaces.contains(tx.keyspace().getValue()));
         }
-        assertFalse(keyspaceStore.containsKeyspace(deletedGraph.keyspace()));
+        assertFalse(keyspaceStore.containsKeyspace(deletedTx.keyspace()));
     }
     private Set<GraknTx> buildTxs(Function<String, GraknTx> txProvider, String ... keyspaces){
         Set<GraknTx> newTransactions = Arrays.stream(keyspaces)

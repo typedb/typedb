@@ -1,24 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package ai.grakn.client.executor;
 
+import ai.grakn.ComputeExecutor;
 import ai.grakn.QueryExecutor;
+import ai.grakn.client.Grakn;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
@@ -27,11 +30,10 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.client.Grakn;
-import com.google.common.collect.Iterators;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
 
-import java.util.Iterator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -51,51 +53,53 @@ public final class RemoteQueryExecutor implements QueryExecutor {
     }
 
     @Override
-    public Stream<Answer> run(GetQuery query) {
-        return runAnswerStream(query);
+    public Stream<ConceptMap> run(DefineQuery query) {
+        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     @Override
-    public Stream<Answer> run(InsertQuery query) {
-        return runAnswerStream(query);
+    public Stream<ConceptMap> run(UndefineQuery query) {
+        return streamConceptMaps(query);
     }
 
     @Override
-    public void run(DeleteQuery query) {
-        runVoid(query);
+    public Stream<ConceptMap> run(GetQuery query) {
+        return streamConceptMaps(query);
     }
 
     @Override
-    public Answer run(DefineQuery query) {
-        return (Answer) Iterators.getOnlyElement(tx.query(query));
+    public Stream<ConceptMap> run(InsertQuery query) {
+        return streamConceptMaps(query);
     }
 
     @Override
-    public void run(UndefineQuery query) {
-        runVoid(query);
+    public Stream<ConceptSet> run(DeleteQuery query) {
+        return streamConceptSets(query);
     }
 
     @Override
-    public <T> T run(AggregateQuery<T> query) {
-        Iterator iterator = tx.query(query);
-        if (iterator.hasNext()) return (T) Iterators.getOnlyElement(iterator);
-        else return null;
+    public <T extends Answer> Stream<T> run(AggregateQuery<T> query) {
+        Iterable<T> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
-
 
     @Override
-    public ai.grakn.ComputeExecutor run(ComputeQuery query) {
-        ComputeQuery.Answer answer = (ComputeQuery.Answer) Iterators.getOnlyElement(tx.query(query));
-        return RemoteComputeExecutor.of(answer);
+    public <T extends Answer> ComputeExecutor<T> run(ComputeQuery<T> query) {
+        Iterable<T> iterable = () -> tx.query(query);
+        Stream<T> stream = StreamSupport.stream(iterable.spliterator(), false);
+        return RemoteComputeExecutor.of(stream);
     }
 
-    private void runVoid(Query<?> query) {
-        tx.query(query).forEachRemaining(empty -> {});
+    // Helper methods
+
+    private Stream<ConceptMap> streamConceptMaps(Query<ConceptMap> query) {
+        Iterable<ConceptMap> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    private Stream<Answer> runAnswerStream(Query<?> query) {
-        Iterable<Object> iterable = () -> tx.query(query);
-        Stream<Object> stream = StreamSupport.stream(iterable.spliterator(), false);
-        return stream.map(Answer.class::cast);
+    private Stream<ConceptSet> streamConceptSets(Query<ConceptSet> query) {
+        Iterable<ConceptSet> iterable = () -> tx.query(query);
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 }

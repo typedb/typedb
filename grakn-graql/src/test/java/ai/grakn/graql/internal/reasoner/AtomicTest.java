@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -1180,9 +1180,9 @@ public class AtomicTest {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
-        List<Answer> parentAnswers2 = parentQuery2.getQuery().execute();
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute();
 
         Unifier unifier = childAtom.getUnifier(parentAtom);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2);
@@ -1228,10 +1228,10 @@ public class AtomicTest {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
 
-        Answer typeAnswer = typeQuery.getQuery().execute().iterator().next();
-        Answer resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
-        Answer resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
-        Answer resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
+        ConceptMap typeAnswer = typeQuery.getQuery().execute().iterator().next();
+        ConceptMap resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
+        ConceptMap resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
+        ConceptMap resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -1387,12 +1387,12 @@ public class AtomicTest {
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> unifiedAnswers = childAnswers.stream()
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom);
@@ -1409,7 +1409,7 @@ public class AtomicTest {
         } else {
             assertCollectionsEqual(parentAnswers, unifiedAnswers);
             Unifier inverse = unifier.inverse();
-            List<Answer> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+            List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
             assertCollectionsEqual(parentToChild, childAnswers);
         }
     }

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package ai.grakn;
 
@@ -21,11 +21,11 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
 import com.ldbc.driver.ResultReporter;
@@ -118,7 +118,7 @@ public class GraknQueryHandlers {
                         $message.has(CREATION_DATE, $date).has(MESSAGE_ID, $messageId),
                         $date.val(lte(maxDate)));
 
-                List<Answer> rawResult = graknLdbcQuery2.orderBy($date, Order.desc)
+                List<ConceptMap> rawResult = graknLdbcQuery2.orderBy($date, Order.desc)
                         .limit(ldbcQuery2.limit()).withTx(graknTx).get().execute();
 
                 // process the query results
@@ -133,7 +133,7 @@ public class GraknQueryHandlers {
                                     $message.has(CREATION_DATE, $date)
                                             .has(MESSAGE_ID, SNB.<Long>resource(map, $messageId)),
                                     or($message.has(CONTENT, $content), $message.has(IMAGE_FILE, $content)));
-                            Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
+                            ConceptMap extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                             // prepare the answer from the original query and the query for extended information
                             return new LdbcQuery2Result(
@@ -169,7 +169,7 @@ public class GraknQueryHandlers {
                         var().rel($message).rel(REPLY, reply).isa(REPLY_OF),
                         reply.has(CREATION_DATE, $date).has(MESSAGE_ID, $messageId)
                 );
-                List<Answer> rawResult = orderQuery.withTx(graknTx)
+                List<ConceptMap> rawResult = orderQuery.withTx(graknTx)
                         .orderBy($date, Order.desc).limit(ldbcQuery8.limit()).get().execute();
 
                 // sort first by date and then by message id
@@ -185,7 +185,7 @@ public class GraknQueryHandlers {
                                     var().rel(reply).rel(responder).isa(HAS_CREATOR),
                                     responder.has(PERSON_ID, responderId).has(FIRST_NAME, $firstName).has(LAST_NAME, $lastName)
                             );
-                            Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
+                            ConceptMap extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                             // prepare the answer from the original query and the query for extended information
                             return new LdbcQuery8Result(
@@ -218,7 +218,7 @@ public class GraknQueryHandlers {
                         get().execute().iterator().next().get($person).id();
 
                 // sort by lastname and then id
-                Comparator<Answer> byLastNameAndId = Comparator.comparing(by($lastName)).thenComparing(by($friendId));
+                Comparator<ConceptMap> byLastNameAndId = Comparator.comparing(by($lastName)).thenComparing(by($friendId));
 
                 // This query has to be split into 3 parts, each fetching people a further distance away
                 // The longer queries only need be executed if there are not enough shorter queries
@@ -229,7 +229,7 @@ public class GraknQueryHandlers {
                                 has(LAST_NAME, $lastName).
                                 has(PERSON_ID, $friendId),
                         $person.neq($friend));
-                List<Answer> distance1Result = match.withTx(graknTx).get().execute();
+                List<ConceptMap> distance1Result = match.withTx(graknTx).get().execute();
                 List<LdbcQuery1Result> distance1LdbcResult = populateResults(distance1Result.stream().sorted(byLastNameAndId), ldbcQuery1, graknTx, 1);
                 if (distance1Result.size() < ldbcQuery1.limit()) {
                     match = match($person.id(graknPersonId),
@@ -240,7 +240,7 @@ public class GraknQueryHandlers {
                                     has(PERSON_ID, $friendId),
                             $person.neq($friend)
                     );
-                    List<Answer> distance2Result = match.withTx(graknTx).get().execute();
+                    List<ConceptMap> distance2Result = match.withTx(graknTx).get().execute();
                     distance1LdbcResult.addAll(populateResults(distance2Result.stream().sorted(byLastNameAndId), ldbcQuery1, graknTx, 2));
                     if (distance1Result.size() + distance2Result.size() < ldbcQuery1.limit()) {
                         match = match($person.id(graknPersonId),
@@ -253,7 +253,7 @@ public class GraknQueryHandlers {
                                 $person.neq($friend),
                                 $friend.neq(anyone)
                         );
-                        List<Answer> distance3Result = match.withTx(graknTx).get().execute();
+                        List<ConceptMap> distance3Result = match.withTx(graknTx).get().execute();
                         distance1LdbcResult.addAll(populateResults(distance3Result.stream().sorted(byLastNameAndId), ldbcQuery1, graknTx, 3));
                     }
                 }
@@ -270,14 +270,14 @@ public class GraknQueryHandlers {
          * @param distance     the number of knows relations between initial person and these results
          * @return the ldbc results
          */
-        private static List<LdbcQuery1Result> populateResults(Stream<Answer> graqlResults, LdbcQuery1 ldbcQuery1, GraknTx graknTx, int distance) {
+        private static List<LdbcQuery1Result> populateResults(Stream<ConceptMap> graqlResults, LdbcQuery1 ldbcQuery1, GraknTx graknTx, int distance) {
             return graqlResults.limit(ldbcQuery1.limit()).map(map -> {
                 // these queries get all of the additional related material, excluding resources
                 Var location = var("aLocation");
                 Match locationQuery = match(
                         $friend.id(map.get($friend).id()),
                         var().rel($friend).rel(location).isa(IS_LOCATED_IN));
-                Answer locationResult = locationQuery.withTx(graknTx).get().execute().iterator().next();
+                ConceptMap locationResult = locationQuery.withTx(graknTx).get().execute().iterator().next();
 
                 Var year = var("aYear");
                 Var oganisation = var("aOrganisation");
@@ -286,7 +286,7 @@ public class GraknQueryHandlers {
                         var().rel($friend).rel(oganisation).isa(STUDY_AT).has(CLASS_YEAR, year),
                         var().rel(oganisation).rel(location).isa(IS_LOCATED_IN)
                 );
-                List<Answer> universityResults = universityQuery.withTx(graknTx).get().execute();
+                List<ConceptMap> universityResults = universityQuery.withTx(graknTx).get().execute();
                 List<List<Object>> universityProcessedResults = universityResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<>();
                     result.add(getSingleResource(answer.get(oganisation).asEntity(), NAME, graknTx));
@@ -300,7 +300,7 @@ public class GraknQueryHandlers {
                         var().rel($friend).rel(oganisation).isa(WORK_AT).has(WORK_FROM, year),
                         var().rel(oganisation).rel(location).isa(IS_LOCATED_IN)
                 );
-                List<Answer> workResults = workQuery.withTx(graknTx).get().execute();
+                List<ConceptMap> workResults = workQuery.withTx(graknTx).get().execute();
                 List<List<Object>> workProcessedResults = workResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<>();
                     result.add(getSingleResource(answer.get(oganisation).asEntity(), NAME, graknTx));
@@ -351,13 +351,11 @@ public class GraknQueryHandlers {
                 match = match($person.has(PERSON_ID, ldbcQuery13.person2Id()));
                 Concept person2 = match.withTx(graknTx).get().execute().iterator().next().get($person);
 
-                ComputeQuery pathQuery = compute(PATH).from(person1.id()).to(person2.id())
-                        .in("knows", "person");
-
-                List<List<ConceptId>> paths = pathQuery.withTx(graknTx).execute().getPaths().get();
+                List<ConceptList> paths = compute(PATH).from(person1.id()).to(person2.id())
+                        .in("knows", "person").withTx(graknTx).execute();
 
                 List<ConceptId> path = Collections.emptyList();
-                if (!paths.isEmpty()) path = paths.get(0);
+                if (!paths.isEmpty()) path = paths.get(0).list();
 
                 // our path is either:
                 //     empty if there is none

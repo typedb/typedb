@@ -1,27 +1,30 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptList;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.ConceptSet;
+import ai.grakn.graql.answer.ConceptSetMeasure;
+import ai.grakn.graql.answer.Value;
 import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
@@ -30,7 +33,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * An interface for print objects in Graql responses (e.g. {@link Integer}s and {@link Answer}s into a String).
+ * An interface for print objects in Graql responses (e.g. {@link Integer}s and {@link ConceptMap}s into a String).
  * The intermediate {@link Builder} type is used when the final type is different to the "in-progress" type when
  * creating it. For example, you may want to use a {@link StringBuilder} for {@link Builder} (for efficiency).
  *
@@ -102,11 +105,22 @@ public abstract class Printer<Builder> {
         else if (object instanceof Collection) {
             return collection((Collection<?>) object);
         }
-        else if (object instanceof Answer) {
-            return queryAnswer((Answer) object);
+        if (object instanceof Value) {
+            return value((Value) object);
         }
-        else if (object instanceof ComputeQuery.Answer) {
-            return computeAnswer((ComputeQuery.Answer) object);
+        else if (object instanceof ConceptMap) {
+            return conceptMap((ConceptMap) object);
+        }
+        else if (object instanceof ConceptList) {
+            return conceptList((ConceptList) object);
+        }
+        else if (object instanceof ConceptSet) {
+            if (object instanceof ConceptSetMeasure) {
+                return conceptSetMeasure((ConceptSetMeasure) object);
+            }
+            else {
+                return conceptSet((ConceptSet) object);
+            }
         }
         else if (object instanceof Map) {
             return map((Map<?, ?>) object);
@@ -162,24 +176,55 @@ public abstract class Printer<Builder> {
     protected abstract Builder map(Map<?, ?> map);
 
     /**
-     * Convert any {@link Answer} into its print builder
+     * Convert any {@link ConceptList} into its print builder
      *
-     * @param answer the answer to convert into its print builder
-     * @return the map as a builder
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept list as an output builder
      */
     @CheckReturnValue
-    protected Builder queryAnswer(Answer answer) {
-        return map(answer.map());
+    protected Builder conceptList(ConceptList answer) {
+        return collection(answer.list());
     }
 
     /**
-     * Convert any {@link ComputeQuery.Answer} into its print builder
+     * Convert any {@link ConceptMap} into its print builder
      *
-     * @param computeAnswer is the answer result of a Graql Compute queries
-     * @return the computeAnswer as an output builder
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept map as an output builder
      */
     @CheckReturnValue
-    protected abstract Builder computeAnswer(ComputeQuery.Answer computeAnswer);
+    protected abstract Builder conceptMap(ConceptMap answer);
+
+    /**
+     * Convert any {@link ConceptSet} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept set as an output builder
+     */
+    @CheckReturnValue
+    protected Builder conceptSet(ConceptSet answer) {
+        return collection(answer.set());
+    }
+
+    /**
+     * Convert any {@link ConceptSetMeasure} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the concept set measure as an output builder
+     */
+    @CheckReturnValue
+    protected abstract Builder conceptSetMeasure(ConceptSetMeasure answer);
+
+    /**
+     * Convert any {@link Value} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the number as an output builder
+     */
+    @CheckReturnValue
+    protected Builder value(Value answer) {
+        return object(answer.number());
+    }
 
     /**
      * Default conversion behaviour if none of the more specific methods can be used

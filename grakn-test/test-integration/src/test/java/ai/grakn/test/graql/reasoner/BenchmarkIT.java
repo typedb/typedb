@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
@@ -30,13 +29,14 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -74,7 +74,7 @@ public class BenchmarkIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = Grakn.session(engine.uri(), keyspace);
+        this.session = EmbeddedGraknSession.createEngineSession(keyspace);
     }
 
     private void loadOntology(String fileName, GraknSession session){
@@ -372,13 +372,13 @@ public class BenchmarkIT {
         }
     }
 
-    private List<Answer> executeQuery(String queryString, GraknTx graph, String msg){
+    private List<ConceptMap> executeQuery(String queryString, GraknTx graph, String msg){
         return executeQuery(graph.graql().infer(true).parse(queryString), msg);
     }
 
-    private List<Answer> executeQuery(GetQuery query, String msg) {
+    private List<ConceptMap> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<ConceptMap> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

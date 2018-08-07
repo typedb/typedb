@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.utils;
@@ -36,12 +36,16 @@ import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.Schema;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -265,7 +269,7 @@ public class ReasonerUtils {
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Var childVarName = childType.getVarName();
-            Var parentVarName = unifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
+            Var parentVarName = childParentUnifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
@@ -298,6 +302,67 @@ public class ReasonerUtils {
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
         return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
+    }
+
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param comparison function on the basis of which the collections shall be compared
+     * @param <T> collection type
+     * @return true iff the given collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <T> boolean isEquivalentCollection(Collection<T> a, Collection<T> b, BiFunction<T, T, Boolean> comparison) {
+        return a.size() == b.size()
+                && a.stream().allMatch(e -> b.stream().anyMatch(e2 -> comparison.apply(e, e2)))
+                && b.stream().allMatch(e -> a.stream().anyMatch(e2 -> comparison.apply(e, e2)));
+    }
+
+    private static <B, S extends B> Map<Equivalence.Wrapper<B>, Integer> getCardinalityMap(Collection<S> coll, Equivalence<B> equiv) {
+        Map<Equivalence.Wrapper<B>, Integer> count = new HashMap<>();
+
+        for (S obj : coll) {
+            count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
+        }
+        return count;
+    }
+
+    private static <T> int getFreq(T obj, Map<T, Integer> freqMap) {
+        Integer count = freqMap.get(obj);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param equiv equivalence on the basis of which the collections shall be compared
+     * @param <B> collection base type
+     * @param <S> collection super type
+     * @return true iff the given Collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <B, S extends B> boolean isEquivalentCollection(Collection<S> a, Collection<S> b,  Equivalence<B> equiv) {
+        if (a.size() != b.size()) {
+            return false;
+        } else {
+            Map<Equivalence.Wrapper<B>, Integer> mapa = getCardinalityMap(a, equiv);
+            Map<Equivalence.Wrapper<B>, Integer>  mapb = getCardinalityMap(b, equiv);
+            if (mapa.size() != mapb.size()) {
+                return false;
+            } else {
+                Iterator<Equivalence.Wrapper<B>> it = mapa.keySet().iterator();
+
+                Equivalence.Wrapper<B> obj;
+                do {
+                    if (!it.hasNext()) {
+                        return true;
+                    }
+
+                    obj = it.next();
+                } while (getFreq(obj, mapa) == getFreq(obj, mapb));
+
+                return false;
+            }
+        }
     }
 
     /**

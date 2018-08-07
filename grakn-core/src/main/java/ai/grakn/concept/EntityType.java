@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -66,17 +66,6 @@ public interface EntityType extends Type{
      * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this entity type
-     * @return The EntityType itself
-     *
-     * @throws GraknTxOperationException if the sub type is a meta type
-     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
-     */
-    EntityType sub(EntityType type);
 
     /**
      * Sets the Role which instances of this EntityType may play.

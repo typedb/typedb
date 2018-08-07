@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -127,10 +127,10 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
-        EntityType child = tx.putEntityType("child");
-        EntityType p2 = tx.putEntityType("p2").sub(child);
-        EntityType p3 = tx.putEntityType("p3").sub(p2);
-        EntityType p4 = tx.putEntityType("p4").sub(p3);
+        EntityType p4 = tx.putEntityType("p4");
+        EntityType p3 = tx.putEntityType("p3").sup(p4);
+        EntityType p2 = tx.putEntityType("p2").sup(p3);
+        EntityType child = tx.putEntityType("child").sup(p2);
         EntityType entity = tx.getMetaEntityType();
         Type thing = tx.getMetaConcept();
 

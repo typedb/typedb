@@ -1,27 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.migration.base;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.batch.Client;
+import ai.grakn.client.Grakn;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.CommonUtil;
 import com.google.common.io.Files;
@@ -139,16 +139,16 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).transaction(GraknTxType.WRITE);
-            QueryBuilder qb = graph.graql();
+            GraknTx tx = new Grakn(options.getUri()).session(options.getKeyspace()).transaction(GraknTxType.WRITE);
+            QueryBuilder qb = tx.graql();
 
             StringBuilder builder = new StringBuilder();
             builder.append("Graph schema contains:\n");
-            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
-            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
-            builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
-            builder.append("\t ").append(graph.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
-            builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
+            builder.append("\t ").append(tx.admin().getMetaEntityType().instances().count()).append(" entity types\n");
+            builder.append("\t ").append(tx.admin().getMetaRelationType().instances().count()).append(" relation types\n");
+            builder.append("\t ").append(tx.admin().getMetaRole().subs().count()).append(" roles\n\n");
+            builder.append("\t ").append(tx.admin().getMetaAttributeType().instances().count()).append(" resource types\n");
+            builder.append("\t ").append(tx.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(label(ENTITY.getLabel()))).aggregate(count()).execute()).append(" entities\n");
@@ -158,7 +158,7 @@ public class MigrationCLI {
 
             System.out.println(builder);
 
-            graph.close();
+            tx.close();
         }
     }
 

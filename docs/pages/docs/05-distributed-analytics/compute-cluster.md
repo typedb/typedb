@@ -31,7 +31,7 @@ The results you get involve 3 clusters with sizes: 3, 5, 3.
 If you want to see the actual members of the clusters you have to use the modifier `members`:
 
 ```graql
-compute cluster in [person, marriage], using connected-component, where members=true;
+compute cluster in [person, marriage], using connected-component;
 ```
 
 Here, the [subgraph](./overview) functionality has been used to get more meaningful results.

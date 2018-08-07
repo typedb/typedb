@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.docs;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
@@ -26,6 +25,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
@@ -157,7 +158,8 @@ public class DocTestUtil {
 
     public static GraknSession getTestGraph(SimpleURI uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        GraknSession session = Grakn.session(uri, keyspace);
+        GraknSession session = EmbeddedGraknSession.createEngineSession(keyspace);
+
 
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);

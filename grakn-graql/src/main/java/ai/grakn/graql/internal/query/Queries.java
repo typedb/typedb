@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.Answer;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class Queries {
     }
 
     public static InsertQueryAdmin insert(GraknTx tx, Collection<VarPatternAdmin> vars) {
-        return InsertQueryImpl.create(vars, null, tx);
+        return InsertQueryImpl.create(tx, null, vars);
     }
 
     /**
@@ -58,7 +59,7 @@ public class Queries {
      * @param varPattern  a collection of Vars to insert
      */
     public static InsertQueryAdmin insert(MatchAdmin match, Collection<VarPatternAdmin> varPattern) {
-        return InsertQueryImpl.create(varPattern, match, match.tx());
+        return InsertQueryImpl.create(match.tx(), match, varPattern);
     }
 
     public static DeleteQueryAdmin delete(MatchAdmin match, Set<Var> vars) {
@@ -66,7 +67,8 @@ public class Queries {
         return DeleteQueryImpl.of(vars, match);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+    public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {
+        //TODO: validate vars in aggregate query
         return AggregateQueryImpl.of(match, aggregate);
     }
 

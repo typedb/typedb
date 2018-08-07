@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package ai.grakn.graql.internal.reasoner.atom;
 
@@ -22,16 +22,18 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -42,15 +44,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -81,7 +82,7 @@ public abstract class Atom extends AtomicBase {
         if (isResource() || getSchemaConcept() == null) return false;
         SchemaConcept schemaConcept = getSchemaConcept();
         return getApplicableRules()
-                .filter(rule -> rule.getBody().selectAtoms().stream()
+                .filter(rule -> rule.getBody().selectAtoms()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                         .anyMatch(at -> typesCompatible(schemaConcept, at.getSchemaConcept())))
                 .anyMatch(this::isRuleApplicable);
@@ -91,12 +92,38 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom is ground (all variables are bound)
      */
     public boolean isGround(){
-        Set<Var> varNames = getVarNames();
-        return Stream.concat(
-                getPredicates(),
-                getInnerPredicates())
+        Set<Var> mappedVars = Stream.concat(getPredicates(), getInnerPredicates())
                 .map(AtomicBase::getVarName)
-                .allMatch(varNames::contains);
+                .collect(toSet());
+        return getVarNames().stream()
+                .allMatch(mappedVars::contains);
+    }
+
+    /**
+     * @return true if this atom is bounded - via substitution/specific resource or schema
+     */
+    public boolean isBounded(){
+        return isResource() && ((ResourceAtom) this).isSpecific()
+                || this instanceof OntologicalAtom
+                || isGround();
+    }
+
+    /**
+     * @return true if this atom is disconnected (doesn't have neighbours)
+     */
+    public boolean isDisconnected(){
+        return isSelectable()
+            && getParentQuery().getAtoms(Atom.class)
+                .filter(Atomic::isSelectable)
+                .filter(at -> !at.equals(this))
+                .allMatch(at -> Sets.intersection(at.getVarNames(), this.getVarNames()).isEmpty());
+    }
+
+    /**
+     * @return true if this atom requires direct schema lookups
+     */
+    public boolean requiresSchema(){
+        return getSchemaConcept() == null || this instanceof OntologicalAtom;
     }
 
     public abstract Class<? extends VarProperty> getVarPropertyClass();
@@ -104,10 +131,10 @@ public abstract class Atom extends AtomicBase {
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
         Set<String> errors = new HashSet<>();
-        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(Collectors.toSet());
+        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(toSet());
         Set<Var> varNames = Sets.difference(
                 getVarNames(),
-                this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
+                this.getInnerPredicates().map(Atomic::getVarName).collect(toSet())
         );
         boolean unboundVariables = varNames.stream()
                 .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
@@ -150,7 +177,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    protected Stream<Rule> getPotentialRules(){
+    public Stream<Rule> getPotentialRules(){
         boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
@@ -164,7 +191,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, tx()))
+                    .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -183,6 +210,15 @@ public abstract class Atom extends AtomicBase {
     public boolean requiresRoleExpansion(){ return false; }
 
     /**
+     * @return if this atom requires decomposition into a set of atoms
+     */
+    public boolean requiresDecomposition(){
+        return this.getPotentialRules()
+                .map(r -> tx().ruleCache().getRule(r, () -> new InferenceRule(r, tx())))
+                .anyMatch(InferenceRule::isAppendRule);
+    }
+
+    /**
      * @return corresponding type if any
      */
     public abstract SchemaConcept getSchemaConcept();
@@ -196,26 +232,6 @@ public abstract class Atom extends AtomicBase {
      * @return value variable name
      */
     public abstract Var getPredicateVariable();
-
-    /**
-     * @param var variable of interest
-     * @return id predicate referring to prescribed variable
-     */
-    @Nullable
-    public IdPredicate getIdPredicate(Var var){
-        return getPredicate(var, IdPredicate.class);
-    }
-
-    /**
-     * @param var variable the predicate refers to
-     * @param type predicate type
-     * @param <T> predicate type generic
-     * @return specific predicate referring to provided variable
-     */
-    @Nullable
-    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
-        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
-    }
 
     public abstract Stream<Predicate> getInnerPredicates();
 
@@ -262,10 +278,10 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public Atom inferTypes(){ return inferTypes(new QueryAnswer()); }
+    public Atom inferTypes(){ return inferTypes(new ConceptMapImpl()); }
 
     @Override
-    public Atom inferTypes(Answer sub){ return this; }
+    public Atom inferTypes(ConceptMap sub){ return this; }
 
     /**
      * @return list of types this atom can take
@@ -276,7 +292,7 @@ public abstract class Atom extends AtomicBase {
      * @param sub partial substitution
      * @return list of possible atoms obtained by applying type inference
      */
-    public List<Atom> atomOptions(Answer sub){ return Lists.newArrayList(inferTypes(sub));}
+    public List<Atom> atomOptions(ConceptMap sub){ return Lists.newArrayList(inferTypes(sub));}
 
     /**
      * @param type to be added to this {@link Atom}
@@ -284,7 +300,12 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type){ return this;}
 
-    public Stream<Answer> materialise(){ return Stream.empty();}
+    public Stream<ConceptMap> materialise(){ return Stream.empty();}
+
+    /**
+     * @return set of atoms this atom can be decomposed to
+     */
+    public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
 
     public abstract Atom rewriteWithTypeVariable();
 
@@ -294,7 +315,7 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     protected Atom rewriteWithTypeVariable(Atom parentAtom){
-        if (!parentAtom.getPredicateVariable().isUserDefinedName()) return this;
+        if (this.getPredicateVariable().isUserDefinedName() || !parentAtom.getPredicateVariable().isUserDefinedName()) return this;
         return rewriteWithTypeVariable();
     }
 

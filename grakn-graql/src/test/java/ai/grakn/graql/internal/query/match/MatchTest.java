@@ -1,20 +1,20 @@
 
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query.match;
@@ -40,7 +40,7 @@ import ai.grakn.graql.Order;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.matcher.MatchableConcept;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -846,7 +846,7 @@ public class MatchTest {
     @Test
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         Match query = qb.match(x.has("name"));
-        for (Answer result : query) {
+        for (ConceptMap result : query) {
             assertEquals(result.vars(), ImmutableSet.of(x));
         }
     }
@@ -891,8 +891,8 @@ public class MatchTest {
 
     @Test
     public void whenQueryDoesNotSpecifyRole_ResultIsTheSameAsSpecifyingMetaRole() {
-        Set<Answer> withoutRole = qb.match(var().rel(x).isa("has-cast")).stream().collect(toSet());
-        Set<Answer> withRole = qb.match(var().rel("role", x).isa("has-cast")).stream().collect(toSet());
+        Set<ConceptMap> withoutRole = qb.match(var().rel(x).isa("has-cast")).stream().collect(toSet());
+        Set<ConceptMap> withRole = qb.match(var().rel("role", x).isa("has-cast")).stream().collect(toSet());
 
         assertEquals(withoutRole, withRole);
     }
@@ -1093,25 +1093,25 @@ public class MatchTest {
 
     @Test
     public void testOrderDescendingString() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.desc).stream().findFirst().get();
         assertEquals("The Muppets", answer.get(y).asAttribute().value());
     }
 
     @Test
     public void testOrderAscendingString() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("title", y)).orderBy(y, Order.asc).stream().findFirst().get();
         assertEquals("Apocalypse Now", answer.get(y).asAttribute().value());
     }
 
     @Test
     public void testOrderDescendingDate() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.desc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.desc).stream().findFirst().get();
         assertEquals(LocalDateTime.of(2000, 9, 2, 0, 0), answer.get(y).asAttribute().value());
     }
 
     @Test
     public void testOrderAscendingDate() {
-        Answer answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.asc).stream().findFirst().get();
+        ConceptMap answer = movieKB.tx().graql().match(x.isa("movie").has("release-date", y)).orderBy(y, Order.asc).stream().findFirst().get();
         assertEquals(LocalDateTime.of(1984, 1, 1, 0, 0), answer.get(y).asAttribute().value());
     }
 

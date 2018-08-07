@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.pattern;
@@ -38,6 +38,8 @@ import java.util.Set;
 abstract class VarPatternImpl extends AbstractVarPattern {
 
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
+
+    private int hashCode = 0;
 
     @Override
     public abstract Var var();
@@ -65,11 +67,13 @@ abstract class VarPatternImpl extends AbstractVarPattern {
 
     @Override
     public final int hashCode() {
-        // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
-        int result = properties().hashCode();
-        if (var().isUserDefinedName()) result = 31 * result + var().hashCode();
-        result = 31 * result + (var().isUserDefinedName() ? 1 : 0);
-        return result;
+        if (hashCode == 0) {
+            // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
+            hashCode = properties().hashCode();
+            if (var().isUserDefinedName()) hashCode = 31 * hashCode + var().hashCode();
+            hashCode = 31 * hashCode + (var().isUserDefinedName() ? 1 : 0);
+        }
+        return hashCode;
     }
 
     @Override

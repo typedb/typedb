@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.gremlin.fragment;
@@ -22,12 +22,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
@@ -69,9 +71,9 @@ public class IsaExplicitTest {
         EntityType entityType2 = graph.putEntityType(thingy2);
         EntityType entityType3 = graph.putEntityType(thingy3);
 
-        EntityType superType1 = graph.putEntityType(thingy)
-                .sub(entityType0)
-                .sub(entityType1);
+        EntityType superType1 = graph.putEntityType(thingy);
+        entityType0.sup(superType1);
+        entityType1.sup(superType1);
 
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
@@ -112,8 +114,8 @@ public class IsaExplicitTest {
     public void whenInsertIsaExplicit_InsertsADirectInstanceOfAType() {
         QueryBuilder queryBuilder = tx.graql();
         queryBuilder.insert(x.isaExplicit(thingy)).execute();
-        assertEquals(1L, queryBuilder.parse("match $z isa! thingy; aggregate count;").execute());
-        assertEquals(2L, queryBuilder.parse("match $z isa thingy; aggregate count;").execute());
+        assertEquals(1, queryBuilder.<AggregateQuery<Value>>parse("match $z isa! thingy; aggregate count;").execute().get(0).number().intValue());
+        assertEquals(2, queryBuilder.<AggregateQuery<Value>>parse("match $z isa thingy; aggregate count;").execute().get(0).number().intValue());
     }
 
     @Test

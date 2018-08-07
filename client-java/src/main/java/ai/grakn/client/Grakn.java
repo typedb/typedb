@@ -1,19 +1,20 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package ai.grakn.client;
@@ -21,11 +22,11 @@ package ai.grakn.client;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.QueryExecutor;
 import ai.grakn.client.concept.RemoteConcept;
 import ai.grakn.client.executor.RemoteQueryExecutor;
 import ai.grakn.client.rpc.RequestBuilder;
+import ai.grakn.client.rpc.ResponseReader;
 import ai.grakn.client.rpc.Transceiver;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -67,16 +68,29 @@ import java.util.stream.StreamSupport;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 
 /**
- * Entry-point and client equivalent of {@link ai.grakn.Grakn}. Communicates with a running Grakn server using gRPC.
- * In the future, this will likely become the default entry-point over {@link ai.grakn.Grakn}. For now, only a
- * subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
+ * Entry-point which communicates with a running Grakn server using gRPC.
+ * For now, only a subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
  */
 public final class Grakn {
+    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
 
-    private Grakn() {}
+    private ManagedChannel channel;
+    private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
+    private Keyspace keyspace;
 
-    public static Grakn.Session session(SimpleURI uri, Keyspace keyspace) {
-        return new Session(uri, keyspace);
+
+    public Grakn(SimpleURI uri) {
+        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+        keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        keyspace = new Keyspace();
+    }
+
+    public Grakn.Session session(ai.grakn.Keyspace keyspace) {
+        return new Session(keyspace);
+    }
+
+    public Grakn.Keyspace keyspaces(){
+        return keyspace;
     }
 
     /**
@@ -85,16 +99,12 @@ public final class Grakn {
      * @see Transaction
      * @see Grakn
      */
-    public static class Session implements GraknSession {
+    public class Session implements GraknSession {
 
-        private final Keyspace keyspace;
-        private final SimpleURI uri;
-        private final ManagedChannel channel;
+        private final ai.grakn.Keyspace keyspace;
 
-        private Session(SimpleURI uri, Keyspace keyspace) {
+        private Session(ai.grakn.Keyspace keyspace) {
             this.keyspace = keyspace;
-            this.uri = uri;
-            this.channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         }
 
         SessionServiceGrpc.SessionServiceStub sessionStub() {
@@ -106,7 +116,7 @@ public final class Grakn {
         }
 
         @Override
-        public Transaction transaction(GraknTxType type) {
+        public Grakn.Transaction transaction(GraknTxType type) {
             return new Transaction(this, type);
         }
 
@@ -116,13 +126,20 @@ public final class Grakn {
         }
 
         @Override
-        public String uri() {
-            return uri.toString();
-        }
-
-        @Override
-        public Keyspace keyspace() {
+        public ai.grakn.Keyspace keyspace() {
             return keyspace;
+        }
+    }
+
+    /**
+     * Internal class used to handle keyspace related operations
+     */
+
+    public final class Keyspace {
+
+        public void delete(ai.grakn.Keyspace keyspace){
+            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
+            keyspaceBlockingStub.delete(request);
         }
     }
 
@@ -178,13 +195,6 @@ public final class Grakn {
             return RemoteQueryExecutor.create(this);
         }
 
-        @Override // TODO: Move out of Transaction class
-        public void delete() {
-            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace().getValue());
-            KeyspaceServiceGrpc.KeyspaceServiceBlockingStub stub = session.keyspaceBlockingStub();
-            stub.delete(request);
-            close();
-        }
 
         private SessionProto.Transaction.Res responseOrThrow() {
             Transceiver.Response response;
@@ -219,52 +229,60 @@ public final class Grakn {
         public java.util.Iterator query(Query<?> query) {
             transceiver.send(RequestBuilder.Transaction.query(query.toString(), query.inferring()));
             SessionProto.Transaction.Res txResponse = responseOrThrow();
-
-            switch (txResponse.getQueryIter().getIterCase()) {
-                case NULL:
-                    return Collections.emptyIterator();
-                case ID:
-                    int iteratorId = txResponse.getQueryIter().getId();
-                    return new Iterator<>(this, iteratorId, response -> RequestBuilder.Answer.answer(response.getQueryIterRes().getAnswer(), this));
-                default:
-                    throw CommonUtil.unreachableStatement("Unexpected " + txResponse);
-            }
+            int iteratorId = txResponse.getQueryIter().getId();
+            return new Iterator<>(
+                    this,
+                    iteratorId,
+                    response -> ResponseReader.answer(response.getQueryIterRes().getAnswer(), this)
+            );
         }
 
         @Nullable
         @Override
         public <T extends Type> T getType(Label label) {
-            return getSchemaConcept(label);
+            SchemaConcept concept = getSchemaConcept(label);
+            if (concept == null || !concept.isType()) return null;
+            return (T) concept.asType();
         }
 
         @Nullable
         @Override
         public EntityType getEntityType(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isEntityType()) return null;
+            return concept.asEntityType();
         }
 
         @Nullable
         @Override
         public RelationshipType getRelationshipType(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isRelationshipType()) return null;
+            return concept.asRelationshipType();
         }
 
         @Nullable
         @Override
         public <V> AttributeType<V> getAttributeType(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isAttributeType()) return null;
+            return concept.asAttributeType();
         }
 
         @Nullable
         @Override
         public Role getRole(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isRole()) return null;
+            return concept.asRole();
         }
 
         @Nullable
         @Override
         public Rule getRule(String label) {
-            return getSchemaConcept(Label.of(label));
+            SchemaConcept concept = getSchemaConcept(Label.of(label));
+            if (concept == null || !concept.isRule()) return null;
+            return concept.asRule();
         }
 
         @Nullable
@@ -276,7 +294,7 @@ public final class Grakn {
                 case NULL:
                     return null;
                 default:
-                    return (T) RemoteConcept.of(response.getGetSchemaConceptRes().getSchemaConcept(), this);
+                    return (T) RemoteConcept.of(response.getGetSchemaConceptRes().getSchemaConcept(), this).asSchemaConcept();
             }
         }
 

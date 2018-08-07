@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.inference;
@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.DualLinearTransitivityMatrixKB;
@@ -330,8 +330,8 @@ public class RecursiveInferenceTest {
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
         assertCollectionsEqual(answers, explicitAnswers);
     }
 
@@ -380,8 +380,8 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa vertex; get;";
 
 
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<Answer> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
 
         assertCollectionsEqual(answers, explicitAnswers);
     }

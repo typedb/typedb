@@ -1,26 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
@@ -39,17 +40,17 @@ import java.util.List;
  */
 public class ExplanationBuilder {
 
-    public static List<Answer> buildExplanation(ai.grakn.graql.admin.Answer queryAnswer) {
+    public static List<Answer> buildExplanation(ConceptMap queryAnswer) {
         final List<Answer> explanation = new ArrayList<>();
-        queryAnswer.getExplanation().getAnswers().forEach(answer -> {
-            AnswerExplanation expl = answer.getExplanation();
+        queryAnswer.explanation().getAnswers().forEach(answer -> {
+            Explanation expl = answer.explanation();
             Atom atom = ((ReasonerAtomicQuery) expl.getQuery()).getAtom();
-            ai.grakn.graql.admin.Answer inferredAnswer = new QueryAnswer();
+            ConceptMap inferredAnswer = new ConceptMapImpl();
 
             if (expl.isLookupExplanation()){
                 ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(atom.isResource()? atom : atom.rewriteWithRelationVariable());
                 inferredAnswer = ReasonerQueries.atomic(rewrittenQuery, answer).getQuery().stream()
-                        .findFirst().orElse(new QueryAnswer());
+                        .findFirst().orElse(new ConceptMapImpl());
             } else if (expl.isRuleExplanation()) {
                 Atom headAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
                 ReasonerAtomicQuery rewrittenQuery = ReasonerQueries.atomic(headAtom.isResource()? headAtom : headAtom.rewriteWithRelationVariable());
@@ -57,7 +58,7 @@ public class ExplanationBuilder {
                 inferredAnswer = headAtom.getMultiUnifier(atom, UnifierType.RULE).stream()
                         .map(Unifier::inverse)
                         .flatMap(unifier -> rewrittenQuery.materialise(answer.unify(unifier)))
-                        .findFirst().orElse(new QueryAnswer());
+                        .findFirst().orElse(new ConceptMapImpl());
             }
             explanation.add(Answer.create(inferredAnswer));
         });
