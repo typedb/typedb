@@ -74,6 +74,9 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 public final class Grakn {
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
 
+    @Deprecated
+    public static final SimpleURI DEFAULT_HTTP_URI = new SimpleURI("localhost:4567");
+
     private ManagedChannel channel;
     private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
     private Keyspace keyspace;
