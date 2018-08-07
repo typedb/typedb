@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
@@ -63,7 +63,7 @@ public class NeqComplementState extends AtomicState {
                        Unifier u,
                        QueryStateBase parent,
                        Set<ReasonerAtomicQuery> subGoals,
-                       SimpleQueryCache<ReasonerAtomicQuery> cache) {
+                       QueryCache<ReasonerAtomicQuery> cache) {
         super(q, sub, u, parent, subGoals, cache);
 
         this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());

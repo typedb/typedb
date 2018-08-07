@@ -51,25 +51,28 @@ class MatchInfer extends MatchModifier {
 
         if (tx != null) {
             embeddedTx = tx;
-        } else if (inner.tx() instanceof EmbeddedGraknTx) {
+        }
+        else if (inner.tx() instanceof EmbeddedGraknTx) {
             embeddedTx = (EmbeddedGraknTx) inner.tx();
-        } else {
+        }
+        else {
             throw GraqlQueryException.noTx();
         }
 
         if (!RuleUtils.hasRules(embeddedTx)) return inner.stream(embeddedTx);
+
         validatePattern(embeddedTx);
+
 
         try {
             Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
             Conjunction<VarPatternAdmin> conj = conjIt.next();
-
-            ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
+            ReasonerQuery conjQuery = ReasonerQueries.create(conj, embeddedTx);
             conjQuery.checkValid();
             Stream<ConceptMap> answerStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
             while (conjIt.hasNext()) {
                 conj = conjIt.next();
-                conjQuery = ReasonerQueries.create(conj, embeddedTx).rewrite();
+                conjQuery = ReasonerQueries.create(conj, embeddedTx);
                 Stream<ConceptMap> localStream = conjQuery.isRuleResolvable() ? conjQuery.resolve() : embeddedTx.graql().infer(false).match(conj).stream();
                 answerStream = Stream.concat(answerStream, localStream);
             }

@@ -42,12 +42,10 @@ import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
 import ai.grakn.kb.internal.concept.EntityImpl;
@@ -55,11 +53,12 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import com.google.common.collect.Iterables;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -143,11 +142,7 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom a2 = (ResourceAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
-    }
-
-    private boolean multiPredicateEquivalent(ResourceAtom that, Equivalence<Atomic> equiv){
-        return ReasonerUtils.isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
+                && this.hasMultiPredicateEquivalentWith(a2);
     }
 
     @Override
@@ -161,21 +156,53 @@ public abstract class ResourceAtom extends Binary{
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + AtomicEquivalence.equivalenceHash(this.getMultiPredicate(), AtomicEquivalence.AlphaEquivalence);
+        hashCode = hashCode * 37 + this.multiPredicateEquivalenceHashCode();
+        return hashCode;
+    }
+
+    private boolean hasMultiPredicateEquivalentWith(ResourceAtom atom){
+        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
+        for (ValuePredicate vp : getMultiPredicate()) {
+            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
+            boolean predicateHasEquivalent = false;
+            while (objIt.hasNext() && !predicateHasEquivalent) {
+                predicateHasEquivalent = vp.isAlphaEquivalent(objIt.next());
+            }
+            if (!predicateHasEquivalent) return false;
+        }
+        return true;
+    }
+
+    private int multiPredicateEquivalenceHashCode(){
+        int hashCode = 0;
+        SortedSet<Integer> hashes = new TreeSet<>();
+        getMultiPredicate().forEach(atom -> hashes.add(atom.alphaEquivalenceHashCode()));
+        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }
 
     @Override
-    boolean predicateBindingsEquivalent(Binary at, Equivalence<Atomic> equiv) {
-        if (!(at instanceof ResourceAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
+    boolean hasEquivalentPredicatesWith(Binary at) {
+        if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
 
-        ResourceAtom that = (ResourceAtom) at;
-        if (!multiPredicateEquivalent(that, equiv)) return false;
+        ResourceAtom atom = (ResourceAtom) at;
+        if (!hasMultiPredicateEquivalentWith(atom)) return false;
 
-        IdPredicate thisPredicate = this.getIdPredicate(this.getPredicateVariable());
-        IdPredicate predicate = that.getIdPredicate(that.getPredicateVariable());
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isAlphaEquivalent(predicate);
+    }
 
-        return thisPredicate == null && predicate == null || thisPredicate != null && equiv.equivalent(thisPredicate, predicate);
+    @Override
+    boolean predicateBindingsAreEquivalent(Binary at) {
+        if (!(at instanceof ResourceAtom && super.predicateBindingsAreEquivalent(at))) return false;
+
+        ResourceAtom atom = (ResourceAtom) at;
+        if (!hasMultiPredicateEquivalentWith(atom)) return false;
+
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return (thisPredicate == null) == (predicate == null);
     }
 
     @Override
@@ -222,8 +249,6 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     public boolean isSelectable(){ return true;}
-
-    public boolean isSpecific(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isSpecific());}
 
     @Override
     public boolean requiresMaterialisation(){ return true;}

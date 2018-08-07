@@ -24,7 +24,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
@@ -33,7 +32,6 @@ import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -74,26 +72,6 @@ public abstract class AtomicBase implements Atomic {
      */
     public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
         return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
-    }
-
-    /**
-     * @param var variable of interest
-     * @return id predicate referring to prescribed variable
-     */
-    @Nullable
-    public IdPredicate getIdPredicate(Var var){
-        return getPredicate(var, IdPredicate.class);
-    }
-
-    /**
-     * @param var variable the predicate refers to
-     * @param type predicate type
-     * @param <T> predicate type generic
-     * @return specific predicate referring to provided variable
-     */
-    @Nullable
-    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
-        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
     }
 
     @Override

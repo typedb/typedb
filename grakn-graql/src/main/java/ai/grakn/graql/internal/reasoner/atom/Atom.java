@@ -31,9 +31,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -44,14 +42,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
-import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -82,7 +81,7 @@ public abstract class Atom extends AtomicBase {
         if (isResource() || getSchemaConcept() == null) return false;
         SchemaConcept schemaConcept = getSchemaConcept();
         return getApplicableRules()
-                .filter(rule -> rule.getBody().selectAtoms()
+                .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                         .anyMatch(at -> typesCompatible(schemaConcept, at.getSchemaConcept())))
                 .anyMatch(this::isRuleApplicable);
@@ -92,38 +91,12 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom is ground (all variables are bound)
      */
     public boolean isGround(){
-        Set<Var> mappedVars = Stream.concat(getPredicates(), getInnerPredicates())
+        Set<Var> varNames = getVarNames();
+        return Stream.concat(
+                getPredicates(),
+                getInnerPredicates())
                 .map(AtomicBase::getVarName)
-                .collect(toSet());
-        return getVarNames().stream()
-                .allMatch(mappedVars::contains);
-    }
-
-    /**
-     * @return true if this atom is bounded - via substitution/specific resource or schema
-     */
-    public boolean isBounded(){
-        return isResource() && ((ResourceAtom) this).isSpecific()
-                || this instanceof OntologicalAtom
-                || isGround();
-    }
-
-    /**
-     * @return true if this atom is disconnected (doesn't have neighbours)
-     */
-    public boolean isDisconnected(){
-        return isSelectable()
-            && getParentQuery().getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .filter(at -> !at.equals(this))
-                .allMatch(at -> Sets.intersection(at.getVarNames(), this.getVarNames()).isEmpty());
-    }
-
-    /**
-     * @return true if this atom requires direct schema lookups
-     */
-    public boolean requiresSchema(){
-        return getSchemaConcept() == null || this instanceof OntologicalAtom;
+                .allMatch(varNames::contains);
     }
 
     public abstract Class<? extends VarProperty> getVarPropertyClass();
@@ -131,10 +104,10 @@ public abstract class Atom extends AtomicBase {
     @Override
     public Set<String> validateAsRuleHead(Rule rule){
         Set<String> errors = new HashSet<>();
-        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(toSet());
+        Set<Atomic> parentAtoms = getParentQuery().getAtoms(Atomic.class).filter(at -> !at.equals(this)).collect(Collectors.toSet());
         Set<Var> varNames = Sets.difference(
                 getVarNames(),
-                this.getInnerPredicates().map(Atomic::getVarName).collect(toSet())
+                this.getInnerPredicates().map(Atomic::getVarName).collect(Collectors.toSet())
         );
         boolean unboundVariables = varNames.stream()
                 .anyMatch(var -> parentAtoms.stream().noneMatch(at -> at.getVarNames().contains(var)));
@@ -177,7 +150,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    public Stream<Rule> getPotentialRules(){
+    protected Stream<Rule> getPotentialRules(){
         boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
@@ -191,7 +164,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             getPotentialRules()
-                    .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
+                    .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -210,15 +183,6 @@ public abstract class Atom extends AtomicBase {
     public boolean requiresRoleExpansion(){ return false; }
 
     /**
-     * @return if this atom requires decomposition into a set of atoms
-     */
-    public boolean requiresDecomposition(){
-        return this.getPotentialRules()
-                .map(r -> tx().ruleCache().getRule(r, () -> new InferenceRule(r, tx())))
-                .anyMatch(InferenceRule::isAppendRule);
-    }
-
-    /**
      * @return corresponding type if any
      */
     public abstract SchemaConcept getSchemaConcept();
@@ -232,6 +196,26 @@ public abstract class Atom extends AtomicBase {
      * @return value variable name
      */
     public abstract Var getPredicateVariable();
+
+    /**
+     * @param var variable of interest
+     * @return id predicate referring to prescribed variable
+     */
+    @Nullable
+    public IdPredicate getIdPredicate(Var var){
+        return getPredicate(var, IdPredicate.class);
+    }
+
+    /**
+     * @param var variable the predicate refers to
+     * @param type predicate type
+     * @param <T> predicate type generic
+     * @return specific predicate referring to provided variable
+     */
+    @Nullable
+    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
+        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
+    }
 
     public abstract Stream<Predicate> getInnerPredicates();
 
@@ -302,11 +286,6 @@ public abstract class Atom extends AtomicBase {
 
     public Stream<ConceptMap> materialise(){ return Stream.empty();}
 
-    /**
-     * @return set of atoms this atom can be decomposed to
-     */
-    public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
-
     public abstract Atom rewriteWithTypeVariable();
 
     /**
@@ -315,7 +294,7 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     protected Atom rewriteWithTypeVariable(Atom parentAtom){
-        if (this.getPredicateVariable().isUserDefinedName() || !parentAtom.getPredicateVariable().isUserDefinedName()) return this;
+        if (!parentAtom.getPredicateVariable().isUserDefinedName()) return this;
         return rewriteWithTypeVariable();
     }
 

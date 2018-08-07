@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
@@ -31,11 +32,10 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -66,24 +66,24 @@ import static java.util.stream.Collectors.toSet;
 public class InferenceRule {
 
     private final EmbeddedGraknTx<?> tx;
-    private final Rule rule;
+    private final ConceptId ruleId;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
-    private long priority = Long.MAX_VALUE;
+    private int priority = Integer.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.rule = rule;
+        this.ruleId = rule.id();
         //TODO simplify once changes propagated to rule objects
         this.body = ReasonerQueries.create(conjunction(rule.when().admin()), tx);
         this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, EmbeddedGraknTx<?> tx){
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, EmbeddedGraknTx<?> tx){
         this.tx = tx;
-        this.rule = rule;
+        this.ruleId = ruleId;
         this.head = head;
         this.body = body;
     }
@@ -112,10 +112,9 @@ public class InferenceRule {
     /**
      * @return the priority with which the rule should be fired
      */
-    public long resolutionPriority(){
-        if (priority == Long.MAX_VALUE) {
-            //NB: only checking locally as checking full tree (getDependentRules) is expensive
-            priority = -getBody().selectAtoms().flatMap(Atom::getApplicableRules).count();
+    public int resolutionPriority(){
+        if (priority == Integer.MAX_VALUE) {
+            priority = -RuleUtils.getDependentRules(getBody()).size();
         }
         return priority;
     }
@@ -127,12 +126,12 @@ public class InferenceRule {
         return Patterns.conjunction(vars);
     }
 
-    public Rule getRule(){ return rule;}
+    public ConceptId getRuleId(){ return ruleId;}
 
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
-    private boolean hasDisconnectedHead(){
+    public boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 
@@ -196,7 +195,7 @@ public class InferenceRule {
      * @param unifier unifier unifying parent with the rule
      * @return rule with propagated constraints from parent
      */
-    private InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
+    public InferenceRule propagateConstraints(Atom parentAtom, Unifier unifier){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Atom headAtom = head.getAtom();
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
@@ -243,7 +242,7 @@ public class InferenceRule {
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
                 ReasonerQueries.create(bodyAtoms, tx),
-                rule,
+                ruleId,
                 tx
         );
     }
@@ -253,26 +252,11 @@ public class InferenceRule {
             return new InferenceRule(
                     ReasonerQueries.atomic(getHead().getAtom().toRelationshipAtom()),
                     ReasonerQueries.create(getBody().getAtoms(), tx),
-                    rule,
+                    ruleId,
                     tx
             );
         }
         return this;
-    }
-
-    public boolean isAppendRule(){
-        Atom headAtom = getHead().getAtom();
-        SchemaConcept headType = headAtom.getSchemaConcept();
-        if (headType.isRelationshipType()
-                && headAtom.getVarName().isUserDefinedName()) {
-            RelationshipAtom bodyAtom = getBody().getAtoms(RelationshipAtom.class)
-                    .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                    .filter(at -> at.getSchemaConcept().equals(headType))
-                    .filter(at -> at.getVarName().isUserDefinedName())
-                    .findFirst().orElse(null);
-            return bodyAtom != null;
-        }
-        return false;
     }
 
     private InferenceRule rewriteVariables(Atom parentAtom){
@@ -291,14 +275,7 @@ public class InferenceRule {
                     }).forEach(bodyRewrites::add);
 
             ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
-            return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
-        }
-        return this;
-    }
-
-    private InferenceRule rewriteBodyAtoms(){
-        if (getBody().requiresDecomposition()) {
-            return new InferenceRule(getHead(), getBody().rewrite(), rule, tx);
+            return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
         }
         return this;
     }
@@ -310,7 +287,6 @@ public class InferenceRule {
      */
     public InferenceRule rewrite(Atom parentAtom){
         return this
-                .rewriteBodyAtoms()
                 .rewriteHeadToRelation(parentAtom)
                 .rewriteVariables(parentAtom);
     }
@@ -323,7 +299,7 @@ public class InferenceRule {
      * @param cache query cache
      * @return resolution subGoal formed from this rule
      */
-    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache){
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta

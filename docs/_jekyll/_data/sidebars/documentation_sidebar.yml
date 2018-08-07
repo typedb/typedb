@@ -23,9 +23,6 @@ entries:
       - title: Graql Console
         output: web
         url: /docs/get-started/graql-console
-      - title: Grakn Console
-        output: web
-        url: /docs/get-started/grakn-console
   - title: Cloud Deployment
     output: web
     folderitems:

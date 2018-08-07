@@ -58,23 +58,6 @@ The following parameters are used to define the stack:
     
         Specifies whether to optimise Grakn Launch Configuration for EBS I/O.
         
-## Running Grakn
-**A Grakn Cluster starts automatically running as user `grakn`.** There is no need to manually start grakn servers.
-**Once the deployment is started, please allow some time for the cluster to fully bootup and synchronise**. A reasonable rule of thumb for the bootup time is **2 minutes per cluster node**. The progress of cluster bootup can be
-checked by logging in to a cluster node and executing the [cluster health check](#cluster-check) command.
-
-        
-## User credentials
-In order to use Graql and Grakn consoles, user credentials are required. The default user is `grakn`, whereas the default password can be found in the `GraknUserPassword` output.
-
-**Once logged in, We strongly encourage to change the default user password**. In order to do so, log in to th Grakn console and type:
- 
-```
-UPDATE USER grakn WITH PASSWORD newpassword
-```
-
-More details on available commands can be found [here](http://dev.grakn.ai/docs/get-started/grakn-console). 
-        
 ## Accessing Grakn
 
 There are various ways to access Grakn on AWS. Here we will address the most common usage patterns.
@@ -89,7 +72,7 @@ To log in into one of the cluster nodes, simply use the ssh command:
 
 `ssh -i <private key file> ubuntu@<grakn instance DNS name or IP address>`
 
-#### <a name="cluster-check"></a> Cluster health check
+#### Cluster health check
 To verify the state of the cluster, execute the following command:
     
 `grakn cluster status`
@@ -114,11 +97,31 @@ The Grakn console can be accessed similarly to the Graql console by typing:
 
 `grakn console start`
   
-and providing the user credentials. A successful login attempt will look like this:
+and providing the user credentials (user: grakn, password: the one specified in the `GraknUserPassword` output). A successful login attempt will look like this:
 
 ![](/images/aws-grakn-console.png)
 
-A summary of available commands can be found [here](http://dev.grakn.ai/docs/get-started/grakn-console).
+Provided you log in as user with `admin` privileges, Grakn console allows to perform the following actions:
+
+* create a new user:
+
+`CREATE USER username WITH PASSWORD userpassword WITH ROLE admin`
+
+* update an existing user's password
+
+`UPDATE username WITH PASSWORD newpassword`
+
+* retrieve all of the users present:
+
+`LIST USERS`
+
+* retrieve a user:
+
+`GET USER username`
+
+* delete an existing user:
+
+`DELETE USER username`
 
 ## Next Steps
 

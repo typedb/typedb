@@ -26,17 +26,22 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  *
  * <p>
- * Class defining the resolution plan for a given {@link ReasonerQueryImpl} at an atom level.
+ * Class defining the resolution plan for a given {@link ReasonerQueryImpl}.
  * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
  * </p>
  *
@@ -45,12 +50,12 @@ import java.util.stream.Collectors;
  */
 public final class ResolutionPlan {
 
-    final private ImmutableList<Atom> plan;
     final private ReasonerQueryImpl query;
+    final private ImmutableList<Atom> plan;
 
     public ResolutionPlan(ReasonerQueryImpl q){
         this.query = q;
-        this.plan = GraqlTraversalPlanner.plan(query);
+        this.plan = GraqlTraversalPlanner.refinedPlan(query);
         validatePlan();
     }
 
@@ -68,7 +73,7 @@ public final class ResolutionPlan {
      * @return true if the plan is complete with respect to provided query - contains all selectable atoms
      */
     private boolean isComplete(){
-        return query.selectAtoms().allMatch(plan::contains);
+        return plan.containsAll(query.selectAtoms());
     }
 
     /**
@@ -94,6 +99,7 @@ public final class ResolutionPlan {
         return nonGroundPredicates.isEmpty();
     }
 
+
     private void validatePlan() {
         if (!isNeqGround()) {
             throw GraqlQueryException.nonGroundNeqPredicate(query);
@@ -103,5 +109,30 @@ public final class ResolutionPlan {
         }
     }
 
+    /**
+     * compute the query resolution plan - list of queries ordered by their cost as computed by the graql traversal planner
+     * @return list of prioritised queries
+     */
+    public LinkedList<ReasonerQueryImpl> queryPlan(){
+        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
+        LinkedList<Atom> atoms = new LinkedList<>(plan);
+        EmbeddedGraknTx<?> tx = query.tx();
+
+        List<Atom> nonResolvableAtoms = new ArrayList<>();
+        while (!atoms.isEmpty()) {
+            Atom top = atoms.remove();
+            if (top.isRuleResolvable()) {
+                if (!nonResolvableAtoms.isEmpty()) {
+                    queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
+                    nonResolvableAtoms.clear();
+                }
+                queries.add(ReasonerQueries.atomic(top));
+            } else {
+                nonResolvableAtoms.add(top);
+                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
+            }
+        }
+        return queries;
+    }
 }
 
