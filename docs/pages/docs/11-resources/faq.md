@@ -142,8 +142,8 @@ I want to clear the knowledge graph I've been experimenting with and try somethi
 If you are using the Java API, it's a simple as:
 
 ```java-test-ignore
-tx = Grakn.session(Grakn.DEFAULT_URI, "my-knowledge-base").open(GraknTxType.WRITE);
-tx.clear();
+Grakn grakn = new Grakn(Grakn.DEFAULT_URI);
+grakn.keyspaces().delete("my-knowledge-base");
 ```
 
 If you are using the Graql shell and have not committed what you have in the knowledge graph, you can just quit the shell and restart it, and all is clean.

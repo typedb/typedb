@@ -38,13 +38,13 @@ import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Repeat;
 import ai.grakn.util.RepeatRule;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
+
 import java.util.Iterator;
 import java.util.List;
-
-import org.junit.BeforeClass;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -61,7 +61,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class ResolutionPlanTest {
 
@@ -72,11 +71,6 @@ public class ResolutionPlanTest {
 
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("resolution-plan-test.gql");
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Test
     @Repeat( times = repeat )

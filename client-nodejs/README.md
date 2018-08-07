@@ -55,8 +55,8 @@ on the Grakn object the following methods are available:
 | Method                                   | Return type       | Description                                          |
 | ---------------------------------------- | ----------------- | ---------------------------------------------------- |
 | `session(String keyspace)`               | *Session*         | Return a new Session bound to the specified keyspace |
-| async `keyspace.delete(String keyspace)` | *void*            | Deletes the specified keyspace                       |
-| async `keyspace.retrieve()`              | Array of *String* | Retrieves all available keyspaces                    |
+| async `keyspaces().delete(String keyspace)` | *void*            | Deletes the specified keyspace                       |
+| async `keyspaces().retrieve()`              | Array of *String* | Retrieves all available keyspaces                    |
 
 
 

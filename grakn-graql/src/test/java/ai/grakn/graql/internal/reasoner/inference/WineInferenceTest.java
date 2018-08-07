@@ -20,23 +20,15 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
-import static org.junit.Assume.assumeTrue;
 
 public class WineInferenceTest {
 
-    @Rule
-    public final SampleKBContext wineGraph = SampleKBContext.load("wines-test.gql", "wines-rules.gql");
-
-    @BeforeClass
-    public static void setUpClass() {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext wineGraph = SampleKBContext.load("wines-test.gql", "wines-rules.gql");
 
     @Test
     public void testRecommendation() {

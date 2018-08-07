@@ -1,6 +1,6 @@
 {
   "name": "grakn",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Grakn Node.js Client",
   "main": "dist/Grakn.js",
   "author": "Grakn Labs",
