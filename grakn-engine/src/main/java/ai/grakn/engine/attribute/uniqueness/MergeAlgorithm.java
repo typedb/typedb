@@ -48,10 +48,10 @@ public class MergeAlgorithm {
             Set<KeyspaceValuePair> duplicates = newAttributes.attributes().stream()
                     .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
             for (KeyspaceValuePair keyspaceValuePair : duplicates) {
-                try (EmbeddedGraknSession s  = EmbeddedGraknSession.create(keyspaceValuePair.keyspace(), "localhost:4567");
+                try (EmbeddedGraknSession s  = EmbeddedGraknSession.createEngineSession(keyspaceValuePair.keyspace());
                      EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
                     merge(tx, keyspaceValuePair.value());
-                    tx.commitSubmitNoLogs();
+                    tx.commit();
                 }
             }
             LOG.info("new attributes processed.");

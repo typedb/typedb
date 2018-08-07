@@ -27,11 +27,11 @@ import static ai.grakn.graql.Graql.*;
 
 public class ScratchpadTest {
     @Test
-    public void printTheAnswerFromMatchIsaNameGet() throws InterruptedException {
+    public void printTheAnswerFromMatchIsaNameGet() {
         SimpleURI grakn = new SimpleURI("localhost", 48555);
         Keyspace keyspace = Keyspace.of("grakn6"); //
 
-        try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
+        try (Grakn.Session session = new Grakn(grakn).session(keyspace)) {
             try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
                 tx.graql().match(var("n").isa("name")).get().execute().forEach(n -> {
                     System.out.println(n.get("n").id() + " = " + n.get("n").asAttribute().value());
@@ -43,7 +43,7 @@ public class ScratchpadTest {
 
     @Test
     public void getAttribute() {
-        EmbeddedGraknSession session = EmbeddedGraknSession.create(Keyspace.of("grakn"), "0.0.0.0:4567");
+        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(Keyspace.of("grakn"));
         EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE);
         GraphTraversalSource tinker = tx.getTinkerTraversal();
         tinker.V().has("INDEX").toList().forEach(v -> {
@@ -56,7 +56,7 @@ public class ScratchpadTest {
 
     @Test
     public void insertTwoPeopleWithIdenticalNames() {
-        EmbeddedGraknSession session = EmbeddedGraknSession.create(Keyspace.of("grakn"), "0.0.0.0:4567");
+        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(Keyspace.of("grakn"));
         EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE);
 
         AttributeType at = tx.putAttributeType("name", AttributeType.DataType.STRING);
@@ -75,7 +75,7 @@ public class ScratchpadTest {
 
     @Test
     public void matchPersonAndHisName() {
-        EmbeddedGraknSession session = EmbeddedGraknSession.create(Keyspace.of("grakn"), "0.0.0.0:4567");
+        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(Keyspace.of("grakn"));
         EmbeddedGraknTx tx = session.transaction(GraknTxType.READ);
 
         tx.graql().match(var("p").isa("person").has("name", var("n"))).get().execute().forEach(answer -> {
@@ -88,7 +88,7 @@ public class ScratchpadTest {
 
     @Test
     public void mergeAttribute() {
-        EmbeddedGraknSession session = EmbeddedGraknSession.create(Keyspace.of("grakn"), "0.0.0.0:4567");
+        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(Keyspace.of("grakn"));
         EmbeddedGraknTx tx = session.transaction(GraknTxType.READ);
 
         mergeAttribteAlgorithm(tx, "name", "John");
@@ -137,7 +137,7 @@ public class ScratchpadTest {
 
         // TODO: check that we've turned off janus index and propertyUnique
 
-        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+        try (Grakn.Session session = new Grakn(new SimpleURI(grakn)).session(keyspace)) {
             try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
                 tx.graql().define(
                         label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
@@ -150,7 +150,7 @@ public class ScratchpadTest {
             }
         }
 
-        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+        try (Grakn.Session session = new Grakn(new SimpleURI(grakn)).session(keyspace)) {
             System.out.println("inserting a new name attribute with value '" + name + "'...");
             for (int i = 0; i < duplicateCount; ++i) {
                 try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {

@@ -43,7 +43,7 @@ public class AttributeUniquenessIT {
         // TODO: check that we've turned off janus index and propertyUnique
 
         // insert 2 "John"
-        try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
+        try (Grakn.Session session = new Grakn(grakn).session(keyspace)) {
             try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
                 AttributeType name = tx.putAttributeType("name", AttributeType.DataType.STRING);
                 EntityType person = tx.putEntityType("person").has(name);
@@ -66,7 +66,7 @@ public class AttributeUniquenessIT {
         System.out.println("finished waiting.");
 
         // TODO: enable
-        try (Grakn.Session session = Grakn.session(grakn, keyspace)) {
+        try (Grakn.Session session = new Grakn(grakn).session(keyspace)) {
             try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
                 AttributeType<String> name = tx.getAttributeType("name");
                 EntityType person = tx.getEntityType("person");
@@ -95,7 +95,7 @@ public class AttributeUniquenessIT {
 
         // TODO: check that we've turned off janus index and propertyUnique
 
-        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+        try (Grakn.Session session = new Grakn(new SimpleURI(grakn)).session(keyspace)) {
             try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
                 tx.graql().define(
                         label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
@@ -108,7 +108,7 @@ public class AttributeUniquenessIT {
             }
         }
 
-        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+        try (Grakn.Session session = new Grakn(new SimpleURI(grakn)).session(keyspace)) {
             System.out.println("inserting a new name attribute with value '" + name + "'...");
             for (int i = 0; i < duplicateCount; ++i) {
                 try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
@@ -132,7 +132,7 @@ public class AttributeUniquenessIT {
             mergeIter++;
         }
 
-        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+        try (Grakn.Session session = new Grakn(new SimpleURI(grakn)).session(keyspace)) {
             System.out.println("inserting a new name attribute with value '" + name + "'...");
             for (int i = 0; i < duplicateCount; ++i) {
                 try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
@@ -156,7 +156,7 @@ public class AttributeUniquenessIT {
             mergeIter2++;
         }
 
-        try (Grakn.Session session = Grakn.session(new SimpleURI(grakn), keyspace)) {
+        try (Grakn.Session session = new Grakn(new SimpleURI(grakn)).session(keyspace)) {
             try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
                 List<Concept> concept = tx.graql().match(var("n").isa("name")).get().execute()
                         .stream().map(e -> e.get(var("n"))).collect(Collectors.toList());
