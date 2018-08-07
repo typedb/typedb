@@ -125,7 +125,7 @@ public class SimplePlanner {
      */
      public static ImmutableList<Atom> plan(ReasonerQueryImpl query){
         return ImmutableList.<Atom>builder().addAll(
-                query.selectAtoms().stream()
+                query.selectAtoms()
                         .sorted(Comparator.comparing(at -> -AtomPriority.priority(at)))
                         .iterator())
                 .build();

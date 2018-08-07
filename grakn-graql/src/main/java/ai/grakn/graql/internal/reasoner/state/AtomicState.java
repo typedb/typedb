@@ -22,7 +22,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -48,7 +48,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                 Unifier u,
                 QueryStateBase parent,
                 Set<ReasonerAtomicQuery> subGoals,
-                QueryCache<ReasonerAtomicQuery> cache) {
+                SimpleQueryCache<ReasonerAtomicQuery> cache) {
         super(ReasonerQueries.atomic(query, sub),
                 sub,
                 u,
@@ -83,7 +83,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                     materialisedAnswer(baseAnswer, rule, unifier) :
                     ruleAnswer(baseAnswer, rule, unifier);
         }
-        return getCache().recordAnswer(query, answer, getCacheUnifier());
+        return getCache().record(query, answer, getCacheUnifier());
     }
 
     private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
@@ -102,7 +102,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
         ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        QueryCache<ReasonerAtomicQuery> cache = getCache();
+        SimpleQueryCache<ReasonerAtomicQuery> cache = getCache();
 
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
@@ -128,7 +128,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
         if (headAnswer.isEmpty()
                 && queryAnswer.isEmpty()) {
             ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
-            if (!queryEquivalentToHead) cache.recordAnswer(ruleHead, materialisedSub);
+            if (!queryEquivalentToHead) cache.record(ruleHead, materialisedSub);
             answer = materialisedSub
                     .project(queryVars)
                     .unify(unifier);

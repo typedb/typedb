@@ -40,7 +40,6 @@ import ai.grakn.test.kbs.TransitivityMatrixKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.rule.SessionContext;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 public class BenchmarkTest {
 
     //Needed to start cass depending on profile

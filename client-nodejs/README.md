@@ -33,9 +33,9 @@ const tx = await session.transaction(Grakn.txType.WRITE);
 Execute Graql query (this example works inside an `async` function):
 
 ```
-const resultIterator = await tx.query("match $x isa person; limit 10; get;");
-const answer = await resultIterator.next();
-const person = answer.get().get('x');
+const resultIterator = await tx.query("match $x isa person; limit 10; get;"); // This will return an Iterator of ConceptMap Answer
+const answer = await resultIterator.next(); // Take first ConceptMap Answer
+const person = answer.map().get('x'); // Access map in Answer with answer.map() and take Concept associated to variable x from 'match $x isa person; get;'
 tx.close();
 ```
 
@@ -97,7 +97,7 @@ on every iterator the following methods are available:
 | ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | async `next()`            | *IteratorElement* or *null* | Retrieves next element or returns null when no more elements are available                                                                                                                                                                                                |
 | async `collect()`         | Array of *IteratorElement*  | Consumes the iterator and collect all the elements into an array                                                                                                                                                                                                          |
-| async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator returned by transaction.query() method when executing a MATCH query.**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
+| async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator containing ConceptMap Answer, returned by transaction.query().**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
 
 **IteratorElement**
 

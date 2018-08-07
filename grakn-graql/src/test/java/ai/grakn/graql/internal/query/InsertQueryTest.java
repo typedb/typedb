@@ -58,7 +58,6 @@ import org.junit.rules.ExpectedException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -78,10 +77,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -222,7 +218,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testIterateMatchInsertResults() {
+    public void testMatchInsertShouldInsertDataEvenWhenResultsAreNotCollected() {
         VarPattern language1 = var().isa("language").has("name", "123");
         VarPattern language2 = var().isa("language").has("name", "456");
 
@@ -231,29 +227,10 @@ public class InsertQueryTest {
         assertExists(qb, language2);
 
         InsertQuery query = qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
-        Iterator<ConceptMap> results = query.iterator();
+        query.stream();
 
-        assertNotExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
-        assertNotExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
-
-        ConceptMap result1 = results.next();
-        assertEquals(ImmutableSet.of(var("x")), result1.vars());
-
-        boolean query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).iterator().hasNext();
-        boolean query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).iterator().hasNext();
-
-        //Check if one of the matches have had the insert executed correctly
-        boolean oneExists = query123 != query456;
-        assertTrue("A match insert was not executed correctly for only one match", oneExists);
-
-        //Check that both are inserted correctly
-        ConceptMap result2 = results.next();
-        assertEquals(ImmutableSet.of(var("x")), result1.vars());
         assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
-        assertFalse(results.hasNext());
-
-        assertNotEquals(result1.get("x"), result2.get("x"));
     }
 
     @Test
@@ -487,9 +464,9 @@ public class InsertQueryTest {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get().id();
 
-        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
-        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
+        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
+        qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Not Right Now")).execute();
+        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Not Right Now"));
     }
 
     @Test

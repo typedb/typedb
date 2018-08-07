@@ -45,7 +45,7 @@ import java.lang.reflect.InvocationTargetException;
 
 
 public abstract class TxFactoryBuilder {
-    static final String IN_MEMORY = "in-memory";
+    public static final String IN_MEMORY = "in-memory";
     private static final Logger LOG = LoggerFactory.getLogger(GraknTxFactoryBuilder.class);
 
     public abstract TxFactory<?> getFactory(EmbeddedGraknSession session, boolean isComputerFactory);

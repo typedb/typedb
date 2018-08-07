@@ -73,7 +73,7 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
     }
 
     @Override
-    protected void clearGraph() {
+    public void clearGraph() {
         JanusGraphCleanup.clear(getTinkerPopGraph());
     }
 

@@ -17,9 +17,11 @@
  */
 package ai.grakn;
 
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.GraknTxFactoryBuilder;
 import com.ldbc.driver.DbConnectionState;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -38,21 +40,15 @@ public class GraknDbConnectionState extends DbConnectionState {
      */
     public GraknDbConnectionState(Map<String, String> properties) {
 
-        String uri;
-
-        uri = properties.get("ai.grakn.uri");
-
-
         String keyspace;
 
         keyspace = properties.get("ai.grakn.keyspace");
 
-
-        session = Grakn.session(uri, keyspace);
+        session = EmbeddedGraknSession.createEngineSession(Keyspace.of(keyspace), GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
     }
 
     @Override
-    public void close() throws IOException {
+    public void close(){
         session.close();
     }
 

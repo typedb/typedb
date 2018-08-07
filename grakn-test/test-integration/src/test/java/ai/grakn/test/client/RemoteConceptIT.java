@@ -146,7 +146,7 @@ public class RemoteConceptIT {
     @Before
     public void setUp() {
         // move session construction to setupClass
-        session = Grakn.session(engine.grpcUri(), SampleKBLoader.randomKeyspace());
+        session = new Grakn(engine.grpcUri()).session(SampleKBLoader.randomKeyspace());
 
         tx = session.transaction(GraknTxType.WRITE);
 

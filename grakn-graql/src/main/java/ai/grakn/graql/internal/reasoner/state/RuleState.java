@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Iterators;
@@ -41,12 +41,16 @@ public class RuleState extends QueryStateBase{
     private final InferenceRule rule;
     private final Iterator<ResolutionState> bodyIterator;
 
-    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
         super(sub, unifier, parent, visitedSubGoals, cache);
         this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals, cache));
         this.rule = rule;
     }
 
+    @Override
+    public String toString(){
+        return getClass() + "\n" + rule + "\n";
+    }
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
