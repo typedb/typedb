@@ -68,7 +68,7 @@ public class QueryValidityTest {
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentEntityTypeLabel_Throws(){
+    public void whenQueryingForInexistentEntityTypeLabel_Throws() throws GraqlQueryException{
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x isa polok; get;";
         qb.<GetQuery>parse(queryString).execute();
@@ -82,21 +82,21 @@ public class QueryValidityTest {
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForMismatchedResourceTypeLabel_Throws(){
+    public void whenQueryingForMismatchedResourceTypeLabel_Throws() throws GraqlQueryException{
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match $x has binary $r; get;";
         qb.<GetQuery>parse(queryString).execute();
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentRelationTypeLabel_Throws(){
+    public void whenQueryingForInexistentRelationTypeLabel_Throws() throws GraqlQueryException{
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa jakas-relacja; get;";
         qb.<GetQuery>parse(queryString).execute();
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForMismatchedRelationTypeLabel_Throws(){
+    public void whenQueryingForMismatchedRelationTypeLabel_Throws() throws GraqlQueryException{
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa name; get;";
         qb.<GetQuery>parse(queryString).execute();
@@ -110,14 +110,14 @@ public class QueryValidityTest {
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForRelationWithNonRoleRoles_Throws(){
+    public void whenQueryingForRelationWithNonRoleRoles_Throws() throws GraqlQueryException{
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match (entity: $x, entity: $y) isa relationship; get;";
         qb.<GetQuery>parse(queryString).execute();
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForRelationWithNonExistentRoles_Throws(){
+    public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlQueryException{
         QueryBuilder qb = testContext.tx().graql().infer(true);
         String queryString = "match (rola: $x, rola: $y) isa relationship; get;";
         qb.<GetQuery>parse(queryString).execute();

@@ -84,7 +84,7 @@ public class AtomicQueryTest {
     @ClassRule
     public static final SampleKBContext unificationWithTypesSet = SampleKBContext.load("unificationWithTypesTest.gql");
 
-    @Test (expected = GraqlQueryException.class)
+    @Test (expected = IllegalArgumentException.class)
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         EmbeddedGraknTx<?> graph = geoKB.tx();
         String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
