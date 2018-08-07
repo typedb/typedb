@@ -24,8 +24,6 @@ import ai.grakn.batch.GraknClient;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.SimpleURI;
 import com.google.common.base.Charsets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,8 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Felix Chapman
  */
 final class BatchLoader {
-    private static final Logger LOG = LoggerFactory.getLogger(BatchLoader.class);
-
     private static final int DEFAULT_MAX_RETRY = 1;
 
     static void sendBatchRequest(
