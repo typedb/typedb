@@ -22,7 +22,8 @@ echo "Staging new files"
 git add --force -- _jekyll _site
 git commit -m "Site update"
 echo "Pushing to Heroku"
-# we will just push the git tree for just the docs repo, by doing `git subtree split --prefix docs ...`
+# we will just push the git tree for just the docs repo, by doing `git subtree split --prefix docs ...` from the root directory
+cd ../
 git push git@heroku.com:dev-grakn.git `git subtree split --prefix docs graknlabs-docs-temp-branch`:master --force
 echo "Deleting temporary branch"
 git checkout @{-1}
