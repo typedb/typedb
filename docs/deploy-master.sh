@@ -3,29 +3,41 @@
 set -e
 
 function error {
-    echo "The script failed with an error. Please remember to remove the temporary remote and branch which was created:"
+    echo "The script failed with an error."
+    echo "Please remember to remove the following remote and branch if you have them:"
     echo "git remote remove graknlabs-docs-temp-remote"
     echo "git branch -D graknlabs-docs-temp-branch"
 }
 
 trap error ERR
 
-echo "Checking graknlabs/grakn:master int a temporary branch for deployment"
+echo
+echo "Checking out graknlabs/grakn:master into a temporary branch graknlabs-docs-temp-branch"
+echo "..."
 git stash
 git remote add graknlabs-docs-temp-remote git@github.com:graknlabs/grakn.git
 git fetch graknlabs-docs-temp-remote
 git checkout -b graknlabs-docs-temp-branch graknlabs-docs-temp-remote/master
-echo "Building _site"
+
+echo
+echo "Building dev.grakn.ai website"
+echo "..."
 rake build
-echo "Staging new files"
-# Forcefully add the _jekyll and _site folder before pushing to Heroku, this is necessary because both folders are ignored under the main .gitignore
+
+# Forcefully add the _jekyll and _site that are ignored for the main repository
 git add --force -- _jekyll _site
-git commit -m "Site update"
-echo "Pushing to Heroku"
+git commit -m "Updating dev.grakn.ai"
+
+echo
+echo "Pushing website to git@heroku.com:dev-grakn.git"
+echo "..."
 # we will just push the git tree for just the docs repo, by doing `git subtree split --prefix docs ...` from the root directory
 cd ../
 git push git@heroku.com:dev-grakn.git `git subtree split --prefix docs graknlabs-docs-temp-branch`:master --force
-echo "Deleting temporary branch"
+
+echo
+echo "Removing up temporary branch graknlabs-docs-temp-branch"
+echo "..."
 git checkout @{-1}
 git remote remove graknlabs-docs-temp-remote
 git branch -D graknlabs-docs-temp-branch
