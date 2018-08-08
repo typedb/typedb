@@ -59,7 +59,7 @@ SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
 ```
 
-So you need to include a logger dependency. In the GRAKN.AI distribution we use [Logback](https://logback.qos.ch/). Take a look at the [`logback.xml`](https://github.com/graknlabs/grakn/blob/master/conf/main/logback.xml) used in the Grakn project for an idea how to configure your own.
+So you need to include a logger dependency. In the GRAKN.AI distribution we use [Logback](https://logback.qos.ch/). Take a look at the [`server/logback.xml`](https://github.com/graknlabs/grakn/blob/master/conf/server/logback.xml) used in the Grakn project for an idea how to configure your own.
 
 ### How do I load data into Grakn?
 
