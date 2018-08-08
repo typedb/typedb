@@ -60,11 +60,11 @@ public class DistributionContext extends CompositeTestRule {
 
     public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
 
-    private static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
+    private static final String ZIP_FILENAME = "grakn-core-" + GraknVersion.VERSION + ".zip";
     private static final Path GRAKN_BASE_DIRECTORY = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value());
     private static final Path TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-dist", "target");
     private static final Path ZIP_FULLPATH = Paths.get(TARGET_DIRECTORY.toString(), ZIP_FILENAME);
-    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-dist-" + GraknVersion.VERSION);
+    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-core-" + GraknVersion.VERSION);
 
     private Process engineProcess;
     private int port = 4567;

@@ -118,6 +118,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <finalName>grakn-core-${project.version}</finalName>
                     <tarLongFileMode>gnu</tarLongFileMode>
                     <descriptors>
                         <descriptor>${project.basedir}/src/dist.xml</descriptor>
