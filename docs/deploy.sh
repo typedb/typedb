@@ -10,10 +10,10 @@ function error {
 
 trap error ERR
 
-echo "Checking out temporary branch from stable"
+echo "Checking out temporary branch from master"
 git remote add grakn-docs-origin git@github.com:graknlabs/grakn.git
 git fetch grakn-docs-origin
-git checkout -b docs-deploy-temp grakn-docs-origin/stable
+git checkout -b docs-deploy-temp grakn-docs-origin/master
 echo "Building _site"
 rake build
 echo "Staging new files"
