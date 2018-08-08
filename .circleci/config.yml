@@ -360,3 +360,6 @@ workflows:
       - client-python-e2e:
           requires:
             - build
+      - client-java-e2e:
+          requires:
+            - build
