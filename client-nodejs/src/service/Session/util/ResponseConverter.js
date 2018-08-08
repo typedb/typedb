@@ -165,7 +165,7 @@ ResponseConverter.prototype.getValue = function (resp) {
     if (attrValue.hasLong()) return attrValue.getLong();
     if (attrValue.hasFloat()) return attrValue.getFloat();
     if (attrValue.hasDouble()) return attrValue.getDouble();
-    if (attrValue.hasDate()) return attrValue.getDate();
+    if (attrValue.hasDate()) return new Date(attrValue.getDate());
 };
 
 ResponseConverter.prototype.getOwners = function (resp) {
