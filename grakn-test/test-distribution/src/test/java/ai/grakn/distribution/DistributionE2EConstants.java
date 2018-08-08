@@ -32,11 +32,11 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class DistributionE2EConstants {
     // path of grakn zip files
-    public static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
+    public static final String ZIP_FILENAME = "grakn-core-" + GraknVersion.VERSION + ".zip";
     public static final Path GRAKN_BASE_DIRECTORY = Paths.get(System.getProperty("main.basedir"));
-    public static final Path GRAKN_TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-dist", "target");
+    public static final Path GRAKN_TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-core", "target");
     public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), ZIP_FILENAME);
-    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution test", "grakn-dist-" + GraknVersion.VERSION);
+    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution test", "grakn-core-" + GraknVersion.VERSION);
 
     public static void assertGraknRunning() {
         assertThat("assertGraknRunning() failed because /tmp/grakn-engine.pid is not found", Paths.get("/tmp/grakn-engine.pid").toFile().exists(), equalTo(true));
