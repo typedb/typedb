@@ -28,7 +28,6 @@ import ai.grakn.engine.controller.util.JsonConceptBuilder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.printer.JacksonPrinter;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Query;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.MovieKB;
@@ -61,7 +60,6 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -107,7 +105,7 @@ public class GraqlControllerTest {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .create(mockLockProvider, GraknConfig.create(), KeyspaceStoreFake.of());
         factory.keyspaceStore().loadSystemSchema();
-        new GraqlController(factory, mock(PostProcessor.class), mock(AttributeUniqueness.class), printer, new MetricRegistry()).start(spark);
+        new GraqlController(factory, mock(AttributeUniqueness.class), printer, new MetricRegistry()).start(spark);
     });
 
     @ClassRule

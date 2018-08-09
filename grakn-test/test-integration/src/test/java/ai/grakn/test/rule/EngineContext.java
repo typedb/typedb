@@ -30,8 +30,6 @@ import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
-import ai.grakn.engine.data.QueueSanityCheck;
-import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -40,13 +38,6 @@ import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.rpc.SessionService;
-import ai.grakn.engine.task.postprocessing.CountPostProcessor;
-import ai.grakn.engine.task.postprocessing.CountStorage;
-import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.task.postprocessing.IndexStorage;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
@@ -140,22 +131,6 @@ public class EngineContext extends CompositeTestRule {
 
     public GraknConfig config() {
         return config;
-    }
-
-    public RedisCountStorage redis() {
-        return redis(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-    }
-
-    public RedisCountStorage redis(String uri) {
-        SimpleURI simpleURI = new SimpleURI(uri);
-        return redis(simpleURI.getHost(), simpleURI.getPort());
-    }
-
-    public RedisCountStorage redis(String host, int port) {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        this.jedisPool = new JedisPool(poolConfig, host, port);
-        MetricRegistry metricRegistry = new MetricRegistry();
-        return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
     public SimpleURI uri() {
@@ -303,28 +278,20 @@ public class EngineContext extends CompositeTestRule {
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
-
-        // post-processing
-        IndexStorage indexStorage = RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
-        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
         AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new SessionService(requestOpener, postProcessor, attributeUniqueness))
+                .addService(new SessionService(requestOpener, attributeUniqueness))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         GraknTestUtil.allocateSparkPort(config);
-        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
         Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, attributeUniqueness, keyspaceStore);
+                lockProvider, attributeUniqueness, keyspaceStore);
 
         graknEngineServer.start();
 

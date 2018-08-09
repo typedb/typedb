@@ -22,7 +22,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.internal.printer.Printer;
@@ -58,13 +57,12 @@ public class GraqlControllerDeleteTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static final PostProcessor postProcessor = mock(PostProcessor.class);
     private static final AttributeUniqueness attributeUniqueness = mock(AttributeUniqueness.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(new GraqlController(mockFactory, postProcessor, attributeUniqueness, printer, new MetricRegistry()));
+    public static SparkContext sparkContext = SparkContext.withControllers(new GraqlController(mockFactory, attributeUniqueness, printer, new MetricRegistry()));
 
     @Before
     public void setupMock(){

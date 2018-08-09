@@ -24,7 +24,6 @@ import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
@@ -85,7 +84,7 @@ public class GraqlControllerReadOnlyTest {
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(mockFactory.config(), mockFactory.keyspaceStore(), new ServerStatus(), metricRegistry).start(spark);
-        new GraqlController(mockFactory, mock(PostProcessor.class), mock(AttributeUniqueness.class), printer, metricRegistry).start(spark);
+        new GraqlController(mockFactory, mock(AttributeUniqueness.class), printer, metricRegistry).start(spark);
     });
 
     @Before

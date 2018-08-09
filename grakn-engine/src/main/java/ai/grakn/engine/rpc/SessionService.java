@@ -30,7 +30,6 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -63,17 +62,15 @@ import java.util.stream.Stream;
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
-    private PostProcessor postProcessor;
     private AttributeUniqueness attributeUniqueness;
 
-    public SessionService(OpenRequest requestOpener, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness) {
+    public SessionService(OpenRequest requestOpener, AttributeUniqueness attributeUniqueness) {
         this.requestOpener = requestOpener;
-        this.postProcessor = postProcessor;
         this.attributeUniqueness = attributeUniqueness;
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return TransactionListener.create(responseSender, requestOpener, postProcessor, attributeUniqueness);
+        return TransactionListener.create(responseSender, requestOpener, attributeUniqueness);
     }
 
 
@@ -87,25 +84,23 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
-        private final PostProcessor postProcessor;
         private AttributeUniqueness attributeUniqueness;
         private final Iterators iterators = Iterators.create();
 
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
 
-        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness) {
+        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeUniqueness attributeUniqueness) {
             this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
-            this.postProcessor = postProcessor;
             this.attributeUniqueness = attributeUniqueness;
         }
 
-        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness) {
+        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeUniqueness attributeUniqueness) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseSender, threadExecutor, requestOpener, postProcessor, attributeUniqueness);
+            return new TransactionListener(responseSender, threadExecutor, requestOpener, attributeUniqueness);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -226,11 +221,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             tx = requestOpener.open(args);
             responseSender.onNext(ResponseBuilder.Transaction.open());
         }
-
-//        private void commit() {
-//            tx().commitSubmitNoLogs().ifPresent(postProcessor::submit);
-//            responseSender.onNext(ResponseBuilder.Transaction.commit());
-//        }
 
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->

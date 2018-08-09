@@ -21,8 +21,6 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
-import ai.grakn.engine.data.QueueSanityCheck;
-import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -30,14 +28,6 @@ import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.SessionService;
 import ai.grakn.engine.rpc.ServerOpenRequest;
-import ai.grakn.engine.task.postprocessing.CountPostProcessor;
-import ai.grakn.engine.task.postprocessing.CountStorage;
-import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.task.postprocessing.IndexStorage;
-import ai.grakn.engine.task.postprocessing.PostProcessingTask;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.redismock.RedisServer;
@@ -66,8 +56,6 @@ import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -127,13 +115,6 @@ public class ServerTest {
             }
         } finally {
             redisServer.stop();
-        }
-    }
-
-    @Test
-    public void whenStartingEngineServer_EnsureBackgroundTasksAreRegistered() throws IOException {
-        try (Server server = createGraknEngineServer(mockRedisWrapper)) {
-            assertThat(server.backgroundTaskRunner().tasks(), hasItem(isA(PostProcessingTask.class)));
         }
     }
 
@@ -201,11 +182,6 @@ public class ServerTest {
 
 
         // post-processing
-        IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
-        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
         AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
@@ -213,12 +189,11 @@ public class ServerTest {
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
-        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, postProcessor, attributeUniqueness)).build();
+        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, attributeUniqueness)).build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
-        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return ServerFactory.createServer(engineId, config, status,
                 sparkHttp, httpControllers, rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, attributeUniqueness, keyspaceStore);
+                lockProvider, attributeUniqueness, keyspaceStore);
     }
 }

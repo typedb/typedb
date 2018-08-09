@@ -19,11 +19,8 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
-import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.task.BackgroundTaskRunner;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,46 +44,35 @@ public class Server implements AutoCloseable {
     private final GraknConfig config;
     private final ServerStatus serverStatus;
     private final LockProvider lockProvider;
-    private final QueueSanityCheck queueSanityCheck;
     private final ServerHTTP httpHandler;
-    private final BackgroundTaskRunner backgroundTaskRunner;
     private final AttributeUniqueness attributeUniqueness;
 
     private final KeyspaceStore keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, ServerHTTP httpHandler, BackgroundTaskRunner backgroundTaskRunner, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
-        this.queueSanityCheck = queueSanityCheck;
         // Lock provider
         this.lockProvider = lockProvider;
         this.keyspaceStore = keyspaceStore;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
-        this.backgroundTaskRunner = backgroundTaskRunner;
         this.attributeUniqueness = attributeUniqueness;
     }
 
     public void start() throws IOException {
-        queueSanityCheck.testConnection();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 config.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 config.getProperty(GraknConfigKey.SERVER_PORT));
         synchronized (this){
-            queueSanityCheck.checkVersion();
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
         attributeUniqueness.startDaemon();
         serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
-    }
-
-    @VisibleForTesting
-    public BackgroundTaskRunner backgroundTaskRunner(){
-        return backgroundTaskRunner;
     }
 
     @Override
@@ -99,8 +85,6 @@ public class Server implements AutoCloseable {
                 Thread.currentThread().interrupt();
             }
             attributeUniqueness.stopDaemon();
-            queueSanityCheck.close();
-            backgroundTaskRunner.close();
         }
     }
 

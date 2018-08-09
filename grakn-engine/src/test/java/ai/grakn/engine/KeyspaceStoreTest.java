@@ -32,7 +32,6 @@ import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.rpc.SessionService;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.SimpleURI;
@@ -87,7 +86,6 @@ public class KeyspaceStoreTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private final static PostProcessor mockedPostProcessor = mock(PostProcessor.class);
     private final static AttributeUniqueness mockedAttributeUniqueness = mock(AttributeUniqueness.class);
 
 
@@ -98,7 +96,7 @@ public class KeyspaceStoreTest {
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedPostProcessor, mockedAttributeUniqueness))
+                .addService(new SessionService(requestOpener, mockedAttributeUniqueness))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

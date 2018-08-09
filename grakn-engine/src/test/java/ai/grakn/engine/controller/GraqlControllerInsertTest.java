@@ -24,7 +24,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.answer.ConceptMap;
@@ -63,7 +62,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,14 +71,13 @@ public class GraqlControllerInsertTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static final PostProcessor postProcessor = mock(PostProcessor.class);
     private static final AttributeUniqueness attributeUniqueness = mock(AttributeUniqueness.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(
-            new GraqlController(mockFactory, postProcessor, attributeUniqueness, printer, new MetricRegistry())
+            new GraqlController(mockFactory, attributeUniqueness, printer, new MetricRegistry())
     );
 
     @Before
@@ -103,7 +100,6 @@ public class GraqlControllerInsertTest {
 
     @After
     public void clearExceptions() {
-        reset(postProcessor);
     }
 
     @Test
@@ -219,10 +215,6 @@ public class GraqlControllerInsertTest {
 
         CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
         when(tx.commitAndGetLogs()).thenReturn(Optional.of(commitLog));
-
-        sendRequest(query);
-
-        verify(postProcessor, times(1)).submit(commitLog);
     }
 
     private Response sendRequest(String query) {

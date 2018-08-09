@@ -21,24 +21,13 @@ package ai.grakn.engine;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.controller.HttpController;
-import ai.grakn.engine.data.QueueSanityCheck;
-import ai.grakn.engine.data.RedisSanityCheck;
-import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.rpc.SessionService;
-import ai.grakn.engine.task.BackgroundTaskRunner;
-import ai.grakn.engine.task.postprocessing.CountPostProcessor;
-import ai.grakn.engine.task.postprocessing.CountStorage;
-import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.task.postprocessing.IndexStorage;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
@@ -67,13 +56,8 @@ public class ServerFactory {
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        // redis
-        RedisWrapper redisWrapper = RedisWrapper.create(config);
-        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
-
         // distributed locks
-        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
-
+        LockProvider lockProvider = new ProcessWideLockProvider();
 
         KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
@@ -82,19 +66,14 @@ public class ServerFactory {
 
 
         // post-processing
-        IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
-        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
         AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, postProcessor, attributeUniqueness, keyspaceStore);
+        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeUniqueness, keyspaceStore);
 
-        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, attributeUniqueness, keyspaceStore);
+        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, lockProvider, attributeUniqueness, keyspaceStore);
     }
 
     /**
@@ -107,13 +86,11 @@ public class ServerFactory {
             Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
-            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
+            LockProvider lockProvider, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
 
-        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, postProcessor, attributeUniqueness, rpcServerRPC, httpControllers);
+        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, attributeUniqueness, rpcServerRPC, httpControllers);
 
-        BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config);
-
-        Server server = new Server(engineId, config, serverStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, attributeUniqueness, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockProvider, httpHandler, attributeUniqueness, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);
@@ -121,18 +98,12 @@ public class ServerFactory {
         return server;
     }
 
-    // TODO: remove this method
-    private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig) {
-        BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
-        return taskRunner;
-    }
-
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-                .addService(new SessionService(requestOpener, postProcessor, attributeUniqueness))
+                .addService(new SessionService(requestOpener, attributeUniqueness))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
 

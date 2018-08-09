@@ -27,7 +27,6 @@ import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.printer.JacksonPrinter;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
@@ -54,14 +53,13 @@ public class ServerHTTP {
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final ServerStatus serverStatus;
-    private final PostProcessor postProcessor;
     private final AttributeUniqueness attributeUniqueness;
     private final ServerRPC rpcServerRPC;
     private final Collection<HttpController> additionalCollaborators;
 
     public ServerHTTP(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            ServerStatus serverStatus, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness,
+            ServerStatus serverStatus, AttributeUniqueness attributeUniqueness,
             ServerRPC rpcServerRPC,
             Collection<HttpController> additionalCollaborators
     ) {
@@ -70,7 +68,6 @@ public class ServerHTTP {
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.serverStatus = serverStatus;
-        this.postProcessor = postProcessor;
         this.attributeUniqueness = attributeUniqueness;
         this.rpcServerRPC = rpcServerRPC;
         this.additionalCollaborators = additionalCollaborators;
@@ -91,7 +88,7 @@ public class ServerHTTP {
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
-        new GraqlController(factory, postProcessor, attributeUniqueness, printer, metricRegistry).start(spark);
+        new GraqlController(factory, attributeUniqueness, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
         new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
 

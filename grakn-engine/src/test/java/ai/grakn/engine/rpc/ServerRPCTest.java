@@ -31,7 +31,6 @@ import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlQueryException;
@@ -115,7 +114,6 @@ public class ServerRPCTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
     private final AttributeUniqueness mockedAttributeUniqueness = mock(AttributeUniqueness.class);
     private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
 
@@ -130,11 +128,9 @@ public class ServerRPCTest {
 
     @Before
     public void setUp() throws IOException {
-        doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
-
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedPostProcessor, mockedAttributeUniqueness))
+                .addService(new SessionService(requestOpener, mockedAttributeUniqueness))
                 .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

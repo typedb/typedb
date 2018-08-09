@@ -24,7 +24,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.response.ExplanationBuilder;
 import ai.grakn.engine.controller.util.Requests;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
@@ -101,16 +100,14 @@ public class GraqlController implements HttpController {
     private static final int MAX_RETRY = 10;
     private final Printer printer;
     private final EngineGraknTxFactory factory;
-    private final PostProcessor postProcessor;
     private AttributeUniqueness attributeUniqueness;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness, Printer printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, AttributeUniqueness attributeUniqueness, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
-        this.postProcessor = postProcessor;
         this.attributeUniqueness = attributeUniqueness;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
