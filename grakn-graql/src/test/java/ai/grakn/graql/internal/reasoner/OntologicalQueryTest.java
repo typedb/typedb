@@ -49,7 +49,7 @@ public class OntologicalQueryTest {
     @Rule
     public final SampleKBContext matchingTypesContext = SampleKBContext.load("matchingTypesTest.gql");
 
-    @Test
+    @Test @Ignore("to be fixed soon - flaky")
     public void instancePairsRelatedToSameTypeOfEntity(){
         GraknTx tx = matchingTypesContext.tx();
         String basePattern = "$x isa service;" +
