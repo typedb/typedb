@@ -327,10 +327,10 @@ jobs:
         - attach_workspace:
             at: ~/grakn
         - run:
-          name: Prepare apt repositories
-          command: |
-            sudo apt-get install apt-transport-https
-            sudo apt-get update
+            name: Prepare apt repositories
+            command: |
+              sudo apt-get install apt-transport-https
+              sudo apt-get update
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
         - run: cd workbase && npm install
