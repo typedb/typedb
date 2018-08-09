@@ -281,12 +281,31 @@ jobs:
       - run: PATH=$PATH:./grakn-dist/target/grakn-core-test ./grakn-test/test-biomed/validate.sh
 
   client-nodejs-e2e:
-      docker:
-         - image: circleci/node:8.11.2
+      machine: true
       working_directory: ~/grakn
       steps:
         - attach_workspace:
             at: ~/grakn
+        - run:
+            name: Install nvm and node
+            command: |
+              curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+              export NVM_DIR="/opt/circleci/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              nvm install v10.5.0
+              nvm alias default v10.5.0
+              echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+              echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+        - run:
+            name: Prepare apt repositories
+            command: |
+              curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+              echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+              sudo apt-get install apt-transport-https
+              sudo apt-get update
+        - run:
+            name: Install yarn
+            command: sudo apt-get -y install yarn
         - run: nohup grakn-dist/target/grakn-core-test/grakn server start
         - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: cd client-nodejs && yarn install && yarn run test
@@ -297,9 +316,6 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
-        - restore_cache:
-            name: Restore maven m2 cache
-            key: grakn-cache-m2-version-8
         - run:
             name: Install python deps
             command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
@@ -320,12 +336,21 @@ jobs:
         - run: cd workbase && npm test
 
   workbase-e2e:
-      docker:
-        - image: circleci/node:8.11.2
+      machine: true
       working_directory: ~/grakn
       steps:
         - attach_workspace:
             at: ~/grakn
+        - run:
+            name: Install nvm and node
+            command: |
+              curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+              export NVM_DIR="/opt/circleci/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              nvm install v10.5.0
+              nvm alias default v10.5.0
+              echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+              echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
         - run:
             name: Prepare apt repositories
             command: |
