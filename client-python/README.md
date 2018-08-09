@@ -76,8 +76,8 @@ on the Grakn object the following methods are available:
 | Method                                   | Return type       | Description                                          |
 | ---------------------------------------- | ----------------- | ---------------------------------------------------- |
 | `session(String keyspace)`               | *Session*         | Return a new Session bound to the specified keyspace |
-| `keyspaces.delete(String keyspace)`      | *None*            | Deletes the specified keyspace                       |
-| `keyspaces.retrieve()`                   | List of *String*  | Retrieves all available keyspaces                    |
+| `keyspaces().delete(String keyspace)`      | *None*            | Deletes the specified keyspace                       |
+| `keyspaces().retrieve()`                   | List of *String*  | Retrieves all available keyspaces                    |
 
 
 
