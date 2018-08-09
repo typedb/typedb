@@ -14,7 +14,6 @@ In this example, we are going to introduce the analytics package using the basic
 * the cluster algorithm - to identify which people are related
 * the degree algorithm - to count the size of the cluster.
 
-<!-- TO DO - Put this back in 0.13
 
 You can find *basic-genealogy.gql* in the *examples* directory of the Grakn distribution zip. You can also find it on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
@@ -26,13 +25,11 @@ The first step is to load it into Grakn using the terminal. Start Grakn, and loa
 ```
 
 You can test in the Graql shell that all has loaded correctly. For example:
-
+    
 ```bash
 ./graql console -k genealogy
 >>>match $p isa person, has identifier $i;
 ```
--->
-
 
 ## Getting Started
 
@@ -47,24 +44,25 @@ First, we start Grakn Engine using the terminal:
 The rest of the project is contained in the Java example code, which can be found on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql). The maven dependencies for this project are:
 
 ```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-factory</artifactId>
-<version>${grakn.version}</version>
-</dependency>
-<dependency>
-<groupId>org.slf4j</groupId>
-<artifactId>slf4j-nop</artifactId>
-<version>1.7.20</version>
-</dependency>
-<dependency>
-<groupId>org.springframework.boot</groupId>
-<artifactId>spring-boot-starter-tomcat</artifactId>
-<version>1.2.4.RELEASE</version>
-</dependency>
-```
+<repositories>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
 
-The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
+<properties>
+    <grakn.version>1.3.0</grakn.version>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>ai.grakn</groupId>
+    <artifactId>client-java</artifactId>
+    <version>${grakn.version}</version>
+  </dependency>
+</dependencies>
+```
 
 First, we load the schema and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
 
@@ -72,8 +70,9 @@ First, we load the schema and data we will be working with, which is the familia
 ```java-test-ignore
 private static void loadBasicGenealogy() {
     ClassLoader classLoader = Main.class.getClassLoader();
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);
+    try (Grakn.Session session = grakn.session("genealogy")) {
+        try (Grakn.Transaction tx = session.open(GraknTxType.WRITE)) {
             try {
                 tx.graql().parse(IOUtils.toString(classLoader.getResourceAsStream("basic-genealogy.gql"))).execute();
                 } catch (IOException e) {
@@ -93,10 +92,11 @@ The next thing to do is connect to the running engine instance and check that th
 ```java-test-ignore
 private static void testConnection() {
     // initialise the connection to Grakn engine
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);  
+    try (Grakn.Session session = grakn.session("genealogy")) {
 
         // open a tx (database transaction)
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = session.open(GraknTxType.READ)) {
 
             // construct a match to find people
             Match match = tx.graql().match(var("x").isa("person"));
@@ -120,10 +120,11 @@ Now that we have established the connection to Grakn engine works we can obtain 
 ```java-test-ignore
 private static Map<String, Set<String>> computeClusters() {
     // initialise the connection to Grakn engine
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);  
+    try (Grakn.Session session = grakn.session("genealogy")) {
 
         // open a tx (database transaction)
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
             ClusterQuery<Map<String, Set<String>>> query = tx.graql().compute().cluster().in("person", "marriage").members();
@@ -152,10 +153,11 @@ Now that we have information about the clusters, it would be useful to add it to
 ```java-test-ignore
 private static void mutateOntology() {
     // initialise the connection to Grakn engine
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);  
+    try (Grakn.Session session = grakn.session("genealogy")) {
 
         // open a tx (database transaction)
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = session.open(GraknTxType.WRITE)) {
 
             // create set of vars representing the mutation
             Var group = Graql.var("group").label("group").sub("role");
@@ -187,13 +189,14 @@ Now all that is left is to populate the graph with the clusters and grouping rel
 private static void persistClusters(Map<String, Set<String>> results) {
 
     // initialise the connection to Grakn engine
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);  
+    try (Grakn.Session session = grakn.session("genealogy")) {
 
         // iterate through results of cluster query
         results.forEach((clusterID, memberSet) -> {
 
             // open a tx (database transaction)
-            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+            try (Grakn.Transaction tx = session.open(GraknTxType.WRITE)) {
 
                     // collect the vars to insert
                     Set<Var> insertVars = new HashSet<>();
@@ -235,10 +238,11 @@ When using the visualiser it is probably quite useful to be able to see the size
 ```java-test-ignore
 private static Map<Long, Set<String>> degreeOfClusters() {
     // initialise the connection to Grakn engine
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);  
+    try (Grakn.Session session = grakn.session("genealogy")) {
 
         // open a tx (database transaction)
-        try (GraknTx tx = session.open(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
             DegreeQuery query = tx.graql().compute().degree().in("cluster", "grouping").of("cluster");
@@ -264,9 +268,10 @@ As we did when computing the clusters, we need to put the information back into 
 ```java-test-ignore
 private static void persistDegrees(Map<Long, Set<String>> degrees) {
     // initialise the connection to Grakn engine
-    try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
+    Grakn grakn = new Grakn(Grakn.DEFAULT_URI);  
+    try (Grakn.Session session = grakn.session("genealogy")) {
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = session.open(GraknTxType.WRITE)) {
 
             // mutate the schema
             Var degree = Graql.var().label("degree").sub("attribute").datatype(ResourceType.DataType.LONG);
@@ -279,7 +284,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
             tx.commit();
             }
 
-            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+            try (Grakn.Transaction tx = session.open(GraknTxType.WRITE)) {
 
             // add the degrees to the cluster
             Set<Var> degreeMutation = new HashSet<>();

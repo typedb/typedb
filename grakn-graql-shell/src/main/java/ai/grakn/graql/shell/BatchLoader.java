@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Felix Chapman
  */
 final class BatchLoader {
-
     private static final int DEFAULT_MAX_RETRY = 1;
 
     static void sendBatchRequest(
@@ -53,7 +52,7 @@ final class BatchLoader {
              BatchExecutorClient batchExecutorClient = loaderClient(uri)
         ) {
             batchExecutorClient.onNext(queryResponse -> queriesExecuted.incrementAndGet());
-            batchExecutorClient.onError(serr::println);
+            batchExecutorClient.onError(e -> e.printStackTrace(serr));
 
             Graql.parser().parseReader(queryReader).forEach(query -> batchExecutorClient.add(query, keyspace));
         }

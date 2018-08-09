@@ -35,10 +35,10 @@ function Grakn(uri, credentials) {
 
     this.session = (keyspace) => new Session(uri, keyspace, credentials);
 
-    this.keyspace = {
+    this.keyspaces = ()=> ({
         delete: (keyspace) => keyspaceService.delete(keyspace),
         retrieve: () => keyspaceService.retrieve()
-    };
+    });
 }
 
 module.exports = Grakn

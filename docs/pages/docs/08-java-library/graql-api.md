@@ -19,10 +19,11 @@ import static ai.grakn.graql.Graql.*;
 
 ## QueryBuilder
 
-A `QueryBuilder` is constructed from a `GraknTx`:
+A `QueryBuilder` is constructed from a `Grakn.Transaction`:
 
 ```java-test-ignore
-Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
 Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 
 QueryBuilder qb = tx.graql();

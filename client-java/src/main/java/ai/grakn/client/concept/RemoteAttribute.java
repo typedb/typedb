@@ -28,6 +28,9 @@ import ai.grakn.concept.Thing;
 import ai.grakn.rpc.proto.ConceptProto;
 import com.google.auto.value.AutoValue;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.stream.Stream;
 
 /**
@@ -48,8 +51,22 @@ public abstract class RemoteAttribute<D> extends RemoteThing<Attribute<D>, Attri
                 .setAttributeValueReq(ConceptProto.Attribute.Value.Req.getDefaultInstance()).build();
 
         ConceptProto.ValueObject value = runMethod(method).getAttributeValueRes().getValue();
-        // TODO: Fix this unsafe casting
-        return (D) value.getAllFields().values().iterator().next();
+        return castValue(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    private D castValue(ConceptProto.ValueObject value){
+        switch (value.getValueCase()){
+            case DATE: return (D) LocalDateTime.ofInstant(Instant.ofEpochMilli(value.getDate()), ZoneId.of("Z"));
+            case STRING: return (D) value.getString();
+            case BOOLEAN: return (D) (Boolean) value.getBoolean();
+            case INTEGER: return (D) (Integer) value.getInteger();
+            case LONG: return (D) (Long) value.getLong();
+            case FLOAT: return (D) (Float) value.getFloat();
+            case DOUBLE: return (D) (Double) value.getDouble();
+            case VALUE_NOT_SET: return null;
+            default: throw new IllegalArgumentException("Unexpected value for attribute: " + value);
+        }
     }
 
     @Override

@@ -228,12 +228,15 @@ public class GraqlShell implements AutoCloseable {
                     .parser()
                     .parseList(queryString);
 
-            Iterable<String> results = () -> queries
-                    .flatMap(query -> printer.toStream(query.stream())).iterator();
+            Stream<String> results = queries.flatMap(query -> printer.toStream(query.stream()));
 
-            for (String result : results) {
-                console.println(result);
-            }
+            results.forEach(result -> {
+                try {
+                    console.println(result);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         });
 
         // Flush the console so the output is all displayed before the next command

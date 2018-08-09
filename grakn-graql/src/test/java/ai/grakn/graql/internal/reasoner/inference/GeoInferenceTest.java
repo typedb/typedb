@@ -29,9 +29,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
 import java.util.List;
 
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
@@ -40,18 +38,12 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.hamcrest.Matchers.empty;
 
 public class GeoInferenceTest {
 
-    @Rule
-    public final SampleKBContext geoKB = GeoKB.context();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext geoKB = GeoKB.context();
 
     @Test
     public void testEntitiesLocatedInThemselves(){

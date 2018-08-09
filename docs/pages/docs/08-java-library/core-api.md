@@ -26,7 +26,8 @@ First we need a knowledge graph. For this example we will just use an
 [in-memory knowledge graph](./setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java-test-ignore
-Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
 Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 ```
 
@@ -161,7 +162,8 @@ insert $x isa person has firstname "John";
 Now the equivalent Core API:    
 
 ```java-test-ignore
-Grakn.Session session = Grakn.session(new SimpleURI("localhost:48555"), Keyspace.of("grakn"));
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
 Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 
 Attribute johnName = firstname.putAttribute("John"); //Create the attribute

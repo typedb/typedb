@@ -69,6 +69,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -953,5 +954,15 @@ public class RemoteQueryIT {
         assertTrue(bob.attributes(name2).allMatch(n -> n.value().equals("Bob")));
 
         tx2.close();
+    }
+
+    @Test
+    public void setAttributeValueWithDatatypeDate(){
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
+            AttributeType<LocalDateTime> birthDateType = tx.putAttributeType(Label.of("birth-date"), DataType.DATE);
+            LocalDateTime date = LocalDateTime.now();
+            Attribute<LocalDateTime> dateAttribute = birthDateType.create(date);
+            assertEquals(date, dateAttribute.value());
+        }
     }
 }

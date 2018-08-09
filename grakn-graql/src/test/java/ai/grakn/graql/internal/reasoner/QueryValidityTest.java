@@ -22,24 +22,16 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 public class QueryValidityTest {
 
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Test
     public void whenQueryingForInexistentConceptId_emptyResultReturned(){

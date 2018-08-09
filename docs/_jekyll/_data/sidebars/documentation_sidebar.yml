@@ -173,12 +173,15 @@ entries:
   - title: Language Drivers
     output: web
     folderitems:
+      - title: Java
+        output: web
+        url: /docs/language-drivers/client-java
+      - title: Node.js
+        output: web
+        url: /docs/language-drivers/client-nodejs
       - title: Python
         output: web
-        url: /docs/language-drivers/grakn-python
-      - title: Haskell
-        output: web
-        url: /docs/language-drivers/grakn-haskell
+        url: /docs/language-drivers/client-python
   - title: API References
     output: web
     folderitems:
