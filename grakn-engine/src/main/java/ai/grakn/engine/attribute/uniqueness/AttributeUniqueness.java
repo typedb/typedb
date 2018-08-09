@@ -18,20 +18,23 @@
 
 package ai.grakn.engine.attribute.uniqueness;
 
+import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
-import ai.grakn.engine.attribute.uniqueness.queue.InMemoryQueue;
 import ai.grakn.engine.attribute.uniqueness.queue.Queue;
 import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.keyspace.KeyspaceStoreImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
+
+import static ai.grakn.engine.attribute.uniqueness.MergeAlgorithm.merge;
 
 /**
  * This class is responsible for merging attribute duplicates which is done in order to maintain attribute uniqueness.
@@ -44,21 +47,32 @@ import java.util.concurrent.CompletableFuture;
  */
 public class AttributeUniqueness {
     private static Logger LOG = LoggerFactory.getLogger(AttributeUniqueness.class);
-    private static final int QUEUE_GET_BATCH_MAX = 1;
+    private static final int QUEUE_GET_BATCH_MAX = 1000;
+    private static final Path relQueuePath = Paths.get("queue"); // path to the queue storage location, relative to the data directory
+
     private EngineGraknTxFactory txFactory;
-    private Queue newAttributeQueue = new RocksDbQueue();
-    private MergeAlgorithm mergeAlgorithm = new MergeAlgorithm();
+    private Queue newAttributeQueue;
+
     private boolean stopDaemon = false;
 
-    public AttributeUniqueness(EngineGraknTxFactory txFactory) {
+    /**
+     * Instantiates {@link AttributeUniqueness}
+     * @param config a reference to an instance of {@link GraknConfig} which is initialised from a grakn.properties.
+     * @param txFactory an {@link EngineGraknTxFactory} instance which provides access to write into the database
+     */
+    public AttributeUniqueness(GraknConfig config, EngineGraknTxFactory txFactory) {
+        Path dataDir = Paths.get(config.getProperty(GraknConfigKey.DATA_DIR));
+        Path absQueuePath = dataDir.resolve(relQueuePath);
+        this.newAttributeQueue = new RocksDbQueue(absQueuePath);
         this.txFactory = txFactory;
+
     }
 
     /**
-     *
-     * @param keyspace
-     * @param value
-     * @param conceptId
+     * Inserts an attribute to the queue. The attribute must have been inserted to the database prior to calling this method.
+     * @param keyspace keyspace of the attribute
+     * @param value the value of the attribute
+     * @param conceptId the concept id of the attribute
      */
     public void insertAttribute(Keyspace keyspace, String value, ConceptId conceptId) {
         final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
@@ -67,25 +81,26 @@ public class AttributeUniqueness {
     }
 
     /**
-     * Starts the attribute merger daemon, which continuously merge attribute duplicates.
-     * The thread listens to the {@link InMemoryQueue} queue for incoming attributes and applies
-     * the merge algorithm as implemented in {@link MergeAlgorithm}.
+     * Starts a daemon which continuously merge attribute duplicates.
+     * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
+     * the merge algorithm as implemented in the {@link MergeAlgorithm} class.
      *
      */
     public CompletableFuture<Void> startDaemon() {
         CompletableFuture<Void> daemon = CompletableFuture.supplyAsync(() -> {
-            LOG.info("startDaemon() - start");
+            LOG.info("startDaemon() - starting attribute uniqueness daemon...");
             while (!stopDaemon) {
                 try {
+                    LOG.info("startDaemon() - attribute uniqueness daemon started.");
                     Attributes newAttrs = newAttributeQueue.readAttributes(QUEUE_GET_BATCH_MAX);
-                    mergeAlgorithm.merge(txFactory, newAttrs);
+                    merge(txFactory, newAttrs);
                     newAttributeQueue.ackAttributes(newAttrs);
                 }
                 catch (InterruptedException e) {
-                    LOG.error("mergeNow() failed with an exception. ", e);
+                    LOG.error("merge() failed with an exception. ", e);
                 }
             }
-            LOG.info("startDaemon() - daemon stopped");
+            LOG.info("startDaemon() - attribute uniqueness daemon stopped");
             return null;
         });
 
@@ -98,10 +113,10 @@ public class AttributeUniqueness {
     }
 
     /**
-     * Stops the attribute merger daemon
+     * Stops the attribute uniqueness daemon
      */
     public void stopDaemon() {
-        LOG.info("stopDaemon() - stopping the daemon...");
+        LOG.info("stopDaemon() - stopping the attribute uniqueness daemon...");
         stopDaemon = true;
     }
 }

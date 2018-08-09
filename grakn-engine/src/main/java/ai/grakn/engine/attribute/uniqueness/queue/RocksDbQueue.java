@@ -19,10 +19,8 @@
 package ai.grakn.engine.attribute.uniqueness.queue;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
@@ -46,12 +44,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class RocksDbQueue implements Queue {
     private final RocksDB queueDb;
-    private AtomicLong queueSize = new AtomicLong(0L);
 
-    public RocksDbQueue() {
+    public RocksDbQueue(Path path) {
         try {
             Options options = new Options().setCreateIfMissing(true);
-            Path path = Paths.get("./queue");
             queueDb = RocksDB.open(options, path.toAbsolutePath().toString());
         }
         catch (RocksDBException e) {
@@ -64,7 +60,6 @@ public class RocksDbQueue implements Queue {
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
             queueDb.put(syncWrite, serialiseStringUtf8(attribute.conceptId().getValue()), serialiseAttributeUtf8(attribute));
-            queueSize.incrementAndGet();
             synchronized (this) { notifyAll(); }
         }
         catch (RocksDBException e) {
@@ -75,15 +70,15 @@ public class RocksDbQueue implements Queue {
     //    @Override
     public Attributes readAttributes(int limit) throws InterruptedException {
         // blocks until the queue contains at least 1 element
-        while (queueSize.get() == 0) {
+        while (isQueueEmpty(queueDb)) {
             synchronized (this) { wait(); }
         }
 
         List<Attribute> result = new LinkedList<>();
 
-        int count = 0;
         RocksIterator it = queueDb.newIterator();
         it.seekToFirst();
+        int count = 0;
         while (it.isValid() && count < limit) {
             String id = deserializeStringUtf8(it.key());
             Attribute attr = deserialiseAttributeUtf8(it.value());
@@ -106,8 +101,6 @@ public class RocksDbQueue implements Queue {
         }
         try {
             queueDb.write(writeOptions, acks);
-            long decrementBy = -1L * attributes.attributes().size();
-            queueSize.getAndAdd(decrementBy);
         }
         catch (RocksDBException e) {
             throw new QueueException(e);
@@ -118,6 +111,15 @@ public class RocksDbQueue implements Queue {
         queueDb.close();
     }
 
+    private boolean isQueueEmpty(RocksDB queueDb) {
+        RocksIterator it = queueDb.newIterator();
+        it.seekToFirst();
+        return !it.isValid();
+    }
+
+    /**
+     *
+     */
     static class SerialisationUtils {
         public static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(

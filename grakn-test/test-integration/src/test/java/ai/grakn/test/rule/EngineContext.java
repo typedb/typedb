@@ -310,7 +310,7 @@ public class EngineContext extends CompositeTestRule {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(engineGraknTxFactory);
+        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)

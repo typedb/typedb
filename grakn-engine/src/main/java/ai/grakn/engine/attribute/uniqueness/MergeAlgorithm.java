@@ -47,7 +47,7 @@ public class MergeAlgorithm {
      * Merges a list of attributes.
      * @param newAttributes
      */
-    public void merge(EngineGraknTxFactory txFactory, Attributes newAttributes) {
+    public static void merge(EngineGraknTxFactory txFactory, Attributes newAttributes) {
         try {
             LOG.info("starting a new batch to process these new attributes: " + newAttributes);
             Set<KeyspaceValuePair> duplicates = newAttributes.attributes().stream()

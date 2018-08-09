@@ -206,7 +206,7 @@ public class ServerTest {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
-        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(engineGraknTxFactory);
+        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();

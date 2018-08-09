@@ -11,6 +11,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -22,14 +23,16 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
 public class RocksDbQueueIT {
+    Path path = Paths.get("./queue");
+
     @After
     public void cleanup() throws IOException {
-        FileUtils.deleteDirectory(Paths.get("./queue").toFile());
+        FileUtils.deleteDirectory(path.toFile());
     }
 
     @Test
     public void shouldBeAbleToInsertNewAttributes() throws InterruptedException {
-        RocksDbQueue queue = new RocksDbQueue();
+        RocksDbQueue queue = new RocksDbQueue(path);
         List<Attribute> attributes = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
                 Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2")),
@@ -48,7 +51,7 @@ public class RocksDbQueueIT {
 
     @Test
     public void unackedAttributesShouldStillBeAvailableForAReRead() throws InterruptedException {
-        RocksDbQueue queue = new RocksDbQueue();
+        RocksDbQueue queue = new RocksDbQueue(path);
         List<Attribute> attributes = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
                 Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2")),
@@ -69,7 +72,7 @@ public class RocksDbQueueIT {
 
     @Test
     public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException {
-        RocksDbQueue queue = new RocksDbQueue();
+        RocksDbQueue queue = new RocksDbQueue(path);
         List<Attribute> attributes1 = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
                 Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2"))
@@ -92,7 +95,7 @@ public class RocksDbQueueIT {
     @Ignore
     @Test
     public void readAttributesMustBlockUntilThereAreItemsInTheQueue() throws InterruptedException {
-        RocksDbQueue queue = new RocksDbQueue();
+        RocksDbQueue queue = new RocksDbQueue(path);
         AtomicInteger i = new AtomicInteger();
         CompletableFuture.supplyAsync(() -> {
             i.incrementAndGet();

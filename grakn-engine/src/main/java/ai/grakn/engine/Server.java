@@ -98,7 +98,7 @@ public class Server implements AutoCloseable {
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
             }
-            attributeUniqueness.startDaemon();
+            attributeUniqueness.stopDaemon();
             queueSanityCheck.close();
             backgroundTaskRunner.close();
         }
