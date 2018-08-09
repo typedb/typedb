@@ -133,7 +133,7 @@
                     </tr>  
                     <tr>
                         <td style="text-align:center;">
-                            [{{crtlOrCmd}}] + click on a node
+                            [{{crtlOrCmd}}] + click on a node OR click and hold on a node
                         </td>  
                         <td>
                             select multiple nodes
