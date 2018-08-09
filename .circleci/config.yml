@@ -333,8 +333,8 @@ jobs:
               sudo apt-get update
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-        - run: nohup grakn-dist/target/grakn-dist-test/grakn server start
-        - run: cd grakn-dist/target/grakn-dist-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
+        - run: nohup grakn-dist/target/grakn-core-test/grakn server start
+        - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: cd workbase && npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
