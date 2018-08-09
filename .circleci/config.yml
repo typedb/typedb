@@ -315,13 +315,8 @@ jobs:
         - image: circleci/node:8.11.2
       working_directory: ~/grakn
       steps:
+        - checkout
         - run: cd workbase && npm install
-
-        - save_cache:
-            paths:
-              - node_modules
-            key: v1-dependencies-{{ checksum "package.json" }}
-
         - run: npm test
 
   workbase-e2e:
