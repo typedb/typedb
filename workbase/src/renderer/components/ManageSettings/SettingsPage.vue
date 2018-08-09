@@ -42,12 +42,19 @@
   justify-content: center;
 }
 .active{
-  border-bottom: 2px solid #0674D7;
+  border-bottom: 2px solid #00eca2;
 }
 
 li{
   cursor: pointer;
   margin: 30px;
+}
+
+li:hover,
+li:focus {
+    color: #00eca2;
+    text-decoration: none;
+    cursor: pointer;
 }
 </style>
 
