@@ -102,14 +102,16 @@ public class GraqlController implements HttpController {
     private final Printer printer;
     private final EngineGraknTxFactory factory;
     private final PostProcessor postProcessor;
+    private AttributeUniqueness attributeUniqueness;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.postProcessor = postProcessor;
+        this.attributeUniqueness = attributeUniqueness;
         this.printer = printer;
         this.executeGraql = metricRegistry.timer(name(GraqlController.class, "execute-graql"));
         this.executeExplanation = metricRegistry.timer(name(GraqlController.class, "execute-explanation"));
@@ -341,7 +343,7 @@ public class GraqlController implements HttpController {
         if (commitQuery) {
             tx.commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> AttributeUniqueness.singleton.insertAttribute(commitLog.keyspace(), value, id))
+                            conceptIds.forEach(id -> attributeUniqueness.insertAttribute(commitLog.keyspace(), value, id))
                     )
             );
         }

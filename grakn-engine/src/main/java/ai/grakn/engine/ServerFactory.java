@@ -19,6 +19,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
@@ -42,6 +43,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
+import spark.Service;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -85,13 +87,14 @@ public class ServerFactory {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, postProcessor, keyspaceStore);
+        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, postProcessor, attributeUniqueness, keyspaceStore);
 
-        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
+        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, attributeUniqueness, keyspaceStore);
     }
 
     /**
@@ -101,16 +104,16 @@ public class ServerFactory {
 
     public static Server createServer(
             EngineID engineId, GraknConfig config, ServerStatus serverStatus,
-            spark.Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
+            Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
-            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, KeyspaceStore keyspaceStore) {
+            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
 
-        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, postProcessor, rpcServerRPC, httpControllers);
+        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, postProcessor, attributeUniqueness, rpcServerRPC, httpControllers);
 
         BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config);
 
-        Server server = new Server(engineId, config, serverStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, attributeUniqueness, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);
@@ -124,12 +127,12 @@ public class ServerFactory {
         return taskRunner;
     }
 
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor, KeyspaceStore keyspaceStore){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-                .addService(new SessionService(requestOpener, postProcessor))
+                .addService(new SessionService(requestOpener, postProcessor, attributeUniqueness))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
 

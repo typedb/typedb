@@ -29,6 +29,7 @@ import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
@@ -309,10 +310,11 @@ public class EngineContext extends CompositeTestRule {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new SessionService(requestOpener, postProcessor))
+                .addService(new SessionService(requestOpener, postProcessor, attributeUniqueness))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
@@ -322,7 +324,7 @@ public class EngineContext extends CompositeTestRule {
         Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
+                queueSanityCheck, lockProvider, postProcessor, attributeUniqueness, keyspaceStore);
 
         graknEngineServer.start();
 

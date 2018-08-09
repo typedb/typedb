@@ -25,6 +25,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
@@ -87,6 +88,7 @@ public class KeyspaceStoreTest {
     public final ExpectedException exception = ExpectedException.none();
 
     private final static PostProcessor mockedPostProcessor = mock(PostProcessor.class);
+    private final static AttributeUniqueness mockedAttributeUniqueness = mock(AttributeUniqueness.class);
 
 
     @BeforeClass
@@ -96,7 +98,7 @@ public class KeyspaceStoreTest {
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedPostProcessor))
+                .addService(new SessionService(requestOpener, mockedPostProcessor, mockedAttributeUniqueness))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

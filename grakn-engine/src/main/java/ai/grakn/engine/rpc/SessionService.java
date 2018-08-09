@@ -64,14 +64,16 @@ import java.util.stream.Stream;
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
     private PostProcessor postProcessor;
+    private AttributeUniqueness attributeUniqueness;
 
-    public SessionService(OpenRequest requestOpener, PostProcessor postProcessor) {
+    public SessionService(OpenRequest requestOpener, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness) {
         this.requestOpener = requestOpener;
         this.postProcessor = postProcessor;
+        this.attributeUniqueness = attributeUniqueness;
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return TransactionListener.create(responseSender, requestOpener, postProcessor);
+        return TransactionListener.create(responseSender, requestOpener, postProcessor, attributeUniqueness);
     }
 
 
@@ -86,22 +88,24 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
         private final PostProcessor postProcessor;
+        private AttributeUniqueness attributeUniqueness;
         private final Iterators iterators = Iterators.create();
 
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
 
-        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor) {
+        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness) {
             this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
             this.postProcessor = postProcessor;
+            this.attributeUniqueness = attributeUniqueness;
         }
 
-        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, PostProcessor postProcessor) {
+        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseSender, threadExecutor, requestOpener, postProcessor);
+            return new TransactionListener(responseSender, threadExecutor, requestOpener, postProcessor, attributeUniqueness);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -231,7 +235,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> AttributeUniqueness.singleton.insertAttribute(commitLog.keyspace(), value, id))
+                            conceptIds.forEach(id -> attributeUniqueness.insertAttribute(commitLog.keyspace(), value, id))
                     ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }

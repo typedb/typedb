@@ -20,6 +20,7 @@ package ai.grakn.engine;
 
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.HttpController;
@@ -54,12 +55,13 @@ public class ServerHTTP {
     private final MetricRegistry metricRegistry;
     private final ServerStatus serverStatus;
     private final PostProcessor postProcessor;
+    private final AttributeUniqueness attributeUniqueness;
     private final ServerRPC rpcServerRPC;
     private final Collection<HttpController> additionalCollaborators;
 
     public ServerHTTP(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            ServerStatus serverStatus, PostProcessor postProcessor,
+            ServerStatus serverStatus, PostProcessor postProcessor, AttributeUniqueness attributeUniqueness,
             ServerRPC rpcServerRPC,
             Collection<HttpController> additionalCollaborators
     ) {
@@ -69,6 +71,7 @@ public class ServerHTTP {
         this.metricRegistry = metricRegistry;
         this.serverStatus = serverStatus;
         this.postProcessor = postProcessor;
+        this.attributeUniqueness = attributeUniqueness;
         this.rpcServerRPC = rpcServerRPC;
         this.additionalCollaborators = additionalCollaborators;
     }
@@ -88,7 +91,7 @@ public class ServerHTTP {
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
-        new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
+        new GraqlController(factory, postProcessor, attributeUniqueness, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
         new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
 

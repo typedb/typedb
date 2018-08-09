@@ -20,6 +20,7 @@ package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
@@ -42,15 +43,34 @@ import java.util.stream.Collectors;
 public class MergeAlgorithm {
     private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
 
-    public void merge(Attributes newAttributes) {
+    /**
+     * Merges a list of attributes.
+     * @param newAttributes
+     */
+    public void merge(EngineGraknTxFactory txFactory, Attributes newAttributes) {
         try {
             LOG.info("starting a new batch to process these new attributes: " + newAttributes);
             Set<KeyspaceValuePair> duplicates = newAttributes.attributes().stream()
                     .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
             for (KeyspaceValuePair keyspaceValuePair : duplicates) {
-                try (EmbeddedGraknSession s  = EmbeddedGraknSession.createEngineSession(keyspaceValuePair.keyspace());
-                     EmbeddedGraknTx tx = s.transaction(GraknTxType.WRITE)) {
-                    merge(tx, keyspaceValuePair.value());
+                try (EmbeddedGraknTx tx = txFactory.tx(keyspaceValuePair.keyspace(), GraknTxType.WRITE)) {
+                    GraphTraversalSource tinker = tx.getTinkerTraversal();
+                    GraphTraversal<Vertex, Vertex> duplicates1 = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceValuePair.value());
+                    Vertex mergeTargetV = duplicates1.next();
+                    while (duplicates1.hasNext()) {
+                        Vertex dup = duplicates1.next();
+                        try {
+                            dup.vertices(Direction.IN).forEachRemaining(ent -> {
+                                Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
+                                edge.remove();
+                                ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                            });
+                            dup.remove();
+                        }
+                        catch (IllegalStateException vertexAlreadyRemovedException) {
+                            LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
+                        }
+                    }
                     tx.commit();
                 }
             }
@@ -61,29 +81,4 @@ public class MergeAlgorithm {
         }
     }
 
-    /**
-     * Merges a list of attributes.
-     * The attributes being processed will be marked so they cannot be touched by other operations.
-     * @param value the value of attributes to be merged
-     * @return the merged attribute (TODO)
-     */
-    public void merge(EmbeddedGraknTx tx, String value) {
-        GraphTraversalSource tinker = tx.getTinkerTraversal();
-        GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), value);
-        Vertex mergeTargetV = duplicates.next();
-        while (duplicates.hasNext()) {
-            Vertex dup = duplicates.next();
-            try {
-                dup.vertices(Direction.IN).forEachRemaining(ent -> {
-                    Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
-                    edge.remove();
-                    ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
-                });
-                dup.remove();
-            }
-            catch (IllegalStateException vertexAlreadyRemovedException) {
-                LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
-            }
-        }
-    }
 }

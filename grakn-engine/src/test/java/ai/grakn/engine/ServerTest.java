@@ -20,6 +20,7 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.controller.HttpController;
@@ -205,18 +206,19 @@ public class ServerTest {
         IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
         CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
         PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
-        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, postProcessor)).build();
+        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, postProcessor, attributeUniqueness)).build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
         return ServerFactory.createServer(engineId, config, status,
                 sparkHttp, httpControllers, rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
+                queueSanityCheck, lockProvider, postProcessor, attributeUniqueness, keyspaceStore);
     }
 }

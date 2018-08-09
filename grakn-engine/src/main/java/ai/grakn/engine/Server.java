@@ -18,6 +18,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
 import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.BackgroundTaskRunner;
@@ -49,10 +50,11 @@ public class Server implements AutoCloseable {
     private final QueueSanityCheck queueSanityCheck;
     private final ServerHTTP httpHandler;
     private final BackgroundTaskRunner backgroundTaskRunner;
+    private final AttributeUniqueness attributeUniqueness;
 
     private final KeyspaceStore keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, ServerHTTP httpHandler, BackgroundTaskRunner backgroundTaskRunner, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, ServerHTTP httpHandler, BackgroundTaskRunner backgroundTaskRunner, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
@@ -63,6 +65,7 @@ public class Server implements AutoCloseable {
         this.httpHandler = httpHandler;
         this.engineId = engineId;
         this.backgroundTaskRunner = backgroundTaskRunner;
+        this.attributeUniqueness = attributeUniqueness;
     }
 
     public void start() throws IOException {
@@ -76,6 +79,7 @@ public class Server implements AutoCloseable {
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
+        attributeUniqueness.startDaemon();
         serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
     }
@@ -94,6 +98,7 @@ public class Server implements AutoCloseable {
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
             }
+            attributeUniqueness.startDaemon();
             queueSanityCheck.close();
             backgroundTaskRunner.close();
         }
