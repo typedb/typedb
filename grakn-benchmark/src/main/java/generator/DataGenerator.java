@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.SimpleURI;
 import pdf.ConstantPDF;
 import pdf.DiscreteGaussianPDF;
@@ -316,7 +316,7 @@ public class DataGenerator {
     }
 
     private Grakn.Session getSession() {
-        return Grakn.session(new SimpleURI(uri), Keyspace.of(keyspace));
+        return (new Grakn(new SimpleURI((uri)))).session(Keyspace.of(keyspace));
     }
 
     public void generate(int numConceptsLimit) {
@@ -359,7 +359,7 @@ public class DataGenerator {
          */
         queryStream.map(q -> (InsertQuery) q)
                 .forEach(q -> {
-                    List<Answer> insertions = q.execute();
+                    List<ConceptMap> insertions = q.execute();
                     insertions.forEach(insert -> {
                         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(q, insertions);
                         if (insertedConcepts.isEmpty()) {

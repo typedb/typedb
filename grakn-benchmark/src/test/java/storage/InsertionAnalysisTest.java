@@ -24,7 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -41,10 +41,10 @@ import static org.mockito.Mockito.when;
  */
 public class InsertionAnalysisTest {
 
-    private ArrayList<Answer> mockAnswers(Map<Var, String> variables) {
+    private ArrayList<ConceptMap> mockConceptMaps(Map<Var, String> variables) {
 
-        ArrayList<Answer> answerList = new ArrayList<>();
-        Answer answerMock = mock(Answer.class);
+        ArrayList<ConceptMap> answerList = new ArrayList<>();
+        ConceptMap answerMock = mock(ConceptMap.class);
         for (Map.Entry<Var, String> variable : variables.entrySet()) {
 
             // Mock the answer object
@@ -67,7 +67,7 @@ public class InsertionAnalysisTest {
 
         HashMap<Var, String> vars = new HashMap<>();
         vars.put(x, "V123456");
-        ArrayList<Answer> answerList = this.mockAnswers(vars);
+        ArrayList<ConceptMap> answerList = this.mockConceptMaps(vars);
 
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
@@ -104,7 +104,7 @@ public class InsertionAnalysisTest {
                         .rel("employee", y)
                         .rel("employee", z));
 
-        ArrayList<Answer> answerList = this.mockAnswers(vars);
+        ArrayList<ConceptMap> answerList = this.mockConceptMaps(vars);
 
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
@@ -140,7 +140,7 @@ public class InsertionAnalysisTest {
                         y.id(ConceptId.of(xId)),
                         z.id(ConceptId.of(xId)));
 
-        ArrayList<Answer> answerList = this.mockAnswers(vars);
+        ArrayList<ConceptMap> answerList = this.mockConceptMaps(vars);
 
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
@@ -167,7 +167,7 @@ public class InsertionAnalysisTest {
 //        InsertQuery query = Graql.insert(x.isa("company").has("name", cAttr));
         InsertQuery query = Graql.insert(x.isa("company").has("name", y), x.id(ConceptId.of(xId)), y.val(cAttr));
 
-        ArrayList<Answer> answerList = this.mockAnswers(vars);
+        ArrayList<ConceptMap> answerList = this.mockConceptMaps(vars);
 
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 
@@ -194,7 +194,7 @@ public class InsertionAnalysisTest {
 //        InsertQuery query = Graql.insert(x.isa("company").has("name", cAttr));
         InsertQuery query = Graql.insert(x.isa("company").has("name", y).id(ConceptId.of(xId)), y.val(cAttr));
 
-        ArrayList<Answer> answerList = this.mockAnswers(vars);
+        ArrayList<ConceptMap> answerList = this.mockConceptMaps(vars);
 
         HashSet<Concept> insertedConcepts = InsertionAnalysis.getInsertedConcepts(query, answerList);
 

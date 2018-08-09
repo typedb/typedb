@@ -23,7 +23,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.answer.Value;
 
 import java.util.List;
 import java.util.Random;
@@ -69,7 +70,7 @@ public class ConceptIdPicker extends Picker<ConceptId> {
 //                    .limit(1)
 //                    .get(this.matchVar);
 
-            List<Answer> result = qb.match(this.matchVarPattern)
+            List<ConceptMap> result = qb.match(this.matchVarPattern)
                     .offset(randomOffset)
                     .limit(1)
                     .get()
@@ -88,9 +89,8 @@ public class ConceptIdPicker extends Picker<ConceptId> {
     protected Integer getConceptCount(GraknTx tx) {
         QueryBuilder qb = tx.graql();
         // TODO This isn't working, waiting on bug fix - this was likely due to a mismatch between the Grakn active code and the Grakn build on my machine. Test to check if this is still a problem
-        Long count = qb.match(this.matchVarPattern)
-                .aggregate(count())
-                .execute();
-        return Math.toIntExact(count);
+        Value count_value = qb.match(this.matchVarPattern).aggregate(count()).execute().get(0);
+        Number count = count_value.number();
+        return Math.toIntExact((long)count);
     }
 }

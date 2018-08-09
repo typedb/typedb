@@ -22,8 +22,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 
 import java.util.HashSet;
@@ -36,7 +36,7 @@ import java.util.Optional;
  */
 public class InsertionAnalysis {
 
-    public static HashSet<Concept> getInsertedConcepts(InsertQuery query, List<Answer> answers) {
+    public static HashSet<Concept> getInsertedConcepts(InsertQuery query, List<ConceptMap> answers) {
         /*
         Method
 
@@ -69,7 +69,7 @@ public class InsertionAnalysis {
 
         HashSet<Concept> resultConcepts = new HashSet<>();
 
-        for (Answer answer : answers){
+        for (ConceptMap answer: answers){
             for (Var insertVarWithoutId : insertVarsWithoutIds) {
                 resultConcepts.add(answer.get(insertVarWithoutId));
             }

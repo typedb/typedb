@@ -30,7 +30,7 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -79,9 +79,9 @@ public class SchemaManager {
 //            qb.undefine(y.sub("thing")).execute(); // TODO undefine $y sub thing; doesn't work/isn't supported
             // TODO undefine $y sub entity; also doesn't work, you need to be specific with undefine
 
-            List<Answer> schema = qb.match(y.sub("thing")).get().execute();
+            List<ConceptMap> schema = qb.match(y.sub("thing")).get().execute();
 
-            for (Answer element : schema) {
+            for (ConceptMap element : schema) {
                 Var z = Graql.var().asUserDefined();
                 qb.undefine(z.id(element.get(y).id())).execute();
             }
@@ -94,7 +94,7 @@ public class SchemaManager {
     public static <T extends Type> HashSet<T> getTypesOfMetaType(GraknTx tx, String metaTypeName) {
         QueryBuilder qb = tx.graql();
         Match match = qb.match(var("x").sub(metaTypeName));
-        List<Answer> result = match.get().execute();
+        List<ConceptMap> result = match.get().execute();
 
         return result.stream()
                 .map(answer -> (T) answer.get(var("x")).asType())
@@ -106,7 +106,7 @@ public class SchemaManager {
     public static HashSet<Role> getRoles(GraknTx tx, String metaTypeName) {
         QueryBuilder qb = tx.graql();
         Match match = qb.match(var("x").sub(metaTypeName));
-        List<Answer> result = match.get().execute();
+        List<ConceptMap> result = match.get().execute();
 
         return result.stream()
                 .map(answer -> answer.get(var("x")).asRole())
