@@ -151,21 +151,6 @@ export default {
     });
   },
   /**
-   * Get current engine configuration.
-   */
-  getConfig() {
-    return this.request({
-      url: `/kb/${User.getCurrentKeySpace()}`,
-      requestType: 'PUT',
-    });
-  },
-
-  getVersion() {
-    return this.request({
-      url: '/version',
-    });
-  },
-  /**
    * Get meta schema type instances.
    */
   getMetaTypes(): Promise<SchemaConcept[]> {
