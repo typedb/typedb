@@ -281,8 +281,9 @@ jobs:
       - run: PATH=$PATH:./grakn-dist/target/grakn-core-test ./grakn-test/test-biomed/validate.sh
 
   client-nodejs-e2e:
-       docker:
+      docker:
          - image: circleci/node:8.11.2
+      working_directory: ~/grakn
       steps:
         - attach_workspace:
             at: ~/grakn
@@ -310,27 +311,26 @@ jobs:
         - run: cd client-python && python -m unittest discover ./tests/integration/ -v
 
   workbase-unit-tests:
-    docker:
-      - image: circleci/node:8.11.2
-    working_directory: ~/grakn
-    steps:
-      - run: cd workbase && npm install
+      docker:
+        - image: circleci/node:8.11.2
+      working_directory: ~/grakn
+      steps:
+        - run: cd workbase && npm install
 
-      - save_cache:
-          paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+        - save_cache:
+            paths:
+              - node_modules
+            key: v1-dependencies-{{ checksum "package.json" }}
 
-      - run: npm test
+        - run: npm test
 
   workbase-e2e:
       docker:
         - image: circleci/node:8.11.2
       working_directory: ~/grakn
       steps:
-         - attach_workspace:
-                    at: ~/grakn
-
+        - attach_workspace:
+            at: ~/grakn
         - run: cd workbase && npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
