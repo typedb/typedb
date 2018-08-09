@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -107,12 +108,16 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
+        Label hasOwner = Schema.ImplicitType.HAS_OWNER.getLabel(type());
+        Label hasValue = Schema.ImplicitType.HAS_VALUE.getLabel(type());
+        Label has = Schema.ImplicitType.HAS.getLabel(type());
+
         Var edge1 = Graql.var();
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                rolePlayer(this, relationship().var(), edge1, start, null),
-                rolePlayer(this, relationship().var(), edge2, attribute().var(), null),
+                rolePlayer(this, relationship().var(), edge1, start, null, ImmutableSet.of(hasOwner), ImmutableSet.of(has)),
+                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, ImmutableSet.of(hasValue), ImmutableSet.of(has)),
                 neq(this, edge1, edge2)
         );
     }

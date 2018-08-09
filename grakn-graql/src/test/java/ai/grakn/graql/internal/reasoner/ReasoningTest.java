@@ -19,13 +19,16 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -170,9 +173,33 @@ public class ReasoningTest {
     @ClassRule
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
 
+    @ClassRule
+    public static final SampleKBContext resourceOwnership = SampleKBContext.load("resourceOwnershipTest.gql");
+
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
+
+    @Test
+    public void resourceOwnershipNotPropagatedWithinRelation() {
+        EmbeddedGraknTx<?> tx = resourceOwnership.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+
+        String attributeName = "name";
+        String queryString = "match $x has " + attributeName + " $y; get;";
+
+        String implicitQueryString = "match " +
+                "(" +
+                HAS_OWNER.getLabel(attributeName).getValue() + ": $x, " +
+                HAS_VALUE.getLabel(attributeName).getValue() + ": $y " +
+                ") isa " + HAS.getLabel(attributeName).getValue() + ";get;";
+
+        List<ConceptMap> implicitAnswers = qb.<GetQuery>parse(implicitQueryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+
+        assertThat(answers, empty());
+        assertCollectionsEqual(implicitAnswers, answers);
+    }
 
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationOfReflexiveRelations() {
