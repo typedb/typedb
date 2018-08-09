@@ -317,7 +317,7 @@ jobs:
       steps:
         - checkout
         - run: cd workbase && npm install
-        - run: npm test
+        - run: cd workbase && npm test
 
   workbase-e2e:
       docker:
@@ -329,7 +329,7 @@ jobs:
         - run: cd workbase && npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
-        - run: npm run e2e
+        - run: cd workbase && npm run e2e
 
 
 workflows:
