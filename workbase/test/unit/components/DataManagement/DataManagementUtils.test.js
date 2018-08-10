@@ -3,7 +3,7 @@ import mockConcepts from '../../../helpers/MockConcepts.js';
 
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
-jest.mock('@/components/DataManagement/NodeSettings', () => ({
+jest.mock('@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings', () => ({
   getTypeLabels() { return []; },
 }));
 

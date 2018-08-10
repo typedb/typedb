@@ -1,4 +1,4 @@
-import QuerySettings from '@/components/DataManagement/QuerySettings';
+import QuerySettings from '@/components/DataManagement/DataManagementContent/MenuBar/QuerySettings/QuerySettings';
 import PersistentStorage from '@/components/shared/PersistentStorage';
 
 jest.mock('@/components/shared/PersistentStorage', () => ({

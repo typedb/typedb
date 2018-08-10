@@ -1,4 +1,4 @@
-import NodeSettings from '@/components/DataManagement/NodeSettings';
+import NodeSettings from '@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings';
 import PersistentStorage from '@/components/shared/PersistentStorage';
 
 jest.mock('@/components/shared/PersistentStorage', () => ({
