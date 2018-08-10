@@ -20,7 +20,7 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.controller.HttpController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -182,18 +182,18 @@ public class ServerTest {
 
 
         // post-processing
-        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
+        AttributeDeduplicator attributeDeduplicator = new AttributeDeduplicator(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
-        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, attributeUniqueness)).build();
+        io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, attributeDeduplicator)).build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         return ServerFactory.createServer(engineId, config, status,
                 sparkHttp, httpControllers, rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                lockProvider, attributeUniqueness, keyspaceStore);
+                lockProvider, attributeDeduplicator, keyspaceStore);
     }
 }

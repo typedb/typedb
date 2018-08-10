@@ -21,7 +21,6 @@ package ai.grakn.engine.attribute.uniqueness;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -40,14 +39,14 @@ import java.util.stream.Collectors;
  * TODO
  * @author Ganeshwara Herawan Hananda
  */
-public class MergeAlgorithm {
-    private static Logger LOG = LoggerFactory.getLogger(MergeAlgorithm.class);
+public class DeduplicationAlgorithm {
+    private static Logger LOG = LoggerFactory.getLogger(DeduplicationAlgorithm.class);
 
     /**
      * Merges a list of attributes.
      * @param newAttributes
      */
-    public static void merge(EngineGraknTxFactory txFactory, Attributes newAttributes) {
+    public static void deduplicate(EngineGraknTxFactory txFactory, Attributes newAttributes) {
         try {
             LOG.info("starting a new batch to process these new attributes: " + newAttributes);
             Set<KeyspaceValuePair> duplicates = newAttributes.attributes().stream()

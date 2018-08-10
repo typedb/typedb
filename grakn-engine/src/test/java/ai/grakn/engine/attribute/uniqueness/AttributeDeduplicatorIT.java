@@ -27,9 +27,9 @@ import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
-public class AttributeUniquenessIT {
+public class AttributeDeduplicatorIT {
     // Unique Attribute
-    // - merge
+    // - deduplicate
     // - optimise with janus unique index
     // - reduce by propertyUnique (deprecate)
 
@@ -87,7 +87,7 @@ public class AttributeUniquenessIT {
     @Test
     public void shouldBeAbleToMergeManyAttributesIntoOne() {
         String grakn = "localhost:48555";
-        String merge = "http://localhost:4567/merge";
+        String merge = "http://localhost:4567/deduplicate";
         String keyspaceFriendlyNameWithDate = ("grakn_" + (new Date()).toString().replace(" ", "_").replace(":", "_")).toLowerCase();
         Keyspace keyspace = Keyspace.of(keyspaceFriendlyNameWithDate);
         String name = "John";
@@ -119,14 +119,14 @@ public class AttributeUniquenessIT {
             System.out.println("done.");
         }
 
-        // merge
+        // deduplicate
         int mergeIter = 0;
         while (true) {
-            System.out.println("triggering merge.");
+            System.out.println("triggering deduplicate.");
             triggerMerge(merge);
-            System.out.println("merge completed");
+            System.out.println("deduplicate completed");
             if (mergeIter >= duplicateCount) {
-                System.out.println("we've triggered the merge operation " + mergeIter + " times to merge " + duplicateCount + " duplicates. Soo... HOPEFULLY... there's no more duplicates exist. merge finished");
+                System.out.println("we've triggered the deduplicate operation " + mergeIter + " times to deduplicate " + duplicateCount + " duplicates. Soo... HOPEFULLY... there's no more duplicates exist. deduplicate finished");
                 break;
             }
             mergeIter++;
@@ -143,14 +143,14 @@ public class AttributeUniquenessIT {
             System.out.println("done.");
         }
 
-        // merge
+        // deduplicate
         int mergeIter2 = 0;
         while (true) {
-            System.out.println("triggering merge.");
+            System.out.println("triggering deduplicate.");
             int remainingAttributeInQueue = triggerMerge(merge);
             System.out.println(remainingAttributeInQueue + " attributes removed");
             if (mergeIter2 >= duplicateCount) {
-                System.out.println("we've triggered the merge operation " + mergeIter + " times to merge " + duplicateCount + " duplicates. Soo... HOPEFULLY... there's no more duplicates exist. merge finished");
+                System.out.println("we've triggered the deduplicate operation " + mergeIter + " times to deduplicate " + duplicateCount + " duplicates. Soo... HOPEFULLY... there's no more duplicates exist. deduplicate finished");
                 break;
             }
             mergeIter2++;
@@ -166,8 +166,8 @@ public class AttributeUniquenessIT {
     }
 
     /**
-     * Attempts to trigger an attribute merge operation by sending a GET request to the supplied URL.
-     * Returns back the count of items still in the Queue queue after merge
+     * Attempts to trigger an attribute deduplicate operation by sending a GET request to the supplied URL.
+     * Returns back the count of items still in the Queue queue after deduplicate
      */
     private int triggerMerge(String url) {
         try {

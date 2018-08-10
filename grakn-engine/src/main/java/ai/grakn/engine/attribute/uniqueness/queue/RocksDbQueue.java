@@ -56,7 +56,7 @@ public class RocksDbQueue implements Queue {
     }
 
     //    @Override
-    public void insertAttribute(Attribute attribute) {
+    public void insert(Attribute attribute) {
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
             queueDb.put(syncWrite, serialiseStringUtf8(attribute.conceptId().getValue()), serialiseAttributeUtf8(attribute));
@@ -68,7 +68,7 @@ public class RocksDbQueue implements Queue {
     }
 
     //    @Override
-    public Attributes readAttributes(int limit) throws InterruptedException {
+    public Attributes read(int limit) throws InterruptedException {
         // blocks until the queue contains at least 1 element
         while (isQueueEmpty(queueDb)) {
             synchronized (this) { wait(); }
@@ -92,7 +92,7 @@ public class RocksDbQueue implements Queue {
     }
 
     //    @Override
-    public void ackAttributes(Attributes attributes) {
+    public void ack(Attributes attributes) {
         WriteBatch acks = new WriteBatch();
         // set to false for better performance. at the moment we're setting it to true as the algorithm is untested and we prefer correctness over speed
         WriteOptions writeOptions = new WriteOptions().setSync(true);

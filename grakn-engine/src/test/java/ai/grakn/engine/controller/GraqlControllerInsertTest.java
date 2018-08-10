@@ -22,7 +22,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -71,13 +71,13 @@ public class GraqlControllerInsertTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static final AttributeUniqueness attributeUniqueness = mock(AttributeUniqueness.class);
+    private static final AttributeDeduplicator ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicator.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static final Printer printer = mock(Printer.class);
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(
-            new GraqlController(mockFactory, attributeUniqueness, printer, new MetricRegistry())
+            new GraqlController(mockFactory, ATTRIBUTE_DEDUPLICATOR, printer, new MetricRegistry())
     );
 
     @Before

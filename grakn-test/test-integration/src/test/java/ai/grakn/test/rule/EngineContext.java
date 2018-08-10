@@ -19,7 +19,6 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -29,7 +28,7 @@ import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
@@ -51,11 +50,8 @@ import io.grpc.ServerBuilder;
 import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -278,11 +274,11 @@ public class EngineContext extends CompositeTestRule {
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
-        AttributeUniqueness attributeUniqueness = new AttributeUniqueness(config, engineGraknTxFactory);
+        AttributeDeduplicator attributeDeduplicator = new AttributeDeduplicator(config, engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new SessionService(requestOpener, attributeUniqueness))
+                .addService(new SessionService(requestOpener, attributeDeduplicator))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
@@ -291,7 +287,7 @@ public class EngineContext extends CompositeTestRule {
         Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                lockProvider, attributeUniqueness, keyspaceStore);
+                lockProvider, attributeDeduplicator, keyspaceStore);
 
         graknEngineServer.start();
 

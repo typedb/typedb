@@ -27,7 +27,7 @@ public interface Queue {
      * Enqueue a new attribute to the queue
      * @param attribute
      */
-    void insertAttribute(Attribute attribute);
+    void insert(Attribute attribute);
 
     /**
      * get n attributes where min <= n < limit. For fault tolerance, attributes are not deleted from the queue until Attributes::markProcessed() is called.
@@ -35,7 +35,7 @@ public interface Queue {
      * @param limit the maximum number of items to be returned.
      * @return an {@link Attributes} instance containing a list of duplicates
      */
-    Attributes readAttributes(int limit) throws InterruptedException;
+    Attributes read(int limit) throws InterruptedException;
 
-    void ackAttributes(Attributes batch);
+    void ack(Attributes batch);
 }

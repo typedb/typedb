@@ -34,36 +34,36 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 
-import static ai.grakn.engine.attribute.uniqueness.MergeAlgorithm.merge;
+import static ai.grakn.engine.attribute.uniqueness.DeduplicationAlgorithm.deduplicate;
 
 /**
  * This class is responsible for merging attribute duplicates which is done in order to maintain attribute uniqueness.
- * It is an always-on background thread which continuously merge duplicates. This means that eventually,
+ * It is an always-on background thread which continuously deduplicate duplicates. This means that eventually,
  * every attribute instance will have a unique value, as the duplicates will have been removed.
- * A new incoming attribute will immediately trigger the merge operation, meaning that duplicates are merged in almost real-time speed.
- * It is fault-tolerant and will re-process incoming attributes if Grakn crashes during a merge process.
+ * A new incoming attribute will immediately trigger the deduplicate operation, meaning that duplicates are merged in almost real-time speed.
+ * It is fault-tolerant and will re-process incoming attributes if Grakn crashes during a deduplicate process.
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class AttributeUniqueness {
-    private static Logger LOG = LoggerFactory.getLogger(AttributeUniqueness.class);
+public class AttributeDeduplicator {
+    private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicator.class);
     private static final int QUEUE_GET_BATCH_MAX = 1000;
-    private static final Path relQueuePath = Paths.get("queue"); // path to the queue storage location, relative to the data directory
+    private static final Path queuePathRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
 
     private EngineGraknTxFactory txFactory;
-    private Queue newAttributeQueue;
+    private Queue queue;
 
     private boolean stopDaemon = false;
 
     /**
-     * Instantiates {@link AttributeUniqueness}
+     * Instantiates {@link AttributeDeduplicator}
      * @param config a reference to an instance of {@link GraknConfig} which is initialised from a grakn.properties.
      * @param txFactory an {@link EngineGraknTxFactory} instance which provides access to write into the database
      */
-    public AttributeUniqueness(GraknConfig config, EngineGraknTxFactory txFactory) {
+    public AttributeDeduplicator(GraknConfig config, EngineGraknTxFactory txFactory) {
         Path dataDir = Paths.get(config.getProperty(GraknConfigKey.DATA_DIR));
-        Path absQueuePath = dataDir.resolve(relQueuePath);
-        this.newAttributeQueue = new RocksDbQueue(absQueuePath);
+        Path queuePathAbsolute = dataDir.resolve(queuePathRelative);
+        this.queue = new RocksDbQueue(queuePathAbsolute);
         this.txFactory = txFactory;
 
     }
@@ -76,14 +76,14 @@ public class AttributeUniqueness {
      */
     public void insertAttribute(Keyspace keyspace, String value, ConceptId conceptId) {
         final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
-        LOG.info("insertAttribute(" + newAttribute + ")");
-        newAttributeQueue.insertAttribute(newAttribute);
+        LOG.info("insert(" + newAttribute + ")");
+        queue.insert(newAttribute);
     }
 
     /**
-     * Starts a daemon which continuously merge attribute duplicates.
+     * Starts a daemon which continuously deduplicate attribute duplicates.
      * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the merge algorithm as implemented in the {@link MergeAlgorithm} class.
+     * the deduplicate algorithm as implemented in the {@link DeduplicationAlgorithm} class.
      *
      */
     public CompletableFuture<Void> startDaemon() {
@@ -92,12 +92,12 @@ public class AttributeUniqueness {
             while (!stopDaemon) {
                 try {
                     LOG.info("startDaemon() - attribute uniqueness daemon started.");
-                    Attributes newAttrs = newAttributeQueue.readAttributes(QUEUE_GET_BATCH_MAX);
-                    merge(txFactory, newAttrs);
-                    newAttributeQueue.ackAttributes(newAttrs);
+                    Attributes newAttrs = queue.read(QUEUE_GET_BATCH_MAX);
+                    deduplicate(txFactory, newAttrs);
+                    queue.ack(newAttrs);
                 }
                 catch (InterruptedException e) {
-                    LOG.error("merge() failed with an exception. ", e);
+                    LOG.error("deduplicate() failed with an exception. ", e);
                 }
             }
             LOG.info("startDaemon() - attribute uniqueness daemon stopped");

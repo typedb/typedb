@@ -25,7 +25,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
@@ -86,7 +86,7 @@ public class KeyspaceStoreTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private final static AttributeUniqueness mockedAttributeUniqueness = mock(AttributeUniqueness.class);
+    private final static AttributeDeduplicator MOCKED_ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicator.class);
 
 
     @BeforeClass
@@ -96,7 +96,7 @@ public class KeyspaceStoreTest {
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedAttributeUniqueness))
+                .addService(new SessionService(requestOpener, MOCKED_ATTRIBUTE_DEDUPLICATOR))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

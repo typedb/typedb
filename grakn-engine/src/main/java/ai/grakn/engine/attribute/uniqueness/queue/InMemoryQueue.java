@@ -30,12 +30,12 @@ public class InMemoryQueue implements Queue {
     private java.util.Queue<Attribute> newAttributeQueue = new LinkedBlockingQueue<>();
 
     @Override
-    public void insertAttribute(Attribute attribute) {
+    public void insert(Attribute attribute) {
         newAttributeQueue.add(attribute);
     }
 
     @Override
-    public Attributes readAttributes(int max) {
+    public Attributes read(int max) {
         List<Attribute> batch = new LinkedList<>();
 
         for (int i = 0; i < max && batch.size() < max; ++i) {
@@ -48,6 +48,6 @@ public class InMemoryQueue implements Queue {
 
     // TODO
     @Override
-    public void ackAttributes(Attributes batch) {
+    public void ack(Attributes batch) {
     }
 }

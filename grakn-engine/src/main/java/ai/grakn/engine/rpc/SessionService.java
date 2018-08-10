@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -62,15 +62,15 @@ import java.util.stream.Stream;
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
-    private AttributeUniqueness attributeUniqueness;
+    private AttributeDeduplicator attributeDeduplicator;
 
-    public SessionService(OpenRequest requestOpener, AttributeUniqueness attributeUniqueness) {
+    public SessionService(OpenRequest requestOpener, AttributeDeduplicator attributeDeduplicator) {
         this.requestOpener = requestOpener;
-        this.attributeUniqueness = attributeUniqueness;
+        this.attributeDeduplicator = attributeDeduplicator;
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return TransactionListener.create(responseSender, requestOpener, attributeUniqueness);
+        return TransactionListener.create(responseSender, requestOpener, attributeDeduplicator);
     }
 
 
@@ -84,23 +84,23 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
-        private AttributeUniqueness attributeUniqueness;
+        private AttributeDeduplicator attributeDeduplicator;
         private final Iterators iterators = Iterators.create();
 
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
 
-        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeUniqueness attributeUniqueness) {
+        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicator attributeDeduplicator) {
             this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
-            this.attributeUniqueness = attributeUniqueness;
+            this.attributeDeduplicator = attributeDeduplicator;
         }
 
-        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeUniqueness attributeUniqueness) {
+        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeDeduplicator attributeDeduplicator) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseSender, threadExecutor, requestOpener, attributeUniqueness);
+            return new TransactionListener(responseSender, threadExecutor, requestOpener, attributeDeduplicator);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -225,7 +225,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> attributeUniqueness.insertAttribute(commitLog.keyspace(), value, id))
+                            conceptIds.forEach(id -> attributeDeduplicator.insertAttribute(commitLog.keyspace(), value, id))
                     ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }

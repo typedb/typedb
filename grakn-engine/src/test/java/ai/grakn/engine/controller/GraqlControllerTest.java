@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStoreFake;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.controller.response.Concept;
 import ai.grakn.engine.controller.response.ConceptBuilder;
 import ai.grakn.engine.controller.util.JsonConceptBuilder;
@@ -105,7 +105,7 @@ public class GraqlControllerTest {
         EngineGraknTxFactory factory = EngineGraknTxFactory
                 .create(mockLockProvider, GraknConfig.create(), KeyspaceStoreFake.of());
         factory.keyspaceStore().loadSystemSchema();
-        new GraqlController(factory, mock(AttributeUniqueness.class), printer, new MetricRegistry()).start(spark);
+        new GraqlController(factory, mock(AttributeDeduplicator.class), printer, new MetricRegistry()).start(spark);
     });
 
     @ClassRule

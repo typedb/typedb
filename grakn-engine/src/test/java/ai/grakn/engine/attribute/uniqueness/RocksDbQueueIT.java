@@ -42,9 +42,9 @@ public class RocksDbQueueIT {
         );
 
         for (Attribute a: attributes) {
-            queue.insertAttribute(a);
+            queue.insert(a);
         }
-        Attributes insertedAttributes = queue.readAttributes(attributes.size());
+        Attributes insertedAttributes = queue.read(attributes.size());
         assertThat(insertedAttributes.attributes(), equalTo(attributes));
         queue.close();
     }
@@ -61,11 +61,11 @@ public class RocksDbQueueIT {
         );
 
         for (Attribute a: attributes) {
-            queue.insertAttribute(a);
+            queue.insert(a);
         }
-        Attributes insertedAttributes = queue.readAttributes(Integer.MAX_VALUE);
+        Attributes insertedAttributes = queue.read(Integer.MAX_VALUE);
         assertThat(insertedAttributes.attributes(), equalTo(attributes));
-        Attributes remainingAttributes = queue.readAttributes(Integer.MAX_VALUE);
+        Attributes remainingAttributes = queue.read(Integer.MAX_VALUE);
         assertThat(remainingAttributes.attributes(), equalTo(attributes));
         queue.close();
     }
@@ -83,11 +83,11 @@ public class RocksDbQueueIT {
                 Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
         );
 
-        Stream.concat(attributes1.stream(), attributes2.stream()).forEach(a -> queue.insertAttribute(a));
+        Stream.concat(attributes1.stream(), attributes2.stream()).forEach(a -> queue.insert(a));
 
-        Attributes insertedAttributes1 = queue.readAttributes(attributes1.size());
-        queue.ackAttributes(insertedAttributes1);
-        Attributes insertedAttributes2 = queue.readAttributes(Integer.MAX_VALUE);
+        Attributes insertedAttributes1 = queue.read(attributes1.size());
+        queue.ack(insertedAttributes1);
+        Attributes insertedAttributes2 = queue.read(Integer.MAX_VALUE);
         assertThat(insertedAttributes2.attributes(), equalTo(attributes2));
         queue.close();
     }
@@ -101,10 +101,10 @@ public class RocksDbQueueIT {
             i.incrementAndGet();
             try { Thread.sleep(5000); } catch (InterruptedException e) { throw new RuntimeException(e); }
             System.out.println("future");
-            queue.insertAttribute(Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")));
+            queue.insert(Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")));
             return null;
         });
         System.out.println("main thread");
-        queue.readAttributes(5);
+        queue.read(5);
     }
 }

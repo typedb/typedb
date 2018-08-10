@@ -18,7 +18,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Stopwatch;
@@ -45,11 +45,11 @@ public class Server implements AutoCloseable {
     private final ServerStatus serverStatus;
     private final LockProvider lockProvider;
     private final ServerHTTP httpHandler;
-    private final AttributeUniqueness attributeUniqueness;
+    private final AttributeDeduplicator attributeDeduplicator;
 
     private final KeyspaceStore keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeUniqueness attributeUniqueness, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeDeduplicator attributeDeduplicator, KeyspaceStore keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
@@ -58,7 +58,7 @@ public class Server implements AutoCloseable {
         this.keyspaceStore = keyspaceStore;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
-        this.attributeUniqueness = attributeUniqueness;
+        this.attributeDeduplicator = attributeDeduplicator;
     }
 
     public void start() throws IOException {
@@ -70,7 +70,7 @@ public class Server implements AutoCloseable {
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
-        attributeUniqueness.startDaemon();
+        attributeDeduplicator.startDaemon();
         serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
     }
@@ -84,7 +84,7 @@ public class Server implements AutoCloseable {
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
             }
-            attributeUniqueness.stopDaemon();
+            attributeDeduplicator.stopDaemon();
         }
     }
 

@@ -20,7 +20,7 @@ package ai.grakn.engine;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.attribute.uniqueness.AttributeUniqueness;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.HttpController;
@@ -53,13 +53,13 @@ public class ServerHTTP {
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final ServerStatus serverStatus;
-    private final AttributeUniqueness attributeUniqueness;
+    private final AttributeDeduplicator attributeDeduplicator;
     private final ServerRPC rpcServerRPC;
     private final Collection<HttpController> additionalCollaborators;
 
     public ServerHTTP(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            ServerStatus serverStatus, AttributeUniqueness attributeUniqueness,
+            ServerStatus serverStatus, AttributeDeduplicator attributeDeduplicator,
             ServerRPC rpcServerRPC,
             Collection<HttpController> additionalCollaborators
     ) {
@@ -68,7 +68,7 @@ public class ServerHTTP {
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.serverStatus = serverStatus;
-        this.attributeUniqueness = attributeUniqueness;
+        this.attributeDeduplicator = attributeDeduplicator;
         this.rpcServerRPC = rpcServerRPC;
         this.additionalCollaborators = additionalCollaborators;
     }
@@ -88,7 +88,7 @@ public class ServerHTTP {
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
-        new GraqlController(factory, attributeUniqueness, printer, metricRegistry).start(spark);
+        new GraqlController(factory, attributeDeduplicator, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
         new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
 
