@@ -1,8 +1,8 @@
 <template>
   <transition name="slide-fade">
-    <div class="canvas-tool-tip" v-if="currentKeyspace">
-      <div id="nodes"> Nodes: {{nodes}}</div>
-      <div id="edges"> Edges: {{edges}}</div>
+    <div class="canvas-tool-tip z-depth-3" v-if="currentKeyspace">
+      <div id="nodes"> nodes: {{nodes}}</div>
+      <div id="edges"> edges: {{edges}}</div>
     </div>
   </transition>
 </template>

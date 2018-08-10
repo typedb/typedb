@@ -3,7 +3,7 @@ import storage from '@/components/shared/PersistentStorage';
 import logger from '@/../Logger';
 import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
 import ManagementUtils from './DataManagementUtils';
-import NodeSettings from './NodeSettings';
+import NodeSettings from './Canvas/NodeSettingsPanel/NodeSettings';
 import Style from './Style';
 
 import { RUN_CURRENT_QUERY, TOGGLE_LABEL, TOGGLE_COLOUR } from '../shared/StoresActions';

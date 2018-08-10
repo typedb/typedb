@@ -80,11 +80,9 @@ span {
 import Spinner from '@/components/UIElements/Spinner.vue';
 import { RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
 import GraqlCodeMirror from './GraqlCodeMirror';
-
-// Sub-components
 import AddCurrentQuery from './AddCurrentQuery.vue';
 import ScrollButton from './ScrollButton.vue';
-import FavQueriesSettings from '../../FavQueriesSettings';
+import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
 import ManagementUtils from '../../DataManagementUtils';
 
 export default {

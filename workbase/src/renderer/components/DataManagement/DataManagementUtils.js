@@ -1,5 +1,5 @@
-import QuerySettings from './QuerySettings';
-import NodeSettings from './NodeSettings';
+import QuerySettings from './MenuBar/QuerySettings/QuerySettings';
+import NodeSettings from './Canvas/NodeSettingsPanel/NodeSettings';
 
 function buildValue(array) {
   if (!array) return '';
@@ -98,6 +98,7 @@ async function prepareAttribute(attribute) {
 }
 
 async function prepareConcepts(result) {
+  debugger;
   return result.map((x) => {
     const exp = x.explanation();
     const key = x.map().keys().next().value;
