@@ -83,7 +83,7 @@ import GraqlCodeMirror from './GraqlCodeMirror';
 import AddCurrentQuery from './AddCurrentQuery.vue';
 import ScrollButton from './ScrollButton.vue';
 import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
-import ManagementUtils from '../../DataManagementUtils';
+import ManagementUtils from '../../../DataManagementUtils';
 
 export default {
   name: 'GraqlEditor',
