@@ -6,10 +6,10 @@
       <div class="center">
         <div class="graqlEditor-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
           <textarea id="graqlEditor" ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
+          <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror"></scroll-button>
         </div>
       </div>
       <div class="right-side">
-        <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror"></scroll-button>
         <add-current-query :current-query="currentQuery" :toolTipShown="toolTipShown" v-on:toggle-tool-tip="toggleToolTip" ref="addFavQuery"></add-current-query>
         <button id="run-query" @click="runQuery" :class="{'disabled':(!currentKeyspace || !currentQuery.length)}" class="btn" ref="runQueryButton"><i class="fas fa-chevron-circle-right"></i></button>
         <button 
