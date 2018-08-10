@@ -21,10 +21,6 @@ package ai.grakn.engine.config;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.test.rule.InMemoryRedisContext;
-import ai.grakn.util.SimpleURI;
-import com.google.common.collect.Iterables;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,9 +35,6 @@ import static junit.framework.TestCase.assertNotNull;
 public class GraknConfigTest {
 
     private static GraknConfig configuration = GraknConfig.create();
-
-    @ClassRule
-     public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(configuration.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

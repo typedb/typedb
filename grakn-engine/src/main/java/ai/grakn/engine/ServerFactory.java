@@ -69,7 +69,7 @@ public class ServerFactory {
         AttributeDeduplicator attributeDeduplicator = new AttributeDeduplicator(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
-        spark.Service sparkHttp = spark.Service.ignite();
+        Service sparkHttp = Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicator, keyspaceStore);
 

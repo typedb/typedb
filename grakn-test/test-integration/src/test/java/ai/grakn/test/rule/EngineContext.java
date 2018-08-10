@@ -29,10 +29,9 @@ import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
-import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.engine.rpc.ServerOpenRequest;
@@ -49,7 +48,6 @@ import com.jayway.restassured.RestAssured;
 import io.grpc.ServerBuilder;
 import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -78,10 +76,7 @@ public class EngineContext extends CompositeTestRule {
     private Server server;
 
     private final GraknConfig config;
-    private JedisPool jedisPool;
     private spark.Service sparkHttp;
-
-    private final InMemoryRedisContext redis;
 
     public KeyspaceStore systemKeyspace() {
         return keyspaceStore;
@@ -97,19 +92,14 @@ public class EngineContext extends CompositeTestRule {
 
     private EngineContext() {
         config = createTestConfig();
-        redis = InMemoryRedisContext.create();
     }
 
-    private EngineContext(GraknConfig config, InMemoryRedisContext redis) {
+    private EngineContext(GraknConfig config) {
         this.config = config;
-        this.redis = redis;
     }
 
     public static EngineContext create(GraknConfig config) {
-        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-        int redisPort = redisURI.getPort();
-        InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
-        return new EngineContext(config, redis);
+        return new EngineContext(config);
     }
 
     /**
@@ -123,10 +113,6 @@ public class EngineContext extends CompositeTestRule {
 
     public Server server() {
         return server;
-    }
-
-    public GraknConfig config() {
-        return config;
     }
 
     public SimpleURI uri() {
@@ -144,8 +130,7 @@ public class EngineContext extends CompositeTestRule {
     @Override
     protected final List<TestRule> testRules() {
         return ImmutableList.of(
-                SessionContext.create(),
-                redis
+                SessionContext.create()
         );
     }
 
@@ -157,8 +142,6 @@ public class EngineContext extends CompositeTestRule {
         }
 
         SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-
-        jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
         // To ensure consistency b/w test profiles and configuration files, when not using Janus
         // for a unit tests in an IDE, add the following option:
@@ -176,10 +159,7 @@ public class EngineContext extends CompositeTestRule {
 
         sparkHttp = spark.Service.ignite();
 
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + redis.port()));
-        RedisWrapper redis = RedisWrapper.create(config);
-
-        server = startGraknEngineServer(redis);
+        server = startGraknEngineServer();
 
         LOG.info("engine started on " + uri());
     }
@@ -202,7 +182,6 @@ public class EngineContext extends CompositeTestRule {
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
-            jedisPool.close();
             sparkHttp.stop();
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -256,18 +235,14 @@ public class EngineContext extends CompositeTestRule {
         RestAssured.baseURI = "http://" + config.uri();
     }
 
-    public JedisPool getJedisPool() {
-        return jedisPool;
-    }
-
-    private Server startGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
+    private Server startGraknEngineServer() throws IOException {
         EngineID id = EngineID.me();
         ServerStatus status = new ServerStatus();
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
-        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
+        LockProvider lockProvider = new ProcessWideLockProvider();
 
         keyspaceStore = new KeyspaceStoreImpl(config);
 
