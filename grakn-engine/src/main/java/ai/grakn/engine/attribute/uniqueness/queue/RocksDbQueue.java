@@ -48,7 +48,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  *
  * @author Ganeshwara Herawan Hananda
  */
-public class RocksDbQueue implements Queue, AutoCloseable {
+public class RocksDbQueue implements AutoCloseable {
     private final RocksDB queueDb;
 
     /**
@@ -71,7 +71,6 @@ public class RocksDbQueue implements Queue, AutoCloseable {
      *
      * @param attribute the attribute to be inserted
      */
-    //    @Override
     public void insert(Attribute attribute) {
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
@@ -86,15 +85,14 @@ public class RocksDbQueue implements Queue, AutoCloseable {
     /**
      * Read at most N attributes from the beginning of the queue. Read everything if there are less than N attributes in the queue.
      * If the queue is empty, the method will block until the queue receives a new attribute.
-     * The attributes won't be removed from the queue until you call {@link #ack(Attributes)} on the returned attributes.
+     * The attributes won't be removed from the queue until you call {@link #ack(List<Attribute>)} on the returned attributes.
      *
      * @param limit the maximum number of items to be returned.
-     * @return an {@link Attributes} instance containing a list of {@link Attribute}
+     * @return a list of {@link Attribute}
      * @throws InterruptedException
-     * @see #ack(Attributes)
+     * @see #ack(List<Attribute>)
      */
-    //    @Override
-    public Attributes read(int limit) throws InterruptedException {
+    public List<Attribute> read(int limit) throws InterruptedException {
         // blocks until the queue contains at least 1 element
         while (isQueueEmpty(queueDb)) {
             synchronized (this) { wait(); }
@@ -114,7 +112,7 @@ public class RocksDbQueue implements Queue, AutoCloseable {
             count++;
         }
 
-        return new Attributes(result);
+        return result;
     }
 
     /**
@@ -122,12 +120,11 @@ public class RocksDbQueue implements Queue, AutoCloseable {
      *
      * @param attributes the attributes which will be removed
      */
-    //    @Override
-    public void ack(Attributes attributes) {
+    public void ack(List<Attribute> attributes) {
         WriteBatch acks = new WriteBatch();
         // set to false for better performance. at the moment we're setting it to true as the algorithm is untested and we prefer correctness over speed
         WriteOptions writeOptions = new WriteOptions().setSync(true);
-        for (Attribute attr: attributes.attributes()) {
+        for (Attribute attr: attributes) {
             acks.remove(serialiseStringUtf8(attr.conceptId().getValue()));
         }
         try {
@@ -141,7 +138,6 @@ public class RocksDbQueue implements Queue, AutoCloseable {
     /**
      * Close the {@link RocksDbQueue} instance.
      */
-//    @Override
     public void close() {
         queueDb.close();
     }
@@ -162,7 +158,7 @@ public class RocksDbQueue implements Queue, AutoCloseable {
      * Serialisation helpers for the {@link RocksDbQueue}. Don't add any other serialisation methods that are not related to it.
      */
     static class SerialisationUtils {
-        public static byte[] serialiseAttributeUtf8(Attribute attribute) {
+        static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(
                     "attribute-keyspace", attribute.keyspace().getValue(),
                     "attribute-value", attribute.value(),
@@ -171,7 +167,7 @@ public class RocksDbQueue implements Queue, AutoCloseable {
             return serialiseStringUtf8(json.toString());
         }
 
-        public static Attribute deserialiseAttributeUtf8(byte[] attribute) {
+        static Attribute deserialiseAttributeUtf8(byte[] attribute) {
             Json json = Json.read(deserializeStringUtf8(attribute));
             String keyspace = json.at("attribute-keyspace").asString();
             String value = json.at("attribute-value").asString();
@@ -179,11 +175,11 @@ public class RocksDbQueue implements Queue, AutoCloseable {
             return Attribute.create(Keyspace.of(keyspace), value, ConceptId.of(conceptId));
         }
 
-        public static String deserializeStringUtf8(byte[] bytes) {
+        static String deserializeStringUtf8(byte[] bytes) {
             return new String(bytes, UTF_8);
         }
 
-        public static byte[] serialiseStringUtf8(String string) {
+        static byte[] serialiseStringUtf8(String string) {
             return string.getBytes(UTF_8);
         }
     }

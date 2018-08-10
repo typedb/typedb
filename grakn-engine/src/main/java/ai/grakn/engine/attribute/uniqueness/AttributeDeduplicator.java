@@ -23,8 +23,6 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
-import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
-import ai.grakn.engine.attribute.uniqueness.queue.Queue;
 import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -33,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.engine.attribute.uniqueness.DeduplicationAlgorithm.deduplicate;
@@ -60,7 +59,7 @@ public class AttributeDeduplicator {
     private static final Path queuePathRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
 
     private EngineGraknTxFactory txFactory;
-    private Queue queue;
+    private RocksDbQueue queue;
 
     private boolean stopDaemon = false;
 
@@ -101,7 +100,7 @@ public class AttributeDeduplicator {
             LOG.info("startDeduplicationDaemon() - attribute de-duplicator daemon started.");
             while (!stopDaemon) {
                 try {
-                    Attributes newAttrs = queue.read(QUEUE_GET_BATCH_MAX);
+                    List<Attribute> newAttrs = queue.read(QUEUE_GET_BATCH_MAX);
                     deduplicate(txFactory, newAttrs);
                     queue.ack(newAttrs);
                 }

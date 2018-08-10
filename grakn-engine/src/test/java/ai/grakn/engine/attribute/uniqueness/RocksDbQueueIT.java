@@ -3,7 +3,6 @@ package ai.grakn.engine.attribute.uniqueness;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
-import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
 import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -41,16 +40,16 @@ public class RocksDbQueueIT {
                 Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
         );
 
-        for (Attribute a: attributes) {
-            queue.insert(a);
+        for (Attribute attr: attributes) {
+            queue.insert(attr);
         }
-        Attributes insertedAttributes = queue.read(attributes.size());
-        assertThat(insertedAttributes.attributes(), equalTo(attributes));
+        List<Attribute> insertedAttributes = queue.read(attributes.size());
+        assertThat(insertedAttributes, equalTo(attributes));
         queue.close();
     }
 
     @Test
-    public void unackedAttributesShouldStillBeAvailableForAReRead() throws InterruptedException {
+    public void readButUnackedAttributesShouldRemainInTheQueue() throws InterruptedException {
         RocksDbQueue queue = new RocksDbQueue(path);
         List<Attribute> attributes = Arrays.asList(
                 Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -60,13 +59,13 @@ public class RocksDbQueueIT {
                 Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
         );
 
-        for (Attribute a: attributes) {
-            queue.insert(a);
+        for (Attribute attr: attributes) {
+            queue.insert(attr);
         }
-        Attributes insertedAttributes = queue.read(Integer.MAX_VALUE);
-        assertThat(insertedAttributes.attributes(), equalTo(attributes));
-        Attributes remainingAttributes = queue.read(Integer.MAX_VALUE);
-        assertThat(remainingAttributes.attributes(), equalTo(attributes));
+        List<Attribute> insertedAttributes = queue.read(Integer.MAX_VALUE);
+        assertThat(insertedAttributes, equalTo(attributes));
+        List<Attribute> remainingAttributes = queue.read(Integer.MAX_VALUE);
+        assertThat(remainingAttributes, equalTo(attributes));
         queue.close();
     }
 
@@ -83,18 +82,18 @@ public class RocksDbQueueIT {
                 Attribute.create(Keyspace.of("k5"), "v5", ConceptId.of("c5"))
         );
 
-        Stream.concat(attributes1.stream(), attributes2.stream()).forEach(a -> queue.insert(a));
+        Stream.concat(attributes1.stream(), attributes2.stream()).forEach(attr -> queue.insert(attr));
 
-        Attributes insertedAttributes1 = queue.read(attributes1.size());
+        List<Attribute> insertedAttributes1 = queue.read(attributes1.size());
         queue.ack(insertedAttributes1);
-        Attributes insertedAttributes2 = queue.read(Integer.MAX_VALUE);
-        assertThat(insertedAttributes2.attributes(), equalTo(attributes2));
+        List<Attribute> insertedAttributes2 = queue.read(Integer.MAX_VALUE);
+        assertThat(insertedAttributes2, equalTo(attributes2));
         queue.close();
     }
 
     @Ignore
     @Test
-    public void readAttributesMustBlockUntilThereAreItemsInTheQueue() throws InterruptedException {
+    public void theReadMethodMustBlockUntilThereAreItemsInTheQueue() throws InterruptedException {
         RocksDbQueue queue = new RocksDbQueue(path);
         AtomicInteger i = new AtomicInteger();
         CompletableFuture.supplyAsync(() -> {

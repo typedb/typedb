@@ -22,8 +22,8 @@ package ai.grakn.engine.attribute.uniqueness.queue;
  * TODO
  * @author Ganeshwara Herawan Hananda
  */
-public class QueueException extends RuntimeException {
-    public QueueException(Throwable cause) {
+class QueueException extends RuntimeException {
+    QueueException(Throwable cause) {
         super(cause);
     }
 }

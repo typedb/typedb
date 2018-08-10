@@ -19,7 +19,7 @@
 package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.attribute.uniqueness.queue.Attributes;
+import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
@@ -32,6 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,13 +47,14 @@ class DeduplicationAlgorithm {
      * Deduplicate unique through attributes
      * @param attributes
      */
-    static void deduplicate(EngineGraknTxFactory txFactory, Attributes attributes) {
+    static void deduplicate(EngineGraknTxFactory txFactory, List<Attribute> attributes) {
         try {
             LOG.info("starting a new batch to process these new attributes: " + attributes);
 
             // group the attributes into a set of unique (keyspace -> value) pair
-            Set<KeyspaceValuePair> uniqueKeyValuePairs = attributes.attributes().stream()
-                    .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value())).collect(Collectors.toSet());
+            Set<KeyspaceValuePair> uniqueKeyValuePairs = attributes.stream()
+                    .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value()))
+                    .collect(Collectors.toSet());
 
             // perform deduplicateSingleAttribute for each (keyspace -> value)
             for (KeyspaceValuePair keyspaceValuePair : uniqueKeyValuePairs) {
