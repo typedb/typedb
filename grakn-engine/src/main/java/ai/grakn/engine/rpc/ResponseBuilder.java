@@ -269,7 +269,7 @@ public class ResponseBuilder {
         public static AnswerProto.Answer answer(Object object) {
             AnswerProto.Answer.Builder answer = AnswerProto.Answer.newBuilder();
 
-            if (object instanceof AnswerGroup){
+            if (object instanceof AnswerGroup) {
                 answer.setAnswerGroup(answerGroup((AnswerGroup) object));
             } else if (object instanceof ConceptMap) {
                 answer.setConceptMap(conceptMap((ConceptMap) object));
@@ -287,12 +287,11 @@ public class ResponseBuilder {
         }
 
         static AnswerProto.Explanation explanation(Explanation explanation) {
-            return AnswerProto.Explanation.newBuilder()
-                    .setPattern(explanation.getQuery().getPattern().toString())
-                    .addAllAnswers(explanation.getAnswers().stream()
-                            .map(Answer::conceptMap)
-                            .collect(Collectors.toList()))
-                    .build();
+            AnswerProto.Explanation.Builder builder = AnswerProto.Explanation.newBuilder()
+                    .addAllAnswers(explanation.getAnswers().stream().map(Answer::conceptMap)
+                            .collect(Collectors.toList()));
+            if (explanation.getQuery() != null) builder.setPattern(explanation.getQuery().getPattern().toString());
+            return builder.build();
         }
 
         static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
@@ -301,7 +300,7 @@ public class ResponseBuilder {
                     .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
 
             // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+            if (answer.explanation() != null) {
                 answerGroupProto.setExplanation(explanation(answer.explanation()));
             }
             return answerGroupProto.build();
@@ -315,7 +314,7 @@ public class ResponseBuilder {
             });
 
             // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+            if (answer.explanation() != null) {
                 conceptMapProto.setExplanation(explanation(answer.explanation()));
             }
             return conceptMapProto.build();
@@ -326,7 +325,7 @@ public class ResponseBuilder {
             conceptListProto.setList(conceptIds(answer.list()));
 
             // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+            if (answer.explanation() != null) {
                 conceptListProto.setExplanation(explanation(answer.explanation()));
             }
             return conceptListProto.build();
@@ -337,7 +336,7 @@ public class ResponseBuilder {
             conceptSetProto.setSet(conceptIds(answer.set()));
 
             // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && answer.explanation().getQuery() != null) {
+            if (answer.explanation() != null) {
                 conceptSetProto.setExplanation(explanation(answer.explanation()));
             }
             return conceptSetProto.build();
