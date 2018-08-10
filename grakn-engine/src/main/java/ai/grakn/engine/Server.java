@@ -70,7 +70,7 @@ public class Server implements AutoCloseable {
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
-        attributeDeduplicator.startDaemon();
+        attributeDeduplicator.startDeduplicationDaemon();
         serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
     }
@@ -84,7 +84,7 @@ public class Server implements AutoCloseable {
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
             }
-            attributeDeduplicator.stopDaemon();
+            attributeDeduplicator.stopDeduplicationDaemon();
         }
     }
 

@@ -225,7 +225,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void commit() {
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((value, conceptIds) ->
-                            conceptIds.forEach(id -> attributeDeduplicator.insertAttribute(commitLog.keyspace(), value, id))
+                            conceptIds.forEach(id -> attributeDeduplicator.markForDeduplication(commitLog.keyspace(), value, id))
                     ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }

@@ -39,12 +39,23 @@ import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.Serialisat
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * TODO
+ * An implementation of a FIFO queue to support the attribute de-duplication in RocksDB.
+ * It supports three operations: insert, read, and ack.
+ *
+ * The read and ack should be used together in order to provide fault-tolerance.
+ * The attribute de-duplicator can read attributes from the queue and only ack after everything has been processed.
+ * If the de-duplicator crashes during a deduplication, it can resume operation from the last ack-ed attribute.
+ *
  * @author Ganeshwara Herawan Hananda
  */
-public class RocksDbQueue implements Queue {
+public class RocksDbQueue implements Queue, AutoCloseable {
     private final RocksDB queueDb;
 
+    /**
+     * Instantiates the class and the queue data directory
+     *
+     * @param path where to persist the queue data
+     */
     public RocksDbQueue(Path path) {
         try {
             Options options = new Options().setCreateIfMissing(true);
@@ -55,6 +66,11 @@ public class RocksDbQueue implements Queue {
         }
     }
 
+    /**
+     * insert a new attribute at the end of the queue.
+     *
+     * @param attribute the attribute to be inserted
+     */
     //    @Override
     public void insert(Attribute attribute) {
         WriteOptions syncWrite = new WriteOptions().setSync(true);
@@ -67,6 +83,16 @@ public class RocksDbQueue implements Queue {
         }
     }
 
+    /**
+     * Read at most N attributes from the beginning of the queue. Read everything if there are less than N attributes in the queue.
+     * If the queue is empty, the method will block until the queue receives a new attribute.
+     * The attributes won't be removed from the queue until you call {@link #ack(Attributes)} on the returned attributes.
+     *
+     * @param limit the maximum number of items to be returned.
+     * @return an {@link Attributes} instance containing a list of {@link Attribute}
+     * @throws InterruptedException
+     * @see #ack(Attributes)
+     */
     //    @Override
     public Attributes read(int limit) throws InterruptedException {
         // blocks until the queue contains at least 1 element
@@ -91,6 +117,11 @@ public class RocksDbQueue implements Queue {
         return new Attributes(result);
     }
 
+    /**
+     * Remove attributes from the queue.
+     *
+     * @param attributes the attributes which will be removed
+     */
     //    @Override
     public void ack(Attributes attributes) {
         WriteBatch acks = new WriteBatch();
@@ -107,10 +138,20 @@ public class RocksDbQueue implements Queue {
         }
     }
 
+    /**
+     * Close the {@link RocksDbQueue} instance.
+     */
+//    @Override
     public void close() {
         queueDb.close();
     }
 
+    /**
+     * Check if the queue is empty.
+     *
+     * @param queueDb the queue to be checked
+     * @return true if empty, false otherwise
+     */
     private boolean isQueueEmpty(RocksDB queueDb) {
         RocksIterator it = queueDb.newIterator();
         it.seekToFirst();
@@ -118,7 +159,7 @@ public class RocksDbQueue implements Queue {
     }
 
     /**
-     *
+     * Serialisation helpers for the {@link RocksDbQueue}. Don't add any other serialisation methods that are not related to it.
      */
     static class SerialisationUtils {
         public static byte[] serialiseAttributeUtf8(Attribute attribute) {
