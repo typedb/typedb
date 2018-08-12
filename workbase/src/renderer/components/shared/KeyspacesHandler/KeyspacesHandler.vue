@@ -7,7 +7,7 @@
         </div>
          <transition name="slide-fade">
             <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-show="toolTipShown === 'keyspaces'">
-                <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no available keyspace</div>
+                <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
                 <li :id="ks" class="ks-key" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
             </ul>
         </transition>  
