@@ -372,7 +372,7 @@ workflows:
       - build:
           filters:
             branches:
-              ignore: /.*/
+              ignore: /workbase.*/
       - workbase-unit-tests
       - unit-it-test-1:
           requires:
