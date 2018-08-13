@@ -371,8 +371,10 @@ workflows:
     jobs:
       - build:
           filters:
+            tags:
+              only: /^v.*/
             branches:
-              ignore: /^master.*/
+              ignore: /.*/
       - workbase-unit-tests
       - unit-it-test-1:
           requires:
