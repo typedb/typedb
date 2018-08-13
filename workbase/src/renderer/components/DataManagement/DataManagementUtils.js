@@ -226,7 +226,7 @@ async function loadAttributes(node, limit, offset) {
 }
 
 function limitQuery(query) {
-  const getRegex = /^(.*;)\s*(get\b.*;)$/;
+  const getRegex = /^((.|\s)*;)\s*(get\b.*;)$/;
   let limitedQuery = query;
 
   // If there is no `get` the user mistyped the query
@@ -236,12 +236,11 @@ function limitQuery(query) {
     const deleteRegex = /^(.*;)\s*(delete\b.*;)$/;
     const match = getRegex.exec(query);
     limitedQuery = match[1];
-    const getPattern = match[2];
+    const getPattern = match[3];
     if (!(offsetRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} offset 0;`; }
     if (!(limitRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} limit ${QuerySettings.getQueryLimit()};`; }
     limitedQuery = `${limitedQuery} ${getPattern}`;
   }
-
   return limitedQuery;
 }
 

@@ -37,6 +37,15 @@ describe('limitQuery', () => {
     const limited = DataManagementUtils.limitQuery(query);
     expect(limited).toBe(query);
   });
+  test('query containing multi-line queries', () => {
+    const query = `
+    match $x isa person; 
+    $r($x, $y); get;`;
+    const limited = DataManagementUtils.limitQuery(query);
+    expect(limited).toBe(`
+    match $x isa person; 
+    $r($x, $y); offset 0; limit 10; get;`);
+  });
 });
 
 describe('prepareNodes', () => {
