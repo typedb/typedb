@@ -7,6 +7,7 @@ genericEntity sub entity
     plays someRole
     plays otherRole
     has reattachable-resource-string
+    has subResource
     has resource-long
     has derived-resource-boolean;
 
@@ -48,7 +49,15 @@ transferResourceToRelation sub rule
         $z has reattachable-resource-string $y;
     };
 
-setResourceFlag sub rule
+attachResourceValueToResourceOfDifferentType sub rule
+	when {
+		$x isa genericEntity has reattachable-resource-string $r1;
+	}
+	then {
+		$x has subResource $r1;
+	};
+
+setResourceFlagBasedOnOtherResourceValue sub rule
     when {
         $x isa anotherEntity, has resource-long > 0;
     }
@@ -64,16 +73,17 @@ attachResourceToEntity sub rule
         $x has derived-resource-string 'value';
     };
 
-#needed for reusingResources_copyingResourceValueToResourceOfDifferentType test
-#subResource sub resource-string;
+attachUnattachedResourceToEntity sub rule
+    when {
+        $x isa derived-resource-string;
+        $x == 'unattached';
+        $y isa yetAnotherEntity;
+    }
+    then {
+        $y has derived-resource-string 'unattached';
+    };
 
-#rule-3 sub rule
-#	when {
-#		$x isa genericEntity has resource-string $r1;
-#	}
-#	then {
-#		$x has subResource $r1;
-#	};
+subResource sub reattachable-resource-string;
 
 insert
 
@@ -87,3 +97,5 @@ $se isa anotherEntity has resource-long 1;
 
 $aeX isa yetAnotherEntity;
 $aeY isa yetAnotherEntity;
+
+$r isa derived-resource-string "unattached";

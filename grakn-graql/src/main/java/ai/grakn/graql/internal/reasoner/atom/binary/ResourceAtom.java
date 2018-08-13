@@ -312,8 +312,7 @@ public abstract class ResourceAtom extends Binary{
         }
     }
 
-    @Override
-    public Stream<ConceptMap> materialise(){
+    public Stream<ConceptMap> materialise2(){
         ConceptMap substitution = getParentQuery().getSubstitution();
         AttributeType type = getSchemaConcept().asAttributeType();
         Concept owner = substitution.get(getVarName());
@@ -329,6 +328,31 @@ public abstract class ResourceAtom extends Binary{
             attachAttribute(owner, attribute);
             return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
         }
+    }
+
+    @Override
+    public Stream<ConceptMap> materialise(){
+        ConceptMap substitution = getParentQuery().getSubstitution();
+        AttributeTypeImpl attributeType = AttributeTypeImpl.from(getSchemaConcept().asAttributeType());
+
+
+        Concept owner = substitution.get(getVarName());
+        Var resourceVariable = getPredicateVariable();
+
+        //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
+        Attribute attribute;
+
+        if(this.isSpecific()){
+            Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().orElse(null);
+            Attribute existingAttribute = attributeType.attribute(value);
+            attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
+
+        } else {
+            attribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
+        }
+
+        attachAttribute(owner, attribute);
+        return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
     }
 
     /**
