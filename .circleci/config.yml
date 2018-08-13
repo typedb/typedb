@@ -330,6 +330,8 @@ jobs:
       docker:
         - image: circleci/node:8.11.2
       working_directory: ~/grakn
+      branches:
+        only: /^workbase-.*/
       steps:
         - checkout
         - run: cd workbase && npm install
@@ -369,10 +371,7 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: /^master.*/
+      - build
       - workbase-unit-tests
       - unit-it-test-1:
           requires:
