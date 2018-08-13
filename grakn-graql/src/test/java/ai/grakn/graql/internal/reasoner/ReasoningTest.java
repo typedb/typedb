@@ -96,6 +96,12 @@ public class ReasoningTest {
     public static final SampleKBContext appendingRPsContext = SampleKBContext.load("appendingRPsTest.gql");
 
     @ClassRule
+    public static final SampleKBContext resourceAttachment = SampleKBContext.load("resourceAttachment.gql");
+
+    @ClassRule
+    public static final SampleKBContext resourcesAsRolePlayers = SampleKBContext.load("resourcesAsRolePlayers.gql");
+
+    @ClassRule
     public static final SampleKBContext test7 = SampleKBContext.load("testSet7.gql");
 
     @ClassRule
@@ -115,18 +121,6 @@ public class ReasoningTest {
 
     @ClassRule
     public static final SampleKBContext test13 = SampleKBContext.load("testSet13.gql");
-
-    @ClassRule
-    public static final SampleKBContext test14 = SampleKBContext.load("testSet14.gql");
-
-    @ClassRule
-    public static final SampleKBContext test15 = SampleKBContext.load("testSet15.gql");
-
-    @ClassRule
-    public static final SampleKBContext test16 = SampleKBContext.load("testSet16.gql");
-
-    @ClassRule
-    public static final SampleKBContext test17 = SampleKBContext.load("testSet17.gql");
 
     @ClassRule
     public static final SampleKBContext test19 = SampleKBContext.load("testSet19.gql");
@@ -382,12 +376,12 @@ public class ReasoningTest {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_usingExistingResourceToDefineResource() {
-        QueryBuilder qb = test14.tx().graql().infer(true);
+    public void reusingResources_attachingResourceToEntity() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
 
-        String queryString = "match $x isa entity1, has resource $y; get;";
+        String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        String queryString2 = "match $x isa resource; get;";
+        String queryString2 = "match $x isa reattachable-resource-string; get;";
         List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
         assertEquals(answers.size(), 2);
@@ -396,9 +390,9 @@ public class ReasoningTest {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_queryingForGenericRelation() {
-        QueryBuilder qb = test14.tx().graql().infer(true);
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
 
-        String queryString = "match $x isa entity1;($x, $y); get;";
+        String queryString = "match $x isa genericEntity;($x, $y); get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
         assertEquals(answers.size(), 3);
@@ -409,8 +403,8 @@ public class ReasoningTest {
     @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_usingExistingResourceToDefineSubResource() {
-        QueryBuilder qb = test14.tx().graql().infer(true);
-        String queryString = "match $x isa entity1, has subResource $y;";
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        String queryString = "match $x isa genericEntity, has subResource $y;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
 
@@ -428,9 +422,9 @@ public class ReasoningTest {
 
     @Test
     public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
-        QueryBuilder qb = test14.tx().graql().infer(true);
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
 
-        VarPattern has = var("x").has(Label.of("resource"), var("y"), var("r"));
+        VarPattern has = var("x").has(Label.of("reattachable-resource-string"), var("y"), var("r"));
         List<ConceptMap> answers = qb.match(has).get().execute();
         assertEquals(answers.size(), 3);
         answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));
@@ -438,16 +432,16 @@ public class ReasoningTest {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        QueryBuilder withInference = test14.tx().graql().infer(true);
-        QueryBuilder withoutInference = test14.tx().graql().infer(false);
+        QueryBuilder withInference = resourceAttachment.tx().graql().infer(true);
+        QueryBuilder withoutInference = resourceAttachment.tx().graql().infer(false);
 
-        VarPattern owner = label(HAS_OWNER.getLabel("resource"));
-        VarPattern value = label(HAS_VALUE.getLabel("resource"));
-        VarPattern hasRes = label(HAS.getLabel("resource"));
+        VarPattern owner = label(HAS_OWNER.getLabel("reattachable-resource-string"));
+        VarPattern value = label(HAS_VALUE.getLabel("reattachable-resource-string"));
+        VarPattern hasRes = label(HAS.getLabel("reattachable-resource-string"));
 
         Function<QueryBuilder, GetQuery> query = qb -> qb.match(
                 var().rel(owner, "x").rel(value, "y").isa(hasRes),
-                var("a").has("resource", var("b"))  // This pattern is added only to encourage reasoning to activate
+                var("a").has("reattachable-resource-string", var("b"))  // This pattern is added only to encourage reasoning to activate
         ).get();
 
 
@@ -460,9 +454,9 @@ public class ReasoningTest {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources_attachingExistingResourceToARelation() {
-        QueryBuilder qb = test14.tx().graql().infer(true);
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
 
-        String queryString = "match $x isa entity1, has resource $y; $z isa relation; get;";
+        String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 2);
         answers.forEach(ans ->
@@ -473,7 +467,7 @@ public class ReasoningTest {
                 }
         );
 
-        String queryString2 = "match $x isa relation, has resource $y; get;";
+        String queryString2 = "match $x isa relation, has reattachable-resource-string $y; get;";
         List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
@@ -485,18 +479,18 @@ public class ReasoningTest {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources_definingResourceThroughOtherResourceWithConditionalValue() {
-        QueryBuilder qb = test15.tx().graql().infer(true);
-        String queryString = "match $x has boolean-resource $r; get;";
+    public void reusingResources_derivingResourceFromOtherResourceWithConditionalValue() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        String queryString = "match $x has derived-resource-boolean $r; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 1);
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void inferringSpecificResourceValue() {
-        QueryBuilder qb = test16.tx().graql().infer(true);
-        String queryString = "match $x has resource 'value'; get;";
-        String queryString2 = "match $x has resource $r; get;";
+    public void derivingResourceWithSpecificValue() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        String queryString = "match $x has derived-resource-string 'value'; get;";
+        String queryString2 = "match $x has derived-resource-string $r; get;";
         GetQuery query = qb.parse(queryString);
         GetQuery query2 = qb.parse(queryString2);
         List<ConceptMap> answers = query.execute();
@@ -510,7 +504,7 @@ public class ReasoningTest {
 
     @Test
     public void resourcesAsRolePlayers() {
-        QueryBuilder qb = test17.tx().graql().infer(true);
+        QueryBuilder qb = resourcesAsRolePlayers.tx().graql().infer(true);
 
         String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
@@ -543,7 +537,7 @@ public class ReasoningTest {
 
     @Test
     public void resourcesAsRolePlayers_vpPropagationTest() {
-        QueryBuilder qb = test17.tx().graql().infer(true);
+        QueryBuilder qb = resourcesAsRolePlayers.tx().graql().infer(true);
 
         String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa another-resource-relation; get;";
         String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa another-resource-relation; get;";
