@@ -370,7 +370,10 @@ workflows:
   run-all-tests:
     jobs:
       - build
-      - workbase-unit-tests
+      - workbase-unit-tests:
+          filters:
+            branches:
+              only: master
       - unit-it-test-1:
           requires:
             - build
