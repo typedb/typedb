@@ -6,16 +6,15 @@ import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.*;
@@ -91,19 +90,37 @@ public class RocksDbQueueIT {
         queue.close();
     }
 
-    @Ignore
+    /**
+     * this test might not be immediately obvious hence warrants an explanation.
+     *
+     * the read() method implements the 'guarded block' pattern using wait() and notifyAll(), and we want to
+     * test if it properly waits until the queue becomes non-empty.
+     *
+     * the correct behavior is for read() to wait until insert() has been invoked, and this is verified
+     * if the element 'added-after-read' appears AFTER 'added-after-300ms'.
+     *
+     * @throws InterruptedException
+     */
     @Test
-    public void theReadMethodMustBlockUntilThereAreItemsInTheQueue() throws InterruptedException {
+    public void theReadMethodMustWaitUntilTheQueueBecomesNonEmpty() throws InterruptedException {
+        List<String> verifyOrderOfOperation = new ArrayList<>();
         RocksDbQueue queue = new RocksDbQueue(path);
-        AtomicInteger i = new AtomicInteger();
+
         CompletableFuture.supplyAsync(() -> {
-            i.incrementAndGet();
-            try { Thread.sleep(5000); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            System.out.println("future");
+
+            // operation a: wait for 300ms and insert 'added-after-300ms' into the list
+            try { Thread.sleep(300); } catch (InterruptedException e) { throw new RuntimeException(e); }
             queue.insert(Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")));
+            verifyOrderOfOperation.add("added-after-300ms");
+
             return null;
         });
-        System.out.println("main thread");
+
+        // operation b: insert 'added-after-read' after queue.read(x)
         queue.read(5);
+        verifyOrderOfOperation.add("added-after-read");
+
+        // the element 'added-after-read' must appear AFTER 'added-after-300ms'
+        assertThat(verifyOrderOfOperation, equalTo(Arrays.asList("added-after-300ms", "added-after-read")));
     }
 }
