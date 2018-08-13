@@ -331,7 +331,7 @@ jobs:
         - image: circleci/node:8.11.2
       working_directory: ~/grakn
       branches:
-        only: /^workbase-.*/
+        ignore: /^workbase-.*/
       steps:
         - checkout
         - run: cd workbase && npm install
