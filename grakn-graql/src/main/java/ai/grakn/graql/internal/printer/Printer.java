@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
@@ -105,14 +106,14 @@ public abstract class Printer<Builder> {
         else if (object instanceof Collection) {
             return collection((Collection<?>) object);
         }
-        if (object instanceof Value) {
-            return value((Value) object);
-        }
-        else if (object instanceof ConceptMap) {
-            return conceptMap((ConceptMap) object);
+        else if (object instanceof AnswerGroup<?>) {
+            return answerGroup((AnswerGroup<?>) object);
         }
         else if (object instanceof ConceptList) {
             return conceptList((ConceptList) object);
+        }
+        else if (object instanceof ConceptMap) {
+            return conceptMap((ConceptMap) object);
         }
         else if (object instanceof ConceptSet) {
             if (object instanceof ConceptSetMeasure) {
@@ -121,6 +122,9 @@ public abstract class Printer<Builder> {
             else {
                 return conceptSet((ConceptSet) object);
             }
+        }
+        else if (object instanceof Value) {
+            return value((Value) object);
         }
         else if (object instanceof Map) {
             return map((Map<?, ?>) object);
@@ -174,6 +178,15 @@ public abstract class Printer<Builder> {
      */
     @CheckReturnValue
     protected abstract Builder map(Map<?, ?> map);
+
+    /**
+     * Convert any {@link AnswerGroup} into its print builder
+     *
+     * @param answer is the answer result of a Graql Compute queries
+     * @return the grouped answers as an output builder
+     */
+    @CheckReturnValue
+    protected abstract Builder answerGroup(AnswerGroup<?> answer);
 
     /**
      * Convert any {@link ConceptList} into its print builder

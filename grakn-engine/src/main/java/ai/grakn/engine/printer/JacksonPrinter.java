@@ -21,6 +21,7 @@ package ai.grakn.engine.printer;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.response.Answer;
 import ai.grakn.engine.controller.response.ConceptBuilder;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.internal.printer.Printer;
@@ -47,7 +48,7 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public String complete(Object object) {
+    protected String complete(Object object) {
         try {
             return mapper.writeValueAsString(object);
         } catch (IOException e) {
@@ -56,12 +57,17 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public Object concept(Concept concept) {
+    protected Object concept(Concept concept) {
         return ConceptBuilder.build(concept);
     }
 
     @Override
-    public Object conceptMap(ConceptMap answer) {
+    protected Object answerGroup(AnswerGroup<?> answer) {
+        return new HashMap.SimpleEntry<>(answer.owner(), build(answer.answers()));
+    }
+
+    @Override
+    protected Object conceptMap(ConceptMap answer) {
         return Answer.create(answer);
     }
 
@@ -71,17 +77,17 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public Object bool(boolean bool) {
+    protected Object bool(boolean bool) {
         return bool;
     }
 
     @Override
-    public Object object(Object object) {
+    protected Object object(Object object) {
         return object;
     }
 
     @Override
-    public Object map(Map map) {
+    protected Object map(Map map) {
         Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
         return entries.collect(Collectors.toMap(
                 entry -> build(entry.getKey()),
@@ -90,7 +96,7 @@ public class JacksonPrinter extends Printer<Object> {
     }
 
     @Override
-    public Object collection(Collection collection) {
+    protected Object collection(Collection collection) {
         return collection.stream().map(object -> build(object)).collect(Collectors.toList());
     }
 }

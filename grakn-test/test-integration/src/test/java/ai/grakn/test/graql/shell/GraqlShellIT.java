@@ -270,6 +270,23 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void testAggregateGroupQuery() throws Exception {
+        assertShellMatches(
+                "define name sub attribute, datatype string;",
+                anything(),
+                "define person sub entity, has name;",
+                anything(),
+                "insert $x isa person, has name \"Alice\";",
+                anything(),
+                "insert $x isa person, has name \"Bob\";",
+                anything(),
+                "match $x isa person, has name $y; aggregate group $x;",
+                containsString("Alice"),
+                containsString("Bob")
+        );
+    }
+
+    @Test
     public void testAutocomplete() throws Exception {
         String result = runShellWithoutErrors("match $x isa \t");
 
