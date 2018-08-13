@@ -20,7 +20,6 @@ afterAll(async () => {
   return undefined;
 });
 
-
 describe('Favourite queries', () => {
   test('initialize workbase', async () => {
     const count = await app.client.getWindowCount();
