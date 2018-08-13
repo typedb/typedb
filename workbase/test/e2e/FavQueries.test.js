@@ -20,7 +20,6 @@ afterAll(async () => {
   return undefined;
 });
 
-
 describe('Favourite queries', () => {
   test('initialize workbase', async () => {
     const count = await app.client.getWindowCount();
@@ -62,7 +61,7 @@ describe('Favourite queries', () => {
     app.client.click('#fav-queries-btn');
     await app.client.waitUntilWindowLoaded();
 
-    await sleep(2000);
+    await sleep(3000);
 
     const queryNameSaved = await app.client.getText('#list-key');
     await sleep(1000);
@@ -74,6 +73,8 @@ describe('Favourite queries', () => {
     assert.ok(favQueriesList);
 
     let noOfNodes = await app.client.getText('#nodes');
+
+    await sleep(1000);
     assert.equal(noOfNodes, 'Nodes: 0');
 
     app.client.click('#use-btn');
@@ -89,7 +90,7 @@ describe('Favourite queries', () => {
     await app.client.waitUntilWindowLoaded();
 
     app.client.click('#delete-btn');
-    await sleep(1000);
+    await sleep(2000);
     const noQueriesSaved = await app.client.getText('#no-saved');
     assert.equal(noQueriesSaved, 'No saved queries.');
   });
