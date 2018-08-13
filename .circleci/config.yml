@@ -369,20 +369,17 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build
+      - build:
+          filters:
+            branches:
+              ignore: /^workbase.*/
       - workbase-unit-tests
       - unit-it-test-1:
           requires:
             - build
-          filters:
-            branches:
-              ignore: /^workbase.*/
       - unit-it-test-2:
           requires:
             - build
-          filters:
-            branches:
-              ignore: /^workbase.*/
       - distribution-e2e:
           requires:
             - build
@@ -404,3 +401,11 @@ workflows:
       - workbase-e2e:
            requires:
              - build
+#      - build-workbase:
+#          requires:
+#             - build
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
