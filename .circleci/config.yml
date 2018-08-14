@@ -391,31 +391,31 @@ jobs:
             paths:
               - ./workbase/build/
 
-      build-workbase-mac:
-            macos:
-                xcode: "9.0"
-            working_directory: ~/grakn/workbase
+  build-workbase-mac:
+        macos:
+            xcode: "9.0"
+        working_directory: ~/grakn/workbase
 
-            steps:
-              # Download and cache dependencies
-              - restore_cache:
-                  keys:
-                  - v1-dependencies-{{ checksum "package.json" }}
-                  # fallback to using the latest cache if no exact match is found
-                  - v1-dependencies-
+        steps:
+          # Download and cache dependencies
+          - restore_cache:
+              keys:
+              - v1-dependencies-{{ checksum "package.json" }}
+              # fallback to using the latest cache if no exact match is found
+              - v1-dependencies-
 
-              - run: npm install
+          - run: npm install
 
-              - save_cache:
-                  paths:
-                    - node_modules
-                  key: v1-dependencies-{{ checksum "package.json" }}
+          - save_cache:
+              paths:
+                - node_modules
+              key: v1-dependencies-{{ checksum "package.json" }}
 
-              - run: npm run build
-              - persist_to_workspace:
-                  root: ~/grakn
-                  paths:
-                    - ./workbase/build/
+          - run: npm run build
+          - persist_to_workspace:
+              root: ~/grakn
+              paths:
+                - ./workbase/build/
 
 workflows:
   version: 2
