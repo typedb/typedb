@@ -6,7 +6,7 @@ version: 2
 jobs:
   build:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       - checkout
 
@@ -55,13 +55,13 @@ jobs:
       # share Grakn with other jobs by putting it in the workspace
       ##############################################################################
       - persist_to_workspace:
-          root: ~/grakn
+          root: /grakn
           paths:
             - .
 
   unit-it-test-1:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       ##############################################################################
       # update repositories and install toolings (yarn, maven, node)
@@ -94,7 +94,7 @@ jobs:
       # - run tests
       ##############################################################################
       - attach_workspace:
-          at: ~/grakn
+          at: /grakn
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
@@ -111,7 +111,7 @@ jobs:
       - run:
           name: List Of IT Tests To Be Ran On This Machine
           command: cat parallelise-it-tests.txt
-      - run: mvn verify -Dsurefire.includesFile=`echo ~/grakn/parallelise-unit-tests.txt` -Dfailsafe.includesFile=`echo ~/grakn/parallelise-it-tests.txt` -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+      - run: mvn verify -Dsurefire.includesFile=`echo /grakn/parallelise-unit-tests.txt` -Dfailsafe.includesFile=`echo /grakn/parallelise-it-tests.txt` -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
       ##############################################################################
       # make and store reports
@@ -119,17 +119,17 @@ jobs:
       - run:
           name: Save test results
           command: |
-            mkdir -p ~/grakn-surefire-reports/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+            mkdir -p /grakn-surefire-reports/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} /grakn-surefire-reports/ \;
           when: always
       - store_artifacts:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
       - store_test_results:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
 
   unit-it-test-2:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       ##############################################################################
       # update repositories and install toolings (yarn, maven, node)
@@ -162,7 +162,7 @@ jobs:
       # - run tests
       ##############################################################################
       - attach_workspace:
-          at: ~/grakn
+          at: /grakn
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
@@ -179,7 +179,7 @@ jobs:
       - run:
           name: List Of IT Tests To Be Ran On This Machine
           command: cat parallelise-it-tests.txt
-      - run: mvn verify -Dsurefire.includesFile=`echo ~/grakn/parallelise-unit-tests.txt` -Dfailsafe.includesFile=`echo ~/grakn/parallelise-it-tests.txt` -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
+      - run: mvn verify -Dsurefire.includesFile=`echo /grakn/parallelise-unit-tests.txt` -Dfailsafe.includesFile=`echo /grakn/parallelise-it-tests.txt` -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
       ##############################################################################
       # make and store reports
@@ -187,17 +187,17 @@ jobs:
       - run:
           name: Save test results
           command: |
-            mkdir -p ~/grakn-surefire-reports/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+            mkdir -p /grakn-surefire-reports/
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} /grakn-surefire-reports/ \;
           when: always
       - store_artifacts:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
       - store_test_results:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
 
   distribution-e2e:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       ##############################################################################
       # - attach to workspace
@@ -205,7 +205,7 @@ jobs:
       # - run tests
       ##############################################################################
       - attach_workspace:
-          at: ~/grakn
+          at: /grakn
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
@@ -217,17 +217,17 @@ jobs:
       - run:
           name: Save test results
           command: |
-              mkdir -p ~/grakn-surefire-reports/
-              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+              mkdir -p /grakn-surefire-reports/
+              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} /grakn-surefire-reports/ \;
           when: always
       - store_artifacts:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
       - store_test_results:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
 
   client-java-e2e:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       ##############################################################################
       # - attach to workspace
@@ -235,7 +235,7 @@ jobs:
       # - run tests
       ##############################################################################
       - attach_workspace:
-          at: ~/grakn
+          at: /grakn
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
@@ -247,19 +247,19 @@ jobs:
       - run:
           name: Save test results
           command: |
-              mkdir -p ~/grakn-surefire-reports/
-              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
+              mkdir -p /grakn-surefire-reports/
+              find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} /grakn-surefire-reports/ \;
           when: always
       - store_artifacts:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
       - store_test_results:
-          path: ~/grakn-surefire-reports/
+          path: /grakn-surefire-reports/
   snb-e2e:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       - attach_workspace:
-          at: ~/grakn
+          at: /grakn
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
@@ -269,10 +269,10 @@ jobs:
 
   biomed-e2e:
     machine: true
-    working_directory: ~/grakn
+    working_directory: /grakn
     steps:
       - attach_workspace:
-          at: ~/grakn
+          at: /grakn
       - restore_cache:
           name: Restore maven m2 cache
           key: grakn-cache-m2-version-8
@@ -282,10 +282,10 @@ jobs:
 
   client-nodejs-e2e:
       machine: true
-      working_directory: ~/grakn
+      working_directory: /grakn
       steps:
         - attach_workspace:
-            at: ~/grakn
+            at: /grakn
         - run:
             name: Install nvm and node
             command: |
@@ -312,10 +312,10 @@ jobs:
 
   client-python-e2e:
       machine: true
-      working_directory: ~/grakn
+      working_directory: /grakn
       steps:
         - attach_workspace:
-            at: ~/grakn
+            at: /grakn
         - run:
             name: Install python deps
             command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
@@ -329,7 +329,7 @@ jobs:
   workbase-unit-tests:
       docker:
         - image: circleci/node:8.11.2
-      working_directory: ~/grakn
+      working_directory: /grakn
       steps:
         - checkout
         - run: cd workbase && npm install
@@ -337,10 +337,10 @@ jobs:
 
   workbase-e2e:
       machine: true
-      working_directory: ~/grakn
+      working_directory: /grakn
       steps:
         - attach_workspace:
-            at: ~/grakn
+            at: /grakn
         - run:
             name: Install nvm and node
             command: |
@@ -368,30 +368,30 @@ jobs:
   build-workbase-linux:
       docker:
         - image: circleci/node:8.11.2
-      working_directory: ~/grakn
+      working_directory: /grakn
 
       steps:
         - attach_workspace:
-                  at: ~/grakn
+                  at: /grakn
         - run: cd workbase && npm install
         - run: cd workbase && npm run build
         - persist_to_workspace:
-            root: ~/grakn
+            root: /grakn
             paths:
               - ./workbase/build/
 
   build-workbase-mac:
         macos:
             xcode: "9.0"
-        working_directory: ~/grakn
+        working_directory: /grakn
 
         steps:
           - attach_workspace:
-                    at: ~/grakn
+                    at: /grakn
           - run: cd workbase && npm install
           - run: cd workbase && npm run build
           - persist_to_workspace:
-              root: ~/grakn
+              root: /grakn
               paths:
                 - ./workbase/build/
 
@@ -399,7 +399,10 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build
+      - build:
+          filter:
+            branches:
+              ignore: /.*/
       - workbase-unit-tests
       - build-workbase-linux
       - build-workbase-mac
