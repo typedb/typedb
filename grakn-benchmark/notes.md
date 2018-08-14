@@ -2,7 +2,7 @@
 ## --- Kibana Dev Tools commands ----
 
 ```
-PUT full_indexed_fixed
+PUT full_indexed_fixed_7
 {
   "settings": {
     "index": {
@@ -133,7 +133,7 @@ PUT full_indexed_fixed
         "max_retries": "5"
       },
       "mapping": {
-        "coerce": "false",
+        "coerce": "true",
         "nested_fields": {
           "limit": "50"
         },
@@ -218,7 +218,7 @@ PUT full_indexed_fixed
       }
     }
   },
-  "mapping": {
+  "mappings": {
     "span": {
       "properties": {
         "duration": {
@@ -279,12 +279,7 @@ PUT full_indexed_fixed
               }
             },
             "numConcepts": {
-              "type": "long",
-              "fields": {
-                "keyword": {
-                  "type": "keyword"
-                }
-              }
+              "type": "long"
             },
             "query": {
               "type": "text",
@@ -295,20 +290,10 @@ PUT full_indexed_fixed
               }
             },
             "repetition": {
-              "type": "long",
-              "fields": {
-                "keyword": {
-                  "type": "keyword"
-                }
-              }
+              "type": "long"
             },
             "runStartDateTime": {
-              "type": "long",
-              "fields": {
-                "keyword": {
-                  "type": "keyword"
-                }
-              }
+              "type": "long"
             }
           }
         },
@@ -339,7 +324,7 @@ POST _reindex
     "index": "benchmarking:span-2018-08-08"
   },
   "dest": {
-    "index": "full_indexed_fixed"
+    "index": "full_indexed_fixed_7"
   }
 }
 ```

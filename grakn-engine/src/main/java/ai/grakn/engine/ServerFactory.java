@@ -24,10 +24,10 @@ import ai.grakn.engine.data.QueueSanityCheck;
 import ai.grakn.engine.data.RedisSanityCheck;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.rpc.SessionService;
 import ai.grakn.engine.task.BackgroundTaskRunner;
@@ -41,6 +41,12 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.rpc.OpenRequest;
+import brave.Tracing;
+import brave.propagation.B3Propagation;
+import io.grpc.ServerInterceptors;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.urlconnection.URLConnectionSender;
+import brave.grpc.GrpcTracing;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
 
@@ -126,13 +132,29 @@ public class ServerFactory {
         return taskRunner;
     }
 
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor, KeyspaceStore keyspaceStore){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor, KeyspaceStore keyspaceStore) {
+        System.out.println(keyspaceStore);
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
+        // Brave Instrumentation
+        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+
+        Tracing tracing = Tracing.newBuilder()
+                .localServiceName("query-benchmark-server")
+                .propagationFactory(B3Propagation.FACTORY)
+                .spanReporter(reporter)
+                .build();
+
+        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
+
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-                .addService(new SessionService(requestOpener, postProcessor))
-                .addService(new KeyspaceService(keyspaceStore))
+                .addService(ServerInterceptors.intercept(
+                        new SessionService(requestOpener, postProcessor), grpcTracing.newServerInterceptor()))
+                .addService(ServerInterceptors.intercept(
+                        new KeyspaceService(keyspaceStore), grpcTracing.newServerInterceptor()))
+//                .addService(new SessionService(requestOpener, postProcessor))
+//                .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
         return ServerRPC.create(grpcServer);

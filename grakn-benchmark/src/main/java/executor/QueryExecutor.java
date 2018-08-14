@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ *  GRAKN.AI - THE KNOWLEDGE GRAPH
+ *  Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package executor;
@@ -28,8 +28,6 @@ import brave.Tracing;
 import brave.opentracing.BraveSpan;
 import brave.opentracing.BraveSpanBuilder;
 import brave.opentracing.BraveTracer;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -91,13 +89,8 @@ public class QueryExecutor {
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
 
-            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 
-            Tracing tracing = Tracing.newBuilder()
-                    .localServiceName("query-benchmark")
-                    .spanReporter(reporter)
-                    .build();
-
+            Tracing tracing = Tracing.current();
             BraveTracer braveTracer = BraveTracer.create(tracing);
 
             Iterator<Query> queryIterator = queryStream.iterator();

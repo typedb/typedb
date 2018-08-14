@@ -53,13 +53,16 @@ import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
+import brave.Tracing;
+import brave.grpc.GrpcTracing;
 import com.google.common.collect.AbstractIterator;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -83,7 +86,20 @@ public final class Grakn {
 
 
     public Grakn(SimpleURI uri) {
-        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
+
+        // attach tracing to the client
+        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+
+        Tracing tracing = Tracing.newBuilder()
+                .localServiceName("query-benchmark")
+                .spanReporter(reporter)
+                .build();
+
+        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
+
+        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+                    .intercept(grpcTracing.newClientInterceptor())
+                    .usePlaintext(true).build();
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();
     }
