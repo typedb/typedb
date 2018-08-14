@@ -66,7 +66,7 @@ li {
 }
 
 .active a {
-  border-bottom: 2px solid chartreuse;
+  border-bottom: 2px solid #00eca2;
 }
 </style>
 

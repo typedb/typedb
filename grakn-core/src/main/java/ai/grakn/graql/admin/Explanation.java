@@ -21,6 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -53,6 +54,7 @@ public interface Explanation {
     /**
      * @return query associated with this explanation
      */
+    @Nullable
     @CheckReturnValue
     ReasonerQuery getQuery();
 
