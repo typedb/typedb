@@ -368,7 +368,7 @@ jobs:
   build-workbase-linux:
       docker:
         - image: circleci/node:8.11.2
-      working_directory: ~/grakn/workbase
+      working_directory: ~/grakn
 
       steps:
         # Download and cache dependencies
@@ -378,14 +378,14 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
-        - run: npm install
+        - run: cd workbase && npm install
 
         - save_cache:
             paths:
               - node_modules
             key: v1-dependencies-{{ checksum "package.json" }}
 
-        - run: npm run build
+        - run: cd workbase && npm run build
         - persist_to_workspace:
             root: ~/grakn
             paths:
@@ -394,7 +394,7 @@ jobs:
   build-workbase-mac:
         macos:
             xcode: "9.0"
-        working_directory: ~/grakn/workbase
+        working_directory: ~/grakn
 
         steps:
           # Download and cache dependencies
@@ -404,14 +404,14 @@ jobs:
               # fallback to using the latest cache if no exact match is found
               - v1-dependencies-
 
-          - run: npm install
+          - run: cd workbase && npm install
 
           - save_cache:
               paths:
                 - node_modules
               key: v1-dependencies-{{ checksum "package.json" }}
 
-          - run: npm run build
+          - run: cd workbase && npm run build
           - persist_to_workspace:
               root: ~/grakn
               paths:
