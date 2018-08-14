@@ -55,13 +55,13 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
 
     app.client.click('#entities');
     await sleep(3000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 2');
+    assert.equal(noOfNodes, 'nodes: 2');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -71,7 +71,7 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
   });
 
   test('load attribute types', async () => {
@@ -83,13 +83,13 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
 
     app.client.click('#attributes');
     await sleep(3000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 10');
+    assert.equal(noOfNodes, 'nodes: 10');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -99,7 +99,7 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
   });
 
   test('load relationship types', async () => {
@@ -111,13 +111,13 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
 
     app.client.click('#relationships');
     await sleep(3000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 7');
+    assert.equal(noOfNodes, 'nodes: 7');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -127,7 +127,7 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
   });
 
   test('load person entities', async () => {
@@ -146,13 +146,13 @@ describe('Types Panel', () => {
     await sleep(3000);
 
     let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
 
     app.client.click('#person-btn');
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 30');
+    assert.equal(noOfNodes, 'nodes: 30');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -162,7 +162,7 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
   });
 
   test('load age attributes', async () => {
@@ -181,13 +181,13 @@ describe('Types Panel', () => {
     await sleep(3000);
 
     let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
 
     app.client.click('#age-btn');
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 18');
+    assert.equal(noOfNodes, 'nodes: 18');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -197,7 +197,7 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
   });
 
   test('load parentiship relationships', async () => {
@@ -216,17 +216,17 @@ describe('Types Panel', () => {
     await sleep(4000);
 
     let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
     let noOfEdges = await app.client.getText('#edges');
-    assert.equal(noOfEdges, 'Edges: 0');
+    assert.equal(noOfEdges, 'edges: 0');
 
     await app.client.click('#marriage-btn');
     await sleep(6000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 74');
+    assert.equal(noOfNodes, 'nodes: 74');
     noOfEdges = await app.client.getText('#edges');
-    assert.equal(noOfEdges, 'Edges: 60');
+    assert.equal(noOfEdges, 'edges: 60');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -236,8 +236,8 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
     noOfEdges = await app.client.getText('#edges');
-    assert.equal(noOfEdges, 'Edges: 0');
+    assert.equal(noOfEdges, 'edges: 0');
   });
 });

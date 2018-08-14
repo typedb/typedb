@@ -67,7 +67,7 @@ describe('Types Panel', () => {
     await sleep(1000);
 
     const noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 1');
+    assert.equal(noOfNodes, 'nodes: 1');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -98,9 +98,9 @@ describe('Types Panel', () => {
     await sleep(3000);
 
     const noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 2');
+    assert.equal(noOfNodes, 'nodes: 2');
     const noOfEdges = await app.client.getText('#edges');
-    assert.equal(noOfEdges, 'Edges: 1');
+    assert.equal(noOfEdges, 'edges: 1');
 
     app.client.rightClick('#graph-div');
     await sleep(1000);
@@ -131,8 +131,8 @@ describe('Types Panel', () => {
     await sleep(3000);
 
     const noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 1');
+    assert.equal(noOfNodes, 'nodes: 1');
     const noOfEdges = await app.client.getText('#edges');
-    assert.equal(noOfEdges, 'Edges: 0');
+    assert.equal(noOfEdges, 'edges: 0');
   });
 });
