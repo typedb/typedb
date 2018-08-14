@@ -76,6 +76,20 @@ describe('Integration test', () => {
         await localSession.close();
     });
 
+    test("explanation with join explanation", async () => {
+        const localSession = graknClient.session("gene");
+        const tx = await localSession.transaction(env.txType().WRITE);
+        const iterator = await tx.query(`match ($x, $y) isa marriage; ($y, $z) isa marriage;
+                                            $x != $z; get;`);
+        const answers = await iterator.collect();
+        expect(answers).toHaveLength(4);
+        answers.forEach(a=>{
+            expect(a.explanation).toBeDefined()
+        });
+        await tx.close()
+        await localSession.close();
+    });
+
     test("no results with infer false", async () => {
         const localSession = graknClient.session("gene");
         const tx = await localSession.transaction(env.txType().WRITE);

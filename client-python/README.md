@@ -1,16 +1,26 @@
+---
+title: Grakn Python Client
+keywords: setup, getting started, download, driver
+tags: [getting-started]
+sidebar: documentation_sidebar
+permalink: /docs/language-drivers/client-python
+folder: docs
+symlink: true
+---
+
 # Grakn Python Client
 
-A Python client for [Grakn](https://grakn.ai) 
+A Python client for [Grakn](https://grakn.ai)
 
 Requires Grakn 1.3.0 and Python >= 3.6
 
 # Installation
 
 ```
-pip3 install grakn 
+pip3 install grakn
 ```
 
-To obtain the Grakn database itself, head [here](https://grakn.ai/pages/documentation/get-started/setup-guide.html) for the setup guide. 
+To obtain the Grakn database itself, head [here](https://grakn.ai/pages/documentation/get-started/setup-guide.html) for the setup guide.
 
 # Quickstart
 
@@ -66,8 +76,8 @@ on the Grakn object the following methods are available:
 | Method                                   | Return type       | Description                                          |
 | ---------------------------------------- | ----------------- | ---------------------------------------------------- |
 | `session(String keyspace)`               | *Session*         | Return a new Session bound to the specified keyspace |
-| `keyspace.delete(String keyspace)`       | *None*            | Deletes the specified keyspace                       |
-| `keyspace.retrieve()`                    | List of *String*  | Retrieves all available keyspaces                    |
+| `keyspaces.delete(String keyspace)`      | *None*            | Deletes the specified keyspace                       |
+| `keyspaces.retrieve()`                   | List of *String*  | Retrieves all available keyspaces                    |
 
 
 
@@ -298,5 +308,3 @@ A `Rule` concept has all the `SchemaConcept` methods plus the following:
 | ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------- |
 | `get_when()`      | *String*    | Retrieves the when part of this Rule. When this query is satisfied the "then" part of the rule is executed |
 | `get_then()`      | *String*    | Retrieves the then part of this Rule. This query is executed when the "when" part of the rule is satisfied |
-
-
