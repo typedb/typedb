@@ -1,17 +1,5 @@
 # GRAKN.AI Documentation
 
-## TL;DR
-
-**How to update and build the docs**
-
-* Install `bundler` and `rake` (one time only task)
-* Pull down documentation repo
-* Make changes to markdown
-* `node ./deploy-server.js` in terminal and browse to [http://127.0.0.1:3003](http://127.0.0.1:3003) (use `rake serve` if `node` is not installed on your machine)
-* If you need to make some extra changes to the markdown after you have the server running, just change the files and save them. `rake` will pick up the changes and rebuild the docs so you don't need to do anything.
-* When you're happy, push to the docs repo to `stable` branch
-* Once the changes have been merged to stable, go to `/docs` and run `./deploy.sh` script (you can run this script from whatever brunch on your machine)
-
 ## Dependencies
 
 You need to install the following dependencies to be able to build HTML pages in the documentation repository. **NOTE:** this is *not* necessary for updating the documentation itself.
