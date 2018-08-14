@@ -108,7 +108,7 @@
         <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
-        <rocksdbjni.version>3.5.1</rocksdbjni.version>
+        <rocksdbjni.version>5.14.2</rocksdbjni.version>
     </properties>
 
     <organization>
@@ -1017,7 +1017,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${rocksdbjni.version}</version>
+                <version>3.5.1</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>

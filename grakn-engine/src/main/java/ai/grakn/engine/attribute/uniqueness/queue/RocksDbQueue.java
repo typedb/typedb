@@ -125,7 +125,11 @@ public class RocksDbQueue implements AutoCloseable {
         // set to false for better performance. at the moment we're setting it to true as the algorithm is untested and we prefer correctness over speed
         WriteOptions writeOptions = new WriteOptions().setSync(true);
         for (Attribute attr: attributes) {
-            acks.remove(serialiseStringUtf8(attr.conceptId().getValue()));
+            try {
+                acks.delete(serialiseStringUtf8(attr.conceptId().getValue()));
+            } catch (RocksDBException e) {
+                throw new QueueException(e);
+            }
         }
         try {
             queueDb.write(writeOptions, acks);
