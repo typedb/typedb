@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -21,16 +22,10 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
 public class RocksDbQueueTest {
-    Path path = Paths.get("./queue");
-
-    @After
-    public void cleanup() throws IOException {
-        FileUtils.deleteDirectory(path.toFile());
-    }
-
     @Test
-    public void shouldBeAbleToInsertNewAttributes() throws InterruptedException {
-        try (RocksDbQueue queue = new RocksDbQueue(path)) {
+    public void shouldBeAbleToInsertNewAttributes() throws InterruptedException, IOException {
+        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes = Arrays.asList(
                     Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
                     Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2")),
@@ -45,11 +40,13 @@ public class RocksDbQueueTest {
             List<Attribute> insertedAttributes = queue.read(attributes.size());
             assertThat(insertedAttributes, equalTo(attributes));
         }
+        FileUtils.deleteDirectory(queuePath.toFile());
     }
 
     @Test
-    public void readButUnackedAttributesShouldRemainInTheQueue() throws InterruptedException {
-        try (RocksDbQueue queue = new RocksDbQueue(path)) {
+    public void readButUnackedAttributesShouldRemainInTheQueue() throws InterruptedException, IOException {
+        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes = Arrays.asList(
                     Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
                     Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2")),
@@ -66,11 +63,13 @@ public class RocksDbQueueTest {
             List<Attribute> remainingAttributes = queue.read(Integer.MAX_VALUE);
             assertThat(remainingAttributes, equalTo(attributes));
         }
+        FileUtils.deleteDirectory(queuePath.toFile());
     }
 
     @Test
-    public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException {
-        try (RocksDbQueue queue = new RocksDbQueue(path)) {
+    public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException, IOException {
+        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes1 = Arrays.asList(
                     Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
                     Attribute.create(Keyspace.of("k2"), "v2", ConceptId.of("c2"))
@@ -88,6 +87,7 @@ public class RocksDbQueueTest {
             List<Attribute> insertedAttributes2 = queue.read(Integer.MAX_VALUE);
             assertThat(insertedAttributes2, equalTo(attributes2));
         }
+        FileUtils.deleteDirectory(queuePath.toFile());
     }
 
     /**
@@ -102,9 +102,10 @@ public class RocksDbQueueTest {
      * @throws InterruptedException
      */
     @Test
-    public void theReadMethodMustWaitUntilTheQueueBecomesNonEmpty() throws InterruptedException {
+    public void theReadMethodMustWaitUntilTheQueueBecomesNonEmpty() throws InterruptedException, IOException {
+        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
         List<String> verifyOrderOfOperation = new ArrayList<>();
-        RocksDbQueue queue = new RocksDbQueue(path);
+        RocksDbQueue queue = new RocksDbQueue(queuePath);
 
         CompletableFuture.supplyAsync(() -> {
 
@@ -122,5 +123,6 @@ public class RocksDbQueueTest {
 
         // the element 'added-after-read' must appear AFTER 'added-after-300ms'
         assertThat(verifyOrderOfOperation, equalTo(Arrays.asList("added-after-300ms", "added-after-read")));
+        FileUtils.deleteDirectory(queuePath.toFile());
     }
 }
