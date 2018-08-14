@@ -7,7 +7,7 @@ jest.mock('@/components/DataManagement/DataManagementUtils', () => ({
   isRolePlayerAutoloadEnabled: () => false,
   prepareNodes: () => ([]),
 }));
-jest.mock('@/components/DataManagement/NodeSettings', () => {});
+jest.mock('@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings', () => {});
 jest.mock('@/components/visualiser/Facade', () => ({
   initVisualiser: () => ({ registerEventHandler: () => { } }),
 }));

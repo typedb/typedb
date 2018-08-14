@@ -8,7 +8,7 @@
         </div>
         <div class="tooltip-body">
           <div><input type="text" id="query-name" class="grakn-input" v-model="currentQueryName" placeholder="query name" v-focus></div>
-          <div><button id="save-fav-query" @click="addFavQuery" class="btn btn-default" :disabled="currentQueryName.length==0">Save</button></div>
+          <div><button id="save-fav-query" @click="addFavQuery" class="btn btn-default save-fav-query" :disabled="currentQueryName.length==0">Save</button></div>
         </div>
       </div>
     </transition>
@@ -85,6 +85,12 @@ div>span {
   width: 30px;
   height: 30px;
   border-radius: 50%;
+}
+
+.save-fav-query {
+  padding: 10px;
+  height: 30px;
+  line-height: 1em;
 }
 </style>
 

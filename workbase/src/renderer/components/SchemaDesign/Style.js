@@ -1,5 +1,5 @@
 
-import NodeSettings from '../DataManagement/NodeSettings';
+import NodeSettings from '../DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings';
 
 
 const DEFAULT_NODE_SHAPE = 'box';

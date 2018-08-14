@@ -1,5 +1,5 @@
-import QuerySettings from './QuerySettings';
-import NodeSettings from './NodeSettings';
+import QuerySettings from './DataManagementContent/MenuBar/QuerySettings/QuerySettings';
+import NodeSettings from './DataManagementContent/NodeSettingsPanel/NodeSettings';
 
 function buildValue(array) {
   if (!array) return '';

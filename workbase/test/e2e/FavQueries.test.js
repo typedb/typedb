@@ -73,16 +73,14 @@ describe('Favourite queries', () => {
     assert.ok(favQueriesList);
 
     let noOfNodes = await app.client.getText('#nodes');
-
-    await sleep(1000);
-    assert.equal(noOfNodes, 'Nodes: 0');
+    assert.equal(noOfNodes, 'nodes: 0');
 
     app.client.click('#use-btn');
     app.client.click('#run-query');
     await sleep(3000);
 
     noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'Nodes: 2');
+    assert.equal(noOfNodes, 'nodes: 2');
   });
 
   test('delete favourite query', async () => {
@@ -92,6 +90,6 @@ describe('Favourite queries', () => {
     app.client.click('#delete-btn');
     await sleep(2000);
     const noQueriesSaved = await app.client.getText('#no-saved');
-    assert.equal(noQueriesSaved, 'No saved queries.');
+    assert.equal(noQueriesSaved, 'no saved queries');
   });
 });

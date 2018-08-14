@@ -6,22 +6,22 @@
     <div class="query-settings-wrapper">
     <transition name="slide-fade">
         <div v-if="toolTipShown === 'querySettings'" class="dropdown-content" id="query-settings">
+            <i :style="'font-size:13px;'" @click="togglePanel" class="fas fa-times"></i>
             <div class="panel-heading">
-                <h4><i class="page-header-icon fa fa-cog"></i>Query settings
-                <a @click="togglePanel"><i class="page-header-close-icon fa fa-times"></i></a></h4>
+                <h4>query settings</h4>
             </div>
             <div class="panel-body">
                 <div class="divide"></div>
                 <div class="dd-item">
-                  <div class="left">Limit query:</div><div class="right"><input id="limit-query" v-model="queryLimit" type="text" class="form-control limit" maxlength="3" size="4"></div>
+                  <div class="left">limit query:</div><div class="right"><input id="limit-query" v-model="queryLimit" type="text" class="form-control limit" maxlength="3" size="4"></div>
                 </div>
                 <div class="divide"></div>
                   <div class="dd-item">
-                    <div class="left">Limit neighbours:</div><div class="right"><input id="limit-neighbours" v-model="neighboursLimit" type="text" class="form-control limit" maxlength="3" size="4"></div>
+                    <div class="left">limit neighbours:</div><div class="right"><input id="limit-neighbours" v-model="neighboursLimit" type="text" class="form-control limit" maxlength="3" size="4"></div>
                 </div>
                 <div class="divide"></div>
                   <div class="dd-item">
-                    <div class="left"><input id="load-role-players" type="checkbox" v-model="loadRolePlayers"></div><div class="right">Autoload role players</div>
+                    <div class="left"><input id="load-role-players" type="checkbox" v-model="loadRolePlayers"></div><div class="right">autoload role players</div>
                 </div>
             </div>
         </div>
@@ -66,6 +66,20 @@
   position: absolute;
 }
 
+.fa-times{
+    cursor: pointer;
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    padding: 2px;
+    height: 14px;
+    line-height: 1em;
+}
+
+.fa-times:hover{
+    color: #06b17b;
+}
+
 .dropdown-content {
     position: relative;
     top: 100%;
@@ -79,11 +93,8 @@
 
 .panel-heading {
     margin-bottom: 10px;
-}
-
-.page-header-icon {
-    padding-right: 45px;
-    font-size: 20px;
+    font-size: 18px;
+    text-align: center;
 }
 
 .page-header-close-icon {
@@ -135,7 +146,7 @@
 </style>
 
 <script>
-import Utils from '../QuerySettings';
+import Utils from './QuerySettings';
 
 export default {
   name: 'QuerySettings',

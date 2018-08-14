@@ -63,7 +63,7 @@
 <script>
 
 import { TOGGLE_COLOUR } from '@/components/shared/StoresActions';
-import NodeSettings from '../NodeSettings';
+import NodeSettings from './NodeSettings';
 
 export default {
   name: 'ColourPicker',

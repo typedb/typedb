@@ -117,12 +117,11 @@
 
 <script>
 import KeyspacesHandler from '../../shared/KeyspacesHandler/KeyspacesHandler.vue';
-import GraqlEditor from './GraqlEditor/GraqlEditor.vue';
-import FavQueriesList from './FavQueriesList.vue';
-import TypesPanel from './TypesPanel.vue';
-import QuerySettings from './QuerySettings.vue';
-
-import FavQueriesSettings from '../FavQueriesSettings';
+import GraqlEditor from './MenuBar/GraqlEditor/GraqlEditor.vue';
+import FavQueriesList from './MenuBar/FavQueries/FavQueriesList.vue';
+import TypesPanel from './MenuBar/TypesPanel.vue';
+import QuerySettings from './MenuBar/QuerySettings/QuerySettings.vue';
+import FavQueriesSettings from './MenuBar/FavQueries/FavQueriesSettings';
 
 export default {
   props: ['localStore'],
