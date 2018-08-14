@@ -371,20 +371,7 @@ jobs:
       working_directory: ~/grakn
 
       steps:
-        # Download and cache dependencies
-        - restore_cache:
-            keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
         - run: cd workbase && npm install
-
-        - save_cache:
-            paths:
-              - node_modules
-            key: v1-dependencies-{{ checksum "package.json" }}
-
         - run: cd workbase && npm run build
         - persist_to_workspace:
             root: ~/grakn
@@ -397,20 +384,7 @@ jobs:
         working_directory: ~/grakn
 
         steps:
-          # Download and cache dependencies
-          - restore_cache:
-              keys:
-              - v1-dependencies-{{ checksum "package.json" }}
-              # fallback to using the latest cache if no exact match is found
-              - v1-dependencies-
-
           - run: cd workbase && npm install
-
-          - save_cache:
-              paths:
-                - node_modules
-              key: v1-dependencies-{{ checksum "package.json" }}
-
           - run: cd workbase && npm run build
           - persist_to_workspace:
               root: ~/grakn
