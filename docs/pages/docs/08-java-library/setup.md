@@ -34,7 +34,7 @@ All applications will require the `client-java` dependency to be declared on the
 
 ## Opening A Session And Transaction
 
-{% include note.html content="Before proceeding, make sure that the Grakn knowledge graph has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
+{% include note.html content="Before proceeding, make sure that the Grakn knowledge graph has already been started. Otherwise, refer to the [Setup guide](../get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
 
 A **session** object is responsible for maintaining a connection to a specific keyspace in the knowledge graph. Opening a session is performed by invoking the `session()` method on the grakn client.
 Once the session is open, you can proceed by creating a **transaction** in order to manipulate the data in the keyspace.
