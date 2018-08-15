@@ -12,7 +12,10 @@
         <div class="dd-header" v-show="attributes.length">Attributes:</div>
         <div class="node-features">
           <div class="dd-item" v-for="(value, key) in attributes" :key="key">
-            <div><span class="list-key">{{value.type}}:</span> {{value.value}}</div>
+            <div>
+              <div v-if="value.href" class="list-key">{{value.type}}:<a :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank"> {{value.value}}</a></div>
+              <div v-else><span class="list-key">{{value.type}}:</span> {{value.value}}</div> 
+            </div>
           </div>
         </div>
       </div>
@@ -60,8 +63,27 @@ export default {
         type: await (await x.type()).label(),
         value: await x.value(),
       })));
-      this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1));
+      this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
+
       if (val.length === 1) this.showNodePanel = true;
+    },
+  },
+  methods: {
+    validURL(str) {
+      const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
+        '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
+        '(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})' +
+        '(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})' +
+        '(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])' +
+        '(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}' +
+        '(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))' +
+        '|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)' +
+        '(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*' +
+        '(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?' +
+        '(?:[/?#]\\S*)?$';
+
+      const pattern = new RegExp(URL_REGEX, 'i');
+      return pattern.test(str);
     },
   },
 };
