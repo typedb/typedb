@@ -69,7 +69,7 @@ From left to right:
 
 ## Context Menu
 
-* <b>[Node Settings](#change-the-display)</b> - Open the node settings panel to show different information about the node on the graph and change the colour or the nodes of the similar type. 
+* <b>[Node Settings](#change-the-display)</b> - Open the node settings panel to show different information about the node on the graph and change the colour or the nodes of the same type. 
   
 * <b>Delete Node</b> - Delete a node or multiple nodes from the graph.
   
@@ -121,11 +121,11 @@ A single click on any node in the knowledge graph brings up a tool tip of inform
 
 ![Single click](/images/workbase/node_panel.png)
 
-A double click on a node will bring up the relationships associated with the node, as shown below.
+A double click on a node will bring up the relationships associated with the node, as shown below. The first doule click will load a single batch of relationships as per the [neighbours limit](#limit-neighbours). Any consequent double click will load the next batch of relationships.
 
 ![Double click](/images/workbase/double_click.png)
 
-Holding shift and double clicking on a node also brings up the attributes associated with it, displaying them in the knowledge graph, as shown below.
+Holding shift and double clicking on a node also brings up the attributes associated with it, displaying them in the knowledge graph, as shown below. The first shift + doule click will load a single batch of attributes as per the [neighbours limit](#limit-neighbours). Any consequent shift + double click will load the next batch of attributes.
 
 ![shift double click](/images/workbase/shift_click.png)
 
@@ -145,25 +145,34 @@ Query Settings can be accessed under the cog icon at the right hand of the horiz
 
 #### Limit Query 
 
-You can change the offset and limit on the number of results returned by editing the value directly in the submission form, or by adjusting the Query Limit setting.
+You can change the offset and limit on the number of results returned by editing the value directly in the submission form, or by adjusting the Query Limit setting. (This limit will only be enforced only when no `offset` is specified by the user in the query)
 
-#### Limit Neighbour  
+#### Limit Neighbours
 
 Allows the user to limit the nodes loaded when double clicking or shift + double clicking on a node.
 
 #### Autoload Role Players
 
-You can enable or disable loading role players with relationships.
+You can enable or disable loading role players with relationships. This is useful when you only want to visualise the relationships without their role players. You can see the differences between the same query when autoload roleplayers is enabled and disabled below.
+
+enabled:
+![Person query](/images/workbase/autoload_roleplayers_enabled.png)
+disabled:
+![Person query](/images/workbase/autoload_roleplayers_disabled.png)
 
 ### Explain an Inferred Concept
 
 If a nodes is inferred, you can select the `Explain` option from the context menu and get the explainaion of how it is inferred. e.g if the cousin relationship is inferred, selecting explain would give us the following:
 
-![explain](/images/workbase/explain_cousin.png)
+![explain](/images/workbase/explain_cousin2.png)
+
+![explain](/images/workbase/explain_cousin1.png)
 
 ### Shortest Path
 
 Select two nodes and select the `Shortest Path` option in the context menu to display the shortest path between the two nodes if it exists.
+
+![explain](/images/workbase/shortest_path1.png)
 
 ![explain](/images/workbase/shortest_path.png)
 
@@ -189,7 +198,13 @@ Allows user to configure the host and port of Grakn.
 
 ### Preference Settings
 
-Allows user to clear all saved preferences.
+Allows user to clear all saved preferences:
+* Favourite queries
+* Query limit
+* Neighbours limit
+* Autoload roleplayers
+* Node labels
+* Node Colours
 
 ![preference settings](/images/workbase/preference_settings.png)
 
