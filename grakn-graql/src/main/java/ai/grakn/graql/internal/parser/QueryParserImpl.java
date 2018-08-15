@@ -105,8 +105,7 @@ public class QueryParserImpl implements QueryParser {
         registerAggregate(name, numArgs, numArgs, aggregateMethod);
     }
 
-    private void registerAggregate(
-            String name, int minArgs, int maxArgs, Function<List<Object>, Aggregate> aggregateMethod) {
+    private void registerAggregate(String name, int minArgs, int maxArgs, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, args -> {
             if (args.size() < minArgs || args.size() > maxArgs) {
                 throw GraqlQueryException.incorrectAggregateArgumentNumber(name, minArgs, maxArgs, args);
@@ -249,9 +248,10 @@ public class QueryParserImpl implements QueryParser {
 
     // Aggregate methods that include other aggregates, such as group are not necessarily safe at runtime.
     // This is unavoidable in the parser.
+    // TODO: remove this manual registration of aggregate queries and design it into the grammar
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
-        registerAggregate("count", 0, args -> Graql.count());
+        registerAggregate("count", 0, Integer.MAX_VALUE, args -> Graql.count());
         registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
         registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
         registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));
