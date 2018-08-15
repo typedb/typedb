@@ -4,17 +4,21 @@
         <div class="modal-content">
             <div class="close-cross"><span class="closeCmd">&times;</span></div>
             <div class="head">
-                <h5 class="modal-title"><i style="font-size:35px;" class="pe page-header-icon pe-7s-rocket"></i>&nbsp; Workbase Commands &nbsp;<i style="font-size:35px;" class="pe page-header-icon pe-7s-rocket"></i></h5>
+                <h5 class="modal-title">&nbsp; workbase commands &nbsp;</h5>
             </div>
-            <table class="table table-hover table-stripped">
+            <nav class="nav" role="navigation">
+                <ul class="nav-list">
+                    <li v-bind:id="tab" :class="{'active':activeTab===tab}" v-for="tab in tabs" @click="activeTab=tab" :key="tab">{{tab}}</li>
+                </ul>
+            </nav>
+            <table class="table table-hover table-stripped" v-if="activeTab === 'graql editor'">
                 <tbody>
                     <tr>
                         <td style="text-align:center;">
                             <i class="far fa-star"></i>
-                            Starred Queries
                         </td>  
                         <td>
-                            List all the saved queries
+                            list all the saved queries
                         </td>                             
                     </tr>
                     <tr>
@@ -23,7 +27,15 @@
                             <caret-icon style="vertical-align:middle;"></caret-icon>
                         </td>  
                         <td>
-                            Drop down list to show what is in the schema
+                            drop down list to show what is in the schema
+                        </td>                             
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">
+                            history
+                        </td>  
+                        <td>
+                            use [SHIFT] + [UP/DOWN] to navigate through previous graql queries
                         </td>                             
                     </tr>
                     <tr>
@@ -31,16 +43,16 @@
                             <img src="static/img/icons/icon_add_white.svg">
                         </td>  
                         <td>
-                            Save current query to starred queries
+                            save current query to starred queries
                         </td>                             
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             <i class="fas fa-chevron-circle-right"></i>
-                            OR "ENTER"
+                            or [ENTER]
                         </td>  
                         <td>
-                            To visualize knowlege graph
+                            to visualize knowlege graph
                         </td>                             
                     </tr>
                     <tr>
@@ -48,7 +60,7 @@
                             <i class="far fa-times-circle"></i>
                         </td>  
                         <td>
-                            To clear the query
+                            to clear the query
                         </td>                             
                     </tr>
                     <tr>
@@ -56,15 +68,15 @@
                             <i class="fa fa-cog"></i>
                         </td>  
                         <td>
-                            Toggle query settings
+                            toggle query settings
                         </td>                             
                     </tr>             
                     <tr>
                         <td style="text-align:center;">
-                            limit Query
+                            limit query
                         </td>  
                         <td>
-                            Can be used to limit the number of results returned
+                            can be used to limit the number of results returned
                         </td>                             
                     </tr>
                     <tr>
@@ -72,49 +84,69 @@
                             limit neighbours
                         </td>  
                         <td>
-                            Can be used to limit the number of results linked to a node
+                            can be used to limit the number of results linked to a node
                         </td>                             
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Autoload role players
+                            autoload role players
                         </td>  
                         <td>
-                            Loads the role players of a relationship
+                            load the role players of a relationship
+                        </td>                             
+                    </tr>
+                </tbody>
+            </table>
+            <table class="table table-hover table-stripped" v-if="activeTab === 'graph'">
+                <tbody>
+                    <tr>
+                        <td style="text-align:center;">
+                            single click on a node
+                        </td>  
+                        <td>
+                            select a node and open its node panel showing information about it
                         </td>                             
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Single click on node
+                            double click on a node
                         </td>  
                         <td>
-                            Bring up information about node
-                        </td>                             
-                    </tr>
-                    <tr>
-                        <td style="text-align:center;">
-                            Double click on node
-                        </td>  
-                        <td>
-                            Show relationships associated with the node
+                            load neighbours associated with the node
                         </td>                             
                     </tr> 
                     <tr>
                         <td style="text-align:center;">
-                            Right click
+                            [SHIFT] + double click
                         </td>  
                         <td>
-                            Open graph menu
+                            load attributes associated with the node
+                        </td>                             
+                    </tr> 
+                    <tr>
+                        <td style="text-align:center;">
+                            right click on a node
+                        </td>  
+                        <td>
+                            open graph menu
                         </td>                             
                     </tr>  
                     <tr>
                         <td style="text-align:center;">
-                            {{crtlOrCmd}} + click on nodes
+                            [{{crtlOrCmd}}] + click on a node
                         </td>  
                         <td>
-                            Select multiple nodes
+                            select multiple nodes
                         </td>                             
-                    </tr>                  
+                    </tr>  
+                    <tr>
+                        <td style="text-align:center;">
+                            click + hold on a node
+                        </td>  
+                        <td>
+                            select multiple nodes
+                        </td>                             
+                    </tr>                
                 </tbody>
             </table>
         </div>
@@ -127,34 +159,55 @@
     margin-bottom: 20px;
     font-weight: bold;
 }
-
 .close-cross {
     display: flex;
     justify-content: flex-end;
     width: 100%;
 }
-
 .close-cross span {
     color: white;
 }
-
 table {
     border-collapse: separate;
     border-spacing: 15px;
-    width: 700px;
+    width: 760px;
 }
-
 td {
     border-bottom: 1px solid #606060;
     padding-bottom: 5px;
 }
-
 .table-responsive {
     margin-top: 10px;
 }
-
+.graqlEditor-wrapper {
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    border-radius: 3px;
+    position: absolute;
+    width: 100%;
+    top: -15px;
+}
+.nav-list{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+.active{
+  border-bottom: 2px solid #00eca2;
+}
+li{
+  cursor: pointer;
+  margin: 40px;
+}
+li:hover,
+li:focus {
+    color: #00eca2;
+    text-decoration: none;
+    cursor: pointer;
+}
 /* The Modal (background) */
-
 .modal {
     display: none;
     /* Hidden by default */
@@ -177,10 +230,7 @@ td {
     background-color: rgba(0, 0, 0, 0.3);
     /* Black w/ opacity */
 }
-
-
 /* Modal Content */
-
 .modal-content {
     position: relative;
     background-color: #0f0f0f;
@@ -194,12 +244,11 @@ td {
     -webkit-animation-name: animatetop;
     -webkit-animation-duration: 0.4s;
     animation-name: animatetop;
-    animation-duration: 0.4s
+    animation-duration: 0.4s;
+    height: 650px;
+    margin-top: 5%;
 }
-
-
 /* Add Animation */
-
 @-webkit-keyframes animatetop {
     from {
         top: 300px;
@@ -210,7 +259,6 @@ td {
         opacity: 1
     }
 }
-
 @keyframes animatetop {
     from {
         top: 300px;
@@ -221,17 +269,13 @@ td {
         opacity: 1
     }
 }
-
-
 /* The Close Button */
-
 .closeCmd {
     color: white;
     float: right;
     font-size: 28px;
     font-weight: bold;
 }
-
 .closeCmd:hover,
 .closeCmd:focus {
     color: #00eca2;
@@ -242,12 +286,14 @@ td {
 
 <script>
 import CaretIcon from '@/components/UIElements/CaretIcon.vue';
-
 export default {
   name: 'CommandsModal',
   components: { CaretIcon },
   data() {
+    const tabsArray = ['graql editor', 'graph'];
     return {
+      tabs: tabsArray,
+      activeTab: tabsArray[0],
       crtlOrCmd: 'ctrl',
     };
   },
@@ -255,26 +301,21 @@ export default {
     this.$nextTick(() => {
       // Get the modal
       const cmdModal = document.getElementById('cmdModal');
-
       // Get the button that opens the modal
       const cmdBtn = document.getElementById('cmdBtn');
-
       // Get the <span> element that closes the modal
       const cmdSpan = document.getElementsByClassName('closeCmd')[0];
-
       // When the user clicks the button, open the modal
       cmdBtn.onclick = () => {
         if (process.platform === 'darwin') {
-          this.crtlOrCmd = 'Cmd';
+          this.crtlOrCmd = 'cmd';
         }
         cmdModal.style.display = 'block';
       };
-
       // When the user clicks on <span> (x), close the modal
       cmdSpan.onclick = () => {
         cmdModal.style.display = 'none';
       };
-
       // When the user clicks anywhere outside of the modal, close it
       window.onclick = (event) => {
         if (event.target === cmdModal) {
