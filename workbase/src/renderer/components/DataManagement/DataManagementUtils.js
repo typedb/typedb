@@ -85,7 +85,7 @@ async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
           await prepareRelationship(thing);
           break;
         default:
-          // do nothing
+          throw new Error(`Unrecognised baseType of thing: ${thing.baseType}`);
       }
       thing.attrOffset = 0;
       nodes.push(thing);
@@ -265,7 +265,7 @@ async function filterImplicitTypes(concepts) {
     if (concept.isThing()) {
       return (!await (await concept.type()).isImplicit()) ? concept : null;
     }
-    return concept;
+    return (!await concept.isImplicit()) ? concept : null;
   })).then(concepts => concepts.filter(l => l));
 }
 
