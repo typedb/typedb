@@ -149,6 +149,12 @@ entries:
       - title: Grakn Visualiser
         output: web
         url: /docs/visualisation-dashboard/visualiser
+  - title: Workbase
+    output: web
+    folderitems:
+      - title: Visualiser
+        output: web
+        url: /docs/workbase/visualiser
   - title: Java Library
     output: web
     folderitems:
