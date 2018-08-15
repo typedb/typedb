@@ -47,7 +47,6 @@ export default {
       }
     },
     toolTipShown(val) {
-      console.log(val);
       if (val !== undefined) {
         $('.CodeMirror').animate({
           height: this.initialEditorHeight,
