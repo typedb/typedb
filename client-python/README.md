@@ -53,14 +53,24 @@ client = grakn.Grakn(uri='localhost:48555', credentials={'username': 'xxxx', 'pa
 
 You can execute Graql queries and iterate through the answers as follows:
 ```
-answer_iterator = tx.query("match $x isa person; limit 10; get;") # returns an iterator of ConceptMap answers
-a_concept_map_answer = next(answer_iterator) # Request first response
-person = a_concept_map_answer.map()['x']      # Get the dictionary of variables : concepts, retrieve variable 'x'
+# Perform a query that returns an iterator of ConceptMap answers
+answer_iterator = tx.query("match $x isa person; limit 10; get;") 
+# Request first response
+a_concept_map_answer = next(answer_iterator) 
+# Get the dictionary of variables : concepts, retrieve variable 'x'
+person = a_concept_map_answer.map()['x']      
+
+# we can also iterate using a `for` loop
 some_people = []
-for concept_map in answer_iterator:           # we can also iterate using a `for` loop
-  some_people.append(concept_map.get('x'))    # Get 'x' again, without going through .map()
-  break 
-remaining_people = answer_iterator.collect_concepts() # skip the iteration and .get('x') and extract all the concepts in one go
+for concept_map in answer_iterator:           
+    # Get 'x' again, without going through .map()
+    some_people.append(concept_map.get('x'))    
+    break 
+
+# skip the iteration and .get('x') and extract all the concepts in one go
+remaining_people = answer_iterator.collect_concepts() 
+
+# explicit close if not using `with` statements
 tx.close()
 ```
 
@@ -70,9 +80,11 @@ to the server to obtain the next concrete result.
 
 You might also want to make some insertions using `.query()`
 ```
-insert_iterator = tx.query("insert $x isa person, has birth-date 2018-08-06;") # returns an iterator of ConceptMap of inserted concepts
+# Perform insert query that returns an iterator of ConceptMap of inserted concepts
+insert_iterator = tx.query("insert $x isa person, has birth-date 2018-08-06;") 
 concepts = insert_iterator.collect_concepts()
 print("Inserted a person with ID: {0}".format(concepts[0].id))
+# Don't forget to commit() to persist changes
 tx.commit()
 ```
 
@@ -144,7 +156,7 @@ Some of the following Concept methods return a python iterator, which can be con
 
 | Method                    | Return type                 | Description                                                                                                                                                                                                                                                               |
 | ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `collect_concepts()`      | List of *Concept*           | Consumes the iterator and return list of Concepts. **This helper is useful on Iterator returned by transaction.query() method**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
+| `collect_concepts()`      | List of *Concept*           | Consumes the iterator and return list of Concepts. **This helper is useful on Iterator that return ConceptMap answer types**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
 
 NOTE: these iterators represent a lazy evaluation of a query or method on the Grakn server, and will be created very quickly. The actual work
 is performed when the iterator is consumed, creating an RPC to the server to obtain the next concrete `Answer` or `Concept`.
