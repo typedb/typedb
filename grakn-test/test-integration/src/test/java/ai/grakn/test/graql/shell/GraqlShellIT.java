@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -281,8 +282,8 @@ public class GraqlShellIT {
                 "insert $x isa person, has name \"Bob\";",
                 anything(),
                 "match $x isa person, has name $y; aggregate group $x;",
-                containsString("Alice"),
-                containsString("Bob")
+                anyOf(containsString("Alice"),containsString("Bob")),
+                anyOf(containsString("Alice"),containsString("Bob"))
         );
     }
 
