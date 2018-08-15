@@ -286,9 +286,6 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
-        - restore_cache:
-            name: Restore maven m2 cache
-            key: grakn-cache-m2-version-8
         - run:
             name: Install nvm and node
             command: |
@@ -319,9 +316,6 @@ jobs:
       steps:
         - attach_workspace:
             at: ~/grakn
-        - restore_cache:
-            name: Restore maven m2 cache
-            key: grakn-cache-m2-version-8
         - run:
             name: Install python deps
             command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
@@ -332,13 +326,51 @@ jobs:
         - run: cd client-python && make protobuf
         - run: cd client-python && python -m unittest discover ./tests/integration/ -v
 
+  workbase-unit-tests:
+      docker:
+        - image: circleci/node:8.11.2
+      working_directory: ~/grakn
+      steps:
+        - checkout
+        - run: cd workbase && npm install
+        - run: cd workbase && npm test
 
+  workbase-e2e:
+      machine: true
+      working_directory: ~/grakn
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - run:
+            name: Install nvm and node
+            command: |
+              curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.5/install.sh | bash
+              export NVM_DIR="/opt/circleci/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              nvm install v10.5.0
+              nvm alias default v10.5.0
+              echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+              echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+        - run:
+            name: Prepare apt repositories
+            command: |
+              sudo apt-get install apt-transport-https
+              sudo apt-get update
+        - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
+        - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
+        - run: nohup grakn-dist/target/grakn-core-test/grakn server start
+        - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
+        - run: cd workbase && npm install
+        - run: Xvfb :99 &
+        - run: export DISPLAY=:99
+        - run: cd workbase && npm run e2e
 
 workflows:
   version: 2
   run-all-tests:
     jobs:
       - build
+      - workbase-unit-tests
       - unit-it-test-1:
           requires:
             - build
@@ -363,3 +395,6 @@ workflows:
       - client-java-e2e:
           requires:
             - build
+      - workbase-e2e:
+           requires:
+             - build
