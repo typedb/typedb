@@ -6,7 +6,7 @@
       <div class="center">
         <div class="graqlEditor-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
           <textarea id="graqlEditor" ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
-          <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror"></scroll-button>
+          <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror" :toolTipShown="toolTipShown"></scroll-button>
         </div>
       </div>
       <div class="right-side">
