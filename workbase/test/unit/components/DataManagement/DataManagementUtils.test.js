@@ -177,3 +177,12 @@ describe('loadAttribtues', () => {
     expect(data.edges[0].label).toBe('has');
   });
 });
+
+describe('filter implicit types', () => {
+  test('implicit relationship', async () => {
+    let concepts = [mockConcepts.getMockImplicitRelationship()];
+    expect(concepts).toHaveLength(1);
+    concepts = await DataManagementUtils.filterImplicitTypes(concepts);
+    expect(concepts).toHaveLength(0);
+  });
+});

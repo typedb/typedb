@@ -34,7 +34,7 @@ async function buildLabel(node) {
       label = `${node.type}: ${node.id}`;
       break;
     case 'ATTRIBUTE':
-      label = `${node.type}: ${node.value}`;
+      label = `${node.type}: ${await node.value}`;
       break;
     case 'RELATIONSHIP':
       label = '';
@@ -43,6 +43,21 @@ async function buildLabel(node) {
       label = node.type;
   }
   return label;
+}
+
+async function prepareEntity(entity) {
+  entity.type = await (await entity.type()).label();
+  entity.label = await buildLabel(entity);
+}
+
+async function prepareRelationship(rel) {
+  rel.type = await (await rel.type()).label();
+}
+
+async function prepareAttribute(attribute) {
+  attribute.type = await (await attribute.type()).label();
+  attribute.value = await attribute.value();
+  attribute.label = await buildLabel(attribute);
 }
 
 async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
@@ -59,9 +74,19 @@ async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
   const promises = Array.from(roleplayers, async ([role, setOfThings]) => {
     const roleLabel = await role.label();
     await Promise.all(Array.from(setOfThings.values()).map(async (thing) => {
-      const type = await thing.type();
-      thing.type = await type.label();
-      thing.label = await buildLabel(thing);
+      switch (thing.baseType) {
+        case 'ENTITY':
+          await prepareEntity(thing);
+          break;
+        case 'ATTRIBUTE':
+          await prepareAttribute(thing);
+          break;
+        case 'RELATIONSHIP':
+          await prepareRelationship(thing);
+          break;
+        default:
+          // do nothing
+      }
       thing.attrOffset = 0;
       nodes.push(thing);
       edges.push({ from: relationship.id, to: thing.id, label: roleLabel });
@@ -82,20 +107,6 @@ async function prepareSchemaConcept(schemaConcept) {
   schemaConcept.label = await schemaConcept.label();
 }
 
-async function prepareEntity(entity) {
-  entity.type = await (await entity.type()).label();
-  entity.label = await buildLabel(entity);
-}
-
-async function prepareRelationship(rel) {
-  rel.type = await (await rel.type()).label();
-}
-
-async function prepareAttribute(attribute) {
-  attribute.type = await (await attribute.type()).label();
-  attribute.value = await attribute.value();
-  attribute.label = await buildLabel(attribute);
-}
 
 async function prepareConcepts(result) {
   return result.map((x) => {
@@ -248,6 +259,16 @@ function isRolePlayerAutoloadEnabled() {
   return QuerySettings.getRolePlayersStatus();
 }
 
+// filter out all implicit types
+async function filterImplicitTypes(concepts) {
+  return Promise.all(concepts.map(async (concept) => {
+    if (concept.isThing()) {
+      return (!await (await concept.type()).isImplicit()) ? concept : null;
+    }
+    return concept;
+  })).then(concepts => concepts.filter(l => l));
+}
+
 export default {
   prepareConcepts,
   prepareNodes,
@@ -256,4 +277,5 @@ export default {
   isRolePlayerAutoloadEnabled,
   limitQuery,
   loadAttributes,
+  filterImplicitTypes,
 };
