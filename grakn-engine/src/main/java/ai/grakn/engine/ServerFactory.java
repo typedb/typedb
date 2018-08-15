@@ -42,7 +42,6 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.rpc.OpenRequest;
 import brave.Tracing;
-import brave.propagation.B3Propagation;
 import io.grpc.ServerInterceptors;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.urlconnection.URLConnectionSender;
@@ -142,7 +141,7 @@ public class ServerFactory {
 
         Tracing tracing = Tracing.newBuilder()
                 .localServiceName("query-benchmark-server")
-                .propagationFactory(B3Propagation.FACTORY)
+                .supportsJoin(true)
                 .spanReporter(reporter)
                 .build();
 
@@ -153,6 +152,7 @@ public class ServerFactory {
                         new SessionService(requestOpener, postProcessor), grpcTracing.newServerInterceptor()))
                 .addService(ServerInterceptors.intercept(
                         new KeyspaceService(keyspaceStore), grpcTracing.newServerInterceptor()))
+//                  .intercept(grpcTracing.newServerInterceptor())
 //                .addService(new SessionService(requestOpener, postProcessor))
 //                .addService(new KeyspaceService(keyspaceStore))
                 .build();

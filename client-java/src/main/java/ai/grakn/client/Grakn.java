@@ -93,6 +93,7 @@ public final class Grakn {
         Tracing tracing = Tracing.newBuilder()
                 .localServiceName("query-benchmark-client")
                 .spanReporter(reporter)
+                .supportsJoin(true)
                 .build();
 
         GrpcTracing grpcTracing = GrpcTracing.create(tracing);
