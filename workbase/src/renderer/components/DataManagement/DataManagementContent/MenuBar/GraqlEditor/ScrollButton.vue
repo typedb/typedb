@@ -10,7 +10,7 @@
     height: 10px;
     width: 100%;
     display: inline-flex;
-    border-radius: 0% 0% 100% 100%;;
+    border-radius: 0% 0% 5px 5px;
 }
 
 .scroll-caret {
@@ -49,7 +49,6 @@ export default {
     toolTipShown(val) {
       console.log(val);
       if (val !== undefined) {
-        console.log('asdasd');
         $('.CodeMirror').animate({
           height: this.initialEditorHeight,
         }, 300);
