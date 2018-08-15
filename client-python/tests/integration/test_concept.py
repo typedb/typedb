@@ -19,6 +19,7 @@
 
 import unittest
 import grakn
+import datetime
 from grakn.exception.GraknError import GraknError
 
 
@@ -562,10 +563,33 @@ class test_Attribute(test_Base):
         double = double_attr_type.create(43.1)
         self.assertEqual(double.value(), 43.1)
 
-    def test_date_value(self):
-        # TODO
-        print(" ------ TODO ------ ")
-        pass
+    def test_get_date_value(self):
+        date_type = self.tx.put_attribute_type("birthdate", grakn.DataType.DATE)
+        person_type = self.tx.get_schema_concept("person")
+        person_type.has(date_type)
+        concepts = self.tx.query("insert $x isa person, has birthdate 2018-08-06;").collect_concepts()
+        person = concepts[0]
+        attrs_iter = person.attributes()
+        for attr_concept in attrs_iter:
+            # pick out the birthdate
+            if attr_concept.type().label() == "birthdate":
+                date = attr_concept.value()
+                self.assertIsInstance(date, datetime.datetime)
+                self.assertEqual(date.year, 2018)
+                self.assertEqual(date.month, 8)
+                self.assertEqual(date.day, 6)
+                return
+
+
+    def test_set_date_value(self):
+        date_type = self.tx.put_attribute_type("birthdate", grakn.DataType.DATE)
+        test_date = datetime.datetime(year=2018, month=6, day=6)
+        date_attr_inst = date_type.create(test_date)
+        value = date_attr_inst.value() # retrieve from server
+        self.assertIsInstance(value, datetime.datetime)
+        self.assertEqual(value.timestamp(), test_date.timestamp())
+
+        
 
     def test_owners(self):
         """ Test retrieving entities that have an attribute """

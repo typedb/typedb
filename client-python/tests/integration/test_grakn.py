@@ -212,7 +212,7 @@ class test_Transaction(test_Base):
 
         tx.close()
         local_session.close()
-        inst.keyspaces.delete("shortestpath")
+        inst.keyspaces().delete("shortestpath")
 
     def test_cluster_anwer_ConceptSet(self):
         """ Test clustering with connected components response as ConceptSet """ 
@@ -229,7 +229,7 @@ class test_Transaction(test_Base):
         self.assertTrue(parentship_map['parentship'] in concept_set_answer.set())
         tx.close()
         local_session.close()
-        inst.keyspaces.delete("clusterkeyspace")
+        inst.keyspaces().delete("clusterkeyspace")
 
 
     def test_compute_centrality_answer_ConceptSetMeasure(self):
@@ -246,7 +246,7 @@ class test_Transaction(test_Base):
         self.assertTrue(parentship_map['child'] in concept_set_measure_answer.set())
         tx.close()
         local_session.close()
-        inst.keyspaces.delete("centralitykeyspace")
+        inst.keyspaces().delete("centralitykeyspace")
 
 
     def test_compute_aggregate_group_answer_AnswerGroup(self):
@@ -263,7 +263,7 @@ class test_Transaction(test_Base):
         self.assertEqual(answer_group.answers()[0].map()['y'].id, parentship_map['child'])
         tx.close()
         local_session.close()
-        inst.keyspaces.delete("aggregategroup")
+        inst.keyspaces().delete("aggregategroup")
 
 
 
