@@ -30,7 +30,8 @@ In the interpreter or in your source, import `grakn`:
 import grakn
 ```
 
-You can then instantiate a client, open a session, and create transactions:
+You can then instantiate a client, open a session, and create transactions. You MUST use port 48555 
+for Grakn and client versions >=1.3, port 4567 (the old REST endpoint) is deprecated for clients.
 ```
 client = grakn.Grakn(uri="localhost:48555")
 session = client.session(keyspace="mykeyspace")
