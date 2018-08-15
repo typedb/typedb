@@ -30,7 +30,9 @@ In the interpreter or in your source, import `grakn`:
 import grakn
 ```
 
-You can then instantiate a client, open a session, and create transactions:
+You can then instantiate a client, open a session, and create transactions.     
+_NOTE_: Grakn's default gRPC port is 48555 for versions >=1.3. Port 4567 (the old default REST endpoint) is deprecated for clients.
+
 ```
 client = grakn.Grakn(uri="localhost:48555")
 session = client.session(keyspace="mykeyspace")
@@ -74,7 +76,7 @@ remaining_people = answer_iterator.collect_concepts()
 tx.close()
 ```
 
-NOTE: queries will return almost immediately -- this is because Grakn lazily evaluates the request on the server when
+_NOTE_: queries will return almost immediately -- this is because Grakn lazily evaluates the request on the server when
 the local iterator is consumed, not when the request is created. Each time `next(iter)` is called, the client executes a fast RPC request 
 to the server to obtain the next concrete result.
 
@@ -158,7 +160,7 @@ Some of the following Concept methods return a python iterator, which can be con
 | ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `collect_concepts()`      | List of *Concept*           | Consumes the iterator and return list of Concepts. **This helper is useful on Iterator that return ConceptMap answer types**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
 
-NOTE: these iterators represent a lazy evaluation of a query or method on the Grakn server, and will be created very quickly. The actual work
+_NOTE_: these iterators represent a lazy evaluation of a query or method on the Grakn server, and will be created very quickly. The actual work
 is performed when the iterator is consumed, creating an RPC to the server to obtain the next concrete `Answer` or `Concept`.
 
 
