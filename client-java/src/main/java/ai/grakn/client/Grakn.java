@@ -91,7 +91,7 @@ public final class Grakn {
         AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 
         Tracing tracing = Tracing.newBuilder()
-                .localServiceName("query-benchmark")
+                .localServiceName("query-benchmark-client")
                 .spanReporter(reporter)
                 .build();
 
