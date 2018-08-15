@@ -73,10 +73,10 @@
 
 <script>
 import { isDataManagement } from '@/routes.js';
-import MenuBar from './MenuBar/MenuBar.vue';
+import MenuBar from './MenuBar.vue';
 import ContextMenu from './ContextMenu.vue';
-import DataManagementStore from './DataManagementStore';
-import GraphCanvas from '../shared/GraphCanvas/GraphCanvas.vue';
+import DataManagementStore from '../DataManagementStore';
+import GraphCanvas from '../../shared/GraphCanvas/GraphCanvas.vue';
 import NodeSettingsPanel from './NodeSettingsPanel/NodeSettingsPanel.vue';
 import CommandsModal from './CommandsModal.vue';
 import NodePanel from './NodePanel';

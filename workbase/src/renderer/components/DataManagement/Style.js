@@ -1,5 +1,5 @@
 
-import NodeSettings from '../DataManagement/NodeSettings';
+import NodeSettings from '../DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings';
 
 
 const DEFAULT_NODE_SHAPE = 'box';
@@ -118,7 +118,7 @@ function nodeFont() {
     color: '#ffffff',
     dimmedColor: 'rgba(32, 161, 148, 0.5)',
     size: 15,
-    face: 'Geogrotesque-Ultralight',
+    face: 'Lekton',
   };
 }
 

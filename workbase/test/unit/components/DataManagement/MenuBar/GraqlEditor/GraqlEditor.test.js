@@ -1,9 +1,9 @@
 import { shallowMount } from '@vue/test-utils';
-import GraqlEditor from '@/components/DataManagement/MenuBar/GraqlEditor/GraqlEditor';
+import GraqlEditor from '@/components/DataManagement/DataManagementContent/MenuBar/GraqlEditor/GraqlEditor';
 import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActions';
 
 jest.mock('@/components/shared/PersistentStorage', () => ({}));
-jest.mock('@/components/DataManagement/MenuBar/GraqlEditor/GraqlCodeMirror', () => ({
+jest.mock('@/components/DataManagement/DataManagementContent/MenuBar/GraqlEditor/GraqlCodeMirror', () => ({
   getCodeMirror: () => ({
     on: () => {},
     setValue: jest.fn(),

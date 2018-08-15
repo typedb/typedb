@@ -33,6 +33,10 @@
   cursor: pointer;
 }
 
+.fa-times:hover{
+  color: #06b17b;
+}
+
 .panel-wrapper{
   position: absolute;
   bottom: 10px;
@@ -118,7 +122,7 @@ li:hover{
 
 <script>
 import { TOGGLE_LABEL } from '@/components/shared/StoresActions';
-import NodeSettings from '../NodeSettings';
+import NodeSettings from './NodeSettings';
 import ColourPicker from './ColourPicker.vue';
 
 export default {

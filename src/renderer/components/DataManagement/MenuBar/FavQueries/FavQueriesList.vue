@@ -5,26 +5,26 @@
     </button>
     <transition name="slide-fade">
         <div v-if="toolTipShown === 'favourites'" class="dropdown-content" id="fav-queries-list">
+            <i @click="closeFavQueriesList" :style="'font-size:13px;'" class="fas fa-times cross"></i>
             <div class="panel-heading">
-                <div></div>
-                <h4><i class="page-header-icon far fa-star"></i>Saved queries</h4>
-                <a @click="closeFavQueriesList"><i class="fas fa-times"></i></a>
+                <h4 :style="'padding-right:10px;'">saved queries</h4>
             </div>
+            <div class="divide"></div>
             <div class="panel-body" v-if="favQueries.length">
                 <div class="dd-item" v-for="(query,index) in favQueries" :key="index">
                     <div class="full-query">
                         <span class="list-key" id="list-key"> {{query.name}}</span>
                     </div>
                     <div class="line-buttons">
-                        <button id='use-btn' class="btn bold" @click="typeFavQuery(query.value)">USE</button>
-                        <button id='delete-btn' class="btn" @click="removeFavQuery(index, query.name)"><i class="fas fa-trash-alt"></i></button>
+                        <button id='use-btn' class="btn use-btn" @click="typeFavQuery(query.value)">USE</button>
+                        <button id='delete-btn' class="btn delete-btn" @click="removeFavQuery(index, query.name)"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 </div>
             </div>
             <div class="panel-body" v-else>
                 <div class="dd-item">
                     <div class="no-saved" id="no-saved">
-                        No saved queries.
+                        no saved queries
                     </div>
                 </div>
             </div>
@@ -63,21 +63,45 @@
     margin-bottom: 15px;
 }
 
+.divide {
+  border-bottom: 1px solid #606060;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.use-btn {
+    padding: 7px;
+    height: 30px;
+    line-height: 1em;
+}
+.delete-btn {
+    padding: 7px;
+    height: 30px;
+    line-height: 1em;
+}
 
 a {
     margin-left: auto;
 }
 
 .fa-times{
-  cursor: pointer;
-  padding-left: 10px;
+    cursor: pointer;
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    padding: 2px;
+    height: 14px;
+    line-height: 1em;
+}
+
+.fa-times:hover{
+    color: #06b17b;
 }
 
 .panel-heading {
-    padding: 5px 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 10px;
+    font-size: 18px;
+    text-align: center;
 }
 
 .page-header-icon {
@@ -116,6 +140,7 @@ a {
     position: absolute;
     top: 100%;
     z-index: 2;
+    padding: 10px;
     margin-top: 5px;
     background-color: #282828;
 }

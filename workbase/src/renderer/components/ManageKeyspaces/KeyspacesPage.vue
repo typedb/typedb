@@ -9,7 +9,7 @@
           <div class="title">Keyspaces</div>
           <div class="list-container">
               <div class="ks-div noselect" v-for="ks in keyspaces" :key="ks">
-                  <div class="keyspace-label">{{ks}}</div> 
+                  <div class="left-side keyspace-label">{{ks}}</div> 
                   <div class="right-side">
                       <!-- <img @click="showSaveDialog(ks)" src="static/img/icons/icon_export_white.svg" width="19"> -->
                       <i v-bind:id="'delete-'+ks" @click="askConfirmation(ks)" class="fas fa-trash-alt"></i>

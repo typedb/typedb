@@ -3,7 +3,7 @@ import mockConcepts from '../../../helpers/MockConcepts.js';
 
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
-jest.mock('@/components/DataManagement/NodeSettings', () => ({
+jest.mock('@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings', () => ({
   getTypeLabels() { return []; },
 }));
 
@@ -36,6 +36,15 @@ describe('limitQuery', () => {
     const query = 'match $x isa person; limit 40; offset 0; get;';
     const limited = DataManagementUtils.limitQuery(query);
     expect(limited).toBe(query);
+  });
+  test('query containing multi-line queries', () => {
+    const query = `
+    match $x isa person; 
+    $r($x, $y); get;`;
+    const limited = DataManagementUtils.limitQuery(query);
+    expect(limited).toBe(`
+    match $x isa person; 
+    $r($x, $y); offset 0; limit 10; get;`);
   });
 });
 

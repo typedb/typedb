@@ -40,7 +40,11 @@ describe('Favourite queries', () => {
     assert.equal(await app.client.getText('.toasted.primary.default'), 'New keyspace [test] successfully created!\nCLOSE');
   });
 
-  test('delete exisiting keyspace - TBD', async () => {
-    // TBD
+  test('delete exisiting keyspace', async () => {
+    app.client.click('#delete-test');
+    await sleep(1000);
+    app.client.click('.confirm');
+    await sleep(3000);
+    assert.equal(await app.client.getText('.toasted.primary.default'), 'Keyspace [test] successfully deleted\nCLOSE');
   });
 });

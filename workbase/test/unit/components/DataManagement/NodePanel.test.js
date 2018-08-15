@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import NodePanel from '@/components/DataManagement/NodePanel';
+import NodePanel from '@/components/DataManagement/DataManagementContent/NodePanel';
 
 describe('NodePanel.vue', () => {
   test('When selectedNode is SchemaConcept, empty attributes', async () => {

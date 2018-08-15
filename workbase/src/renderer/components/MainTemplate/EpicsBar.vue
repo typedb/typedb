@@ -8,7 +8,7 @@
                     <li class="sub-menu"><a>KB Documentation</a></li> -->
                 <li class="first-level noselect">DATA</li>
                     <!-- <li class="sub-menu"><a>Query Visualisation</a></li> -->
-                    <router-link tag="li" to="/develop/data" class="sub-menu"><a>Visualiser</a></router-link>
+                    <router-link tag="li" to="/develop/data" class="sub-menu"><a>visualiser</a></router-link>
                 <!-- <li class="first-level" >MIGRATION</li>
                     <li class="sub-menu"><a>Scripts</a></li>
                     <li class="sub-menu"><a>Migrators</a></li>
@@ -17,9 +17,9 @@
                     <li class="sub-menu"><a>Reports</a></li> -->
                 <li class="first-level">MANAGE</li>
                     <!-- <li class="sub-menu">Users</li> -->
-                    <router-link tag="li" to="/manage/keyspaces" class="sub-menu" id="manage-keyspaces"><a>Keyspaces</a></router-link>
+                    <router-link tag="li" to="/manage/keyspaces" class="sub-menu" id="manage-keyspaces"><a>keyspaces</a></router-link>
                     <!-- <li class="sub-menu">Server</li> -->
-                    <router-link tag="li" to="/manage/settings" class="sub-menu" id="settings"><a>Settings</a></router-link>
+                    <router-link tag="li" to="/manage/settings" class="sub-menu" id="settings"><a>settings</a></router-link>
                 <li class="first-level" v-if="isUserLogged">USER</li>
                     <li class="sub-menu" @click="logout" v-if="isUserLogged"><a>Logout</a></li>
             </ul>
@@ -66,7 +66,7 @@ li {
 }
 
 .active a {
-  border-bottom: 2px solid chartreuse;
+  border-bottom: 2px solid #00eca2;
 }
 </style>
 
