@@ -243,11 +243,11 @@ public class GraqlShellIT {
         assertShellMatches(
                 "define entity2 sub entity;",
                 anything(),
-                "match $x isa entity2; aggregate count;",
+                "match $x isa entity2; aggregate count $x;",
                 containsString("0"),
                 "insert $x isa entity2;",
                 anything(),
-                "match $x isa entity2; aggregate count;",
+                "match $x isa entity2; aggregate count $x;",
                 containsString("1")
         );
     }

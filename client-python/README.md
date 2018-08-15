@@ -30,7 +30,9 @@ In the interpreter or in your source, import `grakn`:
 import grakn
 ```
 
-You can then instantiate a client, open a session, and create transactions:
+You can then instantiate a client, open a session, and create transactions.     
+_NOTE_: Grakn's default gRPC port is 48555 for versions >=1.3. Port 4567 (the old default REST endpoint) is deprecated for clients.
+
 ```
 client = grakn.Grakn(uri="localhost:48555")
 session = client.session(keyspace="mykeyspace")
