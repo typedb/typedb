@@ -365,36 +365,114 @@ jobs:
         - run: export DISPLAY=:99
         - run: cd workbase && npm run e2e
 
+  build-workbase-linux:
+      docker:
+        - image: circleci/node:8.11.2
+      working_directory: ~/grakn
+
+      steps:
+        - attach_workspace:
+            at: ~/grakn
+        - run: cd workbase && npm install
+        - run: cd workbase && npm run build
+        - persist_to_workspace:
+            root: ~/grakn
+            paths:
+              - ./workbase/build/
+
+  build-workbase-mac:
+        macos:
+            xcode: "9.0"
+        working_directory: ~/grakn
+        steps:
+          - attach_workspace:
+             at: ~/grakn
+          - run: nohup grakn-dist/target/grakn-core-test/grakn server start
+          - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
+          - run: cd workbase && npm install
+          - run: cd workbase && npm run e2e
+          - run: cd workbase && npm run build
+          - persist_to_workspace:
+              root: ~/grakn
+              paths:
+                - ./workbase/build/
+
+  publish-github-draft:
+    docker:
+      - image: cibuilds/github:0.10
+    working_directory: ~/grakn
+    steps:
+      - attach_workspace:
+          at: ~/grakn
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} ./grakn-dist/target/ ./workbase/build
+
 workflows:
   version: 2
   run-all-tests:
     jobs:
+#      - build
+#      - workbase-unit-tests
+#      - unit-it-test-1:
+#          requires:
+#            - build
+#      - unit-it-test-2:
+#          requires:
+#            - build
+#      - distribution-e2e:
+#          requires:
+#            - build
+#      - snb-e2e:
+#          requires:
+#            - build
+#      - biomed-e2e:
+#          requires:
+#            - build
+#      - client-nodejs-e2e:
+#          requires:
+#            - build
+#      - client-python-e2e:
+#          requires:
+#            - build
+#      - client-java-e2e:
+#          requires:
+#            - build
+#      - workbase-e2e:
+#           requires:
+#             - build
+
+  build-and-deploy:
+    jobs:
       - build
-      - workbase-unit-tests
-      - unit-it-test-1:
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
+      - build-workbase-mac:
           requires:
-            - build
-      - unit-it-test-2:
-          requires:
-            - build
-      - distribution-e2e:
-          requires:
-            - build
-      - snb-e2e:
-          requires:
-            - build
-      - biomed-e2e:
-          requires:
-            - build
-      - client-nodejs-e2e:
-          requires:
-            - build
-      - client-python-e2e:
-          requires:
-            - build
-      - client-java-e2e:
-          requires:
-            - build
-      - workbase-e2e:
-           requires:
              - build
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
+      - build-workbase-linux:
+          requires:
+             - build
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
+      - publish-github-draft:
+          requires:
+            - build-workbase-mac
+            - build-workbase-linux
+#          filters:
+#            tags:
+#              only: /^v.*/
+#            branches:
+#              ignore: /.*/
