@@ -114,6 +114,7 @@
         <skip.deploy.dist>false</skip.deploy.dist>
 
         <brave.version>5.1.2</brave.version>
+        <brave-grpc.version>5.1.2</brave-grpc.version>
     </properties>
 
     <organization>

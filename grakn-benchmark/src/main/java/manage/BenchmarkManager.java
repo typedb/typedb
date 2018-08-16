@@ -65,7 +65,7 @@ public class BenchmarkManager {
         QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, dataSetName);
         BenchmarkManager manager = new BenchmarkManager(dataGenerator, queryExecutor, 100);
 
-        List<Integer> numConceptsInRun = Arrays.asList(100, 250, 500, 1000);
+        List<Integer> numConceptsInRun = Arrays.asList(100, 250);
         manager.run(numConceptsInRun);
     }
 }

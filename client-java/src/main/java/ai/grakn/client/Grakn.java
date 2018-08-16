@@ -58,8 +58,6 @@ import brave.grpc.GrpcTracing;
 import com.google.common.collect.AbstractIterator;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -84,23 +82,33 @@ public final class Grakn {
     private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
     private Keyspace keyspace;
 
-
     public Grakn(SimpleURI uri) {
+        this(uri, null);
+    }
 
-        // attach tracing to the client
-        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+    public Grakn(SimpleURI uri, Tracing tracing) {
 
-        Tracing tracing = Tracing.newBuilder()
-                .localServiceName("query-benchmark-client")
-                .spanReporter(reporter)
-                .supportsJoin(true)
-                .build();
+        if (tracing != null) {
 
-        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
+//        Tracing tracing = Tracing.newBuilder()
+//                .localServiceName("query-benchmark-client")
+//                .spanReporter(reporter)
+//                .supportsJoin(true)
+//                .build();
 
-        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+//        Tracing tracing = Tracing.current();
+            System.out.println("Grakn Client Tracer: ");
+            System.out.println(tracing.tracer());
+
+            GrpcTracing grpcTracing = GrpcTracing.create(tracing);
+
+            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
                     .intercept(grpcTracing.newClientInterceptor())
                     .usePlaintext(true).build();
+        } else {
+            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+                    .usePlaintext(true).build();
+        }
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();
     }

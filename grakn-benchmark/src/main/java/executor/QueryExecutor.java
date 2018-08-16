@@ -24,10 +24,11 @@ import ai.grakn.client.Grakn;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.util.SimpleURI;
+import brave.Span;
+import brave.Tracer;
 import brave.Tracing;
-import brave.opentracing.BraveSpan;
-import brave.opentracing.BraveSpanBuilder;
-import brave.opentracing.BraveTracer;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -84,14 +85,25 @@ public class QueryExecutor {
     }
 
     void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, Number runTimeStamp) throws Exception {
-        Grakn client = new Grakn(new SimpleURI(uri));
+        // create tracing before the Grakn client is instantiated
+        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+        Tracing tracing = Tracing.newBuilder()
+                .localServiceName("query-benchmark-client-entry")
+                .spanReporter(reporter)
+                .supportsJoin(true)
+                .build();
+        Tracer tracer = tracing.tracer();
+        System.out.println("QueryExecutor tracer: ");
+        System.out.println(tracer);
+
+        // instantiate grakn client
+        Grakn client = new Grakn(new SimpleURI(uri), tracing);
         Grakn.Session session = client.session(Keyspace.of(keyspace));
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
 
 
-            Tracing tracing = Tracing.current();
-            BraveTracer braveTracer = BraveTracer.create(tracing);
+//             BraveTracer braveTracer = BraveTracer.create(tracing);
 
             Iterator<Query> queryIterator = queryStream.iterator();
 
@@ -100,26 +112,45 @@ public class QueryExecutor {
 
                 Query query = queryIterator.next().withTx(tx);
 
-                BraveSpanBuilder queryBatchSpanBuilder = braveTracer.buildSpan("querySpan")
-                        .withTag("numConcepts", numConcepts)
-                        .withTag("query", query.toString())
-                        .withTag("dataSetName", this.dataSetName)
-                        .withTag("runStartDateTime", runTimeStamp);
+                tracer.newTrace();
+                Span batchSpan = tracer.newTrace().name("batch-query-span");
+                batchSpan.tag("numConcepts", Integer.toString(numConcepts));
+                batchSpan.tag("query", query.toString());
+                batchSpan.tag("dataSetName", this.dataSetName);
+                batchSpan.tag("runStartDateTime", runTimeStamp.toString());
+                batchSpan.start();
 
-                BraveSpan queryBatchSpan = queryBatchSpanBuilder.start();
+
+//                BraveSpanBuilder queryBatchSpanBuilder = braveTracer.buildSpan("querySpan")
+//                        .withTag("numConcepts", numConcepts)
+//                        .withTag("query", query.toString())
+//                        .withTag("dataSetName", this.dataSetName)
+//                        .withTag("runStartDateTime", runTimeStamp);
+
+//                BraveSpan queryBatchSpan = queryBatchSpanBuilder.start();
 
                 for (int i = 0; i < numRepeats; i++) {
 
-                    BraveSpanBuilder querySpanBuilder = braveTracer.buildSpan("querySpan")
-                            .withTag("repetition", i)
-                            .asChildOf(queryBatchSpan);
+//                    BraveSpanBuilder querySpanBuilder = braveTracer.buildSpan("querySpan")
+//                            .withTag("repetition", i)
+//                            .asChildOf(queryBatchSpan);
 
-                    BraveSpan querySpan = querySpanBuilder.start();
-                    query.execute();
-                    querySpan.finish();
+//                    ScopedSpan span = tracer.startScopedSpanWithParent("query-span", batchSpan.context());
+                    Span span = tracer.newChild(batchSpan.context()).name("query-span");
+                    span.tag("repetition", Integer.toString(i));
+                    span.start();
+
+                    try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
+                        query.execute();
+                    } catch (RuntimeException | Error e) {
+                        span.error(e);
+                        throw e;
+                    } finally {
+                        span.finish();
+                    }
                     counter ++;
                 }
-                queryBatchSpan.finish();
+                batchSpan.finish();
             }
             System.out.println(counter);
             tracing.close();
