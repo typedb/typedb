@@ -27,6 +27,14 @@ function getMockRelationshipType() {
   };
 }
 
+function getMockImplicitRelationshipType() {
+  return {
+    baseType: 'RELATIONSHIP_TYPE',
+    id: '2222',
+    isImplicit: () => Promise.resolve(true),
+  };
+}
+
 function getMockEntity1() {
   return {
     baseType: 'ENTITY',
@@ -72,6 +80,15 @@ function getMockRelationship() {
   };
 }
 
+function getMockImplicitRelationship() {
+  return {
+    baseType: 'RELATIONSHIP',
+    id: '6666',
+    type: () => Promise.resolve(getMockImplicitRelationshipType()),
+    isThing: () => true,
+  };
+}
+
 export default {
   getMockEntityType,
   getMockAttributeType,
@@ -80,5 +97,6 @@ export default {
   getMockEntity2,
   getMockAttribute,
   getMockRelationship,
+  getMockImplicitRelationship,
 };
 

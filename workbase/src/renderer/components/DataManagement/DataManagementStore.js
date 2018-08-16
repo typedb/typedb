@@ -66,7 +66,9 @@ const methods = {
       }
       this.loadingQuery = true;
 
-      const data = await this.exectueQuery(query);
+      const concepts = await this.exectueQuery(query);
+
+      const data = { nodes: await ManagementUtils.prepareNodes(concepts), edges: [] };
 
       if (ManagementUtils.isRolePlayerAutoloadEnabled()) {
         const relationships = data.nodes.filter(x => x.baseType === 'RELATIONSHIP');
@@ -80,6 +82,7 @@ const methods = {
         data.nodes.push(...roleplayers.nodes);
         data.edges.push(...roleplayers.edges);
       }
+
 
       this.visFacade.addToCanvas(data);
       this.visFacade.fitGraphToWindow();
@@ -106,7 +109,7 @@ const methods = {
     if (!concepts.length) {
       this.$notifyInfo('No results were found for your query!', 'bottom-right');
     }
-    return { nodes: await ManagementUtils.prepareNodes(concepts), edges: [] };
+    return ManagementUtils.filterImplicitTypes(concepts);
   },
   getLabelBySelectedType() { return NodeSettings.getTypeLabels(this.getSelectedNode().type); },
 
