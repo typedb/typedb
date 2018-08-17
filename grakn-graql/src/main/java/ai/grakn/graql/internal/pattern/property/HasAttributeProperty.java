@@ -108,16 +108,16 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        Label hasOwner = Schema.ImplicitType.HAS_OWNER.getLabel(type());
-        Label hasValue = Schema.ImplicitType.HAS_VALUE.getLabel(type());
-        Label has = Schema.ImplicitType.HAS.getLabel(type());
+        Label type = type();
+        Label has = Schema.ImplicitType.HAS.getLabel(type);
+        Label key = Schema.ImplicitType.KEY.getLabel(type);
 
         Var edge1 = Graql.var();
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                rolePlayer(this, relationship().var(), edge1, start, null, ImmutableSet.of(hasOwner), ImmutableSet.of(has)),
-                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, ImmutableSet.of(hasValue), ImmutableSet.of(has)),
+                rolePlayer(this, relationship().var(), edge1, start, null, null, ImmutableSet.of(has, key)),
+                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, null, ImmutableSet.of(has, key)),
                 neq(this, edge1, edge2)
         );
     }

@@ -278,6 +278,17 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             resourceType.addEdge(type, Schema.EdgeLabel.SUB);
             entityType.addEdge(type, Schema.EdgeLabel.SUB);
 
+            //add top resource relation type
+            Label attributeLabel = Schema.MetaSchema.ATTRIBUTE.getLabel();
+            Role ownerRole = putRoleTypeImplicit(Schema.ImplicitType.HAS_OWNER.getLabel(attributeLabel));
+            Role valueRole = putRoleTypeImplicit(Schema.ImplicitType.HAS_VALUE.getLabel(attributeLabel));
+            RelationshipType relationshipType= putRelationTypeImplicit(Schema.ImplicitType.HAS.getLabel(attributeLabel)).
+                    relates(ownerRole).relates(valueRole);
+
+            ownerRole.sup(getMetaRole());
+            valueRole.sup(getMetaRole());
+            relationshipType.sup(getMetaRelationType());
+
             schemaInitialised = true;
         }
 
