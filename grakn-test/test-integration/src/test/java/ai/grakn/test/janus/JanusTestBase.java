@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 
 public abstract class JanusTestBase {
     protected final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
-    private final static File CONFIG_LOCATION = Paths.get("../conf/main/grakn.properties").toFile();
+    private final static File CONFIG_LOCATION = Paths.get("../../conf/main/grakn.properties").toFile();
     private final static Keyspace TEST_SHARED = Keyspace.of("shared");
     static TxFactoryJanus janusGraphFactory;
     final static GraknConfig TEST_CONFIG = GraknConfig.read(CONFIG_LOCATION);
