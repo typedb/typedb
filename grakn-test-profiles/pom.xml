@@ -98,13 +98,6 @@
             <properties>
                 <grakn.test-profile>janus</grakn.test-profile>
             </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>ai.grakn</groupId>
-                    <artifactId>grakn-factory</artifactId>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 </project>
