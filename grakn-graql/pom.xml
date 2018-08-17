@@ -33,10 +33,6 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
             <artifactId>grakn-kb</artifactId>
         </dependency>
         <dependency>

@@ -328,7 +328,6 @@ public interface GraknTx extends AutoCloseable{
      * @return true if the current transaction is read only
      */
     @CheckReturnValue
-    @API
     GraknTxType txType();
 
     /**

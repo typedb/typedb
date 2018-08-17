@@ -38,7 +38,6 @@
         <module>grakn-migration</module>
         <module>grakn-dist</module>
         <module>grakn-test</module>
-        <module>grakn-core</module>
         <module>grakn-test-profiles</module>
         <module>client-java</module>
         <module>grakn-test-tools</module>
@@ -180,11 +179,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-core</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>

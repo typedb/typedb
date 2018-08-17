@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller.response;
 
-import ai.grakn.API;
 import ai.grakn.engine.Jacksonisable;
 import ai.grakn.util.REST;
 import ai.grakn.util.REST.WebPath;
@@ -38,53 +37,45 @@ import javax.annotation.CheckReturnValue;
 @AutoValue
 public abstract class Keyspace implements Jacksonisable {
 
-    @API
     @CheckReturnValue
     public abstract ai.grakn.Keyspace value();
 
-    @API
     @CheckReturnValue
     @JsonCreator
     public static Keyspace of(ai.grakn.Keyspace value){
         return new AutoValue_Keyspace(value);
     }
 
-    @API
     @CheckReturnValue
     @JsonProperty("@id")
     public String id(){
         return REST.resolveTemplate(WebPath.KB_KEYSPACE, name());
     }
 
-    @API
     @CheckReturnValue
     @JsonProperty
     public String name(){
         return value().getValue();
     }
 
-    @API
     @CheckReturnValue
     @JsonProperty
     public String types(){
         return REST.resolveTemplate(WebPath.KEYSPACE_TYPE, name());
     }
 
-    @API
     @CheckReturnValue
     @JsonProperty
     public String roles(){
         return REST.resolveTemplate(WebPath.KEYSPACE_ROLE, name());
     }
 
-    @API
     @CheckReturnValue
     @JsonProperty
     public String rules(){
         return REST.resolveTemplate(WebPath.KEYSPACE_RULE, name());
     }
 
-    @API
     @CheckReturnValue
     @JsonProperty
     public String graql(){
