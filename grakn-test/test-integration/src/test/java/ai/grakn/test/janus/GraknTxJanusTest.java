@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.test.janus;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -29,8 +29,9 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.janus.GraknTxJanus;
+import ai.grakn.janus.TxFactoryJanus;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.GraknTxJanus;
 import com.google.common.collect.Iterators;
 import org.junit.After;
 import org.junit.Before;

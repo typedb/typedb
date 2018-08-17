@@ -16,9 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.test.janus;
 
 import ai.grakn.GraknTxType;
+import ai.grakn.janus.JanusPreviousPropertyStep;
+import ai.grakn.janus.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;

@@ -30,7 +30,7 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
@@ -76,7 +76,7 @@ public class EngineGraknSessionTest {
     @Test
     public void whenOpeningTransactionsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureTransactionsAreTheSame(){
         String keyspace = "mykeyspace";
-        GraknTx tx1 = EmbeddedGraknSession.createEngineSession(Keyspace.of(keyspace), config, GraknTxFactoryBuilder.getInstance()).transaction(GraknTxType.WRITE);
+        GraknTx tx1 = EmbeddedGraknSession.createEngineSession(Keyspace.of(keyspace), config, TxFactoryBuilder.getInstance()).transaction(GraknTxType.WRITE);
         tx1.close();
         GraknTx tx2 = graknFactory.tx(Keyspace.of(keyspace), GraknTxType.WRITE);
 

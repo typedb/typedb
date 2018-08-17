@@ -71,9 +71,9 @@ public class EmbeddedGraknSession implements GraknSession {
 
     /**
      * Instantiates {@link EmbeddedGraknSession}
-     *
-     * @param keyspace to which keyspace the session should be bound to
+     *  @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used. If null is supplied, it will be created
+     * @param txFactoryBuilder
      */
     EmbeddedGraknSession(Keyspace keyspace, @Nullable GraknConfig config, TxFactoryBuilder txFactoryBuilder) {
         Objects.requireNonNull(keyspace);
@@ -93,11 +93,11 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
     public static EmbeddedGraknSession createEngineSession(Keyspace keyspace, GraknConfig config) {
-        return new EmbeddedGraknSession(keyspace, config, GraknTxFactoryBuilder.getInstance());
+        return new EmbeddedGraknSession(keyspace, config, TxFactoryBuilder.getInstance());
     }
 
     public static EmbeddedGraknSession createEngineSession(Keyspace keyspace) {
-        return new EmbeddedGraknSession(keyspace, GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
+        return new EmbeddedGraknSession(keyspace, GraknConfig.create(), TxFactoryBuilder.getInstance());
     }
 
     public static EmbeddedGraknSession inMemory(Keyspace keyspace) {
@@ -119,8 +119,8 @@ public class EmbeddedGraknSession implements GraknSession {
         GraknConfig config = GraknConfig.empty();
         config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
         config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, GraknTxFactoryBuilder.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, GraknTxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_MODE, TxFactoryBuilder.IN_MEMORY);
+        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, TxFactoryBuilder.IN_MEMORY);
         return config;
     }
 

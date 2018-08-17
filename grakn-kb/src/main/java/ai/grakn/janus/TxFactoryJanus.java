@@ -16,11 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.janus;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknTx;
-import ai.grakn.kb.internal.GraknTxJanus;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.TxFactoryAbstract;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
@@ -111,7 +112,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    TxFactoryJanus(EmbeddedGraknSession session) {
+    public TxFactoryJanus(EmbeddedGraknSession session) {
         super(session);
     }
 
@@ -131,7 +132,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     @Override
-    protected JanusGraph buildTinkerPopGraph(boolean batchLoading) {
+    public JanusGraph buildTinkerPopGraph(boolean batchLoading) {
         return newJanusGraph(batchLoading);
     }
 

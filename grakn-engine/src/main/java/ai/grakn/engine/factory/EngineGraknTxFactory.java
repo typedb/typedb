@@ -26,7 +26,7 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -65,7 +65,7 @@ public class EngineGraknTxFactory {
     //Should only be used for testing
     @VisibleForTesting
     public synchronized void refreshConnections(){
-        GraknTxFactoryBuilder.refresh();
+        TxFactoryBuilder.refresh();
     }
 
 
@@ -86,7 +86,7 @@ public class EngineGraknTxFactory {
      */
     private EmbeddedGraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineConfig, GraknTxFactoryBuilder.getInstance()));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineConfig, TxFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }

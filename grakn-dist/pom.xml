@@ -83,12 +83,6 @@
             <artifactId>migration-export</artifactId>
         </dependency>
 
-        <!-- Factories -->
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-factory</artifactId>
-        </dependency>
-
         <!-- Cassandra uses airline for command line parsing -->
         <dependency>
             <groupId>io.airlift</groupId>

@@ -19,7 +19,7 @@ package ai.grakn;
 
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import com.ldbc.driver.DbConnectionState;
 
 import java.util.Map;
@@ -44,7 +44,7 @@ public class GraknDbConnectionState extends DbConnectionState {
 
         keyspace = properties.get("ai.grakn.keyspace");
 
-        session = EmbeddedGraknSession.createEngineSession(Keyspace.of(keyspace), GraknConfig.create(), GraknTxFactoryBuilder.getInstance());
+        session = EmbeddedGraknSession.createEngineSession(Keyspace.of(keyspace), GraknConfig.create(), TxFactoryBuilder.getInstance());
     }
 
     @Override

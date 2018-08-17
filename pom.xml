@@ -40,7 +40,6 @@
         <module>grakn-test</module>
         <module>grakn-core</module>
         <module>grakn-test-profiles</module>
-        <module>grakn-factory</module>
         <module>client-java</module>
         <module>grakn-test-tools</module>
     </modules>
@@ -199,24 +198,6 @@
                         <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
                     </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-graql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>slf4j-api</artifactId>
-                        <groupId>org.slf4j</groupId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-factory</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
                         <artifactId>javax.servlet</artifactId>
@@ -233,6 +214,17 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-nop</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>ai.grakn</groupId>
+                <artifactId>grakn-graql</artifactId>
+                <version>1.4.0-SNAPSHOT</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>slf4j-api</artifactId>
+                        <groupId>org.slf4j</groupId>
                     </exclusion>
                 </exclusions>
             </dependency>

@@ -16,10 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.test.janus;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.janus.TxFactoryJanus;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

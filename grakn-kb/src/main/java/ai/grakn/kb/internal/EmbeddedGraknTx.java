@@ -765,7 +765,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         return Optional.empty();
     }
 
-    void commitTransactionInternal() {
+    public void commitTransactionInternal() {
         try {
             LOG.trace("Graph is valid. Committing graph . . . ");
             getTinkerPopGraph().tx().commit();

@@ -16,9 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.janus;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.factory.TxFactoryAbstract;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
@@ -76,7 +78,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
         );
     }
 
-    TxFactoryJanusHadoop(EmbeddedGraknSession session) {
+    public TxFactoryJanusHadoop(EmbeddedGraknSession session) {
         super(session);
 
         overrideMap(session()).forEach((k, v) -> session().config().properties().setProperty(k, v));

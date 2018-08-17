@@ -31,7 +31,7 @@ import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
@@ -59,7 +59,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
     public KeyspaceStoreImpl(GraknConfig config){
         this.config = config;
-        this.systemKeyspaceSession = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, config, GraknTxFactoryBuilder.getInstance());
+        this.systemKeyspaceSession = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, config, TxFactoryBuilder.getInstance());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 

@@ -23,7 +23,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.GraknTxFactoryBuilder;
+import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -63,7 +63,7 @@ public class SampleKBLoader {
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
         EmbeddedGraknSession session = GraknTestUtil.usingTinker() ? EmbeddedGraknSession.inMemory(randomKeyspace()) : EmbeddedGraknSession.createEngineSession(randomKeyspace());
-        factory = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
+        factory = TxFactoryBuilder.getInstance().getFactory(session, false);
         this.preLoad = preLoad;
     }
 

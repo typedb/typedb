@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-factory</artifactId>
+            <artifactId>grakn-graql</artifactId>
             <exclusions>
                 <!--Excluded because LDBC provides and requires a newer version -->
                 <exclusion>
@@ -40,10 +40,6 @@
                     <artifactId>commons-cli</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graql</artifactId>
         </dependency>
 
         <!--

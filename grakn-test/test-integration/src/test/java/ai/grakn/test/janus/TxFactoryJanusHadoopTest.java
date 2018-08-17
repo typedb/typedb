@@ -16,11 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.test.janus;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
+import ai.grakn.janus.TxFactoryJanusHadoop;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;
 import org.junit.Test;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package ai.grakn.janus;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -39,17 +39,15 @@ import static java.util.Collections.emptyIterator;
 
 /**
  * Optimise a particular traversal in Janus:
- * <p>
  * <code>
  * g.V().outE().values(c).as(b).V().filter(__.properties(a).where(P.eq(b)));
  * </code>
- * <p>
  * This step can be used in place of {@code V().filter(..)} since we are referring to a previously visited property in
  * the traversal.
  *
- * @author Felix Chapman
+ * @param <S> TODO: figure out what S is for
  */
-class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVertex> implements Scoping {
+public class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVertex> implements Scoping {
 
     private static final long serialVersionUID = -8906462828437711078L;
     private final String propertyKey;
@@ -62,7 +60,7 @@ class JanusPreviousPropertyStep<S> extends FlatMapStep<S, JanusGraphVertex> impl
      * the step label that refers to a previously visited value in the traversal.
      * e.g. in {@code g.V().as(b)}, {@code b} is a step label.
      */
-    JanusPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
+    public JanusPreviousPropertyStep(Traversal.Admin traversal, String propertyKey, String stepLabel) {
         super(traversal);
         this.propertyKey = Objects.requireNonNull(propertyKey);
         this.stepLabel = Objects.requireNonNull(stepLabel);
