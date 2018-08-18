@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
@@ -176,9 +176,25 @@ public class ReasoningTest {
     @ClassRule
     public static final SampleKBContext resourceOwnership = SampleKBContext.load("resourceOwnershipTest.gql");
 
+    @ClassRule
+    public static final SampleKBContext resourceHierarchy = SampleKBContext.load("resourceHierarchy.gql");
+
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
+
+    @Test
+    public void resourceHierarchiesAreRespected() {
+        EmbeddedGraknTx<?> tx = resourceHierarchy.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+
+        Set<RelationshipType> relTypes = tx.getMetaRelationType().subs().collect(toSet());
+        List<ConceptMap> attributeSubs = qb.<GetQuery>parse("match $x sub attribute; get;").execute();
+        List<ConceptMap> attributeRelationSubs = qb.<GetQuery>parse("match $x sub @has-attribute; get;").execute();
+
+        assertEquals(attributeSubs.size(), attributeRelationSubs.size());
+        assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationshipType).allMatch(relTypes::contains));
+    }
 
     @Test
     public void resourceOwnershipNotPropagatedWithinRelation() {

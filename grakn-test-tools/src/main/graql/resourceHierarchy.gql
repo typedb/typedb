@@ -1,0 +1,28 @@
+define
+
+genericEntity sub entity
+    has baseResource
+    has extendedResource
+    has anotherExtendedResource
+    has furtherExtendedResource
+    has simpleResource;
+
+genericRole sub role;
+
+relation sub relationship
+    relates genericRole;
+
+baseResource sub attribute datatype string
+    plays genericRole;
+
+extendedResource sub baseResource datatype string;
+anotherExtendedResource sub baseResource datatype string;
+
+furtherExtendedResource sub extendedResource datatype string;
+
+simpleResource sub attribute datatype string;
+
+
+insert
+$x isa baseResource == 'value';
+$y isa extendedResource == 'pupa';

@@ -282,8 +282,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
             //Get everything that this can play bot including the supers
             Set<Role> plays = new HashSet<>(directPlays().keySet());
-            subs().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
-                    forEach(play -> plays.add((Role) play));
+            subs().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).forEach(plays::add);
 
             superPlays.removeAll(plays);
 
@@ -398,19 +397,30 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         //Linking with ako structure if present
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
-        if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
-                    relates(ownerRoleSuper).relates(valueRoleSuper);
+        Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+        Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+        RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
+                relates(ownerRoleSuper).relates(valueRoleSuper);
 
-            //Create the super type edges from sub role/relations to super roles/relation
-            ownerRole.sup(ownerRoleSuper);
-            valueRole.sup(valueRoleSuper);
-            relationshipType.sup(relationshipTypeSuper);
+        //Create the super type edges from sub role/relations to super roles/relation
+        ownerRole.sup(ownerRoleSuper);
+        valueRole.sup(valueRoleSuper);
+        relationshipType.sup(relationshipTypeSuper);
 
+        if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
             //Make sure the supertype attribute is linked with the role as well
             ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
+
+            //Make sure the supertype attribute is linked with the top resource relation structure
+            Label metaLabel = Schema.MetaSchema.ATTRIBUTE.getLabel();
+            Role topOwnerRole = vertex().tx().putRoleTypeImplicit(Schema.ImplicitType.HAS_OWNER.getLabel(metaLabel));
+            Role topValueRole = vertex().tx().putRoleTypeImplicit(Schema.ImplicitType.HAS_VALUE.getLabel(metaLabel));
+            RelationshipType topRelType = vertex().tx().putRelationTypeImplicit(Schema.ImplicitType.HAS.getLabel(metaLabel))
+                    .relates(topOwnerRole).relates(topValueRole);
+
+            ownerRole.sup(topOwnerRole);
+            valueRole.sup(topValueRole);
+            relationshipType.sup(topRelType);
         }
 
         this.play(ownerRole, required);
