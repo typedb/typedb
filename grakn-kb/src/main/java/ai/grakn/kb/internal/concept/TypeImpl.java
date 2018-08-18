@@ -410,7 +410,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
             //Make sure the supertype attribute is linked with the role as well
             ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
-
+        } else {
             //Make sure the supertype attribute is linked with the top resource relation structure
             Label metaLabel = Schema.MetaSchema.ATTRIBUTE.getLabel();
             Role topOwnerRole = vertex().tx().putRoleTypeImplicit(Schema.ImplicitType.HAS_OWNER.getLabel(metaLabel));
