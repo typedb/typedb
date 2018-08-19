@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.shell;
+package ai.grakn.core.console;
 
 import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
@@ -34,7 +34,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
 
-import static ai.grakn.graql.shell.GraqlShell.loadQuery;
+import static ai.grakn.core.console.GraqlShell.loadQuery;
 
 /**
  *

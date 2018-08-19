@@ -18,9 +18,9 @@
 
 package ai.grakn.core.server.bootup;
 
-import ai.grakn.graql.shell.GraqlConsole;
-import ai.grakn.graql.shell.GraqlShellOptions;
-import ai.grakn.graql.shell.GraqlShellOptionsFactory;
+import ai.grakn.core.console.GraqlConsole;
+import ai.grakn.core.console.GraqlShellOptions;
+import ai.grakn.core.console.GraqlShellOptionsFactory;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;

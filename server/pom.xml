@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graql-shell</artifactId>
+            <artifactId>core.console</artifactId>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>

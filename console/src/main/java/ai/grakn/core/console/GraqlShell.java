@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.shell;
+package ai.grakn.core.console;
 
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;

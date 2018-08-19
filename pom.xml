@@ -32,7 +32,7 @@
     <modules>
         <module>grakn-kb</module>
         <module>grakn-graql</module>
-        <module>grakn-graql-shell</module>
+        <module>console</module>
         <module>server</module>
         <module>grakn-dashboard</module>
         <module>grakn-migration</module>
@@ -244,7 +244,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-graql-shell</artifactId>
+                <artifactId>core.console</artifactId>
                 <version>1.4.0-SNAPSHOT</version>
             </dependency>
             <dependency>
