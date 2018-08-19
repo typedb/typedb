@@ -7,8 +7,8 @@ jdk:
 cache:
   directories:
   - $HOME/.m2
-  - grakn-dashboard/node_modules
-  - grakn-engine/npm
+  - dashboard/node_modules
+  - server/npm
 
 addons:
   sonarcloud:

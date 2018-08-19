@@ -54,9 +54,9 @@ import static ai.grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SE
  * @author Michele Orsi
  */
 public class EngineBootup {
-    private static final String DISPLAY_NAME = "Engine";
+    private static final String DISPLAY_NAME = "Grakn Core Server";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
-    private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-engine.pid");
+    private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-core-server.pid");
     private static final String JAVA_OPTS = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
 
     protected final Path graknHome;

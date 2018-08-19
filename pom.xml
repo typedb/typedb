@@ -34,7 +34,7 @@
         <module>grakn-graql</module>
         <module>console</module>
         <module>server</module>
-        <module>grakn-dashboard</module>
+        <module>dashboard</module>
         <module>grakn-migration</module>
         <module>grakn-dist</module>
         <module>grakn-test-profiles</module>

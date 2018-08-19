@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/graknlabs/grakn.git"
   },
-  "name": "grakn-dashboard",
+  "name": "dashboard",
   "version": "1.0.0-SNAPSHOT",
   "description": "Grakn Web Dashboard",
   "author": "Grakn Labs",

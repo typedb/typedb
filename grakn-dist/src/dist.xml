@@ -84,7 +84,7 @@
         <!-- static assets for dashboard -->
         <fileSet>
             <outputDirectory>services/assets</outputDirectory>
-            <directory>${main.basedir}/grakn-dashboard/static</directory>
+            <directory>${main.basedir}/dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>
