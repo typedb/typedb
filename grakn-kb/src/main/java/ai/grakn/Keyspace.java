@@ -18,7 +18,7 @@
 
 package ai.grakn;
 
-import ai.grakn.engine.Jacksonisable;
+import ai.grakn.core.server.Jacksonisable;
 import ai.grakn.exception.GraknTxOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
