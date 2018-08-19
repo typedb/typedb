@@ -9,9 +9,6 @@
                 <router-link tag="li" to="/console" class="link">
                     <a class="noselect">Console</a>
                 </router-link>
-                <router-link tag="li" to="/config" class="link">
-                    <a class="noselect">Config</a>
-                </router-link>
                 <li class="link"><a target="_blank" href="https://grakn.ai/pages/index.html" class="noselect">Documentation</a></li>
             </ul>
         </nav>

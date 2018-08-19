@@ -181,7 +181,7 @@ As in object-oriented programming, the inheritance mechanism in Grakn enables su
 
 <br />The Grakn knowledge model imposes inheritance of all `has` and `plays` constraints on entity, relationship and attribute types. As a result, the entity type `customer` inherits `has name` and `plays employee` from the `person` supertype, as shown in the diagram below.
 
-Likewise, the `startup` entity type inherits `relates name` and `plays employer` from the `company` supertype.
+Likewise, the `startup` entity type inherits `has name` and `plays employer` from the `company` supertype.
 
 <br /> <img src="/images/knowledge-model5.png" style="width: 400px;" alt="
 An image showing that 'customer' inherits the property of playing 'employee' from its super-type 'person'.

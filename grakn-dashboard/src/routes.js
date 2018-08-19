@@ -21,7 +21,6 @@
 const mainTemplate = require('./components/mainTemplate/mainTemplate.vue');
 const graphPage = require('./components/graphPage/graphPage.vue');
 const consolePage = require('./components/consolePage.vue');
-const configPage = require('./components/configPage.vue');
 const notFoundPage = require('./components/notFoundPage.vue');
 
 // Routes
@@ -34,11 +33,6 @@ const routes = [
       component: graphPage,
       name: 'Graph',
       description: 'Graph visualiser page',
-    }, {
-      path: '/config',
-      component: configPage,
-      name: 'Config',
-      description: 'Engine configurations page',
     }, {
       path: '/console',
       component: consolePage,

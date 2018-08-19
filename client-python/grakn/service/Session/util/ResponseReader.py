@@ -18,6 +18,7 @@
 #
 
 import abc
+import datetime
 from grakn.service.Session.util import enums
 from grakn.service.Session.Concept import ConceptFactory
 from grakn.exception.GraknError import GraknError 
@@ -102,7 +103,9 @@ class ResponseReader(object):
         elif whichone == 'double':
             return grpc_value_object.double
         elif whichone == 'date':
-            return grpc_value_object.date
+            epoch_ms_utc = grpc_value_object.date
+            local_datetime_utc = datetime.datetime.fromtimestamp(float(epoch_ms_utc)/1000.)
+            return local_datetime_utc
         else:
             raise GraknError("Unknown datatype in enum but not handled in from_grpc_value_object")
         

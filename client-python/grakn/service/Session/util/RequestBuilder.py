@@ -188,7 +188,10 @@ class RequestBuilder(object):
             elif datatype == enums.DataType.DOUBLE:
                 msg.double = data
             elif datatype == enums.DataType.DATE:
-                msg.date = data
+                # convert local datetime into long
+                epoch_seconds_utc = data.timestamp()
+                epoch_ms_long_utc = int(epoch_seconds_utc*1000)
+                msg.date = epoch_ms_long_utc 
             else:
                 # TODO specialize exception
                 raise Exception("Unknown attribute datatype: {}".format(datatype))
