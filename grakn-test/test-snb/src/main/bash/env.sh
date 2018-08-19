@@ -1,1 +1,0 @@
-grakn-test/test-integration/src/test/bash/env.sh

@@ -1,6 +1,0 @@
-match
-    $person isa person, has person-id @long(<"Person.id">);
-    $post isa post, has message-id @long(<"Post.id">);
-insert
-    (admirer: $person, like: $post) isa likes
-    has creation-date @date(<"creationDate">,"yyyy-MM-dd'T'HH:mm:ss.SSSZ");

@@ -1,5 +1,0 @@
-match
-    $forum isa forum, has forum-id @long(<"Forum.id">);
-    $person isa person, has person-id @long(<"Person.id">);
-insert
-    (moderated: $forum, moderator: $person) isa has-moderator;

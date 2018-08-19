@@ -31,13 +31,6 @@
 
     <packaging>pom</packaging>
 
-    <dependencies>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-test-tools</artifactId>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>

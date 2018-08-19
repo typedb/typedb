@@ -1,5 +1,0 @@
-match
-    $post isa post, has message-id @long(<"Post.id">);
-    $place isa place, has place-id @long(<"Place.id">);
-insert
-    (located: $post, region: $place) isa is-located-in;

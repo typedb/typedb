@@ -1,9 +1,0 @@
- - query: SELECT * FROM pokemon;
-   template: src/test/resources/ai/grakn/test/migration/sql/pokemon/templates/pokemon-migrator.gql
-
- - query: SELECT * FROM type;
-   template: src/test/resources/ai/grakn/test/migration/sql/pokemon/templates/types-migrator.gql
-
- - query: SELECT pokemon.identifier AS species, type.identifier AS type
-          FROM pokemon, type WHERE pokemon.type1=type.id OR pokemon.type2=type.id
-   template: src/test/resources/ai/grakn/test/migration/sql/pokemon/templates/edges-migrator.gql

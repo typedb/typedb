@@ -1,6 +1,0 @@
-define
-
-the-thing sub entity
-   has a-string;
-
-a-string sub attribute datatype string;
