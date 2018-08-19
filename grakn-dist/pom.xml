@@ -53,7 +53,7 @@
         <!--Core dependencies-->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-engine</artifactId>
+            <artifactId>core.server</artifactId>
         </dependency>
 
         <dependency>

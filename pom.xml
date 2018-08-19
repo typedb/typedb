@@ -33,7 +33,7 @@
         <module>grakn-kb</module>
         <module>grakn-graql</module>
         <module>grakn-graql-shell</module>
-        <module>grakn-engine</module>
+        <module>server</module>
         <module>grakn-dashboard</module>
         <module>grakn-migration</module>
         <module>grakn-dist</module>
@@ -233,7 +233,7 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-engine</artifactId>
+                <artifactId>core.server</artifactId>
                 <version>1.4.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
