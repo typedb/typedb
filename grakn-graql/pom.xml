@@ -32,11 +32,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-kb</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>

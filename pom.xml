@@ -26,11 +26,10 @@
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
     <version>1.4.0-SNAPSHOT</version>
-    <name>Grakn</name>
+    <name>Grakn Core</name>
     <description>The Knowledge Graph</description>
     <url>https://grakn.ai</url>
     <modules>
-        <module>grakn-kb</module>
         <module>grakn-graql</module>
         <module>console</module>
         <module>server</module>
@@ -179,9 +178,13 @@
         <dependencies>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-kb</artifactId>
+                <artifactId>grakn-graql</artifactId>
                 <version>1.4.0-SNAPSHOT</version>
                 <exclusions>
+                    <exclusion>
+                        <artifactId>slf4j-api</artifactId>
+                        <groupId>org.slf4j</groupId>
+                    </exclusion>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -206,17 +209,6 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-nop</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-graql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>slf4j-api</artifactId>
-                        <groupId>org.slf4j</groupId>
                     </exclusion>
                 </exclusions>
             </dependency>

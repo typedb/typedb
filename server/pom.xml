@@ -49,10 +49,6 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-kb</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
             <artifactId>client-java</artifactId>
             <scope>test</scope>
         </dependency>
