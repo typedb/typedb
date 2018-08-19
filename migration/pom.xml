@@ -17,23 +17,24 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>migration-csv</artifactId>
-    <parent>
-        <artifactId>grakn-migration</artifactId>
-        <groupId>ai.grakn</groupId>
-        <version>1.4.0-SNAPSHOT</version>
-    </parent>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-base</artifactId>
-        </dependency>
-    </dependencies>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>core.migration</artifactId>
+  <parent>
+      <artifactId>grakn</artifactId>
+      <groupId>ai.grakn</groupId>
+      <version>1.4.0-SNAPSHOT</version>
+  </parent>
+  <packaging>pom</packaging>
+  <modules>
+      <module>csv</module>
+      <module>json</module>
+      <module>base</module>
+      <module>export</module>
+      <module>sql</module>
+      <module>xml</module>
+  </modules>
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
 </project>

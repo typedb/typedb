@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ GRAKN.AI - THE KNOWLEDGE GRAPH
   ~ Copyright (C) 2018 Grakn Labs Ltd
@@ -17,13 +16,12 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>migration-sql</artifactId>
+    <artifactId>migration-json</artifactId>
     <parent>
-        <artifactId>grakn-migration</artifactId>
+        <artifactId>core.migration</artifactId>
         <groupId>ai.grakn</groupId>
         <version>1.4.0-SNAPSHOT</version>
     </parent>
@@ -32,10 +30,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -35,7 +35,7 @@
         <module>console</module>
         <module>server</module>
         <module>dashboard</module>
-        <module>grakn-migration</module>
+        <module>migration</module>
         <module>grakn-dist</module>
         <module>grakn-test-profiles</module>
         <module>client-java</module>
