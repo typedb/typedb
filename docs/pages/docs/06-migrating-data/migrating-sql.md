@@ -232,7 +232,7 @@ At this point, the SQL data has been added to a knowledge graph in Grakn, and ca
 
 ```graql-skip-test
 match $x isa cat; # Get all cats
-match ($x, $y) isa occurs; $x isa cat; $y isa event has description "litter"; select $x; # Get all cats that have had litters of kittens
+match ($x, $y) isa occurs; $x isa cat; $y isa event has description "litter"; get $x; # Get all cats that have had litters of kittens
 ```
 
 ### In Java
