@@ -8,7 +8,7 @@
   </div>
 </template>
 <script>
-import { CANVAS_RESET, RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
+import { CANVAS_RESET, RUN_CURRENT_QUERY, EXPLAIN_CONCEPT } from '@/components/shared/StoresActions';
 
 export default {
   name: 'ContextMenu',
@@ -74,7 +74,7 @@ export default {
       contextMenu.style.top = `${mouseEvent.pointer.DOM.y}px`;
     },
     explainNode() {
-      this.localStore.explainConcept(this.selectedNodes[0]);
+      this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
       this.showContextMenu = false;
     },
     clearGraph() {
@@ -109,8 +109,8 @@ export default {
       return (this.selectedNodes && this.selectedNodes.length === 2);
     },
     computeShortestPath() {
-      this.localStore.currentQuery = `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`;
-      this.localStore.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Run Query'); });
+      this.localStore.setCurrentQuery(`compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
+      this.localStore.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Compute shortest path'); });
       this.showContextMenu = false;
     },
   },

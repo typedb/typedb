@@ -54,8 +54,8 @@ function addToCanvas(data) {
   });
 
   data.edges.forEach((edge) => {
-    const styledEdge = Object.assign(edge, this.style.computeEdgeStyle(edge));
-    this.container.visualiser.addEdge(styledEdge);
+    if (!edge.color) { Object.assign(edge, this.style.computeEdgeStyle(edge)); }
+    this.container.visualiser.addEdge(edge);
   });
 }
 
