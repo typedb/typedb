@@ -339,8 +339,8 @@ public abstract class ResourceAtom extends Binary{
      * @return rewritten atom
      */
     private ResourceAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (!parentAtom.isResource() || !((ResourceAtom) parentAtom).getRelationVariable().isUserDefinedName()) return this;
-        return rewriteWithRelationVariable();
+        if (parentAtom.isResource() && ((ResourceAtom) parentAtom).getRelationVariable().isUserDefinedName()) return rewriteWithRelationVariable();
+        return this;
     }
 
     @Override
