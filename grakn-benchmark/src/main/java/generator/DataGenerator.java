@@ -67,7 +67,7 @@ public class DataGenerator {
 
     private final String uri;
     private final String keyspace;
-    private static String schemaRelativeDirPath = "/grakn-benchmark/src/main/resources/societal_model.gql";
+    private static List<String> schemaGraqlQueries;
 
     public static final int RANDOM_SEED = 1;
     private int iteration = 0;
@@ -87,11 +87,12 @@ public class DataGenerator {
 
     private ConceptStore storage;
 
-    public DataGenerator(String keyspace, String uri) {
+    public DataGenerator(String keyspace, String uri, List<String> schemaGraqlQueries) {
         this.keyspace = keyspace;
         this.uri = uri;
-        this.reset();
+        this.schemaGraqlQueries = schemaGraqlQueries;
         this.rand = new Random(RANDOM_SEED);
+        this.reset();
         entityStrategies = new RouletteWheelCollection<>(this.rand);
         relationshipStrategies = new RouletteWheelCollection<>(this.rand);
         attributeStrategies = new RouletteWheelCollection<>(this.rand);
@@ -372,35 +373,35 @@ public class DataGenerator {
 
     public void reset() {
         System.out.println("Initialising keyspace...");
-        SchemaManager.initialise(this.getSession(), schemaRelativeDirPath);
+        SchemaManager.initialise(this.getSession(), schemaGraqlQueries);
         System.out.println("done");
         this.iteration = 0;
     }
 
-    public static void main(String[] args) {
-        String uri = "localhost:48555";
-        String keyspace = "societal_model";
-        DataGenerator dg = new DataGenerator(keyspace, uri);
-        System.out.print("Generating data...\n");
-
-        long startTime = System.nanoTime();
-        dg.generate(100);
-        dg.generate(200);
-        dg.generate(300);
-        dg.generate(400);
-//        dg.generate(1000);
-//        dg.generate(10000);
-//        dg.generate(1000000);//Started at 19:33
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime) / 1000000000;
-
-        long hours = duration / 3600;
-        long minutes = (duration % 3600) / 60;
-        long seconds = duration % 60;
-
-        String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-
-        System.out.printf("Generation took %s\n", timeString);
-        System.out.print("Done\n");
-    }
+//    public static void main(String[] args) {
+//        String uri = "localhost:48555";
+//        String keyspace = "societal_model";
+//        DataGenerator dg = new DataGenerator(keyspace, uri);
+//        System.out.print("Generating data...\n");
+//
+//        long startTime = System.nanoTime();
+//        dg.generate(100);
+//        dg.generate(200);
+//        dg.generate(300);
+//        dg.generate(400);
+////        dg.generate(1000);
+////        dg.generate(10000);
+////        dg.generate(1000000);//Started at 19:33
+//        long endTime = System.nanoTime();
+//        long duration = (endTime - startTime) / 1000000000;
+//
+//        long hours = duration / 3600;
+//        long minutes = (duration % 3600) / 60;
+//        long seconds = duration % 60;
+//
+//        String timeString = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+//
+//        System.out.printf("Generation took %s\n", timeString);
+//        System.out.print("Done\n");
+//    }
 }

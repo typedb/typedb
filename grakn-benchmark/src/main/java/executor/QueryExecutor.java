@@ -27,15 +27,11 @@ import ai.grakn.util.SimpleURI;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.urlconnection.URLConnectionSender;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ai.grakn.graql.Graql.count;
 
 /**
  *
@@ -46,34 +42,39 @@ public class QueryExecutor {
     private final String dataSetName;
     private final String keyspace;
 
-    static final ArrayList<Query> queries = new ArrayList<>();
+    final List<Query> queries;
 
-    static {
-//        queries.add(Graql.match(Graql.var("x").isa("company")).limit(5).get());
-        queries.add(Graql.match(Graql.var("x").isa("company")).limit(5).get("x"));
-//        queries.add(Graql.match(Graql.var("x").isa("person")).limit(5).get());
-        queries.add(Graql.match(Graql.var("x").isa("person")).limit(5).get("x"));
-//        queries.add(Graql.match(Graql.var("x").isa("name")).limit(5).get());
-        queries.add(Graql.match(Graql.var("x").isa("name")).limit(5).get("x"));
-        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "Google")).limit(5).get("x"));
+//    static {
+////        queries.add(Graql.match(Graql.var("x").isa("company")).limit(5).get());
+//        queries.add(Graql.match(Graql.var("x").isa("company")).limit(5).get("x"));
+////        queries.add(Graql.match(Graql.var("x").isa("person")).limit(5).get());
+//        queries.add(Graql.match(Graql.var("x").isa("person")).limit(5).get("x"));
+////        queries.add(Graql.match(Graql.var("x").isa("name")).limit(5).get());
+//        queries.add(Graql.match(Graql.var("x").isa("name")).limit(5).get("x"));
+//        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "Google")).limit(5).get("x"));
+//
+//        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "Facebook").has("rating", 40)).limit(5).get("x"));
+//        queries.add(Graql.match(Graql.var("x").isa("employment")
+//                .rel("employer", Graql.var("c"))
+//                .rel("employee", Graql.var("e"))
+//                .has("name", "Facebook")
+//                .has("rating", 40))
+//                .limit(5).get("e"));
+//        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "JetBrains")).aggregate(count()));
+//        queries.add(Graql.match(Graql.var("x").isa("rating")).aggregate(count()));
+//        queries.add(Graql.match(Graql.var("x").isa("name").has("rating", Graql.var("r"))).aggregate(count()));
+//        queries.add(Graql.match(Graql.var("x").isa("name").has("rating", 5)).aggregate(count()));
+//    }
 
-        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "Facebook").has("rating", 40)).limit(5).get("x"));
-        queries.add(Graql.match(Graql.var("x").isa("employment")
-                .rel("employer", Graql.var("c"))
-                .rel("employee", Graql.var("e"))
-                .has("name", "Facebook")
-                .has("rating", 40))
-                .limit(5).get("e"));
-        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "JetBrains")).aggregate(count()));
-        queries.add(Graql.match(Graql.var("x").isa("rating")).aggregate(count()));
-        queries.add(Graql.match(Graql.var("x").isa("name").has("rating", Graql.var("r"))).aggregate(count()));
-        queries.add(Graql.match(Graql.var("x").isa("name").has("rating", 5)).aggregate(count()));
-    }
-
-    public QueryExecutor(String keyspace, String uri, String dataSetName) {
+    public QueryExecutor(String keyspace, String uri, String dataSetName, List<String> queryStrings) {
         this.keyspace = keyspace;
         this.uri = uri;
         this.dataSetName = dataSetName;
+
+        // convert Graql strings into Query types
+        this.queries = queryStrings.stream()
+                        .map(q -> (Query)Graql.parser().parseQuery(q))
+                        .collect(Collectors.toList());
     }
 
     public void processStaticQueries(int numRepeats, int numConcepts, Number runTimeStamp) {
@@ -86,24 +87,25 @@ public class QueryExecutor {
 
     void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, Number runTimeStamp) throws Exception {
         // create tracing before the Grakn client is instantiated
-        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-        Tracing tracing = Tracing.newBuilder()
-                .localServiceName("query-benchmark-client-entry")
-                .spanReporter(reporter)
-                .supportsJoin(true)
-                .build();
-        Tracer tracer = tracing.tracer();
-        System.out.println("QueryExecutor tracer: ");
-        System.out.println(tracer);
+//        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+//        Tracing tracing = Tracing.newBuilder()
+//                .localServiceName("query-benchmark-client-entry")
+//                .spanReporter(reporter)
+//                .supportsJoin(true)
+//                .build();
+//        Tracer tracer = tracing.tracer();
+//        System.out.println("QueryExecutor tracer: ");
+//        System.out.println(tracer);
 
         // instantiate grakn client
-        Grakn client = new Grakn(new SimpleURI(uri), tracing);
+        Grakn client = new Grakn(new SimpleURI(uri));
         Grakn.Session session = client.session(Keyspace.of(keyspace));
 
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
 
 
 //             BraveTracer braveTracer = BraveTracer.create(tracing);
+            Tracer tracer = Tracing.currentTracer();
 
             Iterator<Query> queryIterator = queryStream.iterator();
 
@@ -153,20 +155,19 @@ public class QueryExecutor {
                 batchSpan.finish();
             }
             System.out.println(counter);
-            tracing.close();
+//            tracing.close();
         }
     }
 
 
-    public static void main(String[] args) {
-        String uri = "localhost:48555";
-        String keyspace = "societal_model";
-        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, "generated_societal_model");
-//        queryExecutor.processQueriesBrave();
-        try {
-            queryExecutor.processStaticQueries(100, 400, new Date().getTime());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String[] args) {
+//        String uri = "localhost:48555";
+//        String keyspace = "societal_model";
+//        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, "generated_societal_model");
+//        try {
+//            queryExecutor.processStaticQueries(100, 400, new Date().getTime());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

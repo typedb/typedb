@@ -32,11 +32,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.Schema;
-import com.google.common.io.Files;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -49,18 +44,7 @@ import static ai.grakn.graql.internal.pattern.Patterns.var;
  */
 public class SchemaManager {
 
-    public static void initialise(GraknSession session, String schemaRelativeDirPath) {
-        /*
-        Delete all concepts and concept types in Grakn, and load a schema from file
-         */
-        File graql = new File(System.getProperty("user.dir") + schemaRelativeDirPath);
-
-        List<String> queries;
-        try {
-            queries = Files.readLines(graql, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public static void initialise(GraknSession session, List<String> graqlSchemaQueries) {
 
         try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
 
@@ -86,7 +70,7 @@ public class SchemaManager {
                 qb.undefine(z.id(element.get(y).id())).execute();
             }
 
-            tx.graql().parser().parseList(queries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
+            tx.graql().parser().parseList(graqlSchemaQueries.stream().collect(Collectors.joining("\n"))).forEach(Query::execute);
             tx.commit();
         }
     }

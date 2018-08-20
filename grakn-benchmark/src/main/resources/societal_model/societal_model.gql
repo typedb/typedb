@@ -1,0 +1,162 @@
+define
+
+name sub attribute datatype string,
+    has rating;
+forename sub name;
+surname sub name;
+gender sub attribute datatype string;
+rating sub attribute datatype long;
+
+# If this subs name then we'll get both genders of the name if we ask for the
+# names of the entity. If we don't sub name then we'll get no name without the
+# naming-context of the participant
+# gendered-name sub name,
+gendered-name sub attribute datatype string,
+  has gender;
+
+person sub entity,
+  has forename,  # could look at rules to find names typically given to men/women e.g. not many women called Michael
+  has surname,
+  has gender,
+  plays employee,
+  plays director;
+
+employment sub relationship,
+  has rating,
+  relates employee,
+  relates employer,
+  relates director,
+  relates profession,
+  relates wage,
+  relates piece-wages,
+  relates contract,
+  plays naming-context;
+
+naming sub relationship,
+  relates naming-context,
+  relates naming-subject,
+  has name,
+  has gendered-name;
+
+occupation sub entity,
+  has name,
+  has gendered-name,
+  # has health-and-safety-risk
+  plays profession,
+  plays naming-subject;
+
+company sub entity,
+  has name,
+  has rating,
+  plays employer;
+
+# vocation sub occupation;
+# pudding-maker, to be wealthy
+
+# societal-role sub entity;
+# Societal-roles generally Poet, artist, singer, programmer, duke/duchess, king/queen, prince/princess, mother/father, academic, author,
+
+# This pattern may be very common, in which case gendered naming is a common behaviour, and forms a good example of
+# a behaviour that we commonly want, but we don't necessarily want to have to sub a parent that does that for us
+# In this case, we want to abstract the entity type to create a rule that always operates when a concept has a gendered name, and is linked to a
+# gendered-occupation sub rule,
+#   when {
+#     $p isa person, has gender $g;
+#     $o isa occupation;
+#     (employee: $p, profession: $o) isa employment;
+#     $o has gendered-name $n;
+#     $n has gender $g;
+#   } then {
+#     $o has name $n;
+#     #(employee: $p, profession: $o, character: $n) isa employment;
+#   };
+
+# # Option 1
+# gendered-occupation sub rule,
+#   when {
+#     $p isa person, has gender $g;
+#     $o isa occupation;
+#     $e(employee: $p, profession: $o) isa employment;
+#     $o has gendered-name $gn;
+#     $gn has gender $g;
+#   } then {
+#     (naming-context: $e, naming-subject: $o) isa naming;
+#   };
+#
+# gendered-occupation-2 sub rule,
+#   when {
+#     $p isa person, has gender $g;
+#     $o isa occupation;
+#     $e(employee: $p, profession: $o) isa employment;
+#     $o has gendered-name $gn;
+#     $gn has gender $g;
+#     $n(naming-context: $e, naming-subject: $o) isa naming;
+#   } then {
+#     $n has name $gn;
+#   };
+#
+# ungendered-occupation sub rule,
+#   when {
+#     $p isa person;
+#     $o isa occupation;
+#     $e(employee: $p, profession: $o) isa employment;
+#     $o has name $ugn;
+#   } then {
+#     (naming-context: $e, naming-subject: $o) isa naming;
+#   };
+#
+# ungendered-occupation-2 sub rule,
+#   when {
+#     $p isa person;
+#     $o isa occupation;
+#     $e(employee: $p, profession: $o) isa employment;
+#     $o has name $ugn;
+#     $n(naming-context: $e, naming-subject: $o) isa naming;
+#   } then {
+#     $n has name $ugn;
+#   };
+
+# Option 2
+# gendered-occupation sub rule,
+#   when {
+#     $p isa person, has gender $g;
+#     $o isa occupation;
+#     $e(employee: $p, profession: $o) isa employment;
+#     $o has gendered-name $gn;
+#     $gn has gender $g;
+#   } then {
+#     $n(naming-context: $e, naming-subject: $o, expression: $gn) isa naming;
+#   };
+
+# match $p isa person, has forename $fn, has gender $g; $o isa occupation; $e($p, $o) isa employment; $naming($o, $e) isa naming, has name $name; get $fn, $name;
+
+# insert $p1 isa person, has forename "Helen", has surname "Mirren", has gender "female";
+# $p2 isa person, has forename "Natalie", has surname "Portman", has gender "female";
+# $p3 isa person, has forename "Leonardo", has surname "DiCaprio", has gender "male";
+# $p4 isa person, has forename "Johnny", has surname "Depp", has gender "male";
+# $o1 isa occupation, has gendered-name $n1, has gendered-name $n2;
+# $o2 isa occupation, has name "scientist";
+# $n1 "actor", has gender "male";
+# $n2 "actress", has gender "female";
+# # Actresses
+# (employee: $p1, profession: $o1) isa employment;
+# (employee: $p2, profession: $o1) isa employment;
+# # Actors
+# (employee: $p3, profession: $o1) isa employment;
+# (employee: $p4, profession: $o1) isa employment;
+# # Scientists
+# (employee: $p2, profession: $o2) isa employment;
+
+
+
+# TODO volunteering-work, relates volunteer and , using firefighter as an example?
+
+# Model a persons vocations? Could be an ML solution
+
+
+# match $x isa person, has gender $g;
+# $y isa occupation, has name $z;
+# ($x, $y) isa employment;
+# $z == "actress";
+# $z has gender $g;
+# get $x;

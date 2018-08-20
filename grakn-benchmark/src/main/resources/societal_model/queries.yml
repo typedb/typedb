@@ -1,0 +1,11 @@
+queries:
+  - 'match $x isa company; limit 5; get $x;'
+  - 'match $x isa person; limit 5; get $x;'
+  - 'match $x isa name; limit 5; get $x;'
+  - 'match $x isa company, has name "Google"; limit 5; get $x;'
+  - 'match $x isa company, has name "Facebook", has rating 40; limit 5; get $x;'
+  - 'match $x (employer: $c, employee: $e) isa employment; $c has name "Facebook", has rating 50; limit 5; get $e;'
+  - 'match $x isa company, has name "JetBrains"; aggregate count;'
+  - 'match $x isa rating; aggregate count;'
+  - 'match $x isa name, has rating $r; aggregate count;'
+  - 'match $x isa name, has rating 5; aggregate count;'

@@ -18,12 +18,18 @@
 
 package manage;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import configure.BenchmarkConfiguration;
+import configure.FileDefinitions;
 import executor.QueryExecutor;
 import generator.DataGenerator;
 
+import java.io.*;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
 
 /**
  *
@@ -55,17 +61,32 @@ public class BenchmarkManager {
         return new Date().getTime();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+
+        String configFileName = args[0];
+        ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
+        FileDefinitions.BenchmarkConfigFile configFile = benchmarkConfigMapper.readValue(
+                new File(System.getProperty("user.dir") + configFileName),
+                FileDefinitions.BenchmarkConfigFile.class);
+        BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFile);
+
+        // * pass schema file path to Generator
+        // * pass queries to QueryExecutor
+
 
         String uri = "localhost:48555";
         String keyspace = "societal_model";
-        String dataSetName = "generated_societal_model";
 
-        DataGenerator dataGenerator = new DataGenerator(keyspace, uri);
-        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, dataSetName);
+        DataGenerator dataGenerator = new DataGenerator(keyspace, uri, benchmarkConfiguration.getSchema());
+        QueryExecutor queryExecutor = new QueryExecutor(keyspace,
+                                            uri,
+                                            "generated_" + benchmarkConfiguration.getName(),
+                                            benchmarkConfiguration.getQueries());
         BenchmarkManager manager = new BenchmarkManager(dataGenerator, queryExecutor, 100);
 
         List<Integer> numConceptsInRun = Arrays.asList(100, 250);
         manager.run(numConceptsInRun);
     }
 }
+
+

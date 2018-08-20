@@ -141,7 +141,7 @@ public class ServerFactory {
 
         Tracing tracing = Tracing.newBuilder()
                 .localServiceName("query-benchmark-server")
-                .supportsJoin(true)
+                .supportsJoin(false)
                 .spanReporter(reporter)
                 .build();
 
