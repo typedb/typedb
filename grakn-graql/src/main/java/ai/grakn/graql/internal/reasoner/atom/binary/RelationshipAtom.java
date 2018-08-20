@@ -190,6 +190,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override
+    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), getParentQuery()); }
+
+    @Override
     public Set<Atom> rewriteToAtoms(){
         return this.getRelationPlayers().stream()
                 .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
@@ -517,17 +520,20 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
-
+    public boolean isUnifiableWith(Atom atom){
         //findbugs complains about cast without it
-        if (!(ruleAtom instanceof RelationshipAtom)) return false;
-        RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
-        RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
+        if (!(atom instanceof RelationshipAtom)) return false;
+        RelationshipAtom that = (RelationshipAtom) atom;
 
         //rule head atom is applicable if it is unifiable
-        return headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
-                && !headAtom.getRelationPlayerMappings(atomWithType).isEmpty();
+        return !this.getRelationPlayerMappings(that).isEmpty();
+    }
+
+    @Override
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
+        if (!(ruleAtom instanceof RelationshipAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
+        RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
+        return ruleAtom.isUnifiableWith(atomWithType);
     }
 
     @Override
@@ -901,6 +907,12 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                     ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
                                                     ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
                                                     return matchType.atomicCompatibility(parentVP, childVP);
+                                                })
+                                                //check linked resources
+                                                .filter(crp -> {
+                                                    Var parentVar = prp.getRolePlayer().var();
+                                                    Var childVar = crp.getRolePlayer().var();
+                                                    return matchType.attributeCompatibility(parentAtom, this, parentVar, childVar);
                                                 })
                                                 .forEach(compatibleRelationPlayers::add)
                                 );

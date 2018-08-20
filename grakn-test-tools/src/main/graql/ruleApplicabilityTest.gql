@@ -6,17 +6,17 @@ define
 #
 #              role
 #            /      \
-#        role1      role3
+#        someRole      anotherRole
 #          |
-#        role2
+#        subRole
 #          |
 #     symmetricRole
 #
 
-role1 sub role;
-role2 sub role1;
-symmetricRole sub role2;
-role3 sub role;
+someRole sub role;
+subRole sub someRole;
+symmetricRole sub subRole;
+anotherRole sub role;
 
 #Entities
 
@@ -33,106 +33,113 @@ role3 sub role;
 #                           anotherThreeRoleEntity(R3)
 
 noRoleEntity sub entity
-    has name;
+    has name
+    has resource;
 
 anotherNoRoleEntity sub entity
     has name;
 
 singleRoleEntity sub noRoleEntity
-    plays role1;
+    plays someRole;
 
 anotherSingleRoleEntity sub noRoleEntity
-    plays role1;
+    plays someRole;
 
 anotherTwoRoleEntity sub anotherSingleRoleEntity
-    plays role2
+    plays subRole
     plays symmetricRole;
 
 anotherThreeRoleEntity sub anotherTwoRoleEntity
-    plays role3;
+    plays anotherRole;
 
 twoRoleEntity sub noRoleEntity
-    plays role2
-    plays role3;
+    plays subRole
+    plays anotherRole;
 
 threeRoleEntity sub noRoleEntity
-    plays role1
-    plays role2
-    plays role3;
+    plays someRole
+    plays subRole
+    plays anotherRole;
 
 #Relations
 
 ternary sub relationship
-    relates role1
-    relates role2
-    relates role3;
+    relates someRole
+    relates subRole
+    relates anotherRole;
 
 reifiable-relation sub relationship
-    relates role1
-    relates role2
-    plays role1
-    plays role2
+    relates someRole
+    relates subRole
+    plays someRole
+    plays subRole
     has description;
 
 binary sub reifiable-relation
-    relates role1
-    relates role2;
+    relates someRole
+    relates subRole;
 
 reifying-relation sub relationship
-    relates role1
-    relates role2
+    relates someRole
+    relates subRole
     relates symmetricRole;
 
 typed-relation sub relationship
-    relates role1
-    relates role2
-    relates role3
+    relates someRole
+    relates subRole
+    relates anotherRole
     has description;
+    
+attributed-relation sub relationship
+    relates someRole
+    relates subRole
+    relates anotherRole;
 
 #Resources
-   name sub attribute datatype string;
-   description sub attribute datatype string;
+    resource sub attribute datatype string;
+    name sub attribute datatype string;
+    description sub attribute datatype string;
 
 #Rules
 
 #3 instances in total
 rule-0 sub rule
     when {
-    	(role1: $x, role2: $y) isa binary;
-    	(role1: $y, role2: $z) isa binary;
+    	(someRole: $x, subRole: $y) isa binary;
+    	(someRole: $y, subRole: $z) isa binary;
     }
     then {
-    	(role1: $x, role2: $z) isa binary;
+    	(someRole: $x, subRole: $z) isa binary;
     };
 
 #1 instance
 rule-1 sub rule
     when {
-    	(role1: $x, role2: $y) isa binary;
-    	(role1: $y, role2: $z) isa binary;
+    	(someRole: $x, subRole: $y) isa binary;
+    	(someRole: $y, subRole: $z) isa binary;
     }
     then {
-    	(role1:$x, role2:$y, role3: $z) isa ternary;
+    	(someRole:$x, subRole:$y, anotherRole: $z) isa ternary;
     };
 
 #1 instance
 rule-2 sub rule
     when {
-    	(role1: $x, role2: $y) isa binary;
-    	(role1: $y, role2: $z) isa binary;
+    	(someRole: $x, subRole: $y) isa binary;
+    	(someRole: $y, subRole: $z) isa binary;
     }
     then {
-    	(role1:$x, role2:$y, role2: $z) isa ternary;
+    	(someRole:$x, subRole:$y, subRole: $z) isa ternary;
     };
 
 #1 instance
 rule-3 sub rule
     when {
-    	$r1 (role1: $x, role2: $y) isa reifiable-relation;
-    	$r2 (role1: $y, role2: $z) isa reifiable-relation;
+    	$r1 (someRole: $x, subRole: $y) isa reifiable-relation;
+    	$r2 (someRole: $y, subRole: $z) isa reifiable-relation;
     }
     then {
-    	(role1:$r1, role2:$r2) isa reifying-relation;
+    	(someRole:$r1, subRole:$r2) isa reifying-relation;
     };
 
 rule-4 sub rule
@@ -151,12 +158,22 @@ rule-5 sub rule
     	$z isa twoRoleEntity;
     }
     then {
-    	(role1:$x, role2:$y, role3: $z) isa typed-relation;
+    	(someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
+    };
+    
+rule-6 sub rule
+    when {
+    	$x isa singleRoleEntity has resource 'someValue';
+    	$y isa anotherTwoRoleEntity has resource 'someOtherValue';
+    	$z isa twoRoleEntity has resource 'yetAnotherValue';
+    }
+    then {
+    	(someRole:$x, subRole:$y, anotherRole: $z) isa attributed-relation;
     };
 
 resource-rule sub rule
     when {
-        $rel (role1: $x, role2: $y) isa reifiable-relation;
+        $rel (someRole: $x, subRole: $y) isa reifiable-relation;
     }
     then {
         $rel has description 'reified';
@@ -164,7 +181,7 @@ resource-rule sub rule
 
 resource-rule2 sub rule
     when {
-        $r1 (role1:$x, role2:$y, role3: $z) isa typed-relation;
+        $r1 (someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
     }
     then {
         $r1 has description 'reified';
@@ -189,5 +206,5 @@ $y isa anotherTwoRoleEntity;
 $z isa anotherTwoRoleEntity;
 $u isa anotherTwoRoleEntity;
 
-(role1: $y, role2: $z) isa binary;
-(role1: $z, role2: $u) isa binary;
+(someRole: $y, subRole: $z) isa binary;
+(someRole: $z, subRole: $u) isa binary;
