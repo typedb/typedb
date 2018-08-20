@@ -97,17 +97,19 @@ snake sub pet;
 hamster sub pet;
 bird sub pet;
 
+event sub entity,
+  has name,
+  has date,
+  has description;
+
 name sub attribute datatype string;
 owner sub attribute datatype string;
 sex sub attribute datatype string;
 birth sub attribute datatype string;
 death sub attribute datatype string;
 count sub attribute datatype long;
-
-event sub entity,
-  has name,
-  has date,
-  has description;
+date sub attribute datatype date;
+description sub attribute datatype string;
 ```
 
 The schema is not complete at this point, as we have not included any relationship between pets and their events. In SQL, a `foreign key` is a column that references another column, as seen in the SQL schema line `ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );`.
