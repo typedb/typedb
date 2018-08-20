@@ -189,7 +189,7 @@ public abstract class ResourceAtom extends Binary{
         return Patterns.conjunction(vars);
     }
 
-    //@Override
+    @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         //findbugs complains about cast without it
         if (!(ruleAtom instanceof ResourceAtom)) return false;
@@ -206,7 +206,7 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom parent = (ResourceAtom) atom;
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) this.getParentQuery();
 
-        //check type bindings compatiblity
+        //check type bindings compatibility
         Type childType = childQuery.getVarTypeMap().get(this.getVarName());
         Type parentType = parent.getParentQuery().getVarTypeMap().get(parent.getVarName());
 
@@ -217,27 +217,6 @@ public abstract class ResourceAtom extends Binary{
         return parent.getMultiPredicate().isEmpty()
                 || this.getMultiPredicate().isEmpty()
                 || this.getMultiPredicate().stream().allMatch(childPredicate -> parent.getMultiPredicate().stream().anyMatch(parentPredicate -> parentPredicate.isCompatibleWith(childPredicate)));
-    }
-
-    //@Override
-    public boolean isRuleApplicableViaAtom2(Atom ruleAtom) {
-        //findbugs complains about cast without it
-        if(!(ruleAtom instanceof ResourceAtom)) return false;
-
-        ResourceAtom childAtom = (ResourceAtom) ruleAtom;
-        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
-
-        //check type bindings compatiblity
-        Type parentType = this.getParentQuery().getVarTypeMap().get(this.getVarName());
-        Type childType = childQuery.getVarTypeMap().get(childAtom.getVarName());
-
-        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
-                || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
-
-        //check value predicate compatibility
-        if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
-
-        return childAtom.getMultiPredicate().stream().allMatch(childPredicate -> this.getMultiPredicate().stream().anyMatch(parentPredicate -> parentPredicate.isCompatibleWith(childPredicate)));
     }
 
     @Override
