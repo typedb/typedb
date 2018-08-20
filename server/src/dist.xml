@@ -27,112 +27,122 @@
 
     <fileSets>
         <fileSet>
-            <outputDirectory>${file.separator}</outputDirectory>
             <directory>${basedir}/src</directory>
             <includes>
                 <include>grakn</include>
                 <include>graql</include>
             </includes>
-        </fileSet>
-        <!-- changelog license readme -->
-        <fileSet>
             <outputDirectory>${file.separator}</outputDirectory>
+        </fileSet>
+
+        <!-- changelog license readme -->
+
+        <fileSet>
             <directory>${main.basedir}</directory>
             <includes>
                 <include>LICENSE</include>
                 <include>README.md</include>
             </includes>
+            <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>
+
         <fileSet>
-            <outputDirectory>services</outputDirectory>
             <directory>${basedir}/src/services/</directory>
             <includes>
                 <include>**</include>
             </includes>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>examples</outputDirectory>
-            <directory>${basedir}/src/examples/</directory>
-            <includes>
-                <include>**</include>
-            </includes>
+            <outputDirectory>services</outputDirectory>
         </fileSet>
 
         <!-- grakn.properties -->
+
         <fileSet>
-            <outputDirectory>conf</outputDirectory>
-            <directory>${main.basedir}/conf/main</directory>
+            <directory>${basedir}/conf</directory>
             <includes>
                 <include>grakn.properties</include>
             </includes>
+            <outputDirectory>conf</outputDirectory>
         </fileSet>
+
         <!-- and logback.xml (server and client configs) -->
+
         <fileSet>
+            <directory>${basedir}/conf</directory>
+            <includes>
+                <include>logback.xml</include>
+            </includes>
             <outputDirectory>services/grakn/server</outputDirectory>
-            <directory>${main.basedir}/conf/main/server</directory>
+        </fileSet>
+
+        <fileSet>
+            <directory>${main.basedir}/console/conf</directory>
             <includes>
                 <include>logback.xml</include>
             </includes>
-        </fileSet>
-        <fileSet>
             <outputDirectory>services/grakn/client</outputDirectory>
-            <directory>${main.basedir}/conf/main/client</directory>
-            <includes>
-                <include>logback.xml</include>
-            </includes>
         </fileSet>
+
         <!-- static assets for dashboard -->
+
         <fileSet>
-            <outputDirectory>services/assets</outputDirectory>
             <directory>${main.basedir}/dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>
+            <outputDirectory>services/assets</outputDirectory>
         </fileSet>
+
         <fileSet>
             <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
             <outputDirectory>logs</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
             <excludes>
                 <exclude>*/**</exclude>
             </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>.</directory>
             <outputDirectory>db/cassandra/data</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
             <excludes>
                 <exclude>*/**</exclude>
             </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>.</directory>
             <outputDirectory>db/cassandra/commitlog</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
             <excludes>
                 <exclude>*/**</exclude>
             </excludes>
-        </fileSet>
-        <fileSet>
-            <directory>.</directory>
             <outputDirectory>db/cassandra/saved_caches</outputDirectory>
-            <excludes>
-                <exclude>*/**</exclude>
-            </excludes>
         </fileSet>
+
         <fileSet>
             <directory>.</directory>
-            <outputDirectory>db/redis</outputDirectory>
             <excludes>
                 <exclude>*/**</exclude>
             </excludes>
+            <outputDirectory>db/redis</outputDirectory>
         </fileSet>
+
         <!-- Redis Package -->
+
         <fileSet>
-            <outputDirectory>services/redis</outputDirectory>
             <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
             <excludes>
                 <exclude>README.md</exclude>
             </excludes>
+            <outputDirectory>services/redis</outputDirectory>
         </fileSet>
     </fileSets>
+
     <dependencySets>
         <dependencySet>
             <outputDirectory>services/lib</outputDirectory>

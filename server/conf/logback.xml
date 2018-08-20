@@ -89,17 +89,17 @@
     </logger>
 
     <!--GRAKN ASCII text on startup goes to Standard Out-->
-    <logger name="ai.grakn.engine.Server" level="INFO">
+    <logger name="ai.grakn.core.server.Server" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <!--Post Processing logs go to separate log file-->
-    <logger name="ai.grakn.engine.task.postprocessing" level="${log.level:-INFO}" additivity="false">
+    <logger name="ai.grakn.core.server.task.postprocessing" level="${log.level:-INFO}" additivity="false">
         <appender-ref ref="POST-PROCESSING"/>
     </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
-    <!--<logger name="ai.grakn.engine.postprocessing.PostProcessing" level="DEBUG">-->
+    <!--<logger name="ai.grakn.core.server.postprocessing.PostProcessing" level="DEBUG">-->
         <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 </configuration>
