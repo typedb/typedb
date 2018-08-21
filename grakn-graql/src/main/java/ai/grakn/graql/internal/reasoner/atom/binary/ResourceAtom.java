@@ -19,7 +19,6 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -315,20 +314,23 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public Stream<ConceptMap> materialise(){
         ConceptMap substitution = getParentQuery().getSubstitution();
-        AttributeType type = getSchemaConcept().asAttributeType();
+        AttributeTypeImpl attributeType = AttributeTypeImpl.from(getSchemaConcept().asAttributeType());
+
         Concept owner = substitution.get(getVarName());
         Var resourceVariable = getPredicateVariable();
 
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
-        if (substitution.containsVar(resourceVariable)){
-            Attribute attribute = substitution.get(resourceVariable).asAttribute();
-            attachAttribute(owner, attribute);
-            return Stream.of(substitution);
+        Attribute attribute;
+        if(this.isSpecific()){
+            Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().orElse(null);
+            Attribute existingAttribute = attributeType.attribute(value);
+            attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
         } else {
-            Attribute attribute = AttributeTypeImpl.from(type).putAttributeInferred(Iterables.getOnlyElement(getMultiPredicate()).getPredicate().equalsValue().get());
-            attachAttribute(owner, attribute);
-            return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
+            attribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
         }
+
+        attachAttribute(owner, attribute);
+        return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
     }
 
     /**

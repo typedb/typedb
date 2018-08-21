@@ -7,7 +7,7 @@
 [![Javadocs](https://javadoc.io/badge/ai.grakn/grakn.svg)](https://javadoc.io/doc/ai.grakn/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 [![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
-[![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download)
+[![Download count](https://img.shields.io/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download)
 ---
 [![Static Bugs](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=bugs)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=code_smells)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)

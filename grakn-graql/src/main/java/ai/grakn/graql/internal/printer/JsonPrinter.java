@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.util.CommonUtil;
@@ -39,12 +40,12 @@ import static java.util.stream.Collectors.toList;
  */
 class JsonPrinter extends Printer<Json> {
     @Override
-    public final String complete(Json builder) {
+    protected final String complete(Json builder) {
         return builder.toString();
     }
 
     @Override
-    public Json concept(Concept concept) {
+    protected Json concept(Concept concept) {
         Json json = Json.object("id", concept.id().getValue());
 
         if (concept.isSchemaConcept()) {
@@ -76,7 +77,7 @@ class JsonPrinter extends Printer<Json> {
     }
 
     @Override
-    public final Json bool(boolean bool) {
+    protected final Json bool(boolean bool) {
         return Json.make(bool);
     }
 
@@ -86,7 +87,7 @@ class JsonPrinter extends Printer<Json> {
     }
 
     @Override
-    public final Json map(Map<?, ?> map) {
+    protected final Json map(Map<?, ?> map) {
         Json json = Json.object();
 
         map.forEach((Object key, Object value) -> {
@@ -95,6 +96,13 @@ class JsonPrinter extends Printer<Json> {
             json.set(keyString, build(value));
         });
 
+        return json;
+    }
+
+    @Override
+    protected Json answerGroup(AnswerGroup<?> answer) {
+        Json json = Json.object();
+        json.set(answer.toString(), build(answer.answers()));
         return json;
     }
 
@@ -111,7 +119,7 @@ class JsonPrinter extends Printer<Json> {
     }
 
     @Override
-    public final Json object(Object object) {
+    protected final Json object(Object object) {
         return Json.make(object);
     }
 }

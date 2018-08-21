@@ -29,12 +29,15 @@ class Grakn(object):
 
     def __init__(self, uri, credentials=None):
         self.uri = uri
-        self.keyspaces = KeyspaceService(self.uri, credentials)
+        self._keyspace_service = KeyspaceService(self.uri, credentials)
         self.credentials = credentials
 
     def session(self, keyspace: str):
         """ Open a session for a specific  keyspace. Can be used as `with Grakn('localhost:48555').session(keyspace='test') as session: ... ` or as normal assignment"""
         return Session(self.uri, keyspace, self.credentials)
+
+    def keyspaces(self):
+        return self._keyspace_service
 
 
 class Session(object):

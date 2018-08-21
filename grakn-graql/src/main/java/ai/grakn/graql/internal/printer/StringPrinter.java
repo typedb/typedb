@@ -24,6 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.answer.AnswerGroup;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.internal.util.ANSI;
@@ -148,7 +149,17 @@ class StringPrinter extends Printer<StringBuilder> {
     }
 
     @Override
-    public StringBuilder conceptMap(ConceptMap answer) {
+    protected StringBuilder answerGroup(AnswerGroup<?> answer) {
+        StringBuilder builder = new StringBuilder();
+        return builder.append('{')
+                .append(concept(answer.owner()))
+                .append(": ")
+                .append(build(answer.answers()))
+                .append('}');
+    }
+
+    @Override
+    protected StringBuilder conceptMap(ConceptMap answer) {
         StringBuilder builder = new StringBuilder();
 
         answer.forEach((name, concept) -> builder.append(name).append(" ").append(concept(concept)).append("; "));

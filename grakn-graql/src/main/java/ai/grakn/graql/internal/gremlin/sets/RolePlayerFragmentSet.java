@@ -33,6 +33,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -128,6 +129,36 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         return false;
     };
 
+    static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, tx) -> {
+        Iterable<RolePlayerFragmentSet> rolePlayers =
+                EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
+
+        for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
+            @Nullable RolePlayerFragmentSet newRolePlayer = null;
+
+            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationshipTypeLabels();
+            if(relLabels == null) continue;
+
+            Set<RelationshipType> relTypes = relLabels.stream()
+                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .filter(Objects::nonNull)
+                    .filter(Concept::isRelationshipType)
+                    .map(Concept::asRelationshipType)
+                    .collect(toSet());
+            if (relTypes.stream().allMatch(SchemaConcept::isImplicit) && rolePlayer.roleLabels() == null) {
+                newRolePlayer = rolePlayer.substituteRelationshipTypeLabels(relTypes);
+            }
+
+            if (newRolePlayer != null && !newRolePlayer.equals(rolePlayer)) {
+                fragmentSets.remove(rolePlayer);
+                fragmentSets.add(newRolePlayer);
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     /**
      * A query can use the {@link RelationshipType} {@link Label}s on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
      * <ol>
@@ -179,6 +210,16 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
         return false;
     };
+
+    private RolePlayerFragmentSet substituteRelationshipTypeLabels(Set<RelationshipType> relTypes){
+        ImmutableSet<Label> newRoleTypeLabels = relTypes != null?
+                relTypes.stream().flatMap(RelationshipType::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
+                null;
+
+        return new AutoValue_RolePlayerFragmentSet(
+                varProperty(), relation(), edge(), rolePlayer(), null, roleLabels(), newRoleTypeLabels
+        );
+    }
 
     /**
      * Apply an optimisation where we check the {@link Role} property instead of navigating to the {@link Role} directly.

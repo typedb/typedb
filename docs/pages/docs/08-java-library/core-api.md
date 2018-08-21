@@ -28,7 +28,7 @@ First we need a knowledge graph. For this example we will just use an
 ```java-test-ignore
 Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
 Grakn.Session session = grakn.session(Keyspace.of("grakn"));
-Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
@@ -164,9 +164,9 @@ Now the equivalent Core API:
 ```java-test-ignore
 Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
 Grakn.Session session = grakn.session(Keyspace.of("grakn"));
-Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
 
-Attribute johnName = firstname.putAttribute("John"); //Create the attribute
+Attribute johnName = firstname.create("John"); //Create the attribute
 person.create().has(johnName); //Link it to an entity
 ```   
 
