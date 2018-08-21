@@ -26,7 +26,7 @@ import com.google.auto.value.AutoValue;
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
-abstract class KeyspaceValuePair {
+public abstract class KeyspaceValuePair {
     public abstract Keyspace keyspace();
     public abstract String value();
 

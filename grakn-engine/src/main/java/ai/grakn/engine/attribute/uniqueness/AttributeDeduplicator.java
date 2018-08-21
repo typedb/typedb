@@ -100,7 +100,7 @@ public class AttributeDeduplicator {
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
      * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the {@link #deduplicate(GraphTraversalSource, String)} algorithm.
+     * the {@link #deduplicate(Set)} algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {
@@ -118,12 +118,7 @@ public class AttributeDeduplicator {
                             .collect(Collectors.toSet());
 
                     // perform deduplicate for each (keyspace -> value)
-                    for (KeyspaceValuePair keyspaceValuePair : uniqueKeyValuePairs) {
-                        try (EmbeddedGraknTx tx = txFactory.tx(keyspaceValuePair.keyspace(), GraknTxType.WRITE)) {
-                            deduplicate(tx.getTinkerTraversal(), keyspaceValuePair.value());
-                            tx.commit();
-                        }
-                    }
+                    deduplicate(txFactory, uniqueKeyValuePairs);
 
                     LOG.info("new attributes processed.");
 
@@ -146,6 +141,37 @@ public class AttributeDeduplicator {
     }
 
     /**
+     * Given an attributeValue, find the duplicates and merge them into a single unique attribute
+     *
+     * @param txFactory the factory object for accessing the database
+     * @param keyspaceValuePairs the set of attributes which are to be deduplicated duplicates
+     */
+    public static void deduplicate(EngineGraknTxFactory txFactory, Set<KeyspaceValuePair> keyspaceValuePairs) {
+        for (KeyspaceValuePair keyspaceValuePair : keyspaceValuePairs) {
+            try (EmbeddedGraknTx tx = txFactory.tx(keyspaceValuePair.keyspace(), GraknTxType.WRITE)) {
+                GraphTraversalSource tinker = tx.getTinkerTraversal();
+                GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceValuePair.value());
+                Vertex mergeTargetV = duplicates.next();
+                while (duplicates.hasNext()) {
+                    Vertex dup = duplicates.next();
+                    try {
+                        dup.vertices(Direction.IN).forEachRemaining(ent -> {
+                            Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
+                            edge.remove();
+                            ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                        });
+                        dup.remove();
+                    }
+                    catch (IllegalStateException vertexAlreadyRemovedException) {
+                        LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
+                    }
+                }
+                tx.commit();
+            }
+        }
+    }
+
+    /**
      * Stops the attribute uniqueness daemon
      */
     public void stopDeduplicationDaemon() {
@@ -153,29 +179,5 @@ public class AttributeDeduplicator {
         stopDaemon = true;
     }
 
-    /**
-     * Given an attributeValue, find the duplicates and merge them into a single unique attribute
-     *
-     * @param tinker the {@link GraphTraversalSource} object for accessing the database
-     * @param attributeValue the value of attribute with duplicates
-     */
-    private static void deduplicate(GraphTraversalSource tinker, String attributeValue) {
-        GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), attributeValue);
-        Vertex mergeTargetV = duplicates.next();
-        while (duplicates.hasNext()) {
-            Vertex dup = duplicates.next();
-            try {
-                dup.vertices(Direction.IN).forEachRemaining(ent -> {
-                    Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
-                    edge.remove();
-                    ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
-                });
-                dup.remove();
-            }
-            catch (IllegalStateException vertexAlreadyRemovedException) {
-                LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
-            }
-        }
-    }
 }
 
