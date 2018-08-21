@@ -22,15 +22,21 @@ package ai.grakn.client.rpc;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
+import brave.Tracer;
+import brave.Tracing;
+import brave.propagation.TraceContext;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static brave.internal.HexCodec.toLowerHex;
 
 /**
  * Wrapper making transaction calls to the Grakn RPC Server - handles sending a stream of {@link Transaction.Req} and
@@ -70,6 +76,35 @@ public class Transceiver implements AutoCloseable {
      * This method is non-blocking - it returns immediately.
      */
     public void send(Transaction.Req request) {
+
+        // set the current tracing context into the request
+        Tracer tracer = Tracing.currentTracer();
+
+        if (tracer != null && tracer.currentSpan() != null) {
+            TraceContext context = tracer.currentSpan().context();
+            Map<String, String> metadata = request.getMetadataMap();
+
+            // span ID
+            String spanIdStr = toLowerHex(context.spanId());
+            metadata.put("spanId", spanIdStr);
+
+            // parent ID
+            Long parentId = context.parentId();
+            if (parentId == null) {
+                metadata.put("parentId", "");
+            } else {
+                metadata.put("parentId", toLowerHex(parentId));
+            }
+
+            // Trace ID
+            String traceIdLow = toLowerHex(context.traceId());
+            String traceIdHigh = toLowerHex(context.traceIdHigh());
+            metadata.put("traceIdLow", traceIdLow);
+            metadata.put("traceIdHigh", traceIdHigh);
+        }
+
+        System.out.println(request);
+
         if (responseListener.terminated.get()) {
             throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
         }

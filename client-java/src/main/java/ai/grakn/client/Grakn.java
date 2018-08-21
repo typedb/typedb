@@ -115,7 +115,7 @@ public final class Grakn {
 
         channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
 //                .intercept(grpcTracing.newClientInterceptor())
-                .intercept(new CustomTracingClientInterceptor(grpcTracing, () -> this.currentSpanContext))
+                .intercept(new CustomTracingClientInterceptor(grpcTracing))
                 .usePlaintext(true).build();
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();
