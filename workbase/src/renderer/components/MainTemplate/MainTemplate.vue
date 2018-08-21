@@ -3,9 +3,9 @@
         <div class="wrapper">
             <app-bar></app-bar>
             <div class="main-wrapper">
-                <div class="side">
+                <!-- <div class="side">
                     <epics-bar></epics-bar>
-                </div>
+                </div> -->
                 <div class="content">
                     <keep-alive>
                         <router-view></router-view>

@@ -1,5 +1,28 @@
 <template>
-  <transition name="slide-down" appear>
+  <div class="top-bar-wrapper">
+    <div class="left">
+      <img src="static/img/logo-text.png" class="grakn-icon">
+      <h1>visualiser</h1>
+    </div>
+    <div class="center">
+      <fav-queries-list 
+        :currentKeyspace="currentKeyspace" 
+        :favQueries="favQueries" 
+        :toolTipShown="toolTipShown" 
+        v-on:toggle-tool-tip="toggleToolTip" 
+        ref="savedQueries">
+      </fav-queries-list>
+    </div>
+    <div class="right">
+    </div>
+  </div>
+
+
+
+
+
+
+  <!-- <transition name="slide-down" appear>
     <nav role="navigation" class="navbar-fixed noselect">
       <div class="nav-wrapper">
         <div class="left">
@@ -42,12 +65,50 @@
         </div>
       </div>
     </nav>
-  </transition>
+  </transition> -->
 </template>
 
 <style scoped>
 
-.menu-item{
+.top-bar-wrapper {
+  width: 100%;
+  height: 50px;
+  background-color: #1A1A1A;
+  position: relative;
+  flex-direction: row;
+  /* padding: 10px; */
+  border-bottom: 1px solid white;
+}
+
+.left {
+  width: 210px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-right: 1px solid white;
+  position: relative;
+}
+
+.grakn-icon {
+  height: 25px;
+}
+
+.center {
+  height: 100%;
+}
+
+.right {
+  width: 210px;
+  height: 100%;
+  display: flex;
+  justify-content: flex-end;
+  border-left: 1px solid white;
+  position: relative;
+}
+
+
+/* .menu-item{
     cursor: pointer;
 }
 
@@ -111,7 +172,7 @@
 
 .light .navbar-fixed{
     background-color:#f2f4f7;
-}
+} */
 
 </style>
 

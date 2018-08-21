@@ -1,6 +1,21 @@
 <template>
-  <transition name="slide-fade" appear> 
-    <div class="design-wrapper"> 
+  <transition name="fade" appear> 
+    <div class="visulaiser-wrapper"> 
+      <top-bar></top-bar>
+      <div class="center">
+        <left-bar></left-bar>
+        <div class="bottom">
+          <bottom-bar></bottom-bar>
+        </div>
+        <right-bar></right-bar>
+      </div>
+    </div>
+
+
+
+
+
+    <!-- <div class="design-wrapper"> 
         <commands-modal></commands-modal> 
         <menu-bar :localStore="localStore"></menu-bar>
         <div class="design-content">
@@ -19,12 +34,41 @@
             <i class="fas fa-info-circle"></i>
         </div>
         <canvas-tool-tip :localStore="localStore"></canvas-tool-tip> 
-    </div>
+    </div> -->
   </transition>
 </template>
 
 <style scoped>
-.slide-fade-enter-active {
+.visulaiser-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+}
+
+.center {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  position: relative;
+}
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+
+
+
+
+
+
+
+/* .slide-fade-enter-active {
     transition: all .8s ease;
 }
 .slide-fade-enter,
@@ -66,14 +110,18 @@
     bottom: 0;
     left: 0;
     cursor: pointer;
-}
+} */
 
 
 </style>
 
 <script>
 import { isDataManagement } from '@/routes.js';
-import MenuBar from './MenuBar.vue';
+import TopBar from './TopBar.vue';
+import LeftBar from './LeftBar.vue';
+import RightBar from './RightBar.vue';
+import BottomBar from './BottomBar.vue';
+
 import ContextMenu from './ContextMenu.vue';
 import DataManagementStore from '../DataManagementStore';
 import GraphCanvas from '../../shared/GraphCanvas/GraphCanvas.vue';
@@ -85,7 +133,7 @@ import CanvasToolTip from './CanvasToolTip.vue';
 export default {
   name: 'DataManagementContent',
   components: {
-    MenuBar, ContextMenu, GraphCanvas, NodeSettingsPanel, NodePanel, CommandsModal, CanvasToolTip,
+    TopBar, LeftBar, RightBar, BottomBar, ContextMenu, GraphCanvas, NodeSettingsPanel, NodePanel, CommandsModal, CanvasToolTip,
   },
   data() {
     return {

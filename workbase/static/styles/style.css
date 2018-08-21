@@ -210,3 +210,15 @@ input, textarea {
     white-space: pre-wrap !important;
     word-wrap: break-word !important;
   }
+
+
+
+/* Transitions */
+
+.fade-enter-active {
+  transition: all .8s ease;
+}
+.fade-enter,
+.fade-leave-active {
+  opacity: 0;
+}

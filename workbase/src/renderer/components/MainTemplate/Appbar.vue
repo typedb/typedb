@@ -2,7 +2,7 @@
 <div>
     <nav role="navigation" class="navbar-fixed noselect">
         <div class="nav-wrapper">
-            <span>GRAKN Workbase</span>
+            <span>Grakn Workbase</span>
         </div>
     </nav>
 </div>
