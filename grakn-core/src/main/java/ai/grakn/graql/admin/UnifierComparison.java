@@ -56,9 +56,9 @@ public interface UnifierComparison {
 
     /**
      *
-     * @param parent
-     * @param child
-     * @return
+     * @param parent {@link Atomic} of parent expression
+     * @param child {@link Atomic} of child expression
+     * @return true if child has attributes compatible with parent's
      */
     default boolean attributeCompatibility(Atomic parent, Atomic child, Var parentVar, Var childVar){ return true;}
 }

@@ -718,9 +718,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
-        boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
-                Schema.MetaSchema.isMetaLabel(role.label())
-        );
+        boolean allRolesMeta = explicitRoles.stream().allMatch(role -> Schema.MetaSchema.isMetaLabel(role.label()));
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
