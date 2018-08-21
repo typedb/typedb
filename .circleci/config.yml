@@ -250,10 +250,10 @@ jobs:
         working_directory: ~/grakn
         steps:
           - *attach_grakn_workspace
-          - *start_grakn_server
-          - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
+#          - *start_grakn_server
+#          - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
           - run: cd workbase && npm install
-          - run: cd workbase && npm run e2e
+#          - run: cd workbase && npm run e2e
           - run: cd workbase && npm run build
           - persist_to_workspace:
               root: ~/grakn
