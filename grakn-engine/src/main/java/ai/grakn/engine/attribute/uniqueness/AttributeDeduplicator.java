@@ -19,6 +19,7 @@
 package ai.grakn.engine.attribute.uniqueness;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
@@ -26,15 +27,22 @@ import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
 import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-
-import static ai.grakn.engine.attribute.uniqueness.DeduplicationAlgorithm.deduplicate;
+import java.util.stream.Collectors;
 
 /**
  * This class is responsible for de-duplicating attributes. It is done to ensure that every attribute in Grakn stays unique.
@@ -92,7 +100,7 @@ public class AttributeDeduplicator {
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
      * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the deduplicate algorithm as implemented in the {@link DeduplicationAlgorithm} class.
+     * the {@link #deduplicate(GraphTraversalSource, String)} algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {
@@ -101,11 +109,28 @@ public class AttributeDeduplicator {
             while (!stopDaemon) {
                 try {
                     List<Attribute> attributes = queue.read(QUEUE_GET_BATCH_MAX);
-                    deduplicate(txFactory, attributes);
+
+                    LOG.info("starting a new batch to process these new attributes: " + attributes);
+
+                    // group the attributes into a set of unique (keyspace -> value) pair
+                    Set<KeyspaceValuePair> uniqueKeyValuePairs = attributes.stream()
+                            .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value()))
+                            .collect(Collectors.toSet());
+
+                    // perform deduplicate for each (keyspace -> value)
+                    for (KeyspaceValuePair keyspaceValuePair : uniqueKeyValuePairs) {
+                        try (EmbeddedGraknTx tx = txFactory.tx(keyspaceValuePair.keyspace(), GraknTxType.WRITE)) {
+                            deduplicate(tx.getTinkerTraversal(), keyspaceValuePair.value());
+                            tx.commit();
+                        }
+                    }
+
+                    LOG.info("new attributes processed.");
+
                     queue.ack(attributes);
                 }
-                catch (InterruptedException e) {
-                    LOG.error("deduplicate() failed with an exception. ", e);
+                catch (InterruptedException | RuntimeException e) {
+                    LOG.error("An exception has occurred in the attribute de-duplicator daemon. ", e);
                 }
             }
             LOG.info("startDeduplicationDaemon() - attribute de-duplicator daemon stopped");
@@ -113,7 +138,7 @@ public class AttributeDeduplicator {
         });
 
         daemon.exceptionally(e -> {
-            LOG.error("An exception has occurred in the AttributeDeduplicator. ", e);
+            LOG.error("An unhandled exception has occurred in the attribute de-duplicator daemon. ", e);
             return null;
         });
 
@@ -126,6 +151,31 @@ public class AttributeDeduplicator {
     public void stopDeduplicationDaemon() {
         LOG.info("stopDeduplicationDaemon() - stopping the attribute de-duplicator daemon...");
         stopDaemon = true;
+    }
+
+    /**
+     * Given an attributeValue, find the duplicates and merge them into a single unique attribute
+     *
+     * @param tinker the {@link GraphTraversalSource} object for accessing the database
+     * @param attributeValue the value of attribute with duplicates
+     */
+    private static void deduplicate(GraphTraversalSource tinker, String attributeValue) {
+        GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), attributeValue);
+        Vertex mergeTargetV = duplicates.next();
+        while (duplicates.hasNext()) {
+            Vertex dup = duplicates.next();
+            try {
+                dup.vertices(Direction.IN).forEachRemaining(ent -> {
+                    Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
+                    edge.remove();
+                    ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                });
+                dup.remove();
+            }
+            catch (IllegalStateException vertexAlreadyRemovedException) {
+                LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
+            }
+        }
     }
 }
 
