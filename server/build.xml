@@ -1,0 +1,149 @@
+<!--
+  ~ GRAKN.AI - THE KNOWLEDGE GRAPH
+  ~ Copyright (C) 2018 Grakn Labs Ltd
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+    <id>build core.server</id>
+    <formats>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <directory>${basedir}/src</directory>
+            <includes>
+                <include>grakn</include>
+            </includes>
+            <outputDirectory>${file.separator}</outputDirectory>
+        </fileSet>
+
+        <!-- changelog license readme -->
+
+        <fileSet>
+            <directory>${main.basedir}</directory>
+            <includes>
+                <include>LICENSE</include>
+                <include>README.md</include>
+            </includes>
+            <outputDirectory>${file.separator}</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/src/services/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+            <outputDirectory>services</outputDirectory>
+        </fileSet>
+
+        <!-- grakn.properties -->
+
+        <fileSet>
+            <directory>${basedir}/conf</directory>
+            <includes>
+                <include>grakn.properties</include>
+            </includes>
+            <outputDirectory>conf</outputDirectory>
+        </fileSet>
+
+        <!-- and logback.xml (server configs) -->
+
+        <fileSet>
+            <directory>${basedir}/conf</directory>
+            <includes>
+                <include>logback.xml</include>
+            </includes>
+            <outputDirectory>services/grakn/server</outputDirectory>
+        </fileSet>
+
+        <!-- static assets for dashboard -->
+
+        <fileSet>
+            <directory>${main.basedir}/dashboard/static</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+            <outputDirectory>services/assets</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+            <outputDirectory>logs</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+            <outputDirectory>db/cassandra/data</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+            <outputDirectory>db/cassandra/commitlog</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+            <outputDirectory>db/cassandra/saved_caches</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+            <outputDirectory>db/redis</outputDirectory>
+        </fileSet>
+
+        <!-- Redis Package -->
+
+        <fileSet>
+            <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
+            <excludes>
+                <exclude>README.md</exclude>
+            </excludes>
+            <outputDirectory>services/redis</outputDirectory>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>services/lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <useProjectArtifact>true</useProjectArtifact>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+
+</assembly>

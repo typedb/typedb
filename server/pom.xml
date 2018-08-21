@@ -29,10 +29,6 @@
 
     <artifactId>core.server</artifactId>
 
-    <properties>
-        <main.basedir>${project.parent.basedir}</main.basedir>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.google.auto.value</groupId>
@@ -53,10 +49,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>client-java</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>core.console</artifactId>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -226,7 +218,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-bin</id>
+                        <id>build core.server</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
@@ -234,11 +226,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <finalName>grakn-core-${project.version}</finalName>
-                    <outputDirectory>${main.basedir}/dist</outputDirectory>
+                    <finalName>grakn-core-server-${project.version}</finalName>
+                    <outputDirectory>${project.parent.basedir}/dist</outputDirectory>
                     <tarLongFileMode>gnu</tarLongFileMode>
                     <descriptors>
-                        <descriptor>src/dist.xml</descriptor>
+                        <descriptor>build.xml</descriptor>
                     </descriptors>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>

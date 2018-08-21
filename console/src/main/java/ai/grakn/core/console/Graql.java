@@ -16,11 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package ai.grakn.core.console;
 
-import ai.grakn.core.console.GraqlConsole;
-import ai.grakn.core.console.GraqlShellOptions;
-import ai.grakn.core.console.GraqlShellOptionsFactory;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.migration.export.Main;
 import ai.grakn.migration.json.JsonMigrator;
