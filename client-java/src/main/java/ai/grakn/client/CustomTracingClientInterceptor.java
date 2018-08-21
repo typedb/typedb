@@ -18,6 +18,7 @@
 
 package brave.grpc;
 
+import ai.grakn.rpc.proto.SessionProto;
 import brave.Span;
 import brave.Tracer;
 import brave.propagation.Propagation.Setter;
@@ -87,8 +88,8 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
 //            span = tracer.joinSpan(traceContext);
 //        }
 
-//        Span span = tracer.nextSpan();
-//        try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
+        Span span = tracer.nextSpan();
+        try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
             return new SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
 
 
@@ -134,6 +135,29 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
                 }
 
                 @Override public void sendMessage(ReqT message) {
+                    TraceContext.Builder traceContextBuilder = TraceContext.newBuilder();
+                    // try casting it to grpc message types
+                    if (message instanceof SessionProto.Transaction.Req) {
+                        SessionProto.Transaction.Req txReq = (SessionProto.Transaction.Req) message;
+
+//                        if (txReq.)
+//
+//                        String parentId = txReq.getParentId();
+//                        String traceId = txReq.getTraceId();
+
+
+
+
+//                    } else if (message instanceof KeyspaceProto.
+                    } else {
+                        System.out.println("Unimplemented message type in clientInterceptor.sendMessage");
+                    }
+
+//                    TraceContext.Builder traceContextBuilder = TraceContext.newBuilder();
+//                    traceContextBuilder.parentId()
+
+                    // build a new span context using message data
+//                    String parentId = (SessionProto.Transaction) message;
 
                     try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
                         super.sendMessage(message);
@@ -144,7 +168,7 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
 //        } catch (RuntimeException | Error e) {
 //            span.error(e).finish();
 //            throw e;
-//        }
+        }
     }
 }
 
