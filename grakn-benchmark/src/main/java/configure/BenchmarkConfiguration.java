@@ -27,20 +27,22 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-
+/**
+ *  Contains the configuration for an execution of the benchmarking system
+ */
 
 public class BenchmarkConfiguration {
 
-    private FileDefinitions.QueriesConfigFile queries;
+    private QueriesConfigurationFile queries;
     private List<String> schemaGraql;
-    private FileDefinitions.BenchmarkConfigFile benchmarkConfigFile;
+    private BenchmarkConfigurationFile benchmarkConfigFile;
 
-    public BenchmarkConfiguration(FileDefinitions.BenchmarkConfigFile config) throws IOException {
+    public BenchmarkConfiguration(BenchmarkConfigurationFile config) throws IOException {
         this.benchmarkConfigFile = config;
 
         // read the queries file string and use them to load further YAML
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        queries = mapper.readValue(new File(config.getQueriesYamlFile()), FileDefinitions.QueriesConfigFile.class);
+        queries = mapper.readValue(new File(config.getQueriesYamlFile()), QueriesConfigurationFile.class);
 
         try {
             schemaGraql = Files.readLines(new File(config.getSchemaFile()), StandardCharsets.UTF_8);

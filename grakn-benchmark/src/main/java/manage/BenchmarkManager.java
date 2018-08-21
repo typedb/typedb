@@ -20,11 +20,13 @@ package manage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import configure.BenchmarkConfiguration;
-import configure.FileDefinitions;
+import configure.BenchmarkConfigurationFile;
 import executor.QueryExecutor;
 import generator.DataGenerator;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -65,9 +67,9 @@ public class BenchmarkManager {
 
         String configFileName = args[0];
         ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
-        FileDefinitions.BenchmarkConfigFile configFile = benchmarkConfigMapper.readValue(
+        BenchmarkConfigurationFile configFile = benchmarkConfigMapper.readValue(
                 new File(System.getProperty("user.dir") + configFileName),
-                FileDefinitions.BenchmarkConfigFile.class);
+                BenchmarkConfigurationFile.class);
         BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFile);
 
         // * pass schema file path to Generator
