@@ -1,28 +1,29 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -30,6 +31,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -38,7 +40,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -46,7 +47,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -62,7 +62,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class AtomicTest {
 
@@ -80,11 +79,6 @@ public class AtomicTest {
 
     @ClassRule
     public static final SampleKBContext unificationTestSet = SampleKBContext.load("unificationTest.gql");
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Test
     public void testAtomsAreCorrectlyIdentifiedAsRecursive(){
@@ -360,7 +354,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String relationString = "{($x, $y);}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
     }
 
     @Test //for each role player role mapping is ambiguous so metarole has to be assigned
@@ -368,7 +362,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = roleInferenceSet.tx();
         String relationString = "{($x, $y) isa relationship;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
     }
 
     @Test //missing role is ambiguous without cardinality constraints
@@ -420,7 +414,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z) isa ternary;$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
     }
 
     @Test //relation relates a single role so instead of assigning metarole this role should be assigned
@@ -490,7 +484,7 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
-        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().getLabel())));
+        relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         assertEquals(2, relation.getApplicableRules().count());
     }
 
@@ -595,6 +589,35 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_genericType(){
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
+        String typeString = "{$x isa $type;}";
+        String typeString2 = "{$x isa $type;$x isa entity;}";
+        String typeString3 = "{$x isa $type;$x isa relationship;}";
+        Atom type = ReasonerQueries.atomic(conjunction(typeString, graph), graph).getAtom();
+        Atom type2 = ReasonerQueries.atomic(conjunction(typeString2, graph), graph).getAtom();
+        Atom type3 = ReasonerQueries.create(conjunction(typeString3, graph), graph).getAtoms(IsaAtom.class).filter(at -> at.getSchemaConcept() == null).findFirst().orElse(null);
+
+        assertEquals(RuleUtils.getRules(graph).count(), type.getApplicableRules().count());
+        assertThat(type2.getApplicableRules().collect(toSet()), empty());
+        assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), type3.getApplicableRules().count());
+    }
+
+    @Test
+    public void testRuleApplicability_genericTypeAsARoleplayer(){
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
+        String typeString = "{(symmetricRole: $x); $x isa $type;}";
+        String typeString2 = "{(role1: $x); $x isa $type;}";
+        Atom type = ReasonerQueries.create(conjunction(typeString, graph), graph).getAtoms(IsaAtom.class).findFirst().orElse(null);
+        Atom type2 = ReasonerQueries.create(conjunction(typeString2, graph), graph).getAtoms(IsaAtom.class).findFirst().orElse(null);
+        assertThat(type.getApplicableRules().collect(toSet()), empty());
+        assertEquals(
+                RuleUtils.getRules(graph).filter(r -> r.thenTypes().anyMatch(c -> c.label().equals(Label.of("binary")))).count(),
+                type2.getApplicableRules().count()
+        );
+    }
+
+    @Test
+    public void testRuleApplicability_genericTypeWithBounds(){
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{$x isa $type;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertEquals(
@@ -636,11 +659,16 @@ public class AtomicTest {
         EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
         String relationString = "{($x, $y);$x isa noRoleEntity;}";
         String relationString2 = "{($x, $y);$x isa entity;}";
+        String relationString3 = "{($x, $y);$x isa relationship;}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
         assertEquals(5, relation.getApplicableRules().count());
-        assertEquals(RuleUtils.getRules(graph).count(), relation2.getApplicableRules().count());
+        assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
+
+        //TODO not filtered correctly
+        //assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isAttributeType)).count(), relation3.getApplicableRules().count());
     }
 
     @Test
@@ -719,7 +747,7 @@ public class AtomicTest {
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y) isa ternary;" +
-                "$x id '" + concept.getId().getValue() + "';" +
+                "$x id '" + concept.id().getValue() + "';" +
                 "}";
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         assertThat(relation.getApplicableRules().collect(toSet()), empty());
@@ -731,7 +759,7 @@ public class AtomicTest {
         Concept concept = getConcept(graph, "name", "noRoleEntity");
         String relationString = "{" +
                 "($x, $y);" +
-                "$x id '" + concept.getId().getValue() + "';" +
+                "$x id '" + concept.id().getValue() + "';" +
                 "}";
 
         Atom relation = ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -747,8 +775,8 @@ public class AtomicTest {
         String resourceString4 = "{$x has res-double < 4.0;}";
         String resourceString5 = "{$x has res-double >= 5;}";
         String resourceString6 = "{$x has res-double <= 5;}";
-        String resourceString7 = "{$x has res-double = 3.14;}";
-        String resourceString8 = "{$x has res-double != 5;}";
+        String resourceString7 = "{$x has res-double == 3.14;}";
+        String resourceString8 = "{$x has res-double !== 5;}";
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -778,8 +806,8 @@ public class AtomicTest {
         String resourceString4 = "{$x has res-long < 200;}";
         String resourceString5 = "{$x has res-long >= 130;}";
         String resourceString6 = "{$x has res-long <= 130;}";
-        String resourceString7 = "{$x has res-long = 123;}";
-        String resourceString8 = "{$x has res-long != 200;}";
+        String resourceString7 = "{$x has res-long == 123;}";
+        String resourceString8 = "{$x has res-long !== 200;}";
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -859,14 +887,14 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceDouble(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-double val > 3.0;($x, $y);}";
-        String queryString2 = "{$x isa res-double val > 4.0;($x, $y);}";
-        String queryString3 = "{$x isa res-double val < 3.0;($x, $y);}";
-        String queryString4 = "{$x isa res-double val < 4.0;($x, $y);}";
-        String queryString5 = "{$x isa res-double val >= 5;($x, $y);}";
-        String queryString6 = "{$x isa res-double val <= 5;($x, $y);}";
-        String queryString7 = "{$x isa res-double val = 3.14;($x, $y);}";
-        String queryString8 = "{$x isa res-double val != 5;($x, $y);}";
+        String queryString = "{$x isa res-double > 3.0;($x, $y);}";
+        String queryString2 = "{$x isa res-double > 4.0;($x, $y);}";
+        String queryString3 = "{$x isa res-double < 3.0;($x, $y);}";
+        String queryString4 = "{$x isa res-double < 4.0;($x, $y);}";
+        String queryString5 = "{$x isa res-double >= 5;($x, $y);}";
+        String queryString6 = "{$x isa res-double <= 5;($x, $y);}";
+        String queryString7 = "{$x isa res-double == 3.14;($x, $y);}";
+        String queryString8 = "{$x isa res-double !== 5;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -890,14 +918,14 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceLong(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-long val > 100;($x, $y);}";
-        String queryString2 = "{$x isa res-long val > 150;($x, $y);}";
-        String queryString3 = "{$x isa res-long val < 100;($x, $y);}";
-        String queryString4 = "{$x isa res-long val < 200;($x, $y);}";
-        String queryString5 = "{$x isa res-long val >= 130;($x, $y);}";
-        String queryString6 = "{$x isa res-long val <= 130;($x, $y);}";
-        String queryString7 = "{$x isa res-long val = 123;($x, $y);}";
-        String queryString8 = "{$x isa res-long val != 200;($x, $y);}";
+        String queryString = "{$x isa res-long > 100;($x, $y);}";
+        String queryString2 = "{$x isa res-long > 150;($x, $y);}";
+        String queryString3 = "{$x isa res-long < 100;($x, $y);}";
+        String queryString4 = "{$x isa res-long < 200;($x, $y);}";
+        String queryString5 = "{$x isa res-long >= 130;($x, $y);}";
+        String queryString6 = "{$x isa res-long <= 130;($x, $y);}";
+        String queryString7 = "{$x isa res-long == 123;($x, $y);}";
+        String queryString8 = "{$x isa res-long !== 200;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -921,10 +949,10 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceString(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-string val contains 'val';($x, $y);}";
-        String queryString2 = "{$x isa res-string val 'test';($x, $y);}";
-        String queryString3 = "{$x isa res-string val /.*(fast|value).*/;($x, $y);}";
-        String queryString4 = "{$x isa res-string val /.*/;($x, $y);}";
+        String queryString = "{$x isa res-string contains 'val';($x, $y);}";
+        String queryString2 = "{$x isa res-string 'test';($x, $y);}";
+        String queryString3 = "{$x isa res-string /.*(fast|value).*/;($x, $y);}";
+        String queryString4 = "{$x isa res-string /.*/;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -940,8 +968,8 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_ReifiedResourceBoolean(){
         EmbeddedGraknTx<?> graph = reifiedResourceApplicabilitySet.tx();
-        String queryString = "{$x isa res-boolean val 'true';($x, $y);}";
-        String queryString2 = "{$x isa res-boolean val 'false';($x, $y);}";
+        String queryString = "{$x isa res-boolean 'true';($x, $y);}";
+        String queryString2 = "{$x isa res-boolean 'false';($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
@@ -986,9 +1014,9 @@ public class AtomicTest {
     public void testUnification_RelationWithMetaRolesAndIds(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         Concept instance = graph.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").execute().iterator().next().get(var("x"));
-        String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.getId().getValue() + "';}";
-        String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.getId().getValue() + "';}";
-        String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.getId().getValue() + "';}";
+        String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "';}";
+        String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "';}";
+        String relation3 = "{(role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "';}";
 
         exactUnification(relation, relation2, true, true, graph);
         exactUnification(relation, relation3, true, true, graph);
@@ -1104,11 +1132,11 @@ public class AtomicTest {
     @Test
     public void testUnification_VariousResourceAtoms(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String resource = "{$x has resource $r;$r val 'f';}";
-        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource = "{$x has resource $r;$r 'f';}";
+        String resource2 = "{$r has resource $x;$x 'f';}";
         String resource3 = "{$r has resource 'f';}";
-        String resource4 = "{$x has resource $y via $r;$y val 'f';}";
-        String resource5 = "{$y has resource $r via $x;$r val 'f';}";
+        String resource4 = "{$x has resource $y via $r;$y 'f';}";
+        String resource5 = "{$y has resource $r via $x;$r 'f';}";
         exactUnification(resource, resource2, true, true, graph);
         exactUnification(resource, resource3, true, true, graph);
         exactUnification(resource2, resource3, true, true, graph);
@@ -1144,9 +1172,9 @@ public class AtomicTest {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
-        List<Answer> parentAnswers2 = parentQuery2.getQuery().execute();
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute();
 
         Unifier unifier = childAtom.getUnifier(parentAtom);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2);
@@ -1172,15 +1200,15 @@ public class AtomicTest {
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String resource = "{$x has resource $r;$r val 'f';}";
-        String resource2 = "{$r has resource $x;$x val 'f';}";
+        String resource = "{$x has resource $r;$r 'f';}";
+        String resource2 = "{$r has resource $x;$x 'f';}";
         String resource3 = "{$r has resource 'f';}";
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, graph), graph);
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, graph), graph);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, graph), graph);
 
-        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
+        String type = "{$x isa resource;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").id().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, graph), graph);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -1192,10 +1220,10 @@ public class AtomicTest {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
 
-        Answer typeAnswer = typeQuery.getQuery().execute().iterator().next();
-        Answer resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
-        Answer resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
-        Answer resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
+        ConceptMap typeAnswer = typeQuery.getQuery().execute().iterator().next();
+        ConceptMap resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
+        ConceptMap resourceAnswer2 = resourceQuery2.getQuery().execute().iterator().next();
+        ConceptMap resourceAnswer3 = resourceQuery3.getQuery().execute().iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -1351,12 +1379,12 @@ public class AtomicTest {
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).getUnifier();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> unifiedAnswers = childAnswers.stream()
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom);
@@ -1373,7 +1401,7 @@ public class AtomicTest {
         } else {
             assertCollectionsEqual(parentAnswers, unifiedAnswers);
             Unifier inverse = unifier.inverse();
-            List<Answer> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+            List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
             assertCollectionsEqual(parentToChild, childAnswers);
         }
     }
@@ -1387,7 +1415,8 @@ public class AtomicTest {
     }
 
     private Concept getConcept(EmbeddedGraknTx<?> graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
+        return graph.graql().match(var("x").has(typeName, val).admin()).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
     }
 
     private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {

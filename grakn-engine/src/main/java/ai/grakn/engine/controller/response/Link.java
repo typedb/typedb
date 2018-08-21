@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller.response;
@@ -65,7 +65,7 @@ public abstract class Link implements Jacksonisable{
                 WebPath.CONCEPT_LINK,
                 thing.keyspace().getValue(),
                 Schema.BaseType.CONCEPT.name().toLowerCase(Locale.getDefault()),
-                thing.getId().getValue());
+                thing.id().getValue());
         return create(id);
     }
 
@@ -82,7 +82,7 @@ public abstract class Link implements Jacksonisable{
                 WebPath.CONCEPT_LINK,
                 schemaConcept.keyspace().getValue(),
                 type,
-                schemaConcept.getLabel().getValue());
+                schemaConcept.label().getValue());
         return create(id);
     }
 
@@ -90,21 +90,21 @@ public abstract class Link implements Jacksonisable{
      * Creates a link to fetch all the {@link EmbeddedAttribute}s of a {@link Thing}
      */
     public static Link createAttributesLink(ai.grakn.concept.Thing thing){
-        return create(REST.resolveTemplate(WebPath.CONCEPT_ATTRIBUTES, thing.keyspace().getValue(), thing.getId().getValue()));
+        return create(REST.resolveTemplate(WebPath.CONCEPT_ATTRIBUTES, thing.keyspace().getValue(), thing.id().getValue()));
     }
 
     /**
      * Creates a link to fetch all the {@link EmbeddedAttribute}s of a {@link Thing}
      */
     public static Link createKeysLink(ai.grakn.concept.Thing thing){
-        return create(REST.resolveTemplate(WebPath.CONCEPT_KEYS, thing.keyspace().getValue(), thing.getId().getValue()));
+        return create(REST.resolveTemplate(WebPath.CONCEPT_KEYS, thing.keyspace().getValue(), thing.id().getValue()));
     }
 
     /**
      * Creates a link to fetch all the {@link Relationship)s of a {@link Thing}
      */
     public static Link createRelationshipsLink(ai.grakn.concept.Thing thing){
-        return create(REST.resolveTemplate(WebPath.CONCEPT_RELATIONSHIPS, thing.keyspace().getValue(), thing.getId().getValue()));
+        return create(REST.resolveTemplate(WebPath.CONCEPT_RELATIONSHIPS, thing.keyspace().getValue(), thing.id().getValue()));
     }
 
     /**
@@ -114,7 +114,7 @@ public abstract class Link implements Jacksonisable{
         String id = REST.resolveTemplate(
                 WebPath.TYPE_INSTANCES,
                 type.keyspace().getValue(),
-                type.getLabel().getValue());
+                type.label().getValue());
         return create(id);
     }
 
@@ -134,7 +134,7 @@ public abstract class Link implements Jacksonisable{
      */
     public static Link createSubsLink(ai.grakn.concept.SchemaConcept schemaConcept){
         String keyspace = schemaConcept.keyspace().getValue();
-        String label = schemaConcept.getLabel().getValue();
+        String label = schemaConcept.label().getValue();
 
         if(schemaConcept.isType()) {
             return create(REST.resolveTemplate(WebPath.TYPE_SUBS, keyspace, label));
@@ -149,28 +149,28 @@ public abstract class Link implements Jacksonisable{
      * Creates a link to get all the plays of a {@link Type}
      */
     public static Link createPlaysLink(ai.grakn.concept.Type type){
-        return create(REST.resolveTemplate(WebPath.TYPE_PLAYS, type.keyspace().getValue(), type.getLabel().getValue()));
+        return create(REST.resolveTemplate(WebPath.TYPE_PLAYS, type.keyspace().getValue(), type.label().getValue()));
     }
 
     /**
      * Creates a link to get all the attributes of a {@link Type}
      */
     public static Link createAttributesLink(ai.grakn.concept.Type type){
-        return create(REST.resolveTemplate(WebPath.TYPE_ATTRIBUTES, type.keyspace().getValue(), type.getLabel().getValue()));
+        return create(REST.resolveTemplate(WebPath.TYPE_ATTRIBUTES, type.keyspace().getValue(), type.label().getValue()));
     }
 
     /**
      * Creates a link to get all the keys of a {@link Type}
      */
     public static Link createKeysLink(ai.grakn.concept.Type type){
-        return create(REST.resolveTemplate(WebPath.TYPE_KEYS, type.keyspace().getValue(), type.getLabel().getValue()));
+        return create(REST.resolveTemplate(WebPath.TYPE_KEYS, type.keyspace().getValue(), type.label().getValue()));
     }
 
     /**
      * Creates a link to get all the instances of a {@link Type}
      */
     public static Link createInstancesLink(ai.grakn.concept.Type type){
-        return create(REST.resolveTemplate(WebPath.TYPE_INSTANCES, type.keyspace().getValue(), type.getLabel().getValue()));
+        return create(REST.resolveTemplate(WebPath.TYPE_INSTANCES, type.keyspace().getValue(), type.label().getValue()));
     }
 
 }

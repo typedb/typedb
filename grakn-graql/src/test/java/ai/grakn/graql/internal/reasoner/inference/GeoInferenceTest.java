@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.inference;
@@ -22,16 +22,14 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
 import java.util.List;
 
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
@@ -40,26 +38,20 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.hamcrest.Matchers.empty;
 
 public class GeoInferenceTest {
 
-    @Rule
-    public final SampleKBContext geoKB = GeoKB.context();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext geoKB = GeoKB.context();
 
     @Test
     public void testEntitiesLocatedInThemselves(){
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in; get;";
 
-        GetQuery query = iqb.materialise(false).parse(queryString);
-        List<Answer> answers = query.execute();
+        GetQuery query = iqb.parse(queryString);
+        List<ConceptMap> answers = query.execute();
         assertThat(answers, empty());
     }
 
@@ -76,8 +68,7 @@ public class GeoInferenceTest {
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';}; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -101,10 +92,8 @@ public class GeoInferenceTest {
                 "$z2 isa university;$z2 has name $name;" +
                 "{$z2 has name 'University-of-Warsaw';} or {$z2 has name'Warsaw-Polytechnics';}; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString2), qb.parse(explicitQuery2));
     }
 
     @Test
@@ -122,14 +111,14 @@ public class GeoInferenceTest {
         Concept poland = getConcept(graph, "name", "Poland");
         Concept europe = getConcept(graph, "name", "Europe");
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), poland.id().getValue()));
         assertEquals(answers.size(), 6);
 
-        List<Answer> answers2 = iqb.materialise(false).<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -146,12 +135,12 @@ public class GeoInferenceTest {
                 "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
                 "$y has name 'Masovia'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
 
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 5);
-        List<Answer> answers2 = iqb.materialise(false).<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         assertCollectionsEqual(answers, answers2);
     }
 
@@ -163,21 +152,21 @@ public class GeoInferenceTest {
         Concept europe = getConcept(graph, "name", "Europe");
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$y id '" + poland.getId().getValue() + "'; get;";
+                "$y id '" + poland.id().getValue() + "'; get;";
 
         String queryString2 = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$y id '" + europe.getId().getValue() + "'; get;";
+                "$y id '" + europe.id().getValue() + "'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), poland.id().getValue()));
         assertEquals(answers.size(), 6);
 
 
-        List<Answer> answers2 = iqb.materialise(false).<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), europe.id().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -188,18 +177,18 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($x, $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
         String queryString2 = "match " +
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
                 "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 5);
-        List<Answer> answers2 = iqb.materialise(false).<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
         assertCollectionsEqual(answers, answers2);
     }
 
@@ -210,17 +199,14 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($r1: $x, $r2: $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+
 
         answers.forEach(ans -> assertEquals(ans.size(), 4));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
-        answers2.forEach(ans -> assertEquals(ans.size(), 4));
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 20);
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -228,10 +214,8 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 51);
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -239,10 +223,8 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa is-located-in; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 102);
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -252,15 +234,12 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($x, $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
 
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 5);
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -268,13 +247,9 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match ($r1: $x, $r2: $y) isa is-located-in; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers.size(), 408);
-
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
-        answers2.forEach(ans -> assertEquals(ans.size(), 4));
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -284,15 +259,11 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "$x ($r1: $x1, $r2: $x2) isa is-located-in;" +
-                "$x2 id '" + masovia.getId().getValue() + "'; get;";
+                "$x2 id '" + masovia.id().getValue() + "'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 20);
         answers.forEach(ans -> assertEquals(ans.size(), 5));
-
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
-        answers2.forEach(ans -> assertEquals(ans.size(), 5));
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -303,13 +274,11 @@ public class GeoInferenceTest {
                 .rel(var("r1").label("geo-entity"), var("x"))
                 .rel(var("r2").label("entity-location"), var("y"));
 
-        List<Answer> answers = iqb.match(rolePattern).get().execute();
-        List<Answer> answers2 = iqb.materialise(true).match(rolePattern).get().execute();
+        List<ConceptMap> answers = iqb.match(rolePattern).get().execute();
+
 
         answers.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers.size(), 51);
-        answers2.forEach(ans -> assertEquals(ans.size(), 4));
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -317,13 +286,11 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match ($x, $r2: $y) isa is-located-in; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+
 
         answers.forEach(ans -> assertEquals(ans.size(), 3));
         assertEquals(answers.size(), 204);
-        answers2.forEach(ans -> assertEquals(ans.size(), 3));
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -333,18 +300,14 @@ public class GeoInferenceTest {
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
                 "($x, $r2: $y) isa is-located-in;" +
-                "$y id '" + masovia.getId().getValue() + "'; get;";
+                "$y id '" + masovia.id().getValue() + "'; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+
 
         answers.forEach(ans -> assertEquals(ans.size(), 3));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).id().getValue(), masovia.id().getValue()));
         assertEquals(answers.size(), 10);
-
-        answers2.forEach(ans -> assertEquals(ans.size(), 3));
-        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -352,10 +315,8 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertEquals(answers.size(), 51);
-        assertCollectionsEqual(answers, answers2);
     }
 
     @Test
@@ -364,12 +325,9 @@ public class GeoInferenceTest {
         String queryString = "match $x isa is-located-in; get;";
         String queryString2 = "match $x ($x1, $x2) isa is-located-in;get $x;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(true).<GetQuery>parse(queryString).execute();
-        List<Answer> answers3 = iqb.materialise(false).<GetQuery>parse(queryString2).execute();
-        List<Answer> answers4 = iqb.materialise(true).<GetQuery>parse(queryString2).execute();
-        assertCollectionsEqual(answers, answers2);
-        assertCollectionsEqual(answers3, answers4);
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers3 = iqb.<GetQuery>parse(queryString2).execute();
+
         assertEquals(answers.size(), 51);
         assertEquals(answers3.size(), 51);
     }
@@ -381,14 +339,15 @@ public class GeoInferenceTest {
         String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 22; get;";
         String queryString3 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 = iqb.materialise(false).<GetQuery>parse(queryString2).execute();
-        List<Answer> answers3 = iqb.materialise(false).<GetQuery>parse(queryString3).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 = iqb.<GetQuery>parse(queryString2).execute();
+        List<ConceptMap> answers3 = iqb.<GetQuery>parse(queryString3).execute();
         assertTrue(answers3.containsAll(answers));
         assertTrue(answers3.containsAll(answers2));
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x").findAny().orElse(null);
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x")
+                .stream().map(answer -> answer.get("x")).findAny().orElse(null);
     }
 }

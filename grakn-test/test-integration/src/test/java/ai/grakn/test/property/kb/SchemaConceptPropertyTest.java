@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.property.kb;
@@ -67,7 +67,7 @@ public class SchemaConceptPropertyTest {
     public void whenDeletingAMetaConcept_Throw(@Meta SchemaConcept schemaConcept) {
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(isOneOf(
-                GraknTxOperationException.metaTypeImmutable(schemaConcept.getLabel()).getMessage(),
+                GraknTxOperationException.metaTypeImmutable(schemaConcept.label()).getMessage(),
                 GraknTxOperationException.cannotBeDeleted(schemaConcept).getMessage()
         ));
         schemaConcept.delete();
@@ -76,7 +76,7 @@ public class SchemaConceptPropertyTest {
     @Property
     public void whenDeletingASchemaConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
-        assumeFalse(isMetaLabel(superConcept.getLabel()));
+        assumeFalse(isMetaLabel(superConcept.label()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.cannotBeDeleted(superConcept).getMessage());
@@ -86,13 +86,13 @@ public class SchemaConceptPropertyTest {
     @Property
     public void whenCallingGetLabel_TheResultIsUnique(SchemaConcept concept1, @FromTx SchemaConcept concept2) {
         assumeThat(concept1, not(is(concept2)));
-        assertNotEquals(concept1.getLabel(), concept2.getLabel());
+        assertNotEquals(concept1.label(), concept2.label());
     }
 
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
             @Open GraknTx graph, @FromTx SchemaConcept concept) {
-        Label label = concept.getLabel();
+        Label label = concept.label();
         assertEquals(concept, graph.getSchemaConcept(label));
     }
 
@@ -145,18 +145,18 @@ public class SchemaConceptPropertyTest {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.label()).getMessage());
         setDirectSuper(subConcept, superConcept);
     }
 
     @Ignore("Test fails due to incorrect error message") // TODO
     @Property
-    public void whenSettingTheDirectSuperToAnIndirectSub_Throw(
+    public void whenSettingTheDirectSuperToAnIndirectSuper_Throw(
             @NonMeta SchemaConcept concept, long seed) {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
         //Check if the mutation can be performed in a valid manner
-        if(newSuperConcept.isType()) assumeThat(newSuperConcept.asType().plays().collect(Collectors.toSet()), is(empty()));
+        if(newSuperConcept.isType()) assumeThat(newSuperConcept.asType().playing().collect(Collectors.toSet()), is(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.loopCreated(concept, newSuperConcept).getMessage());
@@ -177,48 +177,10 @@ public class SchemaConceptPropertyTest {
         assertEquals(superConcept, subConcept.sup());
     }
 
-    @Property
-    public void whenAddingADirectSubThatIsAMetaConcept_Throw(
-            SchemaConcept superConcept, @Meta @FromTx SchemaConcept subConcept) {
-        assumeTrue(sameSchemaConcept(subConcept, superConcept));
-
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
-        addDirectSub(superConcept, subConcept);
-    }
-
-    @Ignore("Test fails due to incorrect error message") // TODO
-    @Property
-    public void whenAddingADirectSubWhichIsAnIndirectSuper_Throw(
-            @NonMeta SchemaConcept newSubConcept, long seed) {
-        SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
-
-        //Check if the mutation can be performed in a valid manner
-        if(concept.isType()) assumeThat(concept.asType().plays().collect(Collectors.toSet()), is(empty()));
-
-        exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());
-        addDirectSub(concept, newSubConcept);
-    }
-
-    @Property
-    public void whenAddingADirectSub_TheDirectSubIsAdded(
-            SchemaConcept superConcept, @NonMeta @FromTx SchemaConcept subConcept) {
-        assumeTrue(sameSchemaConcept(subConcept, superConcept));
-        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
-
-        //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
-
-        addDirectSub(superConcept, subConcept);
-
-        assertThat(PropertyUtil.directSubs(superConcept), hasItem(subConcept));
-    }
-
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingASchemaConceptWithHypothesisRules_Throw(SchemaConcept concept) {
-        assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
+        assumeThat(concept.whenRules().collect(toSet()), not(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.cannotBeDeleted(concept).getMessage());
@@ -228,7 +190,7 @@ public class SchemaConceptPropertyTest {
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingASchemaConceptWithConclusionRules_Throw(SchemaConcept concept) {
-        assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
+        assumeThat(concept.thenRules().collect(toSet()), not(empty()));
 
         exception.expect(GraknTxOperationException.class);
         exception.expectMessage(GraknTxOperationException.cannotBeDeleted(concept).getMessage());
@@ -255,22 +217,6 @@ public class SchemaConceptPropertyTest {
             subConcept.asAttributeType().sup(superConcept.asAttributeType());
         } else if (subConcept.isRule()) {
             subConcept.asRule().sup(superConcept.asRule());
-        } else {
-            fail("unreachable");
-        }
-    }
-
-    private void addDirectSub(SchemaConcept superConcept, SchemaConcept subConcept) {
-        if (superConcept.isEntityType()) {
-            superConcept.asEntityType().sub(subConcept.asEntityType());
-        } else if (superConcept.isRelationshipType()) {
-            superConcept.asRelationshipType().sub(subConcept.asRelationshipType());
-        } else if (superConcept.isRole()) {
-            superConcept.asRole().sub(subConcept.asRole());
-        } else if (superConcept.isAttributeType()) {
-            superConcept.asAttributeType().sub(subConcept.asAttributeType());
-        } else if (superConcept.isRule()) {
-            superConcept.asRule().sub(subConcept.asRule());
         } else {
             fail("unreachable");
         }

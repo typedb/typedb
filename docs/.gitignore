@@ -1,39 +1,9 @@
+_site
 .sass_cache/
-.idea/
 .jekyll-metadata
 _pdf
-.DS_Store
 *.swp
 Gemfile.lock
 *.geany
 node_modules
-
-# Mac files #
-.DS_Store
-
-# IDE files #
-.idea/
-*.iml
-*.geany
-
-# Compiled files #
-out/
-target/
-*.class
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.ear
-
-# Debug files #
-dep.tree
-
-# Databases #
-db/
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+.ruby-version

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller.response;
@@ -21,7 +21,8 @@ package ai.grakn.engine.controller.response;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
@@ -50,8 +51,8 @@ public class ExplanationBuilderTest {
         String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
         genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
                 .forEach(answer -> {
-            String cousin1 = answer.get("x").getId().getValue();
-            String cousin2 = answer.get("y").getId().getValue();
+            String cousin1 = answer.get("x").id().getValue();
+            String cousin2 = answer.get("y").id().getValue();
 
             String specificQuery = "match " +
                     "$x id " + cousin1 + ";" +
@@ -59,11 +60,11 @@ public class ExplanationBuilderTest {
                     "(cousin: $x, cousin: $y) isa cousins; limit 1;get;";
 
             GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
-            ai.grakn.graql.admin.Answer specificAnswer = query.execute().stream().findFirst().orElse(new QueryAnswer());
+            ConceptMap specificAnswer = query.execute().stream().findFirst().orElse(new ConceptMapImpl());
 
-            Set<ConceptId> originalEntityIds = specificAnswer.getExplanation().getAnswers().stream()
+            Set<ConceptId> originalEntityIds = specificAnswer.explanation().getAnswers().stream()
                     .flatMap(ans -> ans.concepts().stream())
-                    .map(ai.grakn.concept.Concept::getId)
+                    .map(ai.grakn.concept.Concept::id)
                     .collect(Collectors.toSet());
 
             List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer);

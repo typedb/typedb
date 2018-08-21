@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.kbs;
@@ -59,21 +59,21 @@ public class PathMatrixKB extends AbstractPathKB {
             }
         }
 
-        arc.addRelationship()
-                .addRolePlayer(arcFrom, getInstance(graph, "a0"))
-                .addRolePlayer(arcTo, getInstance(graph, "a0,0"));
+        arc.create()
+                .assign(arcFrom, getInstance(graph, "a0"))
+                .assign(arcTo, getInstance(graph, "a0,0"));
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 if (j < n - 1) {
-                    arc.addRelationship()
-                            .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
-                            .addRolePlayer(arcTo, getInstance(graph, "a" + i + "," + (j + 1)));
+                    arc.create()
+                            .assign(arcFrom, getInstance(graph, "a" + i + "," + j))
+                            .assign(arcTo, getInstance(graph, "a" + i + "," + (j + 1)));
                 }
                 if (i < m - 1) {
-                    arc.addRelationship()
-                            .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
-                            .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + j));
+                    arc.create()
+                            .assign(arcFrom, getInstance(graph, "a" + i + "," + j))
+                            .assign(arcTo, getInstance(graph, "a" + (i + 1) + "," + j));
                 }
             }
         }

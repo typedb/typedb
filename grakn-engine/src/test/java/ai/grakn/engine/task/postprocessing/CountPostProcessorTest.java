@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.task.postprocessing;
@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
@@ -65,14 +65,14 @@ public class CountPostProcessorTest {
         configMock = mock(GraknConfig.class);
         when(configMock.getProperty(GraknConfigKey.SHARDING_THRESHOLD)).thenReturn(5L);
 
-        GraknKeyspaceStore graknKeyspaceStoreMock = mock(GraknKeyspaceStore.class);
-        when(graknKeyspaceStoreMock.containsKeyspace(any())).thenReturn(true);
+        KeyspaceStore keyspaceStoreMock = mock(KeyspaceStore.class);
+        when(keyspaceStoreMock.containsKeyspace(any())).thenReturn(true);
 
         EmbeddedGraknTx txMock = mock(EmbeddedGraknTx.class);
         when(txMock.admin()).thenReturn(mock(GraknAdmin.class));
 
         factoryMock = mock(EngineGraknTxFactory.class);
-        when(factoryMock.keyspaceStore()).thenReturn(graknKeyspaceStoreMock);
+        when(factoryMock.keyspaceStore()).thenReturn(keyspaceStoreMock);
         when(factoryMock.tx(any(Keyspace.class), any())).thenReturn(txMock);
 
         lockProviderMock = mock(LockProvider.class);

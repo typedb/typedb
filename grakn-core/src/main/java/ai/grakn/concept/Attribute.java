@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -48,7 +48,7 @@ public interface Attribute<D> extends Thing {
      * @return The value itself
      */
     @CheckReturnValue
-    D getValue();
+    D value();
 
     /**
      * Retrieves the type of the {@link Attribute}, that is, the {@link AttributeType} of which this resource is an Thing.
@@ -72,7 +72,7 @@ public interface Attribute<D> extends Thing {
      * @return The list of all Instances that possess this {@link Attribute}.
      */
     @CheckReturnValue
-    Stream<Thing> ownerInstances();
+    Stream<Thing> owners();
 
     /**
      * If the {@link Attribute} is unique, this method retrieves the Thing that possesses it.
@@ -82,7 +82,7 @@ public interface Attribute<D> extends Thing {
     @CheckReturnValue
     @Nullable
     default Thing owner() {
-        Iterator<Thing> owners = ownerInstances().iterator();
+        Iterator<Thing> owners = owners().iterator();
         if(owners.hasNext()) {
             return owners.next();
         } else {
@@ -97,7 +97,7 @@ public interface Attribute<D> extends Thing {
      * @return The instance itself
      */
     @Override
-    Attribute attribute(Attribute attribute);
+    Attribute has(Attribute attribute);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Attribute}
@@ -105,7 +105,7 @@ public interface Attribute<D> extends Thing {
      * @return The {@link Attribute} itself
      */
     @Override
-    Attribute deleteAttribute(Attribute attribute);
+    Attribute unhas(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")

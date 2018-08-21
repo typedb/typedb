@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.template.macro;
@@ -73,8 +73,8 @@ public class EqualsMacroTest {
 
     @Test
     public void whenUsingEqualsMacroInTemplate_ItExecutesCorrectly(){
-        String template = "insert $x val @equals(<this>, <that>);";
-        String expected = "insert $x0 val true;";
+        String template = "insert $x == @equals(<this>, <that>);";
+        String expected = "insert $x0 == true;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");
@@ -82,8 +82,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <notThat>);";
-        expected = "insert $x0 val false;";
+        template = "insert $x == @equals(<this>, <notThat>);";
+        expected = "insert $x0 == false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -91,8 +91,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <notThat>);";
-        expected = "insert $x0 val false;";
+        template = "insert $x == @equals(<this>, <notThat>);";
+        expected = "insert $x0 == false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -100,8 +100,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <that>, <those>);";
-        expected = "insert $x0 val true;";
+        template = "insert $x == @equals(<this>, <that>, <those>);";
+        expected = "insert $x0 == true;";
 
         data = new HashMap<>();
         data.put("this", 50);
@@ -110,8 +110,8 @@ public class EqualsMacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x val @equals(<this>, <that>, <notThat>);";
-        expected = "insert $x0 val false;";
+        template = "insert $x == @equals(<this>, <that>, <notThat>);";
+        expected = "insert $x0 == false;";
 
         data = new HashMap<>();
         data.put("this", 50);

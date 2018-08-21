@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.analytics;
@@ -31,6 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.GraknTestUtil;
 import org.junit.Before;
@@ -39,10 +40,12 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static ai.grakn.util.GraqlSyntax.Compute.Argument.min_k;
+import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -70,55 +73,55 @@ public class CorenessTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            graph.graql().compute().centrality().usingKCore().minK(1).execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(1)).execute();
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertTrue(result.isEmpty());
         }
     }
 
     @Test
     public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.putEntityType(thing).addEntity();
-            graph.putEntityType(anotherThing).addEntity();
-            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            graph.putEntityType(thing).create();
+            graph.putEntityType(anotherThing).create();
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertTrue(result.isEmpty());
         }
     }
 
     @Test
     public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
-            Entity entity1 = entityType.addEntity();
-            Entity entity2 = entityType.addEntity();
+            Entity entity1 = entityType.create();
+            Entity entity2 = entityType.create();
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
             graph.putRelationshipType(related)
                     .relates(role1).relates(role2)
-                    .addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2);
+                    .create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             entityType.plays(role3).plays(role4);
             graph.putRelationshipType(veryRelated)
                     .relates(role3).relates(role4)
-                    .addRelationship()
-                    .addRolePlayer(role3, entity1)
-                    .addRolePlayer(role4, entity2);
+                    .create()
+                    .assign(role3, entity1)
+                    .assign(role4, entity2);
 
-            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertTrue(result.isEmpty());
         }
     }
@@ -127,18 +130,21 @@ public class CorenessTest {
     public void testOnGraphWithFourEntitiesAndSixRelationships() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            Map<Long, Set<String>> result = graph.graql().compute().centrality().usingKCore().execute();
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            List<ConceptSetMeasure> result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.get(3L).size());
+            assertEquals(4, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
 
-            result = graph.graql().compute().centrality().usingKCore().of(thing).execute();
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).of(thing).execute();
             assertEquals(1, result.size());
-            assertEquals(2, result.get(3L).size());
+            assertEquals(2, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
 
-            result = graph.graql().compute().centrality().usingKCore().in(thing, anotherThing, related).execute();
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).in(thing, anotherThing, related).execute();
             assertEquals(1, result.size());
-            assertEquals(4, result.get(2L).size());
+            assertEquals(4, result.get(0).set().size());
+            assertEquals(2, result.get(0).measurement().intValue());
         }
     }
 
@@ -146,44 +152,49 @@ public class CorenessTest {
     public void testImplicitTypeShouldBeIncluded() {
         addSchemaAndEntities();
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).attribute(attributeType);
-            graph.getEntityType(anotherThing).attribute(attributeType);
+            graph.getEntityType(thing).has(attributeType);
+            graph.getEntityType(anotherThing).has(attributeType);
 
-            Attribute Attribute1 = attributeType.putAttribute("blah");
-            graph.getConcept(entityId1).asEntity().attribute(Attribute1);
-            graph.getConcept(entityId2).asEntity().attribute(Attribute1);
-            graph.getConcept(entityId3).asEntity().attribute(Attribute1);
-            graph.getConcept(entityId4).asEntity().attribute(Attribute1);
+            Attribute Attribute1 = attributeType.create("blah");
+            graph.getConcept(entityId1).asEntity().has(Attribute1);
+            graph.getConcept(entityId2).asEntity().has(Attribute1);
+            graph.getConcept(entityId3).asEntity().has(Attribute1);
+            graph.getConcept(entityId4).asEntity().has(Attribute1);
 
-            Attribute Attribute2 = attributeType.putAttribute("bah");
-            graph.getConcept(entityId1).asEntity().attribute(Attribute2);
-            graph.getConcept(entityId2).asEntity().attribute(Attribute2);
-            graph.getConcept(entityId3).asEntity().attribute(Attribute2);
+            Attribute Attribute2 = attributeType.create("bah");
+            graph.getConcept(entityId1).asEntity().has(Attribute2);
+            graph.getConcept(entityId2).asEntity().has(Attribute2);
+            graph.getConcept(entityId3).asEntity().has(Attribute2);
 
             graph.commit();
         }
 
-        Map<Long, Set<String>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().centrality().usingKCore().execute();
+        List<ConceptSetMeasure> result;
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             System.out.println("result = " + result);
             assertEquals(2, result.size());
-            assertEquals(5, result.get(4L).size());
-            assertEquals(1, result.get(3L).size());
 
-            result = graph.graql().compute().centrality().usingKCore().minK(4L).execute();
+            assertEquals(1, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
+
+            assertEquals(5, result.get(1).set().size());
+            assertEquals(4, result.get(1).measurement().intValue());
+
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(4L)).execute();
             assertEquals(1, result.size());
-            assertEquals(5, result.get(4L).size());
+            assertEquals(5, result.get(0).set().size());
+            assertEquals(4, result.get(0).measurement().intValue());
         }
     }
 
     @Test
     public void testDisconnectedCores() {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -200,74 +211,79 @@ public class CorenessTest {
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
             entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
 
-            Entity entity0 = entityType1.addEntity();
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType1.addEntity();
-            Entity entity4 = entityType1.addEntity();
-            Entity entity5 = entityType1.addEntity();
-            Entity entity6 = entityType1.addEntity();
-            Entity entity7 = entityType1.addEntity();
-            Entity entity8 = entityType1.addEntity();
+            Entity entity0 = entityType1.create();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType1.create();
+            Entity entity4 = entityType1.create();
+            Entity entity5 = entityType1.create();
+            Entity entity6 = entityType1.create();
+            Entity entity7 = entityType1.create();
+            Entity entity8 = entityType1.create();
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity3)
-                    .addRolePlayer(role2, entity4);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity3);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity4);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2);
+            relationshipType1.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3);
+            relationshipType1.create()
+                    .assign(role1, entity3)
+                    .assign(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity3);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity4);
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity5)
-                    .addRolePlayer(role2, entity6);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity5)
-                    .addRolePlayer(role4, entity7);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity5)
-                    .addRolePlayer(role4, entity8);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity6)
-                    .addRolePlayer(role4, entity7);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity6)
-                    .addRolePlayer(role4, entity8);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity7)
-                    .addRolePlayer(role4, entity8);
+            relationshipType1.create()
+                    .assign(role1, entity5)
+                    .assign(role2, entity6);
+            relationshipType2.create()
+                    .assign(role3, entity5)
+                    .assign(role4, entity7);
+            relationshipType2.create()
+                    .assign(role3, entity5)
+                    .assign(role4, entity8);
+            relationshipType2.create()
+                    .assign(role3, entity6)
+                    .assign(role4, entity7);
+            relationshipType2.create()
+                    .assign(role3, entity6)
+                    .assign(role4, entity8);
+            relationshipType2.create()
+                    .assign(role3, entity7)
+                    .assign(role4, entity8);
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity0)
-                    .addRolePlayer(role2, entity1);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity0)
-                    .addRolePlayer(role2, entity8);
+            relationshipType1.create()
+                    .assign(role1, entity0)
+                    .assign(role2, entity1);
+            relationshipType1.create()
+                    .assign(role1, entity0)
+                    .assign(role2, entity8);
 
             graph.commit();
         }
 
-        Map<Long, Set<String>> result;
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            result = graph.graql().compute().centrality().usingKCore().execute();
+        List<ConceptSetMeasure> result;
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).execute();
             assertEquals(2, result.size());
-            assertEquals(8, result.get(3L).size());
-            assertEquals(1, result.get(2L).size());
 
-            result = graph.graql().compute().centrality().usingKCore().minK(3L).execute();
+            assertEquals(1, result.get(0).set().size());
+            assertEquals(2, result.get(0).measurement().intValue());
+
+            assertEquals(8, result.get(1).set().size());
+            assertEquals(3, result.get(1).measurement().intValue());
+
+            result = graph.graql().compute(CENTRALITY).using(K_CORE).where(min_k(3L)).execute();
             assertEquals(1, result.size());
-            assertEquals(8, result.get(3L).size());
+            assertEquals(8, result.get(0).set().size());
+            assertEquals(3, result.get(0).measurement().intValue());
         }
     }
 
@@ -283,20 +299,21 @@ public class CorenessTest {
             list.add(i);
         }
 
-        Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
-            try (GraknTx graph = session.open(GraknTxType.READ)) {
-                return Graql.compute().withTx(graph).centrality().usingKCore().minK(3L).execute();
+        Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
+            try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+                return Graql.compute(CENTRALITY).withTx(graph).using(K_CORE).where(min_k(3L)).execute();
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
         result.forEach(map -> {
             assertEquals(1, map.size());
-            assertEquals(4, map.get(3L).size());
+            assertEquals(4, map.get(0).set().size());
+            assertEquals(3, map.get(0).measurement().intValue());
         });
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -313,35 +330,35 @@ public class CorenessTest {
             entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
             entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
 
-            Entity entity1 = entityType1.addEntity();
-            Entity entity2 = entityType1.addEntity();
-            Entity entity3 = entityType2.addEntity();
-            Entity entity4 = entityType2.addEntity();
+            Entity entity1 = entityType1.create();
+            Entity entity2 = entityType1.create();
+            Entity entity3 = entityType2.create();
+            Entity entity4 = entityType2.create();
 
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity1)
-                    .addRolePlayer(role2, entity2);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity2)
-                    .addRolePlayer(role2, entity3);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity3)
-                    .addRolePlayer(role2, entity4);
-            relationshipType1.addRelationship()
-                    .addRolePlayer(role1, entity4)
-                    .addRolePlayer(role2, entity1);
+            relationshipType1.create()
+                    .assign(role1, entity1)
+                    .assign(role2, entity2);
+            relationshipType1.create()
+                    .assign(role1, entity2)
+                    .assign(role2, entity3);
+            relationshipType1.create()
+                    .assign(role1, entity3)
+                    .assign(role2, entity4);
+            relationshipType1.create()
+                    .assign(role1, entity4)
+                    .assign(role2, entity1);
 
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity1)
-                    .addRolePlayer(role4, entity3);
-            relationshipType2.addRelationship()
-                    .addRolePlayer(role3, entity2)
-                    .addRolePlayer(role4, entity4);
+            relationshipType2.create()
+                    .assign(role3, entity1)
+                    .assign(role4, entity3);
+            relationshipType2.create()
+                    .assign(role3, entity2)
+                    .assign(role4, entity4);
 
-            entityId1 = entity1.getId();
-            entityId2 = entity2.getId();
-            entityId3 = entity3.getId();
-            entityId4 = entity4.getId();
+            entityId1 = entity1.id();
+            entityId2 = entity2.id();
+            entityId3 = entity3.id();
+            entityId4 = entity4.id();
 
             graph.commit();
         }

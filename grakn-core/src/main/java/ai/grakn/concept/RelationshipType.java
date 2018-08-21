@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -44,7 +44,7 @@ public interface RelationshipType extends Type {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    RelationshipType setLabel(Label label);
+    RelationshipType label(Label label);
 
     /**
      * Creates and returns a new {@link Relationship} instance, whose direct type will be this type.
@@ -54,7 +54,7 @@ public interface RelationshipType extends Type {
      *
      * @throws GraknTxOperationException if this is a meta type
      */
-    Relationship addRelationship();
+    Relationship create();
 
     /**
      * Sets the supertype of the {@link RelationshipType} to be the {@link RelationshipType} specified.
@@ -63,14 +63,6 @@ public interface RelationshipType extends Type {
      * @return  The {@link RelationshipType} itself.
      */
     RelationshipType sup(RelationshipType type);
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this {@link RelationshipType}
-     * @return The {@link RelationshipType} itself
-     */
-    RelationshipType sub(RelationshipType type);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -88,7 +80,7 @@ public interface RelationshipType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationshipType attribute(AttributeType attributeType);
+    RelationshipType has(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
@@ -98,7 +90,7 @@ public interface RelationshipType extends Type {
      * @return A list of the RoleTypes which make up this {@link RelationshipType}.
      */
     @CheckReturnValue
-    Stream<Role> relates();
+    Stream<Role> roles();
 
     //------------------------------------- Edge Handling ----------------------------------
 
@@ -114,13 +106,13 @@ public interface RelationshipType extends Type {
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Delete a Role from this {@link RelationshipType}
+     * Unrelated a Role from this {@link RelationshipType}
      * @see Role
      *
-     * @param role The Role to delete from the {@link RelationshipType}.
+     * @param role The Role to unrelate from the {@link RelationshipType}.
      * @return The {@link RelationshipType} itself.
      */
-    RelationshipType deleteRelates(Role role);
+    RelationshipType unrelate(Role role);
 
     //---- Inherited Methods
     /**
@@ -130,7 +122,7 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType setAbstract(Boolean isAbstract);
+    RelationshipType isAbstract(Boolean isAbstract);
 
     /**
      * Returns the direct supertype of this {@link RelationshipType}.
@@ -171,7 +163,7 @@ public interface RelationshipType extends Type {
      * @return The {@link Rule} itself.
      */
     @Override
-    RelationshipType deletePlays(Role role);
+    RelationshipType unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link RelationshipType} to have {@link Attribute}s of type {@link AttributeType}
@@ -180,7 +172,7 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType deleteAttribute(AttributeType attributeType);
+    RelationshipType unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link RelationshipType}
@@ -189,7 +181,7 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationshipType deleteKey(AttributeType attributeType);
+    RelationshipType unkey(AttributeType attributeType);
 
     /**
      * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}

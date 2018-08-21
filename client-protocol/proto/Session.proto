@@ -1,0 +1,203 @@
+syntax = "proto3";
+
+option java_package = "ai.grakn.rpc.proto";
+option java_outer_classname = "SessionProto";
+
+import "Concept.proto";
+import "Answer.proto";
+
+package session;
+
+service SessionService {
+    // Represents a full transaction. The stream of `Transaction.Req`s must begin with a `Open` message.
+    // When the call is completed, the transaction will always be closed, with or without a `Commit` message.
+    rpc transaction (stream Transaction.Req) returns (stream Transaction.Res);
+}
+
+message Transaction {
+    message Req {
+        oneof req {
+            Open.Req open_req = 1;
+            Commit.Req commit_req = 2;
+            Query.Req query_req = 3;
+            Iter.Req iterate_req = 4;
+            GetSchemaConcept.Req getSchemaConcept_req = 5;
+            GetConcept.Req getConcept_req = 6;
+            GetAttributes.Req getAttributes_req = 7;
+            PutEntityType.Req putEntityType_req = 8;
+            PutAttributeType.Req putAttributeType_req = 9;
+            PutRelationType.Req putRelationType_req = 10;
+            PutRole.Req putRole_req = 11;
+            PutRule.Req putRule_req = 12;
+            ConceptMethod.Req conceptMethod_req = 13;
+        }
+    }
+    message Res {
+        oneof res {
+            Open.Res open_res = 1;
+            Commit.Res commit_res = 2;
+            Query.Iter query_iter = 3;
+            Iter.Res iterate_res = 4;
+            GetSchemaConcept.Res getSchemaConcept_res = 5;
+            GetConcept.Res getConcept_res = 6;
+            GetAttributes.Iter getAttributes_iter = 7;
+            PutEntityType.Res putEntityType_res = 8;
+            PutAttributeType.Res putAttributeType_res = 9;
+            PutRelationType.Res putRelationType_res = 10;
+            PutRole.Res putRole_res = 11;
+            PutRule.Res putRule_res = 12;
+            ConceptMethod.Res conceptMethod_res = 13;
+        }
+    }
+
+    message Iter {
+        message Req {
+            int32 id = 1;
+        }
+        message Res {
+            oneof res {
+                bool done = 1;
+                Query.Iter.Res query_iter_res = 2;
+                GetAttributes.Iter.Res getAttributes_iter_res = 3;
+                Method.Iter.Res conceptMethod_iter_res = 4;
+            }
+        }
+    }
+
+    enum Type {
+        READ = 0;
+        WRITE = 1;
+        BATCH = 2;
+    }
+
+    message Open {
+        message Req {
+            string keyspace = 1;
+            Type type = 2;
+            /* Fields ignored in the open-source version. */
+            string username = 3;
+            string password = 4;
+        }
+        message Res {}
+
+    }
+
+    message Commit {
+        message Req {}
+        message Res {}
+    }
+
+    message Query {
+        message Req {
+            string query = 1;
+            INFER infer = 2;
+            // We cannot use bool for `infer` because GRPC's default value for bool is FALSE
+            // We use enum INFER instead, because the default value is index 0 (TRUE)
+        }
+        message Iter {
+            int32 id = 1;
+            message Res {
+                Answer answer = 1;
+            }
+        }
+        enum INFER {
+            TRUE = 0;
+            FALSE = 1;
+            // The default value of this enum is 0 (TRUE)
+        }
+    }
+
+    message GetSchemaConcept {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            oneof res {
+                Concept schemaConcept = 1;
+                Null null = 2;
+            }
+        }
+    }
+
+    message GetConcept {
+        message Req {
+            string id = 1;
+        }
+        message Res {
+            oneof res {
+                Concept concept = 1;
+                Null null = 2;
+            }
+        }
+    }
+
+    message GetAttributes {
+        message Req {
+            ValueObject value = 1;
+        }
+        message Iter {
+            int32 id = 1;
+            message Res {
+                Concept attribute = 1;
+            }
+        }
+    }
+
+    message PutEntityType {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            Concept entityType = 1;
+        }
+    }
+
+    message PutAttributeType {
+        message Req {
+            string label = 1;
+            AttributeType.DATA_TYPE dataType = 2;
+        }
+        message Res {
+            Concept attributeType = 1;
+        }
+    }
+
+    message PutRelationType {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            Concept relationType = 1;
+        }
+    }
+
+    message PutRole {
+        message Req {
+            string label = 1;
+        }
+        message Res {
+            Concept role = 1;
+        }
+    }
+
+    message PutRule {
+        message Req {
+            string label = 1;
+            string when = 2;
+            string then = 3;
+        }
+        message Res {
+            Concept rule = 1;
+        }
+    }
+
+    message ConceptMethod {
+        message Req {
+            string id = 1;
+            Method.Req method = 2;
+        }
+        message Res {
+            Method.Res response = 1;
+        }
+    }
+}

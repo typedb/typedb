@@ -1,19 +1,19 @@
 <!--
-Grakn - A Distributed Semantic Database
-Copyright (C) 2016  Grakn Labs Limited
+GRAKN.AI - THE KNOWLEDGE GRAPH
+Copyright (C) 2018 Grakn Labs Ltd
 
-Grakn is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
-Grakn is distributed in the hope that it will be useful,
+This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -->
 
 <template>
@@ -34,10 +34,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="dd-header" v-show="Object.keys(nodeAttributes).length">Attributes:</div>
         <div class="dd-item" v-for="(value,key) in nodeAttributes">
             <div class="dd-handle noselect">
-                <span v-if="value.value" class="list-key">{{value.type}}:</span>
-                <span v-else class="list-key">{{value.type}}</span>
-                <!-- <a v-if="value.externalRef" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.type}}</a> -->
-                <span v-if="value.value">{{value.value}}</span>
+                <span class="list-key">{{value.type}}:</span>
+                <a v-if="value.href" :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.value}}</a>
+                <span v-else-if="value.value">{{value.value}}</span>
                 <span v-else>{{value.dataType.split('.').pop()}}</span>
             </div>
         </div>
@@ -151,6 +150,10 @@ export default {
     },
     nodeProperties() {
       if (this.node === undefined) return {};
+      if(this.node.baseType === 'INFERRED_RELATIONSHIP') return {
+        type: this.node.type,
+        baseType: this.node.baseType,
+      }
       return {
         id: this.node.id,
         type: this.node.type,
@@ -174,19 +177,13 @@ export default {
    * It sorts them alphabetically and then check if a attribute value is a URL
    */
     prepareAttributes(attributes) {
-      return attributes.sort((a,b)=>((a.type>b.type)?1:-1));
-          //TODO: MOVE THIS TO PARSER
-          // (sortedObject, k) => {
-          //     // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
-          //   const currentAttributeWithHref = Object.assign(attributes[k], { href: this.validURL(attributes[k].label) });
-          //   return Object.assign(sortedObject, { [k]: currentAttributeWithHref });
-          // }, {});
+      const sortedAttrs = attributes.sort((a,b)=>((a.type>b.type)?1:-1));
+      return sortedAttrs.map(a => Object.assign(a, { href: this.validURL(a.value)}));
     },
     validURL(str) {
       const pattern = new RegExp(URL_REGEX, 'i');
       return pattern.test(str);
     },
-
   },
 };
 </script>

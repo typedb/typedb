@@ -9,7 +9,7 @@ $( document ).ready(function() {
     var h = $(window).height();
     //console.log (h);
     if (h > 800) {
-        $( "#mysidebar" ).attr("class", "nav affix");
+        $( "#mysidebar" ).attr("class", "nav");
     }
     // activate tooltips. although this is a bootstrap js function, it must be activated this way in your theme.
     $('[data-toggle="tooltip"]').tooltip({
@@ -67,7 +67,7 @@ $( document ).ready(function() {
     var hamburgerSecondaryMenu = $('#hamburger-menu-secondary');
     var hamburgerSecondaryMenuBack = $('#hamburger-menu-secondary-back');
     var hamburgerExpanded = false;
-    var secondaryExpanded = false;
+    var secondaryExpanded = null;
 
     hamburgerBtn.click(function() {
         hamburgerExpanded = !hamburgerExpanded;
@@ -78,37 +78,38 @@ $( document ).ready(function() {
         else {
             hamburgerBtn.removeClass("is-active");
             hamburgerMenu.removeClass("navigation-bar__hamburger--open");
-            if(secondaryExpanded) {
-                hamburgerSecondaryMenu.removeClass('navigation-bar__hamburger__secondary--open');
-                $("a").remove('.navigation-bar__link__removable');
-                secondaryExpanded = false;
-            }
         }
     })
 
-    var hamburgerParentButtons = $('.navigation-bar__hamburger__link');
-
-    hamburgerParentButtons.click(function() {
-        var links = $(this).data('links');
-        Object.keys(links).forEach(function(link) {
-            var linkAddr = links[link];
-            hamburgerSecondaryMenu.append('<a class="navigation-bar__link navigation-bar__link__removable" href="' + linkAddr + '">' + link + '</a>');
+    var hamburgerParentButtons = $('.navigation-bar__link__dropdown');
+    hamburgerParentButtons.each(function(i) {
+        $(this).click(function() {
+            var submenu = $(this).find('.navigation-bar__link__dropdown__mobile');
+            if( secondaryExpanded === i) {
+                secondaryExpanded = null;
+                submenu.removeClass('navigation-bar__link__dropdown__mobile--active');
+                hamburgerParentButtons.eq(i).find('.fa-caret-down').addClass('fa-caret-right');
+                hamburgerParentButtons.eq(i).find('.fa-caret-right').removeClass('fa-caret-down');
+            }
+            else {
+                if (secondaryExpanded) {
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.navigation-bar__link__dropdown__mobile').removeClass('navigation-bar__link__dropdown__mobile--active');
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-down').addClass('fa-caret-right');
+                    hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-right').removeClass('fa-caret-down');
+                }
+                secondaryExpanded = i;
+                submenu.addClass('navigation-bar__link__dropdown__mobile--active');
+                hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-right').addClass('fa-caret-down');
+                hamburgerParentButtons.eq(secondaryExpanded).find('.fa-caret-down').removeClass('fa-caret-right');
+            }
         });
-        hamburgerSecondaryMenu.addClass('navigation-bar__hamburger__secondary--open');
-        secondaryExpanded = true;
-    });
-
-    hamburgerSecondaryMenuBack.click(function() {
-        hamburgerSecondaryMenu.removeClass('navigation-bar__hamburger__secondary--open');
-        $("a").remove('.navigation-bar__link__removable');
-        secondaryExpanded = false;
     })
 
 
     //Footer Subscribe logic
     var footerSubscribeButton = $("#footer-subscribe-btn");
     var footerSubscribeInput = $("#footer-subscribe-input");
-    
+
     function validateEmail(email) {
         var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
         return re.test(email.toLowerCase());
@@ -125,4 +126,14 @@ $( document ).ready(function() {
             );
         }
     })
+
+    // Code for pulling latest Download Version.
+    $.ajax({
+        url: "https://cms.grakn.ai/api/1.1/tables/version/rows?access_token=m7CBWmCjTog1OcNifMcM1TNlOYuztSyL",
+      }).done(function(response) {
+        var latest_version = response.data.length > 0? response.data.filter(item => item.latest === "True" && item.product==="core")[0].version : '';
+       $('#download_nav_bar').html('Download ' + latest_version);
+       $('#download_nav_bar_mobile').html('Download ' + latest_version);
+       $('#download_footer').html('Grakn ' + latest_version);
+    });
 });

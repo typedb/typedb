@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.migration.base;
 
-import ai.grakn.Grakn;
 import ai.grakn.Keyspace;
 import ai.grakn.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;
@@ -43,6 +42,7 @@ public class MigrationOptions {
     public static final String MAX_DELAY_DEFAULT_VALUE = "1000";
     public static final String RETRY_DEFAULT_VALUE = "5";
     public static final String LINES_DEFAULT_VALUE = "-1";
+    private static final SimpleURI DEFAULT_URI = new SimpleURI("localhost", 4567);
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -94,7 +94,7 @@ public class MigrationOptions {
     }
 
     public SimpleURI getUri() {
-        return command.hasOption("u") ? new SimpleURI(command.getOptionValue("u")) : Grakn.DEFAULT_URI;
+        return command.hasOption("u") ? new SimpleURI(command.getOptionValue("u")) : DEFAULT_URI;
     }
 
     public Options getOptions() {

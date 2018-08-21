@@ -9,9 +9,6 @@
                 <router-link tag="li" to="/console" class="link">
                     <a class="noselect">Console</a>
                 </router-link>
-                <router-link tag="li" to="/config" class="link">
-                    <a class="noselect">Config</a>
-                </router-link>
                 <li class="link"><a target="_blank" href="https://grakn.ai/pages/index.html" class="noselect">Documentation</a></li>
             </ul>
         </nav>
@@ -21,6 +18,9 @@
         </div>
         <div class="green-link">
             <a target="_blank" href="https://github.com/graknlabs/grakn" class="noselect">Star on GitHub</a>
+        </div>
+        <div class="green-link noselect" id="cmdBtn">
+            Commands
         </div>
     </aside>
 </transition>
@@ -96,11 +96,6 @@ export default {
   mounted() {
     this.$nextTick(() => {
     });
-  },
-  methods: {
-    openSignUp() {
-      $('.modal-wrapper').toggleClass('open');
-    },
   },
 };
 </script>

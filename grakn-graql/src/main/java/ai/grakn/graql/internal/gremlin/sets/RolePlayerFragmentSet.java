@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.gremlin.sets;
@@ -33,6 +33,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -128,6 +129,36 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         return false;
     };
 
+    static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, tx) -> {
+        Iterable<RolePlayerFragmentSet> rolePlayers =
+                EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
+
+        for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
+            @Nullable RolePlayerFragmentSet newRolePlayer = null;
+
+            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationshipTypeLabels();
+            if(relLabels == null) continue;
+
+            Set<RelationshipType> relTypes = relLabels.stream()
+                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .filter(Objects::nonNull)
+                    .filter(Concept::isRelationshipType)
+                    .map(Concept::asRelationshipType)
+                    .collect(toSet());
+            if (relTypes.stream().allMatch(SchemaConcept::isImplicit) && rolePlayer.roleLabels() == null) {
+                newRolePlayer = rolePlayer.substituteRelationshipTypeLabels(relTypes);
+            }
+
+            if (newRolePlayer != null && !newRolePlayer.equals(rolePlayer)) {
+                fragmentSets.remove(rolePlayer);
+                fragmentSets.add(newRolePlayer);
+                return true;
+            }
+        }
+
+        return false;
+    };
+
     /**
      * A query can use the {@link RelationshipType} {@link Label}s on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
      * <ol>
@@ -180,6 +211,16 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         return false;
     };
 
+    private RolePlayerFragmentSet substituteRelationshipTypeLabels(Set<RelationshipType> relTypes){
+        ImmutableSet<Label> newRoleTypeLabels = relTypes != null?
+                relTypes.stream().flatMap(RelationshipType::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
+                null;
+
+        return new AutoValue_RolePlayerFragmentSet(
+                varProperty(), relation(), edge(), rolePlayer(), null, roleLabels(), newRoleTypeLabels
+        );
+    }
+
     /**
      * Apply an optimisation where we check the {@link Role} property instead of navigating to the {@link Role} directly.
      * @param roles the role-player must link to any of these (or their sub-types)
@@ -190,7 +231,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(roleLabels() == null);
 
         ImmutableSet<Label> newRoleLabels =
-                roles.flatMap(Role::subs).map(SchemaConcept::getLabel).collect(toImmutableSet());
+                roles.flatMap(Role::subs).map(SchemaConcept::label).collect(toImmutableSet());
 
         return new AutoValue_RolePlayerFragmentSet(
                 varProperty(), relation(), edge(), rolePlayer(), null, newRoleLabels, relationshipTypeLabels()

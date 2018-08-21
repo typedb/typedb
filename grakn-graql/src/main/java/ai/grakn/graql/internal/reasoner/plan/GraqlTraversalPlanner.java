@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.plan;
@@ -70,12 +70,12 @@ public class GraqlTraversalPlanner {
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using a refined {@link GraqlTraversal} procedure.
      */
-    public static ImmutableList<Atom> refinedPlan(ReasonerQueryImpl query) {
+    public static ImmutableList<Atom> plan(ReasonerQueryImpl query) {
         List<Atom> startCandidates = query.getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
                 .collect(Collectors.toList());
         Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
-        return ImmutableList.copyOf(refinedPlan(query, startCandidates, subs));
+        return ImmutableList.copyOf(refinePlan(query, startCandidates, subs));
     }
 
     @Nullable
@@ -86,13 +86,15 @@ public class GraqlTraversalPlanner {
                 .findFirst().orElse(null);
     }
 
+    private static String PLACEHOLDER_ID = "placeholderId";
+
     /**
      * @param query top level query for which the plan is constructed
      * @param atoms list of current atoms of interest
      * @param subs extra substitutions
      * @return an optimally ordered list of provided atoms
      */
-    private static List<Atom> refinedPlan(ReasonerQueryImpl query, List<Atom> atoms, Set<IdPredicate> subs){
+    private static List<Atom> refinePlan(ReasonerQueryImpl query, List<Atom> atoms, Set<IdPredicate> subs){
         List<Atom> candidates = subs.isEmpty()?
                 atoms :
                 atoms.stream()
@@ -111,15 +113,15 @@ public class GraqlTraversalPlanner {
 
                 Set<IdPredicate> extraSubs = first.getVarNames().stream()
                         .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                        .map(v -> IdPredicate.create(v, ConceptId.of("placeholderId"), query))
+                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
                         .collect(Collectors.toSet());
 
                 return Stream.concat(
                         Stream.of(first),
-                        refinedPlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
+                        refinePlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
                 ).collect(Collectors.toList());
             } else {
-                return refinedPlan(query, atomsToPlan, subs);
+                return refinePlan(query, atomsToPlan, subs);
             }
         }
     }
@@ -147,7 +149,7 @@ public class GraqlTraversalPlanner {
      * @param queryPattern corresponding pattern
      * @return an optimally ordered list of provided atoms
      */
-    static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, EmbeddedGraknTx<?> tx){
+    private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, PatternAdmin queryPattern, EmbeddedGraknTx<?> tx){
         Multimap<VarProperty, Atom> propertyMap = HashMultimap.create();
         atoms.stream()
                 .filter(at -> !(at instanceof OntologicalAtom))
@@ -157,16 +159,21 @@ public class GraqlTraversalPlanner {
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(queryPattern, tx);
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
-        ImmutableList.Builder<Atom> builder = ImmutableList.builder();
-        builder.addAll(atoms.stream().filter(at -> at instanceof OntologicalAtom).iterator());
-        builder.addAll(fragments.stream()
+        List<Atom> atomList = new ArrayList<>();
+        atoms.stream().filter(at -> at instanceof OntologicalAtom).forEach(atomList::add);
+        fragments.stream()
                 .map(Fragment::varProperty)
                 .filter(Objects::nonNull)
                 .filter(properties::contains)
                 .distinct()
                 .flatMap(p -> propertyMap.get(p).stream())
                 .distinct()
-                .iterator());
-        return builder.build();
+                .forEach(atomList::add);
+
+        //add any unlinked items (disconnected and indexed for instance)
+        propertyMap.values().stream()
+                .filter(at -> !atomList.contains(at))
+                .forEach(atomList::add);
+        return ImmutableList.copyOf(atomList);
     }
 }

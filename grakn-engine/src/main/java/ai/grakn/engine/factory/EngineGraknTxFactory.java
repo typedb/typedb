@@ -1,31 +1,29 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.factory;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
@@ -43,29 +41,25 @@ import java.util.concurrent.locks.Lock;
  * <p>
  * <p>
  *     This internal factory is used to produce {@link GraknTx}s.
- *
- *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
- *     {@link GraknTxFactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
- *     are actually the same graphs.
  * </p>
  *
  * @author fppt
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;
-    private final GraknKeyspaceStore graknKeyspaceStore;
+    private final KeyspaceStore keyspaceStore;
     private final Map<Keyspace, EmbeddedGraknSession> openedSessions;
     private final LockProvider lockProvider;
 
-    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig, GraknKeyspaceStore keyspaceStore) {
+    public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig, KeyspaceStore keyspaceStore) {
         return new EngineGraknTxFactory(engineConfig, lockProvider, keyspaceStore);
     }
 
-    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, GraknKeyspaceStore keyspaceStore) {
+    private EngineGraknTxFactory(GraknConfig engineConfig, LockProvider lockProvider, KeyspaceStore keyspaceStore) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
         this.lockProvider = lockProvider;
-        this.graknKeyspaceStore = keyspaceStore;
+        this.keyspaceStore = keyspaceStore;
     }
 
     //Should only be used for testing
@@ -76,11 +70,11 @@ public class EngineGraknTxFactory {
 
 
     public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
-        if (!graknKeyspaceStore.containsKeyspace(keyspace)) {
+        if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
 
-        return session(keyspace).open(type);
+        return session(keyspace).transaction(type);
     }
 
     /**
@@ -92,7 +86,7 @@ public class EngineGraknTxFactory {
      */
     private EmbeddedGraknSession session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineURI(), engineConfig, GraknTxFactoryBuilder.getInstance()));
+            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineConfig, GraknTxFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
@@ -108,9 +102,9 @@ public class EngineGraknTxFactory {
         lock.lock();
         try {
             // Create new empty keyspace in db
-            session(keyspace).open(GraknTxType.WRITE).close();
+            session(keyspace).transaction(GraknTxType.WRITE).close();
             // Add current keyspace to list of available Grakn keyspaces
-            graknKeyspaceStore.addKeyspace(keyspace);
+            keyspaceStore.addKeyspace(keyspace);
         } finally {
             lock.unlock();
         }
@@ -124,11 +118,8 @@ public class EngineGraknTxFactory {
         return engineConfig;
     }
 
-    public GraknKeyspaceStore keyspaceStore() {
-        return graknKeyspaceStore;
+    public KeyspaceStore keyspaceStore() {
+        return keyspaceStore;
     }
 
-    private String engineURI() {
-        return engineConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME) + ":" + engineConfig.getProperty(GraknConfigKey.SERVER_PORT);
-    }
 }

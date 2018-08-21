@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.util;
@@ -31,10 +31,14 @@ import javax.annotation.CheckReturnValue;
 public enum ErrorMessage {
     //--------------------------------------------- Bootup Errors -----------------------------------------------
     GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"),
-    UNABLE_TO_START_GRAKN("Unable to start Grakn"),
+    UNSUPPORTED_JAVA_VERSION("Unsupported Java version [%s] found. Grakn needs Java 1.8 in order to run."),
+    UNABLE_TO_START_GRAKN("An error has occurred during boot-up. Please run 'grakn server status' or check the logs located under the 'logs' directory."),
+    UNABLE_TO_START_ENGINE_JAR_NOT_FOUND("Unable to start Engine, No JAR files found! Please re-download the Grakn distribution."),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
     UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
+    PID_ALREADY_EXISTS("Pid file already exists: '[%s]'. Overwriting..."),
+    COULD_NOT_GET_PID("Couldn't get the PID of Grakn Engine. Received '%s'"),
 
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
@@ -52,7 +56,7 @@ public enum ErrorMessage {
     IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
-    HAS_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
+    HAS_INVALID("The type [%s] is not allowed to have an attribute of type [%s]"),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     TX_CLOSED("The Transaction for keyspace [%s] is closed"),
@@ -60,7 +64,7 @@ public enum ErrorMessage {
     TX_CLOSED_ON_ACTION("The transaction was %s and closed [%s]. Use the session to get a new transaction for the graph."),
     TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
-    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a resource"),
+    CANNOT_BE_KEY_AND_ATTRIBUTE("The Type [%s] cannot have the Attribute Type [%s] as a key and as an attribute"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
@@ -73,7 +77,7 @@ public enum ErrorMessage {
     UNKNOWN_CONCEPT("Uknown concept type [%s]"),
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
-    BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Grakn will need to be restarted."),
+    BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -123,9 +127,9 @@ public enum ErrorMessage {
 
     VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
 
-    VALIDATION_RULE_INVALID_RESOURCE_TYPE("Attempting to define a rule containing a resource pattern with type [%s] which is not a resource type\n"),
+    VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE("Attempting to define a rule containing an attribute pattern with type [%s] which is not an attribute type\n"),
 
-    VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE("Attempting to define a rule containing a resource pattern of type [%s] with type [%s] that cannot have this resource\n"),
+    VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE("Attempting to define a rule containing an attribute pattern of type [%s] with type [%s] that cannot have this attribute\n"),
 
     VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED("Attempting to define a rule containing a relation pattern with role [%s] which cannot be played in relation [%s]\n"),
 
@@ -143,13 +147,16 @@ public enum ErrorMessage {
             "Cannot produce graph"),
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
+    //--------------------------------------------- Migration Errors -----------------------------------------------
+    OWL_NOT_SUPPORTED("Owl migration is not supported anymore"),
+
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TX("no graph provided"),
 
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
-    MUST_BE_ATTRIBUTE_TYPE("type '%s' must be a attribute-type"),
+    MUST_BE_ATTRIBUTE_TYPE("type '%s' must be an attribute-type"),
     ID_NOT_FOUND("id '%s' not found"),
     LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
@@ -157,7 +164,7 @@ public enum ErrorMessage {
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
     NON_POSITIVE_LIMIT("limit %s should be positive"),
     NEGATIVE_OFFSET("offset %s should be non-negative"),
-    INVALID_VALUE("unsupported resource value type %s"),
+    INVALID_VALUE("unsupported attribute value type %s"),
 
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
@@ -175,7 +182,7 @@ public enum ErrorMessage {
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
 
-    INVALID_STATMENT("Value [%s] not of type [%s] in data [%s]"),
+    INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating
     TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
@@ -190,22 +197,31 @@ public enum ErrorMessage {
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
-    PID_ALREADY_EXISTS("pid file already exists: '[%s]'."),
-
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
+    INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     ROLE_ID_IS_NOT_ROLE("Assignment of non-role id to a role variable in pattern [%s]."),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]."),
+    INVALID_CACHE_ENTRY("Query cache entry for query [%s] contains invalid entry."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
     NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
-    NO_SOURCE("No valid source id provided"),
-    NO_DESTINATION("No valid destination id provided"),
+    INVALID_COMPUTE_METHOD("Invalid compute method. " +
+            "The available compute methods are: [%s]."),
+
+    INVALID_COMPUTE_CONDITION("Invalid condition(s) for 'compute [%s]'. The accepted condition(s) are: [%s]."),
+
+    MISSING_COMPUTE_CONDITION("Missing condition(s) for 'compute [%s]'. The required condition(s) are: [%s]."),
+
+    INVALID_COMPUTE_METHOD_ALGORITHM("Invalid algorithm for 'compute [%s]'. The accepted algorithm(s) are: [%s]."),
+
+    INVALID_COMPUTE_ARGUMENT("Invalid argument(s) 'compute [%s] using [%s]'. The accepted argument(s) are: [%s]."),
+    
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),

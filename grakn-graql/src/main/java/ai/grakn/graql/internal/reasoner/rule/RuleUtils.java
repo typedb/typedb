@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.rule;
@@ -21,8 +21,11 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 
@@ -48,8 +51,7 @@ public class RuleUtils {
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(GraknTx graph) {
-        return graph.admin().getMetaRule().subs().
-                filter(sub -> !sub.equals(graph.admin().getMetaRule()));
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRules();
     }
 
     /**
@@ -57,7 +59,7 @@ public class RuleUtils {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
-        return graph.admin().getMetaRule().subs().anyMatch(rule -> !rule.getLabel().equals(Schema.MetaSchema.RULE.getLabel()));
+        return graph.admin().getMetaRule().subs().anyMatch(rule -> !rule.label().equals(Schema.MetaSchema.RULE.getLabel()));
     }
 
     /**
@@ -66,19 +68,16 @@ public class RuleUtils {
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        return type == null ? getRules(graph) :
-                direct? type.getRulesOfConclusion() :
-                        type.subs().flatMap(SchemaConcept::getRulesOfConclusion);
+        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRulesWithType(type, direct);
     }
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
-     * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops
      */
-    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, GraknTx graph){
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
         Iterator<Rule> ruleIterator = rules.stream()
-                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
+                .map(InferenceRule::getRule)
                 .iterator();
         boolean cyclical = false;
         while (ruleIterator.hasNext() && !cyclical){
@@ -88,8 +87,8 @@ public class RuleUtils {
             while(!rulesToVisit.isEmpty() && !cyclical) {
                 Rule rule = rulesToVisit.pop();
                 if (!visitedRules.contains(rule)){
-                    rule.getConclusionTypes()
-                            .flatMap(SchemaConcept::getRulesOfHypothesis)
+                    rule.thenTypes()
+                            .flatMap(SchemaConcept::whenRules)
                             .forEach(rulesToVisit::add);
                     visitedRules.add(rule);
                 } else {
@@ -114,24 +113,19 @@ public class RuleUtils {
      * @return all rules that are reachable from the entry types
      */
     public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
-        final Equivalence<Atom> equivalence = new Equivalence<Atom>(){
-            @Override
-            protected boolean doEquivalent(Atom a1, Atom a2) {return a1.isAlphaEquivalent(a2);}
-            @Override
-            protected int doHash(Atom a) {return a.alphaEquivalenceHashCode();}
-        };
+        final Equivalence<Atomic> equivalence = AtomicEquivalence.AlphaEquivalence;
 
         Set<InferenceRule> rules = new HashSet<>();
         Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();
         Stack<Equivalence.Wrapper<Atom>> atoms = new Stack<>();
-        query.selectAtoms().stream().map(equivalence::wrap).forEach(atoms::push);
+        query.selectAtoms().map(equivalence::wrap).forEach(atoms::push);
         while(!atoms.isEmpty()) {
             Equivalence.Wrapper<Atom> wrappedAtom = atoms.pop();
              Atom atom = wrappedAtom.get();
             if (!visitedAtoms.contains(wrappedAtom) && atom != null){
                 atom.getApplicableRules()
                         .peek(rules::add)
-                        .flatMap(rule -> rule.getBody().selectAtoms().stream())
+                        .flatMap(rule -> rule.getBody().selectAtoms())
                         .map(equivalence::wrap)
                         .filter(at -> !visitedAtoms.contains(at))
                         .filter(at -> !atoms.contains(at))

@@ -14,21 +14,24 @@ This example shows how to use Java in a basic example that can be extended as a 
 All Grakn applications have the following Maven dependency:
 
 ```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-kb</artifactId>
-<version>${project.version}</version>
-</dependency>
-```
+<repositories>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
 
-This dependency will give you access to the Core API. Your Java application will also require the following dependency:
+<properties>
+    <grakn.version>1.3.0</grakn.version>
+</properties>
 
-```xml
-<dependency>
-<groupId>ai.grakn</groupId>
-<artifactId>grakn-factory</artifactId>
-<version>${project.version}</version>
-</dependency>
+<dependencies>
+  <dependency>
+    <groupId>ai.grakn</groupId>
+    <artifactId>client-java</artifactId>
+    <version>${grakn.version}</version>
+  </dependency>
+</dependencies>
 ```
 
 ### Grakn Engine
@@ -41,9 +44,9 @@ cd [your Grakn install directory]
 ```
 
 
-## Java API: GraknTx
+## Java API: Grakn.Transaction
 
-The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge graph programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge graph.
+The Java API, `Grakn.Transaction`, is a low-level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge graph programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge graph.
 
 ### Building the Schema
 
@@ -51,29 +54,30 @@ We will look at the same schema as is covered in the [Basic Schema documentation
 
 First we need a [knowledge graph](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
 
-```java
-GraknSession session = Grakn.session(uri, keyspace);
-GraknTx tx = session.open(GraknTxType.WRITE)
+```java-test-ignore
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(keyspace);
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 ```
 
 
 Building the schema is covered in `writeSchema()`. First, the method adds the attribute types using putAttributeType():
 
-```java
+```java-test-ignore
 identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
 name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING).sup(name);
 surname = tx.putAttributeType("surname", AttributeType.DataType.STRING).sup(name);
 middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING).sup(name);
-date = tx.putAttributeType("date", AttributeType.DataType.STRING);
-birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING).sup(date);
-deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING).sup(date);
+eventDate = tx.putAttributeType("event-date", AttributeType.DataType.DATE);
+birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.DATE).sup(eventDate);
+deathDate = tx.putAttributeType("death-date", AttributeType.DataType.DATE).sup(eventDate);
 gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
 Then it adds roles using `putRole()`:
 
-```java
+```java-test-ignore
 spouse = tx.putRole("spouse");
 spouse1 = tx.putRole("spouse1").sup(spouse);
 spouse2 = tx.putRole("spouse2").sup(spouse);
@@ -83,31 +87,31 @@ child = tx.putRole("child");
 
 Then to add the relationship types, `putRelationshipType()`, which is followed by `relates()` to set the roles associated with the relationship and attribute() to state that it has a date attribute:
 
-```java
+```java-test-ignore
 marriage = tx.putRelationshipType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
-marriage.attribute(date);
+marriage.has(eventDate);
 parentship = tx.putRelationshipType("parentship");
 parentship.relates(parent).relates(child);
 ```
 
 Finally, entity types are added using `putEntityType()`, `plays()` and `attribute()`:
 
-```java
+```java-test-ignore
 person = tx.putEntityType("person");
 person.plays(spouse1).plays(spouse2).plays(parent).plays(child);
-person.attribute(gender);
-person.attribute(birthDate);
-person.attribute(deathDate);
-person.attribute(identifier);
-person.attribute(firstname);
-person.attribute(middlename);
-person.attribute(surname);
+person.has(gender);
+person.has(birthDate);
+person.has(deathDate);
+person.has(identifier);
+person.has(firstname);
+person.has(middlename);
+person.has(surname);
 ```
 
 Now to commit the schema:
 
-```java
+```java-test-ignore
 tx.commit();
 ```
 
@@ -116,20 +120,20 @@ Now that we have created the schema, we can load in some data using the Java API
 
 The example project does this in `writeSampleRelation_Marriage()`. First it creates a person entity named homer:
 
-```java
+```java-test-ignore
 // After committing we need to open a new transaction
-tx = session.open(GraknTxType.WRITE)
+tx = session.transaction(GraknTxType.WRITE)
 
 // Define the attributes
-Attribute<String> firstNameJohn = firstname.putAttribute("John");
-Attribute<String> surnameNiesz = surname.putAttribute("Niesz");
-Attribute<String> male = gender.putAttribute("male");
+Attribute<String> firstNameJohn = firstname.create("John");
+Attribute<String> surnameNiesz = surname.create("Niesz");
+Attribute<String> male = gender.create("male");
 //Now we can create the actual husband entity
-Entity johnNiesz = person.addEntity();
+Entity johnNiesz = person.create();
 //Add the attributes
-johnNiesz.attribute(firstNameJohn);
-johnNiesz.attribute(surnameNiesz);
-johnNiesz.attribute(male);
+johnNiesz.has(firstNameJohn);
+johnNiesz.has(surnameNiesz);
+johnNiesz.has(male);
 ```
 
 We can compare how a Graql statement maps to the Java API. This is the equivalent in Graql:
@@ -140,12 +144,12 @@ insert $x isa person has firstname "John", has surname "Niesz" has gender "male"
 
 The code goes on to create another `person` entity, named `maryYoung`, and then marries them:
 
-```java
-Entity maryYoung = person.addEntity();
+```java-test-ignore
+Entity maryYoung = person.create();
 
-Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
-theMarriage.attribute(marriageDate);
+Relationship theMarriage = marriage.create().assign(spouse1, johnNiesz).assign(spouse2, maryYoung);
+Attribute marriageDate = eventDate.create(LocalDateTime.of(1880, 8, 12, 0, 0, 0));
+theMarriage.has(marriageDate);
 ```
 
 ## Querying the Knowledge Graph Using GraknTx
@@ -158,7 +162,7 @@ match $x isa person; get;
 
 In Java:
 
-```java
+```java-test-ignore
 for (Thing p: tx.getEntityType("person").instances()) {
     System.out.println(" " + p);
 }
@@ -166,17 +170,17 @@ for (Thing p: tx.getEntityType("person").instances()) {
 
 ## Querying the Knowledge Graph Using QueryBuilder
 
-It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
+It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `Grakn.Transaction.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
-```java
-for (Answer a: tx.graql().match(var("x").isa("person"))) {
+```java-test-ignore
+for (ConceptMap a: tx.graql().match(var("x").isa("person")).get().execute()) {
     System.out.println(" " + a);
 }
 ```
 
 Which leads us to the common question...
 
-## When to use GraknTx and when to use QueryBuilder?
+## When to use Grakn.Transaction and when to use QueryBuilder?
 
 **Java API**
 If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the Java API will be sufficient, e.g. for
@@ -186,7 +190,7 @@ Manipulation, such as insertions into the knowledge graph.
 **QueryBuilder — the “Java Graql” API**
 This is best for advanced querying where traversals are involved. For example “Who is married to Homer?” is too complex a query for the Java API. Using a `QueryBuilder`:
 
-```java
+```java-test-ignore
 GetQuery query = tx.graql().match(
   var("x").has("firstname", "John").isa("person"),
   var("y").has("firstname", var("y_name")).isa("person"),

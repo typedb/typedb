@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.matcher;
@@ -58,21 +58,21 @@ public class MatchableConcept {
     @Override
     public String toString() {
         if (concept.isAttribute()) {
-            return "hasValue(" + valueToString(concept.asAttribute().getValue()) + ")";
+            return "hasValue(" + valueToString(concept.asAttribute().value()) + ")";
         } else if (concept.isThing()) {
             Thing thing = concept.asThing();
             Stream<Attribute<?>> resources = thing.attributes();
             Optional<?> value = resources
-                    .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
-                    .map(Attribute::getValue).findFirst();
+                    .filter(resource -> NAME_TYPES.contains(resource.type().label()))
+                    .map(Attribute::value).findFirst();
 
-            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().getLabel();
+            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().label();
         } else if (concept.isType()) {
-            return "type(" + concept.asType().getLabel() + ")";
+            return "type(" + concept.asType().label() + ")";
         } else if (concept.isRole()) {
-            return "role(" + concept.asRole().getLabel() + ")";
+            return "role(" + concept.asRole().label() + ")";
         } else if (concept.isRule()) {
-            return "rule(" + concept.asRule().getLabel() + ")";
+            return "rule(" + concept.asRule().label() + ")";
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }

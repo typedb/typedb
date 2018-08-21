@@ -3,8 +3,11 @@ import EngineClient from './EngineClient';
 
 // Default constant values
 const DEFAULT_USE_REASONER = true;
+const DEFAULT_ROLE_PLAYERS = true;
 export const DEFAULT_KEYSPACE = 'grakn';
 const DEFAULT_QUERY_LIMIT = '30';
+const DEFAULT_ROLE_PLAYERS_LIMIT = '50';
+
 
 
 export default {
@@ -37,6 +40,37 @@ export default {
     localStorage.setItem('freeze_nodes', status);
   },
 
+    // -------------- Relationship Settings ------------ //
+
+    setRolePlayersStatus(status) {
+      localStorage.setItem('load_role_players', status);
+    },
+  
+    // @return boolean
+    getRolePlayersStatus() {
+      const rolePlayers = localStorage.getItem('load_role_players');
+      if (rolePlayers == null) {
+        this.setRolePlayersStatus(DEFAULT_ROLE_PLAYERS);
+        return DEFAULT_ROLE_PLAYERS;
+      }
+      return (rolePlayers === 'true');
+    },
+
+    setRolePlayersLimit(value) {
+      let parsedValue = parseInt(value, 10) || 0;
+      if (parsedValue < 0) parsedValue = 0;
+      localStorage.setItem('role_players_limit', parsedValue);
+    },
+
+    getRolePlayersLimit() {
+      const rolePlayersLimit = localStorage.getItem('role_players_limit');
+      if (rolePlayersLimit == null) {
+        this.setRolePlayersLimit(DEFAULT_ROLE_PLAYERS_LIMIT);
+        return DEFAULT_ROLE_PLAYERS_LIMIT;
+      }
+      return rolePlayersLimit;
+    },
+
   // ---- Current Keyspace -----//
   setCurrentKeySpace(keyspace) {
     localStorage.setItem('current_keyspace', keyspace);
@@ -61,7 +95,7 @@ export default {
     }
     return (modalShown === 'true');
   },
-
+  
   // ------------ Limit number of results ---------------- //
   getQueryLimit() {
     const queryLimit = localStorage.getItem('query_limit');

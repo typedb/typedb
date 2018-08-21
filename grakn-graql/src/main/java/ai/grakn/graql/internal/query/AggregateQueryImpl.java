@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -22,20 +22,19 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.Answer;
 import com.google.auto.value.AutoValue;
 
-import javax.annotation.Nullable;
-import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Implementation of AggregateQuery
  * @param <T> the type of the aggregate result
  */
 @AutoValue
-abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implements AggregateQuery<T> {
+abstract class AggregateQueryImpl<T extends Answer> implements AggregateQuery<T> {
 
-    public static <T> AggregateQueryImpl<T> of(Match match, Aggregate<? super Answer, T> aggregate) {
+    public static <T extends Answer> AggregateQueryImpl<T> of(Match match, Aggregate<T> aggregate) {
         return new AutoValue_AggregateQueryImpl<>(match, aggregate);
     }
 
@@ -45,8 +44,8 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public final T execute() {
-        return queryRunner().run(this);
+    public final Stream<T> stream() {
+        return executor().run(this);
     }
 
     @Override
@@ -56,7 +55,7 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
     }
 
     @Override
-    public final Optional<GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 
@@ -65,7 +64,6 @@ abstract class AggregateQueryImpl<T> extends AbstractExecutableQuery<T> implemen
         return match().toString() + " aggregate " + aggregate().toString() + ";";
     }
 
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

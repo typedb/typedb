@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.property.kb;
@@ -52,7 +52,7 @@ public class RelationshipPropertyTest {
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
             Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
-        relationship.addRolePlayer(role, rolePlayer);
+        relationship.assign(role, rolePlayer);
 
         assertThat(relationship.rolePlayers().collect(toSet()), hasItem(rolePlayer));
     }
@@ -61,7 +61,7 @@ public class RelationshipPropertyTest {
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
             Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
-        relationship.addRolePlayer(role, rolePlayer);
+        relationship.assign(role, rolePlayer);
 
         assertThat(relationship.rolePlayers(role).collect(toSet()), hasItem(rolePlayer));
     }
@@ -72,7 +72,7 @@ public class RelationshipPropertyTest {
 
         Thing[] rolePlayers = relationship.rolePlayers(role).toArray(Thing[]::new);
 
-        relationship.addRolePlayer(role, rolePlayer);
+        relationship.assign(role, rolePlayer);
 
         assertThat(relationship.rolePlayers(role).collect(toSet()), hasItems(rolePlayers));
     }
@@ -86,8 +86,8 @@ public class RelationshipPropertyTest {
 
     @Property
     public void whenCallingRolePlayersWithoutArgs_ReturnRolePlayersOfAllRoleTypes(Relationship relationship) {
-        Role[] allRoles = new Role[relationship.allRolePlayers().size()];
-        relationship.allRolePlayers().keySet().toArray(allRoles);
+        Role[] allRoles = new Role[relationship.rolePlayersMap().size()];
+        relationship.rolePlayersMap().keySet().toArray(allRoles);
 
         assertEquals(relationship.rolePlayers().collect(toSet()), relationship.rolePlayers(allRoles).collect(toSet()));
     }

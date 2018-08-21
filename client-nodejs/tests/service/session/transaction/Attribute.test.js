@@ -1,0 +1,92 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+const env = require('../../../support/GraknTestEnvironment');
+let session;
+let tx;
+
+beforeAll(() => {
+    session = env.session();
+});
+
+afterAll(async () => {
+    await env.tearDown();
+});
+
+beforeEach(async () => {
+    tx = await session.transaction(env.txType().WRITE);
+})
+
+afterEach(() => {
+    tx.close();
+});
+
+describe("Attribute methods", () => {
+
+    test("value", async () => {
+        const doubleAttributeType = await tx.putAttributeType("length", env.dataType().DOUBLE);
+        const doubleAttribute = await doubleAttributeType.create(11.58);
+        expect(await doubleAttribute.value()).toBe(11.58);
+    });
+
+    test("get value Date", async () => {
+        const dateType = await tx.putAttributeType("birth-date", env.dataType().DATE);
+        const personType = await tx.putEntityType('person');
+        await personType.has(dateType);
+        const iterator = await tx.query("insert $x isa person, has birth-date 2018-08-06;");
+        const concepts = (await iterator.collectConcepts());
+        const person = concepts[0];
+        const attrs = await person.attributes();
+        const date = await attrs.next();
+        const value = await date.value();
+        expect(value instanceof Date).toBeTruthy();
+    });
+
+    test("set value Date", async () => {
+        const dateType = await tx.putAttributeType("birth-date", env.dataType().DATE);
+        const testDate = new Date('2018-08-06');
+        const date = await dateType.create(testDate);
+        const value = await date.value();
+        expect(value instanceof Date).toBeTruthy();
+        expect(testDate.getTime()).toEqual(value.getTime());
+    });
+
+    test("owners", async () => {
+        const personType = await tx.putEntityType('person');
+        const animalType = await tx.putEntityType('animal');
+        const nameType = await tx.putAttributeType("name", env.dataType().STRING);
+        await personType.has(nameType);
+        await animalType.has(nameType);
+        const person = await personType.create();
+        const dog = await animalType.create();
+        const name = await nameType.create('Giacobbe');
+        await person.has(name);
+        await dog.has(name);
+
+        const owners = await (await name.owners()).collect();
+        expect(owners.length).toBe(2);
+        const ids = [person.id, dog.id];
+        const ownersIds = owners.map(x => x.id);
+        ids.sort();
+        ownersIds.sort();
+        expect(ids[0]).toBe(ownersIds[0]);
+        expect(ids[1]).toBe(ownersIds[1]);
+    });
+
+});

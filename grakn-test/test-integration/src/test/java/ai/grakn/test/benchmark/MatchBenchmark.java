@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.benchmark;
@@ -25,7 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SessionContext;
 import org.junit.Rule;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -50,19 +50,19 @@ public class MatchBenchmark extends BenchmarkTest {
     @Setup
     public void setup() throws Throwable {
         GraknSession session = sessionContext.newSession();
-        GraknTx graphEntity = session.open(GraknTxType.WRITE);
+        GraknTx graphEntity = session.transaction(GraknTxType.WRITE);
         EntityType entityType = graphEntity.putEntityType(BENCHMARK_ENTITY_TYPE);
         AttributeType<String> attributeType =
                 graphEntity.putAttributeType(BENCHMARK_ATTRIBUTE_TYPE, AttributeType.DataType.STRING);
-        entityType.attribute(attributeType);
+        entityType.has(attributeType);
 
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++) {
-                entityType.addEntity().attribute(attributeType.putAttribute(String.valueOf(i)));
+                entityType.create().has(attributeType.create(String.valueOf(i)));
             }
         }
         graphEntity.commit();
-        graph = session.open(GraknTxType.WRITE);
+        graph = session.transaction(GraknTxType.WRITE);
     }
 
     @TearDown
@@ -78,7 +78,7 @@ public class MatchBenchmark extends BenchmarkTest {
                         .has(BENCHMARK_ATTRIBUTE_TYPE, "0")
         );
         GetQuery answers = match.get();
-        Optional<Answer> first = answers.stream().findFirst();
+        Optional<ConceptMap> first = answers.stream().findFirst();
         first.get();
     }
 }

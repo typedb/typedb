@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query.match;
@@ -21,15 +21,17 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
+ *
+ * @author Grakn Warriors
  */
 class MatchTx extends MatchModifier {
 
@@ -41,18 +43,17 @@ class MatchTx extends MatchModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph) {
-        if (graph.isPresent()) {
-            throw GraqlQueryException.multipleTxs();
-        }
+    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
+        // TODO: This is dodgy. We need to refactor the code to remove this behavior
+        if (tx != null) throw GraqlQueryException.multipleTxs();
 
         // TODO: This cast is unsafe - this is fixed if queries don't contain transactions
-        return inner.stream(Optional.of((EmbeddedGraknTx<?>) this.tx));
+        return inner.stream((EmbeddedGraknTx<?>) this.tx);
     }
 
     @Override
-    public Optional<GraknTx> tx() {
-        return Optional.of(tx);
+    public GraknTx tx() {
+        return tx;
     }
 
     @Override

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -46,8 +46,8 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
 
     private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
         super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
+        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
     public static RuleImpl get(VertexElement vertexElement){
@@ -66,22 +66,22 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     }
 
     @Override
-    public Pattern getWhen() {
+    public Pattern when() {
         return parsePattern(vertex().property(Schema.VertexProperty.RULE_WHEN));
     }
 
     @Override
-    public Pattern getThen() {
+    public Pattern then() {
         return parsePattern(vertex().property(Schema.VertexProperty.RULE_THEN));
     }
 
     @Override
-    public Stream<Type> getHypothesisTypes() {
+    public Stream<Type> whenTypes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
     }
 
     @Override
-    public Stream<Type> getConclusionTypes() {
+    public Stream<Type> thenTypes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION);
     }
 

@@ -1,30 +1,30 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.TxTestBase;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
@@ -49,84 +49,84 @@ public class AttributeTypeTest extends TxTestBase {
 
     @Test
     public void whenCreatingResourceTypeOfTypeString_DataTypeIsString() throws Exception {
-        assertEquals(AttributeType.DataType.STRING, attributeType.getDataType());
+        assertEquals(AttributeType.DataType.STRING, attributeType.dataType());
     }
 
     @Test
-    public void whenCreatingStringResourceTypeWithValidRegex_EnsureNoErrorsThrown(){
-        assertNull(attributeType.getRegex());
-        attributeType.setRegex("[abc]");
-        assertEquals(attributeType.getRegex(), "[abc]");
+    public void whenCreatingStringResourceTypeWithValidRegex_EnsureNoErrorsThrown() {
+        assertNull(attributeType.regex());
+        attributeType.regex("[abc]");
+        assertEquals(attributeType.regex(), "[abc]");
     }
 
     @Test
-    public void whenCreatingStringResourceTypeWithInvalidRegex_Throw(){
-        assertNull(attributeType.getRegex());
+    public void whenCreatingStringResourceTypeWithInvalidRegex_Throw() {
+        assertNull(attributeType.regex());
         expectedException.expect(PatternSyntaxException.class);
-        attributeType.setRegex("[");
+        attributeType.regex("[");
     }
 
     @Test
-    public void whenSettingRegexOnNonStringResourceType_Throw(){
+    public void whenSettingRegexOnNonStringResourceType_Throw() {
         AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.cannotSetRegex(thing).getMessage());
-        thing.setRegex("blab");
+        thing.regex("blab");
     }
 
     @Test
-    public void whenAddingResourceWhichDoesNotMatchRegex_Throw(){
-        attributeType.setRegex("[abc]");
-        attributeType.putAttribute("a");
+    public void whenAddingResourceWhichDoesNotMatchRegex_Throw() {
+        attributeType.regex("[abc]");
+        attributeType.create("a");
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.getLabel().getValue())));
-        attributeType.putAttribute("1");
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.label().getValue())));
+        attributeType.create("1");
     }
 
     @Test
-    public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw(){
-        attributeType.putAttribute("1");
+    public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw() {
+        attributeType.create("1");
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
-        attributeType.setRegex("[abc]");
+        attributeType.regex("[abc]");
     }
 
     @Test
-    public void whenGettingTheResourceFromAResourceType_ReturnTheResource(){
+    public void whenGettingTheResourceFromAResourceType_ReturnTheResource() {
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING);
 
-        Attribute c1 = t1.putAttribute("1");
-        Attribute c2 = t2.putAttribute("2");
+        Attribute c1 = t1.create("1");
+        Attribute c2 = t2.create("2");
 
-        assertEquals(c1, t1.getAttribute("1"));
-        assertNull(t1.getAttribute("2"));
+        assertEquals(c1, t1.attribute("1"));
+        assertNull(t1.attribute("2"));
 
-        assertEquals(c2, t2.getAttribute("2"));
-        assertNull(t2.getAttribute("1"));
+        assertEquals(c2, t2.attribute("2"));
+        assertNull(t2.attribute("1"));
     }
 
     @Test
-    public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
-        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
+    public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked() {
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).regex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
 
         //Valid Attribute
-        Attribute<String> attribute = t2.putAttribute("b");
+        Attribute<String> attribute = t2.create("b");
 
         //Invalid Attribute
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().getLabel().getValue())));
-        t2.putAttribute("a");
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().label().getValue())));
+        t2.create("a");
     }
 
     @Test
-    public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources(){
-        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
+    public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources() {
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).regex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]");
 
         //Future Invalid
-        t2.putAttribute("a");
+        t2.create("a");
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.regexFailure(t2, "a", "[b]").getMessage());
@@ -134,14 +134,14 @@ public class AttributeTypeTest extends TxTestBase {
     }
 
     @Test
-    public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
+    public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied() {
         AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
-        t2.putAttribute("a");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
+        t2.create("a");
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.regexFailure(t1, "a", "[b]").getMessage());
-        t1.setRegex("[b]");
+        t1.regex("[b]");
     }
 
     @Test
@@ -152,10 +152,10 @@ public class AttributeTypeTest extends TxTestBase {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknSession session = EmbeddedGraknSession.inMemory("somethingmorerandom")) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
-                aTime.putAttribute(rightNow);
+                aTime.create(rightNow);
                 graph.commit();
             }
         }
@@ -163,10 +163,10 @@ public class AttributeTypeTest extends TxTestBase {
         // offset the time to GMT where the colleague is working
         TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
         // the colleague extracts the LocalTime which should be the same
-        try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknSession session = EmbeddedGraknSession.inMemory("somethingmorerandom")) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType aTime = graph.getAttributeType("aTime");
-                LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).getValue();
+                LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();
 
                 // localTime should not have changed as it should not be sensitive to timezone
                 assertEquals(rightNow, databaseTime);

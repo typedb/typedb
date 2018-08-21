@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.docs;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
@@ -26,6 +25,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.engine.GraknConfig;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.SampleKBLoader;
 import ai.grakn.util.SimpleURI;
@@ -45,11 +46,38 @@ import static org.junit.Assert.fail;
 
 public class DocTestUtil {
 
+    private static final String OPEN_TAG = "\\s*<[^>]*>";
+    private static final String OPEN_TAGS = OPEN_TAG + "*";
+    private static final String QUERY = "\\s*(?<query>.*?)\\s*";
+
     public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/docs/pages/");
+
+    /**
+     * Regex for matching Graql examples in markdown documentation. This is designed to match code blocks and HTML.
+     */
+    static Pattern markdownOrHtml(String languageName) {
+        String className = "language-" + languageName;
+        String openClassTag = "class\\s*=\\s*\"" + className + "\".*?>";
+
+        String html = openClassTag + OPEN_TAGS;
+        String markdown = "```" + languageName + "\\s*\\n";
+
+        return Pattern.compile("(" + html + "|" + markdown + ")" + QUERY + "(</|```)", Pattern.DOTALL);
+    }
 
     private static final Pattern KEYSPACE_HEADER =
             Pattern.compile("---.*KB:\\s*(.*?)\\n.*---", Pattern.DOTALL + Pattern.CASE_INSENSITIVE);
 
+    /**
+     *  Each example is run using a pre-loaded graph. By default, this is the {@link GenealogyKB}. If you want to change
+     *  it for a certain page, add a new key {@code KB} to the front matter of the page, e.g.
+     *  <pre>
+     *  ---
+     *  ...
+     *  KB: academy
+     *  ---
+     *  </pre>
+     */
     private static final Map<String, Consumer<GraknTx>> loaders = ImmutableMap.<String, Consumer<GraknTx>>builder()
 
             .put("default", GenealogyKB.get())
@@ -69,12 +97,12 @@ public class DocTestUtil {
                 AttributeType<Long> distanceFromCoast = tx.putAttributeType("distance-from-coast", AttributeType.DataType.LONG);
                 AttributeType<Double> risk = tx.putAttributeType("risk", AttributeType.DataType.DOUBLE);
 
-                company.attribute(name);
-                country.attribute(name);
-                article.attribute(subject);
-                region.attribute(name);
-                oilPlatform.attribute(distanceFromCoast).attribute(platformId);
-                bond.attribute(risk);
+                company.has(name);
+                country.has(name);
+                article.has(subject);
+                region.has(name);
+                oilPlatform.has(distanceFromCoast).has(platformId);
+                bond.has(risk);
 
                 tx.putRelationshipType("located-in")
                         .relates(tx.putRole("location")).relates(tx.putRole("located"));
@@ -94,7 +122,7 @@ public class DocTestUtil {
                 AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
                 AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
                 AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
-                plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
+                plant.has(common).has(botanical).has(zone).has(light).has(availability);
             })
 
             .put("pokemon", tx -> {
@@ -111,14 +139,14 @@ public class DocTestUtil {
                 tx.putRelationshipType("has-type")
                         .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
-                pokemonType.attribute(typeId).attribute(description);
-                pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
+                pokemonType.has(typeId).has(description);
+                pokemon.has(weight).has(height).has(pokedexNo).has(description);
             })
 
             .put("genealogy-plus", GenealogyKB.get().andThen(tx -> {
                 // TODO: Remove custom genealogy schema when not used
                 AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
-                tx.getEntityType("person").attribute(age);
+                tx.getEntityType("person").has(age);
                 tx.putAttributeType("nickname", AttributeType.DataType.STRING);
             }))
 
@@ -130,9 +158,10 @@ public class DocTestUtil {
 
     public static GraknSession getTestGraph(SimpleURI uri, String knowledgeBaseName) {
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
-        GraknSession session = Grakn.session(uri, keyspace);
+        GraknSession session = EmbeddedGraknSession.createEngineSession(keyspace);
 
-        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+
+        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Consumer<GraknTx> loader = loaders.get(knowledgeBaseName);
 
             if (loader == null) {
@@ -152,6 +181,11 @@ public class DocTestUtil {
     }
 
     static void codeBlockFail(String fileAndLine, String codeBlock, String error) {
+        // IntelliJ recognises this syntax and changes it into a clickable link in the test results.
+        // This means you can click to go straight to the failing documentation page!
+        // e.g.
+        //     Failure in .(queries.md:170)
+        //                  ^ this will be clickable
         fail("Failure in .(" + fileAndLine + ")\n\n" + indent(error) + "\n\nin:\n\n" + indent(codeBlock));
     }
 

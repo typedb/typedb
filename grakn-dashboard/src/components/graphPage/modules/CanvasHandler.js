@@ -1,20 +1,21 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 /* @flow */
 
 import Parser from '../../../js/Parser/Parser';
@@ -123,20 +124,33 @@ function onGraphResponse(resp: string) {
     return;
   }
 
-  // Add nodes and edges to canvas
+  // Remove implicit nodes
   const filteredNodes = filterNodes(parsedResponse.nodes);
-  filteredNodes.forEach(node => visualiser.addNode(node));
+  // Add filtered nodes to canvas
+  filteredNodes.forEach((node) => { visualiser.addNode(node); });
+  // Add edges to canvas
+  parsedResponse.edges.forEach((edge) => { visualiser.addEdge(edge); });
 
   // Lazy load attributes once nodes are in the graph
   lazyLoadAttributes(filteredNodes);
 
-  // Load relationship types' roles
+  // Load relationship types' roles - this will work only if loading schema concepts i.e. relationship types
   linkRelationshipTypesToRoles(filteredNodes);
 
-  // Never visualise relationships without roleplayers
-  filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
-    .forEach((rel) => { loadRelationshipRolePlayers(rel); });
+  // Get load Role-Players status from local storage
+  const rolePlayers = localStorage.getItem('load_role_players');
 
+  // Check if user has set loading of Role-Players
+  if(rolePlayers === "true"){
+
+    // If we have 0 edges to display (e.g. when user clicks on Types -> Relationships -> one type of relationship type)
+    // force to load relationships role players.
+    // This to avoid floating points representing relationships without any roleplayer attached to any of them
+    if (parsedResponse.edges.length === 0) {
+    filterNodes(parsedResponse.nodes).filter(x => x.baseType.endsWith('RELATIONSHIP'))
+      .forEach((rel) => { loadRelationshipRolePlayers(rel); });
+    }
+  }  
   visualiser.fitGraphToWindow();
 }
 
@@ -158,7 +172,11 @@ function getId(str) {
 }
 
 function loadRelationshipRolePlayers(rel) {
-  const promises = rel.roleplayers.map(x => EngineClient.request({ url: x.thing }));
+
+  // Get Limit set by user on Role-Players shown
+  const rolePlayersLimit = localStorage.getItem('role_players_limit');
+
+  const promises = rel.roleplayers.slice(0,rolePlayersLimit).map(x => EngineClient.request({ url: x.thing }));
   Promise.all(promises)
     .then((resps) => { resps.forEach((res) => { onGraphResponse(res); }); })
     .then(() => {
@@ -197,7 +215,6 @@ function loadRoleRolePlayers(role, relId) {
         });
     });
 }
-
 
 function addAttributeAndEdgeToInstance(instanceId, res) {
   onGraphResponse(res);

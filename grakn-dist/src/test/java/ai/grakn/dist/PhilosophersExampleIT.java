@@ -1,26 +1,26 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.dist;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -42,7 +42,7 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknTx tx = Grakn.session("in-memory", "mygraph").open(GraknTxType.WRITE);
+        GraknTx tx = EmbeddedGraknSession.inMemory("mygraph").transaction(GraknTxType.WRITE);
         qb = tx.graql();
         runQueries("src/examples/philosophers.gql");
     }
@@ -75,7 +75,7 @@ public class PhilosophersExampleIT {
     @Test
     public void testAlexanderIsTheOnlyPharaoh() {
         GetQuery pharaoh = qb.parse("match has name $x, has title contains 'Pharaoh'; get;");
-        assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().getValue());
+        assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().value());
     }
 
     @Test

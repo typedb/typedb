@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
 
@@ -22,7 +22,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -45,7 +44,7 @@ public class FibonacciHeapTest {
         // keep references to entries as we add them so we can decreasePriority and remove
         final Map<Integer, FibonacciHeap<Integer, Integer>.Entry> entries = Maps.newHashMap();
         for (int i = 100; i < 200; i++) {
-            entries.put(i, heap.add(i, i).get());
+            entries.put(i, heap.add(i, i));
         }
         assertFalse(heap.isEmpty());
         assertEquals(100, heap.size());
@@ -53,15 +52,15 @@ public class FibonacciHeapTest {
         heap.decreasePriority(entries.get(140), 25);
         heap.decreasePriority(entries.get(160), 15);
         // Last one should be the min value.
-        assertEquals(heap.peekOption().get(), entries.get(160));
-        assertEquals(160, heap.pollOption().get().intValue());
+        assertEquals(heap.peek(), entries.get(160));
+        assertEquals(160, heap.poll().intValue());
         // Second last should now be the min value.
-        assertEquals(heap.peekOption().get(), entries.get(140));
+        assertEquals(heap.peek(), entries.get(140));
         heap.remove(entries.get(140));
         // Remove the third smallest entry.
         heap.remove(entries.get(110));
         // Original min value should now be the min.
-        assertEquals(heap.peekOption().get(), entries.get(100));
+        assertEquals(heap.peek(), entries.get(100));
         heap.clear();
         assertTrue(heap.isEmpty());
         assertEquals(0, heap.size());
@@ -79,7 +78,7 @@ public class FibonacciHeapTest {
         }
         assertFalse(heap.isEmpty());
         assertEquals(1000, heap.size());
-        heap.pollOption();
+        heap.poll();
         assertFalse(heap.isEmpty());
         assertEquals(999, heap.size());
         heap.clear();
@@ -102,7 +101,7 @@ public class FibonacciHeapTest {
         heap.add(1001, Double.MIN_NORMAL);
         assertFalse(heap.isEmpty());
         assertEquals(1000, heap.size());
-        assertTrue(heap.pollOption().get() < 1001);
+        assertTrue(heap.poll() < 1001);
         assertFalse(heap.isEmpty());
         assertEquals(999, heap.size());
         heap.clear();
@@ -125,7 +124,7 @@ public class FibonacciHeapTest {
         heap.add(1001, 0.0);
         assertFalse(heap.isEmpty());
         assertEquals(1000, heap.size());
-        assertEquals(1001, heap.pollOption().get().intValue());
+        assertEquals(1001, heap.poll().intValue());
         assertFalse(heap.isEmpty());
         assertEquals(999, heap.size());
         heap.clear();
@@ -158,13 +157,13 @@ public class FibonacciHeapTest {
         final FibonacciHeap<Integer, Integer> joined = FibonacciHeap.merge(heap1, heap2);
         assertFalse(joined.isEmpty());
         assertEquals(10, joined.size());
-        Optional<Integer> oVal = joined.pollOption();
+        int oVal = joined.poll();
         int i = 1;
-        assertTrue(oVal.get() == i);
+        assertTrue(oVal == i);
         while (!joined.isEmpty()) {
-            oVal = joined.pollOption();
-            assertTrue(oVal.get() > i);
-            i = oVal.get();
+            oVal = joined.poll();
+            assertTrue(oVal > i);
+            i = oVal;
         }
         assertTrue(joined.isEmpty());
         assertEquals(0, joined.size());
@@ -285,7 +284,7 @@ public class FibonacciHeapTest {
         Arrays.sort(values);
         int i = 0;
         while (!heap.isEmpty()) {
-            assertEquals(values[i], heap.pollOption().get(), 0.0001);
+            assertEquals(values[i], heap.poll(), 0.0001);
             i++;
         }
     }

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.admin;
@@ -21,6 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
@@ -70,6 +71,11 @@ public interface ReasonerQuery{
     Set<Atomic> getAtoms();
 
     /**
+     * @return the conjunction pattern that represent this query
+     */
+    Conjunction<PatternAdmin> getPattern();
+
+    /**
      * @param type the class of {@link Atomic} to return
      * @param <T> the type of {@link Atomic} to return
      * @return stream of atoms of specified type defined in this query
@@ -81,7 +87,7 @@ public interface ReasonerQuery{
      * @return (partial) substitution obtained from all id predicates (including internal) in the query
      */
     @CheckReturnValue
-    Answer getSubstitution();
+    ConceptMap getSubstitution();
 
     /**
      * @return error messages indicating ontological inconsistencies of the query
@@ -105,11 +111,10 @@ public interface ReasonerQuery{
 
     /**
      * resolves the query
-     * @param materialise materialisation flag
      * @return stream of answers
      */
     @CheckReturnValue
-    Stream<Answer> resolve(boolean materialise);
+    Stream<ConceptMap> resolve();
 
     /**
      * Returns a var-type map local to this query. Map is cached.
@@ -124,6 +129,6 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    ImmutableMap<Var, Type> getVarTypeMap(Answer sub);
+    ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub);
 
 }

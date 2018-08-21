@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.property.kb;
@@ -67,29 +67,29 @@ public class TypePropertyTest {
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.setAbstract(isAbstract);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.label()).getMessage());
+        type.isAbstract(isAbstract);
     }
 
     @Property
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, Role role) {
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.label()).getMessage());
         type.plays(role);
     }
 
     @Property
     public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, AttributeType attributeType) {
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.label()).getMessage());
         type.key(attributeType);
     }
 
     @Property
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, AttributeType attributeType) {
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.attribute(attributeType);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.label()).getMessage());
+        type.has(attributeType);
     }
 
     @Ignore // TODO: Fails very rarely and only remotely
@@ -108,16 +108,16 @@ public class TypePropertyTest {
         assumeThat(PropertyUtil.directInstances(type), not(empty()));
 
         exception.expect(GraknTxOperationException.class);
-        exception.expectMessage(IS_ABSTRACT.getMessage(type.getLabel()));
+        exception.expectMessage(IS_ABSTRACT.getMessage(type.label()));
 
-        type.setAbstract(true);
+        type.isAbstract(true);
     }
 
     @Property
     public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@NonMeta Type type, boolean isAbstract) {
         assumeThat(PropertyUtil.directInstances(type), empty());
 
-        type.setAbstract(isAbstract);
+        type.isAbstract(isAbstract);
         assertEquals(isAbstract, type.isAbstract());
     }
 
@@ -136,20 +136,20 @@ public class TypePropertyTest {
     @Property
     public void whenGettingPlays_ResultIsASupersetOfDirectSuperTypePlays(Type type) {
         assumeNotNull(type.sup());
-        assertTrue(type.plays().collect(toSet()).containsAll(type.sup().plays().collect(toSet())));
+        assertTrue(type.playing().collect(toSet()).containsAll(type.sup().playing().collect(toSet())));
     }
 
     @Property
     public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromTx Role role) {
-        assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
+        assertEquals(type.playing().anyMatch(r -> r.equals(role)), role.players().collect(toSet()).contains(type));
     }
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
             @NonMeta Type type, @FromTx Role role) {
-        Set<Role> previousPlays = type.plays().collect(toSet());
+        Set<Role> previousPlays = type.playing().collect(toSet());
         type.plays(role);
-        Set<Role> newPlays = type.plays().collect(toSet());
+        Set<Role> newPlays = type.playing().collect(toSet());
 
         assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
@@ -159,13 +159,13 @@ public class TypePropertyTest {
             @Open GraknTx tx, @FromTx Type type, @FromTx Role role, long seed) {
         SchemaConcept superConcept = PropertyUtil.choose(tx.admin().sups(type), seed);
         assumeTrue(superConcept.isType());
-        assumeFalse(isMetaLabel(superConcept.getLabel()));
+        assumeFalse(isMetaLabel(superConcept.label()));
 
         Type superType = superConcept.asType();
 
-        Set<Role> previousPlays = type.plays().collect(toSet());
+        Set<Role> previousPlays = type.playing().collect(toSet());
         superType.plays(role);
-        Set<Role> newPlays = type.plays().collect(toSet());
+        Set<Role> newPlays = type.playing().collect(toSet());
 
         assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
@@ -173,17 +173,17 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @NonMeta Type type, @FromTx Role role) {
-        assumeThat(type.sup().plays().collect(toSet()), not(hasItem(role)));
-        type.deletePlays(role);
-        assertThat(type.plays().collect(toSet()), not(hasItem(role)));
+        assumeThat(type.sup().playing().collect(toSet()), not(hasItem(role)));
+        type.unplay(role);
+        assertThat(type.playing().collect(toSet()), not(hasItem(role)));
     }
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @NonMeta Type type, long seed) {
-        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().plays().collect(toSet()), seed);
-        type.deletePlays(role);
-        assertThat(type.plays().collect(toSet()), hasItem(role));
+        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().playing().collect(toSet()), seed);
+        type.unplay(role);
+        assertThat(type.playing().collect(toSet()), hasItem(role));
     }
 
     // TODO: Tests for `resource` and `key`

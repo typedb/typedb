@@ -1,22 +1,10 @@
 # GRAKN.AI Documentation
 
-## TL;DR
-
-**How to update and build the docs**
-
-* Install `bundler` and `rake` (one time only task)
-* Pull down documentation repo
-* Make changes to markdown
-* `node ./deploy-server.js` in terminal and browse to [http://127.0.0.1:3003](http://127.0.0.1:3003) (use `rake serve` if `node` is not installed on your machine)
-* If you need to make some extra changes to the markdown after you have the server running, just change the files and save them. `rake` will pick up the changes and rebuild the docs so you don't need to do anything.
-* When you're happy, push to the docs repo to `stable` branch
-* Once the changes have been merged to stable, go to `/docs` and run `./deploy.sh` script (you can run this script from whatever brunch on your machine)
-
 ## Dependencies
 
 You need to install the following dependencies to be able to build HTML pages in the documentation repository. **NOTE:** this is *not* necessary for updating the documentation itself.
 
-1. Bundle; you will need to install `bundler` through your package manager of choice.
+1. **Bundler** - you will need to install `bundler` through your package manager of choice.
 
     **Arch Linux**
     ```
@@ -25,15 +13,11 @@ You need to install the following dependencies to be able to build HTML pages in
 
     **OSX**
     ```
-    $ brew install bundler
-    ```
-
-    **Ruby Gems (generic)**
-    ```
+    $ brew install ruby
     $ gem install bundler
     ```
 
-2. Rake; this is used to automate the rest of the site building process.
+2. **Rake** - this is used to automate the rest of the site building process.
     ```
     $ gem install rake
     ```
@@ -41,11 +25,6 @@ You need to install the following dependencies to be able to build HTML pages in
     With `rake` installed you can now install all other dependencies:
     ```
     $ rake dependencies
-    ```
-
-3. NPM Modules; These are used to run the deployment server tests.
-    ```
-    $ yarn install
     ```
 
 ## Building
@@ -61,6 +40,7 @@ $
 
 This will build the documentation site in `_jekyll` and create a symlink `_site` in the repository top level directory which will contain all the generated content.
 
+
 ## Cleaning
 
 Clean by running the following command in the repository top level:
@@ -70,7 +50,8 @@ $ rake clean
 
 This will remove all generated files.
 
-## Serving
+
+## Running local server (for development)
 
 You can also build and server the generated HTML files in one command. A web
 server will be started listening on `localhost` (127.0.0.1) on port 4005
@@ -84,15 +65,30 @@ $
 
 You can now view the documentation by navigating your web browser to `http://127.0.0.1:4005/`
 
-## Deployment & Final Testing
-After you are done making changes, run the deployment server with ```node ./deploy-server.js``` to test how everything is going to look on releasing.
-You can access the site on `http://127.0.0.1:3003/`
 
-If everything works, create a new PR against grakn [stable branch](https://github.com/graknlabs/grakn/tree/stable).
-Once the PR has been merged run the `deploy.sh` script inside `/docs`.
-The script deploys the application to our heroku server. Make sure you have the correct git credentials.
+## Running host server (to test production deployment) (optional, for debugging host server issues)
 
-> If deploying from some other branch make sure to edit `deploy.sh` file to branch off accordingly.
+The [dev.grakn.ai](https://dev.grakn.ai) website is hosted on a node server. To test the actual node server deployment, which is different from the rake server, you need to:
+
+1. Install NPM Modules; These are used to run the deployment server tests.
+    ```
+    $ yarn install
+    ```
+2. Run the deployment server with ```node ./deploy-server.js```
+3. Test how everything is going to look on releasing, on `http://127.0.0.1:3003/`
+
+
+## Deployment
+
+1. Make sure you have access rights to write to Grakn Heroku account.
+1. Create a new PR to Grakn [master branch](https://github.com/graknlabs/grakn/tree/master).
+2. Once the PR has been merged run the following:
+```
+git fetch <grakn-master-remote> master
+cd docs
+./deploy-master.sh
+```
+
 
 ## Tests
 

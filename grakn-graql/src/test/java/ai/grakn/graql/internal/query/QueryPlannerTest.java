@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -77,11 +77,11 @@ public class QueryPlannerTest {
         EntityType entityType4 = graph.putEntityType(thingy4);
 
         AttributeType<String> attributeType = graph.putAttributeType(resourceType, AttributeType.DataType.STRING);
-        entityType4.attribute(attributeType);
+        entityType4.has(attributeType);
 
-        EntityType superType1 = graph.putEntityType(thingy)
-                .sub(entityType0)
-                .sub(entityType1);
+        EntityType superType1 = graph.putEntityType(thingy);
+        entityType0.sup(superType1);
+        entityType1.sup(superType1);
 
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
@@ -102,13 +102,13 @@ public class QueryPlannerTest {
         graph.putRelationshipType(veryRelated)
                 .relates(role4).relates(role5);
 
-        Entity entity1 = entityType1.addEntity();
-        Entity entity2 = entityType2.addEntity();
-        Entity entity3 = entityType3.addEntity();
-        relationshipType1.addRelationship()
-                .addRolePlayer(role1, entity1)
-                .addRolePlayer(role2, entity2)
-                .addRolePlayer(role3, entity3);
+        Entity entity1 = entityType1.create();
+        Entity entity2 = entityType2.create();
+        Entity entity3 = entityType3.create();
+        relationshipType1.create()
+                .assign(role1, entity1)
+                .assign(role2, entity2)
+                .assign(role3, entity3);
     });
 
     @Before
@@ -326,16 +326,16 @@ public class QueryPlannerTest {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
         // thing 2 = 4, thing3 = 7
-        tx.shard(tx.getEntityType(thingy2).getId());
-        tx.shard(tx.getEntityType(thingy2).getId());
-        tx.shard(tx.getEntityType(thingy2).getId());
+        tx.shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
 
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
-        tx.shard(tx.getEntityType(thingy3).getId());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
 
         Pattern pattern;
         ImmutableList<Fragment> plan;
@@ -350,11 +350,11 @@ public class QueryPlannerTest {
         assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
-//        varName = plan.get(7).end().getValue();
-//        assertEquals(y.getValue(), varName);
+//        varName = plan.get(7).end().value();
+//        assertEquals(y.value(), varName);
 //
-//        varName = plan.get(11).end().getValue();
-//        assertEquals(y.getValue(), varName);
+//        varName = plan.get(11).end().value();
+//        assertEquals(y.value(), varName);
 
         pattern = and(
                 x.isa(thingy),
@@ -381,9 +381,9 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertEquals(z, plan.get(4).end());
 
-        tx.shard(tx.getEntityType(thingy1).getId());
-        tx.shard(tx.getEntityType(thingy1).getId());
-        tx.shard(tx.getEntityType(thingy).getId());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy).id());
         // now thing = 5, thing1 = 3
 
         pattern = and(
@@ -402,8 +402,8 @@ public class QueryPlannerTest {
         plan = getPlan(pattern);
         assertEquals(x, plan.get(3).end());
 
-        tx.shard(tx.getEntityType(thingy1).getId());
-        tx.shard(tx.getEntityType(thingy1).getId());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
         // now thing = 7, thing1 = 5
 
         pattern = and(

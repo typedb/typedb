@@ -1,42 +1,42 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
+import ai.grakn.batch.BatchExecutorClient;
+import ai.grakn.batch.GraknClient;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.EngineContext;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -74,14 +74,14 @@ public class BenchmarkIT {
         assumeFalse(usingTinker());
 
         keyspace = randomKeyspace();
-        this.session = Grakn.session(engine.uri(), keyspace);
+        this.session = EmbeddedGraknSession.createEngineSession(keyspace);
     }
 
     private void loadOntology(String fileName, GraknSession session){
         try {
             File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + fileName);
             String s = Files.toString(graqlFile, Charset.forName("UTF-8"));
-            GraknTx tx = session.open(GraknTxType.WRITE);
+            GraknTx tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
             tx.commit();
             tx.close();
@@ -94,7 +94,7 @@ public class BenchmarkIT {
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
             for(int i = 0 ; i < N ;i++){
                 InsertQuery entityInsert = Graql.insert(var().asUserDefined().isa(entityLabel));
-                loader.add(entityInsert, keyspace).subscribe();
+                loader.add(entityInsert, keyspace);
             }
         }
     }
@@ -102,10 +102,10 @@ public class BenchmarkIT {
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel, String relationLabel, int N,
                                                  GraknSession session, GraknClient graknClient, Keyspace keyspace){
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()) {
-            GraknTx tx = session.open(GraknTxType.READ);
+            GraknTx tx = session.transaction(GraknTxType.READ);
             Var entityVar = var().asUserDefined();
             ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
-                    .map(ans -> ans.get(entityVar).getId())
+                    .map(ans -> ans.get(entityVar).id())
                     .toArray(ConceptId[]::new);
 
             assertEquals(instances.length, N);
@@ -123,12 +123,12 @@ public class BenchmarkIT {
                 Var fromRolePlayer = Graql.var();
                 Var toRolePlayer = Graql.var();
                 Pattern relationInsert = Graql.var()
-                        .rel(Graql.label(fromRole.getLabel()), fromRolePlayer)
-                        .rel(Graql.label(toRole.getLabel()), toRolePlayer)
-                        .isa(Graql.label(relationType.getLabel()))
+                        .rel(Graql.label(fromRole.label()), fromRolePlayer)
+                        .rel(Graql.label(toRole.label()), toRolePlayer)
+                        .isa(Graql.label(relationType.label()))
                         .and(fromRolePlayer.asUserDefined().id(instances[from]))
                         .and(toRolePlayer.asUserDefined().id(instances[to]));
-                loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace).subscribe();
+                loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace);
             }
             tx.close();
         }
@@ -163,14 +163,14 @@ public class BenchmarkIT {
         String toRoleLabel = "toRole";
 
         //load ontology
-        try(GraknTx tx = session.open(GraknTxType.WRITE)) {
+        try(GraknTx tx = session.transaction(GraknTxType.WRITE)) {
             Role fromRole = tx.putRole(fromRoleLabel);
             Role toRole = tx.putRole(toRoleLabel);
             AttributeType<String> index = tx.putAttributeType(attributeLabel, AttributeType.DataType.STRING);
             tx.putEntityType(entityLabel)
                     .plays(fromRole)
                     .plays(toRole)
-                    .attribute(index);
+                    .has(index);
 
             //define N relation types
             for (int i = 1; i <= N; i++) {
@@ -189,20 +189,20 @@ public class BenchmarkIT {
                         .when(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
-                                                .rel(Graql.label(toRole.getLabel()), intermedVar)
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), intermedVar)
                                                 .isa(baseRelationLabel),
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), intermedVar)
-                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .rel(Graql.label(fromRole.label()), intermedVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa(genericRelationLabel + (i - 1))
                                 )
                         )
                         .then(
                                 Graql.and(
                                         Graql.var()
-                                                .rel(Graql.label(fromRole.getLabel()), fromVar)
-                                                .rel(Graql.label(toRole.getLabel()), toVar)
+                                                .rel(Graql.label(fromRole.label()), fromVar)
+                                                .rel(Graql.label(toRole.label()), toVar)
                                                 .isa(genericRelationLabel + i)
                                 )
                         );
@@ -216,10 +216,10 @@ public class BenchmarkIT {
 
         //load initial relation instances
         try(BatchExecutorClient loader = BatchExecutorClient.newBuilder().taskClient(graknClient).build()){
-            try(GraknTx tx = session.open(GraknTxType.READ)) {
+            try(GraknTx tx = session.transaction(GraknTxType.READ)) {
                 Var entityVar = var().asUserDefined();
                 ConceptId[] instances = tx.graql().match(entityVar.isa(entityLabel)).get().execute().stream()
-                        .map(ans -> ans.get(entityVar).getId())
+                        .map(ans -> ans.get(entityVar).id())
                         .toArray(ConceptId[]::new);
 
                 RelationshipType baseRelation = tx.getRelationshipType(baseRelationLabel);
@@ -230,24 +230,24 @@ public class BenchmarkIT {
                                 .has(attributeLabel, "first")
                                 .id(instances[0])
                                 .admin().varPatterns()
-                ), keyspace).subscribe();
+                ), keyspace);
 
                 for(int i = 1; i < instances.length; i++){
                     Var fromRolePlayer = Graql.var();
                     Var toRolePlayer = Graql.var();
 
                     Pattern relationInsert = Graql.var()
-                            .rel(Graql.label(fromRole.getLabel()), fromRolePlayer)
-                            .rel(Graql.label(toRole.getLabel()), toRolePlayer)
-                            .isa(Graql.label(baseRelation.getLabel()))
+                            .rel(Graql.label(fromRole.label()), fromRolePlayer)
+                            .rel(Graql.label(toRole.label()), toRolePlayer)
+                            .isa(Graql.label(baseRelation.label()))
                             .and(fromRolePlayer.asUserDefined().id(instances[i - 1]))
                             .and(toRolePlayer.asUserDefined().id(instances[i]));
-                    loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace).subscribe();
+                    loader.add(Graql.insert(relationInsert.admin().varPatterns()), keyspace);
 
                     Pattern resourceInsert = Graql.var().asUserDefined()
                             .has(attributeLabel, String.valueOf(i))
                             .id(instances[i]);
-                    loader.add(Graql.insert(resourceInsert.admin().varPatterns()), keyspace).subscribe();
+                    loader.add(Graql.insert(resourceInsert.admin().varPatterns()), keyspace);
                 }
             }
         }
@@ -264,8 +264,8 @@ public class BenchmarkIT {
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         loadTransitivityData(N);
 
-        try(GraknTx tx = session.open(GraknTxType.READ)) {
-            ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().getId();
+        try(GraknTx tx = session.transaction(GraknTxType.READ)) {
+            ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().id();
             String queryPattern = "(P-from: $x, P-to: $y) isa P;";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +
@@ -308,8 +308,8 @@ public class BenchmarkIT {
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         loadJoinData(N);
 
-        try(GraknTx tx = session.open(GraknTxType.READ)) {
-            ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().getId();
+        try(GraknTx tx = session.transaction(GraknTxType.READ)) {
+            ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().id();
             String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +
@@ -348,9 +348,9 @@ public class BenchmarkIT {
         LOG.debug(new Object() {}.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
 
-        try(GraknTx tx = session.open(GraknTxType.READ)) {
-            ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").getId();
-            ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").getId();
+        try(GraknTx tx = session.transaction(GraknTxType.READ)) {
+            ConceptId firstId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index 'first';get;").execute()).get("x").id();
+            ConceptId lastId = Iterables.getOnlyElement(tx.graql().<GetQuery>parse("match $x has index '" + N + "';get;").execute()).get("x").id();
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
             String subbedQueryString = "match " +
@@ -372,13 +372,13 @@ public class BenchmarkIT {
         }
     }
 
-    private List<Answer> executeQuery(String queryString, GraknTx graph, String msg){
+    private List<ConceptMap> executeQuery(String queryString, GraknTx graph, String msg){
         return executeQuery(graph.graql().infer(true).parse(queryString), msg);
     }
 
-    private List<Answer> executeQuery(GetQuery query, String msg) {
+    private List<ConceptMap> executeQuery(GetQuery query, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<Answer> results = query.execute();
+        List<ConceptMap> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
         LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

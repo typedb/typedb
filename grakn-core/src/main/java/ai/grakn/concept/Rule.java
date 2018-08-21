@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -25,16 +25,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * <p>
- *     A {@link SchemaConcept} used to model and categorise {@link Rule}s.
- * </p>
- *
- * <p>
- *     A {@link SchemaConcept} used to define different types of {@link Rule}.
- *     A {@link Rule}
- * </p>
- *
- * @author fppt
+ * A {@link SchemaConcept} used to model and categorise {@link Rule}s.
  */
 public interface Rule extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
@@ -46,7 +37,7 @@ public interface Rule extends SchemaConcept {
      */
     @CheckReturnValue
     @Nullable
-    Pattern getWhen();
+    Pattern when();
 
     /**
      * Retrieves the then part of the {@link Rule}.
@@ -56,7 +47,7 @@ public interface Rule extends SchemaConcept {
      */
     @CheckReturnValue
     @Nullable
-    Pattern getThen();
+    Pattern then();
 
     /**
      * Retrieve a set of {@link Type}s that constitute a part of the hypothesis of this {@link Rule}.
@@ -64,7 +55,7 @@ public interface Rule extends SchemaConcept {
      * @return A collection of Concept {@link Type}s that constitute a part of the hypothesis of the {@link Rule}
      */
     @CheckReturnValue
-    Stream<Type> getHypothesisTypes();
+    Stream<Type> whenTypes();
 
     /**
      * Retrieve a set of {@link Type}s that constitue a part of the conclusion of the {@link Rule}.
@@ -72,7 +63,7 @@ public interface Rule extends SchemaConcept {
      * @return A collection of {@link Type}s that constitute a part of the conclusion of the {@link Rule}
      */
     @CheckReturnValue
-    Stream<Type> getConclusionTypes();
+    Stream<Type> thenTypes();
 
     //------------------------------------- Modifiers ----------------------------------
     /**
@@ -80,7 +71,7 @@ public interface Rule extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    Rule setLabel(Label label);
+    Rule label(Label label);
 
     /**
      *
@@ -102,14 +93,6 @@ public interface Rule extends SchemaConcept {
      */
     @Override
     Stream<Rule> sups();
-
-    /**
-     * Adds another subtype to this {@link Rule}
-     *
-     * @param type The sub of this {@link Rule}
-     * @return The {@link Rule} itself
-     */
-    Rule sub(Rule type);
 
     /**
      *

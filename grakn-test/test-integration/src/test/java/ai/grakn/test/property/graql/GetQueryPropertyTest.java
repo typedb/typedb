@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.property.graql;
@@ -28,11 +28,11 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -69,8 +69,8 @@ public class GetQueryPropertyTest {
     ) {
         System.out.println(a);
         System.out.println(b);
-        Set<Answer> matchA = matchSet(tx, a);
-        Set<Answer> matchB = matchSet(tx, b);
+        Set<ConceptMap> matchA = matchSet(tx, a);
+        Set<ConceptMap> matchB = matchSet(tx, b);
         String formatMsg = "\nmatch(a Λ b) != match(a) ⋈ match(b)\na = %s\nb = %s \nmatch(a) = %s\nmatch(b) = %s\n";
         String message = String.format(formatMsg, a, b, matchA, matchB);
 
@@ -167,7 +167,7 @@ public class GetQueryPropertyTest {
         assertFalse(tx.graql().match(pattern).get().execute().isEmpty());
     }
 
-    private Set<Answer> matchSet(GraknTx tx, Pattern pattern) {
+    private Set<ConceptMap> matchSet(GraknTx tx, Pattern pattern) {
         final int[] count = {0};
 
         try {
@@ -188,13 +188,13 @@ public class GetQueryPropertyTest {
      * This involves combining answers when all their common variables are bound to the same concept. When both sets
      * of answers have completely disjoint variables, this is equivalent to the cartesian product.
      */
-    private Set<Answer> naturalJoin(Set<Answer> answersA, Set<Answer> answersB) {
+    private Set<ConceptMap> naturalJoin(Set<ConceptMap> answersA, Set<ConceptMap> answersB) {
         return answersA.stream()
                 .flatMap(a -> answersB.stream().map(b -> joinAnswer(a, b)).flatMap(CommonUtil::optionalToStream))
                 .collect(toSet());
     }
 
-    private Optional<Answer> joinAnswer(Answer answerA, Answer answerB) {
+    private Optional<ConceptMap> joinAnswer(ConceptMap answerA, ConceptMap answerB) {
         Map<Var, Concept> answer = Maps.newHashMap(answerA.map());
         answer.putAll(answerB.map());
 
@@ -204,7 +204,7 @@ public class GetQueryPropertyTest {
             }
         }
 
-        return Optional.of(new QueryAnswer(answer));
+        return Optional.of(new ConceptMapImpl(answer));
     }
 
     private void assertEquivalent(GraknTx tx, Pattern patternA, Pattern patternB) {

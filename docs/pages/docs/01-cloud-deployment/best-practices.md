@@ -2,33 +2,58 @@
 title: Deployment Best Practices
 keywords: cloud, deployment, google
 tags: [getting-started, deployment, cloud]
-summary: "Best Practices for deploying Grakn on Google Cloud"
+summary: "Best Practices for deploying Grakn on Google Cloud Platform"
 sidebar: documentation_sidebar
 permalink: /docs/cloud-deployment/best-practices
 folder: docs
 ---
 
-# GC Deployment Best Pracices
+# Deployment Best Practices
 
-In this section we shall describe the recommendations for comput and storage aspects of GC deployments
+In this section we shall describe the recommendations for compute and storage aspects of cloud deployments.
 
 ## Compute
 
 The optimum machine choice offering a good balance between CPU and memory should be equipped with at least 4 vCPUs and 8 GB of RAM.
-Using machines with extra RAM amount above a 25 GB threshold is not expected to yield significant performance improvements.
-Having these bounds in mind the following machines are recommended because they offer a balancd system resources for a range of workloads:
+Using machines with additional RAM above a 25 GB threshold is not expected to yield significant performance improvements.
+Having these bounds in mind the following machines are recommended because they offer a balanced set of system resources for a range of workloads:
 
-* n1-standard-4
-* n1-standard-8
-* n1-standard-16
-* n1-highcpu-16
-* n1-highcpu-32
-* n1-highmem-4
-* n1-highmem-8
+On Google cloud:
+
+* Standard: 
+    - n1-standard-4, 
+    - n1-standard-8, 
+    - n1-standard-16
+* High-CPU: 
+    - n1-highcpu-16,
+    - n1-highcpu-32
+* High-memory: 
+    - n1-highmem-4,
+    - n1-highmem-8
+
+On AWS:
+
+* General Purpose: 
+    - t2.xlarge, 
+    - t2.2xlarge,
+* Memory Optimised: 
+    - m5.xlarge, 
+    - m4.xlarge,
+    - m3.xlarge, 
+* Compute Optimised: 
+    - c5.xlarge,
+    - c5.2xlarge,
+    - c4.xlarge,
+    - c4.2xlarge, 
+    - c3.xlarge,
+    - c3.2xlarge,
+
 
 The optimal machine type appropriate for a given use case shall depend on the specific performance requirements of the use case.
 
-For more information on machine types, please visit the [GC Machine Type Docs](https://cloud.google.com/compute/docs/machine-types)
+For more information on machine types, please visit: 
+* [GC Machine Types](https://cloud.google.com/compute/docs/machine-types)
+* [AWS EC2 Instance Types](https://aws.amazon.com/ec2/instance-types)
 
 ## Storage
 

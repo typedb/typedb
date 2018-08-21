@@ -20,34 +20,6 @@ An aggregate query applies an operation onto a [match](./match-clause), to retur
 
 ## Aggregate Functions
 
-### Ask
-
-Whether the given [match](./match-clause) has any results.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell-ask" data-toggle="tab">Graql</a></li>
-    <li><a href="#java-ask" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell-ask">
-<pre class="language-graql">
-<code>
-match divorce sub relationship; aggregate ask;
-match marriage sub relationship; aggregate ask;
-</code>
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java-ask">
-<pre class="language-java">
-<code>
-qb.match(label("divorce").sub("relationship")).aggregate(ask()).execute();
-qb.match(label("marriage").sub("relationship")).aggregate(ask()).execute();
-</code>
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
-
 ### Count
 
 Count the number of results of the match or aggregate result.
@@ -92,7 +64,7 @@ match $x isa person, has age $a; aggregate sum $a;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
-<pre class="language-graql">
+<pre class="language-java">
 <code>
 qb.match(
     var("x").isa("person").has("age", var("a"))
@@ -140,7 +112,7 @@ Find the minimum of the given attribute variable.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
 <pre class="language-graql"> <code>
-match $x isa person, has firstname $n; aggregate min $n;
+match $x isa person, has age $a; aggregate min $a;
 </code>
 </pre>
 </div>
@@ -235,32 +207,6 @@ qb.match(
 ).aggregate(group("x"));
 </code>
 
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
-
-### Select
-
-Select and name multiple aggregates.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>
-    <li><a href="#java8" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell8">
-<pre class="language-graql"> <code>
-match $x isa person, has age $a, has gender $g; aggregate (min $a as minAge, max $g as maxGender);
-</code>
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java8">
-<pre class="language-java"> <code>
-qb.match(
-    var("x").isa("person").has("age", var("a")).has("gender", var("g")),
-).aggregate(select(min("a").as("minAge"), max("g").as("maxGender")));
-</code>
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

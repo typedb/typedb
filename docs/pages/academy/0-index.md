@@ -1,46 +1,44 @@
 ---
 title: Grakn Academy
 keywords: getting started
-last_updated: September 2017
+last_updated: April 2018
 tags: [getting-started]
 sidebar: academy_sidebar
+summary: This is a brief introduction to topics that will be covered in the Grakn Academy.
 permalink: ./academy/index.html
 folder: overview
 toc: false
 KB: academy
 ---
 
-Welcome to the Grakn Academy. In this series of tutorials, you will learn all the basics of GRAKN - the knowledge graph for knowledge engineering.
+Welcome to the Grakn Academy. In this series of tutorials, you will learn all the basics of Grakn - the knowledge graph for knowledge engineering.
 
-The Academy is structured into modules that covers a broad topic. Each module is divided into several lessons, that you are supposed to follow in order.
+The Academy is structured into modules that cover broad Grakn topics. Each module is divided into several lessons, that you are supposed to follow in order.
 
-The Academy lessons are sprinkled with exercises, that you are highly adviced to do, as they will help solidify your understanding of the topics covered.
-
-Almost no previous knowledge is required, but a familiarity with your computer. Nonetheless, be advised that GRAKN is a database, that is a technical piece of software, so if you are completely devoid of technical skills it might be hard to find value in it.
-
+The Academy lessons are sprinkled with exercises, that you are highly advised to do, as they will help to solidify your understanding of the topics covered.
 
 The module topics are divided as follows:
 
-## [Intoduction to GRAKN](./grakn-intro.html)
+## [Introduction to Grakn](./grakn-intro.html)
 
-In this module you will be given a brief overview of the GRAKN software stack and the principal components you will be using and you will be guided through the process of setting up the necessary tools to follow the Academy lessons.
+In this module you will be given a brief overview of the Grakn software stack and the principal components you will be using and you will be guided through the process of setting up the necessary tools to follow the Academy lessons.
 
-## [GRAQL](./graql-intro.html)
+## [Graql](./graql-intro.html)
 
-In the second module you will learn about GRAQL, GRAKN's own high level query language that is usued to perform all your data definition and manipulation needs.
+In the second module you will learn about Graql, Grakn's own high level query language that is usued to perform all your data definition and manipulation needs.
 
-## [GRAKN Schemas](./schema-elements.html)
+## [Grakn Schemas](./schema-elements.html)
 
-In the third module you will be introduced to the innovative GRAKN object model and the, that allows you to arrange your data using a very intuitive conceptual schema and guarantees that your data is consistent.
+In the third module you will be introduced to the innovative Grakn object model, that allows you to arrange your data using a very intuitive conceptual schema and guarantees that your data is consistent.
 
 ## [Data loading](./loading-files.html)
 
-The fourth module will guide you through the topic of data loading and migration. It will introduce to the GRAQL templating language extensions, that allow to easily migrate data from the most common file formats.
+The fourth module will guide you through the topic of data loading and migration. It will introduce you to the Graql templating language extensions, that allow to easily migrate data from the most common file formats.
 
-## [GRAKN Reasoner](./reasoner-intro.html)
+## [Grakn Reasoner](./reasoner-intro.html)
 
-The fith module will introduce you to the topic of logic inference and GRAKN rules, which allow you to really get the most out of your data.
+The fith module will introduce you to the topic of logic inference and Grakn rules, which allow you to really get the most out of your data.
 
-## [GRAKN Analytics](./analytics-intro.html)
+## [Grakn Analytics](./analytics-intro.html)
 
-The sixth and final module will be about GRAQL OLAP queries and the distributed analytics component, that allows to perform distributed computation at scale.
+The sixth and final module will be about Graql OLAP queries and the distributed analytics component, that allows you to perform distributed computation at scale.

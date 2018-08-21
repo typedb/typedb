@@ -261,7 +261,7 @@
     font-family: 'Titillium';
     src: url('/fonts/titillium/TitilliumWeb-SemiBoldItalic.ttf');
     font-weight: 600;
-    font-style: italic;    
+    font-style: italic;
 }
 @font-face {
     font-family: 'Titillium';
@@ -272,7 +272,7 @@
     font-family: 'Titillium';
     src: url('/fonts/titillium/TitilliumWeb-BoldItalic.ttf');
     font-weight: 700;
-    font-style: italic;    
+    font-style: italic;
 }
 /*  */
 
@@ -523,7 +523,7 @@ nav.navbar .github svg {
 /*  */
 
 div.navbar-collapse .navbar-nav input#search-input {
-    border: 1px solid #c9c9cb;    
+    border: 1px solid #c9c9cb;
     outline: none;
     border-radius: 3px;
     margin-left: 0;
@@ -668,7 +668,7 @@ a.dropdown-toggle,
     font-size: 16px;
     margin-left: 0;
     width: fit-content;
-    text-decoration: none; 
+    text-decoration: none;
     padding-left: 0;
     padding-right: 0;
     margin-left: 10px;
@@ -746,15 +746,6 @@ a.dropdown-toggle,
 
 .nav li > a > span:after{
     display: none;
-}
-
-@media (min-width: 1600px) {
-
-    #mysidebar li a{
-        padding-top: 7px;
-        padding-bottom: 7px;
-    }
-
 }
 
 

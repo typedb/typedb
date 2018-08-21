@@ -1,32 +1,31 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.API;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.cache.Cache;
@@ -75,7 +74,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         if(sup() == null) sup(superType);
     }
 
-    public T setLabel(Label label){
+    public T label(Label label){
         try {
             vertex().tx().txCache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
@@ -93,7 +92,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public LabelId getLabelId(){
+    public LabelId labelId(){
         return cachedLabelId.get();
     }
 
@@ -102,7 +101,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return The label of this ontological element
      */
     @Override
-    public Label getLabel() {
+    public Label label() {
         return cachedLabel.get();
     }
 
@@ -121,7 +120,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
         T superParent = getThis();
 
-        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.getLabel())){
+        while(superParent != null && !Schema.MetaSchema.THING.getLabel().equals(superParent.label())){
             superSet.add(superParent);
 
             //noinspection unchecked
@@ -206,8 +205,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     void checkSchemaMutationAllowed(){
         vertex().tx().checkSchemaMutationAllowed();
-        if(Schema.MetaSchema.isMetaLabel(getLabel())){
-            throw GraknTxOperationException.metaTypeImmutable(getLabel());
+        if(Schema.MetaSchema.isMetaLabel(label())){
+            throw GraknTxOperationException.metaTypeImmutable(label());
         }
     }
 
@@ -218,19 +217,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      */
     private void deleteCachedDirectedSubType(T oldSubType){
         cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
-    }
-
-    /**
-     * Adds another sub to this {@link SchemaConcept}
-     *
-     * @param concept The sub concept of this {@link SchemaConcept}
-     * @return The {@link SchemaConcept} itself
-     */
-    @API
-    public T sub(T concept){
-        //noinspection unchecked
-        ((SchemaConceptImpl) concept).sup(this);
-        return getThis();
     }
 
     /**
@@ -309,7 +295,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
      */
     @Override
-    public Stream<Rule> getRulesOfHypothesis() {
+    public Stream<Rule> whenRules() {
         return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS);
     }
 
@@ -318,14 +304,14 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
      */
     @Override
-    public Stream<Rule> getRulesOfConclusion() {
+    public Stream<Rule> thenRules() {
         return neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION);
     }
 
     @Override
     public String innerToString(){
         String message = super.innerToString();
-        message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
+        message = message + " - Label [" + label() + "] - Abstract [" + isAbstract() + "] ";
         return message;
     }
 

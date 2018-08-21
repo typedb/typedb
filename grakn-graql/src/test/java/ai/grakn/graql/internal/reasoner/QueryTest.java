@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -31,8 +31,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,7 +41,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class QueryTest {
 
@@ -55,11 +52,6 @@ public class QueryTest {
 
     @ClassRule
     public static final SampleKBContext snbGraph = SNBKB.context();
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraph(){
@@ -149,7 +141,7 @@ public class QueryTest {
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
         EmbeddedGraknTx<?> graph = geoKB.tx();
-        String polandId = getConcept(graph, "name", "Poland").getId().getValue();
+        String polandId = getConcept(graph, "name", "Poland").id().getValue();
         String patternString = "{$y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in;}";
         String patternString2 = "{$x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2), isa is-located-in;}";
         String patternString3 = "{$y id '" + polandId + "'; $x isa city; (geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;}";
@@ -284,6 +276,7 @@ public class QueryTest {
     }
 
     private static Concept getConcept(EmbeddedGraknTx<?> graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x").findAny().get();
+        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x")
+                .stream().map(ans -> ans.get("x")).findAny().get();
     }
 }

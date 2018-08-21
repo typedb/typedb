@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.kbs;
@@ -70,25 +70,25 @@ public class TransitivityMatrixKB extends TestKB {
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                aInstanceIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).getId();
+                aInstanceIds[i][j] = putEntityWithResource(graph, "a" + i + "," + j, aEntity, key).id();
             }
         }
         
-        q.addRelationship()
-                .addRolePlayer(qfrom, aInst)
-                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
+        q.create()
+                .assign(qfrom, aInst)
+                .assign(qto, graph.getConcept(aInstanceIds[0][0]));
 
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m ; j++) {
                 if ( i < n - 1 ) {
-                    q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
+                    q.create()
+                            .assign(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .assign(qto, graph.getConcept(aInstanceIds[i+1][j]));
                 }
                 if ( j < m - 1){
-                    q.addRelationship()
-                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
-                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
+                    q.create()
+                            .assign(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .assign(qto, graph.getConcept(aInstanceIds[i][j+1]));
                 }
             }
         }

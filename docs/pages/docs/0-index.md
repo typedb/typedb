@@ -21,8 +21,8 @@ toc: false
 
   <div role="tabpanel" class="tab-pane active" id="getstarted">
     <h2>Get Started</h2>
-    <p>Check out our guide to <b><a href="./get-started/setup-guide">download and set up Grakn</a></b>.</p>
-    <p>When you're set up, there's an <a href="./get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
+    <p>Check out our guide to <b><a href="./docs/get-started/setup-guide">download and set up Grakn</a></b>.</p>
+    <p>When you're set up, there's an <a href="./docs/get-started/quickstart-tutorial">introductory tutorial</a> to show the basics of Graql and how to use the Java API.</p>
   </div>
 
   <div role="tabpanel" class="tab-pane" id="contribute">
@@ -45,3 +45,9 @@ toc: false
     <p>If there's anything you want to improve, you can leave us a comment using the link at the bottom of each page, or even contribute to them directly via <a target="_blank" href="https://github.com/graknlabs/grakn/tree/master/docs">Github</a>.</p>
   </div>
 </div>
+
+<br />
+
+There may be some outdated Grakn terminology used, but here is Haikal giving an introduction to Grakn.
+
+<iframe style="width: 100%; height: 400px" src="https://www.youtube.com/embed/OeFrudRlXAM?list=PLDaQNzoeb9L7UZDPq7z1Gd2Rc0m_oeSDQ" frameborder="0" allowfullscreen></iframe>

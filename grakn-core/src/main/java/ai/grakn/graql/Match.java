@@ -1,30 +1,31 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchAdmin;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -34,28 +35,29 @@ import java.util.stream.Stream;
  * The {@link Match} is the pattern-matching part of a query. The patterns are described in a declarative fashion,
  * then the {@link Match} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * @see Answer
+ * @see ConceptMap
  *
  * @author Felix Chapman
  */
-public interface Match extends Streamable<Answer> {
+public interface Match extends Iterable<ConceptMap> {
 
     /**
-     * @param var a variable to get
-     * @return a stream of concepts
+     * @return iterator over match results
+     */
+    @Override
+    @CheckReturnValue
+    default Iterator<ConceptMap> iterator() {
+        return stream().iterator();
+    }
+
+    /**
+     * @return a stream of match results
      */
     @CheckReturnValue
-    Stream<Concept> get(String var);
+    Stream<ConceptMap> stream();
 
     /**
-     * @param var a variable to get
-     * @return a stream of concepts
-     */
-    @CheckReturnValue
-    Stream<Concept> get(Var var);
-
-    /**
-     * Get all {@link Var}s mentioned in the query
+     * Construct a get query with all all {@link Var}s mentioned in the query
      */
     @CheckReturnValue
     GetQuery get();
@@ -96,6 +98,12 @@ public interface Match extends Streamable<Answer> {
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
+     * Construct a delete query with all all {@link Var}s mentioned in the query
+     */
+    @CheckReturnValue
+    DeleteQuery delete();
+
+    /**
      * @param vars an array of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
@@ -107,14 +115,14 @@ public interface Match extends Streamable<Answer> {
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Var... vars);
+    DeleteQuery delete(Var var, Var... vars);
 
     /**
      * @param vars a collection of variables to delete for each result of this {@link Match}
      * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
-    DeleteQuery delete(Collection<? extends Var> vars);
+    DeleteQuery delete(Set<Var> vars);
 
     /**
      * Order the results by degree in ascending order
@@ -173,11 +181,11 @@ public interface Match extends Streamable<Answer> {
     /**
      * Aggregate results of a query.
      * @param aggregate the aggregate operation to apply
-     * @param <S> the type of the aggregate result
+     * @param <T> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
     @CheckReturnValue
-    <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate);
+    <T extends Answer> AggregateQuery<T> aggregate(Aggregate<T> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

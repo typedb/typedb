@@ -1,26 +1,26 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.state;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Set;
 
@@ -37,9 +37,9 @@ public abstract class QueryStateBase extends ResolutionState {
 
     private final Unifier unifier;
     private final Set<ReasonerAtomicQuery> visitedSubGoals;
-    private final QueryCache<ReasonerAtomicQuery> cache;
+    private final SimpleQueryCache<ReasonerAtomicQuery> cache;
 
-    QueryStateBase(Answer sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
+    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
         super(sub, parent);
         this.unifier = u;
         this.visitedSubGoals = subGoals;
@@ -54,7 +54,7 @@ public abstract class QueryStateBase extends ResolutionState {
     /**
      * @return query cache
      */
-    QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
+    SimpleQueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
 
     /**
      * @return unifier of this state with parent state
@@ -72,5 +72,5 @@ public abstract class QueryStateBase extends ResolutionState {
      * @param state answer state providing the answer
      * @return digested (acknowledged and cached) answer
      */
-    abstract Answer consumeAnswer(AnswerState state);
+    abstract ConceptMap consumeAnswer(AnswerState state);
 }

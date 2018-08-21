@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 package ai.grakn;
 
@@ -130,7 +130,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
@@ -195,7 +195,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
@@ -224,7 +224,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 graph.graql().match(
                         $person.has(PERSON_ID, operation.personId()),
@@ -254,7 +254,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
@@ -295,7 +295,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 graph.graql().match(
                         $forum.has(FORUM_ID, operation.forumId()),
@@ -324,7 +324,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
@@ -381,7 +381,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
 
                 ImmutableSet.Builder<VarPattern> match = ImmutableSet.builder();
                 ImmutableSet.Builder<VarPattern> insert = ImmutableSet.builder();
@@ -434,7 +434,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 Var person1 = var("person1");
                 Var person2 = var("person2");
 

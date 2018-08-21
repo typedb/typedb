@@ -50,7 +50,7 @@ You can also provide as arguments to `get` the variables you wish to see:
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
-<pre class="language-graql">
+<pre class="language-java">
 <code>
 qb.match(
     var("x").has("name", var("xn")),

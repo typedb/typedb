@@ -2,118 +2,73 @@
 title: Java Development Setup
 keywords: java
 tags: [java]
-summary: "Overview and setup guide for Java developers."
+summary: "This section will discuss how to develop an application with Grakn, using the Java API."
 sidebar: documentation_sidebar
 permalink: /docs/java-library/setup
 folder: docs
 ---
 
-## Basic Setup
-
-This section will discuss how to start developing with Grakn using the Java API.
-All Grakn applications require the following Maven dependency:
+## Declaring The Dependency In Maven
+All applications will require the `client-java` dependency to be declared on the `pom.xml` of your application.
 
 ```xml
+<repositories>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
+
 <properties>
-  <grakn.version>1.1.0</grakn.version>
+    <grakn.version>1.3.0</grakn.version>
 </properties>
 
 <dependencies>
   <dependency>
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn-kb</artifactId>
+    <artifactId>client-java</artifactId>
     <version>${grakn.version}</version>
   </dependency>
 </dependencies>
 ```
 
-This dependency will give you access to the Core API as well as an in-memory knowledge graph, which serves as a toy knowledge graph, should you wish to use the stack without having to have an instance of the Grakn server running.
+## Opening A Session And Transaction
 
-## Server Dependent Setup
+{% include note.html content="Before proceeding, make sure that the Grakn knowledge graph has already been started. Otherwise, refer to the [Setup guide](../get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
 
-If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
-Please see the [Setup Guide](../get-started/setup-guide) on more details on how to set up a Grakn server.
+A **session** object is responsible for maintaining a connection to a specific keyspace in the knowledge graph. Opening a session is performed by invoking the `session()` method on the grakn client.
+Once the session is open, you can proceed by creating a **transaction** in order to manipulate the data in the keyspace.
 
-Depending on the configuration of the Grakn server, your Java application will require the following dependency:
-```xml   
-<dependency>
-    <groupId>ai.grakn</groupId>
-    <artifactId>grakn-factory</artifactId>
-    <version>${grakn.version}</version>
-</dependency>
-```    
-
-The JAR files you will need to develop with Grakn can be found inside the `lib` directory of the distribution zip file. All the JARs are provided with no dependencies, so using these requires you to use Maven to acquire dependencies.
-
-Alternatively, you may include a reference to the snapshot repository, which contains the third-party dependencies. Add the following to your `pom.xml`:
-
-```xml
-<repositories>
-  <!--Snapshot repository for 3rd party libraries -->
-  <repository>
-    <id>grakn-development-snapshots</id>
-    <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
-    <releases>
-      <enabled>false</enabled>
-    </releases>
-    <snapshots>
-      <enabled>true</enabled>
-    </snapshots>
-  </repository>
-</repositories>
-```
-
-Here are some links to guides for adding external jars using different IDEs:
-
-- [IntelliJ](https://www.jetbrains.com/help/idea/2016.1/configuring-module-dependencies-and-libraries.html)
-- [Eclipse](http://www.tutorialspoint.com/eclipse/eclipse_java_build_path.htm)
-- [Netbeans](http://oopbook.com/java-classpath-2/classpath-in-netbeans/)
-
-
-## Initialising a Transaction on The knowledge graph
-
-You can initialise an in memory knowledge graph without having the Grakn server running with:
-
-<!-- These are ignored in tests because they connect to non-existent servers -->
-```java
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
-```    
-
-If you are running the Grakn server locally then you can initialise a knowledge graph with:
+The following snippet shows how to open a Grakn session and transaction:
 
 ```java-test-ignore
-tx = Grakn.session(Grakn.DEFAULT_URI, "keyspace").open(GraknTxType.WRITE);
+import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.client.Grakn;
+import ai.grakn.util.SimpleURI;
+
+public class App {
+  public static void main(String[] args) {
+    SimpleURI localGrakn = new SimpleURI("localhost", 48555);
+    Keyspace keyspace = Keyspace.of("grakn");
+    Grakn grakn = new Grakn(localGrakn);
+    try (Grakn.Session session = grakn.session(keyspace)) {
+      try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
+        // ...
+        transaction.commit();
+      }
+    }
+  }
+}
 ```
 
-If you are running the Grakn server remotely you must initialise the knowledge graph by providing the IP address of your server:
+## Keyspace Uniqueness
+A "Keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
 
-```java-test-ignore
-tx = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-```
+Please note that keyspaces are **not** case sensitive. This means that these `grakn`, `Grakn`, and `GrAkn` names refer to the same keyspace.
 
-The string "keyspace" uniquely identifies the knowledge graph and allows you to create different knowledge graphs.
-
-Please note that knowledge graph keyspaces are **not** case sensitive so the following two knowledge graphs are actually the same:
-
-```java-test-ignore
-    GraknTx tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-    GraknTx tx2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.WRITE);
-```
-
-All knowledge graphs are also singletons specific to their keyspaces so be aware that in the following case:
-
-```java-test-ignore
-   tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-   tx2 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-   tx3 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-```
-
-any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge graph.
-
-## Controlling The Behaviour of Knowledge Graph Transactions
-
-When initialising a transaction on a knowledge graph it is possible to define the type of transaction with `GraknTxType`.
-We currently support three types of transactions:
+## Transaction Types
+We currently support three transaction types:
 
 * `GraknTxType.WRITE` - A transaction that allows mutations to be performed on the knowledge graph
 * `GraknTxType.READ` - Prohibits any mutations to be performed to the knowledge graph

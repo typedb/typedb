@@ -36,33 +36,31 @@ undefine person sub entity;
 Within the [variable patterns](../querying-data/overview#variable-pattern) of both [define](#define-query) and
 [undefine](#undefine-query) queries, the following [properties](../querying-data/overview#property) are supported:
 
-## id
+### id
 
 `$x id <identifier>` will assign `$x` to an existing _concept_ with the given ID. It is an error if no such concept
 exists.
 
-## label
+### label
 
 `$A label <identifier>` will assign `$A` to a _schema concept_ with the given label. If no such schema concept exists,
 one will be created.
 
-## sub
+### sub
 
 `$A sub $B` defines the _schema concept_ `$A` as the direct sub-concept of the _schema concept_ `$B`.
 
-## relates
+### relates
 
 `$A relates $B` define the _relationship type_ `$A` to directly relate the _role_ `$B`.
 
-In the case where `$B` does not have a defined `sub`, this will also implicit define `$B sub role`.
+In the case where `$B` does not have a defined `sub`, this will also implicitly define `$B sub role`.
 
-`$A relates $C as $D` is equivalent to `$A relates $C; $C sub $D`. `as` can only be used together with `relates`. 
-
-## plays
+### plays
 
 `$A plays $B` defines the _type_ `$A` to directly play the _role_ `$B`.
 
-## has (type)
+### has (type)
 
 `$A has <identifier>` defines instances of the _type_ `$A` to have attributes of the _attribute type_ `<identifier>`.
 
@@ -79,7 +77,7 @@ In the case where `$B` does not have a defined `sub`, this will also implicit de
 > ```
 > Where `<sup>` is the direct super-concept of `<identifier>`.
 
-## key (type)
+### key (type)
 
 `$A key <identifier>` defines instances of the _type_ `$A` to have a key of _attribute type_ `<identifier>`.
 
@@ -99,23 +97,23 @@ In the case where `$B` does not have a defined `sub`, this will also implicit de
 > (note that `plays<<required>>` is not valid syntax, but indicates that instances of the type _must_ play the required
 > role exactly once).
 
-## datatype
+### datatype
 
 `$A datatype <datatype>` defines the _attribute type_ `$A` to have the specified
 [datatype](../querying-data/overview#value).
 
-## regex
+### regex
 
 `$A regex <regex>` defines the _attribute type_ `$A` to have the specified regex constraint.
 
-## is-abstract
+### is-abstract
 
 `$A is-abstract` defines the _type_ `$A` to be abstract.
 
-## when
+### when
 
 `$A when <pattern>` defines the _rule_ `$A` to have the specified `when` [pattern](./dml.html#pattern).
 
-## then
+### then
 
 `$A then <pattern>` defines the _rule_ `$A` to have the specified `then` [pattern](./dml.html#pattern).

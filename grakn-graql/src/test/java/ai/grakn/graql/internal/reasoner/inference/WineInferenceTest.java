@@ -1,58 +1,49 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
-import static org.junit.Assume.assumeTrue;
 
 public class WineInferenceTest {
 
-    @Rule
-    public final SampleKBContext wineGraph = SampleKBContext.load("wines-test.gql", "wines-rules.gql");
-
-    @BeforeClass
-    public static void setUpClass() {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext wineGraph = SampleKBContext.load("wines-test.gql", "wines-rules.gql");
 
     @Test
     public void testRecommendation() {
-        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW; get;";
+        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $wineName; get;";
         QueryBuilder qb = wineGraph.tx().graql().infer(false);
         QueryBuilder iqb = wineGraph.tx().graql().infer(true);
 
-        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
-                            "{$nameP val 'Bob';$nameW val 'White Champagne';} or" +
-                        "{$nameP val 'Alice';$nameW val 'Cabernet Sauvignion';} or" +
-                        "{$nameP val 'Charlie';$nameW val 'Pinot Grigio Rose';} or" +
-                        "{$nameP val 'Denis';$nameW val 'Busuioaca Romaneasca';} or" +
-                        "{$nameP val 'Eva';$nameW val 'Tamaioasa Romaneasca';} or" +
-                        "{$nameP val 'Frank';$nameW val 'Riojo Blanco CVNE 2003';}; get $x, $y, $nameW;";
+        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $wineName;" +
+                            "{$nameP == 'Bob';$wineName == 'White Champagne';} or" +
+                        "{$nameP == 'Alice';$wineName == 'Cabernet Sauvignion';} or" +
+                        "{$nameP == 'Charlie';$wineName == 'Pinot Grigio Rose';} or" +
+                        "{$nameP == 'Denis';$wineName == 'Busuioaca Romaneasca';} or" +
+                        "{$nameP == 'Eva';$wineName == 'Tamaioasa Romaneasca';} or" +
+                        "{$nameP == 'Frank';$wineName == 'Riojo Blanco CVNE 2003';}; get $x, $y, $wineName;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 }

@@ -1,25 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.graql.shell;
 
-import ai.grakn.engine.GraknConfig;
-import ai.grakn.graql.shell.GraknSessionProvider;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.EngineContext;
@@ -57,6 +55,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -84,6 +83,10 @@ public class GraqlShellIT {
     private static boolean showStdOutAndErr = true;
 
     private final static int NUM_METATYPES = 4;
+
+    private final static String analyticsDataset = "define obj sub entity, plays rel; relation sub relationship, relates rel; " +
+            "insert $a isa obj; $b isa obj; $c isa obj; $d isa obj; " +
+            "(rel: $a, rel: $b) isa relation; (rel: $a, rel: $c) isa relation; (rel: $a, rel: $d) isa relation; ";
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -128,10 +131,10 @@ public class GraqlShellIT {
 
     @Test
     public void testExecuteOption() throws Exception {
-        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
+        String result = runShellWithoutErrors("", "-e", "match $x isa entity; limit 1; get;");
 
         // When using '-e', only results should be printed, no prompt or query
-        assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
+        assertThat(result, allOf(not(containsString(">>>")), not(containsString("match"))));
     }
 
     @Test
@@ -159,8 +162,8 @@ public class GraqlShellIT {
         runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
 
         assertShellMatches(ImmutableList.of("-k", "grakn"),
-                "match im-in-the-default-keyspace sub entity; aggregate ask;",
-                containsString("True")
+                "match im-in-the-default-keyspace sub entity; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -169,14 +172,14 @@ public class GraqlShellIT {
         runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
         runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
 
-        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
-        assertThat(fooFooinFoo, containsString("True"));
-        assertThat(fooFooInBar, containsString("False"));
-        assertThat(barBarInFoo, containsString("False"));
-        assertThat(barBarInBar, containsString("True"));
+        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate count;\n", "-k", "foo");
+        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate count;\n", "-k", "bar");
+        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate count;\n", "-k", "foo");
+        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate count;\n", "-k", "bar");
+        assertThat(fooFooinFoo, containsString("1"));
+        assertThat(fooFooInBar, containsString("0"));
+        assertThat(barBarInFoo, containsString("0"));
+        assertThat(barBarInBar, containsString("1"));
     }
 
     @Test
@@ -190,8 +193,8 @@ public class GraqlShellIT {
         assertShellMatches(
                 "load src/test/graql/shell test(weird name).gql",
                 anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
+                "match movie sub entity; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -200,8 +203,8 @@ public class GraqlShellIT {
         assertShellMatches(
                 "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
                 anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
+                "match movie sub entity; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -217,10 +220,22 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testAskQuery() throws Exception {
+    public void testMatchGetRelationship() throws Exception {
         assertShellMatches(
-                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; aggregate ask;",
-                containsString("False")
+                "define name sub attribute datatype string;",
+                anything(),
+                "define marriage sub relationship, relates spouse;",
+                anything(),
+                "define person sub entity, has name, plays spouse;",
+                anything(),
+                "insert isa person has name \"Bill Gates\";",
+                anything(),
+                "insert isa person has name \"Melinda Gates\";",
+                anything(),
+                "match $husband isa person has name \"Bill Gates\"; $wife isa person has name \"Melinda Gates\"; insert (spouse: $husband, spouse: $wife) isa marriage;",
+                anything(),
+                "match $x isa marriage; get;",
+                allOf(containsString("spouse"), containsString("isa"), containsString("marriage"))
         );
     }
 
@@ -229,12 +244,12 @@ public class GraqlShellIT {
         assertShellMatches(
                 "define entity2 sub entity;",
                 anything(),
-                "match $x isa entity2; aggregate ask;",
-                containsString("False"),
+                "match $x isa entity2; aggregate count $x;",
+                containsString("0"),
                 "insert $x isa entity2;",
                 anything(),
-                "match $x isa entity2; aggregate ask;",
-                containsString("True")
+                "match $x isa entity2; aggregate count $x;",
+                containsString("1")
         );
     }
 
@@ -252,6 +267,23 @@ public class GraqlShellIT {
         assertShellMatches(
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
                 is(Integer.toString(NUM_METATYPES))
+        );
+    }
+
+    @Test
+    public void testAggregateGroupQuery() throws Exception {
+        assertShellMatches(
+                "define name sub attribute, datatype string;",
+                anything(),
+                "define person sub entity, has name;",
+                anything(),
+                "insert $x isa person, has name \"Alice\";",
+                anything(),
+                "insert $x isa person, has name \"Bob\";",
+                anything(),
+                "match $x isa person, has name $y; aggregate group $x;",
+                anyOf(containsString("Alice"),containsString("Bob")),
+                anyOf(containsString("Alice"),containsString("Bob"))
         );
     }
 
@@ -332,12 +364,12 @@ public class GraqlShellIT {
     @Test
     public void testComputeCount() throws Exception {
         assertShellMatches(
-                "define X sub entity; insert $a isa X; $b isa X; $c isa X;",
+                analyticsDataset,
                 anything(),
                 anything(),
                 "commit",
                 "compute count;",
-                is("3")
+                is("7")
         );
     }
 
@@ -399,7 +431,6 @@ public class GraqlShellIT {
     @Test
     public void whenEngineIsNotRunning_ShowAnError() throws Exception {
         ShellResponse response = runShell("", "-r", "localhost:7654");
-
         assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 
@@ -430,7 +461,7 @@ public class GraqlShellIT {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
             assertShellMatches(
-                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
+                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert isa X == '" + value + "';",
                     anything(),
                     anything(),
                     "match $x isa X; get;",
@@ -451,7 +482,7 @@ public class GraqlShellIT {
 
             // Query has a syntax error
             ShellResponse response = runShell(
-                    "insert X sub resource datatype string; value '" + value + "' isa X;\n"
+                    "define X sub attribute datatype string; insert isa X value '" + value + "' ;\n"
             );
 
             assertThat(response.err(), allOf(containsString("syntax error"), containsString(value)));
@@ -562,8 +593,8 @@ public class GraqlShellIT {
         runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
 
         assertShellMatches(ImmutableList.of("-k", "batch"),
-                "match $x isa movie; aggregate ask;",
-                containsString("True")
+                "match $x isa movie; aggregate count;",
+                containsString("1")
         );
     }
 
@@ -571,11 +602,11 @@ public class GraqlShellIT {
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
         ShellResponse response = runShell(
                 "match $x sub concet; aggregate count;\n" +
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n"
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;\n"
         );
 
         assertThat(response.err(), not(containsString("error")));
-        assertThat(response.out(), containsString("True"));
+        assertThat(response.out(), containsString("1"));
     }
 
     @Test
@@ -646,14 +677,14 @@ public class GraqlShellIT {
         assertThat(outputLines, contains(matcherList));
     }
 
-    private String runShellWithoutErrors(String input, String... args) throws Exception {
+    private String runShellWithoutErrors(String input, String... args) {
         ShellResponse response = runShell(input, args);
         String errMessage = response.err();
         assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
         return response.out();
     }
 
-    private ShellResponse runShell(String input, String... args) throws Exception {
+    private ShellResponse runShell(String input, String... args) {
         args = addKeyspaceAndUriParams(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
@@ -674,14 +705,13 @@ public class GraqlShellIT {
         PrintStream err = new PrintStream(terr);
 
         Boolean success = null;
-        GraknConfig config = GraknConfig.create();
 
         try {
             System.setIn(in);
 
             GraqlShellOptions options = GraqlShellOptions.create(args);
 
-            success = GraqlConsole.start(options,new GraknSessionProvider(config), historyFile, out, err);
+            success = GraqlConsole.start(options, historyFile, out, err);
         } catch (Exception e) {
             e.printStackTrace();
             err.flush();

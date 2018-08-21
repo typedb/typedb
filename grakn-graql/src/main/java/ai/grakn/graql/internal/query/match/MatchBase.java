@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query.match;
@@ -24,14 +24,13 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -43,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -53,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base {@link Match} implementation that executes the gremlin traversal
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
 public class MatchBase extends AbstractMatch {
 
@@ -73,8 +71,8 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> optionalGraph) {
-        EmbeddedGraknTx<?> tx = optionalGraph.orElseThrow(GraqlQueryException::noTx);
+    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
+        if (tx == null) throw GraqlQueryException.noTx();
 
         validatePattern(tx);
 
@@ -90,7 +88,7 @@ public class MatchBase extends AbstractMatch {
      * @param graqlTraversal gral traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
-    public static Stream<Answer> streamWithTraversal(
+    public static Stream<ConceptMap> streamWithTraversal(
             Set<Var> commonVars, EmbeddedGraknTx<?> tx, GraqlTraversal graqlTraversal
     ) {
         Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
@@ -99,10 +97,9 @@ public class MatchBase extends AbstractMatch {
 
         return traversal.toStream()
                 .map(elements -> makeResults(vars, tx, elements))
-                .flatMap(CommonUtil::optionalToStream)
                 .distinct()
                 .sequential()
-                .map(QueryAnswer::new);
+                .map(ConceptMapImpl::new);
     }
 
     /**
@@ -111,9 +108,9 @@ public class MatchBase extends AbstractMatch {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private static Optional<Map<Var, Concept>> makeResults(
-            Set<Var> vars, EmbeddedGraknTx<?> tx, Map<String, Element> elements
-    ) {
+    private static Map<Var, Concept> makeResults(
+            Set<Var> vars, EmbeddedGraknTx<?> tx, Map<String, Element> elements) {
+
         Map<Var, Concept> map = new HashMap<>();
         for (Var var : vars) {
             Element element = elements.get(var.name());
@@ -125,7 +122,7 @@ public class MatchBase extends AbstractMatch {
             }
         }
 
-        return Optional.of(map);
+        return map;
     }
 
     private static Concept buildConcept(EmbeddedGraknTx<?> tx, Element element) {
@@ -157,8 +154,8 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Optional<GraknTx> tx() {
-        return Optional.empty();
+    public GraknTx tx() {
+        return null;
     }
 
     @Override
@@ -176,8 +173,8 @@ public class MatchBase extends AbstractMatch {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }
 
-    public final Match infer(boolean materialise) {
-        return new MatchInfer(this, materialise);
+    public final Match infer() {
+        return new MatchInfer(this);
     }
 
     @Override

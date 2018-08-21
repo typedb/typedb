@@ -41,19 +41,12 @@ In the [Hierarchical Schema](./hierarchical-schema.html) section, we have define
 ```graql-test-ignore
 parentship sub relatives
   relates parent
-  relates mother
-  relates father
+  relates mother as parent
+  relates father as parent
   relates child
-  relates son
-  relates daughter;
+  relates son as child
+  relates daughter as child;
 
-parent sub role;
-mother sub parent;
-father sub parent;
-
-child sub role;
-son sub child;
-daughter sub child;
 ````
 
 Now instead of specifying all relationship combinations for a given parentship pair. We can define a basic `(parent, child)` relationship and let rules do the genderisation for us. One way to accomplish that is to define the following rules:
@@ -61,7 +54,7 @@ Now instead of specifying all relationship combinations for a given parentship p
 ```graql-test-ignore
 define
 
-genderizeParentships1 sub rule
+genderizeParentships1
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender 'male';
@@ -70,7 +63,7 @@ $c has gender 'male';
 then
 {(father: $p, son: $c) isa parentship;};
 
-genderizeParentships2 sub rule
+genderizeParentships2
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender 'male';
@@ -79,7 +72,7 @@ $c has gender 'female';
 then
 {(father: $p, daughter: $c) isa parentship;};
 
-genderizeParentships3 sub rule
+genderizeParentships3
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender 'female';
@@ -88,7 +81,7 @@ $c has gender 'male';
 then
 {(mother: $p, son: $c) isa parentship;};
 
-genderizeParentships4 sub rule
+genderizeParentships4
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender 'female';
@@ -139,7 +132,7 @@ Having the schema definition of the relationships, we can subsequently tell the 
 ```graql-test-ignore
 define
 
-peopleWithSameParentsAreSiblings sub rule
+peopleWithSameParentsAreSiblings
 when
 {(mother: $m, $x) isa parentship;
 (mother: $m, $y) isa parentship;
@@ -150,7 +143,7 @@ $x != $y;
 then
 {(sibling: $x, sibling: $y) isa siblings;};
 
-peopleWithSiblingsParentsAreCousins sub rule
+peopleWithSiblingsParentsAreCousins
 when
 {
 (parent: $p, child: $c1) isa parentship;

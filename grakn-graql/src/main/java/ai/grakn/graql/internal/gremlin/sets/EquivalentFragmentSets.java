@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.gremlin.sets;
@@ -45,6 +45,7 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
+            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
             AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
@@ -70,8 +71,12 @@ public class EquivalentFragmentSets {
      *
      * @author Felix Chapman
      */
+    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {
+        return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, roleLabels, relTypeLabels);
+    }
+
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
-        return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
+        return rolePlayer(varProperty, relation, edge, rolePlayer, role, null, null);
     }
 
     /**

@@ -48,9 +48,9 @@ define
   middlename sub name datatype string;
   picture sub attribute datatype string;
   age sub attribute datatype long;
-  "date" sub attribute datatype string;
-  birth-date sub "date" datatype string;
-  death-date sub "date" datatype string;
+  event-date sub attribute datatype date;
+  birth-date sub event-date datatype date;
+  death-date sub event-date datatype date;
   gender sub attribute datatype string;
 
 # Roles and Relations
@@ -96,7 +96,7 @@ event sub entity
   is-abstract
   has degree
   has confidence
-  has "date"
+  has event-date
   has identifier
   has notes
   has conclusion
@@ -120,10 +120,10 @@ birth sub event
 death sub event
   has death-date;
 
-# Resources
+# Attributes
   degree sub attribute datatype string;
   confidence sub attribute datatype string;
-  "date" sub attribute datatype string;
+  event-date sub attribute datatype date;
   identifier sub attribute datatype string;
   notes sub attribute datatype string;
   conclusion sub attribute datatype string;
@@ -147,17 +147,12 @@ relatives sub relationship
 
 marriage sub relatives
   relates spouse
-  relates spouse1
-  relates spouse2
-  relates husband
-  relates wife
-  has "date";
+  relates spouse1 as spouse
+  relates spouse2 as spouse
+  relates husband as spouse
+  relates wife as spouse
+  has event-date;
 
-spouse sub role;
-spouse1 sub spouse;
-spouse2 sub spouse;
-husband sub spouse;
-wife sub spouse;
 ```
 
 
@@ -172,18 +167,12 @@ define
 
 parentship sub relatives
   relates parent
-  relates mother
-  relates father
+  relates mother as parent
+  relates father as parent
   relates child
-  relates son
-  relates daughter;
+  relates son as child
+  relates daughter as child;
 
-parent sub role;
-mother sub parent;
-father sub parent;
-child sub role;
-son sub child;
-daughter sub child;
 ```
 
 Now we have provided more detail about being a parent.
@@ -214,8 +203,8 @@ define
     plays child;
 
     gender sub attribute datatype string;
-    birth-date sub "date";
-    death-date sub "date";
+    birth-date sub event-date;
+    death-date sub event-date;
     name sub attribute datatype string;
     firstname sub name;
     middlename sub name;
@@ -226,7 +215,7 @@ define
     is-abstract
     has degree
     has confidence
-    has "date"
+    has event-date
     has identifier
     has notes
     has conclusion
@@ -257,35 +246,22 @@ define
 
   marriage sub relatives
     relates spouse
-    relates spouse1
-    relates spouse2
-    relates husband
-    relates wife
-    has "date";
-
-  spouse sub role;
-  spouse1 sub spouse;
-  spouse2 sub spouse;
-  husband sub spouse;   
-  wife sub spouse;
+    relates spouse1 as spouse
+    relates spouse2 as spouse
+    relates husband as spouse
+    relates wife as spouse
+    has event-date;
 
   parentship sub relatives
     relates parent
-    relates mother
-    relates father
+    relates mother as parent
+    relates father as parent
     relates child
-    relates son
-    relates daughter;
+    relates son as child
+    relates daughter as child;
 
-  parent sub role;
-  mother sub parent;
-  father sub parent;
-  child sub role;
-  son sub child;
-  daughter sub child;
-
-## Resources
-  "date" sub attribute datatype string;
+## Attributes
+  event-date sub attribute datatype date;
   notes sub attribute datatype string;
   happening sub attribute datatype string;
   degree sub attribute datatype string;

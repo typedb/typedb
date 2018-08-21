@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -68,7 +67,7 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenGettingConceptById_ReturnTheConcept(){
         EntityType entityType = tx.putEntityType("test-name");
-        assertEquals(entityType, tx.getConcept(entityType.getId()));
+        assertEquals(entityType, tx.getConcept(entityType.id()));
     }
 
     @Test
@@ -86,9 +85,9 @@ public class GraknTxTest extends TxTestBase {
         AttributeType<String> t1 = tx.putAttributeType("Parent 1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("Parent 2", AttributeType.DataType.STRING);
 
-        Attribute<String> r1 = t1.putAttribute(targetValue);
-        Attribute<String> r2 = t2.putAttribute(targetValue);
-        t2.putAttribute("Dragon");
+        Attribute<String> r1 = t1.create(targetValue);
+        Attribute<String> r2 = t2.create(targetValue);
+        t2.create("Dragon");
 
         assertThat(tx.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
     }
@@ -146,7 +145,7 @@ public class GraknTxTest extends TxTestBase {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -173,7 +172,7 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenPassingGraphToAnotherThreadWithoutOpening_Throw() throws ExecutionException, InterruptedException {
         ExecutorService pool = Executors.newSingleThreadExecutor();
-        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
+        GraknTx graph = EmbeddedGraknSession.inMemory("testing").transaction(GraknTxType.WRITE);
 
         expectedException.expectCause(IsInstanceOf.instanceOf(GraknTxOperationException.class));
         expectedException.expectMessage(GraknTxOperationException.transactionClosed(graph, null).getMessage());
@@ -186,7 +185,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidKBException {
-        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testingagain").open(GraknTxType.WRITE);
+        GraknTx graph = EmbeddedGraknSession.inMemory( "testingagain").transaction(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
@@ -199,7 +198,7 @@ public class GraknTxTest extends TxTestBase {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph = Grakn.session(Grakn.IN_MEMORY, "testingagain").open(GraknTxType.WRITE);
+        graph = EmbeddedGraknSession.inMemory( "testingagain").transaction(GraknTxType.WRITE);
         graph.putEntityType("A Thing");
     }
 
@@ -215,7 +214,7 @@ public class GraknTxTest extends TxTestBase {
 
         //Purge the above concepts into the main cache
         tx.commit();
-        tx = EmbeddedGraknSession.create(tx.keyspace(), Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(tx.keyspace()).transaction(GraknTxType.WRITE);
 
         //Check cache is in good order
         Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
@@ -224,20 +223,20 @@ public class GraknTxTest extends TxTestBase {
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
         assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
 
-        assertThat(e1.plays().collect(toSet()), containsInAnyOrder(r1, r2));
+        assertThat(e1.playing().collect(toSet()), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Schema in a separate thread
         pool.submit(() -> {
-            GraknTx innerGraph = Grakn.session(Grakn.IN_MEMORY, tx.keyspace()).open(GraknTxType.WRITE);
+            GraknTx innerGraph = EmbeddedGraknSession.inMemory( tx.keyspace()).transaction(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             Role role = innerGraph.getRole("r1");
-            entityType.deletePlays(role);
+            entityType.unplay(role);
         }).get();
 
         //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.getLabel());
-        assertTrue("Main cache was affected by transaction", foundE1.asType().plays().anyMatch(role -> role.equals(r1)));
+        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.label());
+        assertTrue("Main cache was affected by transaction", foundE1.asType().playing().anyMatch(role -> role.equals(r1)));
     }
 
     @Test
@@ -267,16 +266,16 @@ public class GraknTxTest extends TxTestBase {
         String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
-        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.READ);
+        tx = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.READ);
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationshipType(relationType1));
 
         //Pass some mutations
         tx.close();
-        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.WRITE);
+        tx = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.WRITE);
         EntityType entityT = tx.putEntityType(entityType);
-        entityT.addEntity();
+        entityT.create();
         Role roleT1 = tx.putRole(roleType1);
         Role roleT2 = tx.putRole(roleType2);
         RelationshipType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
@@ -285,9 +284,9 @@ public class GraknTxTest extends TxTestBase {
         tx.commit();
 
         //Fail some mutations again
-        tx = EmbeddedGraknSession.create(keyspace, Grakn.IN_MEMORY).open(GraknTxType.READ);
-        failMutation(tx, entityT::addEntity);
-        failMutation(tx, () -> resourceT.putAttribute("A resource"));
+        tx = EmbeddedGraknSession.inMemory(keyspace).transaction(GraknTxType.READ);
+        failMutation(tx, entityT::create);
+        failMutation(tx, () -> resourceT.create("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> entityT.plays(roleT1));
         failMutation(tx, () -> relationT1.relates(roleT2));
@@ -314,15 +313,15 @@ public class GraknTxTest extends TxTestBase {
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
         String keyspace = "akeyspacewithkeys";
-        GraknSession session = Grakn.session(Grakn.IN_MEMORY, keyspace);
+        GraknSession session = EmbeddedGraknSession.inMemory( keyspace);
 
-        GraknTx graph = session.open(GraknTxType.READ);
+        GraknTx graph = session.transaction(GraknTxType.READ);
         failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
         failAtOpeningTx(session, GraknTxType.BATCH, keyspace);
         graph.close();
 
         //noinspection ResultOfMethodCallIgnored
-        session.open(GraknTxType.BATCH);
+        session.transaction(GraknTxType.BATCH);
         failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
         failAtOpeningTx(session, GraknTxType.READ, keyspace);
     }
@@ -331,7 +330,7 @@ public class GraknTxTest extends TxTestBase {
         Exception exception = null;
         try{
             //noinspection ResultOfMethodCallIgnored
-            session.open(txType);
+            session.transaction(txType);
         } catch (GraknTxOperationException e){
             exception = e;
         }
@@ -346,26 +345,26 @@ public class GraknTxTest extends TxTestBase {
         Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
-        Entity s1_e1 = entityType.addEntity();
-        Entity s1_e2 = entityType.addEntity();
-        Entity s1_e3 = entityType.addEntity();
-        tx.shard(entityType.getId());
+        Entity s1_e1 = entityType.create();
+        Entity s1_e2 = entityType.create();
+        Entity s1_e3 = entityType.create();
+        tx.shard(entityType.id());
 
         Shard s2 = entityType.currentShard();
 
         //Add 5 instances to second shard
-        Entity s2_e1 = entityType.addEntity();
-        Entity s2_e2 = entityType.addEntity();
-        Entity s2_e3 = entityType.addEntity();
-        Entity s2_e4 = entityType.addEntity();
-        Entity s2_e5 = entityType.addEntity();
+        Entity s2_e1 = entityType.create();
+        Entity s2_e2 = entityType.create();
+        Entity s2_e3 = entityType.create();
+        Entity s2_e4 = entityType.create();
+        Entity s2_e5 = entityType.create();
 
-        tx.shard(entityType.getId());
+        tx.shard(entityType.id());
         Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard
-        Entity s3_e1 = entityType.addEntity();
-        Entity s3_e2 = entityType.addEntity();
+        Entity s3_e1 = entityType.create();
+        Entity s3_e2 = entityType.create();
 
         //Check Type was sharded correctly
         assertThat(entityType.shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
@@ -378,25 +377,25 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
+        GraknSession session = EmbeddedGraknSession.inMemory( "hi");
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
             //Resources
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
                 AttributeType<Long> int_ = graph.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = graph.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 graph.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
-                graph.putEntityType("FOO").attribute(foo);
+                graph.putEntityType("FOO").has(foo);
 
                 graph.commit();
             }
         }).get();
 
         //Relationship Which Has Resources
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.putEntityType("BAR").attribute(graph.getAttributeType("bar"));
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            graph.putEntityType("BAR").has(graph.getAttributeType("bar"));
             graph.commit();
         }
     }
@@ -406,7 +405,7 @@ public class GraknTxTest extends TxTestBase {
         EntityType entity = tx.putEntityType("my amazing entity type");
         assertEquals(1L, tx.getShardCount(entity));
 
-        tx.shard(entity.getId());
+        tx.shard(entity.id());
         assertEquals(2L, tx.getShardCount(entity));
     }
 

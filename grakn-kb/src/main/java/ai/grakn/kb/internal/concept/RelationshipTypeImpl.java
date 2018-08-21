@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -67,7 +67,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     }
 
     @Override
-    public Relationship addRelationship() {
+    public Relationship create() {
         return addRelationship(false);
     }
 
@@ -85,7 +85,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
 
     @Override
-    public Stream<Role> relates() {
+    public Stream<Role> roles() {
         return cachedRelates.get().stream();
     }
 
@@ -111,7 +111,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
      * @return The {@link Relationship} Type itself.
      */
     @Override
-    public RelationshipType deleteRelates(Role role) {
+    public RelationshipType unrelate(Role role) {
         checkSchemaMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
 
@@ -168,16 +168,16 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     private Stream<Relationship> relationEdges(){
         //Unfortunately this is a slow process
-        return relates().
-                flatMap(Role::playedByTypes).
+        return roles().
+                flatMap(Role::players).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index
                     return  vertex().tx().getTinkerTraversal().V().
-                            has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
+                            has(Schema.VertexProperty.ID.name(), type.id().getValue()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
-                            has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
+                            has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), labelId().getValue()).
                             toStream().
                             map(edge -> vertex().tx().factory().<Relationship>buildConcept(edge));
                 });

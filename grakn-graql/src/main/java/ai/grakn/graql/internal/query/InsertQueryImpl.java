@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -24,38 +24,36 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * A query that will insert a collection of variables into a graph
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
-abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> implements InsertQueryAdmin {
+abstract class InsertQueryImpl implements InsertQueryAdmin {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
-     *
-     * @param vars a collection of Vars to insert
-     * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
+     * @param match the {@link Match} to insert for each result
+     * @param vars a collection of Vars to insert
      */
-    static InsertQueryImpl create(Collection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
-        match.ifPresent(answers -> Preconditions.checkArgument(answers.tx().equals(tx)));
+    static InsertQueryImpl create(GraknTx tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
+        if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
@@ -66,11 +64,11 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
 
     @Override
     public final InsertQuery withTx(GraknTx tx) {
-        return match().map(
-                m -> Queries.insert(varPatterns(), m.withTx(tx).admin())
-        ).orElseGet(
-                () -> Queries.insert(varPatterns(), Optional.of(tx))
-        );
+        if (match() != null) {
+            return Queries.insert(match().withTx(tx).admin(), varPatterns());
+        } else {
+            return Queries.insert(tx, varPatterns());
+        }
     }
 
     @Override
@@ -79,8 +77,8 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
     }
 
     @Override
-    public final Stream<Answer> stream() {
-        return queryRunner().run(this);
+    public final Stream<ConceptMap> stream() {
+        return executor().run(this);
     }
 
     @Override
@@ -90,7 +88,8 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
 
     @Override
     public Set<SchemaConcept> getSchemaConcepts() {
-        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
+        if (getTx() == null) throw GraqlQueryException.noTx();
+        GraknTx theGraph = getTx();
 
         Set<SchemaConcept> types = allVarPatterns()
                 .map(VarPatternAdmin::getTypeLabel)
@@ -98,7 +97,7 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        match().ifPresent(mq -> types.addAll(mq.admin().getSchemaConcepts()));
+        if (match() != null) types.addAll(match().admin().getSchemaConcepts());
 
         return types;
     }
@@ -107,25 +106,25 @@ abstract class InsertQueryImpl extends AbstractQuery<List<Answer>, Answer> imple
         return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
     }
 
-    private Optional<? extends GraknTx> getTx() {
-        Optional<Optional<? extends GraknTx>> matchTx = match().map(Match::admin).map(MatchAdmin::tx);
-        return matchTx.orElse(tx());
+    private GraknTx getTx() {
+        if (match() != null && match().admin().tx() != null) return match().admin().tx();
+        else return tx();
     }
 
     @Override
     public final String toString() {
-        String mq = match().map(match -> match + "\n").orElse("");
-        return mq + "insert " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        StringBuilder builder = new StringBuilder();
+
+        if (match() != null) builder.append(match()).append("\n");
+        builder.append("insert ");
+        builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
+
+        return builder.toString();
     }
 
-    @Override
-    public final List<Answer> execute() {
-        return stream().collect(Collectors.toList());
-    }
-
-    @Nullable
     @Override
     public final Boolean inferring() {
-        return match().map(match -> match.admin().inferring()).orElse(null);
+        if (match() != null) return match().admin().inferring();
+        else return false;
     }
 }

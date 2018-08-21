@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -22,27 +22,32 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.GraqlTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,17 +55,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TypeInferenceQueryTest {
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Rule
-    public final SampleKBContext testContext = SampleKBContext.load("typeInferenceTest.gql");
+    @ClassRule
+    public static final SampleKBContext testContext = SampleKBContext.load("typeInferenceTest.gql");
 
     @Test
     public void testTypeInference_singleGuard() {
@@ -283,10 +286,52 @@ public class TypeInferenceQueryTest {
         typeInference(allRelations(graph), patternString, graph);
     }
 
+    private <T extends Atomic> T getAtom(ReasonerQuery q, Class<T> type, Set<Var> vars){
+        return q.getAtoms(type)
+                .filter(at -> at.getVarNames().containsAll(vars))
+                .findFirst().get();
+    }
+
+    @Test
+    public void testTypeInference_conjunctiveQuery() {
+        EmbeddedGraknTx<?> graph = testContext.tx();
+        String patternString = "{" +
+                "($x, $y); $x isa anotherSingleRoleEntity;" +
+                "($y, $z); $y isa anotherTwoRoleEntity;" +
+                "($z, $w); $w isa threeRoleEntity;" +
+                "}";
+
+        ReasonerQueryImpl conjQuery = ReasonerQueries.create(conjunction(patternString, graph), graph);
+
+        //determination of possible rel types for ($y, $z) relation depends on its neighbours which should be preserved
+        //when resolving (and separating atoms) the query
+        RelationshipAtom XYatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("x"), var("y")));
+        RelationshipAtom YZatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("y"), var("z")));
+        RelationshipAtom ZWatom = getAtom(conjQuery, RelationshipAtom.class, Sets.newHashSet(var("z"), var("w")));
+        RelationshipAtom midAtom = (RelationshipAtom) ReasonerQueries.atomic(YZatom).getAtom();
+
+        assertEquals(midAtom.getPossibleTypes(), YZatom.getPossibleTypes());
+
+        //differently prioritised options arise from using neighbour information
+        List<RelationshipType> firstTypeOption = Lists.newArrayList(
+                graph.getSchemaConcept(Label.of("twoRoleBinary")),
+                graph.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
+                graph.getSchemaConcept(Label.of("threeRoleBinary"))
+        );
+        List<RelationshipType> secondTypeOption = Lists.newArrayList(
+                graph.getSchemaConcept(Label.of("anotherTwoRoleBinary")),
+                graph.getSchemaConcept(Label.of("twoRoleBinary")),
+                graph.getSchemaConcept(Label.of("threeRoleBinary"))
+        );
+        typeInference(secondTypeOption, XYatom.getCombinedPattern().toString(), graph);
+        typeInference(firstTypeOption, YZatom.getCombinedPattern().toString(), graph);
+        typeInference(firstTypeOption, ZWatom.getCombinedPattern().toString(), graph);
+    }
+
     private void typeInference(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
+        Atom atom = query.getAtom();
+        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
@@ -302,11 +347,11 @@ public class TypeInferenceQueryTest {
     private void typeInference(List<RelationshipType> possibleTypes, String pattern, String subbedPattern, EmbeddedGraknTx<?> graph){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, graph), graph);
-        RelationshipAtom atom = (RelationshipAtom) query.getAtom();
-        RelationshipAtom subbedAtom = (RelationshipAtom) subbedQuery.getAtom();
+        Atom atom = query.getAtom();
+        Atom subbedAtom = subbedQuery.getAtom();
 
-        List<Type> relationshipTypes = atom.inferPossibleTypes(new QueryAnswer());
-        List<Type> subbedRelationshipTypes = subbedAtom.inferPossibleTypes(new QueryAnswer());
+        List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
+        List<SchemaConcept> subbedRelationshipTypes = subbedAtom.getPossibleTypes();
         if (possibleTypes.size() == 1){
             assertEquals(possibleTypes, relationshipTypes);
             assertEquals(relationshipTypes, subbedRelationshipTypes);
@@ -325,14 +370,14 @@ public class TypeInferenceQueryTest {
 
     private void typeInferenceQueries(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph) {
         QueryBuilder qb = graph.graql();
-        List<Answer> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
-        List<Answer> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
+        List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, graph);
+        List<ConceptMap> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
         assertEquals(typedAnswers.size(), unTypedAnswers.size());
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
-    private List<Answer> typedAnswers(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
-        List<Answer> answers = new ArrayList<>();
+    private List<ConceptMap> typedAnswers(List<RelationshipType> possibleTypes, String pattern, EmbeddedGraknTx<?> graph){
+        List<ConceptMap> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, graph), graph);
         for(Type type : possibleTypes){
             GetQuery typedQuery = graph.graql().match(ReasonerQueries.atomic(query.getAtom().addType(type)).getPattern()).get();
@@ -347,7 +392,7 @@ public class TypeInferenceQueryTest {
     }
 
     private ConceptId conceptId(EmbeddedGraknTx<?> graph, String type){
-        return graph.getEntityType(type).instances().map(Concept::getId).findFirst().orElse(null);
+        return graph.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> graph){

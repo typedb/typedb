@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -81,7 +81,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
 
         //We add the role types explicitly so we can return them when there are no roleplayers
-        type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
+        type().roles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
         //All castings are used here because we need to iterate over all of them anyway
         castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRole(), (k) -> new HashSet<>()).add(rp.getRolePlayer()));
 
@@ -90,7 +90,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
     @Override
     public Stream<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getRolePlayer);
+        return castingsRelation(roles).map(Casting::getRolePlayer).distinct();
     }
 
     void removeRolePlayer(Role role, Thing thing) {
@@ -106,7 +106,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
 
-        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraknTxOperationException.metaTypeImmutable(role.getLabel());
+        if(Schema.MetaSchema.isMetaLabel(role.label())) throw GraknTxOperationException.metaTypeImmutable(role.label());
 
         //Do the actual put of the role and role player
         putRolePlayerEdge(role, thing);
@@ -124,13 +124,13 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
         GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), this.getId().getValue()).
+                has(Schema.VertexProperty.ID.name(), this.id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().getLabelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.getLabelId().getValue()).
+                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
+                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
-                has(Schema.VertexProperty.ID.name(), toThing.getId()).
+                has(Schema.VertexProperty.ID.name(), toThing.id()).
                 select("edge");
 
         if(traversal.hasNext()){
@@ -139,8 +139,8 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
 
         //Role player edge does not exist create a new one
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
-        edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().getLabelId().getValue());
-        edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.getLabelId().getValue());
+        edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, this.type().labelId().getValue());
+        edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing);
         vertex().tx().txCache().trackForValidation(casting);
     }
@@ -159,11 +159,11 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         }
 
         //Traversal is used so we can potentially optimise on the index
-        Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
+        Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), getId().getValue()).
+                has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
+                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().
                 map(edge -> vertex().tx().factory().buildEdgeElement(edge)).
@@ -173,16 +173,16 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     @Override
     public String innerToString(){
         StringBuilder description = new StringBuilder();
-        description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
+        description.append("ID [").append(id()).append("] Type [").append(type().label()).append("] Roles and Role Players: \n");
         for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
             if(entry.getValue().isEmpty()){
-                description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
+                description.append("    Role [").append(entry.getKey().label()).append("] not played by any instance \n");
             } else {
                 StringBuilder instancesString = new StringBuilder();
                 for (Thing thing : entry.getValue()) {
-                    instancesString.append(thing.getId()).append(",");
+                    instancesString.append(thing.id()).append(",");
                 }
-                description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
+                description.append("    Role [").append(entry.getKey().label()).append("] played by [").
                         append(instancesString.toString()).append("] \n");
             }
         }

@@ -1,19 +1,24 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
+<<<<<<< HEAD
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+=======
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+>>>>>>> central/stable
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -22,9 +27,10 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
@@ -33,7 +39,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -41,18 +47,14 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -67,7 +69,6 @@ import static ai.grakn.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
 
@@ -83,29 +84,18 @@ public class AtomicQueryTest {
     @ClassRule
     public static final SampleKBContext unificationWithTypesSet = SampleKBContext.load("unificationWithTypesTest.gql");
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void setUpClass() {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
-
-    @Test
+    @Test (expected = IllegalArgumentException.class)
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
         EmbeddedGraknTx<?> graph = geoKB.tx();
         String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        exception.expect(GraqlQueryException.class);
-        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(conjunction(patternString), graph);
     }
 
-    @Test
+    @Test (expected = GraqlQueryException.class)
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String patternString = "{$x isa someType;}";
-        exception.expect(GraqlQueryException.class);
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), graph);
     }
 
     @Test
@@ -116,10 +106,10 @@ public class AtomicQueryTest {
         assertTrue(!qb.<GetQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        List<Answer> answers = new ArrayList<>();
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        List<ConceptMap> answers = new ArrayList<>();
 
-        answers.add(new QueryAnswer(
+        answers.add(new ConceptMapImpl(
                 ImmutableMap.of(
                         var("x"), getConceptByResourceValue(graph, "Warsaw"),
                         var("y"), getConceptByResourceValue(graph, "Poland")))
@@ -134,8 +124,8 @@ public class AtomicQueryTest {
     @Test
     public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
         EmbeddedGraknTx<?> graph = materialisationTestSet.tx();
-        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity", graph), graph);
-        assertEquals(entityQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
+        ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity"), graph);
+        assertEquals(entityQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
     }
 
     @Test
@@ -146,30 +136,30 @@ public class AtomicQueryTest {
         Concept secondEntity = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa entity2; get;").execute()).get("x");
         Concept resource = Iterables.getOnlyElement(qb.<GetQuery>parse("match $x isa resource; get;").execute()).get("x");
 
-        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r val 'inferred';$x id " + firstEntity.getId().getValue() + ";}", graph), graph);
+        ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction("{$x has resource $r;$r == 'inferred';$x id " + firstEntity.id().getValue() + ";}"), graph);
         String reuseResourcePatternString =
                 "{" +
                         "$x has resource $r;" +
-                        "$x id " + secondEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + secondEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "}";
 
-        ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString, graph), graph);
+        ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString), graph);
 
-        assertEquals(resourceQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
+        assertEquals(resourceQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
 
-        reuseResourceQuery.materialise(new QueryAnswer()).collect(Collectors.toList());
+        reuseResourceQuery.materialise(new ConceptMapImpl()).collect(Collectors.toList());
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
-                        "$x id " + secondEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + secondEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "get;").execute()).get("rel").asRelationship().isInferred(), true);
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
-                        "$x id " + firstEntity.getId().getValue() + ";" +
-                        "$r id " + resource.getId().getValue() + ";" +
+                        "$x id " + firstEntity.id().getValue() + ";" +
+                        "$r id " + resource.id().getValue() + ";" +
                         "get;").execute()).get("rel").asRelationship().isInferred(), false);
     }
 
@@ -183,21 +173,21 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery relationQuery = ReasonerQueries.atomic(conjunction(
                 "{" +
                         "$r (role1: $x, role2: $y);" +
-                        "$x id " + firstEntity.getId().getValue() + ";" +
-                        "$y id " + secondEntity.getId().getValue() + ";" +
+                        "$x id " + firstEntity.id().getValue() + ";" +
+                        "$y id " + secondEntity.id().getValue() + ";" +
                         "}"
-                , graph),
+                ),
                 graph
         );
 
-        assertEquals(relationQuery.materialise(new QueryAnswer()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
+        assertEquals(relationQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
     }
 
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
         EmbeddedGraknTx<?> graph = geoKB.tx();
         String patternString = "{($x, $y) isa is-located-in;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery copy = ReasonerQueries.atomic(atomicQuery);
         assertEquals(atomicQuery, copy);
@@ -213,18 +203,18 @@ public class AtomicQueryTest {
         QueryBuilder qb = graph.graql().infer(false);
         GetQuery childQuery = qb.parse(childString);
         GetQuery parentQuery = qb.parse(parentString);
-        Set<Answer> answers = childQuery.stream().collect(toSet());
-        Set<Answer> fullAnswers = parentQuery.stream().collect(toSet());
+        Set<ConceptMap> answers = childQuery.stream().collect(toSet());
+        Set<ConceptMap> fullAnswers = parentQuery.stream().collect(toSet());
         Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().admin().getPattern()), graph).getAtom();
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().admin().getPattern()), graph).getAtom();
 
         MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
-        Set<Answer> permutedAnswers = answers.stream()
+        Set<ConceptMap> permutedAnswers = answers.stream()
                 .flatMap(a -> multiUnifier.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
         MultiUnifier multiUnifier2 = childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
-        Set<Answer> permutedAnswers2 = answers.stream()
+        Set<ConceptMap> permutedAnswers2 = answers.stream()
                 .flatMap(a -> multiUnifier2.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
@@ -237,7 +227,7 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = unificationWithTypesSet.tx();
         String patternString = "{$x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary;}";
 
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern, graph);
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
@@ -267,14 +257,14 @@ public class AtomicQueryTest {
         String basePatternString = "{($x1, $x2) isa binary;}";
         String basePatternString2 = "{($y1, $y2) isa binary;}";
 
-        ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction(basePatternString, graph), graph);
-        ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction(basePatternString2, graph), graph);
+        ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction(basePatternString), graph);
+        ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction(basePatternString2), graph);
 
-        Answer xAnswer = new QueryAnswer(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
-        Answer flippedXAnswer = new QueryAnswer(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
+        ConceptMap xAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
+        ConceptMap flippedXAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
 
-        Answer yAnswer = new QueryAnswer(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
-        Answer flippedYAnswer = new QueryAnswer(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
+        ConceptMap yAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
+        ConceptMap flippedYAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
 
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);
@@ -309,8 +299,8 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa twoRoleEntity;($x1, $x2) isa binary;}";
         String patternString2 = "{$y1 isa twoRoleEntity;($y1, $y2) isa binary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
 
@@ -327,8 +317,8 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary;}";
         String patternString2 = "{$y1 isa twoRoleEntity;$y2 isa twoRoleEntity2;($y1, $y2) isa binary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
 
@@ -348,11 +338,11 @@ public class AtomicQueryTest {
         String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
         String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
         String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
-        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
-        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
-        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
-        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
-        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
@@ -396,11 +386,11 @@ public class AtomicQueryTest {
         String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
         String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
         String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
-        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
-        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
-        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
-        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
-        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
@@ -474,11 +464,11 @@ public class AtomicQueryTest {
         String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
         String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
         String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
-        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
-        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
-        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
-        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
-        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
@@ -515,11 +505,11 @@ public class AtomicQueryTest {
         String childString2 = "{(role1: $u, role2: $v, role2: $q) isa ternary;}";
         String childString3 = "{(role1: $u, role1: $v, role2: $q) isa ternary;}";
         String childString4 = "{(role1: $u, role1: $u, role2: $q) isa ternary;}";
-        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString, graph);
-        Conjunction<VarPatternAdmin> childPattern = conjunction(childString, graph);
-        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2, graph);
-        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3, graph);
-        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4, graph);
+        Conjunction<VarPatternAdmin> parentPattern = conjunction(parentString);
+        Conjunction<VarPatternAdmin> childPattern = conjunction(childString);
+        Conjunction<VarPatternAdmin> childPattern2 = conjunction(childString2);
+        Conjunction<VarPatternAdmin> childPattern3 = conjunction(childString3);
+        Conjunction<VarPatternAdmin> childPattern4 = conjunction(childString4);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(parentPattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(childPattern, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(childPattern2, graph);
@@ -572,9 +562,9 @@ public class AtomicQueryTest {
         String patternString = "{$x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -596,9 +586,9 @@ public class AtomicQueryTest {
         String patternString = "{$x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -620,9 +610,9 @@ public class AtomicQueryTest {
         String patternString = "{$x1 isa threeRoleEntity;$x2 isa threeRoleEntity2; $x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -645,9 +635,9 @@ public class AtomicQueryTest {
 
         String childString = "{$y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;($y2, $y3, $y1) isa ternary;}";
         String childString2 = "{$y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(parentString, graph);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(childString, graph);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(childString2, graph);
+        Conjunction<VarPatternAdmin> pattern = conjunction(parentString);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(childString);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(childString2);
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
         ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
@@ -765,12 +755,12 @@ public class AtomicQueryTest {
      */
 
     @Test
-    public void testAlphaEquivalence_DifferentIsaVariants(){
+    public void testEquivalence_DifferentIsaVariants(){
         testEquivalence_DifferentTypeVariants(unificationTestSet.tx(), "isa", "baseRoleEntity", "subRoleEntity");
     }
 
     @Test
-    public void testAlphaEquivalence_DifferentSubVariants(){
+    public void testEquivalence_DifferentSubVariants(){
         testEquivalence_DifferentTypeVariants(unificationTestSet.tx(), "sub", "baseRoleEntity", "role1");
     }
 
@@ -855,35 +845,55 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$y isa baseRoleEntity;}";
         String query2 = "{$x isa baseRoleEntity; $x id 'X';}";
-        String query3 = "{$a isa baseRoleEntity; $b id 'X';}";
-        String query4 = "{$z isa baseRoleEntity; $z id 'Y';}";
-        String query5 = "{$r isa baseRoleEntity; $r id 'X';}";
-        String query6 = "{$e isa $t;$t label baseRoleEntity;$e id 'X';}";
+        String query2b = "{$r isa baseRoleEntity; $r id 'X';}";
+        String query2c = "{$e isa $t;$t label baseRoleEntity;$e id 'X';}";
+        String query3s2 = "{$z isa baseRoleEntity; $z id 'Y';}";
+        String query4s1 = "{$a isa baseRoleEntity; $b id 'X';}";
+        String query5 = "{$e isa baseRoleEntity ; $e != $f;}";
+        String query6 = "{$e isa baseRoleEntity ; $e != $f; $f id 'X';}";
         String query7 = "{$e isa entity ; $e id 'X';}";
 
+
         queryEquivalence(query, query2, false, graph);
-        queryEquivalence(query, query3, false, true, false, graph);
-        queryEquivalence(query, query4, false, graph);
+        queryEquivalence(query, query2b, false, graph);
+        queryEquivalence(query, query2c, false, graph);
+        queryEquivalence(query, query3s2, false, graph);
+        queryEquivalence(query, query4s1, false, true, true, graph);
         queryEquivalence(query, query5, false, graph);
         queryEquivalence(query, query6, false, graph);
         queryEquivalence(query, query7, false, graph);
 
-        queryEquivalence(query2, query3, false, graph);
-        queryEquivalence(query2, query4, false, true, graph);
-        queryEquivalence(query2, query5, true, graph);
-        queryEquivalence(query2, query6, true, graph);
+        queryEquivalence(query2, query2b, true, graph);
+        queryEquivalence(query2, query2c, true, graph);
+        queryEquivalence(query2, query3s2, false, true, graph);
+        queryEquivalence(query2, query4s1, false, graph);
+        queryEquivalence(query2, query5, false, graph);
+        queryEquivalence(query2, query6, false, graph);
         queryEquivalence(query2, query7, false, graph);
 
-        queryEquivalence(query3, query4, false, graph);
-        queryEquivalence(query3, query5, false, graph);
-        queryEquivalence(query3, query6, false, graph);
-        queryEquivalence(query3, query7, false, graph);
+        queryEquivalence(query2b, query2c, true, graph);
+        queryEquivalence(query2b, query3s2, false, true, graph);
+        queryEquivalence(query2b, query4s1, false, graph);
+        queryEquivalence(query2b, query5, false, graph);
+        queryEquivalence(query2b, query6, false, graph);
+        queryEquivalence(query2b, query7, false, graph);
 
-        queryEquivalence(query4, query5, false, true, graph);
-        queryEquivalence(query4, query6, false, true, graph);
-        queryEquivalence(query4, query7, false, graph);
+        queryEquivalence(query2c, query3s2, false, true, graph);
+        queryEquivalence(query2c, query4s1, false, graph);
+        queryEquivalence(query2c, query5, false, graph);
+        queryEquivalence(query2c, query6, false, graph);
+        queryEquivalence(query2c, query7, false, graph);
 
-        queryEquivalence(query5, query6, true, graph);
+        queryEquivalence(query3s2, query4s1, false, graph);
+        queryEquivalence(query3s2, query5, false, graph);
+        queryEquivalence(query3s2, query6, false, graph);
+        queryEquivalence(query3s2, query7, false, graph);
+
+        queryEquivalence(query4s1, query5, false,  graph);
+        queryEquivalence(query4s1, query6, false, graph);
+        queryEquivalence(query4s1, query7, false, graph);
+
+        queryEquivalence(query5, query6, false, graph);
         queryEquivalence(query5, query7, false, graph);
 
         queryEquivalence(query6, query7, false, graph);
@@ -893,7 +903,7 @@ public class AtomicQueryTest {
     public void testEquivalence_DifferentResourceVariants(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$x has resource 'value';}";
-        String query2 = "{$y has resource $r;$r val 'value';}";
+        String query2 = "{$y has resource $r;$r 'value';}";
         String query3 = "{$y has resource $r;}";
         String query4 = "{$y has resource 'value2';}";
 
@@ -913,108 +923,130 @@ public class AtomicQueryTest {
         String query3 = "{$z has resource $u; $z id 'Y';}";
 
         String query4 = "{$y has resource $r;$r id 'X';}";
-        String query5 = "{$r has resource $x;$x id 'X';}";
-        String query6 = "{$y has resource $x;$x id 'Y';}";
+        String query4b = "{$r has resource $x;$x id 'X';}";
+        String query5 = "{$y has resource $x;$x id 'Y';}";
+
+        String query6 = "{$y has resource $x;$x != $x2;}";
+        String query7 = "{$y has resource $x;$x != $x2; $x2 id 'Y';}";
+        String query8 = "{$y has resource $x;$y != $y2;}";
+        String query9 = "{$y has resource $x;$y != $y2; $y2 id 'Y';}";
 
         queryEquivalence(query, query2, false, graph);
         queryEquivalence(query, query3, false, graph);
         queryEquivalence(query, query4, false, graph);
-        queryEquivalence(query, query5, false, graph);
-        queryEquivalence(query, query6, false, graph);
-
-        queryEquivalence(query2, query3, false, false, true, graph);
-        queryEquivalence(query2, query4, false, graph);
-        queryEquivalence(query2, query5, false, graph);
-        queryEquivalence(query2, query6, false, graph);
-
-        queryEquivalence(query3, query4, false, graph);
-        queryEquivalence(query3, query5, false, graph);
-        queryEquivalence(query3, query6, false, graph);
-
-        queryEquivalence(query4, query5, true, graph);
-        queryEquivalence(query4, query6, false, false, true, graph);
-
-        queryEquivalence(query5, query6, false, false, true, graph);
-    }
-
-    @Test //tests alpha-equivalence of queries with resources with multi predicate
-    public void testEquivalence_MultiPredicateResources(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String query = "{$z has resource $u;$a val >23; $a val <27;}";
-        String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a val >23; $a val <27;}";
-        String query3 = "{$e isa baseRoleEntity;$e has resource > 23;}";
-        String query4 = "{$p isa baseRoleEntity;$p has resource $a;$a val >23;}";
-        String query5 = "{$x isa baseRoleEntity;$x has resource $y;$y val >27;$y val <23;}";
-        String query6 = "{$a isa baseRoleEntity;$a has resource $p;$p val <27;$p val >23;}";
-        String query7 = "{$x isa baseRoleEntity, has resource $a;$a val >23; $a val <27;}";
-        String query8 = "{$x isa baseRoleEntity, has resource $z1;$z1 val >23; $z2 val <27;}";
-        String query9 = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a val >23; $a val <27;}";
-
-        queryEquivalence(query, query2, false, graph);
-        queryEquivalence(query, query3, false, graph);
-        queryEquivalence(query, query4, false, graph);
+        queryEquivalence(query, query4b, false, graph);
         queryEquivalence(query, query5, false, graph);
         queryEquivalence(query, query6, false, graph);
         queryEquivalence(query, query7, false, graph);
         queryEquivalence(query, query8, false, graph);
         queryEquivalence(query, query9, false, graph);
 
-        queryEquivalence(query2, query3, false, graph);
+        queryEquivalence(query2, query3, false, false, true, graph);
         queryEquivalence(query2, query4, false, graph);
+        queryEquivalence(query2, query4b, false, graph);
         queryEquivalence(query2, query5, false, graph);
-        queryEquivalence(query2, query6, true, graph);
-        queryEquivalence(query2, query7, true, graph);
+        queryEquivalence(query2, query6, false, graph);
+        queryEquivalence(query2, query7, false, graph);
         queryEquivalence(query2, query8, false, graph);
-        queryEquivalence(query2, query9, true, graph);
+        queryEquivalence(query2, query9, false, graph);
 
-        queryEquivalence(query3, query4, true, graph);
+        queryEquivalence(query3, query4, false, graph);
+        queryEquivalence(query3, query4b, false, graph);
         queryEquivalence(query3, query5, false, graph);
         queryEquivalence(query3, query6, false, graph);
         queryEquivalence(query3, query7, false, graph);
-        queryEquivalence(query3, query8, false, true, false, graph);
+        queryEquivalence(query3, query8, false, graph);
         queryEquivalence(query3, query9, false, graph);
 
-        queryEquivalence(query4, query5, false, graph);
+        queryEquivalence(query4, query4b, true, graph);
+        queryEquivalence(query4, query5, false, false, true, graph);
         queryEquivalence(query4, query6, false, graph);
         queryEquivalence(query4, query7, false, graph);
-        queryEquivalence(query4, query8, false, true, false, graph);
+        queryEquivalence(query4, query8, false, graph);
         queryEquivalence(query4, query9, false, graph);
 
-        queryEquivalence(query5, query6, false, graph);
-        queryEquivalence(query5, query7, false, graph);
-        queryEquivalence(query5, query8, false, graph);
-        queryEquivalence(query5, query9, false, graph);
+        queryEquivalence(query4b, query5, false, false, true, graph);
+        queryEquivalence(query4b, query6, false, graph);
+        queryEquivalence(query4b, query7, false, graph);
+        queryEquivalence(query4b, query8, false, graph);
+        queryEquivalence(query4b, query9, false, graph);
+    }
 
-        queryEquivalence(query6, query7, true, graph);
-        queryEquivalence(query6, query8, false, graph);
-        queryEquivalence(query6, query9, true, graph);
+    @Test //tests alpha-equivalence of queries with resources with multi predicate
+    public void testEquivalence_MultiPredicateResources(){
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        String query = "{$z has resource $u;$a >23; $a <27;}";
+        String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
+        String query2b = "{$a isa baseRoleEntity;$a has resource $p;$p <27;$p >23;}";
+        String query2c = "{$x isa baseRoleEntity, has resource $a;$a >23; $a <27;}";
+        String query2d = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
+        String query3 = "{$e isa baseRoleEntity;$e has resource > 23;}";
+        String query3b = "{$p isa baseRoleEntity;$p has resource $a;$a >23;}";
+        String query4 = "{$x isa baseRoleEntity;$x has resource $y;$y >27;$y <23;}";
+        String query5 = "{$x isa baseRoleEntity, has resource $z1;$z1 >23; $z2 <27;}";
 
-        queryEquivalence(query7, query8, false, graph);
-        queryEquivalence(query7, query9, true, graph);
+        queryEquivalence(query, query2, false, graph);
+        queryEquivalence(query, query2b, false, graph);
+        queryEquivalence(query, query2c, false, graph);
+        queryEquivalence(query, query2d, false, graph);
+        queryEquivalence(query, query3, false, graph);
+        queryEquivalence(query, query3b, false, graph);
+        queryEquivalence(query, query4, false, graph);
+        queryEquivalence(query, query5, false, graph);
+
+        queryEquivalence(query2, query2b, true, graph);
+        queryEquivalence(query2, query2c, true, graph);
+        queryEquivalence(query2, query2d, true, graph);
+        queryEquivalence(query2, query3, false, graph);
+        queryEquivalence(query2, query3b, false, graph);
+        queryEquivalence(query2, query4, false, graph);
+        queryEquivalence(query2, query5, false, graph);
+
+        queryEquivalence(query2b, query2c, true, graph);
+        queryEquivalence(query2b, query2d, true, graph);
+        queryEquivalence(query2b, query3, false, graph);
+        queryEquivalence(query2b, query3b, false, graph);
+        queryEquivalence(query2b, query4, false, graph);
+        queryEquivalence(query2b, query5, false, graph);
+
+        queryEquivalence(query2c, query2d, true, graph);
+        queryEquivalence(query2c, query3, false, graph);
+        queryEquivalence(query2c, query3b, false, graph);
+        queryEquivalence(query2c, query4, false, graph);
+        queryEquivalence(query2c, query5, false, graph);
+
+        queryEquivalence(query3, query3b, true, graph);
+        queryEquivalence(query3, query4, false, graph);
+        queryEquivalence(query3, query5, false, true, true, graph);
+
+        queryEquivalence(query3b, query4, false, graph);
+        queryEquivalence(query3b, query5, false, true, true, graph);
+
+        queryEquivalence(query4, query5, false, graph);
     }
 
     @Test //tests alpha-equivalence of resource atoms with different predicates
     public void testEquivalence_resourcesWithDifferentPredicates() {
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String query = "{$x has resource $r;$r val > 1099;}";
-        String query2 = "{$x has resource $r;$r val < 1099;}";
-        String query3 = "{$x has resource $r;$r val = 1099;}";
-        String query4 = "{$x has resource $r;$r val '1099';}";
-        String query5 = "{$x has resource $r;$r val > $var;}";
+        String query = "{$x has resource $r;$r > 1099;}";
+        String query2 = "{$x has resource $r;$r < 1099;}";
+        String query3 = "{$x has resource $r;$r == 1099;}";
+        String query3b = "{$x has resource $r;$r '1099';}";
+        String query4 = "{$x has resource $r;$r > $var;}";
 
         queryEquivalence(query, query2, false, graph);
         queryEquivalence(query, query3, false, graph);
+        queryEquivalence(query, query3b, false, graph);
         queryEquivalence(query, query4, false, graph);
-        queryEquivalence(query, query5, false, graph);
 
         queryEquivalence(query2, query3, false, graph);
+        queryEquivalence(query2, query3b, false, graph);
         queryEquivalence(query2, query4, false, graph);
-        queryEquivalence(query2, query5, false, graph);
 
-        queryEquivalence(query3, query4, true, graph);
-        queryEquivalence(query3, query5, false, graph);
+        queryEquivalence(query3, query3b, true, graph);
+        queryEquivalence(query3, query4, false, graph);
 
-        queryEquivalence(query4, query5, false, graph);
+        queryEquivalence(query3b, query4, false, graph);
     }
 
     @Test
@@ -1029,6 +1061,8 @@ public class AtomicQueryTest {
                 "{($x, $y) isa binary;}",
                 "{(role1: $x, role2: $y) isa binary;}",
                 "{(role: $y, role2: $z) isa binary;}",
+                "{(role: $y, role2: $z) isa $type;}",
+                "{(role: $y, role2: $z) isa $type; $type label binary;}",
                 "{(role: $x, role: $x, role2: $z) isa binary;}",
 
                 "{$x ($y, $z) isa binary;}",
@@ -1102,34 +1136,62 @@ public class AtomicQueryTest {
     public void testEquivalence_RelationsWithSubstitution(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{(role: $x, role: $y);$x id 'V666';}";
-        String query2 = "{(role: $x, role: $y);$y id 'V666';}";
-        String query3 = "{(role: $x, role: $y);$x id 'V666';$y id 'V667';}";
-        String query4 = "{(role: $x, role: $y);$y id 'V666';$x id 'V667';}";
-        String query5 = "{(role1: $x, role2: $y);$x id 'V666';$y id 'V667';}";
-        String query6 = "{(role1: $x, role2: $y);$y id 'V666';$x id 'V667';}";
+        String queryb = "{(role: $x, role: $y);$y id 'V666';}";
+
+        String query2 = "{(role: $x, role: $y);$x != $y;}";
+        String query3 = "{(role: $x, role: $y);$x != $y;$y id 'V667';}";
+
+        String query4 = "{(role: $x, role: $y);$x id 'V666';$y id 'V667';}";
+        String query4b = "{(role: $x, role: $y);$y id 'V666';$x id 'V667';}";
+
         String query7 = "{(role: $x, role: $y);$x id 'V666';$y id 'V666';}";
 
-        queryEquivalence(query, query2, true, true, graph);
-        queryEquivalence(query, query3, false, false, graph);
+        String query5 = "{(role1: $x, role2: $y);$x id 'V666';$y id 'V667';}";
+        String query6 = "{(role1: $x, role2: $y);$y id 'V666';$x id 'V667';}";
+
+
+        queryEquivalence(query4, query7, false, true, graph);
+
+        queryEquivalence(query3, query4, false, false, graph);
+
+        queryEquivalence(query, queryb, true, true, graph);
+        queryEquivalence(query, query2, false, graph);
+        queryEquivalence(query, query3, false, graph);
         queryEquivalence(query, query4, false, false, graph);
+        queryEquivalence(query, query4b, false, false, graph);
         queryEquivalence(query, query5, false, false, graph);
         queryEquivalence(query, query6, false, false, graph);
         queryEquivalence(query, query7, false, false, graph);
 
-        queryEquivalence(query2, query3, false, false, graph);
+        queryEquivalence(queryb, query2, false, graph);
+        queryEquivalence(queryb, query3, false, graph);
+        queryEquivalence(queryb, query4, false, false, graph);
+        queryEquivalence(queryb, query4b, false, false, graph);
+        queryEquivalence(queryb, query5, false, false, graph);
+        queryEquivalence(queryb, query6, false, false, graph);
+        queryEquivalence(queryb, query7, false, false, graph);
+
         queryEquivalence(query2, query4, false, false, graph);
+        queryEquivalence(query2, query4b, false, false, graph);
         queryEquivalence(query2, query5, false, false, graph);
         queryEquivalence(query2, query6, false, false, graph);
         queryEquivalence(query2, query7, false, false, graph);
 
-        queryEquivalence(query3, query4, true, true, graph);
+
+        queryEquivalence(query3, query4b, false, false, graph);
         queryEquivalence(query3, query5, false, false, graph);
         queryEquivalence(query3, query6, false, false, graph);
-        queryEquivalence(query3, query7, false, true, graph);
+        queryEquivalence(query3, query7, false, false, graph);
 
+        queryEquivalence(query4, query4b, true, true, graph);
         queryEquivalence(query4, query5, false, false, graph);
         queryEquivalence(query4, query6, false, false, graph);
-        queryEquivalence(query4, query7, false, true, graph);
+
+
+
+        queryEquivalence(query4b, query5, false, false, graph);
+        queryEquivalence(query4b, query6, false, false, graph);
+        queryEquivalence(query4b, query7, false, true, graph);
 
         queryEquivalence(query5, query6, false, true, graph);
         queryEquivalence(query5, query7, false, false, graph);
@@ -1144,33 +1206,81 @@ public class AtomicQueryTest {
         String query2 = "{(role1: $x, role2: $y);$x id 'V667';}";
         String query3 = "{(role1: $x, role2: $y);$y id 'V666';}";
         String query4 = "{(role1: $x, role2: $y);$y id 'V667';}";
-        String query5 = "{(role1: $x, role2: $y);$x id 'V666';$y id 'V667';}";
-        String query6 = "{(role1: $x, role2: $y);$y id 'V666';$x id 'V667';}";
+
+        String query5 = "{(role1: $x, role2: $y);$x != $y;}";
+        String query6 = "{(role1: $x, role2: $y);$x != $x2;}";
+        String query7 = "{(role1: $x, role2: $y);$x != $x2;$x2 id 'V667';}";
+
+        String query8 = "{(role1: $x, role2: $y);$x id 'V666';$y id 'V667';}";
+        String query9 = "{(role1: $x, role2: $y);$y id 'V666';$x id 'V667';}";
 
         queryEquivalence(query, query2, false, true, graph);
-        queryEquivalence(query, query3, false, false, graph);
-        queryEquivalence(query, query4, false, false, graph);
-        queryEquivalence(query, query5, false, false, graph);
-        queryEquivalence(query, query6, false, false, graph);
+        queryEquivalence(query, query3, false, graph);
+        queryEquivalence(query, query4, false, graph);
+        queryEquivalence(query, query5, false, graph);
+        queryEquivalence(query, query6, false, graph);
+        queryEquivalence(query, query7, false, graph);
+        queryEquivalence(query, query8, false, graph);
+        queryEquivalence(query, query9, false, graph);
 
         queryEquivalence(query2, query3, false, false, graph);
         queryEquivalence(query2, query4, false, false, graph);
-        queryEquivalence(query2, query5, false, false, graph);
-        queryEquivalence(query2, query6, false, false, graph);
+        queryEquivalence(query2, query8, false, false, graph);
+        queryEquivalence(query2, query9, false, false, graph);
 
         queryEquivalence(query3, query4, false, true, graph);
-        queryEquivalence(query3, query5, false, false, graph);
-        queryEquivalence(query3, query6, false, false, graph);
+        queryEquivalence(query3, query8, false, false, graph);
+        queryEquivalence(query3, query9, false, false, graph);
 
-        queryEquivalence(query4, query5, false, false, graph);
-        queryEquivalence(query4, query6, false, false, graph);
+        queryEquivalence(query4, query8, false, false, graph);
+        queryEquivalence(query4, query9, false, false, graph);
 
-        queryEquivalence(query5, query6, false, true, graph);
+        queryEquivalence(query8, query9, false, true, graph);
+    }
+
+    @Test
+    public void testEquivalence_RelationsWithVariableAndSubstitution(){
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        String query = "{$r (role1: $x);$x id 'V666';}";
+        String query2 = "{$a (role1: $x);$x id 'V667';}";
+        String query3 = "{$b (role2: $y);$y id 'V666';}";
+        String query4 = "{$c (role1: $a);$a != $b;}";
+        String query4b = "{$r (role1: $x);$x != $y;}";
+        String query5 = "{$e (role1: $a);$a != $b;$b id 'V666';}";
+        String query5b = "{$r (role1: $x);$x != $y;$y id 'V666';}";
+
+
+        queryEquivalence(query, query2, false, true, graph);
+        queryEquivalence(query, query3, false, graph);
+        queryEquivalence(query, query4, false, graph);
+        queryEquivalence(query, query4b, false, graph);
+        queryEquivalence(query, query5, false, graph);
+        queryEquivalence(query, query5b, false, graph);
+
+        queryEquivalence(query2, query3, false, graph);
+        queryEquivalence(query2, query4, false, graph);
+        queryEquivalence(query2, query4b, false, graph);
+        queryEquivalence(query2, query5, false, graph);
+        queryEquivalence(query2, query5b, false, graph);
+
+        queryEquivalence(query3, query4, false, graph);
+        queryEquivalence(query3, query4b, false, graph);
+        queryEquivalence(query3, query5, false, graph);
+        queryEquivalence(query3, query5b, false, graph);
+
+        queryEquivalence(query4, query4b, true, graph);
+        queryEquivalence(query4, query5, false, graph);
+        queryEquivalence(query4, query5b, false, graph);
+
+        queryEquivalence(query4b, query5, false, graph);
+        queryEquivalence(query4b, query5b, false, graph);
+
+        queryEquivalence(query5, query5b, true, graph);
     }
 
     private Concept getConceptByResourceValue(EmbeddedGraknTx<?> graph, String id){
         Set<Concept> instances = graph.getAttributesByValue(id)
-                .stream().flatMap(Attribute::ownerInstances).collect(Collectors.toSet());
+                .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         return instances.iterator().next();
@@ -1185,13 +1295,10 @@ public class AtomicQueryTest {
     }
 
     private void queryEquivalence(String patternA, String patternB, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation, EmbeddedGraknTx<?> graph){
-        ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA, graph), graph);
-        ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB, graph), graph);
-        queryEquivalence(a, b, queryExpectation, ReasonerQueryEquivalence.AlphaEquivalence);
-        queryEquivalence(a, b, structuralExpectation, ReasonerQueryEquivalence.StructuralEquivalence);
-        atomicEquivalence(a.getAtom(), b.getAtom(), atomExpectation);
+        ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA), graph);
+        ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB), graph);
+        queryEquivalence(a, b, queryExpectation, atomExpectation, structuralExpectation);
     }
-
 
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation){
         queryEquivalence(a, b, queryExpectation, ReasonerQueryEquivalence.AlphaEquivalence);
@@ -1214,16 +1321,16 @@ public class AtomicQueryTest {
     }
 
     private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
-        assertEquals("Query: " + a.toString() + " =? " + b.toString(), equiv.equivalent(a, b), queryExpectation);
+        assertEquals("Query: " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), equiv.hash(a) == equiv.hash(b), true);
+            assertEquals(a.toString() + " hash=? " + b.toString(), true, equiv.hash(a) == equiv.hash(b));
         }
     }
 
     private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation){
-        assertEquals("Atom: " + a.toString() + " =? " + b.toString(), a.isAlphaEquivalent(b), expectation);
+        assertEquals("Atom: " + a.toString() + " =? " + b.toString(), expectation,  a.isAlphaEquivalent(b));
 
         //check hash additionally if need to be equal
         if (expectation) {
@@ -1242,12 +1349,12 @@ public class AtomicQueryTest {
     private void queryUnification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, boolean checkInverse, boolean checkEquality, boolean ignoreTypes){
         Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
 
-        List<Answer> childAnswers = childQuery.getQuery().execute();
-        List<Answer> unifiedAnswers = childAnswers.stream()
+        List<ConceptMap> childAnswers = childQuery.getQuery().execute();
+        List<ConceptMap> unifiedAnswers = childAnswers.stream()
                 .map(a -> a.unify(unifier))
                 .filter(a -> !a.isEmpty())
                 .collect(Collectors.toList());
-        List<Answer> parentAnswers = parentQuery.getQuery().execute();
+        List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
             Unifier inverse = parentQuery.getMultiUnifier(childQuery).getUnifier();
@@ -1264,8 +1371,8 @@ public class AtomicQueryTest {
             if(!ignoreTypes){
                 assertTrue(parentAnswers.containsAll(unifiedAnswers));
             } else {
-                List<Answer> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
-                List<Answer> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
                 assertTrue(projectedParentAnswers.containsAll(projectedUnified));
             }
 
@@ -1273,16 +1380,16 @@ public class AtomicQueryTest {
             Unifier inverse = unifier.inverse();
             if(!ignoreTypes) {
                 assertCollectionsEqual(parentAnswers, unifiedAnswers);
-                List<Answer> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
+                List<ConceptMap> parentToChild = parentAnswers.stream().map(a -> a.unify(inverse)).collect(Collectors.toList());
                 assertCollectionsEqual(parentToChild, childAnswers);
             } else {
                 Set<Var> childNonTypeVariables = Sets.difference(childQuery.getAtom().getVarNames(), Sets.newHashSet(childQuery.getAtom().getPredicateVariable()));
-                List<Answer> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
-                List<Answer> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
-                List<Answer> projectedChild = childAnswers.stream().map(ans -> ans.project(childNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedParentAnswers = parentAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedUnified = unifiedAnswers.stream().map(ans -> ans.project(parentNonTypeVariables)).collect(Collectors.toList());
+                List<ConceptMap> projectedChild = childAnswers.stream().map(ans -> ans.project(childNonTypeVariables)).collect(Collectors.toList());
 
                 assertCollectionsEqual(projectedParentAnswers, projectedUnified);
-                List<Answer> projectedParentToChild = projectedParentAnswers.stream()
+                List<ConceptMap> projectedParentToChild = projectedParentAnswers.stream()
                         .map(a -> a.unify(inverse))
                         .map(ans -> ans.project(childNonTypeVariables))
                         .collect(Collectors.toList());
@@ -1293,8 +1400,8 @@ public class AtomicQueryTest {
 
     private void queryUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, boolean ignoreTypes, EmbeddedGraknTx<?> graph){
         queryUnification(
-                ReasonerQueries.atomic(conjunction(parentPatternString, graph), graph),
-                ReasonerQueries.atomic(conjunction(childPatternString, graph), graph),
+                ReasonerQueries.atomic(conjunction(parentPatternString), graph),
+                ReasonerQueries.atomic(conjunction(childPatternString), graph),
                 checkInverse,
                 checkEquality,
                 ignoreTypes);
@@ -1307,8 +1414,8 @@ public class AtomicQueryTest {
         return Patterns.conjunction(vars);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> graph){
-        Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
+    private Conjunction<VarPatternAdmin> conjunction(String patternString){
+        Set<VarPatternAdmin> vars = Graql.parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);

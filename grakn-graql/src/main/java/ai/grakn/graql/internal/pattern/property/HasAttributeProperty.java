@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.pattern.property;
@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -107,12 +108,16 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
+        Label type = type();
+        Label has = Schema.ImplicitType.HAS.getLabel(type);
+        Label key = Schema.ImplicitType.KEY.getLabel(type);
+
         Var edge1 = Graql.var();
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                rolePlayer(this, relationship().var(), edge1, start, null),
-                rolePlayer(this, relationship().var(), edge2, attribute().var(), null),
+                rolePlayer(this, relationship().var(), edge1, start, null, null, ImmutableSet.of(has, key)),
+                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, null, ImmutableSet.of(has, key)),
                 neq(this, edge1, edge2)
         );
     }
@@ -138,7 +143,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         PropertyExecutor.Method method = executor -> {
             Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
-            ConceptId relationshipId = thing.attributeRelationship(attributeConcept).getId();
+            ConceptId relationshipId = thing.relhas(attributeConcept).id();
             executor.builder(relationship().var()).id(relationshipId);
         };
 

@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.utils;
@@ -36,11 +36,16 @@ import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
 import ai.grakn.util.Schema;
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -136,7 +141,7 @@ public class ReasonerUtils {
     public static Set<SchemaConcept> supers(SchemaConcept schemaConcept){
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
             superTypes.add(superType);
             superType = superType.sup();
         }
@@ -205,7 +210,7 @@ public class ReasonerUtils {
     public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
-        if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ){
+        if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.label()) ){
             compatibleRoles.addAll(
                     Sets.intersection(
                             new RoleConverter().toCompatibleRoles(parentRole).collect(toSet()),
@@ -215,12 +220,12 @@ public class ReasonerUtils {
             compatibleRoles.addAll(entryRoles);
         }
 
-        if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.getLabel())) {
+        if (parentType != null && !Schema.MetaSchema.isMetaLabel(parentType.label())) {
             Set<Role> compatibleRolesFromTypes = new TypeConverter().toCompatibleRoles(parentType).collect(toSet());
 
             //do set intersection meta role
             compatibleRoles = compatibleRoles.stream()
-                    .filter(role -> Schema.MetaSchema.isMetaLabel(role.getLabel()) || compatibleRolesFromTypes.contains(role))
+                    .filter(role -> Schema.MetaSchema.isMetaLabel(role.label()) || compatibleRolesFromTypes.contains(role))
                     .collect(toSet());
             //parent role also possible
             if (parentRole != null) compatibleRoles.add(parentRole);
@@ -249,7 +254,7 @@ public class ReasonerUtils {
     public static <T extends SchemaConcept> Set<T> topOrMeta(Set<T> schemaConcepts) {
         Set<T> concepts = top(schemaConcepts);
         T meta = concepts.stream()
-                .filter(c -> Schema.MetaSchema.isMetaLabel(c.getLabel()))
+                .filter(c -> Schema.MetaSchema.isMetaLabel(c.label()))
                 .findFirst().orElse(null);
         return meta != null ? Collections.singleton(meta) : concepts;
     }
@@ -264,7 +269,7 @@ public class ReasonerUtils {
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Var childVarName = childType.getVarName();
-            Var parentVarName = unifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
+            Var parentVarName = childParentUnifier.containsKey(childVarName)? Iterables.getOnlyElement(childParentUnifier.get(childVarName)) : childVarName;
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
@@ -281,9 +286,9 @@ public class ReasonerUtils {
     public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child) {
         if (parent == null) return true;
         if (child == null) return false;
-        if (Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
+        if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
         SchemaConcept superType = child;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.getLabel())){
+        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }
@@ -299,6 +304,67 @@ public class ReasonerUtils {
         return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
     }
 
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param comparison function on the basis of which the collections shall be compared
+     * @param <T> collection type
+     * @return true iff the given collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <T> boolean isEquivalentCollection(Collection<T> a, Collection<T> b, BiFunction<T, T, Boolean> comparison) {
+        return a.size() == b.size()
+                && a.stream().allMatch(e -> b.stream().anyMatch(e2 -> comparison.apply(e, e2)))
+                && b.stream().allMatch(e -> a.stream().anyMatch(e2 -> comparison.apply(e, e2)));
+    }
+
+    private static <B, S extends B> Map<Equivalence.Wrapper<B>, Integer> getCardinalityMap(Collection<S> coll, Equivalence<B> equiv) {
+        Map<Equivalence.Wrapper<B>, Integer> count = new HashMap<>();
+
+        for (S obj : coll) {
+            count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
+        }
+        return count;
+    }
+
+    private static <T> int getFreq(T obj, Map<T, Integer> freqMap) {
+        Integer count = freqMap.get(obj);
+        return count != null ? count : 0;
+    }
+
+    /**
+     * @param a first operand
+     * @param b second operand
+     * @param equiv equivalence on the basis of which the collections shall be compared
+     * @param <B> collection base type
+     * @param <S> collection super type
+     * @return true iff the given Collections contain equivalent elements with exactly the same cardinalities.
+     */
+    public static <B, S extends B> boolean isEquivalentCollection(Collection<S> a, Collection<S> b,  Equivalence<B> equiv) {
+        if (a.size() != b.size()) {
+            return false;
+        } else {
+            Map<Equivalence.Wrapper<B>, Integer> mapa = getCardinalityMap(a, equiv);
+            Map<Equivalence.Wrapper<B>, Integer>  mapb = getCardinalityMap(b, equiv);
+            if (mapa.size() != mapb.size()) {
+                return false;
+            } else {
+                Iterator<Equivalence.Wrapper<B>> it = mapa.keySet().iterator();
+
+                Equivalence.Wrapper<B> obj;
+                do {
+                    if (!it.hasNext()) {
+                        return true;
+                    }
+
+                    obj = it.next();
+                } while (getFreq(obj, mapa) == getFreq(obj, mapb));
+
+                return false;
+            }
+        }
+    }
+
     /**
      * @param a subtraction left operand
      * @param b subtraction right operand
@@ -310,5 +376,18 @@ public class ReasonerUtils {
         ArrayList<T> list = new ArrayList<>(a);
         b.forEach(list::remove);
         return list;
+    }
+
+    /**
+     *
+     * @param a union left operand
+     * @param b union right operand
+     * @param <T> list type
+     * @return new list being a union of the two operands
+     */
+    public static <T> List<T> listUnion(List<T> a, List<T> b){
+        List<T> union = new ArrayList<>(a);
+        union.addAll(b);
+        return union;
     }
 }

@@ -1,25 +1,25 @@
 <!--
-Grakn - A Distributed Semantic Database
-Copyright (C) 2016  Grakn Labs Limited
+GRAKN.AI - THE KNOWLEDGE GRAPH
+Copyright (C) 2018 Grakn Labs Ltd
 
-Grakn is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
-Grakn is distributed in the hope that it will be useful,
+This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -->
-
 
 <template>
 <div class="wrapper">
   <signup-modal></signup-modal>
+  <commands-modal></commands-modal>
 
     <div class="navigation">
         <nav-bar :componentCenterLeft="componentCenterLeft" :componentCenter="componentCenter" :componentCenterRight="componentCenterRight" v-on:toogle-sidebar="showSideBar=!showSideBar"></nav-bar>
@@ -53,6 +53,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 // Sub-components
 import NavBar from './navbar.vue';
 import SignupModal from './signupModal.vue';
+import CommandsModal from './commandsModal.vue';
 import SideBar from './sidebar.vue';
 import User from '../../js/User';
 
@@ -88,6 +89,7 @@ export default {
   components: {
     NavBar,
     SignupModal,
+    CommandsModal,
     SideBar,
   },
   beforeRouteEnter(to, from, next) {

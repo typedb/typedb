@@ -1,24 +1,23 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.migration.csv;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -26,31 +25,35 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigratorBuilder;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.rule.EngineContext;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
-import static ai.grakn.test.migration.MigratorTestUtils.load;
 import ai.grakn.util.SampleKBLoader;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import junit.framework.TestCase;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 public class CSVMigratorTest {
 
@@ -67,13 +70,18 @@ public class CSVMigratorTest {
     @Before
     public void setup() {
         keyspace = SampleKBLoader.randomKeyspace();
-        factory = Grakn.session(engine.uri(), keyspace);
+        factory = EmbeddedGraknSession.createEngineSession(keyspace);
         defaultMigrator = new MigratorBuilder()
                 .setUri(engine.uri())
                 .setKeyspace(keyspace)
                 .setRetries(0)
                 .setFailFast(false)
                 .build();
+    }
+
+    @After
+    public void closeSession(){
+        factory.close();
     }
 
     @Test
@@ -124,7 +132,7 @@ public class CSVMigratorTest {
             defaultMigrator.load(template, m.setNullString("").convert());
         }
 
-        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+        try(GraknTx graph = factory.transaction(GraknTxType.WRITE)) {//Re Open Transaction
 
             Stream<Entity> pets = graph.getEntityType("pet").instances();
             assertEquals(1, pets.count());
@@ -135,7 +143,7 @@ public class CSVMigratorTest {
             AttributeType<String> name = graph.getAttributeType("name");
             AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity fluffy = name.getAttribute("Fluffy").ownerInstances().iterator().next().asEntity();
+            Entity fluffy = name.attribute("Fluffy").owners().iterator().next().asEntity();
             assertEquals(1, fluffy.attributes(death).count());
         }
     }
@@ -153,7 +161,7 @@ public class CSVMigratorTest {
                 .setLines(3)
                 .build());
 
-        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+        try(GraknTx graph = factory.transaction(GraknTxType.WRITE)) {//Re Open Transaction
             Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             TestCase.assertEquals(3, pets.size());
 
@@ -173,7 +181,7 @@ public class CSVMigratorTest {
         String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
         declareAndLoad(template, "pets/data/pets.quotes", defaultMigrator);
 
-        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.transaction(GraknTxType.WRITE);//Re Open Transaction
         assertEquals(8, graph.getEntityType("pet").instances().count());
     }
 
@@ -182,7 +190,7 @@ public class CSVMigratorTest {
     public void multipleEntitiesInOneFileTest() throws IOException {
         load(factory, getFile("csv", "single-file/schema.gql"));
 
-        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.transaction(GraknTxType.WRITE);//Re Open Transaction
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");
@@ -226,7 +234,7 @@ public class CSVMigratorTest {
 
         declareAndLoad(template, "pets/data/pets.csv", defaultMigrator);
 
-        try(GraknTx graph = factory.open(GraknTxType.READ)){
+        try(GraknTx graph = factory.transaction(GraknTxType.READ)){
             assertEquals(0, graph.admin().getMetaEntityType().instances().count());
         }
     }

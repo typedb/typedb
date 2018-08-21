@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.exception;
@@ -40,11 +40,22 @@ import java.util.List;
 import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CONDITION;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD;
+import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
+import static ai.grakn.util.ErrorMessage.MISSING_COMPUTE_CONDITION;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
 import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static ai.grakn.util.GraqlSyntax.Compute;
+import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
+import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
+import static ai.grakn.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
 
 /**
  * <p>
@@ -59,12 +70,19 @@ import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
  */
 public class GraqlQueryException extends GraknException {
 
+    private final String NAME = "GraqlQueryException";
+
     private GraqlQueryException(String error) {
         super(error);
     }
 
     private GraqlQueryException(String error, Exception cause) {
         super(error, cause);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
     }
 
     public static GraqlQueryException create(String formatString, Object... args) {
@@ -143,11 +161,11 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException createInstanceOfMetaConcept(Var var, Type type) {
-        return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
+        return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.label());
     }
 
     public static GraqlQueryException insertMetaType(Label label, SchemaConcept schemaConcept) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.getLabel()));
+        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.label()));
     }
 
     /**
@@ -186,7 +204,7 @@ public class GraqlQueryException extends GraknException {
     /**
      * Thrown when a concept does not have all expected properties required to insert it.
      * <p>
-     * For example, a resource without a value: {@code insert $x isa name;}
+     * For example, an attribute without a value: {@code insert $x isa name;}
      * </p>
      */
     public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
@@ -248,14 +266,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.ATTRIBUTE_TYPE_NOT_SPECIFIED.getMessage());
     }
 
-    public static GraqlQueryException noPathDestination() {
-        return new GraqlQueryException(ErrorMessage.NO_DESTINATION.getMessage());
-    }
-
-    public static GraqlQueryException noPathSource() {
-        return new GraqlQueryException(ErrorMessage.NO_SOURCE.getMessage());
-    }
-
     public static GraqlQueryException instanceDoesNotExist() {
         return new GraqlQueryException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
     }
@@ -264,24 +274,28 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.K_SMALLER_THAN_TWO.getMessage());
     }
 
-    public static GraqlQueryException resourceMustBeANumber(AttributeType.DataType dataType, Label resourceType) {
-        return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
+    public static GraqlQueryException attributeMustBeANumber(AttributeType.DataType dataType, Label attributeType) {
+        return new GraqlQueryException(attributeType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
-    public static GraqlQueryException resourcesWithDifferentDataTypes(Collection<? extends Label> resourceTypes) {
-        return new GraqlQueryException("resource types " + resourceTypes + " have different data types");
+    public static GraqlQueryException attributesWithDifferentDataTypes(Collection<? extends Label> attributeTypes) {
+        return new GraqlQueryException("resource types " + attributeTypes + " have different data types");
     }
 
     public static GraqlQueryException unificationAtomIncompatibility() {
         return new GraqlQueryException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
-    public static GraqlQueryException nonAtomicQuery(ReasonerQuery reasonerQuery) {
-        return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(reasonerQuery));
+    public static GraqlQueryException nonAtomicQuery(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(query));
     }
 
-    public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery reasonerQuery) {
-        return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(reasonerQuery));
+    public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(query));
+    }
+
+    public static GraqlQueryException incompleteResolutionPlan(ReasonerQuery reasonerQuery) {
+        return new GraqlQueryException(ErrorMessage.INCOMPLETE_RESOLUTION_PLAN.getMessage(reasonerQuery));
     }
 
     public static GraqlQueryException rolePatternAbsent(Atomic relation) {
@@ -292,7 +306,7 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
     }
 
-    public static GraqlQueryException illegalAtomConversion(Atomic atom){
+    public static GraqlQueryException illegalAtomConversion(Atomic atom) {
         return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
     }
 
@@ -304,8 +318,12 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException("Attempted to obtain unifiers on non-atomic queries.");
     }
 
-    public static GraqlQueryException noAtomsSelected(ReasonerQuery reasonerQuery) {
-        return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(reasonerQuery.toString()));
+    public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString()));
+    }
+
+    public static GraqlQueryException noAtomsSelected(ReasonerQuery query) {
+        return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(query.toString()));
     }
 
     public static GraqlQueryException conceptNotAThing(Object value) {
@@ -333,10 +351,30 @@ public class GraqlQueryException extends GraknException {
     }
 
     public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept) {
-        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
+        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.label()));
     }
 
     public static GraqlQueryException unexpectedResult(Var var) {
         return new GraqlQueryException(UNEXPECTED_RESULT.getMessage(var.getValue()));
+    }
+
+    public static GraqlQueryException invalidComputeQuery_invalidMethod() {
+        return new GraqlQueryException(INVALID_COMPUTE_METHOD.getMessage(METHODS_ACCEPTED));
+    }
+
+    public static GraqlQueryException invalidComputeQuery_invalidCondition(Compute.Method method) {
+        return new GraqlQueryException(INVALID_COMPUTE_CONDITION.getMessage(method, CONDITIONS_ACCEPTED.get(method)));
+    }
+
+    public static GraqlQueryException invalidComputeQuery_missingCondition(Compute.Method method) {
+        return new GraqlQueryException(MISSING_COMPUTE_CONDITION.getMessage(method, CONDITIONS_REQUIRED.get(method)));
+    }
+
+    public static GraqlQueryException invalidComputeQuery_invalidMethodAlgorithm(Compute.Method method) {
+        return new GraqlQueryException(INVALID_COMPUTE_METHOD_ALGORITHM.getMessage(method, ALGORITHMS_ACCEPTED.get(method)));
+    }
+
+    public static GraqlQueryException invalidComputeQuery_invalidArgument(Compute.Method method, Compute.Algorithm algorithm) {
+        return new GraqlQueryException(INVALID_COMPUTE_ARGUMENT.getMessage(method, algorithm, ARGUMENTS_ACCEPTED.get(method).get(algorithm)));
     }
 }

@@ -23,18 +23,30 @@ entries:
       - title: Graql Console
         output: web
         url: /docs/get-started/graql-console
+      - title: Grakn Console
+        output: web
+        url: /docs/get-started/grakn-console
   - title: Cloud Deployment
     output: web
     folderitems:
-      - title: Google Cloud deployment
+      - title: Overview
+        output: web
+        url: /docs/cloud-deployment/overview
+      - title: Google Cloud Deployment
         output: web
         url: /docs/cloud-deployment/gc-deployment
+      - title: AWS Deployment
+        output: web
+        url: /docs/cloud-deployment/aws-deployment
       - title: Best Practices
         output: web
         url: /docs/cloud-deployment/best-practices
-      - title: Post deployment steps
+      - title: Post Deployment Steps
         output: web
         url: /docs/cloud-deployment/post-deployment
+      - title: Terms of Service
+        output: web
+        url: /docs/cloud-deployment/terms-of-service
   - title: Knowledge Model
     output: web
     folderitems:
@@ -104,12 +116,12 @@ entries:
       - title: Shortest Path
         output: web
         url: /docs/distributed-analytics/compute-shortest-path
-      - title: Degrees
+      - title: Centrality
         output: web
-        url: /docs/distributed-analytics/compute-degrees
-      - title: Connected Components
+        url: /docs/distributed-analytics/compute-centrality
+      - title: Cluster
         output: web
-        url: /docs/distributed-analytics/compute-connected-components
+        url: /docs/distributed-analytics/compute-cluster
   - title: Migrating Data
     output: web
     folderitems:
@@ -137,6 +149,12 @@ entries:
       - title: Grakn Visualiser
         output: web
         url: /docs/visualisation-dashboard/visualiser
+  - title: Workbase
+    output: web
+    folderitems:
+      - title: Visualiser
+        output: web
+        url: /docs/workbase/visualiser
   - title: Java Library
     output: web
     folderitems:
@@ -161,12 +179,15 @@ entries:
   - title: Language Drivers
     output: web
     folderitems:
+      - title: Java
+        output: web
+        url: /docs/language-drivers/client-java
+      - title: Node.js
+        output: web
+        url: /docs/language-drivers/client-nodejs
       - title: Python
         output: web
-        url: /docs/language-drivers/grakn-python
-      - title: Haskell
-        output: web
-        url: /docs/language-drivers/grakn-haskell
+        url: /docs/language-drivers/client-python
   - title: API References
     output: web
     folderitems:
@@ -237,6 +258,6 @@ entries:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index
-  - title: GRAKN Academy
+  - title: Grakn Academy
     output: web
     url: /academy/index

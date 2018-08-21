@@ -20,13 +20,13 @@ Templates are used to expand Graql queries, given data. They allow you to contro
 Accessing a single value:
 
 ```graql-template
-$x isa thing has val <value>
+insert $x isa thing has value <value>;
 ```
 
 Value in a nested context:
 
 ```graql-template
-$x isa person has name <person.name.firstName>
+insert $x isa person has name <person.name.firstName>;
 ```
 
 ## Replacement
@@ -112,7 +112,7 @@ else { insert $x; }
 Parenthesis can be used to group conditionals together.
 
 ```graql-template
-if( (first <= second) or (not (third <= second)))
+if( (<first> <= <second>) or (not (<third> <= <second>)))
 do { insert isa y; }
 else { insert isa z; }
 ```
@@ -315,7 +315,7 @@ would result in the expanded Graql queries:
 ```graql
 # ...
 insert $p0 isa person has firstname "Barbara" has identifier "Barbara Newman" has surname "Newman" has gender "female";
-insert $p1 has birth-date "1811-03-06" isa person has surname "Newman" has gender "male" has death-date "1898-09-10" has identifier "Henry Newman" has age 87 has firstname "Henry";
+insert $p1 has birth-date 1811-03-06 isa person has surname "Newman" has gender "male" has death-date 1898-09-10 has identifier "Henry Newman" has age 87 has firstname "Henry";
 # ...
 ```
 

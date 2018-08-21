@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -44,7 +44,7 @@ public interface EntityType extends Type{
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    EntityType setLabel(Label label);
+    EntityType label(Label label);
 
     /**
      * Sets the EntityType to be abstract - which prevents it from having any instances.
@@ -54,7 +54,7 @@ public interface EntityType extends Type{
      * @return The EntityType itself
      */
     @Override
-    EntityType setAbstract(Boolean isAbstract);
+    EntityType isAbstract(Boolean isAbstract);
 
     /**
      * Sets the direct supertype of the EntityType to be the EntityType specified.
@@ -66,17 +66,6 @@ public interface EntityType extends Type{
      * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this entity type
-     * @return The EntityType itself
-     *
-     * @throws GraknTxOperationException if the sub type is a meta type
-     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
-     */
-    EntityType sub(EntityType type);
 
     /**
      * Sets the Role which instances of this EntityType may play.
@@ -94,7 +83,7 @@ public interface EntityType extends Type{
      * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deletePlays(Role role);
+    EntityType unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link EntityType} to have {@link Attribute}s of type {@link AttributeType}
@@ -103,7 +92,7 @@ public interface EntityType extends Type{
      * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deleteAttribute(AttributeType attributeType);
+    EntityType unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link EntityType}
@@ -112,7 +101,7 @@ public interface EntityType extends Type{
      * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deleteKey(AttributeType attributeType);
+    EntityType unkey(AttributeType attributeType);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
@@ -122,7 +111,7 @@ public interface EntityType extends Type{
      *
      * @throws GraknTxOperationException if this is a meta type
      */
-    Entity addEntity();
+    Entity create();
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -140,7 +129,7 @@ public interface EntityType extends Type{
      * @return The Type itself.
      */
     @Override
-    EntityType attribute(AttributeType attributeType);
+    EntityType has(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**

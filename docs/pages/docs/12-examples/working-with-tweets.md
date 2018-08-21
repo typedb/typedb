@@ -83,15 +83,27 @@ Now that you have basic project structure and `pom.xml` in place, let's start cu
 </build>
 ```
 
-Then continue to the `<dependencies>` section and make sure you have all the required dependencies, i.e., `grakn-kb`, `twitter4j-core`, and `twitter4j-stream`:
+Then continue to the `<dependencies>` section and make sure you have all the required dependencies, i.e., `client-java`, `twitter4j-core`, and `twitter4j-stream`:
 
 ```xml
+<repositories>
+ <repository>
+   <id>releases</id>
+   <url>https://oss.sonatype.org/content/repositories/releases</url>
+ </repository>
+</repositories>
+
+<properties>
+   <grakn.version>1.3.0</grakn.version>
+</properties>
+   
 <dependencies>
-    <dependency>
-        <groupId>ai.grakn</groupId>
-        <artifactId>grakn-kb</artifactId>
-        <version><Current Grakn Version></version>
-    </dependency>
+   <dependency>
+       <groupId>ai.grakn</groupId>
+       <artifactId>client-java</artifactId>
+       <version>${grakn.version}</version>
+     </dependency>
+   </dependencies>
 
     <dependency>
         <groupId>org.twitter4j</groupId>
@@ -110,15 +122,14 @@ Then continue to the `<dependencies>` section and make sure you have all the req
 ## The Main Class
 
 Let's kick things off by defining a `Main` class inside the `ai.grakn.twitterexample` package. Aside from Twitter credentials, it contains a few important Grakn settings.
-
-First, we have decided to use an **in-memory knowledge graph** for simplicity's sake — working with an in-memory knowledge graph frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
+The graph will be stored in a **keyspace** named `twitter-example`.
 
 <!-- A lot of these examples are not valid Groovy, so they've been ignored in tests -->
 ```java-test-ignore
 package ai.grakn.twitterexample;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknSession;
+import ai.grakn.client.Grakn;
+import ai.grakn.Grakn.Session;
 
 public class Main {
   // Twitter credentials
@@ -128,7 +139,6 @@ public class Main {
   private static final String accessTokenSecret = "...";
 
   // Grakn settings
-  private static final String implementation = Grakn.IN_MEMORY;
   private static final String keyspace = "twitter-example";
 
   public static void main(String[] args) {
@@ -137,22 +147,23 @@ public class Main {
 }
 ```
 
-We then define a `GraknSession` object in `main()`. Enclosing it in a `try-with-attribute` construct is a good practice, lest we forget closing the session by calling `session.close()`.
+We then define a `Grakn.Session` object in `main()`. Enclosing it in a `try-with-attribute` construct is a good practice, lest we forget closing the session by calling `session.close()`.
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(implementation, keyspace)) {
+  Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+  try (Grakn.Session session = grakn.session(keyspace)) {
     // our code will go here
   }
 }
 ```
 
-Following that, another equally important object for operating on the knowledge graph is `GraknTx`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknTx` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
+Following that, another equally important object for operating on the knowledge graph is `Grakn.Transaction`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknTx` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
 
 ```java-test-ignore
 public class GraknTweetSchemaHelper {
-  public static void withGraknTx(GraknSession session, Consumer<GraknTx> fn) {
-    GraknTx tx = session.open(GraknTxType.WRITE);
+  public static void withGraknTx(Grakn.Session session, Consumer<GraknTx> fn) {
+    Grakn.Transaction tx = session.open(GraknTxType.WRITE);
     fn.accept(tx);
     tx.commit();
   }
@@ -177,7 +188,7 @@ With that set, let's define a new method `initTweetSchema` inside `GraknTweetSch
 
 ```java-test-ignore
 public class GraknTweetSchemaHelper {
-  public static void initTweetSchema(GraknTx tx) {
+  public static void initTweetSchema(Grakn.Transaction tx) {
 
   }
 }
@@ -215,9 +226,9 @@ And finally, assign attributes and roles appropriately.
 
 ```java
 // attribute and relationship assignments
-tweetType.attribute(idType);
-tweetType.attribute(textType);
-userType.attribute(screenNameType);
+tweetType.has(idType);
+tweetType.has(textType);
+userType.has(screenNameType);
 userType.plays(postsType);
 tweetType.plays(postedByType);
 ```
@@ -226,7 +237,8 @@ Now invoke the method in `main` so the schema is created at the start of the app
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(implememntation, keyspace)) {
+  Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+  try (Grakn.Session session = grakn.session(keyspace)) {
     withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
   }
 }
@@ -247,7 +259,7 @@ public class AsyncTweetStreamProcessorHelper {
 }
 ```
 
-The first thing we need to do here is to create a `Configuration` object out of the Twitter credential settings. Let's write a dedicated method just for that and name it `createTwitterConfiguration`. Afterwards, use that method to create the `Configuration` object which we will need in `listenToTwitterStreamAsync`.
+The first thing we need to do here is to create a `Configuration` object out of the Twitter credential settings. Let's write a dedicated method just for that and name it `createTwitterConfiguration`. Afterwards, use that name to create the `Configuration` object which we will need in `listenToTwitterStreamAsync`.
 
 ```java-test-ignore
 public class AsyncTweetStreamProcessorHelper {
@@ -319,7 +331,8 @@ Let's wrap up this section by adding the call to `listenToTwitterStreamAsync` in
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(implementation, keyspace)) {
+  Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+  try (Grakn.Session session = grakn.session(keyspace)) {
     withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
@@ -348,14 +361,14 @@ Let's do that with a new method. It will accept a single `String` and inserts it
 Pay attention to how we need to retrieve the `EntityTypes` and `AttributeTypes` of entity and attribute we are interested in — we need them in order to perform the actual insertion.
 
 ```java-test-ignore
-public static Entity insertTweet(GraknTx tx, String tweet) {
+public static Entity insertTweet(Grakn.Transaction tx, String tweet) {
     EntityType tweetEntityType = tx.getEntityType("tweet");
     AttributeType tweetResouceType = tx.getAttributeType("text");
 
-    Entity tweetEntity = tweetEntityType.addEntity();
-    Attribute tweetAttribute = tweetResouceType.putAttribute(tweet);
+    Entity tweetEntity = tweetEntityType.create();
+    Attribute tweetAttribute = tweetResouceType.create(tweet);
 
-    return tweetEntity.attribute(tweetAttribute);
+    return tweetEntity.has(tweetAttribute);
   }
 ```
 
@@ -383,16 +396,16 @@ And the following method for inserting a user. This one is quite similar to the 
 public static Entity insertUser(GraknTx tx, String user) {
   EntityType userEntityType = tx.getEntityType("user");
   AttributeType userAttributeType = tx.getAttributeType("screen_name");
-  Entity userEntity = userEntityType.addEntity();
-  Attribute userAttribute = userAttributeType.putAttribute(user);
-  return userEntity.attribute(userAttribute);
+  Entity userEntity = userEntityType.create();
+  Attribute userAttribute = userAttributeType.create(user);
+  return userEntity.has(userAttribute);
 }
 ```
 
 And finally, write a function for inserting a user only if it's not yet there in the knowledge graph.
 
 ```java-test-ignore
-public static Entity insertUserIfNotExist(GraknTx tx, String screenName) {
+public static Entity insertUserIfNotExist(Grakn.Transaction tx, String screenName) {
   QueryBuilder qb = tx.graql();
   return findUser(qb, screenName).orElse(insertUser(tx, screenName));
 }
@@ -405,14 +418,14 @@ We're almost there with a complete tweet insertion functionality! There's only o
 The following function will create a relationship between the user and tweet that we specify.
 
 ```java-test-ignore
-public static Relationship insertUserTweetRelation(GraknTx tx, Entity user, Entity tweet) {
+public static Relationship insertUserTweetRelation(Grakn.Transaction tx, Entity user, Entity tweet) {
   RelationType userTweetRelationType = tx.getRelationType("user-tweet-relationship");
   RoleType postsType = tx.getRoleType("posts");
   RoleType postedByType = tx.getRoleType("posted_by");
 
-  Relationship userTweetRelation = userTweetRelationType.addRelationship()
-      .addRolePlayer(postsType, user)
-      .addRolePlayer(postedByType, tweet);
+  Relationship userTweetRelation = userTweetRelationType.create()
+      .assign(postsType, user)
+      .assign(postedByType, tweet);
 
   return userTweetRelation;
 }
@@ -423,18 +436,19 @@ public static Relationship insertUserTweetRelation(GraknTx tx, Entity user, Enti
 Finally, let's wrap up by defining a function of which the sole responsibility is to execute all of the methods we have defined above.
 
 ```java-test-ignore
-public static Relationship insertUserTweet(GraknTx tx, String screenName, String tweet) {
+public static Relationship insertUserTweet(Grakn.Transaction tx, String screenName, String tweet) {
   Entity tweetEntity = insertTweet(tx, tweet);
   Entity userEntity = insertUserIfNotExist(tx, screenName);
   return insertUserTweetRelation(tx, userEntity, tweetEntity);
 }
 ```
 
-We're done with tweet insertion functionality! Next step: querying the stored data. Before we proceed, let's add the method we've just defined to the main method as shown below.
+We're done with tweet insertion functionality! Next step: querying the stored data. Before we proceed, let's add the method we've just defined to the main name as shown below.
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(implementation, keyspace)) {
+  Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+  try (Grakn.Session session = grakn.session(keyspace)) {
     withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
@@ -490,9 +504,9 @@ qb.match(
   AttributeType screenNameAttributeType = tx.getAttributeType("screen_name");
 
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
-    Concept key = entry.getKey();
-    Long value = entry.getValue();
-    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().getValue();
+    Concept key = entry.key();
+    Long value = entry.value();
+    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().value();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 ```
@@ -516,9 +530,9 @@ public static Stream<Map.Entry<String, Long>> calculateTweetCountPerUser(GraknTx
   AttributeType screenNameAttributeType = tx.getAttributeType("screen_name");
 
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
-    Concept key = entry.getKey();
-    Long value = entry.getValue();
-    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().getValue();
+    Concept key = entry.key();
+    Long value = entry.value();
+    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().value();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 
@@ -537,11 +551,11 @@ public class Main {
   private static final String accessTokenSecret = "...";
 
   // Grakn settings
-  private static final String implementation = Grakn.IN_MEMORY;
   private static final String keyspace = "twitter-example";
 
   public static void main(String[] args) {
-    try (GraknSession session = Grakn.session(mplementation, keyspace)) {
+    Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+    try (Grakn.Session session = grakn.session(keyspace)) {
       withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
       listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
@@ -556,7 +570,7 @@ public class Main {
 
   public static void prettyPrintQueryResult(Stream<Map.Entry<String, Long>> result) {
     System.out.println("------");
-    result.forEach(e -> System.out.println("-- user " + e.getKey() + " tweeted " + e.getValue() + " time(s)."));
+    result.forEach(e -> System.out.println("-- user " + e.key() + " tweeted " + e.value() + " time(s)."));
     System.out.println("------");
   }
 }

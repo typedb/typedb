@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query;
@@ -23,20 +23,22 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
+import ai.grakn.graql.answer.ConceptSet;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
+ *
+ * @author Grakn Warriors
  */
 @AutoValue
-abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements DeleteQueryAdmin {
+abstract class DeleteQueryImpl implements DeleteQueryAdmin {
 
     /**
      * @param vars a collection of variables to delete
@@ -47,9 +49,8 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public final Void execute() {
-        queryRunner().run(this);
-        return null;
+    public Stream<ConceptSet> stream() {
+        return executor().run(this);
     }
 
     @Override
@@ -58,13 +59,13 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
     }
 
     @Override
-    public final Optional<? extends GraknTx> tx() {
+    public final GraknTx tx() {
         return match().admin().tx();
     }
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(vars(), match().withTx(tx));
+        return Queries.delete(match().withTx(tx).admin(), vars());
     }
 
     @Override
@@ -74,16 +75,14 @@ abstract class DeleteQueryImpl extends AbstractQuery<Void, Void> implements Dele
 
     @Override
     public String toString() {
-        return match() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        StringBuilder query = new StringBuilder();
+        query.append(match()).append(" ").append("delete");
+        if(!vars().isEmpty()) query.append(" ").append(vars().stream().map(Var::toString).collect(joining(", ")).trim());
+        query.append(";");
+
+        return query.toString();
     }
 
-    @Override
-    protected final Stream<Void> stream() {
-        execute();
-        return Stream.empty();
-    }
-
-    @Nullable
     @Override
     public final Boolean inferring() {
         return match().admin().inferring();

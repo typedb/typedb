@@ -1,27 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.client.Client;
-import ai.grakn.bootup.graknengine.Grakn;
+import ai.grakn.batch.Client;
+import ai.grakn.engine.bootup.Grakn;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
@@ -48,7 +48,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Start a GraknEngineServer from the packaged distribution Zip.
+ * Start a Grakn Server from the packaged distribution Zip.
  * The class is responsible for unzipping and starting the distribution.
  * The location of the distribution must be at $GRAKN_HOME/grakn-dist/target/grakn-dist-$GRAKN_VERSION.zip
  *
@@ -60,11 +60,11 @@ public class DistributionContext extends CompositeTestRule {
 
     public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
 
-    private static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
+    private static final String ZIP_FILENAME = "grakn-core-" + GraknVersion.VERSION + ".zip";
     private static final Path GRAKN_BASE_DIRECTORY = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value());
     private static final Path TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-dist", "target");
     private static final Path ZIP_FULLPATH = Paths.get(TARGET_DIRECTORY.toString(), ZIP_FILENAME);
-    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-dist-" + GraknVersion.VERSION);
+    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-core-" + GraknVersion.VERSION);
 
     private Process engineProcess;
     private int port = 4567;

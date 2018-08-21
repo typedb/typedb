@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller;
@@ -45,7 +45,6 @@ import spark.Response;
 import spark.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,11 +64,9 @@ import static org.apache.http.HttpStatus.SC_NOT_FOUND;
 import static org.apache.http.HttpStatus.SC_OK;
 
 /**
- * <p>
- *     Endpoints used to query for {@link ai.grakn.concept.Concept}s
- * </p>
+ * Endpoints used to query for {@link ai.grakn.concept.Concept}s
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Grakn Warriors
  */
 public class ConceptController implements HttpController {
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -122,13 +119,13 @@ public class ConceptController implements HttpController {
     }
 
     private String getTypePlays(Request request, Response response) throws JsonProcessingException {
-        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.plays().map(ConceptBuilder::build);
+        Function<ai.grakn.concept.Type, Stream<Jacksonisable>> collector = type -> type.playing().map(ConceptBuilder::build);
         return getConceptCollection(request, response, "plays", buildTypeGetter(request), collector);
     }
 
     private String getRelationships(Request request, Response response) throws JsonProcessingException {
         //TODO: Figure out how to incorporate offset and limit
-        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.plays().flatMap(role -> {
+        Function<ai.grakn.concept.Thing, Stream<Jacksonisable>> collector = thing -> thing.roles().flatMap(role -> {
             Link roleWrapper = Link.create(role);
             return thing.relationships(role).map(relationship -> {
                 Link relationshipWrapper = Link.create(relationship);
@@ -220,8 +217,8 @@ public class ConceptController implements HttpController {
     }
 
     private int getIntegerQueryParameter(Request request, String parameter, int defaultValue){
-        Optional<String> value = queryParameter(request, parameter);
-        return value.map(Integer::parseInt).orElse(defaultValue);
+        String value = queryParameter(request, parameter);
+        return value != null ? Integer.parseInt(value) : defaultValue;
     }
 
     private String getSchemaByLabel(Request request, Response response) throws JsonProcessingException {
@@ -244,10 +241,9 @@ public class ConceptController implements HttpController {
         try (GraknTx tx = factory.tx(keyspace, READ); Timer.Context context = conceptIdGetTimer.time()) {
             ai.grakn.concept.Concept concept = getter.apply(tx);
 
-            Optional<Concept> conceptWrapper = Optional.ofNullable(concept).map(ConceptBuilder::build);
-            if(conceptWrapper.isPresent()){
+            if(concept != null){
                 response.status(SC_OK);
-                return objectMapper.writeValueAsString(conceptWrapper.get());
+                return objectMapper.writeValueAsString(ConceptBuilder.build(concept));
             } else {
                 response.status(SC_NOT_FOUND);
                 return "";

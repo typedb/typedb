@@ -1,32 +1,29 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.util;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.engine.GraknConfig;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
-import ai.grakn.factory.GraknSessionLocal;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.graql.Query;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
@@ -65,7 +62,7 @@ public class SampleKBLoader {
 
     private SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
 
-        EmbeddedGraknSession session = GraknSessionLocal.create(randomKeyspace(), Grakn.IN_MEMORY, GraknConfig.create());
+        EmbeddedGraknSession session = GraknTestUtil.usingTinker() ? EmbeddedGraknSession.inMemory(randomKeyspace()) : EmbeddedGraknSession.createEngineSession(randomKeyspace());
         factory = GraknTxFactoryBuilder.getInstance().getFactory(session, false);
         this.preLoad = preLoad;
     }
@@ -82,9 +79,9 @@ public class SampleKBLoader {
         if(tx == null || tx.isClosed()){
             //Load the graph if we need to
             if(!graphLoaded) {
-                try(GraknTx graph = factory.open(GraknTxType.WRITE)){
-                    load(graph);
-                    graph.commit();
+                try(GraknTx tx = factory.open(GraknTxType.WRITE)){
+                    load(tx);
+                    tx.commit();
                     graphLoaded = true;
                 }
             }
@@ -97,7 +94,8 @@ public class SampleKBLoader {
 
     public void rollback() {
         if (tx instanceof GraknTxTinker) {
-            tx.admin().delete();
+            tx.close();
+            tx.clearGraph();
             graphLoaded = false;
         } else if (!tx.isClosed()) {
             tx.close();

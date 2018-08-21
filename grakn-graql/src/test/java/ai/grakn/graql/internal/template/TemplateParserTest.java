@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.template;
@@ -113,32 +113,32 @@ public class TemplateParserTest {
 
     @Test
     public void templateDataContainsInt_ReplacedIntNotQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val 40;";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == 40;";
 
         assertParseEquals(template, ImmutableMap.of("value", 40), expected);
     }
 
     @Test
     public void templateDataContainsString_ReplacedStringIsQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val \"string\";";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == \"string\";";
 
         assertParseEquals(template, ImmutableMap.of("value", "string"), expected);
     }
 
     @Test
     public void templateDataContainsDouble_ReplacedDoubleNotQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val 0.001;";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == 0.001;";
 
         assertParseEquals(template, ImmutableMap.of("value", 0.001), expected);
     }
 
     @Test
     public void templateDataContainsBoolean_ReplacedBooleanNotQuoted(){
-        String template = "insert $x isa y val <value>;";
-        String expected = "insert $x0 isa y val true;";
+        String template = "insert $x isa y == <value>;";
+        String expected = "insert $x0 isa y == true;";
 
         assertParseEquals(template, ImmutableMap.of("value", true), expected);
     }

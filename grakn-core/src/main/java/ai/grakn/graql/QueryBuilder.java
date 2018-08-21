@@ -1,27 +1,30 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql;
 
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+
+import static ai.grakn.util.GraqlSyntax.Compute.Method;
 
 /**
  * Starting point for creating queries
@@ -90,7 +93,7 @@ public interface QueryBuilder {
      * @return a compute query builder for building analytics query
      */
     @CheckReturnValue
-    ComputeQueryBuilder compute();
+    <T extends Answer> ComputeQuery<T> compute(Method<T> method);
 
     /**
      * Get a {@link QueryParser} for parsing queries from strings
@@ -108,9 +111,4 @@ public interface QueryBuilder {
      * Enable or disable inference
      */
     QueryBuilder infer(boolean infer);
-
-    /**
-     * Enable or disable materialisation
-     */
-    QueryBuilder materialise(boolean materialise);
 }

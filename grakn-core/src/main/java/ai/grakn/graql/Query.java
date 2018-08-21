@@ -1,28 +1,33 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
+import ai.grakn.QueryExecutor;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Optional;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -30,9 +35,9 @@ import java.util.stream.Stream;
  *
  * @param <T> The result type after executing the query
  *
- * @author Felix Chapman
+ * @author Grakn Warriors
  */
-public interface Query<T> {
+public interface Query<T extends Answer> extends Iterable<T> {
 
     /**
      * @param tx the graph to execute the query on
@@ -42,37 +47,51 @@ public interface Query<T> {
     Query<T> withTx(GraknTx tx);
 
     /**
-     * Execute the query against the graph (potentially writing to the graph) and return a result
-     * @return the result of the query
-     */
-    T execute();
-
-    /**
-     * Execute the query and return a human-readable stream of results
-     *
-     * @deprecated use {@link #results(GraqlConverter)}}
-     */
-    @Deprecated
-    @CheckReturnValue
-    Stream<String> resultsString(Printer<?> printer);
-
-    /**
-     * Execute the query and return a converted stream of results
+     * @return a {@link Stream} of T, where T is a special type of {@link Answer}
      */
     @CheckReturnValue
-    <S> Stream<S> results(GraqlConverter<?, S> converter);
+    Stream<T> stream();
 
     /**
-     * Whether this query will modify the graph
+     * @return a {@link List} of T, where T is a special type of {@link Answer}
+     */
+    @CheckReturnValue
+    default List<T> execute() {
+        return stream().collect(Collectors.toList());
+    }
+
+    /**
+     * @return an {@link Iterator} of T, where T is a special type of {@link Answer}
+     */
+    @Override
+    @CheckReturnValue
+    default Iterator<T> iterator() {
+        return stream().iterator();
+    }
+
+    /**
+     * @return the special type of {@link QueryExecutor}, depending on whether the query is executed on the client or
+     * server side.
+     */
+    default QueryExecutor executor() {
+        if (tx() == null) throw GraqlQueryException.noTx();
+        return tx().admin().queryExecutor();
+    }
+
+    /**
+     * @return boolean that indicates whether this query will modify the graph
      */
     @CheckReturnValue
     boolean isReadOnly();
 
     /**
-     * Get the transaction associated with this query
+     * @return the transaction {@link GraknTx} associated with this query
      */
-    Optional<? extends GraknTx> tx();
-
     @Nullable
+    GraknTx tx();
+
+    /**
+     * @return boolean that indicates whether this query will perform rule-based inference during execution
+     */
     Boolean inferring();
 }

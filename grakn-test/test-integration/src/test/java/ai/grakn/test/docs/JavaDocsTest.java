@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.docs;
@@ -41,18 +41,35 @@ import java.util.regex.Pattern;
 import static ai.grakn.test.docs.DocTestUtil.PAGES;
 import static ai.grakn.test.docs.DocTestUtil.allMarkdownFiles;
 import static ai.grakn.test.docs.DocTestUtil.codeBlockFail;
+import static ai.grakn.test.docs.DocTestUtil.markdownOrHtml;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+/**
+ * Tests for the Java/Groovy examples in the documentation.
+ *
+ * <p>
+ *     Will automatically find and execute all code examples marked {@code java} in the documentation. If you don't
+ *     want an example to run in the tests, annotate it with something other than {@code java}, such as
+ *     {@code java-skip-test}.
+ * </p>
+ *
+ * <p>
+ *     Each example is run using a Groovy interpreter, this means that the examples should strictly be valid Groovy, not
+ *     Java. Groovy is chosen because it can be interpreted at runtime. Groovy is nearly a super-set of Java, so this
+ *     is usually not a problem. One example where syntax differs is Java lambdas.
+ * </p>
+ *
+ * <p>
+ *     Each example is run using a pre-loaded graph. Go to {@link DocTestUtil#loaders} for more information.
+ * </p>
+ */
+
 @RunWith(Parameterized.class)
 public class JavaDocsTest {
 
-    private static final Pattern TAG_JAVA =
-            Pattern.compile(
-                    "(id=\"java[0-9]+\">\\s*<pre>|```java)" +
-                    "\\s*(.*?)\\s*" +
-                    "(</pre>|```)", Pattern.DOTALL);
+    private static final Pattern TAG_JAVA = markdownOrHtml("java");
 
     private static String groovyPrefix;
 
@@ -78,13 +95,12 @@ public class JavaDocsTest {
 
     @BeforeClass
     public static void loadGroovyPrefix() throws IOException {
-        assumeTrue(GraknTestUtil.usingTinker());
         groovyPrefix = new String(Files.readAllBytes(Paths.get("src/test/java/ai/grakn/test/docs/prefix.groovy")));
     }
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (GraknTestUtil.usingTinker() && numFound < 8) {
+        if (numFound < 8) {
             fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
         }
     }

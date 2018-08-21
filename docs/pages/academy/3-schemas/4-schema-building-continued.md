@@ -1,8 +1,8 @@
 ---
 title: Building the schema (Continued)
 keywords: setup, getting started
-last_updated: September 2017
-summary: In this lesson you will complete your first GRAKN schema, adding roles to what you have built in the last lesson.
+last_updated: April 2018
+summary: In this lesson you will complete your first Grakn schema, adding roles to what you have built in the last lesson.
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/schema-building-continued.html
@@ -32,9 +32,9 @@ define
 "distance-from-coast" sub attribute datatype long;
 ```
 
-So far, so good, but the types that you have added to the file live on their own; to link them together, we need to add to the schema one last concept: roles. Roles help define what a relation is and what is the (wait for it) role of the entities that make a specific relation. They also help guaranteeing logical integrity (i.e. the rational correctness of your data) avoiding, for example, to have cats married to buildings in your data, unless you explicitly allow that in your schema.
+So far, so good. The types that you have added to the file currently "live on their own"; to link them together, we need to add one last concept to the schema: roles. Roles help to define how things are related and what the (wait for it) role of each entity in this relation is. They also help to guarante logical integrity (i.e. the rational correctness of your data) avoiding, for example, to have cats married to buildings in your data, unless you explicitly allow that in your schema.
 
-There are three steps into defining roles. Let’s examine them one by one.
+There are three steps in defining roles. Let’s examine them one by one.
 
 ## Defining relationships with __relates__
 The first step is to look at our relationships one by one and think about what they need to link together. Take `owns`, for example: in our domain, it is used to indicate the connection between an oil-platform and the company it belongs to. There are thus two roles in the "owns" relationship (but there could be also only one or more than two): we will call them `owner` and `owned` (because the author and has no fantasy :) ). In order to specify the relation in this way, we will use the keyword `relate` and the definition of "owns" will then look like this:
@@ -45,18 +45,18 @@ The first step is to look at our relationships one by one and think about what t
 ```
 
 ## Defining roles
-The second step is super easy: the role concepts related to our relationships need to be defined in our schema file. That works exactly like defining types, so you should be able to guess how to do it.
+The second step is super easy: the role concepts related to our relationships need to be defined in our schema file. That works exactly like defining types, so you should be able to guess how to do it (a little hint: just as an entity is a sub of `entity` a new role should be a sub of `role`).
 
 
 ## Who does what?
-The final step is to define which concept are allowed to play which role. To do this, we use the keyword `plays`. Every role must be played by at least one concept type, but there is no upper limit to it. To decide which type can play which role refer back to the conceptual model. For example, we know that we want companies to play the role of owner and oil platforms to play the role of owned. The type definitions will then look like this:
+The final step is to define which concepts are allowed to play which roles. To do this, we use the keyword `plays`. Every role must be played by at least one concept type, but there is no upper limit to it. To decide which type can play which role refer back to the conceptual model. For example, we know that we want companies to play the role of owner and oil platforms to play the role of owned. The type definitions will then look like this:
 
 ```graql-skip-test
 "company" sub entity plays owner;
 "oil-platform" sub entity has distance-from-coast plays owned;
 ```
 
-You should know at this point that there is no specific reason to put the whole type definition on one single line, so the definition above could also be rewritten as
+You should know by now, that there is no specific reason to put the whole type definition in one single line, so the definition above could also be rewritten as
 
 ```graql-skip-test
 "company" sub entity
@@ -101,22 +101,19 @@ define
 "located-in" sub relationship
     relates location
     relates located;
-"owner" sub role; "owned" sub role;
-"location" sub role; "located" sub role;
-"issued" sub role; "issuer" sub role;
 
 "name" sub attribute datatype string;
 "subject" sub attribute datatype string;
 "distance-from-coast" sub attribute datatype long;
 ```
 
-Congratulations! You have built your first working GRAKN schema! Of course, this is just a starting point and when you start putting data into your knowledge graph you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into GRAKN as is (you will learn how in the next module of the Academy). There is one more topic you need to learn about before going on to the module review. Let's have a look at how we can modify a Grakn schema.
+Congratulations! You have built your first working Grakn schema! Of course, this is just a starting point and when you start putting data into your knowledge graph you will realise that you need to extend the schema (for example you might want to allow companies to have names), but the one you have built is valid and working and could be loaded into Grakn as is (you will learn how in the next module of the Academy). There is one more topic you need to learn about before heading to the module review. Let's have a look at how we can modify an existing Grakn schema.
 
 
 ## Changing the schema
-One of the best features of Grakn schemas is the fact that they are flexible. At any point in time you can add types, attribute to types roles and so on.
+One of the best features of Grakn schemas is the fact that they are flexible. At any point in time you can add types, attributes to types, roles and so on.
 
-But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand articles in your knowledge graph and suddently you delete the type `article`. What would happen to all those articles? You wouldn't want to destroy them, would you. For this reason, in order to remove a type you first have to delete all of its instances.
+But what about deleting a type? Well, that is a bit more delicate. Imagine you have stored information about a thousand articles in your knowledge graph and suddenly you delete the type `article`. What would happen to all those articles? You wouldn't want to destroy them, would you? For this reason, in order to remove a type you first have to delete all of its instances.
 
 Once you have done that, you are free to modify your schema as you see fit. In order to undo something that is defined in your schema, you need to use the keyword `undefine`. Do you want to remove the type `article`?
 
@@ -124,7 +121,7 @@ Once you have done that, you are free to modify your schema as you see fit. In o
 undefine article sub entity;
 ```
 
-Do you want to remove the connection between a country and its name (because for some reason you still want countries, but you do not want to them to have names)?
+Do you want to remove the connection between a country and its name (because for some reason you still want countries but you don't want them to have names)?
 
 ```graql
 undefine country has name;
@@ -134,4 +131,4 @@ And so on and so forth. Notice that in the first example, you do not simply `und
 
 
 ## What next?
-First of all, proceed to [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about GRAKN schemas; after that it will be time to load data and our knowledge graph will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the GRAQL basics.
+You can now proceed to the [next lesson](./schema-review.html) to review the schema building process and to check that you remember what you have learned so far about Grakn schemas. After that it will be time to load data. Our knowledge graph will start to look more and more like the one you have seen at the beginning of the Academy when you were still learning about the Graql basics.

@@ -1,4 +1,4 @@
-![GRAKN.AI](https://grakn.ai/img/Grakn%20logo%20-%20transparent.png)
+![GRAKN.AI](https://grakn.ai/assets/img/Grakn%20logo%20-%20transparent.png)
 
 ---
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
@@ -7,7 +7,7 @@
 [![Javadocs](https://javadoc.io/badge/ai.grakn/grakn.svg)](https://javadoc.io/doc/ai.grakn/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 [![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
-[![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download)
+[![Download count](https://img.shields.io/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download)
 ---
 [![Static Bugs](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=bugs)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=code_smells)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)
@@ -48,23 +48,15 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 - Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
+- Yarn (in order to build Dashboard)
 
-**This repo uses submodules**, so clone using:
-```
-$ git clone --recurse-submodules https://github.com/graknlabs/grakn.git
-```
-Or if you have already cloned:
-```
-$ git submodule update --init --recursive
-```
-
-Then you can build Grakn using Maven:
+You can build Grakn using Maven:
 ```
 $ mvn package -DskipTests
 ```
 
 ## Licensing
 
-This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE.txt](https://github.com/graknlabs/grakn/blob/master/LICENSE.txt). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KBMS - get in touch with our team at enterprise@grakn.ai.
+This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KGMS - get in touch with our team at enterprise@grakn.ai.
 
-Copyright (C) 2016-2017  Grakn Labs Limited.
+Copyright (C) 2018  Grakn Labs Ltd

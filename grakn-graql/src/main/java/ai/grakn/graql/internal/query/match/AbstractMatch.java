@@ -1,26 +1,24 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DeleteQuery;
@@ -31,7 +29,8 @@ import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
@@ -43,14 +42,12 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatch implements MatchAdmin {
@@ -62,14 +59,14 @@ abstract class AbstractMatch implements MatchAdmin {
 
     /**
      * Execute the query using the given graph.
-     * @param graph the graph to use to execute the query
+     * @param tx the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(Optional<EmbeddedGraknTx<?>> graph);
+    public abstract Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx);
 
     @Override
-    public final Stream<Answer> stream() {
-        return stream(Optional.empty());
+    public final Stream<ConceptMap> stream() {
+        return stream(null);
     }
 
     /**
@@ -96,23 +93,8 @@ abstract class AbstractMatch implements MatchAdmin {
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
+    public final <S extends Answer> AggregateQuery<S> aggregate(Aggregate<S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
-    }
-
-    @Override
-    public final Stream<Concept> get(String var) {
-        return get(Graql.var(var));
-    }
-
-    @Override
-    public final Stream<Concept> get(Var var) {
-        return stream().map(result -> {
-            if (!result.containsVar(var)) {
-                throw GraqlQueryException.varNotInQuery(var);
-            }
-            return result.get(var);
-        });
     }
 
     @Override
@@ -122,19 +104,21 @@ abstract class AbstractMatch implements MatchAdmin {
 
     @Override
     public GetQuery get(String var, String... vars) {
-        Stream<String> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
-        return get(varStream.map(Graql::var).collect(toImmutableSet()));
+        Set<Var> varSet = Stream.concat(Stream.of(var), Stream.of(vars)).map(Graql::var).collect(Collectors.toSet());
+        return get(varSet);
     }
 
     @Override
     public GetQuery get(Var var, Var... vars) {
-        Stream<Var> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
-        return get(varStream.collect(toImmutableSet()));
+        Set<Var> varSet = new HashSet<>(Arrays.asList(vars));
+        varSet.add(var);
+        return get(varSet);
     }
 
     @Override
     public GetQuery get(Set<Var> vars) {
-        return Queries.get(ImmutableSet.copyOf(vars), this);
+        if (vars.isEmpty()) vars = getPattern().commonVars();
+        return Queries.get(this, ImmutableSet.copyOf(vars));
     }
 
     @Override
@@ -145,23 +129,31 @@ abstract class AbstractMatch implements MatchAdmin {
     @Override
     public final InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableMultiset<VarPatternAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
-        return Queries.insert(varAdmins, admin());
+        return Queries.insert(admin(), varAdmins);
+    }
+
+    @Override
+    public DeleteQuery delete() {
+        return delete(getPattern().commonVars());
     }
 
     @Override
     public final DeleteQuery delete(String var, String... vars) {
-        List<Var> varList = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(toList());
-        return delete(varList);
+        Set<Var> varSet = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(Collectors.toSet());
+        return delete(varSet);
     }
 
     @Override
-    public final DeleteQuery delete(Var... vars) {
-        return delete(Arrays.asList(vars));
+    public final DeleteQuery delete(Var var, Var... vars) {
+        Set<Var> varSet = new HashSet<>(Arrays.asList(vars));
+        varSet.add(var);
+        return delete(varSet);
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends Var> vars) {
-        return Queries.delete(vars, this);
+    public final DeleteQuery delete(Set<Var> vars) {
+        if (vars.isEmpty()) vars = getPattern().commonVars();
+        return Queries.delete(this, vars);
     }
 
     @Override

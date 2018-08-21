@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -37,7 +37,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
+import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
@@ -71,8 +71,8 @@ public class EntityTypeTest extends TxTestBase {
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = tx.putRole("Role Type");
         expectedException.expect(PropertyNotUniqueException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.getLabel()).getMessage());
-        tx.putEntityType(original.getLabel());
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.label()).getMessage());
+        tx.putEntityType(original.label());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class EntityTypeTest extends TxTestBase {
     @Test
     public void whenGettingTheLabelOfType_TheTypeLabelIsReturned(){
         Type test = tx.putEntityType("test");
-        assertEquals(Label.of("test"), test.getLabel());
+        assertEquals(Label.of("test"), test.label());
     }
 
     @Test
@@ -102,8 +102,8 @@ public class EntityTypeTest extends TxTestBase {
         EntityType creature = tx.putEntityType("creature").plays(monster).plays(animal);
         EntityType creatureMysterious = tx.putEntityType("mysterious creature").sup(creature).plays(monsterEvil);
 
-        assertThat(creature.plays().collect(toSet()), containsInAnyOrder(monster, animal));
-        assertThat(creatureMysterious.plays().collect(toSet()), containsInAnyOrder(monster, animal, monsterEvil));
+        assertThat(creature.playing().collect(toSet()), containsInAnyOrder(monster, animal));
+        assertThat(creatureMysterious.playing().collect(toSet()), containsInAnyOrder(monster, animal, monsterEvil));
     }
 
     @Test
@@ -127,10 +127,10 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenGettingTheSuperSetViaSupsMethod_ReturnAllOfItsSuperTypes(){
-        EntityType child = tx.putEntityType("child");
-        EntityType p2 = tx.putEntityType("p2").sub(child);
-        EntityType p3 = tx.putEntityType("p3").sub(p2);
-        EntityType p4 = tx.putEntityType("p4").sub(p3);
+        EntityType p4 = tx.putEntityType("p4");
+        EntityType p3 = tx.putEntityType("p3").sup(p4);
+        EntityType p2 = tx.putEntityType("p2").sup(p3);
+        EntityType child = tx.putEntityType("child").sup(p2);
         EntityType entity = tx.getMetaEntityType();
         Type thing = tx.getMetaConcept();
 
@@ -183,9 +183,9 @@ public class EntityTypeTest extends TxTestBase {
         Role role2 = tx.putRole("A Role 2");
         EntityType type = tx.putEntityType("A Concept Type").plays(role1).plays(role2);
 
-        assertThat(type.plays().collect(toSet()), containsInAnyOrder(role1, role2));
-        type.deletePlays(role1);
-        assertThat(type.plays().collect(toSet()), containsInAnyOrder( role2));
+        assertThat(type.playing().collect(toSet()), containsInAnyOrder(role1, role2));
+        type.unplay(role1);
+        assertThat(type.playing().collect(toSet()), containsInAnyOrder( role2));
     }
 
     @Test
@@ -194,12 +194,12 @@ public class EntityTypeTest extends TxTestBase {
         EntityType e2 = tx.putEntityType("e2").sup(e1);
         EntityType e3 = tx.putEntityType("e3").sup(e1);
 
-        Entity e2_child1 = e2.addEntity();
-        Entity e2_child2 = e2.addEntity();
+        Entity e2_child1 = e2.create();
+        Entity e2_child2 = e2.create();
 
-        Entity e3_child1 = e3.addEntity();
-        Entity e3_child2 = e3.addEntity();
-        Entity e3_child3 = e3.addEntity();
+        Entity e3_child1 = e3.create();
+        Entity e3_child2 = e3.create();
+        Entity e3_child3 = e3.create();
 
         assertThat(e1.instances().collect(toSet()), containsInAnyOrder(e2_child1, e2_child2, e3_child1, e3_child2, e3_child3));
         assertThat(e2.instances().collect(toSet()), containsInAnyOrder(e2_child1, e2_child2));
@@ -233,9 +233,9 @@ public class EntityTypeTest extends TxTestBase {
         Type meta = tx.getMetaEntityType();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.label()).getMessage());
 
-        meta.setAbstract(true);
+        meta.isAbstract(true);
     }
 
     @Test
@@ -244,7 +244,7 @@ public class EntityTypeTest extends TxTestBase {
         Role role = tx.putRole("A Role");
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.label()).getMessage());
 
         meta.plays(role);
     }
@@ -260,24 +260,24 @@ public class EntityTypeTest extends TxTestBase {
         AttributeType rtSuper = tx.putAttributeType(superLabel, AttributeType.DataType.STRING);
         AttributeType rt = tx.putAttributeType(label, AttributeType.DataType.STRING).sup(rtSuper);
 
-        entityType1.attribute(rtSuper);
-        entityType2.attribute(rt);
+        entityType1.has(rtSuper);
+        entityType2.has(rt);
 
         //Check role types are only built explicitly
-        assertThat(entityType1.plays().collect(toSet()),
+        assertThat(entityType1.playing().collect(toSet()),
                 containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
 
-        assertThat(entityType2.plays().collect(toSet()),
+        assertThat(entityType2.playing().collect(toSet()),
                 containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationshipType rtSuperRelation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
+        RelationshipType rtSuperRelation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.label()));
+        Role rtSuperRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.label()));
+        Role rtSuperRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.label()));
 
-        RelationshipType rtRelation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
-        Role reRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
-        Role reRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
+        RelationshipType rtRelation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rt.label()));
+        Role reRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.label()));
+        Role reRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.label()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.sup());
         assertEquals(rtSuperRoleValue, reRoleValue.sup());
@@ -289,7 +289,7 @@ public class EntityTypeTest extends TxTestBase {
         EntityType entityTypeA = tx.putEntityType("entityTypeA");
         EntityType entityTypeB = tx.putEntityType("entityTypeB");
 
-        entityTypeB.addEntity();
+        entityTypeB.create();
 
         entityTypeA.delete();
         assertNull(tx.getEntityType("entityTypeA"));
@@ -344,9 +344,9 @@ public class EntityTypeTest extends TxTestBase {
         AttributeType r3 = tx.putAttributeType("r3", AttributeType.DataType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.attributes().collect(toSet()).isEmpty());
-        e1.attribute(r1);
-        e1.attribute(r2);
-        e1.attribute(r3);
+        e1.has(r1);
+        e1.has(r2);
+        e1.has(r3);
         assertThat(e1.attributes().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
@@ -364,7 +364,7 @@ public class EntityTypeTest extends TxTestBase {
         assertThat(entityType2.attributes().collect(toSet()), is(empty()));
 
         //Link the resources
-        entityType1.attribute(attributeType1);
+        entityType1.has(attributeType1);
 
         entityType1.key(attributeType2);
         entityType2.key(attributeType1);
@@ -377,18 +377,18 @@ public class EntityTypeTest extends TxTestBase {
         assertThat(entityType2.keys().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
 
         //Add resource which is a key for one entity and a resource for another
-        Entity entity1 = entityType1.addEntity();
-        Entity entity2 = entityType2.addEntity();
-        Attribute<String> attribute1 = attributeType1.putAttribute("Test 1");
-        Attribute<String> attribute2 = attributeType2.putAttribute("Test 2");
-        Attribute<String> attribute3 = attributeType2.putAttribute("Test 3");
+        Entity entity1 = entityType1.create();
+        Entity entity2 = entityType2.create();
+        Attribute<String> attribute1 = attributeType1.create("Test 1");
+        Attribute<String> attribute2 = attributeType2.create("Test 2");
+        Attribute<String> attribute3 = attributeType2.create("Test 3");
 
         //Attribute 1 is a key to one and a resource to another
-        entity1.attribute(attribute1);
-        entity2.attribute(attribute1);
+        entity1.has(attribute1);
+        entity2.has(attribute1);
 
-        entity1.attribute(attribute2);
-        entity2.attribute(attribute3);
+        entity1.has(attribute2);
+        entity2.has(attribute3);
 
         tx.commit();
     }
@@ -398,10 +398,10 @@ public class EntityTypeTest extends TxTestBase {
         AttributeType<String> attributeType = tx.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
         EntityType entityType = tx.putEntityType("EntityType");
 
-        entityType.attribute(attributeType);
+        entityType.has(attributeType);
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
         entityType.key(attributeType);
     }
@@ -414,9 +414,9 @@ public class EntityTypeTest extends TxTestBase {
         entityType.key(attributeType);
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
-        entityType.attribute(attributeType);
+        entityType.has(attributeType);
     }
 
     @Test
@@ -430,7 +430,7 @@ public class EntityTypeTest extends TxTestBase {
     public void whenAddingInstanceToType_EnsureIsaEdgeIsPlacedOnShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("EntityType");
         Shard shard =  entityType.currentShard();
-        Entity e1 = entityType.addEntity();
+        Entity e1 = entityType.create();
 
         assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
         assertEquals(e1, shard.links().findAny().get());
@@ -450,9 +450,9 @@ public class EntityTypeTest extends TxTestBase {
     public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
-        EntityType person = tx.putEntityType("person").attribute(name).attribute(age);
+        EntityType person = tx.putEntityType("person").has(name).has(age);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
-        person.deleteAttribute(name);
+        person.unhas(name);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(age));
     }
 
@@ -461,18 +461,18 @@ public class EntityTypeTest extends TxTestBase {
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
-        EntityType person = tx.putEntityType("person").attribute(name).attribute(age).key(id);
+        EntityType person = tx.putEntityType("person").has(name).has(age).key(id);
 
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         //Nothing changes
-        person.deleteAttribute(id);
+        person.unhas(id);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         //Key is removed
-        person.deleteKey(id);
+        person.unkey(id);
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
         assertThat(person.keys().collect(toSet()), empty());
     }

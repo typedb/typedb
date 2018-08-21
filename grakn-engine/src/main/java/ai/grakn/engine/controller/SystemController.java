@@ -1,29 +1,28 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.GraknKeyspaceStore;
+import ai.grakn.engine.KeyspaceStore;
+import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.controller.response.Keyspace;
 import ai.grakn.engine.controller.response.Keyspaces;
 import ai.grakn.engine.controller.response.Root;
@@ -50,7 +49,6 @@ import spark.Service;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -69,13 +67,9 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 
 
 /**
- * <p> Controller Providing Configs for building Grakn Graphs </p>
  *
- * <p> When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location
- * this controller is accessed. The controller provides the necessary config needed in order to
- * build a {@link GraknTx}.
- *
- * This controller also allows the retrieval of all {@link ai.grakn.Keyspace}s opened so far. </p>
+ * This controller allows to get information about existing {@link ai.grakn.Keyspace}s
+ * and check status of Grakn Server, collects Metrics and return Dashboard index page.
  *
  * @author Filipe Peliz Pinto Teixeira
  */
@@ -87,19 +81,19 @@ public class SystemController implements HttpController {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
-    private final GraknEngineStatus graknEngineStatus;
+    private final ServerStatus serverStatus;
     private final MetricRegistry metricRegistry;
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
-    private final GraknKeyspaceStore graknKeyspaceStore;
+    private final KeyspaceStore keyspaceStore;
     private final GraknConfig config;
 
-    public SystemController(GraknConfig config, GraknKeyspaceStore graknKeyspaceStore,
-                            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
-        this.graknKeyspaceStore = graknKeyspaceStore;
+    public SystemController(GraknConfig config, KeyspaceStore keyspaceStore,
+                            ServerStatus serverStatus, MetricRegistry metricRegistry) {
+        this.keyspaceStore = keyspaceStore;
         this.config = config;
 
-        this.graknEngineStatus = graknEngineStatus;
+        this.serverStatus = serverStatus;
         this.metricRegistry = metricRegistry;
         DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
         this.prometheusRegistry = new CollectorRegistry();
@@ -121,10 +115,8 @@ public class SystemController implements HttpController {
     public void start(Service spark) {
 
         spark.get(REST.WebPath.ROOT, this::getRoot);
-
         spark.get(REST.WebPath.KB, (req, res) -> getKeyspaces(res));
         spark.get(REST.WebPath.KB_KEYSPACE, this::getKeyspace);
-        spark.put(REST.WebPath.KB_KEYSPACE, this::putKeyspace);
         spark.delete(REST.WebPath.KB_KEYSPACE, this::deleteKeyspace);
         spark.get(REST.WebPath.METRICS, this::getMetrics);
         spark.get(REST.WebPath.STATUS, (req, res) -> getStatus());
@@ -170,7 +162,7 @@ public class SystemController implements HttpController {
     @Path(REST.WebPath.KB)
     private String getKeyspaces(Response response) throws JsonProcessingException {
         response.type(APPLICATION_JSON);
-        Set<Keyspace> keyspaces = graknKeyspaceStore.keyspaces().stream().
+        Set<Keyspace> keyspaces = keyspaceStore.keyspaces().stream().
                 map(Keyspace::of).
                 collect(Collectors.toSet());
         return objectMapper.writeValueAsString(Keyspaces.of(keyspaces));
@@ -182,7 +174,7 @@ public class SystemController implements HttpController {
         response.type(APPLICATION_JSON);
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
 
-        if (graknKeyspaceStore.containsKeyspace(keyspace)) {
+        if (keyspaceStore.containsKeyspace(keyspace)) {
             response.status(HttpServletResponse.SC_OK);
             return objectMapper.writeValueAsString(Keyspace.of(keyspace));
         } else {
@@ -191,21 +183,11 @@ public class SystemController implements HttpController {
         }
     }
 
-    @PUT
-    @Path("/kb/{keyspace}")
-    private String putKeyspace(Request request, Response response) throws JsonProcessingException {
-        ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        graknKeyspaceStore.addKeyspace(keyspace);
-        response.status(HttpServletResponse.SC_OK);
-        response.type(APPLICATION_JSON);
-        return objectMapper.writeValueAsString(config);
-    }
-
     @DELETE
     @Path("/kb/{keyspace}")
     private boolean deleteKeyspace(Request request, Response response) {
         ai.grakn.Keyspace keyspace = ai.grakn.Keyspace.of(Requests.mandatoryPathParameter(request, KEYSPACE_PARAM));
-        boolean deletionComplete = graknKeyspaceStore.deleteKeyspace(keyspace);
+        boolean deletionComplete = keyspaceStore.deleteKeyspace(keyspace);
         if (deletionComplete) {
             LOG.info("Keyspace {} deleted", keyspace);
             response.status(HttpServletResponse.SC_NO_CONTENT);
@@ -218,7 +200,7 @@ public class SystemController implements HttpController {
     @GET
     @Path("/status")
     private String getStatus() {
-        return graknEngineStatus.isReady() ? "READY" : "INITIALIZING";
+        return serverStatus.isReady() ? "READY" : "INITIALIZING";
     }
 
     @GET

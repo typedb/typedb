@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.test.kbs;
@@ -71,29 +71,29 @@ public class AdmissionsKB extends TestKB {
         decisionType = tx.putAttributeType("decisionType", AttributeType.DataType.STRING);
 
         applicant = tx.putEntityType("applicant");
-        applicant.attribute(TOEFL);
-        applicant.attribute(GRE);
-        applicant.attribute(vGRE);
-        applicant.attribute(GPR);
-        applicant.attribute(specialHonours);
-        applicant.attribute(considerGPR);
-        applicant.attribute(transcript);
-        applicant.attribute(priorGraduateWork);
-        applicant.attribute(languageRequirement);
-        applicant.attribute(degreeOrigin);
-        applicant.attribute(admissionStatus);
-        applicant.attribute(decisionType);
-        applicant.attribute(key);
+        applicant.has(TOEFL);
+        applicant.has(GRE);
+        applicant.has(vGRE);
+        applicant.has(GPR);
+        applicant.has(specialHonours);
+        applicant.has(considerGPR);
+        applicant.has(transcript);
+        applicant.has(priorGraduateWork);
+        applicant.has(languageRequirement);
+        applicant.has(degreeOrigin);
+        applicant.has(admissionStatus);
+        applicant.has(decisionType);
+        applicant.has(key);
     }
 
     @Override
     protected void buildInstances(GraknTx tx) {
-        Thing Alice = putEntityWithResource(tx, "Alice", applicant, key.getLabel());
-        Thing Bob = putEntityWithResource(tx, "Bob", applicant, key.getLabel());
-        Thing Charlie = putEntityWithResource(tx, "Charlie", applicant, key.getLabel());
-        Thing Denis = putEntityWithResource(tx, "Denis", applicant, key.getLabel());
-        Thing Eva = putEntityWithResource(tx, "Eva", applicant, key.getLabel());
-        Thing Frank = putEntityWithResource(tx, "Frank", applicant, key.getLabel());
+        Thing Alice = putEntityWithResource(tx, "Alice", applicant, key.label());
+        Thing Bob = putEntityWithResource(tx, "Bob", applicant, key.label());
+        Thing Charlie = putEntityWithResource(tx, "Charlie", applicant, key.label());
+        Thing Denis = putEntityWithResource(tx, "Denis", applicant, key.label());
+        Thing Eva = putEntityWithResource(tx, "Eva", applicant, key.label());
+        Thing Frank = putEntityWithResource(tx, "Frank", applicant, key.label());
 
         putResource(Alice, TOEFL, 470L);
         putResource(Alice, degreeOrigin, "nonUS");

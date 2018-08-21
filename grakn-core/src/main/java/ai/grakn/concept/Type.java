@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -49,7 +49,7 @@ public interface Type extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    Type setLabel(Label label);
+    Type label(Label label);
 
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
@@ -59,7 +59,7 @@ public interface Type extends SchemaConcept {
      *
      * @throws GraknTxOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws GraknTxOperationException;
+    Type isAbstract(Boolean isAbstract) throws GraknTxOperationException;
 
     /**
      *
@@ -88,7 +88,7 @@ public interface Type extends SchemaConcept {
      *
      * @throws GraknTxOperationException if this is a meta-type
      */
-     Type attribute(AttributeType attributeType) throws GraknTxOperationException;
+     Type has(AttributeType attributeType) throws GraknTxOperationException;
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -96,7 +96,7 @@ public interface Type extends SchemaConcept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Stream<Role> plays();
+    Stream<Role> playing();
 
     /**
      *
@@ -164,7 +164,7 @@ public interface Type extends SchemaConcept {
      * @param role The {@link Role} which the {@link Thing}s of this {@link Type} should no longer be allowed to play.
      * @return The {@link Type} itself.
      */
-    Type deletePlays(Role role);
+    Type unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link Type} to have {@link Attribute}s of type {@link AttributeType}
@@ -172,7 +172,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have
      * @return The {@link Type} itself.
      */
-    Type deleteAttribute(AttributeType attributeType);
+    Type unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link Type}
@@ -180,7 +180,7 @@ public interface Type extends SchemaConcept {
      * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
      * @return The {@link Type} itself.
      */
-    Type deleteKey(AttributeType attributeType);
+    Type unkey(AttributeType attributeType);
 
     @Deprecated
     @CheckReturnValue

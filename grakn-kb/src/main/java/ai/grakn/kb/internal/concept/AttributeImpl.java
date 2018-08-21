@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -59,15 +59,15 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, Object value) {
-        Object persistenceValue = castValue(type.getDataType(), value);
+        Object persistenceValue = castValue(type.dataType(), value);
         AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, persistenceValue);
 
         //Generate the index again. Faster than reading
-        String index = Schema.generateAttributeIndex(type.getLabel(), value.toString());
+        String index = Schema.generateAttributeIndex(type.label(), value.toString());
         vertexElement.propertyUnique(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
-        vertexElement.tx().txCache().addNewAttribute(index, attribute.getId());
+        vertexElement.tx().txCache().addNewAttribute(index, attribute.id());
         return attribute;
     }
 
@@ -85,11 +85,14 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
                     throw new ClassCastException();
                 }
                 return ((Number) value).longValue();
-            } else {
+            } else if (dataType.equals(AttributeType.DataType.DATE) && (value instanceof Long)){
+                return value;
+            }
+            else {
                 return dataType.getPersistenceValue(value);
             }
         } catch (ClassCastException e) {
-            throw GraknTxOperationException.invalidResourceValue(value, dataType);
+            throw GraknTxOperationException.invalidAttributeValue(value, dataType);
         }
     }
 
@@ -99,14 +102,14 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      */
     @Override
     public AttributeType.DataType<D> dataType() {
-        return type().getDataType();
+        return type().dataType();
     }
 
     /**
      * @return The list of all Instances which posses this resource
      */
     @Override
-    public Stream<Thing> ownerInstances() {
+    public Stream<Thing> owners() {
         //Get Owner via implicit structure
         Stream<Thing> implicitOwners = getShortcutNeighbours();
         //Get owners via edges
@@ -130,13 +133,13 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
      * @return The value casted to the correct type
      */
     @Override
-    public D getValue(){
+    public D value(){
         return dataType().getValue(vertex().property(dataType().getVertexProperty()));
     }
 
     @Override
     public String innerToString(){
-        return super.innerToString() + "- Value [" + getValue() + "] ";
+        return super.innerToString() + "- Value [" + value() + "] ";
     }
 
     public static AttributeImpl from(Attribute attribute){

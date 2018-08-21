@@ -1,45 +1,42 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.plan;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  *
  * <p>
- * Class defining the resolution plan for a given {@link ReasonerQueryImpl}.
+ * Class defining the resolution plan for a given {@link ReasonerQueryImpl} at an atom level.
  * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
  * </p>
  *
@@ -49,14 +46,12 @@ import java.util.stream.Collectors;
 public final class ResolutionPlan {
 
     final private ImmutableList<Atom> plan;
-    final private EmbeddedGraknTx<?> tx;
+    final private ReasonerQueryImpl query;
 
-    public ResolutionPlan(ReasonerQueryImpl query){
-        this.tx =  query.tx();
-        this.plan = GraqlTraversalPlanner.refinedPlan(query);
-        if (!isValid()) {
-            throw GraqlQueryException.nonGroundNeqPredicate(query);
-        }
+    public ResolutionPlan(ReasonerQueryImpl q){
+        this.query = q;
+        this.plan = GraqlTraversalPlanner.plan(query);
+        validatePlan();
     }
 
     @Override
@@ -70,13 +65,19 @@ public final class ResolutionPlan {
     public ImmutableList<Atom> plan(){ return plan;}
 
     /**
-     * @return true if the plan doesn't lead to any non-ground neq predicate
+     * @return true if the plan is complete with respect to provided query - contains all selectable atoms
      */
-    private boolean isValid() {
-        //check for neq groundness
+    private boolean isComplete(){
+        return query.selectAtoms().allMatch(plan::contains);
+    }
+
+    /**
+     * @return true if the plan is valid with respect to provided query - its resolution doesn't lead to any non-ground neq predicates
+     */
+    private boolean isNeqGround(){
         Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
-        Set<Var> mappedVars = new HashSet<>();
-        for(Atom atom : plan){
+        Set<Var> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
+        for(Atom atom : this.plan){
             mappedVars.addAll(atom.getVarNames());
             atom.getPredicates(NeqPredicate.class)
                     .forEach(neq -> {
@@ -93,29 +94,14 @@ public final class ResolutionPlan {
         return nonGroundPredicates.isEmpty();
     }
 
-    /**
-     * compute the query resolution plan - list of queries ordered by their cost as computed by the graql traversal planner
-     * @return list of prioritised queries
-     */
-    public LinkedList<ReasonerQueryImpl> queryPlan(){
-        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        LinkedList<Atom> atoms = new LinkedList<>(plan);
-
-        List<Atom> nonResolvableAtoms = new ArrayList<>();
-        while (!atoms.isEmpty()) {
-            Atom top = atoms.remove();
-            if (top.isRuleResolvable()) {
-                if (!nonResolvableAtoms.isEmpty()) {
-                    queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
-                    nonResolvableAtoms.clear();
-                }
-                queries.add(ReasonerQueries.atomic(top));
-            } else {
-                nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
-            }
+    private void validatePlan() {
+        if (!isNeqGround()) {
+            throw GraqlQueryException.nonGroundNeqPredicate(query);
         }
-        return queries;
+        if (!isComplete()){
+            throw GraqlQueryException.incompleteResolutionPlan(query);
+        }
     }
+
 }
 

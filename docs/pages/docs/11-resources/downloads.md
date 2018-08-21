@@ -12,12 +12,12 @@ folder: docs
 
 ## Download Grakn Latest Version
 
-[Download Grakn 1.0](https://grakn.ai/download/latest)
+[Download Grakn](https://grakn.ai/download/)
 {: #download-btn }
 
 
 ### Past Versions
-A list of previously released versions of Grakn can be found on [Github](https://grakn.ai/download).
+A list of previously released versions of Grakn can be found on [Our Website](https://grakn.ai/download).
 
 
 ## Prerequisites

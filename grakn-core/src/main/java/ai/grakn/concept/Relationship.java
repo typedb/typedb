@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -49,7 +49,7 @@ public interface Relationship extends Thing {
      * @return The instance itself
      */
     @Override
-    Relationship attribute(Attribute attribute);
+    Relationship has(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 
@@ -69,7 +69,7 @@ public interface Relationship extends Thing {
      * @return A list of all the role types and the instances playing them in this {@link Relationship}.
      */
     @CheckReturnValue
-    Map<Role, Set<Thing>> allRolePlayers();
+    Map<Role, Set<Thing>> rolePlayersMap();
 
     /**
      * Retrieves a list of every {@link Thing} involved in the {@link Relationship}, filtered by {@link Role} played.
@@ -84,12 +84,12 @@ public interface Relationship extends Thing {
      * Expands this {@link Relationship} to include a new role player which is playing a specific role.
      *
      * @param role The Role Type of the new role player.
-     * @param thing The new role player.
+     * @param player The new role player.
      * @return The {@link Relationship} itself.
      *
      * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relationship addRolePlayer(Role role, Thing thing);
+    Relationship assign(Role role, Thing player);
 
     /**
      * Removes the provided {@link Attribute} from this {@link Relationship}
@@ -97,16 +97,16 @@ public interface Relationship extends Thing {
      * @return The {@link Relationship} itself
      */
     @Override
-    Relationship deleteAttribute(Attribute attribute);
+    Relationship unhas(Attribute attribute);
 
     /**
      * Removes the {@link Thing} which is playing a {@link Role} in this {@link Relationship}.
      * If the {@link Thing} is not playing any {@link Role} in this {@link Relationship} nothing happens.
      *
      * @param role The {@link Role} being played by the {@link Thing}
-     * @param thing The {@link Thing} playing the {@link Role} in this {@link Relationship}
+     * @param player The {@link Thing} playing the {@link Role} in this {@link Relationship}
      */
-    void removeRolePlayer(Role role, Thing thing);
+    void unassign(Role role, Thing player);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

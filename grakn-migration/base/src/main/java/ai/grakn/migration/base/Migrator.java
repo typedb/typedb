@@ -1,30 +1,27 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.migration.base;
 
 import ai.grakn.Keyspace;
-import ai.grakn.client.BatchExecutorClient;
-import ai.grakn.client.GraknClient;
-import ai.grakn.client.GraknClientException;
-import ai.grakn.client.QueryResponse;
+import ai.grakn.batch.BatchExecutorClient;
+import ai.grakn.batch.GraknClient;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryParser;
@@ -36,7 +33,6 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Observable;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -122,7 +118,9 @@ public class Migrator {
                         .maxDelay(maxDelayMs)
                         .metricRegistry(metricRegistry)
                         .build()) {
-            checkKeyspace(graknClient);
+
+            subscribeToReportOutcome(failFast, loader, queriesExecuted);
+
             Stream<Query> queryStream = data.flatMap(d -> template(template, d, failFast));
             if (maxLines > -1) {
                 queryStream = queryStream.limit(maxLines);
@@ -131,9 +129,7 @@ public class Migrator {
                     .forEach(q -> {
                         LOG.trace("Adding query {}", q);
                         totalMeter.mark();
-                        // We add get a hot observable. It starts immediately
-                        Observable<QueryResponse> observable = loader.add(q, keyspace, failFast);
-                        subscribeToReportOutcome(failFast, observable, queriesExecuted);
+                        loader.add(q, keyspace);
                     });
         }
 
@@ -141,32 +137,21 @@ public class Migrator {
     }
 
     private void subscribeToReportOutcome(
-            boolean failFast, Observable<QueryResponse> addObservable, AtomicInteger queriesExecuted
+            boolean failFast, BatchExecutorClient batchExecutorClient, AtomicInteger queriesExecuted
     ) {
-        addObservable.subscribe(
-                taskResult -> {
-                    LOG.trace("Successfully executed: {}", taskResult);
-                    queriesExecuted.incrementAndGet();
-                    successMeter.mark();
-                },
-                error -> {
-                    LOG.debug("Error in execution", error);
-                    if (failFast) {
-                        throw GraknBackendException
-                                .migrationFailure(error.getMessage());
-                    }
-                }
-        );
-    }
+        batchExecutorClient.onNext(taskResult -> {
+            LOG.trace("Successfully executed: {}", taskResult);
+            queriesExecuted.incrementAndGet();
+            successMeter.mark();
+        });
 
-    private void checkKeyspace(GraknClient graknClient) {
-        try {
-            if (!graknClient.keyspace(keyspace.getValue()).isPresent()) {
-                throw GraknBackendException.noSuchKeyspace(keyspace);
+        batchExecutorClient.onError(error -> {
+            System.err.println("Error in execution: " + error);
+            if (failFast) {
+                throw GraknBackendException
+                        .migrationFailure(error.getMessage());
             }
-        } catch (GraknClientException e) {
-            throw GraknServerException.internalError(e.getMessage());
-        }
+        });
     }
 
     /**

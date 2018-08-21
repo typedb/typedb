@@ -1,7 +1,7 @@
 ---
 title: Module Review
 keywords: setup, getting started
-last_updated: September 2017
+last_updated: April 2018
 tags: [getting-started, graql]
 sidebar: academy_sidebar
 permalink: ./academy/graql-review.html
@@ -10,9 +10,9 @@ toc: false
 KB: academy
 ---
 
-Wow! This was intense! We have gone through all the basic of the GRAQL. Let us review them with a few extra exercises.
+Wow! This was intense! We have gone through all the basics of the Graql. Let us review them with a few extra exercises.
 
-### Exercise 1: GRAQL review
+### Exercise 1: Graql review
 Do you remember the big query that I showed you at the beginning of this module? It looked like this:
 
 ```graql
@@ -30,27 +30,24 @@ Maybe it looked scary at the time, but by now you should be able to understand i
 After doing so, run the query in the graph visualiser. Can you guess why the results appears as disconnected nodes?
 
 ### Exercise 2: Get queries
-Run in the dashboard a query that retrieves all bonds issued by a company that owns an oil platform in the USA.
+Run a query in the dashboard that retrieves all bonds issued by a company that owns an oil platform in the USA.
 
 Don’t worry too much if the results don’t make too much sense: they have been generated randomly, so you are likely to see weird stuff like offshore platforms in landlocked countries and similar stuff.
 
 ### Exercise 3: Insert queries
-Add to the knowledge graph a new bond named "MyAwesomeBond" issued by at least 3 companies.
+Add a new bond named "MyAwesomeBond" to the knowledge graph. It should be issued by at least three different companies.
 
-Check in the graph visualiser that the bond has been correctly added and double click on it to show which companies it is connected to.
+Check in the graph visualiser that the bond has been correctly added. Double click it to show which companies it is connected to.
 
 ### Exercise 4: Delete queries
-Delete from the knowledge graph the bond you have inserted in Exercise 3.
-
-### Exercise 5: Ask
-Write a query that tells you whether a country named "Burundi" is in the knowledge graph.
+Delete the bond you have inserted in Exercise 3 from the knowledge graph.
 
 ### Exercise 6: Statistics
 Write a query to find the maximum risk value of a bond.
 Write both a `compute` query and an `aggregate` for the task.
 
 ## Congratulations!
-You are now a GRAQL expert! Or at least you already master GRAQL enough to take full advantage of the power of GRAKN. There is still a lot of things that can be done and will be covered in the next modules, but you are now well equipped to start using GRAKN. Remember: GRAQL is the language that is used for all the GRAKN tasks, so you are now in a very good position.
+You are now a Graql expert! Or at least you already master Graql enough to take full advantage of the power of Grakn. There is still a lot of things that can be done and will be covered in the next modules, but you are now well equipped to start using Grakn. Remember: Graql is the language that is used for all the Grakn tasks, so you are now in a very good position.
 
 ## What next
-The [next Academy module](./schema-elements.html) will teach you all there is to know about GRAKN schemas. What they are and how to build one. If you want to review the GRAQL material, go back to [lesson 2.1](./graql-intro.html). Otherwise, if you want to have a deeper look, head to the [docs](../index.html).
+The [next Academy module](./schema-elements.html) will teach you all there is to know about Grakn schemas. What they are and how to build one. If you want to review the Graql material, go back to [lesson 2.1](./graql-intro.html). Otherwise, if you want to have a deeper look, head to the [docs](../index.html).

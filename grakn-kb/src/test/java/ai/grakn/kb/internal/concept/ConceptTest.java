@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.kb.internal.concept;
@@ -55,7 +55,7 @@ public class ConceptTest extends TxTestBase {
 
         assertEquals(v1_1, v1_2);
         assertNotEquals(v1_1, v2_1);
-        assertNotEquals(v1_1.getId(), v2_1.getId());
+        assertNotEquals(v1_1.id(), v2_1.id());
 
         HashSet<Concept> concepts = new HashSet<>();
         concepts.add(v1_1);
@@ -70,10 +70,10 @@ public class ConceptTest extends TxTestBase {
     @Test
     public void checkToStringHasMinimalInformation() {
         EntityType concept = tx.putEntityType("a");
-        Thing entity = concept.addEntity();
+        Thing entity = concept.create();
 
         assertTrue(entity.toString().contains(Schema.BaseType.ENTITY.name()));
-        assertTrue(entity.toString().contains(entity.getId().getValue()));
+        assertTrue(entity.toString().contains(entity.id().getValue()));
     }
 
     @Test
@@ -104,7 +104,7 @@ public class ConceptTest extends TxTestBase {
     @Test
     public void whenCastingToInCorrectType_Throw(){
         EntityType thingType = tx.putEntityType("thing type");
-        Entity thing = thingType.addEntity();
+        Entity thing = thingType.create();
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.invalidCasting(thing, Type.class).getMessage());

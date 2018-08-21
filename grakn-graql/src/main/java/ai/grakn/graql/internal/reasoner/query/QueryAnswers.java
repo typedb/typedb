@@ -1,24 +1,24 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.Unifier;
 
@@ -26,21 +26,23 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.stream.Stream;
+import javax.annotation.Nonnull;
 
 /**
  *
  * <p>
- * Wrapper class for a set of {@link Answer} objects providing higher level facilities.
+ * Wrapper class for a set of {@link ConceptMap} objects providing higher level facilities.
  *
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswers implements Iterable<Answer>{
+public class QueryAnswers implements Iterable<ConceptMap>{
 
-    private final HashSet<Answer> set = new HashSet<>();
+    private final HashSet<ConceptMap> set = new HashSet<>();
 
+    @Nonnull
     @Override
-    public Iterator<Answer> iterator() { return set.iterator();}
+    public Iterator<ConceptMap> iterator() { return set.iterator();}
 
     @Override
     public boolean equals(Object obj){
@@ -53,19 +55,23 @@ public class QueryAnswers implements Iterable<Answer>{
     @Override
     public int hashCode(){return set.hashCode();}
 
-    public Stream<Answer> stream(){ return set.stream();}
+    @Override
+    public String toString(){ return set.toString();}
+
+    public Stream<ConceptMap> stream(){ return set.stream();}
 
     public QueryAnswers(){}
-    public QueryAnswers(Answer ans){ set.add(ans);}
-    public QueryAnswers(Collection<Answer> ans){ set.addAll(ans); }
-    public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
+    public QueryAnswers(ConceptMap ans){ set.add(ans);}
+    public QueryAnswers(Collection<ConceptMap> ans){ set.addAll(ans); }
+    private QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
-    public boolean add(Answer a){ return set.add(a);}
+    public boolean add(ConceptMap a){ return set.add(a);}
     public boolean addAll(QueryAnswers ans){ return set.addAll(ans.set);}
 
     public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
 
-    public boolean contains(Answer a){ return set.contains(a);}
+    public boolean contains(ConceptMap a){ return set.contains(a);}
+    public boolean isEmpty(){ return set.isEmpty();}
 
     /**
      * unify the answers by applying unifier to variable set

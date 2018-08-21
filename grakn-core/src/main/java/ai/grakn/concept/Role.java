@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -42,7 +42,7 @@ public interface Role extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    Role setLabel(Label label);
+    Role label(Label label);
 
     /**
      * Sets the super of this Role.
@@ -51,14 +51,6 @@ public interface Role extends SchemaConcept {
      * @return The Role itself
      */
     Role sup(Role type);
-
-    /**
-     * Adds another sub to this type
-     *
-     * @param type The sub type of this role type
-     * @return The Role itself
-     */
-    Role sub(Role type);
 
     //------------------------------------- Accessors ----------------------------------
     /**
@@ -91,7 +83,7 @@ public interface Role extends SchemaConcept {
      * @return The {@link RelationshipType} which this {@link Role} takes part in.
      */
     @CheckReturnValue
-    Stream<RelationshipType> relationshipTypes();
+    Stream<RelationshipType> relationships();
 
     /**
      * Returns a collection of the {@link Type}s that can play this {@link Role}.
@@ -100,7 +92,7 @@ public interface Role extends SchemaConcept {
      * @return A list of all the {@link Type}s which can play this {@link Role}.
      */
     @CheckReturnValue
-    Stream<Type> playedByTypes();
+    Stream<Type> players();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

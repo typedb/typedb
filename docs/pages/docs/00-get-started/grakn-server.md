@@ -19,24 +19,22 @@ This guide offers advice on how to:
 
 Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) are self-contained packages (tar.gz/zip) containing all the components you need to run Grakn.
 
-## Setting up Grakn
-
-### Minimum Requirements
+## Booting up Grakn
 
 Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge graph is small enough.
 Recommended production settings are at least 4GB machine with 3GB heap.
 
-### Standalone Grakn
+To start Grakn, navigate to the `bin` directory of your distribution and run the grakn executable:
 
-You can start a standalone instance of Grakn by running `grakn server start`. This will produce a working environment for importing and analysing your data.
+```
+./grakn server start
+```
 
-By default Grakn stores your data in the extracted directory, under `db/cassandra/` in the folder into which you unzipped the distribution zip.
+By default Grakn stores your data under `$GRAKN_HOME/db/` and log files under `$GRAKN_HOME/logs/`. It can be changed by updating the `data-dir` and `log.dirs` properties within `conf/grakn.properties`, respectively.
 
-We recommend changing this to another location to make upgrading Grakn easier and faster in the future. Having changed it, you need to specify the new location in the `conf/cassandra/cassandra.yaml` configuration file:
+For production use, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
 
-* `data_file_directories`: eg. /var/lib/cassandra/data
-* `commitlog_directory`: eg. /var/lib/cassandra/commitlog
-* `saved_caches_directory`: eg. /var/lib/cassandra/saved_caches
+In order to get maximum performance, the data should ideally be housed in a fast SSD.
 
 ### Grakn Cluster
 
@@ -45,19 +43,20 @@ Grakn's clustering functionality is part of [Grakn KGMS](https://grakn.ai/grakn-
 ## Upgrading Grakn
 
 #### Default directory
-For the default storage directory, `db/cassandra/`, you need to:
+For the default storage and logs directory, ie., `$GRAKN_HOME/db/` and `$GRAKN_HOME/logs/`, you need to:
 
-- stop old Grakn (`grakn server stop`)
-- extract the latest Grakn package into a new directory
-- copy the entire contents of the `db` directory to the new location into the new `db` directory
-- start new Grakn (`grakn server start`)
+- Stop the current Grakn if it is running (`grakn server stop`)
+- Extract the latest Grakn package into a new directory
+- Copy the entire contents of the `db` directory to the new location into the new `db` directory
+- Copy `conf/grakn.properties` from the current Grakn into the new Grakn
+- Start the new Grakn (`grakn server start`)
+
+For production use, we highly recommend changing them to an **external directory** outside of `$GRAKN_HOME` in order to make upgrading Grakn easier in the future.
 
 #### External directory
-If you have changed the location of data_file_directories in the `conf/cassandra/cassandra.yaml`, you need to:
+If you have changed the location of  in the `grakn.properties`, you need to:
 
-- stop old Grakn (`grakn server stop`)
-- extract the latest Grakn package into a new directory
-- amend `data_file_directories`, `commitlog_directory` and `saved_caches_directory` to match your custom directories
-- start new Grakn (`grakn server start`)
-
-You will need to amend these variables with every new version of Grakn.
+- Stop the current Grakn if it is running (`grakn server stop`)
+- Extract the latest Grakn package into a new directory
+- Copy `conf/grakn.properties` from the current Grakn into the new Grakn
+- Start the new Grakn (`grakn server start`)

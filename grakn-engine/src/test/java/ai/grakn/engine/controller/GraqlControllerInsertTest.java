@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller;
@@ -26,9 +26,10 @@ import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Printer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.printer.Printer;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.log.CommitLog;
 import ai.grakn.util.REST;
@@ -84,17 +85,17 @@ public class GraqlControllerInsertTest {
     public void setupMock() {
         when(mockFactory.tx(eq(keyspace), any())).thenReturn(tx);
         when(tx.keyspace()).thenReturn(keyspace);
-        when(printer.graqlString(any())).thenReturn(Json.object().toString());
+        when(printer.toString(any())).thenReturn(Json.object().toString());
 
         // Describe expected response to a typical query
-        Query<Object> query = tx.graql().parser().parseQuery("insert $x isa person;");
+        Query<ConceptMap> query = tx.graql().parser().parseQuery("insert $x isa person;");
         Concept person = mock(Concept.class, RETURNS_DEEP_STUBS);
-        when(person.getId()).thenReturn(ConceptId.of("V123"));
+        when(person.id()).thenReturn(ConceptId.of("V123"));
         when(person.isThing()).thenReturn(true);
-        when(person.asThing().type().getLabel()).thenReturn(Label.of("person"));
+        when(person.asThing().type().label()).thenReturn(Label.of("person"));
 
         when(query.execute()).thenReturn(ImmutableList.of(
-                new QueryAnswer(ImmutableMap.of(var("x"), person))
+                new ConceptMapImpl(ImmutableMap.of(var("x"), person))
         ));
     }
 
@@ -114,7 +115,7 @@ public class GraqlControllerInsertTest {
         InOrder inOrder = inOrder(query, tx);
 
         inOrder.verify(query).execute();
-        inOrder.verify(tx, times(1)).commitSubmitNoLogs();
+        inOrder.verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test
@@ -185,7 +186,7 @@ public class GraqlControllerInsertTest {
 
     @Test
     public void POSTGraqlInsertWithJsonType_ResponseIsCorrectJson() {
-        when(printer.graqlString(any())).thenReturn(Json.array().toString());
+        when(printer.toString(any())).thenReturn(Json.array().toString());
         Response response = sendRequest("insert $x isa person;");
         assertThat(jsonResponse(response).asJsonList().size(), equalTo(0));
     }
@@ -203,11 +204,11 @@ public class GraqlControllerInsertTest {
     public void POSTGraqlDefine_GraphCommitSubmitNoLogsIsCalled() {
         String query = "define thingy sub entity;";
 
-        verify(tx, times(0)).commitSubmitNoLogs();
+        verify(tx, times(0)).commitAndGetLogs();
 
         sendRequest(query);
 
-        verify(tx, times(1)).commitSubmitNoLogs();
+        verify(tx, times(1)).commitAndGetLogs();
     }
 
     @Test
@@ -215,7 +216,7 @@ public class GraqlControllerInsertTest {
         String query = "insert $x isa person has name 'Alice';";
 
         CommitLog commitLog = CommitLog.create(tx.keyspace(), Collections.emptyMap(), Collections.emptyMap());
-        when(tx.commitSubmitNoLogs()).thenReturn(Optional.of(commitLog));
+        when(tx.commitAndGetLogs()).thenReturn(Optional.of(commitLog));
 
         sendRequest(query);
 

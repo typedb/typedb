@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner.inference;
@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.rule.SampleKBContext;
@@ -29,26 +29,18 @@ import ai.grakn.test.kbs.SNBKB;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class SNBInferenceTest {
 
-    @Rule
-    public final SampleKBContext snbGraph = SNBKB.context();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext snbGraph = SNBKB.context();
 
     /**
      * Tests transitivity
@@ -63,8 +55,7 @@ public class SNBInferenceTest {
         String explicitQuery = "match $x isa university, has name 'University of Cambridge';" +
                 "$y isa country, has name 'UK'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -77,8 +68,7 @@ public class SNBInferenceTest {
         String explicitQuery = "match $x isa university, has name 'University of Cambridge';" +
                 "$y isa country, has name 'UK'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -95,8 +85,7 @@ public class SNBInferenceTest {
                 "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -110,8 +99,7 @@ public class SNBInferenceTest {
                 "$x isa company, has name 'Grakn';" +
                 "$y isa country, has name 'UK'; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -136,11 +124,11 @@ public class SNBInferenceTest {
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get;";
 
         long startTime = System.nanoTime();
-        List<Answer> limitedAnswers = limitedQuery.execute();
+        List<ConceptMap> limitedAnswers = limitedQuery.execute();
         System.out.println("limited time: " + (System.nanoTime() - startTime)/1e6);
 
         startTime = System.nanoTime();
-        List<Answer> answers = query.execute();
+        List<ConceptMap> answers = query.execute();
         System.out.println("full time: " + (System.nanoTime()- startTime)/1e6);
         assertCollectionsEqual(answers, qb.<GetQuery>parse(explicitQuery).execute());
         assertTrue(answers.containsAll(limitedAnswers));
@@ -158,13 +146,12 @@ public class SNBInferenceTest {
                 "$y isa person;$t isa tag;($y, $t) isa recommendation; get $y, $t;";
         
         String explicitQuery = "match $y isa person, has name $yName;$t isa tag, has name $tName;" +
-                "{$yName val 'Charlie';" +
-                "{$tName val 'Yngwie Malmsteen';} or {$tName val 'Cacophony';} or" +
-                "{$tName val 'Steve Vai';} or {$tName val 'Black Sabbath';};} or " +
-                "{$yName val 'Gary';$tName val 'Pink Floyd';};get $y, $t;";
+                "{$yName == 'Charlie';" +
+                "{$tName == 'Yngwie Malmsteen';} or {$tName == 'Cacophony';} or" +
+                "{$tName == 'Steve Vai';} or {$tName == 'Black Sabbath';};} or " +
+                "{$yName == 'Gary';$tName == 'Pink Floyd';};get $y, $t;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -178,16 +165,15 @@ public class SNBInferenceTest {
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation; get;";
         
         String explicitQuery = "match $y isa person, has name $ny; $yy isa product, has name $nyy;" +
-                "{$ny val 'Alice';$nyy val 'War of the Worlds';} or" +
-                "{$ny val 'Bob';{$nyy val 'Ducatti 1299';} or {$nyy val 'The Good the Bad the Ugly';};} or" +
-                "{$ny val 'Charlie';{$nyy val 'Blizzard of Ozz';} or {$nyy val 'Stratocaster';};} or " +
-                "{$ny val 'Denis';{$nyy val 'Colour of Magic';} or {$nyy val 'Dorian Gray';};} or"+
-                "{$ny val 'Frank';$nyy val 'Nocturnes';} or" +
-                "{$ny val 'Karl Fischer';{$nyy val 'Faust';} or {$nyy val 'Nocturnes';};} or " +
-                "{$ny val 'Gary';$nyy val 'The Wall';};get $y, $yy;";
+                "{$ny == 'Alice';$nyy == 'War of the Worlds';} or" +
+                "{$ny == 'Bob';{$nyy == 'Ducatti 1299';} or {$nyy == 'The Good the Bad the Ugly';};} or" +
+                "{$ny == 'Charlie';{$nyy == 'Blizzard of Ozz';} or {$nyy == 'Stratocaster';};} or " +
+                "{$ny == 'Denis';{$nyy == 'Colour of Magic';} or {$nyy == 'Dorian Gray';};} or"+
+                "{$ny == 'Frank';$nyy == 'Nocturnes';} or" +
+                "{$ny == 'Karl Fischer';{$nyy == 'Faust';} or {$nyy == 'Nocturnes';};} or " +
+                "{$ny == 'Gary';$nyy == 'The Wall';};get $y, $yy;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -210,8 +196,7 @@ public class SNBInferenceTest {
                 "{$r has name 'Yngwie Malmsteen';} or {$r has name 'Cacophony';} or {$r has name 'Steve Vai';} or {$r has name 'Black Sabbath';};} or " +
                 "{$p has name 'Gary';$r has name 'Pink Floyd';}; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -225,12 +210,11 @@ public class SNBInferenceTest {
                 "get $x, $y;";
         
         String explicitQuery = "match $x isa person, has name $nx;$y isa product, has name $ny;" +
-                "{$nx val 'Alice';$ny val 'War of the Worlds';} or" +
-                "{$nx val 'Karl Fischer';$ny val 'Faust';} or " +
-                "{$nx val 'Denis';{$ny val 'Colour of Magic';} or {$ny val 'Dorian Gray';};};get $x, $y;";
+                "{$nx == 'Alice';$ny == 'War of the Worlds';} or" +
+                "{$nx == 'Karl Fischer';$ny == 'Faust';} or " +
+                "{$nx == 'Denis';{$ny == 'Colour of Magic';} or {$ny == 'Dorian Gray';};};get $x, $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -247,8 +231,7 @@ public class SNBInferenceTest {
                 "{$x has name 'Charlie';{$y has name 'Cacophony';} or {$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';}; get $x, $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -266,8 +249,7 @@ public class SNBInferenceTest {
         String explicitQuery = "match $x isa person;$y isa product;" +
                 "{$x has name 'Bob';$y has name 'Ducatti 1299';}; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -288,8 +270,7 @@ public class SNBInferenceTest {
                 "{$y has name 'Ludwig van Beethoven';} or {$y has name 'Johann Wolfgang von Goethe';} or" +
                 "{$y has name 'Wolfgang Amadeus Mozart';};}; get $x, $y;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -298,8 +279,7 @@ public class SNBInferenceTest {
         QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; get $x;";
         String explicitQuery = "match {$x has name 'Frank';} or {$x has name 'Karl Fischer';}; get $x;";
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -315,8 +295,8 @@ public class SNBInferenceTest {
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; get $x, $z;";
         Unifier unifier = new UnifierImpl(ImmutableMap.of(Graql.var("z"), Graql.var("y")));
 
-        List<Answer> answers = iqb.materialise(false).<GetQuery>parse(queryString).execute();
-        List<Answer> answers2 =  iqb.materialise(false).<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers2 =  iqb.<GetQuery>parse(queryString2).execute().stream().map(a -> a.unify(unifier)).collect(Collectors.toList());
         assertCollectionsEqual(answers, answers2);
     }
 
@@ -340,8 +320,7 @@ public class SNBInferenceTest {
                 "{$x isa person; $p isa product;$p has name 'Nocturnes'; $tt isa tag; ($tt, $x), isa tagging;};" +
                 "($p, $t) isa typing; get $p, $t;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 
     /**
@@ -362,7 +341,6 @@ public class SNBInferenceTest {
                 "$p isa product;$p has name 'Faust';};" +
                 "($p, $t) isa typing; get $p, $t;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.parse(queryString), qb.parse(explicitQuery));
     }
 }

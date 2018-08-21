@@ -14,9 +14,9 @@ To get set up to use this API, please read through our [Setup Guide](../get-star
 
 ## Core API
 
-On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient.
+On this page we will focus primarily on the methods provided by the `Grakn.Transaction` interface which is used by all knowledge graph mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the `Grakn.Transaction` interface will be sufficient.
 
-It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
+It is also possible to interact with the knowledge graph using a Core API to form Graql queries via `Grakn.Transaction::graql()`, which is discussed separately [here](./graql-api), and is best suited for advanced querying.
 
 ## Building a Schema with the Core API
 
@@ -25,8 +25,10 @@ Let's see how we can build the same schema exclusively via the Core API.
 First we need a knowledge graph. For this example we will just use an
 [in-memory knowledge graph](./setup#initialising-a-transaction-on-the-knowledge-base):
 
-```java
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "myknowlegdebase").open(GraknTxType.WRITE);
+```java-test-ignore
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
@@ -41,23 +43,23 @@ surname sub name datatype string;
 middlename sub name datatype string;
 picture sub attribute datatype string;
 age sub attribute datatype long;
-"date" sub attribute datatype string;
-birth-date sub "date" datatype string;
-death-date sub "date" datatype string;
+event-date sub attribute datatype date;
+birth-date sub event-date datatype date;
+death-date sub event-date datatype date;
 gender sub attribute datatype string;
 ```
 
 These same attribute types can be built with the Core API as follows:
 
-```java
+```java-test-ignore
 AttributeType identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
 AttributeType firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING);
 AttributeType surname = tx.putAttributeType("surname", AttributeType.DataType.STRING);
 AttributeType middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING);
 AttributeType picture = tx.putAttributeType("picture", AttributeType.DataType.STRING);
 AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
-AttributeType birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING);
-AttributeType deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING);
+AttributeType birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.DATE);
+AttributeType deathDate = tx.putAttributeType("death-date", AttributeType.DataType.DATE);
 AttributeType gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
@@ -78,13 +80,13 @@ parentship sub relationship
 
 Using the Core API:
 
-```java
+```java-test-ignore
 Role spouse1 = tx.putRole("spouse1");
 Role spouse2 = tx.putRole("spouse2");
 RelationshipType marriage = tx.putRelationshipType("marriage")
                             .relates(spouse1)
                             .relates(spouse2);
-marriage.attribute(picture);
+marriage.has(picture);
 
 Role parent = tx.putRole("parent");
 Role child = tx.putRole("child");
@@ -116,33 +118,33 @@ person sub entity
 
 Using the Core API:
 
-```java
+```java-test-ignore
 EntityType person = tx.putEntityType("person")
                         .plays(parent)
                         .plays(child)
                         .plays(spouse1)
                         .plays(spouse2);
 
-person.attribute(identifier);
-person.attribute(firstname);
-person.attribute(surname);
-person.attribute(middlename);
-person.attribute(picture);
-person.attribute(age);
-person.attribute(birthDate);
-person.attribute(deathDate);
-person.attribute(gender);
+person.has(identifier);
+person.has(firstname);
+person.has(surname);
+person.has(middlename);
+person.has(picture);
+person.has(age);
+person.has(birthDate);
+person.has(deathDate);
+person.has(gender);
 ```
 
 Now to commit the schema using the Core API:
 
-```java
+```java-test-ignore
 tx.commit();
 ```
 
 If you do not wish to commit the schema you can revert your changes with:
 
-```java
+```java-test-ignore
 tx.abort();
 ```
 
@@ -159,11 +161,13 @@ insert $x isa person has firstname "John";
 
 Now the equivalent Core API:    
 
-```java
-tx = Grakn.session(Grakn.IN_MEMORY, "myknowlegdebase").open(GraknTxType.WRITE);
+```java-test-ignore
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(Keyspace.of("grakn"));
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
 
-Attribute johnName = firstname.putAttribute("John"); //Create the attribute
-person.addEntity().attribute(johnName); //Link it to an entity
+Attribute johnName = firstname.create("John"); //Create the attribute
+person.create().has(johnName); //Link it to an entity
 ```   
 
 What if we want to create a relationship between some entities?
@@ -179,17 +183,17 @@ insert
 
 With the Core API this would be:
 
-```java
+```java-test-ignore
 //Create the attributes
-johnName = firstname.putAttribute("John");
-Attribute maryName = firstname.putAttribute("Mary");
+johnName = firstname.create("John");
+Attribute maryName = firstname.create("Mary");
 
 //Create the entities
-Entity john = person.addEntity();
-Entity mary = person.addEntity();
+Entity john = person.create();
+Entity mary = person.create();
 
 //Create the actual relationships
-Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
+Relationship theMarriage = marriage.create().assign(spouse1, john).assign(spouse2, mary);
 ```
 
 Add a picture, first using Graql:
@@ -205,9 +209,9 @@ insert
 
 Now the equivalent using the Core API:
 
-```java
-Attribute weddingPicture = picture.putAttribute("www.LocationOfMyPicture.com");
-theMarriage.attribute(weddingPicture);
+```java-test-ignore
+Attribute weddingPicture = picture.create("www.LocationOfMyPicture.com");
+theMarriage.has(weddingPicture);
 ```
 
 
@@ -225,7 +229,7 @@ define
 
 becomes the following with the Core API:
 
-```java
+```java-test-ignore
 EntityType event = tx.putEntityType("event");
 EntityType wedding = tx.putEntityType("wedding").sup(event);
 ```
@@ -261,7 +265,7 @@ then {
 
 As there is more than one way to define Graql patterns through the API, there are several ways to construct rules. One options is through the Pattern factory:
 
-```java
+```java-test-ignore
 Pattern rule1when = var().rel("parent", "p").rel("child", "c").isa("Parent");
 Pattern rule1then = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
 
@@ -272,9 +276,9 @@ Pattern rule2when = and(
 Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
-If we have a specific `GraknTx tx` already defined, we can use the Graql pattern parser:
+If we have a specific `Grakn.Transaction tx` already defined, we can use the Graql pattern parser:
 
-```java
+```java-test-ignore
 rule1when = and(tx.graql().parser().parsePatterns("(parent: $p, child: $c) isa Parent;"));
 rule1then = and(tx.graql().parser().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
 
@@ -284,7 +288,7 @@ rule2then = and(tx.graql().parser().parsePatterns("(ancestor: $p, descendant: $d
 
 We conclude the rule creation with defining the rules from their constituent patterns:
 
-```java
+```java-test-ignore
 Rule rule1 = tx.putRule("R1", rule1when, rule1then);
 Rule rule2 = tx.putRule("R2", rule2when, rule2then);
 ```

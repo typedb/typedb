@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.engine.controller;
@@ -31,13 +31,12 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.printer.Printer;
+import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -64,7 +63,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
-import java.util.Optional;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -90,25 +89,23 @@ import static org.apache.http.HttpStatus.SC_OK;
 
 
 /**
- * <p>
  * Endpoints used to query the graph using Graql and build a HAL, Graql or Json response.
- * </p>
  *
- * @author Marco Scoppetta, alexandraorth
+ * @author Marco Scoppetta
  */
 public class GraqlController implements HttpController {
     private static final ObjectMapper mapper = new ObjectMapper();
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
     private static final RetryLogger retryLogger = new RetryLogger();
     private static final int MAX_RETRY = 10;
-    private final Printer<?> printer;
+    private final Printer printer;
     private final EngineGraknTxFactory factory;
     private final PostProcessor postProcessor;
     private final Timer executeGraql;
     private final Timer executeExplanation;
 
     public GraqlController(
-            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer<?> printer, MetricRegistry metricRegistry
+            EngineGraknTxFactory factory, PostProcessor postProcessor, Printer printer, MetricRegistry metricRegistry
     ) {
         this.factory = factory;
         this.postProcessor = postProcessor;
@@ -140,7 +137,7 @@ public class GraqlController implements HttpController {
 
         return executeFunctionWithRetrying(() -> {
             try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE); Timer.Context context = executeExplanation.time()) {
-                Answer answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new QueryAnswer());
+                ConceptMap answer = tx.graql().infer(true).parser().<GetQuery>parseQuery(queryString).execute().stream().findFirst().orElse(new ConceptMapImpl());
                 return mapper.writeValueAsString(ExplanationBuilder.buildExplanation(answer));
             }
         });
@@ -153,20 +150,20 @@ public class GraqlController implements HttpController {
         String queryString = mandatoryBody(request);
 
         //Run the query with reasoning on or off
-        Optional<Boolean> infer = queryParameter(request, EXECUTE_WITH_INFERENCE).map(Boolean::parseBoolean);
+        Boolean infer = parseBoolean(queryParameter(request, EXECUTE_WITH_INFERENCE));
 
         //Allow multiple queries to be executed
-        boolean multiQuery = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES).orElse("false"));
+        boolean multiQuery = parseBoolean(queryParameter(request, ALLOW_MULTIPLE_QUERIES));
 
         //Define all anonymous variables in the query
-        Optional<Boolean> defineAllVars = queryParameter(request, DEFINE_ALL_VARS).map(Boolean::parseBoolean);
+        Boolean defineAllVars = parseBoolean(queryParameter(request, DEFINE_ALL_VARS));
 
         //Used to check if serialisation of results is needed. When loading we skip this for the sake of speed
-        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA).orElse("false"));
+        boolean skipSerialisation = parseBoolean(queryParameter(request, LOADING_DATA));
 
         //Check the transaction type to use
-        GraknTxType txType = queryParameter(request, TX_TYPE)
-                .map(String::toUpperCase).map(GraknTxType::valueOf).orElse(GraknTxType.WRITE);
+        String txStr = queryParameter(request, TX_TYPE);
+        GraknTxType txType = txStr != null ? GraknTxType.valueOf(txStr.toUpperCase(Locale.getDefault())) : GraknTxType.WRITE;
 
         //This is used to determine the response format
         //TODO: Maybe we should really try to stick with one representation? This would require dashboard console interpreting the json representation
@@ -186,11 +183,10 @@ public class GraqlController implements HttpController {
             try (EmbeddedGraknTx<?> tx = factory.tx(keyspace, txType); Timer.Context context = executeGraql.time()) {
 
                 QueryBuilder builder = tx.graql();
-
-                infer.ifPresent(builder::infer);
+                if (infer != null) builder.infer(infer);
 
                 QueryParser parser = builder.parser();
-                defineAllVars.ifPresent(parser::defineAllVars);
+                if (defineAllVars != null) parser.defineAllVars(defineAllVars);
 
                 response.status(SC_OK);
 
@@ -255,9 +251,11 @@ public class GraqlController implements HttpController {
      * @param parser
      */
     private String executeQuery(EmbeddedGraknTx<?> tx, String queryString, String acceptType, boolean multi, boolean skipSerialisation, QueryParser parser) throws JsonProcessingException {
-        Printer printer = this.printer;
 
-        if (APPLICATION_TEXT.equals(acceptType)) printer = Printers.graql(false);
+        // By default use Jackson printer
+        Printer<?> printer = this.printer;
+
+        if (APPLICATION_TEXT.equals(acceptType)) printer = Printer.stringPrinter(false);
 
         String formatted;
         boolean commitQuery = true;
@@ -267,19 +265,26 @@ public class GraqlController implements HttpController {
             if (skipSerialisation) {
                 formatted = mapper.writeValueAsString(new Object[collectedResults.size()]);
             } else {
-                formatted = printer.graqlString(collectedResults);
+                formatted = printer.toString(collectedResults);
             }
         } else {
             Query<?> query = parser.parseQuery(queryString);
             if (skipSerialisation) {
                 formatted = "";
             } else {
-                formatted = printer.graqlString(executeAndMonitor(query));
+                // If acceptType is 'application/text' add new line after every result
+                if (APPLICATION_TEXT.equals(acceptType)) {
+                    formatted = printer.toStream(query.stream()).collect(Collectors.joining("\n"));
+                } else {
+                    // If acceptType is 'application/json' map results to JSON representation
+                    formatted = printer.toString(executeAndMonitor(query));
+                }
+
             }
             commitQuery = !query.isReadOnly();
         }
 
-        if (commitQuery) tx.commitSubmitNoLogs().ifPresent(postProcessor::submit);
+        if (commitQuery) tx.commitAndGetLogs().ifPresent(postProcessor::submit);
 
         return formatted;
     }

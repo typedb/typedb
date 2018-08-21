@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.concept;
@@ -56,7 +56,7 @@ public interface AttributeType<D> extends Type {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    AttributeType setLabel(Label label);
+    AttributeType label(Label label);
 
     /**
      * Sets the {@link AttributeType} to be abstract - which prevents it from having any instances.
@@ -66,7 +66,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> setAbstract(Boolean isAbstract);
+    AttributeType<D> isAbstract(Boolean isAbstract);
 
     /**
      * Sets the supertype of the {@link AttributeType} to be the AttributeType specified.
@@ -75,14 +75,6 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     AttributeType<D> sup(AttributeType<D> type);
-
-    /**
-     * Adds another subtype to this type
-     *
-     * @param type The sub type of this {@link AttributeType}
-     * @return The {@link AttributeType} itself
-     */
-    AttributeType<D> sub(AttributeType<D> type);
 
     /**
      * Sets the Role which instances of this {@link AttributeType} may play.
@@ -100,7 +92,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> deletePlays(Role role);
+    AttributeType<D> unplay(Role role);
 
     /**
      * Removes the ability for {@link Thing}s of this {@link AttributeType} to have {@link Attribute}s of type {@link AttributeType}
@@ -109,7 +101,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> deleteAttribute(AttributeType attributeType);
+    AttributeType<D> unhas(AttributeType attributeType);
 
     /**
      * Removes {@link AttributeType} as a key to this {@link AttributeType}
@@ -118,7 +110,7 @@ public interface AttributeType<D> extends Type {
      * @return The {@link AttributeType} itself.
      */
     @Override
-    AttributeType<D> deleteKey(AttributeType attributeType);
+    AttributeType<D> unkey(AttributeType attributeType);
 
     /**
      * Set the regular expression that instances of the {@link AttributeType} must conform to.
@@ -126,7 +118,7 @@ public interface AttributeType<D> extends Type {
      * @param regex The regular expression that instances of this {@link AttributeType} must conform to.
      * @return The {@link AttributeType} itself.
      */
-    AttributeType<D> setRegex(@Nullable String regex);
+    AttributeType<D> regex(String regex);
 
     /**
      * Set the value for the {@link Attribute}, unique to its type.
@@ -134,7 +126,7 @@ public interface AttributeType<D> extends Type {
      * @param value A value for the {@link Attribute} which is unique to its type
      * @return new or existing {@link Attribute} of this type with the provided value.
      */
-    Attribute<D> putAttribute(D value);
+    Attribute<D> create(D value);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -152,7 +144,7 @@ public interface AttributeType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    AttributeType<D> attribute(AttributeType attributeType);
+    AttributeType<D> has(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
     /**
@@ -173,7 +165,7 @@ public interface AttributeType<D> extends Type {
      */
     @CheckReturnValue
     @Nullable
-    Attribute<D> getAttribute(D value);
+    Attribute<D> attribute(D value);
 
     /**
      * Returns a collection of super-types of this {@link AttributeType}.
@@ -206,7 +198,7 @@ public interface AttributeType<D> extends Type {
      */
     @Nullable
     @CheckReturnValue
-    DataType<D> getDataType();
+    DataType<D> dataType();
 
     /**
      * Retrieve the regular expression to which instances of this {@link AttributeType} must conform, or {@code null} if no
@@ -218,7 +210,7 @@ public interface AttributeType<D> extends Type {
      */
     @CheckReturnValue
     @Nullable
-    String getRegex();
+    String regex();
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")
@@ -285,7 +277,7 @@ public interface AttributeType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw GraknTxOperationException.invalidResourceValue(o, LONG);
+                        throw GraknTxOperationException.invalidAttributeValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

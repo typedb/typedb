@@ -1,19 +1,19 @@
 /*
- * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016-2018 Grakn Labs Limited
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
  *
- * Grakn is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Grakn is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -24,7 +24,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -35,12 +35,9 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.Schema;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Set;
@@ -52,7 +49,6 @@ import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Suite of tests focused on reasoning expressivity and various edge cases.
@@ -60,33 +56,20 @@ import static org.junit.Assume.assumeTrue;
 public class ReasonerTest {
 
     @ClassRule
-    public static final SampleKBContext snbKB = SNBKB.context();
-
-    @ClassRule
     public static final SampleKBContext testGeoKB = GeoKB.context();
-
-    @ClassRule
-    public static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
-
-    @ClassRule
-    public static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
 
     @ClassRule
     public static final SampleKBContext geoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext geoKB2 = GeoKB.context();
+    public static final SampleKBContext nonMaterialisedGeoKB = GeoKB.context();
 
     @ClassRule
-    public static final SampleKBContext geoKB3 = GeoKB.context();
+    public static final SampleKBContext snbKB = SNBKB.context();
 
-    @org.junit.Rule
-    public final ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
+    @ClassRule
+    public static final SampleKBContext nonMaterialisedSnbKB = SNBKB.context();
+    
 
     @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
@@ -106,8 +89,8 @@ public class ReasonerTest {
 
     @Test
     public void testParsingQueryWithComma(){
-        String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', val 'Bob', has age <21; get;";
-        String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x val 'Bob';$x has age <21; get;";
+        String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', 'Bob', has age <21; get;";
+        String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x 'Bob';$x has age <21; get;";
         QueryBuilder iqb = snbKB.tx().graql().infer(true);
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
@@ -125,8 +108,8 @@ public class ReasonerTest {
 
     @Test
     public void testParsingQueryWithResourceVariable_BoundWithNonSpecificVP(){
-        String patternString = "{$x isa person;$x has age <10;}";
-        String patternString2 = "{$x isa person;$x has age $y;$y val <10;}";
+        String patternString = "{$x isa person;$x has age < 10;}";
+        String patternString2 = "{$x isa person;$x has age $y;$y < 10;}";
         ReasonerQueryImpl query = ReasonerQueries.atomic(conjunction(patternString, snbKB.tx()), snbKB.tx());
         ReasonerQueryImpl query2 = ReasonerQueries.atomic(conjunction(patternString2, snbKB.tx()), snbKB.tx());
         assertEquals(query, query2);
@@ -137,8 +120,8 @@ public class ReasonerTest {
         EmbeddedGraknTx<?> graph = snbKB.tx();
         String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
-        String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 val 'Bob';$x2 val 'Geldof';}";
-        String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 val 'Bob';$x1 val 'Geldof';}";
+        String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 == 'Bob';$x2 == 'Geldof';}";
+        String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 == 'Bob';$x1 == 'Geldof';}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, graph), graph);
         ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(patternString3, graph), graph);
@@ -212,49 +195,19 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTypeVar(){
-        String queryString = "match $x isa person;$y isa $type;($x, $y) isa recommendation; get;";
-        String explicitQuery = "match $y isa $type;" +
-                "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
-                "{$x has name 'Bob';" +
-                "{$y has name 'Ducatti 1299';} or " +
-                "{$y has name 'The Good the Bad the Ugly';};} or" +
-                "{$x has name 'Charlie';" +
-                "{$y has name 'Blizzard of Ozz';} or " +
-                "{$y has name 'Stratocaster';};} or " +
-                "{$x has name 'Denis';" +
-                "{$y has name 'Colour of Magic';} or " +
-                "{$y has name 'Dorian Gray';};} or"+
-                "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
-                "{$x has name 'Karl Fischer';" +
-                "{$y has name 'Faust';} or " +
-                "{$y has name 'Nocturnes';};} or " +
-                "{$x has name 'Gary';$y has name 'The Wall';} or" +
-                "{$x has name 'Charlie';"+
-                "{$y has name 'Yngwie Malmsteen';} or " +
-                "{$y has name 'Cacophony';} or " +
-                "{$y has name 'Steve Vai';} or " +
-                "{$y has name 'Black Sabbath';};} or " +
-                "{$x has name 'Gary';$y has name 'Pink Floyd';}; get;";
-        GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
-        GetQuery query2 = snbKB.tx().graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Test
-    public void testReasoningWithQueryContainingTypeVar2(){
         String thing = Schema.MetaSchema.THING.getLabel().getValue();
         GraknTx graph = nonMaterialisedGeoKB.tx();
         String queryString = "match $x isa $type;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland'; get;";
         String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " $name;" +
                 "{" +
-                "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw';};" +
+                "{$name == 'Warsaw-Polytechnics' or $name == 'University-of-Warsaw';};" +
                 "{$type label 'university' or $type label 'entity' or $type label '" + thing + "';};" +
                 "} or {" +
-                "{$name val 'Warsaw' or $name val 'Wroclaw';};" +
+                "{$name == 'Warsaw' or $name == 'Wroclaw';};" +
                 "{$type label 'city' or $type label 'geoObject' or $type label 'entity' or $type label '" + thing + "';};" +
                 "} or {" +
-                "{$name val 'Masovia' or $name val 'Silesia';};" +
+                "{$name == 'Masovia' or $name == 'Silesia';};" +
                 "{$type label 'region' or $type label 'geoObject' or $type label 'entity' or $type label '" + thing + "';};" +
                 "}; get $x, $y, $type;";
         GetQuery query = graph.graql().infer(true).parse(queryString);
@@ -263,7 +216,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingTypeVar3(){
+    public void testReasoningWithQueryContainingTypeVar2(){
         GraknTx graph = nonMaterialisedGeoKB.tx();
         String queryString = "match $x isa $type;$type label 'university';" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland'; get;";
@@ -299,16 +252,16 @@ public class ReasonerTest {
         String queryString = "match $x isa person;$y isa $type;$type sub recommendable;($x, $y) isa recommendation; get;";
         String explicitQuery = "match $x isa person, has name $xName;$y isa $type;$y has name $yName;" +
                 "{$type label 'recommendable' or $type label 'product' or $type label 'tag';};" +
-                "{$xName val 'Alice';$yName val 'War of the Worlds';} or" +
-                "{$xName val 'Bob';{$yName val 'Ducatti 1299';} or {$yName val 'The Good the Bad the Ugly';};} or" +
-                "{$xName val 'Charlie';{$yName val 'Blizzard of Ozz';} or {$yName val 'Stratocaster';};} or " +
-                "{$xName val 'Denis';{$yName val 'Colour of Magic';} or {$yName val 'Dorian Gray';};} or"+
-                "{$xName val 'Frank';$yName val 'Nocturnes';} or" +
-                "{$xName val 'Karl Fischer';{$yName val 'Faust';} or {$yName val 'Nocturnes';};} or " +
-                "{$xName val 'Gary';$yName val 'The Wall';} or" +
-                "{$xName val 'Charlie';" +
-                "{$yName val 'Yngwie Malmsteen';} or {$yName val 'Cacophony';} or {$yName val 'Steve Vai';} or {$yName val 'Black Sabbath';};} or " +
-                "{$xName val 'Gary';$yName val 'Pink Floyd';};get $x, $y, $type;";
+                "{$xName == 'Alice';$yName == 'War of the Worlds';} or" +
+                "{$xName == 'Bob';{$yName == 'Ducatti 1299';} or {$yName == 'The Good the Bad the Ugly';};} or" +
+                "{$xName == 'Charlie';{$yName == 'Blizzard of Ozz';} or {$yName == 'Stratocaster';};} or " +
+                "{$xName == 'Denis';{$yName == 'Colour of Magic';} or {$yName == 'Dorian Gray';};} or"+
+                "{$xName == 'Frank';$yName == 'Nocturnes';} or" +
+                "{$xName == 'Karl Fischer';{$yName == 'Faust';} or {$yName == 'Nocturnes';};} or " +
+                "{$xName == 'Gary';$yName == 'The Wall';} or" +
+                "{$xName == 'Charlie';" +
+                "{$yName == 'Yngwie Malmsteen';} or {$yName == 'Cacophony';} or {$yName == 'Steve Vai';} or {$yName == 'Black Sabbath';};} or " +
+                "{$xName == 'Gary';$yName == 'Pink Floyd';};get $x, $y, $type;";
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
         GetQuery query2 = snbKB.tx().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -331,7 +284,7 @@ public class ReasonerTest {
         //geoObject sub city always returns an empty set
         String queryString = "match ($x, $y) isa is-located-in;geoObject sub city; get;";
         QueryBuilder iqb = graph.graql().infer(true);
-        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
         assertThat(answers, empty());
     }
 
@@ -344,16 +297,16 @@ public class ReasonerTest {
                 "($x, $y) isa is-located-in; get;";
         String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " $name;" +
                 "{" +
-                "{$name val 'Europe';};" +
+                "{$name == 'Europe';};" +
                 "{$type label 'continent' or $type label 'geoObject';};" +
                 "} or {" +
-                "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw';};" +
+                "{$name == 'Warsaw-Polytechnics' or $name == 'University-of-Warsaw';};" +
                 "{$type label 'university';};" +
                 "} or {" +
-                "{$name val 'Warsaw' or $name val 'Wroclaw';};" +
+                "{$name == 'Warsaw' or $name == 'Wroclaw';};" +
                 "{$type label 'city' or $type label 'geoObject';};" +
                 "} or {" +
-                "{$name val 'Masovia' or $name val 'Silesia';};" +
+                "{$name == 'Masovia' or $name == 'Silesia';};" +
                 "{$type label 'region' or $type label 'geoObject';};" +
                 "}; get $x, $y, $type;";
         GetQuery query = graph.graql().infer(true).parse(queryString);
@@ -389,13 +342,13 @@ public class ReasonerTest {
         String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation; get;";
         String explicitQuery = "match $x isa person, has name $xName;$x isa $type;$y has name $yName;" +
                 "{$type label 'person' or $type label 'entity2';};" +
-                "{$xName val 'Alice';$yName val 'War of the Worlds';} or" +
-                "{$xName val 'Bob';{$yName val 'Ducatti 1299';} or {$yName val 'The Good the Bad the Ugly';};} or" +
-                "{$xName val 'Charlie';{$yName val 'Blizzard of Ozz';} or {$yName val 'Stratocaster';};} or " +
-                "{$xName val 'Denis';{$yName val 'Colour of Magic';} or {$yName val 'Dorian Gray';};} or"+
-                "{$xName val 'Frank';$yName val 'Nocturnes';} or" +
-                "{$xName val 'Karl Fischer';{$yName val 'Faust';} or {$yName val 'Nocturnes';};} or " +
-                "{$xName val 'Gary';$yName val 'The Wall';};get $x, $y, $type;";
+                "{$xName == 'Alice';$yName == 'War of the Worlds';} or" +
+                "{$xName == 'Bob';{$yName == 'Ducatti 1299';} or {$yName == 'The Good the Bad the Ugly';};} or" +
+                "{$xName == 'Charlie';{$yName == 'Blizzard of Ozz';} or {$yName == 'Stratocaster';};} or " +
+                "{$xName == 'Denis';{$yName == 'Colour of Magic';} or {$yName == 'Dorian Gray';};} or"+
+                "{$xName == 'Frank';$yName == 'Nocturnes';} or" +
+                "{$xName == 'Karl Fischer';{$yName == 'Faust';} or {$yName == 'Nocturnes';};} or " +
+                "{$xName == 'Gary';$yName == 'The Wall';};get $x, $y, $type;";
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
         GetQuery query2 = snbKB.tx().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -405,7 +358,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingRegex(){
         GraknTx graph = nonMaterialisedGeoKB.tx();
         String queryString = "match $y isa country;$y has name $name;"+
-                "$name val  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;get $x, $y;";
+                "$name /.*(.*)land(.*).*/;($x, $y) isa is-located-in;get $x, $y;";
         String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in; get;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -418,7 +371,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingContains(){
         GraknTx graph = nonMaterialisedGeoKB.tx();
         String queryString = "match $y isa country;$y has name $name;"+
-                "$name val contains 'land';($x, $y) isa is-located-in;get $x, $y;";
+                "$name contains 'land';($x, $y) isa is-located-in;get $x, $y;";
         String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in; get;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -476,19 +429,6 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingRelationTypeVar2(){
-        String queryString = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel; get;";
-        String queryString2 = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;$rel label recommendation; get;";
-        QueryBuilder qb = snbKB.tx().graql();
-        GetQuery query = qb.infer(true).parse(queryString);
-        GetQuery query2 = qb.infer(true).materialise(true).parse(queryString);
-        GetQuery query3 = qb.infer(false).parse(queryString2);
-
-        assertQueriesEqual(query, query2);
-        assertQueriesEqual(query2, query3);
-    }
-
-    @Test
     public void testReasoningWithQueryContainingUnspecifiedCastings(){
         GraknTx graph = nonMaterialisedGeoKB.tx();
         String queryString = "match (geo-entity: $x) isa is-located-in; get;";
@@ -519,8 +459,8 @@ public class ReasonerTest {
         GetQuery limitQuery = iqb.parse(limitQueryString);
         GetQuery query = iqb.parse(queryString);
 
-        List<Answer> limitedAnswers = limitQuery.execute();
-        List<Answer> answers = query.execute();
+        List<ConceptMap> limitedAnswers = limitQuery.execute();
+        List<ConceptMap> answers = query.execute();
         assertEquals(limitedAnswers.size(), 5);
         assertTrue(answers.size() > limitedAnswers.size());
         assertTrue(answers.containsAll(limitedAnswers));
@@ -531,8 +471,8 @@ public class ReasonerTest {
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; get;";
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
 
-        List<Answer> answers = query.execute();
-        assertEquals(answers.iterator().next().get("a").asAttribute().getValue().toString(), "19");
+        List<ConceptMap> answers = query.execute();
+        assertEquals(answers.iterator().next().get("a").asAttribute().value().toString(), "19");
     }
 
     @Test
@@ -541,14 +481,14 @@ public class ReasonerTest {
         GetQuery query = nonMaterialisedSnbKB.tx().graql().infer(true).parse(queryString);
 
         final int offset = 4;
-        List<Answer> fullAnswers = query.execute();
-        List<Answer> answers = query.match().orderBy(Graql.var("a")).get().execute();
-        List<Answer> answers2 = query.match().orderBy(Graql.var("a")).offset(offset).get().execute();
+        List<ConceptMap> fullAnswers = query.execute();
+        List<ConceptMap> answers = query.match().orderBy(Graql.var("a")).get().execute();
+        List<ConceptMap> answers2 = query.match().orderBy(Graql.var("a")).offset(offset).get().execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);
-        assertEquals(answers.iterator().next().get("a").asAttribute().getValue().toString(), "19");
-        assertEquals(answers2.iterator().next().get("a").asAttribute().getValue().toString(), "23");
+        assertEquals(answers.iterator().next().get("a").asAttribute().value().toString(), "19");
+        assertEquals(answers2.iterator().next().get("a").asAttribute().value().toString(), "23");
     }
 
     @Test
@@ -556,13 +496,13 @@ public class ReasonerTest {
         //recommendations of products for people older than Denis - Frank, Karl and Gary
         String queryString = "match " +
                 "$b has name 'Denis', has age $x;" +
-                "$p has name $name, has age $y; $y val > $x;"+
+                "$p has name $name, has age $y; $y > $x;"+
                 "$pr isa product;($p, $pr) isa recommendation;" +
                 "get $p, $y, $pr, $name;";
         String explicitQuery = "match $p isa person, has age $y, has name $name;$pr isa product, has name $yName;" +
-                "{$name val 'Frank';$yName val 'Nocturnes';} or" +
-                "{$name val 'Karl Fischer';{$yName val 'Faust';} or {$yName val 'Nocturnes';};} or " +
-                "{$name val 'Gary';$yName val 'The Wall';};get $p, $pr, $y, $name;";
+                "{$name == 'Frank';$yName == 'Nocturnes';} or" +
+                "{$name == 'Karl Fischer';{$yName == 'Faust';} or {$yName == 'Nocturnes';};} or " +
+                "{$name == 'Gary';$yName == 'The Wall';};get $p, $pr, $y, $name;";
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
         GetQuery query2 = snbKB.tx().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -571,14 +511,14 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingResourceComparison2(){
         String queryString = "match " +
-                "$p has name $name, has age $x;$x val < $y;" +
+                "$p has name $name, has age $x;$x < $y;" +
                 "$p2 has name 'Denis', has age $y;" +
                 "$t isa tag;($p, $t) isa recommendation; get $p, $name, $x, $t;";
         String explicitQuery = "match " +
                 "$p isa person, has age $x, has name $name;$t isa tag, has name $yName;" +
-                "{$name val 'Charlie';" +
-                "{$yName val 'Yngwie Malmsteen';} or {$yName val 'Cacophony';} or" +
-                "{$yName val 'Steve Vai';} or {$yName val 'Black Sabbath';};};get $p, $name, $x, $t;";
+                "{$name == 'Charlie';" +
+                "{$yName == 'Yngwie Malmsteen';} or {$yName == 'Cacophony';} or" +
+                "{$yName == 'Steve Vai';} or {$yName == 'Black Sabbath';};};get $p, $name, $x, $t;";
         GetQuery query = snbKB.tx().graql().infer(true).parse(queryString);
         GetQuery query2 = snbKB.tx().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -592,8 +532,8 @@ public class ReasonerTest {
         QueryBuilder iqb = graph.graql().infer(true);
         GetQuery query = iqb.parse(queryString);
         GetQuery query2 = iqb.parse(queryString2);
-        List<Answer> answers = query.execute();
-        List<Answer> answers2 = query2.execute();
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
         assertTrue(answers2.containsAll(answers));
         assertEquals(2*answers.size(), answers2.size());
     }
@@ -614,19 +554,28 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation_requeryingDoesntCreateDuplicates(){
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x isa is-located-in; get;";
         String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; get $x;";
         String queryString3 = "match $x ($x1, $x2) isa is-located-in; get $x;";
-        GetQuery query = geoKB.tx().graql().infer(true).parse(queryString);
-        GetQuery query2 = geoKB2.tx().graql().infer(true).parse(queryString2);
-        GetQuery query3 = geoKB3.tx().graql().infer(true).parse(queryString3);
+        GetQuery query = iqb.parse(queryString);
+        GetQuery query2 = iqb.parse(queryString2);
+        GetQuery query3 = iqb.parse(queryString3);
 
-        assertQueriesEqual(query, query2);
-        assertQueriesEqual(query2, query3);
+        List<ConceptMap> answers = query.execute();
+        List<ConceptMap> answers2 = query2.execute();
+        List<ConceptMap> answers3 = query3.execute();
 
-        List<Answer> requeriedAnswers = query.execute();
-        List<Answer> requeriedAnswers2 = query2.execute();
-        List<Answer> requeriedAnswers3 = query3.execute();
+        assertCollectionsEqual(answers, answers2);
+        assertCollectionsEqual(answers2, answers3);
+
+        List<ConceptMap> requeriedAnswers = query.execute();
+        List<ConceptMap> requeriedAnswers2 = query2.execute();
+        List<ConceptMap> requeriedAnswers3 = query3.execute();
+
+        assertCollectionsEqual(answers, requeriedAnswers);
+        assertCollectionsEqual(answers2, requeriedAnswers2);
+        assertCollectionsEqual(answers3, requeriedAnswers3);
 
         assertCollectionsEqual(requeriedAnswers, requeriedAnswers2);
         assertCollectionsEqual(requeriedAnswers2, requeriedAnswers3);
@@ -657,9 +606,9 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingMultiPredResource(){
-        String queryString = "match $p isa person, has age $a;$a val >23; $a val <27;$pr isa product;" +
+        String queryString = "match $p isa person, has age $a;$a > 23; $a < 27;$pr isa product;" +
                 "($p, $pr) isa recommendation; get $p, $pr;";
-        String queryString2 = "match $p isa person, has age >23, has age <27;$pr isa product;" +
+        String queryString2 = "match $p isa person, has age > 23, has age < 27;$pr isa product;" +
                 "($p, $pr) isa recommendation; get;";
         QueryBuilder iqb = snbKB.tx().graql().infer(true);
         GetQuery query = iqb.parse(queryString);
