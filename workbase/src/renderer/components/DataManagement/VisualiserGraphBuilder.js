@@ -169,32 +169,32 @@ async function relationshipsRolePlayers(relationships, limitRolePlayers, limit) 
   };
 }
 
+
 async function loadAttributeEdges(attributes, entityIds) {
   return Promise.all(attributes.map(async (attr) => {
     const owners = await (await attr.owners()).collect();
     const ownersInMap = owners.filter(owner => entityIds.includes(owner.id));
-    return ownersInMap.map((owner) => {
-      owner.attrOffset += 1;
-      attr.offset += 1;
-      return ({ from: owner.id, to: attr.id, label: 'has' });
-    });
+    return ownersInMap.map(owner => ({ from: owner.id, to: attr.id, label: 'has' }),
+    );
   }));
 }
 
 async function constructEdges(result) {
   const conceptMaps = result.map(x => Array.from(x.map().values()));
 
+  // Edges are a combination or relationship edges and attribute edge
   const edges = await Promise.all(conceptMaps.map(async (map) => {
     const entityIds = map.filter(x => x.isEntity()).map(x => x.id);
 
     const attributes = map.filter(x => x.isAttribute());
     const relationships = map.filter(x => x.isRelationship());
-
+    // Compute edges that connect things to their attributes
     const attributeEdges = await loadAttributeEdges(attributes, entityIds);
 
     const roleplayers = await relationshipsRolePlayers(relationships, false);
+    // Compute edges from thing to their relationship neighbours
     const relationshipEdges = roleplayers.edges.filter(edge => entityIds.includes(edge.to));
-
+    // Combine attribute and relationship edges
     return attributeEdges.concat(relationshipEdges).flatMap(x => x);
   }));
   return edges.flatMap(x => x);
