@@ -294,8 +294,14 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-      - build
-      - workbase-unit-tests
+      - build:
+          filters:
+            tags:
+              ignore: /.*/
+      - workbase-unit-tests:
+          filters:
+            tags:
+              ignore: /.*/
       - unit-it-test-1:
           requires:
             - build
