@@ -1,19 +1,16 @@
 <template>
   <transition name="fade" appear> 
-    <div class="visulaiser-wrapper"> 
-      <top-bar></top-bar>
-      <div class="center">
+    <div class="visulaiser-wrapper test"> 
+      <top-bar :localStore="localStore"></top-bar>
+      <div class="lower">     
         <left-bar></left-bar>
-        <div class="bottom">
+        <div class="center">
+          <graph-canvas :localStore="localStore"></graph-canvas>
           <bottom-bar></bottom-bar>
         </div>
         <right-bar></right-bar>
       </div>
     </div>
-
-
-
-
 
     <!-- <div class="design-wrapper"> 
         <commands-modal></commands-modal> 
@@ -45,20 +42,22 @@
   width: 100%;
   height: 100%;
   position: absolute;
+  /* background-color: var(--dark-color); */
 }
 
-.center {
+.lower {
   display: flex;
   flex: 1;
   flex-direction: row;
   position: relative;
 }
 
-.bottom {
+.center {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   width: 100%;
+  position: relative;
 }
 
 

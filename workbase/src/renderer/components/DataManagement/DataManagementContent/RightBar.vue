@@ -6,7 +6,8 @@
 
 <style scoped>
 .right-bar-wrapper {
-  width: 150px;
+  max-width: 150px;
+  min-width: 150px;
   height: 100%;
   background-color: #1A1A1A;
   position: relative;

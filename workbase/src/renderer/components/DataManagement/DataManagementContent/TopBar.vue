@@ -12,15 +12,35 @@
         v-on:toggle-tool-tip="toggleToolTip" 
         ref="savedQueries">
       </fav-queries-list>
+      <types-panel 
+        :localStore="localStore" 
+        :currentKeyspace="currentKeyspace" 
+        :toolTipShown="toolTipShown" 
+        v-on:type-selected="typeSelected" 
+        v-on:meta-type-selected="metaTypeSelected"
+        v-on:toggle-tool-tip="toggleToolTip"> 
+      </types-panel>
+      <graql-editor 
+        :localStore="localStore" 
+        v-on:refresh-fav-queries="refreshFavQueries" 
+        :toolTipShown="toolTipShown" 
+        v-on:toggle-tool-tip="toggleToolTip" 
+        ref="graqlEditor">
+      </graql-editor>
+      <query-settings class="query-settings" 
+        :currentKeyspace="currentKeyspace" 
+        :toolTipShown="toolTipShown" 
+        v-on:toggle-tool-tip="toggleToolTip">
+      </query-settings>
     </div>
     <div class="right">
+      <keyspaces-handler 
+        :localStore="localStore" 
+        :toolTipShown="toolTipShown" 
+        v-on:toggle-tool-tip="toggleToolTip">
+      </keyspaces-handler>
     </div>
   </div>
-
-
-
-
-
 
   <!-- <transition name="slide-down" appear>
     <nav role="navigation" class="navbar-fixed noselect">
@@ -76,18 +96,19 @@
   background-color: #1A1A1A;
   position: relative;
   flex-direction: row;
-  /* padding: 10px; */
+  display: flex;
+  justify-content: space-between;
   border-bottom: 1px solid white;
 }
 
 .left {
-  width: 210px;
+  width: 220px;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-right: 1px solid white;
-  position: relative;
+  padding: 5px;
 }
 
 .grakn-icon {
@@ -96,15 +117,18 @@
 
 .center {
   height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
 .right {
-  width: 210px;
+  width: 220px;
   height: 100%;
   display: flex;
-  justify-content: flex-end;
   border-left: 1px solid white;
-  position: relative;
+  padding: 5px;
+  justify-content: flex-end;
 }
 
 

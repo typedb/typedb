@@ -1,59 +1,34 @@
 <template>
 <div class="keyspaces-wrapper">
-     <div class="dropdown">
-         <div class="wrap-button" @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}">
-            <div id="keyspaces" class="selector-button">{{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}</div>
-            <caret-icon :toggleNorth="toolTipShown === 'keyspaces'"></caret-icon>
-        </div>
-         <transition name="slide-fade">
-            <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-show="toolTipShown === 'keyspaces'">
-                <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
-                <li :id="ks" class="ks-key" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
-            </ul>
-        </transition>  
-    </div> 
+    <div class="list-keyspaces-btn" @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}">
+        <h1 id="keyspaces" class="current-keyspace" >{{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}</h1>    
+        <caret-icon :toggleNorth="toolTipShown === 'keyspaces'"></caret-icon>
+    </div>
+    <transition name="slide-down-fade">
+        <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-show="toolTipShown === 'keyspaces'">
+            <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
+            <li :id="ks" class="ks-key" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
+        </ul>
+    </transition>
 </div>
 </template>
 
 <style scoped>
-
-.keyspaces-wrapper{
-    padding: 5px;
+.list-keyspaces-btn {
     display: flex;
-}
-
-.slide-fade-enter-active {
-    transition: all .6s ease;
-}
-.slide-fade-leave-active {
-    transition: all .3s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-}
-.slide-fade-enter,
-.slide-fade-leave-active {
-    transform: translateY(-10px);
-    opacity: 0;
-}
-
-.wrap-button{
-    cursor: pointer;
-    display: inline-flex;
-    height: 37px;
-    align-items: center;
+    flex-direction: row;
     border: 2px solid rgb(58, 58, 58);
     border-radius: 6%;
-    padding: 5%;
-}
-
-.keyspaces-wrapper{
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
     padding: 5px;
-    display: flex;
-    position: absolute;
 }
 
-.selector-button {
-    color: #00eca2;
-    font-size: 100%;
+.current-keyspace {
     margin-right: 10px;
+    color: #00eca2;
+    
 }
 
 li {

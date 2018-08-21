@@ -1,5 +1,23 @@
 @charset "UTF-8";
 @import url("fonts.css");
+
+
+:root {
+  --border-color: black;
+  --dark-color: rgb(43, 43, 43);
+  --medium-color: #404040;
+  --light-color: #4d4d4d;
+
+  --container-padding: 5px;
+}
+
+
+
+
+
+
+
+
 /*Reset CSS*/
 html, body, div, span, applet, object, iframe,
 h1, h2, h3, h4, h5, h6, p, blockquote, pre,
@@ -94,7 +112,7 @@ html {
 .btn, .btn-large {
   color: #fff;
   cursor: pointer;
-  background-color: #323232;
+  background-color: var(--color-1);
   margin: 3px;
   height: 40px;
   display: flex;
@@ -204,21 +222,34 @@ input, textarea {
 .justify-center {
   justify-content: center; }
 
-  .notify-error {
-    background-color: #e75252 !important;
-    padding: 10px !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-  }
+.notify-error {
+  background-color: #e75252 !important;
+  padding: 10px !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+}
 
 
 
 /* Transitions */
+
 
 .fade-enter-active {
   transition: all .8s ease;
 }
 .fade-enter,
 .fade-leave-active {
+  opacity: 0;
+}
+
+.slide-down-fade-enter-active {
+  transition: all .6s ease;
+}
+.slide-down-fade-leave-active {
+  transition: all .3s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+.slide-down-fade-enter,
+.slide-down-fade-leave-active {
+  transform: translateY(-10px);
   opacity: 0;
 }

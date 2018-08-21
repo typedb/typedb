@@ -3,7 +3,7 @@
     <button @click="loadFavQueries" class="btn btn-default" :class="{'disabled':!currentKeyspace, 'btn-selected':toolTipShown === 'favourites'}" id="fav-queries-btn">
         <i v-bind:class="{ fas: toolTipShown === 'favourites' }" class="far fa-star"></i>
     </button>
-    <transition name="slide-fade">
+    <!-- <transition name="slide-fade">
         <div v-if="toolTipShown === 'favourites'" class="dropdown-content" id="fav-queries-list">
             <i @click="closeFavQueriesList" :style="'font-size:13px;'" class="fas fa-times cross"></i>
             <div class="panel-heading">
@@ -29,7 +29,7 @@
                 </div>
             </div>
         </div>
-    </transition>
+    </transition> -->
 </div>
 </template>
 

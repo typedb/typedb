@@ -37,7 +37,7 @@ span {
     flex-direction: column;
     flex: 1;
     border-radius: 3px;
-    position: absolute;
+    position: relative;
     width: 100%;
     top: -15px;
 }
