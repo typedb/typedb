@@ -27,7 +27,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>${basedir}/src</directory>
+            <directory>${project.parent.basedir}</directory>
             <includes>
                 <include>grakn</include>
             </includes>
@@ -37,7 +37,7 @@
         <!-- changelog license readme -->
 
         <fileSet>
-            <directory>${main.basedir}</directory>
+            <directory>${project.parent.basedir}</directory>
             <includes>
                 <include>LICENSE</include>
                 <include>README.md</include>

@@ -62,7 +62,30 @@ update_classpath_global_var
 
 GRAKN_CONFIG="conf/grakn.properties"
 
-java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.core.server.bootup.GraknBootup $@
+if [ -z "$1" ]; then
+    echo "Missing argument. Possible commands are:"
+    echo "grakn-core server [-h]"
+    echo "grakn-core console [-h]"
+elif [ "$1" = "console" ]; then
+    if [ -f ./services/lib/core.console-*.jar ]; then
+        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.core.console.Graql "$@"
+    else
+        echo "Grakn Core Console is not included in this Grakn distribution."
+        echo "You may want to install Grakn Core Console or Grakn Core (all)."
+    fi
+elif [ "$1" = "server" ]; then
+    if [ -f ./services/lib/core.server-*.jar ]; then
+        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.core.server.bootup.GraknBootup $@
+    else
+        echo "Grakn Core Server is not included in this Grakn distribution."
+        echo "You may want to install Grakn Core Server or Grakn Core (all)."
+    fi
+else
+    echo "Invalid argument: $1"
+    echo "Possible commands are: "
+    echo "grakn-core server [-h]"
+    echo "grakn-core console [-h]"
+fi
 
 exit_code=$?
 

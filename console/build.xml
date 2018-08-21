@@ -27,9 +27,9 @@
 
     <fileSets>
         <fileSet>
-            <directory>${basedir}/src</directory>
+            <directory>${project.parent.basedir}</directory>
             <includes>
-                <include>graql</include>
+                <include>grakn</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>
@@ -37,22 +37,12 @@
         <!-- changelog license readme -->
 
         <fileSet>
-            <directory>${main.basedir}</directory>
+            <directory>${project.parent.basedir}</directory>
             <includes>
                 <include>LICENSE</include>
                 <include>README.md</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
-        </fileSet>
-
-        <!-- grakn.properties -->
-
-        <fileSet>
-            <directory>${basedir}/conf</directory>
-            <includes>
-                <include>grakn.properties</include>
-            </includes>
-            <outputDirectory>conf</outputDirectory>
         </fileSet>
 
         <!-- and logback.xml (client configs) -->
