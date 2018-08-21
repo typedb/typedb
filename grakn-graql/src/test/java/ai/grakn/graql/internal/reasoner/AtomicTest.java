@@ -462,7 +462,7 @@ public class AtomicTest {
                 graph.getRole("role"), var("y"),
                 graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap((relation.getRoleVarMap())));
-        assertEquals(4, relation.getApplicableRules().count());
+        assertEquals(5, relation.getApplicableRules().count());
     }
 
     @Test
@@ -486,6 +486,68 @@ public class AtomicTest {
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
         relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
         assertEquals(2, relation.getApplicableRules().count());
+    }
+
+    @Test
+    public void testRuleApplicability_attributeBoundRelationPlayers(){
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
+
+        //attribute mismatch with the rule
+        String relationString = "{($x, $y) isa attributed-relation;$x has resource-string 'valueOne'; $y has resource-string 'someValue';}";
+
+        //attributes overlap with the ones from rule
+        String relationString2 = "{($x, $y) isa attributed-relation;$x has resource-string 'someValue'; $y has resource-string 'yetAnotherValue';}";
+
+        //attributes overlap with the ones from rule
+        String relationString3 = "{($x, $y) isa attributed-relation;$x has resource-string 'someValue'; $y has resource-string contains 'Value';}";
+
+        //generic relation with attributes not matching the rule ones
+        String relationString4 = "{($x, $y);$x has resource-string 'valueOne'; $y has resource-string 'valueTwo';}";
+
+        Atom relation = ReasonerQueries.create(conjunction(relationString, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation2 = ReasonerQueries.create(conjunction(relationString2, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation4 = ReasonerQueries.create(conjunction(relationString4, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Set<InferenceRule> rules = RuleUtils.getRules(graph).map(r -> new InferenceRule(r, graph)).collect(Collectors.toSet());
+
+        assertEquals(rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-long-rule"))).collect(Collectors.toSet()), relation.getApplicableRules().collect(toSet()));
+        assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()), relation2.getApplicableRules().collect(toSet()));
+        assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(toSet()), relation3.getApplicableRules().collect(toSet()));
+        assertEquals(RuleUtils.getRules(graph).count() - 1, relation4.getApplicableRules().count());
+    }
+
+    @Test
+    public void testRuleApplicability_nonSpecificattributeBoundRelationPlayers(){
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
+
+        //attributes satisfy the ones from rule
+        String relationString = "{($x, $y) isa attributed-relation;$x has resource-long 1334; $y has resource-long 1607;}";
+
+        //inequality attribute not satisfied
+        String relationString2 = "{" +
+                "($x, $y, $z) isa attributed-relation;" +
+                "$x has resource-long -1410;" +
+                "$y has resource-long 0;" +
+                "$z has resource-long 1667;" +
+                "}";
+
+        //attributes with inequalities than have overlap with rule ones
+        String relationString3 = "{" +
+                "($x, $y) isa attributed-relation;" +
+                "$x has resource-long > -1667;" +
+                "$y has resource-long > 20;" +
+                "$z has resource-long < 2000;" +
+                "}";
+
+        Atom relation = ReasonerQueries.create(conjunction(relationString, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation2 = ReasonerQueries.create(conjunction(relationString2, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+        Atom relation3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
+
+        Set<InferenceRule> rules = RuleUtils.getRules(graph).map(r -> new InferenceRule(r, graph)).collect(Collectors.toSet());
+
+        assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()), relation.getApplicableRules().collect(Collectors.toSet()));
+        assertEquals(rules.stream().filter(r -> r.getRule().label().equals(Label.of("attributed-relation-string-rule"))).collect(Collectors.toSet()), relation2.getApplicableRules().collect(Collectors.toSet()));
+        assertEquals(rules.stream().filter(r -> r.getRule().label().getValue().contains("attributed-relation")).collect(Collectors.toSet()), relation3.getApplicableRules().collect(Collectors.toSet()));
     }
 
     @Test
@@ -517,9 +579,9 @@ public class AtomicTest {
         Atom relation5 = ReasonerQueries.atomic(conjunction(relationString5, graph), graph).getAtom();
         Atom relation6 = ReasonerQueries.atomic(conjunction(relationString6, graph), graph).getAtom();
 
-        assertEquals(5, relation.getApplicableRules().count());
+        assertEquals(6, relation.getApplicableRules().count());
         assertThat(relation2.getApplicableRules().collect(toSet()), empty());
-        assertEquals(5, relation3.getApplicableRules().count());
+        assertEquals(6, relation3.getApplicableRules().count());
         assertEquals(3, relation4.getApplicableRules().count());
         assertThat(relation5.getApplicableRules().collect(toSet()), empty());
         assertEquals(4, relation6.getApplicableRules().count());
@@ -536,7 +598,7 @@ public class AtomicTest {
                 graph.getRole("role"), var("y"),
                 graph.getRole("role"), var("z"));
         assertEquals(roleMap, roleSetMap(relation.getRoleVarMap()));
-        assertEquals(4, relation.getApplicableRules().count());
+        assertEquals(5, relation.getApplicableRules().count());
     }
 
     @Test
@@ -548,7 +610,7 @@ public class AtomicTest {
         Atom resource = ReasonerQueries.create(conjunction(relationString, graph), graph).getAtoms(ResourceAtom.class).findFirst().orElse(null);
         Atom resource2 = ReasonerQueries.create(conjunction(relationString2, graph), graph).getAtoms(ResourceAtom.class).findFirst().orElse(null);
         Atom resource3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(ResourceAtom.class).findFirst().orElse(null);
-//        assertEquals(2, resource.getApplicableRules().count());
+        assertEquals(2, resource.getApplicableRules().count());
         assertEquals(2, resource2.getApplicableRules().count());
         assertEquals(3, resource3.getApplicableRules().count());
     }
@@ -664,7 +726,7 @@ public class AtomicTest {
         Atom relation2 = ReasonerQueries.atomic(conjunction(relationString2, graph), graph).getAtom();
         Atom relation3 = ReasonerQueries.create(conjunction(relationString3, graph), graph).getAtoms(RelationshipAtom.class).findFirst().orElse(null);
 
-        assertEquals(6, relation.getApplicableRules().count());
+        assertEquals(7, relation.getApplicableRules().count());
         assertEquals(RuleUtils.getRules(graph).filter(r -> r.thenTypes().allMatch(Concept::isRelationshipType)).count(), relation2.getApplicableRules().count());
 
         //TODO not filtered correctly

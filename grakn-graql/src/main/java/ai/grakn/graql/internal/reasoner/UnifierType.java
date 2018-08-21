@@ -90,15 +90,9 @@ public enum UnifierType implements UnifierComparison {
         @Override
         public boolean attributeCompatibility(Atomic parent, Atomic child, Var parentVar, Var childVar){
             Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
-            parent.getParentQuery().getAtoms(ResourceAtom.class)
-                    .filter(at -> at.getVarName().equals(parentVar))
-                    .filter(ResourceAtom::isSpecific)
-                    .forEach(r -> parentRes.put(r.getSchemaConcept(), r));
+            parent.getParentQuery().getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
             Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();
-            child.getParentQuery().getAtoms(ResourceAtom.class)
-                    .filter(at -> at.getVarName().equals(childVar))
-                    .filter(ResourceAtom::isSpecific)
-                    .forEach(r -> childRes.put(r.getSchemaConcept(), r));
+            child.getParentQuery().getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
             return childRes.values().stream()
                     .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
         }

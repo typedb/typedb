@@ -34,7 +34,8 @@ anotherRole sub role;
 
 noRoleEntity sub entity
     has name
-    has resource;
+    has resource-string
+    has resource-long;
 
 anotherNoRoleEntity sub entity
     has name;
@@ -96,7 +97,8 @@ attributed-relation sub relationship
     relates anotherRole;
 
 #Resources
-    resource sub attribute datatype string;
+    resource-string sub attribute datatype string;
+    resource-long sub attribute datatype long;
     name sub attribute datatype string;
     description sub attribute datatype string;
 
@@ -161,11 +163,21 @@ rule-5 sub rule
     	(someRole:$x, subRole:$y, anotherRole: $z) isa typed-relation;
     };
     
-rule-6 sub rule
+attributed-relation-string-rule sub rule
     when {
-    	$x isa singleRoleEntity has resource 'someValue';
-    	$y isa anotherTwoRoleEntity has resource 'someOtherValue';
-    	$z isa twoRoleEntity has resource 'yetAnotherValue';
+    	$x isa singleRoleEntity has resource-string 'someValue';
+    	$y isa anotherTwoRoleEntity has resource-string 'someOtherValue';
+    	$z isa twoRoleEntity has resource-string 'yetAnotherValue';
+    }
+    then {
+    	(someRole:$x, subRole:$y, anotherRole: $z) isa attributed-relation;
+    };
+
+attributed-relation-long-rule sub rule
+    when {
+    	$x isa singleRoleEntity has resource-long < -1337;
+    	$y isa anotherTwoRoleEntity has resource-long !== 0;
+    	$z isa twoRoleEntity has resource-long > 1606;
     }
     then {
     	(someRole:$x, subRole:$y, anotherRole: $z) isa attributed-relation;

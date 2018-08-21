@@ -201,7 +201,7 @@ public class OntologicalQueryTest {
     public void allInstancesOfTypesThatPlayGivenRole(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match $x isa $type; $type plays role1; get;";
+        String queryString = "match $x isa $type; $type plays someRole; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").execute();
@@ -215,7 +215,7 @@ public class OntologicalQueryTest {
     public void allInstancesOfRelationsThatRelateGivenRole(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match $x isa $type; $type relates role1; get;";
+        String queryString = "match $x isa $type; $type relates someRole; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
@@ -244,7 +244,7 @@ public class OntologicalQueryTest {
     public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match (role1: $x, role2: $y) isa reifiable-relation;$x isa $type; get;";
+        String queryString = "match (someRole: $x, subRole: $y) isa reifiable-relation;$x isa $type; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}
