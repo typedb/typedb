@@ -24,6 +24,7 @@ import brave.Tracer;
 import brave.propagation.Propagation.Setter;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContext.Injector;
+import brave.propagation.TraceContextOrSamplingFlags;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -35,6 +36,8 @@ import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 
 import java.util.function.Supplier;
+
+import static brave.internal.HexCodec.lowerHexToUnsignedLong;
 
 /**
  * Testing thread hopping using a hack here
@@ -59,11 +62,10 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
 
     private Supplier<TraceContext> getTraceContext;
 
-    public CustomTracingClientInterceptor(GrpcTracing grpcTracing, Supplier<TraceContext> supplier) {
+    public CustomTracingClientInterceptor(GrpcTracing grpcTracing) {
         tracer = grpcTracing.tracing.tracer();
         injector = grpcTracing.propagation.injector(SETTER);
         parser = grpcTracing.clientParser;
-        getTraceContext = supplier;
     }
 
     /**
@@ -77,97 +79,117 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
             final MethodDescriptor<ReqT, RespT> method, final CallOptions callOptions,
             final Channel next) {
 
-//        TraceContext traceContext = getTraceContext.get();
-//        System.out.println("TraceContext: ");
-//        System.out.println(traceContext);
-//
-//        Span span;
-//        if (traceContext == null) {
-//            span = tracer.nextSpan();
-//        } else {
-//            span = tracer.joinSpan(traceContext);
-//        }
+        // NOTE this is called *once* per transaction() or keyspace() etc.
+        // NOT per-message
+        // but the onMessage and sendMessage methods below ARE called
 
         Span span = tracer.nextSpan();
+        span.name("Client RPC call");
+        span.kind(Span.Kind.CLIENT);
+
         try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
             return new SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
 
+                private TraceContext stringsToContext(String traceIdHighStr,
+                                                      String traceIdLowStr,
+                                                      String spanIdStr,
+                                                      String parentIdStr) {
+                    long traceIdHigh = lowerHexToUnsignedLong(traceIdHighStr);
+                    long traceIdLow = lowerHexToUnsignedLong(traceIdLowStr);
+                    long spanId = lowerHexToUnsignedLong(spanIdStr);
+                    Long parentId;
+                    if (parentIdStr.length() == 0) {
+                        parentId = null;
+                    } else {
+                        parentId = lowerHexToUnsignedLong(parentIdStr);
+                    }
+                    return constructContext(traceIdHigh, traceIdLow, spanId, parentId);
+                }
 
                 // helper method to obtain span or make a new one
-                private Span getSpan() {
-                    TraceContext traceContext = getTraceContext.get();
-                    System.out.println("TraceContext: ");
-                    System.out.println(traceContext);
-
-                    Span span;
-                    if (traceContext == null) {
-                        span = tracer.nextSpan();
-                    } else {
-                        span = tracer.joinSpan(traceContext);
-                    }
-                    return span;
+                private TraceContext constructContext(long traceIdHigh,
+                                                      long traceIdLow,
+                                                      long spanId,
+                                                      Long parentId) {
+                    TraceContext.Builder builder = TraceContext.newBuilder()
+                                                        .traceIdHigh(traceIdHigh)
+                                                        .traceId(traceIdLow)
+                                                        .spanId(spanId)
+                                                        .parentId(parentId);
+                    TraceContext context = builder.build();
+                    return context;
                 }
+
+//                TODO integrate these
+//                TraceContextOrSamplingFlags traceContextOrSamplingFlags = TraceContextOrSamplingFlags.create(context);
+//                Span span = tracer.nextSpan(traceContextOrSamplingFlags);
+//                    return span;
 
                 @Override
                 public void start(Listener<RespT> responseListener, Metadata headers) {
-                    injector.inject(span.context(), headers);
-                    span.kind(Span.Kind.CLIENT).start();
-                    try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
-                        parser.onStart(method, callOptions, headers, span.customizer());
-                        super.start(new SimpleForwardingClientCallListener<RespT>(responseListener) {
-                            @Override public void onMessage(RespT message) {
-                                try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
-                                    parser.onMessageReceived(message, span.customizer());
-                                    delegate().onMessage(message);
-                                }
+                    super.start(new SimpleForwardingClientCallListener<RespT>(responseListener) {
+                        @Override public void onMessage(RespT message) {
+                            Span span;
+                            if (message instanceof SessionProto.Transaction.Res &&
+                                    ((SessionProto.Transaction.Res)message).
+                                            getMetadataOrDefault("traceIdHigh", "").
+                                            length() > 0) {
+                                SessionProto.Transaction.Res txRes = (SessionProto.Transaction.Res) message;
+                                String traceIdHigh = txRes.getMetadataOrThrow("traceIdHigh");
+                                String traceIdLow = txRes.getMetadataOrThrow("traceIdLow");
+                                String spanId = txRes.getMetadataOrThrow("spanId");
+                                String parentId = txRes.getMetadataOrDefault("parentId", "");
+
+                                TraceContext reconstructedContext = stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
+                                span = tracer.newChild(reconstructedContext).kind(Span.Kind.CLIENT);
+                            } else {
+                                System.out.println("Unimplemented message type in clientInterceptor.sendMessage");
+                                span = tracer.nextSpan().kind(Span.Kind.CLIENT);
                             }
 
-                            @Override public void onClose(Status status, Metadata trailers) {
-                                try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
-                                    super.onClose(status, trailers);
-                                    parser.onClose(status, trailers, span.customizer());
-                                } finally {
-                                    span.finish();
-                                }
-                            }
-                        }, headers);
-                    }
+                            // handle this asynchronously
+                            span.start();
+                            span.annotate("Client receive response");
+                            parser.onMessageReceived(message, span.customizer());
+                            delegate().onMessage(message);
+                            span.flush();
+                        }
+
+                        @Override public void onClose(Status status, Metadata trailers) {
+                            super.onClose(status, trailers);
+                            parser.onClose(status, trailers, span.customizer());
+                        }
+                    }, headers);
                 }
 
                 @Override public void sendMessage(ReqT message) {
-                    TraceContext.Builder traceContextBuilder = TraceContext.newBuilder();
                     // try casting it to grpc message types
-                    if (message instanceof SessionProto.Transaction.Req) {
+                    Span span;
+                    if (message instanceof SessionProto.Transaction.Req &&
+                            ((SessionProto.Transaction.Req)message).
+                                    getMetadataOrDefault("traceIdHigh", "").
+                                    length() > 0) {
                         SessionProto.Transaction.Req txReq = (SessionProto.Transaction.Req) message;
+                        String traceIdHigh = txReq.getMetadataOrThrow("traceIdHigh");
+                        String traceIdLow = txReq.getMetadataOrThrow("traceIdLow");
+                        String spanId = txReq.getMetadataOrThrow("spanId");
+                        String parentId = txReq.getMetadataOrDefault("parentId", "");
 
-//                        if (txReq.)
-//
-//                        String parentId = txReq.getParentId();
-//                        String traceId = txReq.getTraceId();
-
-
-
-
-//                    } else if (message instanceof KeyspaceProto.
+                        TraceContext reconstructedContext = stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
+                        span = tracer.newChild(reconstructedContext).kind(Span.Kind.CLIENT);
                     } else {
                         System.out.println("Unimplemented message type in clientInterceptor.sendMessage");
+                        span = tracer.nextSpan().kind(Span.Kind.CLIENT);
                     }
 
-//                    TraceContext.Builder traceContextBuilder = TraceContext.newBuilder();
-//                    traceContextBuilder.parentId()
-
-                    // build a new span context using message data
-//                    String parentId = (SessionProto.Transaction) message;
-
-                    try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
-                        super.sendMessage(message);
-                        parser.onMessageSent(message, span.customizer());
-                    }
+                    // handle this asynchronously
+                    span.start();
+                    span.annotate("Client send request");
+                    super.sendMessage(message);
+                    parser.onMessageSent(message, span.customizer());
+                    span.flush();
                 }
             };
-//        } catch (RuntimeException | Error e) {
-//            span.error(e).finish();
-//            throw e;
         }
     }
 }
