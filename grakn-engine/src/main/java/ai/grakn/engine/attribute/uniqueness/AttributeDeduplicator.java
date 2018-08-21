@@ -56,7 +56,7 @@ import static ai.grakn.engine.attribute.uniqueness.DeduplicationAlgorithm.dedupl
 public class AttributeDeduplicator {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicator.class);
     private static final int QUEUE_GET_BATCH_MAX = 1000;
-    private static final Path queuePathRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
+    private static final Path queueDataDirRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
 
     private EngineGraknTxFactory txFactory;
     private RocksDbQueue queue;
@@ -70,8 +70,8 @@ public class AttributeDeduplicator {
      */
     public AttributeDeduplicator(GraknConfig config, EngineGraknTxFactory txFactory) {
         Path dataDir = Paths.get(config.getProperty(GraknConfigKey.DATA_DIR));
-        Path queuePathAbsolute = dataDir.resolve(queuePathRelative);
-        this.queue = new RocksDbQueue(queuePathAbsolute);
+        Path queueDataDir = dataDir.resolve(queueDataDirRelative);
+        this.queue = new RocksDbQueue(queueDataDir);
         this.txFactory = txFactory;
     }
 
@@ -84,9 +84,9 @@ public class AttributeDeduplicator {
      * @param conceptId the concept id of the attribute
      */
     public void markForDeduplication(Keyspace keyspace, String value, ConceptId conceptId) {
-        final Attribute newAttribute = Attribute.create(keyspace, value, conceptId);
-        LOG.info("insert(" + newAttribute + ")");
-        queue.insert(newAttribute);
+        Attribute attribute = Attribute.create(keyspace, value, conceptId);
+        LOG.info("insert(" + attribute + ")");
+        queue.insert(attribute);
     }
 
     /**
@@ -100,9 +100,9 @@ public class AttributeDeduplicator {
             LOG.info("startDeduplicationDaemon() - attribute de-duplicator daemon started.");
             while (!stopDaemon) {
                 try {
-                    List<Attribute> newAttrs = queue.read(QUEUE_GET_BATCH_MAX);
-                    deduplicate(txFactory, newAttrs);
-                    queue.ack(newAttrs);
+                    List<Attribute> attributes = queue.read(QUEUE_GET_BATCH_MAX);
+                    deduplicate(txFactory, attributes);
+                    queue.ack(attributes);
                 }
                 catch (InterruptedException e) {
                     LOG.error("deduplicate() failed with an exception. ", e);
