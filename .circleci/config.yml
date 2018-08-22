@@ -258,7 +258,7 @@ jobs:
           - persist_to_workspace:
               root: ~/grakn
               paths:
-                - ./workbase/build/
+                - ./workbase/build/Grakn Workbase-0.0.1-SNAPSHOT-mac.zip
 
   publish-github-draft: #TO BE COMPLETED
     docker:
