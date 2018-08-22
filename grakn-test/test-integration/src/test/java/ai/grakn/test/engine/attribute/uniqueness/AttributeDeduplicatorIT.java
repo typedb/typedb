@@ -217,7 +217,6 @@ public class AttributeDeduplicatorIT {
         // the attribute value and the keyspace it belongs to
         Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
         String ownedAttributeValue = "owned-attribute-value";
-        KeyspaceIndexPair keyspaceIndexPairs = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
 
         // initialise keyspace & define the tx factory
         GraknConfig config = GraknConfig.create();
@@ -260,7 +259,14 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPairs)));
+        Set<KeyspaceIndexPair> keyspaceIndexPairs = new HashSet<>(
+                Arrays.asList(
+                        KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue),
+                        KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-owner-owner-value-1"),
+                        KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-owner-owner-value-2")
+                )
+        );
+        AttributeDeduplicator.deduplicate(txFactory, keyspaceIndexPairs);
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -274,8 +280,8 @@ public class AttributeDeduplicatorIT {
                 owner.add(conceptMap.get("owner").asAttribute().id().getValue());
             }
 
-            assertThat(owned, hasSize(2));
-            assertThat(owner, hasSize(1));
+            assertThat(owned, hasSize(1));
+            assertThat(owner, hasSize(2));
         }
     }
 
