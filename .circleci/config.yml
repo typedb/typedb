@@ -292,6 +292,7 @@ jobs:
           root: ~/grakn
           paths:
             - ./artifacts
+            - ./workbase
 
 workflows:
   version: 2
