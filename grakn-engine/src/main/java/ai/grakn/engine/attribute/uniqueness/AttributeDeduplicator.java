@@ -113,8 +113,8 @@ public class AttributeDeduplicator {
                     LOG.info("starting a new batch to process these new attributes: " + attributes);
 
                     // group the attributes into a set of unique (keyspace -> value) pair
-                    Set<KeyspaceValuePair> uniqueKeyValuePairs = attributes.stream()
-                            .map(attr -> KeyspaceValuePair.create(attr.keyspace(), attr.value()))
+                    Set<KeyspaceIndexPair> uniqueKeyValuePairs = attributes.stream()
+                            .map(attr -> KeyspaceIndexPair.create(attr.keyspace(), attr.value()))
                             .collect(Collectors.toSet());
 
                     // perform deduplicate for each (keyspace -> value)
@@ -144,13 +144,13 @@ public class AttributeDeduplicator {
      * Given an attributeValue, find the duplicates and merge them into a single unique attribute
      *
      * @param txFactory the factory object for accessing the database
-     * @param keyspaceValuePairs the set of attributes which are to be deduplicated duplicates
+     * @param keyspaceIndexPairs the set of attributes which are to be deduplicated duplicates
      */
-    public static void deduplicate(EngineGraknTxFactory txFactory, Set<KeyspaceValuePair> keyspaceValuePairs) {
-        for (KeyspaceValuePair keyspaceValuePair : keyspaceValuePairs) {
-            try (EmbeddedGraknTx tx = txFactory.tx(keyspaceValuePair.keyspace(), GraknTxType.WRITE)) {
+    public static void deduplicate(EngineGraknTxFactory txFactory, Set<KeyspaceIndexPair> keyspaceIndexPairs) {
+        for (KeyspaceIndexPair keyspaceIndexPair : keyspaceIndexPairs) {
+            try (EmbeddedGraknTx tx = txFactory.tx(keyspaceIndexPair.keyspace(), GraknTxType.WRITE)) {
                 GraphTraversalSource tinker = tx.getTinkerTraversal();
-                GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceValuePair.value());
+                GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.value());
                 Vertex mergeTargetV = duplicates.next();
                 while (duplicates.hasNext()) {
                     Vertex dup = duplicates.next();

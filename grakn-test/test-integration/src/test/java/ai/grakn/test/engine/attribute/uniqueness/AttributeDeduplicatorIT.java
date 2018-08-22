@@ -5,7 +5,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
-import ai.grakn.engine.attribute.uniqueness.KeyspaceValuePair;
+import ai.grakn.engine.attribute.uniqueness.KeyspaceIndexPair;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.graql.answer.ConceptMap;
@@ -18,6 +18,9 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 
@@ -29,11 +32,11 @@ public class AttributeDeduplicatorIT {
     public static EmbeddedCassandraContext cassandra = EmbeddedCassandraContext.create();
 
     @Test
-    public void shouldMergeAttributesCorrectly() {
+    public void shouldDeduplicateAttributesCorrectly() {
         // the attribute value and the keyspace it belongs to
-        Keyspace keyspace = Keyspace.of("grakn");
+        Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
         String ownedAttributeValue = "owned-attribute-value";
-        KeyspaceValuePair keyspaceValuePairs = KeyspaceValuePair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
+        KeyspaceIndexPair keyspaceIndexPairs = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
 
         // initialise keyspace & define the tx factory
         GraknConfig config = GraknConfig.create();
@@ -67,7 +70,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceValuePairs)));
+        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPairs)));
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
