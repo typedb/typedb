@@ -23,7 +23,7 @@
     "e2e": "npm run pack && ./node_modules/jest/bin/jest.js ./test/e2e --runInBand"
   },
   "build": {
-    "productName": "Grakn Workbase",
+    "productName": "GraknWorkbase",
     "appId": "ai.grakn.workbase",
     "directories": {
       "output": "build"
