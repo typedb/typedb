@@ -291,7 +291,7 @@ jobs:
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
           paths:
-            - .
+            - ./artifacts
 
 workflows:
   version: 2
