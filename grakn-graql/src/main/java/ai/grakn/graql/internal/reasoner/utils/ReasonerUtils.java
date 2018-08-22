@@ -122,14 +122,19 @@ public class ReasonerUtils {
         if(valueVar.var().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.var().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(v.var(), vp.predicate(), parent)))
+                    .flatMap(v -> v.getProperties(ValueProperty.class))
+                    .map(vp -> vp.mapToAtom(valueVar, vars, parent))
+                    .filter(at -> at instanceof ValuePredicate)
+                    .map( at -> (ValuePredicate) at)
                     .forEach(predicates::add);
         }
         //add value atom
         else {
             valueVar.getProperties(ValueProperty.class)
-                    .forEach(vp -> predicates
-                            .add(ValuePredicate.create(createValueVar(valueVariable, vp.predicate()), parent)));
+                    .map(vp -> vp.mapToAtom(valueVar, vars, parent))
+                    .filter(at -> at instanceof ValuePredicate)
+                    .map( at -> (ValuePredicate) at)
+                    .forEach(predicates::add);
         }
         return predicates;
     }

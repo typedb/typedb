@@ -46,6 +46,7 @@ import java.util.function.Function;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
+import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -544,6 +545,44 @@ public class ReasoningTest {
         assertEquals(4, answers2.size());
         assertEquals(answers.size(), requeriedAnswers.size());
         assertTrue(answers.containsAll(requeriedAnswers));
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void derivingResourceNotHavingSpecificValue() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        String queryString = "match " +
+                "$x has derived-resource-string $val !== 'unattached';" +
+                "get;";
+        String queryString3 = "match " +
+                "$x has derived-resource-string $val;" +
+                "$unwanted 'unattached';" +
+                "$val !== $unwanted; get;";
+        String queryString2 = "match $x has derived-resource-string $val; $val 'value'; get;";
+
+        qb.parse("match $x has attribute $val; $x != 'reattachable-resource-string';get;").execute();
+
+        GetQuery query = qb.parse(queryString);
+        GetQuery query2 = qb.parse(queryString2);
+        assertQueriesEqual(query, query2);
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void derivingResourceNotHavingSpecificValue2() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        String queryString = "match " +
+                "$x has derivable-resource-string $value;" +
+                "$x has derivable-resource-string $unwantedValue;" +
+                "$unwantedValue 'unattached';" +
+                "$value !== $unwantedValue;" +
+                "$value isa $type;" +
+                "$unwantedValue isa $type;" +
+                "$unwantedType label 'derivable-resource-string';" +
+                "$type != $unwantedType;" +
+                "get;";
+        GetQuery query = qb.parse(queryString);
+        List<ConceptMap> execute = query.execute();
+        System.out.println();
+
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.

@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqIdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
@@ -76,6 +77,6 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return NeqPredicate.create(var.var(), this, parent);
+        return NeqIdPredicate.create(var.var(), this, parent);
     }
 }

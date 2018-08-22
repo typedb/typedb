@@ -27,6 +27,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.predicate.NeqPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqValuePredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -92,6 +94,8 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
+        return predicate() instanceof NeqPredicate ?
+                NeqValuePredicate.create(var.var(), (NeqPredicate) predicate(), parent) :
+                ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
     }
 }
