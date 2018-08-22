@@ -13,6 +13,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -48,9 +49,7 @@ public class AttributeDeduplicatorIT {
         // define the schema
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
             tx.graql().define(
-                    label("owned-attribute").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("owner1").sub("attribute").datatype(AttributeType.DataType.STRING).has("owned-attribute"),
-                    label("owner2").sub("entity").has("owned-attribute")
+                    label("owned-attribute").sub("attribute").datatype(AttributeType.DataType.STRING)
             ).execute();
             tx.commit();
         }
@@ -97,17 +96,16 @@ public class AttributeDeduplicatorIT {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
             tx.graql().define(
                     label("owned-attribute").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("owner1").sub("attribute").datatype(AttributeType.DataType.STRING).has("owned-attribute"),
-                    label("owner2").sub("entity").has("owned-attribute")
+                    label("owner").sub("entity").has("owned-attribute")
             ).execute();
             tx.commit();
         }
 
         // insert some data
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
-            tx.graql().insert(var().isa("owner2").has("owned-attribute", ownedAttributeValue)).execute();
-            tx.graql().insert(var().isa("owner2").has("owned-attribute", ownedAttributeValue)).execute();
-            tx.graql().insert(var().isa("owner2").has("owned-attribute", ownedAttributeValue)).execute();
+            tx.graql().insert(var().isa("owner").has("owned-attribute", ownedAttributeValue)).execute();
+            tx.graql().insert(var().isa("owner").has("owned-attribute", ownedAttributeValue)).execute();
+            tx.graql().insert(var().isa("owner").has("owned-attribute", ownedAttributeValue)).execute();
             tx.commit();
         }
 
@@ -115,7 +113,7 @@ public class AttributeDeduplicatorIT {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("a").isa("owned-attribute").val(ownedAttributeValue),
-                    var("o").isa("owner2")).get().execute();
+                    var("o").isa("owner")).get().execute();
             Set<String> a = new HashSet<>();
             Set<String> o = new HashSet<>();
             for (ConceptMap conceptMap: conceptMaps) {
@@ -133,17 +131,17 @@ public class AttributeDeduplicatorIT {
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             List<ConceptMap> conceptMaps = tx.graql().match(
-                    var("a").isa("owned-attribute").val(ownedAttributeValue),
-                    var("o").isa("owner2")).get().execute();
-            Set<String> a = new HashSet<>();
-            Set<String> o = new HashSet<>();
+                    var("owned").isa("owned-attribute").val(ownedAttributeValue),
+                    var("owner").isa("owner")).get().execute();
+            Set<String> owned = new HashSet<>();
+            Set<String> owner = new HashSet<>();
             for (ConceptMap conceptMap: conceptMaps) {
-                a.add(conceptMap.get("a").asAttribute().id().getValue());
-                o.add(conceptMap.get("o").asEntity().id().getValue());
+                owned.add(conceptMap.get("owned").asAttribute().id().getValue());
+                owner.add(conceptMap.get("owner").asEntity().id().getValue());
             }
 
-            assertThat(a, hasSize(1));
-            assertThat(o, hasSize(3));
+            assertThat(owned, hasSize(1));
+            assertThat(owner, hasSize(3));
         }
     }
 
@@ -165,17 +163,16 @@ public class AttributeDeduplicatorIT {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
             tx.graql().define(
                     label("owned-attribute").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("owner1").sub("attribute").datatype(AttributeType.DataType.STRING).has("owned-attribute"),
-                    label("owner2").sub("entity").has("owned-attribute")
+                    label("owner").sub("attribute").datatype(AttributeType.DataType.STRING).has("owned-attribute")
             ).execute();
             tx.commit();
         }
 
         // insert some data
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
-            tx.graql().insert(var().isa("owner1").val("owner1-value-1").has("owned-attribute", ownedAttributeValue)).execute();
-            tx.graql().insert(var().isa("owner1").val("owner1-value-1").has("owned-attribute", ownedAttributeValue)).execute();
-            tx.graql().insert(var().isa("owner1").val("owner1-value-2").has("owned-attribute", ownedAttributeValue)).execute();
+            tx.graql().insert(var().isa("owner").val("owner-value-1").has("owned-attribute", ownedAttributeValue)).execute();
+            tx.graql().insert(var().isa("owner").val("owner-value-1").has("owned-attribute", ownedAttributeValue)).execute();
+            tx.graql().insert(var().isa("owner").val("owner-value-2").has("owned-attribute", ownedAttributeValue)).execute();
             tx.commit();
         }
 
@@ -183,7 +180,7 @@ public class AttributeDeduplicatorIT {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("owned").isa("owned-attribute").val(ownedAttributeValue),
-                    var("owner").isa("owner1")).get().execute();
+                    var("owner").isa("owner")).get().execute();
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             for (ConceptMap conceptMap: conceptMaps) {
@@ -202,7 +199,7 @@ public class AttributeDeduplicatorIT {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("owned").isa("owned-attribute").val(ownedAttributeValue),
-                    var("owner").isa("owner1")).get().execute();
+                    var("owner").isa("owner")).get().execute();
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
             for (ConceptMap conceptMap: conceptMaps) {
