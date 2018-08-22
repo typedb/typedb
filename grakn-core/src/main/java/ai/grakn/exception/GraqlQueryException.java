@@ -306,8 +306,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NON_EXISTENT_UNIFIER.getMessage());
     }
 
-    public static GraqlQueryException illegalAtomConversion(Atomic atom) {
-        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom));
+    public static GraqlQueryException illegalAtomConversion(Atomic atom, Class<?> targetType) {
+        return new GraqlQueryException(ErrorMessage.ILLEGAL_ATOM_CONVERSION.getMessage(atom, targetType));
     }
 
     public static GraqlQueryException valuePredicateAtomWithMultiplePredicates() {

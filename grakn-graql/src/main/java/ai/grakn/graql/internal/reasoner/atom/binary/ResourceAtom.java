@@ -61,7 +61,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import java.util.stream.Stream;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -109,7 +108,7 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public RelationshipAtom toRelationshipAtom(){
         SchemaConcept type = getSchemaConcept();
-        if (type == null) throw GraqlQueryException.illegalAtomConversion(this);
+        if (type == null) throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
         GraknTx tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
@@ -123,6 +122,9 @@ public abstract class ResourceAtom extends Binary{
                 getParentQuery()
         );
     }
+
+    @Override
+    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), getParentQuery()); }
 
     @Override
     public String toString(){
@@ -190,30 +192,31 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         //findbugs complains about cast without it
-        if(!(ruleAtom instanceof ResourceAtom)) return false;
+        if (!(ruleAtom instanceof ResourceAtom)) return false;
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
-        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) childAtom.getParentQuery();
+        return childAtom.isUnifiableWith(this);
+    }
 
-        //check type bindings compatiblity
-        Type parentType = this.getParentQuery().getVarTypeMap().get(this.getVarName());
-        Type childType = childQuery.getVarTypeMap().get(childAtom.getVarName());
+    @Override
+    public boolean isUnifiableWith(Atom atom) {
+        //findbugs complains about cast without it
+        if (!(atom instanceof ResourceAtom)) return false;
 
-        if (parentType != null && childType != null && areDisjointTypes(parentType, childType)
-                || !childQuery.isTypeRoleCompatible(ruleAtom.getVarName(), parentType)) return false;
+        ResourceAtom parent = (ResourceAtom) atom;
+        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) this.getParentQuery();
+
+        //check type bindings compatibility
+        Type childType = childQuery.getVarTypeMap().get(this.getVarName());
+        Type parentType = parent.getParentQuery().getVarTypeMap().get(parent.getVarName());
+
+        if (childType != null && parentType != null && areDisjointTypes(childType, parentType)
+                || !childQuery.isTypeRoleCompatible(this.getVarName(), parentType)) return false;
 
         //check value predicate compatibility
-        if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
-        for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
-            Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
-            boolean predicateCompatible = false;
-            while (parentIt.hasNext() && !predicateCompatible) {
-                ValuePredicate parentPredicate = parentIt.next();
-                predicateCompatible = parentPredicate.isCompatibleWith(childPredicate);
-            }
-            if (!predicateCompatible) return false;
-        }
-        return true;
+        return parent.getMultiPredicate().isEmpty()
+                || this.getMultiPredicate().isEmpty()
+                || this.getMultiPredicate().stream().allMatch(childPredicate -> parent.getMultiPredicate().stream().anyMatch(parentPredicate -> parentPredicate.isCompatibleWith(childPredicate)));
     }
 
     @Override
