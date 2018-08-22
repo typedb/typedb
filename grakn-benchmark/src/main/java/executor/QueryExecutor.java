@@ -142,8 +142,6 @@ public class QueryExecutor {
                     span.tag("repetition", Integer.toString(i));
                     span.start();
 
-                    client.currentSpanContext = span.context();
-
                     try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
                         query.execute();
                     } catch (RuntimeException | Error e) {

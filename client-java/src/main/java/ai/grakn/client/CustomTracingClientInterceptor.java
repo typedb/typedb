@@ -37,7 +37,8 @@ import io.grpc.Status;
 
 import java.util.function.Supplier;
 
-import static brave.internal.HexCodec.lowerHexToUnsignedLong;
+import static brave.internal.HexCodec.toLowerHex;
+import static zipkin2.internal.HexCodec.lowerHexToUnsignedLong;
 
 /**
  * Testing thread hopping using a hack here
@@ -83,17 +84,20 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
         // NOT per-message
         // but the onMessage and sendMessage methods below ARE called
 
-        Span span = tracer.nextSpan();
-        span.name("Client RPC call");
-        span.kind(Span.Kind.CLIENT);
+//        Span span = tracer.nextSpan();
+//        span.name("Client RPC call");
+//        span.kind(Span.Kind.CLIENT);
 
-        try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
+//        try (Tracer.SpanInScope ws = tracer.withSpanInScope(span)) {
             return new SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
 
                 private TraceContext stringsToContext(String traceIdHighStr,
                                                       String traceIdLowStr,
                                                       String spanIdStr,
                                                       String parentIdStr) {
+
+                    // traceIdHigh may be '00...00' but lowerHexToUnsignedLong doesn't like this
+                    // use zipkin's conversion rather than brave's because brave's doesn't like zeros
                     long traceIdHigh = lowerHexToUnsignedLong(traceIdHighStr);
                     long traceIdLow = lowerHexToUnsignedLong(traceIdLowStr);
                     long spanId = lowerHexToUnsignedLong(spanIdStr);
@@ -115,7 +119,8 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
                                                         .traceIdHigh(traceIdHigh)
                                                         .traceId(traceIdLow)
                                                         .spanId(spanId)
-                                                        .parentId(parentId);
+                                                        .parentId(parentId)
+                                                        .sampled(true); // this MUST be set to be able to join
                     TraceContext context = builder.build();
                     return context;
                 }
@@ -132,7 +137,7 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
                             Span span;
                             if (message instanceof SessionProto.Transaction.Res &&
                                     ((SessionProto.Transaction.Res)message).
-                                            getMetadataOrDefault("traceIdHigh", "").
+                                            getMetadataOrDefault("traceIdLow", "").
                                             length() > 0) {
                                 SessionProto.Transaction.Res txRes = (SessionProto.Transaction.Res) message;
                                 String traceIdHigh = txRes.getMetadataOrThrow("traceIdHigh");
@@ -141,23 +146,24 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
                                 String parentId = txRes.getMetadataOrDefault("parentId", "");
 
                                 TraceContext reconstructedContext = stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
-                                span = tracer.newChild(reconstructedContext).kind(Span.Kind.CLIENT);
+//                                span = tracer.newChild(reconstructedContext);
+                                span = tracer.joinSpan(reconstructedContext);
+                                // handle this asynchronously
+//                                span.start();
+                                span.annotate("Client receive response");
+                                span.tag("receiveMessage", message.toString());
+                                parser.onMessageReceived(message, span.customizer());
+//                                span.flush();
+                                span.finish();
                             } else {
-                                System.out.println("Unimplemented message type in clientInterceptor.sendMessage");
-                                span = tracer.nextSpan().kind(Span.Kind.CLIENT);
+                                System.out.println("Ignoring Response type in clientInterceptor.onMessage: " + message.getClass());
                             }
 
-                            // handle this asynchronously
-                            span.start();
-                            span.annotate("Client receive response");
-                            parser.onMessageReceived(message, span.customizer());
                             delegate().onMessage(message);
-                            span.flush();
                         }
 
                         @Override public void onClose(Status status, Metadata trailers) {
                             super.onClose(status, trailers);
-                            parser.onClose(status, trailers, span.customizer());
                         }
                     }, headers);
                 }
@@ -167,7 +173,7 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
                     Span span;
                     if (message instanceof SessionProto.Transaction.Req &&
                             ((SessionProto.Transaction.Req)message).
-                                    getMetadataOrDefault("traceIdHigh", "").
+                                    getMetadataOrDefault("traceIdLow", "").
                                     length() > 0) {
                         SessionProto.Transaction.Req txReq = (SessionProto.Transaction.Req) message;
                         String traceIdHigh = txReq.getMetadataOrThrow("traceIdHigh");
@@ -176,21 +182,39 @@ public class CustomTracingClientInterceptor implements ClientInterceptor {
                         String parentId = txReq.getMetadataOrDefault("parentId", "");
 
                         TraceContext reconstructedContext = stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
-                        span = tracer.newChild(reconstructedContext).kind(Span.Kind.CLIENT);
-                    } else {
-                        System.out.println("Unimplemented message type in clientInterceptor.sendMessage");
-                        span = tracer.nextSpan().kind(Span.Kind.CLIENT);
-                    }
+//                        span = tracer.joinSpan(reconstructedContext);  // join the client-side span that is active on another thread
+                        span = tracer.newChild(reconstructedContext);
+                        span.start();
+                        span.annotate("Client send request");
+                        span.tag("sendMessage", message.toString());
+                        parser.onMessageSent(message, span.customizer());
+//                        span.flush();
 
-                    // handle this asynchronously
-                    span.start();
-                    span.annotate("Client send request");
+                        // --- re-pack the message with the child's data ---
+                        SessionProto.Transaction.Req.Builder builder = txReq.toBuilder();
+                        TraceContext childContext = span.context();
+
+                        // span ID
+                        String spanIdStr = toLowerHex(childContext.spanId());
+                        builder.putMetadata("spanId", spanIdStr);
+
+                        // parent ID
+                        Long newParentId = childContext.parentId();
+                        if (newParentId == null) {
+                            builder.putMetadata("parentId", "");
+                        } else {
+                            builder.putMetadata("parentId", toLowerHex(newParentId));
+                        }
+
+                        // Trace ID remains the same
+                        message = (ReqT) builder.build(); // update the request
+                    } else {
+                        System.out.println("Ignoring unimplemented type in clientInterceptor.sendMessage: " + message.getClass());
+                    }
                     super.sendMessage(message);
-                    parser.onMessageSent(message, span.customizer());
-                    span.flush();
                 }
             };
-        }
+//        }
     }
 }
 

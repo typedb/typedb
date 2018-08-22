@@ -42,7 +42,6 @@ import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.rpc.OpenRequest;
 import brave.Tracing;
-import io.grpc.ServerInterceptors;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.urlconnection.URLConnectionSender;
 import brave.grpc.GrpcTracing;
@@ -145,16 +144,16 @@ public class ServerFactory {
                 .spanReporter(reporter)
                 .build();
 
-        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
+//        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-                .addService(ServerInterceptors.intercept(
-                        new SessionService(requestOpener, postProcessor), grpcTracing.newServerInterceptor()))
-                .addService(ServerInterceptors.intercept(
-                        new KeyspaceService(keyspaceStore), grpcTracing.newServerInterceptor()))
+//                .addService(ServerInterceptors.intercept(
+//                        new SessionService(requestOpener, postProcessor), grpcTracing.newServerInterceptor()))
+//                .addService(ServerInterceptors.intercept(
+//                        new KeyspaceService(keyspaceStore), grpcTracing.newServerInterceptor()))
 //                  .intercept(grpcTracing.newServerInterceptor())
-//                .addService(new SessionService(requestOpener, postProcessor))
-//                .addService(new KeyspaceService(keyspaceStore))
+                .addService(new SessionService(requestOpener, postProcessor))
+                .addService(new KeyspaceService(keyspaceStore))
                 .build();
 
         return ServerRPC.create(grpcServer);

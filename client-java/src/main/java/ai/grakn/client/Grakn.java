@@ -105,20 +105,19 @@ public final class Grakn {
                 .supportsJoin(true)
                 .build();
 
-        GrpcTracing grpcTracing = GrpcTracing.create(tracing).toBuilder()
-                .clientParser(new GrpcClientParser() {
-                    @Override protected <M> void onMessageSent(M message, SpanCustomizer span) {
-                        span.tag("grpc.message_sent", message.toString());
-                    }
-                })
-                .build();
+        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
+//                .toBuilder()
+//                .clientParser(new GrpcClientParser() {
+//                    @Override protected <M> void onMessageSent(M message, SpanCustomizer span) {
+//                        span.tag("grpc.message_sent", message.toString());
+//                    }
+//                })
+//                .build();
 
         channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
 //                .intercept(grpcTracing.newClientInterceptor())
                 .intercept(new CustomTracingClientInterceptor(grpcTracing))
                 .usePlaintext(true).build();
-        keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
-        keyspace = new Keyspace();
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();
 
