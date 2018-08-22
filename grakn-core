@@ -69,8 +69,8 @@ exit_if_java_not_found
 
 if [ -z "$1" ]; then
     echo "Missing argument. Possible commands are:"
-    echo "~$ grakn-core server [-h]"
-    echo "~$ grakn-core console [-h]"
+    echo "  Server:          grakn-core server [--help]"
+    echo "  Console:         grakn-core console [--help]"
 elif [ "$1" = "console" ]; then
     if [ -f ./services/lib/core.console-*.jar ]; then
         update_classpath_for_lib
@@ -90,8 +90,8 @@ elif [ "$1" = "server" ]; then
     fi
 else
     echo "Invalid argument: $1. Possible commands are: "
-    echo "~$ grakn-core server [-h]"
-    echo "~$ grakn-core console [-h]"
+    echo "  Server:          grakn-core server [--help]"
+    echo "  Console:         grakn-core console [--help]"
 fi
 
 exit_code=$?

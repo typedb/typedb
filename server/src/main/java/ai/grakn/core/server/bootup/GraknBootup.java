@@ -194,7 +194,7 @@ public class GraknBootup {
     }
 
     private void serverHelp() {
-        System.out.println("Usage: grakn server COMMAND\n" +
+        System.out.println("Usage: grakn-core server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "start ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]  Start Grakn (or optionally, only one of the component)\n" +
@@ -204,7 +204,7 @@ public class GraknBootup {
                 "\n" +
                 "Tips:\n" +
                 "- Start Grakn with 'grakn server start'\n" +
-                "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
+                "- Start or stop only one component with, e.g. 'grakn-core server start storage' or 'grakn-core server stop storage', respectively\n");
     }
 
     private void serverStatus(String verboseFlag) {
@@ -225,7 +225,7 @@ public class GraknBootup {
     }
 
     private void help() {
-        System.out.println("Usage: grakn COMMAND\n" +
+        System.out.println("Usage: grakn-core COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "server     Manage Grakn components\n" +
@@ -234,7 +234,7 @@ public class GraknBootup {
                 "\n" +
                 "Tips:\n" +
                 "- Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)\n" +
-                "- You can then perform queries by opening a console with 'graql console'");
+                "- You can then perform queries by opening a console with 'grakn-core console'");
     }
 
     private void clean() {
