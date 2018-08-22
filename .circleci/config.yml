@@ -236,6 +236,7 @@ jobs:
         - image: circleci/node:8.11.2
       working_directory: ~/grakn
       steps:
+        - *attach_grakn_workspace
         - run: cd workbase && npm install
         - run: cd workbase && npm run build
         - run: mv ./workbase/build/grakn-workbase-0.0.1-SNAPSHOT.tar.gz ~/grakn/artifacts
@@ -255,7 +256,7 @@ jobs:
           - run: cd workbase && npm install
 #          - run: cd workbase && npm run e2e
           - run: cd workbase && npm run build
-          - run: mv ./workbase/build/Grakn Workbase-0.0.1-SNAPSHOT-mac.zip ~/grakn/artifacts
+          - run: mv ./workbase/build/Grakn\ Workbase-0.0.1-SNAPSHOT.dmg ~/grakn/artifacts
           - persist_to_workspace:
               root: ~/grakn
               paths:
