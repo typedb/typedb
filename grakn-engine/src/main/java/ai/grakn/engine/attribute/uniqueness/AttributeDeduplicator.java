@@ -163,16 +163,8 @@ public class AttributeDeduplicator {
                             GraphTraversal<Vertex, Edge> attributeEdge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent));
                             if (attributeEdge.hasNext()) {
                                 Edge edge = attributeEdge.next();
-
-                                // copy the properties
-                                ArrayList<Property<Object>> propertiesAsKeyValue = Lists.newArrayList(edge.properties());
-                                ArrayList<Object> propertiesAsObj = new ArrayList<>();
-                                for (Property<Object> property: propertiesAsKeyValue) {
-                                    propertiesAsObj.add(property.key());
-                                    propertiesAsObj.add(property.value());
-                                }
-
-                                ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV, propertiesAsObj.toArray());
+                                Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
+                                ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV, properties);
                                 edge.remove();
                             }
 
@@ -180,16 +172,8 @@ public class AttributeDeduplicator {
                             if (rolePlayerEdge.hasNext()) {
                                 Edge edge = rolePlayerEdge.next();
                                 Vertex relationshipVertex = edge.outVertex();
-
-                                // copy the properties
-                                ArrayList<Property<Object>> propertiesAsKeyValue = Lists.newArrayList(edge.properties());
-                                ArrayList<Object> propertiesAsObj = new ArrayList<>();
-                                for (Property<Object> property: propertiesAsKeyValue) {
-                                    propertiesAsObj.add(property.key());
-                                    propertiesAsObj.add(property.value());
-                                }
-
-                                relationshipVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mergeTargetV, propertiesAsObj.toArray());
+                                Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
+                                relationshipVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mergeTargetV, properties);
                                 edge.remove();
                             }
                         });
@@ -213,5 +197,13 @@ public class AttributeDeduplicator {
         stopDaemon = true;
     }
 
+    private static Object[] propertiesToArray(ArrayList<Property<Object>> propertiesAsKeyValue) {
+        ArrayList<Object> propertiesAsObj = new ArrayList<>();
+        for (Property<Object> property: propertiesAsKeyValue) {
+            propertiesAsObj.add(property.key());
+            propertiesAsObj.add(property.value());
+        }
+        return propertiesAsObj.toArray();
+    }
 }
 
