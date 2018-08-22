@@ -2,7 +2,7 @@ import Style from './Style';
 import NodeSettings from './DataManagementContent/NodeSettingsPanel/NodeSettings';
 import QuerySettings from './DataManagementContent/MenuBar/QuerySettings/QuerySettings';
 
-
+// Map graql variables and explanations to each concept
 async function attachExplanation(result) {
   return result.map((x) => {
     const exp = x.explanation();
@@ -16,7 +16,7 @@ async function attachExplanation(result) {
   }).flatMap(x => x);
 }
 
-// filter out all implicit types
+// Filter out all implicit types
 async function filterImplicitTypes(concepts) {
   return Promise.all(concepts.map(async (concept) => {
     if (concept.isThing()) {
@@ -169,11 +169,10 @@ async function relationshipsRolePlayers(relationships, limitRolePlayers, limit) 
   };
 }
 
-
-async function loadAttributeEdges(attributes, entityIds) {
+async function computeAttributeEdges(attributes, thingIds) {
   return Promise.all(attributes.map(async (attr) => {
     const owners = await (await attr.owners()).collect();
-    const ownersInMap = owners.filter(owner => entityIds.includes(owner.id));
+    const ownersInMap = owners.filter(owner => thingIds.includes(owner.id));
     return ownersInMap.map(owner => ({ from: owner.id, to: attr.id, label: 'has' }),
     );
   }));
@@ -182,18 +181,20 @@ async function loadAttributeEdges(attributes, entityIds) {
 async function constructEdges(result) {
   const conceptMaps = result.map(x => Array.from(x.map().values()));
 
-  // Edges are a combination or relationship edges and attribute edge
+  // Edges are a combination of relationship edges and attribute edges
   const edges = await Promise.all(conceptMaps.map(async (map) => {
-    const entityIds = map.filter(x => x.isEntity()).map(x => x.id);
+    // collect ids of all entities in a concept map
+    const thingIds = map.map(x => x.id);
 
     const attributes = map.filter(x => x.isAttribute());
     const relationships = map.filter(x => x.isRelationship());
+
     // Compute edges that connect things to their attributes
-    const attributeEdges = await loadAttributeEdges(attributes, entityIds);
+    const attributeEdges = await computeAttributeEdges(attributes, thingIds);
 
     const roleplayers = await relationshipsRolePlayers(relationships, false);
-    // Compute edges from thing to their relationship neighbours
-    const relationshipEdges = roleplayers.edges.filter(edge => entityIds.includes(edge.to));
+    // Compute edges that connect things to their role players
+    const relationshipEdges = roleplayers.edges.filter(edge => thingIds.includes(edge.to));
     // Combine attribute and relationship edges
     return attributeEdges.concat(relationshipEdges).flatMap(x => x);
   }));
@@ -204,6 +205,7 @@ async function buildFromConceptMap(result) {
   const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
   const edges = await constructEdges(result);
 
+  // Check if auto-load role players is selected
   if (QuerySettings.getRolePlayersStatus()) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
     const roleplayers = await relationshipsRolePlayers(relationships, true, QuerySettings.getNeighboursLimit());

@@ -133,7 +133,7 @@ const methods = {
     return this.loadingQuery || this.explanationQuery;
   },
   isConceptMap(result) {
-    return result[0].map;
+    return (result[0].map);
   },
 
   // setters
