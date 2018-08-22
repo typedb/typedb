@@ -369,6 +369,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return getThis();
     }
 
+
     /**
      * Creates a relation type which allows this type and a {@link ai.grakn.concept.Attribute} type to be linked.
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
@@ -386,28 +387,40 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 relates(ownerRole).
                 relates(valueRole);
 
-        //Linking with ako structure if present
-        AttributeType attributeTypeSuper = attributeType.sup();
-        Label superLabel = attributeTypeSuper.label();
-
-        Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-        Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-        RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
-                relates(ownerRoleSuper).relates(valueRoleSuper);
-
-        //Create the super type edges from sub role/relations to super roles/relation
-        ownerRole.sup(ownerRoleSuper);
-        valueRole.sup(valueRoleSuper);
-        relationshipType.sup(relationshipTypeSuper);
-
-        if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
-            //Make sure the supertype attribute is linked with the role as well
-            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
-        }
-
+        //this plays ownerRole;
         this.play(ownerRole, required);
         //TODO: Use explicit cardinality of 0-1 rather than just false
+        //attributeType plays valueRole;
         ((AttributeTypeImpl) attributeType).play(valueRole, false);
+
+        //Link with full sub structure of relation resources
+        AttributeType attributeTypeSuper = attributeType.sup();
+        while(attributeTypeSuper != null) {
+            Label superLabel = attributeTypeSuper.label();
+
+            Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
+                    relates(ownerRoleSuper).relates(valueRoleSuper);
+
+            //Create the super type edges from sub role/relations to super roles/relation
+            ownerRole.sup(ownerRoleSuper);
+            valueRole.sup(valueRoleSuper);
+            relationshipType.sup(relationshipTypeSuper);
+
+            if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
+                //Make sure the supertype attribute is linked with the role as well
+                ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
+                attributeTypeSuper = attributeTypeSuper.sup();
+
+                //reset the current resource relation
+                ownerRole = ownerRoleSuper;
+                valueRole = valueRoleSuper;
+                relationshipType = relationshipTypeSuper;
+            } else {
+                attributeTypeSuper = null;
+            }
+        }
 
         return getThis();
     }

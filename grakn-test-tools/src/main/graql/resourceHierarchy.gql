@@ -1,7 +1,6 @@
 define
 
 genericEntity sub entity
-    has baseResource
     has extendedResource
     has anotherExtendedResource
     has furtherExtendedResource
