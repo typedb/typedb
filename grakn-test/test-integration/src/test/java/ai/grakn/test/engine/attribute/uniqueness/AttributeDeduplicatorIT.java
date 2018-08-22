@@ -13,7 +13,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -290,7 +289,6 @@ public class AttributeDeduplicatorIT {
         // the attribute value and the keyspace it belongs to
         Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
         String ownedAttributeValue = "owned-attribute-value";
-        KeyspaceIndexPair keyspaceIndexPairs = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
 
         // initialise keyspace & define the tx factory
         GraknConfig config = GraknConfig.create();
@@ -340,6 +338,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
+        KeyspaceIndexPair keyspaceIndexPairs = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
         AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPairs)));
 
         // verify
@@ -354,7 +353,7 @@ public class AttributeDeduplicatorIT {
                 arp.add(conceptMap.get("arp").asAttribute().id().getValue());
             }
 
-            assertThat(arp, hasSize(3));
+            assertThat(arp, hasSize(1));
             assertThat(owner, hasSize(3));
         }
     }

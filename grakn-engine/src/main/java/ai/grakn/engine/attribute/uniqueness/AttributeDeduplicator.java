@@ -28,17 +28,21 @@ import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -156,9 +160,38 @@ public class AttributeDeduplicator {
                     Vertex dup = duplicates.next();
                     try {
                         dup.vertices(Direction.IN).forEachRemaining(ent -> {
-                            Edge edge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent)).next();
-                            edge.remove();
-                            ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV);
+                            GraphTraversal<Vertex, Edge> attributeEdge = tinker.V(dup).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(ent));
+                            if (attributeEdge.hasNext()) {
+                                Edge edge = attributeEdge.next();
+
+                                // copy the properties
+                                ArrayList<Property<Object>> propertiesAsKeyValue = Lists.newArrayList(edge.properties());
+                                ArrayList<Object> propertiesAsObj = new ArrayList<>();
+                                for (Property<Object> property: propertiesAsKeyValue) {
+                                    propertiesAsObj.add(property.key());
+                                    propertiesAsObj.add(property.value());
+                                }
+
+                                ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV, propertiesAsObj.toArray());
+                                edge.remove();
+                            }
+
+                            GraphTraversal<Vertex, Edge> rolePlayerEdge = tinker.V(dup).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(ent));
+                            if (rolePlayerEdge.hasNext()) {
+                                Edge edge = rolePlayerEdge.next();
+                                Vertex relationshipVertex = edge.outVertex();
+
+                                // copy the properties
+                                ArrayList<Property<Object>> propertiesAsKeyValue = Lists.newArrayList(edge.properties());
+                                ArrayList<Object> propertiesAsObj = new ArrayList<>();
+                                for (Property<Object> property: propertiesAsKeyValue) {
+                                    propertiesAsObj.add(property.key());
+                                    propertiesAsObj.add(property.value());
+                                }
+
+                                relationshipVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mergeTargetV, propertiesAsObj.toArray());
+                                edge.remove();
+                            }
                         });
                         dup.remove();
                     }
@@ -166,6 +199,7 @@ public class AttributeDeduplicator {
                         LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + dup.id() + " which is already removed.");
                     }
                 }
+
                 tx.commit();
             }
         }
