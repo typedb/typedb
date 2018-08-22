@@ -79,7 +79,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldDeduplicateAttributesConnectedToEntitiesCorrectly() {
+    public void shouldDeduplicateAttributesConnectedToAHasEdge1() {
         // the attribute value and the keyspace it belongs to
         Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
         String ownedAttributeValue = "owned-attribute-value";
@@ -146,74 +146,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldDeduplicateAttributesConnectedToEntitiesWithAReifiedRelationshipCorrectly() {
-        // the attribute value and the keyspace it belongs to
-        Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
-        String ownedAttributeValue = "owned-attribute-value";
-        KeyspaceIndexPair keyspaceIndexPairs = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
-
-        // initialise keyspace & define the tx factory
-        GraknConfig config = GraknConfig.create();
-        KeyspaceStoreImpl keyspaceStore = new KeyspaceStoreImpl(config);
-        keyspaceStore.loadSystemSchema();
-        keyspaceStore.addKeyspace(keyspace);
-        EngineGraknTxFactory txFactory = EngineGraknTxFactory.create(new ProcessWideLockProvider(), config, keyspaceStore);
-
-        // define the schema
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
-            tx.graql().define(
-                    label("owned-attribute").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("owner").sub("entity").has("owned-attribute")
-            ).execute();
-            tx.commit();
-        }
-
-        // insert some data
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
-            tx.graql().parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;").execute();
-            tx.graql().parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;").execute();
-            tx.graql().parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;").execute();
-            tx.commit();
-        }
-
-        // verify
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
-            List<ConceptMap> conceptMaps = tx.graql().match(
-                    var("owned").isa("owned-attribute").val(ownedAttributeValue),
-                    var("owner").isa("owner")).get().execute();
-            Set<String> owned = new HashSet<>();
-            Set<String> owner = new HashSet<>();
-            for (ConceptMap conceptMap: conceptMaps) {
-                owned.add(conceptMap.get("owned").asAttribute().id().getValue());
-                owner.add(conceptMap.get("owner").asEntity().id().getValue());
-            }
-
-            assertThat(owned, hasSize(3));
-            assertThat(owner, hasSize(3));
-        }
-
-        // deduplicate
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPairs)));
-
-        // verify
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
-            List<ConceptMap> conceptMaps = tx.graql().match(
-                    var("owned").isa("owned-attribute").val(ownedAttributeValue),
-                    var("owner").isa("owner")).get().execute();
-            Set<String> owned = new HashSet<>();
-            Set<String> owner = new HashSet<>();
-            for (ConceptMap conceptMap: conceptMaps) {
-                owned.add(conceptMap.get("owned").asAttribute().id().getValue());
-                owner.add(conceptMap.get("owner").asEntity().id().getValue());
-            }
-
-            assertThat(owned, hasSize(1));
-            assertThat(owner, hasSize(3));
-        }
-    }
-
-    @Test
-    public void shouldDeduplicateAttributesConnectedToAttributesCorrectly() {
+    public void shouldDeduplicateAttributesConnectedToAHasEdge2() {
         // the attribute value and the keyspace it belongs to
         Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
         String ownedAttributeValue = "owned-attribute-value";
@@ -286,7 +219,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldDeduplicateAttributesConnectedToRelationshipsCorrectly() {
+    public void shouldDeduplicateAttributesConnectedToAReifiedEdge() {
         // the attribute value and the keyspace it belongs to
         Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
         String ownedAttributeValue = "owned-attribute-value";
@@ -303,34 +236,29 @@ public class AttributeDeduplicatorIT {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
             tx.graql().define(
                     label("owned-attribute").sub("attribute").datatype(AttributeType.DataType.STRING),
-                    label("owner").sub("relationship").has("owned-attribute").relates("role-player"),
-                    label("role-player-of-owner").sub("entity").plays("role-player")
+                    label("owner").sub("entity").has("owned-attribute")
             ).execute();
             tx.commit();
         }
 
         // insert some data
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
-            tx.graql().insert(var("rp").isa("role-player-of-owner"),
-                    var().isa("owner").has("owned-attribute", ownedAttributeValue)
-                            .rel("role-player", var("rp"))).execute();
-            tx.graql().insert(var("rp").isa("role-player-of-owner"),
-                    var().isa("owner").has("owned-attribute", ownedAttributeValue)
-                            .rel("role-player", var("rp"))).execute();
-            tx.graql().insert(var("rp").isa("role-player-of-owner"),
-                    var().isa("owner").has("owned-attribute", ownedAttributeValue)
-                            .rel("role-player", var("rp"))).execute();
+            tx.graql().parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;").execute();
+            tx.graql().parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;").execute();
+            tx.graql().parse("insert $owner isa owner has owned-attribute '" + ownedAttributeValue + "' via $reified;").execute();
             tx.commit();
         }
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
-            List<ConceptMap> conceptMaps = tx.graql().match(var("owner").isa("owner").has("owned-attribute", var("owned"))).get().execute();
-            Set<String> owner = new HashSet<>();
+            List<ConceptMap> conceptMaps = tx.graql().match(
+                    var("owned").isa("owned-attribute").val(ownedAttributeValue),
+                    var("owner").isa("owner")).get().execute();
             Set<String> owned = new HashSet<>();
+            Set<String> owner = new HashSet<>();
             for (ConceptMap conceptMap: conceptMaps) {
-                owner.add(conceptMap.get("owner").asRelationship().id().getValue());
                 owned.add(conceptMap.get("owned").asAttribute().id().getValue());
+                owner.add(conceptMap.get("owner").asEntity().id().getValue());
             }
 
             assertThat(owned, hasSize(3));
@@ -342,15 +270,91 @@ public class AttributeDeduplicatorIT {
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
-            List<ConceptMap> conceptMaps = tx.graql().match(var("owner").isa("owner").has("owned-attribute", var("owned"))).get().execute();
-            Set<String> owner = new HashSet<>();
+            List<ConceptMap> conceptMaps = tx.graql().match(
+                    var("owned").isa("owned-attribute").val(ownedAttributeValue),
+                    var("owner").isa("owner")).get().execute();
             Set<String> owned = new HashSet<>();
+            Set<String> owner = new HashSet<>();
             for (ConceptMap conceptMap: conceptMaps) {
-                owner.add(conceptMap.get("owner").asRelationship().id().getValue());
                 owned.add(conceptMap.get("owned").asAttribute().id().getValue());
+                owner.add(conceptMap.get("owner").asEntity().id().getValue());
             }
 
             assertThat(owned, hasSize(1));
+            assertThat(owner, hasSize(3));
+        }
+    }
+
+    @Test
+    public void shouldDeduplicateAttributeConnectedToARolePlayerEdge() {
+        // the attribute value and the keyspace it belongs to
+        Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
+        String ownedAttributeValue = "owned-attribute-value";
+        KeyspaceIndexPair keyspaceIndexPairs = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + "owned-attribute" + "-" + ownedAttributeValue);
+
+        // initialise keyspace & define the tx factory
+        GraknConfig config = GraknConfig.create();
+        KeyspaceStoreImpl keyspaceStore = new KeyspaceStoreImpl(config);
+        keyspaceStore.loadSystemSchema();
+        keyspaceStore.addKeyspace(keyspace);
+        EngineGraknTxFactory txFactory = EngineGraknTxFactory.create(new ProcessWideLockProvider(), config, keyspaceStore);
+
+        // define the schema
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            tx.graql().define(
+                    label("owner").sub("relationship").relates("entity-role-player").relates("attribute-role-player"),
+                    label("owned-entity").sub("entity").plays("entity-role-player"),
+                    label("owned-attribute").sub("attribute").plays("attribute-role-player").datatype(AttributeType.DataType.STRING)
+            ).execute();
+            tx.commit();
+        }
+
+        // insert some data
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            tx.graql().insert(
+                    var("erp").isa("owned-entity"), var("arp").isa("owned-attribute").val(ownedAttributeValue),
+                    var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp"))).execute();
+            tx.graql().insert(
+                    var("erp").isa("owned-entity"), var("arp").isa("owned-attribute").val(ownedAttributeValue),
+                    var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp"))).execute();
+            tx.graql().insert(
+                    var("erp").isa("owned-entity"), var("arp").isa("owned-attribute").val(ownedAttributeValue),
+                    var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp"))).execute();
+            tx.commit();
+        }
+
+        // verify
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
+            List<ConceptMap> conceptMaps = tx.graql().match(var("owner").isa("owner")
+                    .rel("attribute-role-player", var("arp"))
+            ).get().execute();
+            Set<String> owner = new HashSet<>();
+            Set<String> arp = new HashSet<>();
+            for (ConceptMap conceptMap: conceptMaps) {
+                owner.add(conceptMap.get("owner").asRelationship().id().getValue());
+                arp.add(conceptMap.get("arp").asAttribute().id().getValue());
+            }
+
+            assertThat(arp, hasSize(3));
+            assertThat(owner, hasSize(3));
+        }
+
+        // deduplicate
+        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPairs)));
+
+        // verify
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
+            List<ConceptMap> conceptMaps = tx.graql().match(var("owner").isa("owner")
+                    .rel("attribute-role-player", var("arp"))
+            ).get().execute();
+            Set<String> owner = new HashSet<>();
+            Set<String> arp = new HashSet<>();
+            for (ConceptMap conceptMap: conceptMaps) {
+                owner.add(conceptMap.get("owner").asRelationship().id().getValue());
+                arp.add(conceptMap.get("arp").asAttribute().id().getValue());
+            }
+
+            assertThat(arp, hasSize(3));
             assertThat(owner, hasSize(3));
         }
     }
