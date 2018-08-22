@@ -97,7 +97,7 @@ public class GraknBootup {
         if (!javaVersion.equals("1.8")) {
             throw new RuntimeException(ErrorMessage.UNSUPPORTED_JAVA_VERSION.getMessage(javaVersion));
         }
-        if (!graknHome.resolve("grakn").toFile().exists()) {
+        if (!graknHome.resolve("grakn-core").toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
         if (!graknProperties.toFile().exists()) {
@@ -106,7 +106,7 @@ public class GraknBootup {
     }
 
     private static void printGraknLogo() {
-        Path ascii = Paths.get(".", "services", "grakn", "grakn-ascii.txt");
+        Path ascii = Paths.get(".", "services", "grakn-core", "grakn-core-ascii.txt");
         if(ascii.toFile().exists()) {
             try {
                 System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));

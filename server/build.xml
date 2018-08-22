@@ -29,7 +29,7 @@
         <fileSet>
             <directory>${project.parent.basedir}</directory>
             <includes>
-                <include>grakn</include>
+                <include>grakn-core</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>
@@ -53,24 +53,14 @@
             <outputDirectory>services</outputDirectory>
         </fileSet>
 
-        <!-- grakn.properties -->
+        <!-- grakn.properties and logback.xml -->
 
         <fileSet>
             <directory>${basedir}/conf</directory>
             <includes>
-                <include>grakn.properties</include>
+                <include>**</include>
             </includes>
             <outputDirectory>conf</outputDirectory>
-        </fileSet>
-
-        <!-- and logback.xml (server configs) -->
-
-        <fileSet>
-            <directory>${basedir}/conf</directory>
-            <includes>
-                <include>logback.xml</include>
-            </includes>
-            <outputDirectory>services/grakn/server</outputDirectory>
         </fileSet>
 
         <!-- static assets for dashboard -->

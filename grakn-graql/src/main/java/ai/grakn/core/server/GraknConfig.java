@@ -57,7 +57,7 @@ public class GraknConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
 
-    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn", "grakn-ascii.txt"));
+    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn-core", "grakn-ascii.txt"));
 
     private static GraknConfig defaultConfig = null;
 

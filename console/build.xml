@@ -29,7 +29,7 @@
         <fileSet>
             <directory>${project.parent.basedir}</directory>
             <includes>
-                <include>grakn</include>
+                <include>grakn-core</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>
@@ -43,16 +43,6 @@
                 <include>README.md</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
-        </fileSet>
-
-        <!-- and logback.xml (client configs) -->
-
-        <fileSet>
-            <directory>${basedir}/conf</directory>
-            <includes>
-                <include>logback.xml</include>
-            </includes>
-            <outputDirectory>services/grakn/console</outputDirectory>
         </fileSet>
     </fileSets>
 

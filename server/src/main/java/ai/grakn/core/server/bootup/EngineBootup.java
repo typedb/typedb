@@ -187,8 +187,8 @@ public class EngineBootup {
     /**
      * Build the classpath from the following folders:
      * - services/lib/*.jar
-     * - conf/
-     * - services/grakn/server/
+     * - conf/grakn.properties
+     * - conf/logback.xml
      * Any slf4J-log4j12 Jars are excluded.
      * @return a classpath to be supplied to Java, ie., java -cp <classpath>
      */
@@ -201,8 +201,7 @@ public class EngineBootup {
         }
         Stream<File> jars = Stream.of(jarFiles);
         File conf = Paths.get("./conf").toFile(); // $GRAKN_HOME/conf
-        File graknLogback = Paths.get("services", "grakn", "server").toFile(); // $GRAKN_HOME/services/grakn/server lib
-        String classPath = ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
+        String classPath = ":"+Stream.concat(jars, Stream.of(conf))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(f -> f.toPath().toString())
                 .sorted() // we need to sort otherwise it doesn't load logback configuration properly
