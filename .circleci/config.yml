@@ -271,7 +271,7 @@ jobs:
       - run:
           name: "Publish Draft Release on GitHub"
           command: |
-            ghr -t bde92904876028388b8505551924775ae84fd4cd -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -draft ${VERSION} ./artifacts
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete -draft ${VERSION} ./artifacts
 
   grakn-release-build:
     machine: true
