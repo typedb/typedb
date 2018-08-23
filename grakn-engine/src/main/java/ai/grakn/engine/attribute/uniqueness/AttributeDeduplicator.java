@@ -28,7 +28,6 @@ import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -154,7 +153,7 @@ public class AttributeDeduplicator {
         for (KeyspaceIndexPair keyspaceIndexPair : keyspaceIndexPairs) {
             try (EmbeddedGraknTx tx = txFactory.tx(keyspaceIndexPair.keyspace(), GraknTxType.WRITE)) {
                 GraphTraversalSource tinker = tx.getTinkerTraversal();
-                GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.value());
+                GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
                 Vertex mergeTargetV = duplicates.next();
                 while (duplicates.hasNext()) {
                     Vertex dup = duplicates.next();

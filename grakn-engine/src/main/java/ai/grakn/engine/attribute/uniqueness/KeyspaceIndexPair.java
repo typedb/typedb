@@ -22,13 +22,14 @@ import ai.grakn.Keyspace;
 import com.google.auto.value.AutoValue;
 
 /**
- * TODO
+ * A class to hold a keyspace and an index together.
+ * 
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
 public abstract class KeyspaceIndexPair {
     public abstract Keyspace keyspace();
-    public abstract String value();
+    public abstract String index();
 
     public static KeyspaceIndexPair create(Keyspace keyspace, String index) {
         return new AutoValue_KeyspaceIndexPair(keyspace, index);
