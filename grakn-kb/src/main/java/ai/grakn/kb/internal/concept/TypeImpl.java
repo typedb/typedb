@@ -413,7 +413,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         //attributeType plays valueRole;
         ((AttributeTypeImpl) attributeType).play(valueRole, false);
 
-        updateAttributeRelationHierarchy(attributeType, has, hasOwner, hasValue, ownerRole, valueRole, relationshipType);
+        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationshipType);
 
         return getThis();
     }
