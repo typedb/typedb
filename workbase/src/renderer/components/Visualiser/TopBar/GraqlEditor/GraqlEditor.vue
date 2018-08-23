@@ -1,0 +1,223 @@
+<template>
+  <transition name="slideInDown" appear>
+    <div class="graqlEditor-container">
+      <div class="left-side">            
+      </div>
+      <div class="center">
+        <div class="graqlEditor-wrapper" v-bind:style="[currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
+          <textarea id="graqlEditor" ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
+          <div v-if="currentQuery.length" class="editor-tab">
+            <img class="tab-btn" @click="clearGraph" src="static/img/icons/icon_close.svg">
+            <img class="tab-btn" @click="showAddFavQuery = true" src="static/img/icons/icon_star.svg">
+            <img class="tab-btn" v-if="editorLinesNumber > 1" src="static/img/icons/icon_up_arrow.svg">
+          </div>
+        </div>
+        <add-current-query :current-query="currentQuery" :toolTipShown="toolTipShown" v-on:toggle-tool-tip="toggleToolTip" ref="addFavQuery"></add-current-query>
+      </div>
+      <div class="right-side">
+        <button id="run-query" 
+          @click="runQuery" :class="{'disabled':(currentKeyspace || !currentQuery.length)}" 
+          class="btn top-bar-btn" ref="runQueryButton">
+          <img src="static/img/icons/icon_play_circle.svg">
+        </button>
+        <button 
+          id="clear"
+          :class="{'disabled':(currentKeyspace || !currentQuery.length)}"
+          @click="clearGraph" 
+          class="btn top-bar-btn" 
+          ref="clearButton">
+          <img src="static/img/icons/icon_refresh.svg">
+        </button>
+        <Spinner className="spinner-data" :localStore="localStore"></Spinner>
+      </div>
+    </div>
+  </transition>
+</template>
+
+<style scoped>
+
+
+.fav-query-name {
+  width: 450px;
+  height: 25px;
+  background-color: var(--medium-color);
+  display: flex;
+  flex-direction: row;
+  border-bottom: var(--container-border);
+  border-left: var(--container-border);
+  position: relative;
+}
+
+.editor-tab {
+  align-items: center;
+  width: 19px;
+  height: 51px;
+  flex-direction: column;
+  display: flex;
+  background-color: var(--medium-color);
+  position: relative;
+  float: right;
+}
+
+.tab-btn {
+  height: 18px;
+  cursor: pointer;
+}
+.tab-btn:hover {
+  background-color: var(--light-color);
+}
+
+
+span {
+    margin-right: 3px;
+}
+
+.graqlEditor-wrapper {
+    z-index: 3;
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    border-radius: 3px;
+    position: absolute;
+    width: 100%;
+    top: -15px;
+    background-color: #0f0f0f;
+    border-bottom: 1px solid #00eca2;
+}
+
+.types-wrapper {
+    position: relative;
+}
+
+.left-side {
+    display: inline-flex;
+    position: relative;
+}
+
+.center {
+    display: inline-flex;
+    flex: 1;
+    position: relative;
+}
+
+.right-side {
+    display: inline-flex;
+}
+
+.disabled{
+    opacity:0.5;
+    cursor: default;
+}
+
+.graqlEditor-container {
+    display: flex;
+    flex-direction: row;
+    flex: 3;
+    position: relative;
+    align-items: center;
+}
+
+</style>
+
+<script>
+import Spinner from '@/components/UIElements/Spinner.vue';
+import { RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
+import GraqlCodeMirror from './GraqlCodeMirror';
+import AddCurrentQuery from './AddCurrentQuery.vue';
+// import ScrollButton from './ScrollButton.vue';
+import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
+import ManagementUtils from '../../DataManagementUtils';
+
+export default {
+  name: 'GraqlEditor',
+  props: ['localStore', 'toolTipShown', 'selectedType', 'selectedMetaType'],
+  components: {
+    AddCurrentQuery,
+    Spinner,
+  },
+  data() {
+    return {
+      codeMirror: {},
+      editorLinesNumber: 1,
+      showAddFavQuery: false,
+    };
+  },
+  created() {
+    this.$on('type-selected', this.typeSelected);
+    this.$on('meta-type-selected', this.metaTypeSelected);
+  },
+  computed: {
+    currentQuery() {
+      return this.localStore.getCurrentQuery();
+    },
+    currentKeyspace() {
+      return this.localStore.getCurrentKeyspace();
+    },
+  },
+  watch: {
+    currentQuery() {
+      // We need this check because codeMirror reset the cursor position when calling getValue
+      if (this.currentQuery === this.codeMirror.getValue()) return;
+      this.codeMirror.setValue(this.currentQuery);
+      this.codeMirror.focus();
+      // Set the cursor at the end of existing content
+      this.codeMirror.setCursor(this.codeMirror.lineCount(), 0);
+    },
+    currentKeyspace() {
+      if (this.currentKeyspace) {
+        this.codeMirror.setOption('readOnly', false);
+      }
+      this.history.clearHistory();
+    },
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.codeMirror = GraqlCodeMirror.getCodeMirror(this.$refs.graqlEditor);
+      // this.codeMirror.setOption('readOnly', 'nocursor');
+      this.history = GraqlCodeMirror.createGraqlEditorHistory(this.codeMirror);
+      this.codeMirror.setOption('extraKeys', {
+        Enter: this.runQuery,
+        'Shift-Enter': 'newlineAndIndent',
+        'Shift-Backspace': this.clearGraph,
+        'Shift-Ctrl-Backspace': this.clearGraphAndPage,
+        'Shift-Up': this.history.undo,
+        'Shift-Down': this.history.redo,
+      });
+
+      this.codeMirror.on('change', (codeMirrorObj) => {
+        this.localStore.setCurrentQuery(codeMirrorObj.getValue());
+        this.editorLinesNumber = codeMirrorObj.lineCount();
+      });
+
+      this.$refs.addFavQuery.$on('new-fav-query', (currentQueryName) => {
+        FavQueriesSettings.addFavQuery(currentQueryName, this.currentQuery, this.currentKeyspace);
+        this.$emit('refresh-fav-queries');
+      });
+    });
+  },
+  methods: {
+    runQuery() {
+      this.localStore.setCurrentQuery(ManagementUtils.limitQuery(this.currentQuery));
+
+      this.history.addToHistory(this.currentQuery);
+
+      this.toggleToolTip();
+      this.localStore.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Run Query'); });
+    },
+    clearGraph() {
+      this.codeMirror.setValue('');
+    },
+    toggleToolTip(val) {
+      this.$emit('toggle-tool-tip', val);
+    },
+    typeSelected(type) {
+      this.codeMirror.setValue(`match $x isa ${type}; get;`);
+      this.runQuery();
+    },
+    metaTypeSelected(metaType) {
+      this.codeMirror.setValue(`match $x sub ${metaType}; get;`);
+      this.runQuery();
+    },
+  },
+};
+</script>

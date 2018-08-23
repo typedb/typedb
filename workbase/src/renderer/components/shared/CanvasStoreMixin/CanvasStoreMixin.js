@@ -2,7 +2,7 @@
 
 import Grakn from 'grakn';
 import GlobalStore from '@/store';
-import VisFacade from '@/components/visualiser/Facade';
+import VisFacade from '@/components/CanvasVisualiser/Facade';
 
 // Import actions
 import { LOAD_METATYPE_INSTANCES, INITIALISE_VISUALISER, CURRENT_KEYSPACE_CHANGED, CANVAS_RESET } from '../StoresActions';

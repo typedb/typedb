@@ -2,10 +2,10 @@
 <div class="keyspaces-wrapper">
     <div class="list-keyspaces-btn" @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}">
         <h1 id="keyspaces" class="current-keyspace" >{{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}</h1>    
-        <caret-icon :toggleNorth="toolTipShown === 'keyspaces'"></caret-icon>
+        <img class="keyspaces-arrow" :src="(toolTipShown === 'keyspaces') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'">
     </div>
     <transition name="slide-down-fade">
-        <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-show="toolTipShown === 'keyspaces'">
+        <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-if="toolTipShown === 'keyspaces'">
             <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
             <li :id="ks" class="ks-key" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
         </ul>
@@ -14,21 +14,25 @@
 </template>
 
 <style scoped>
+
 .list-keyspaces-btn {
     display: flex;
     flex-direction: row;
-    border: 2px solid rgb(58, 58, 58);
-    border-radius: 6%;
+    border: var(--container-border);
+    border-radius: 6px;
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
-    padding: 5px;
+    padding: var(--container-padding);
 }
 
 .current-keyspace {
-    margin-right: 10px;
     color: #00eca2;
-    
+}
+
+.keyspaces-arrow{
+  height: 20px;
+  fill: white;
 }
 
 li {
