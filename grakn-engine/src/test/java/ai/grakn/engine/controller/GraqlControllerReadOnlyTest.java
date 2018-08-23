@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -84,7 +84,7 @@ public class GraqlControllerReadOnlyTest {
     public static SparkContext sparkContext = SparkContext.withControllers((spark, config) -> {
         MetricRegistry metricRegistry = new MetricRegistry();
         new SystemController(mockFactory.config(), mockFactory.keyspaceStore(), new ServerStatus(), metricRegistry).start(spark);
-        new GraqlController(mockFactory, mock(AttributeDeduplicator.class), printer, metricRegistry).start(spark);
+        new GraqlController(mockFactory, mock(AttributeDeduplicatorDaemon.class), printer, metricRegistry).start(spark);
     });
 
     @Before

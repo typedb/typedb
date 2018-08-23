@@ -29,7 +29,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerRPC;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
@@ -112,7 +112,7 @@ public class ServerRPCTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    private final AttributeDeduplicator mockedAttributeDeduplicator = mock(AttributeDeduplicator.class);
+    private final AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
 
     private ServerRPC rpcServerRPC;
@@ -128,7 +128,7 @@ public class ServerRPCTest {
     public void setUp() throws IOException {
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedAttributeDeduplicator))
+                .addService(new SessionService(requestOpener, mockedAttributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

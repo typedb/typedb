@@ -3,7 +3,6 @@ package ai.grakn.test.engine.attribute.uniqueness;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.attribute.uniqueness.KeyspaceIndexPair;
@@ -16,7 +15,6 @@ import ai.grakn.test.rule.EmbeddedCassandraContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +26,7 @@ import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-public class AttributeDeduplicatorIT {
+public class AttributeDeduplicatorDaemonIT {
     @ClassRule
     public static EmbeddedCassandraContext cassandra = EmbeddedCassandraContext.create();
 
@@ -56,8 +54,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the instances
-        KeyspaceIndexPair keyspaceIndexPair = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + testAttributeLabel + "-" + testAttributeValue);
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPair)));
+        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + testAttributeLabel + "-" + testAttributeValue));
 
         // verify if we only have 1 instances after deduplication
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -93,8 +90,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the attribute
-        KeyspaceIndexPair keyspaceIndexPair = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue);
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPair)));
+        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue));
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -159,14 +155,9 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        Set<KeyspaceIndexPair> keyspaceIndexPairs = new HashSet<>(
-                Arrays.asList(
-                        KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue),
-                        KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownerLabel + "-" + ownerValue1),
-                        KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownerLabel + "-" + ownerValue2)
-                )
-        );
-        AttributeDeduplicator.deduplicate(txFactory, keyspaceIndexPairs);
+        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue));
+        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownerLabel + "-" + ownerValue1));
+        AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownerLabel + "-" + ownerValue2));
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -211,8 +202,8 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the attribute
-        KeyspaceIndexPair keyspaceIndexPair = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue);
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPair)));
+        AttributeDeduplicator.deduplicate(txFactory,
+                KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue));
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -258,8 +249,8 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        KeyspaceIndexPair keyspaceIndexPair = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue);
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPair)));
+        AttributeDeduplicator.deduplicate(txFactory,
+                KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue));
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -312,8 +303,8 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        KeyspaceIndexPair keyspaceIndexPair = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue);
-        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPair)));
+        AttributeDeduplicator.deduplicate(txFactory,
+                KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue));
 
         // verify
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
@@ -333,8 +324,7 @@ public class AttributeDeduplicatorIT {
     }
 
     /**
-     * Creates a new {@link EngineGraknTxFactory}
-     * @return
+     * @return a new {@link EngineGraknTxFactory}
      */
     private EngineGraknTxFactory createEngineGraknTxFactory() {
         GraknConfig config = GraknConfig.create();

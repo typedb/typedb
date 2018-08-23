@@ -28,7 +28,7 @@ import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
@@ -249,11 +249,11 @@ public class EngineContext extends CompositeTestRule {
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
-        AttributeDeduplicator attributeDeduplicator = new AttributeDeduplicator(config, engineGraknTxFactory);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new SessionService(requestOpener, attributeDeduplicator))
+                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
@@ -262,7 +262,7 @@ public class EngineContext extends CompositeTestRule {
         Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                lockProvider, attributeDeduplicator, keyspaceStore);
+                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();
 

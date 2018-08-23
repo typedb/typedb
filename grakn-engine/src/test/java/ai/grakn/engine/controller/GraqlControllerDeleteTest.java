@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
+import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -57,7 +57,7 @@ public class GraqlControllerDeleteTest {
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class, RETURNS_DEEP_STUBS);
 
     private static final Keyspace keyspace = Keyspace.of("akeyspace");
-    private static final AttributeDeduplicator ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicator.class);
+    private static final AttributeDeduplicatorDaemon ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicatorDaemon.class);
     private static final EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static final Printer printer = mock(Printer.class);
 
