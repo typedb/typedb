@@ -3,6 +3,7 @@ package ai.grakn.test.engine.attribute.uniqueness;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
 import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
 import ai.grakn.engine.attribute.uniqueness.KeyspaceIndexPair;
@@ -181,6 +182,52 @@ public class AttributeDeduplicatorIT {
 
             assertThat(owned, hasSize(1));
             assertThat(owner, hasSize(2));
+        }
+    }
+
+    @Test
+    public void shouldAlsoMergeHasEdgesInTheDeduplicating3() {
+        // setup a keyspace & txFactory
+        Keyspace keyspace = Keyspace.of("attrdedupit_" + UUID.randomUUID().toString().replace("-", "_"));
+        EngineGraknTxFactory txFactory = createEngineGraknTxFactory();
+
+        String ownedAttributeLabel = "owned-attribute";
+        String ownedAttributeValue = "owned-attribute-value";
+
+        // define the schema
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            tx.graql().define(
+                    label(ownedAttributeLabel).sub("attribute").datatype(AttributeType.DataType.STRING),
+                    label("owner").sub("entity").has(ownedAttributeLabel)
+            ).execute();
+            tx.commit();
+        }
+
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
+            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue  + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;").execute();
+            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue  + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;").execute();
+            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned;").execute();
+            tx.commit();
+        }
+
+        // perform deduplicate on the attribute
+        KeyspaceIndexPair keyspaceIndexPair = KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue);
+        AttributeDeduplicator.deduplicate(txFactory, new HashSet<>(Arrays.asList(keyspaceIndexPair)));
+
+        // verify
+        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
+            Set<String> owned = new HashSet<>();
+            Set<String> owner = new HashSet<>();
+            List<ConceptMap> conceptMaps = tx.graql().match(
+                    var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
+                    var("owner").isa("owner")).get().execute();
+            for (ConceptMap conceptMap: conceptMaps) {
+                owned.add(conceptMap.get("owned").asAttribute().id().getValue());
+                owner.add(conceptMap.get("owner").asEntity().id().getValue());
+            }
+
+            assertThat(owned, hasSize(1));
+            assertThat(owner, hasSize(5));
         }
     }
 

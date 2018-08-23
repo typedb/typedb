@@ -23,7 +23,7 @@ import com.google.auto.value.AutoValue;
 
 /**
  * A class to hold a keyspace and an index together.
- * 
+ *
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
