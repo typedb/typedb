@@ -56,7 +56,6 @@ public class REST {
         public static final String KEYSPACE_GRAQL = "/kb/:keyspace/graql";
         public static final String KEYSPACE_EXPLAIN = "/kb/:keyspace/explain";
         public static final String COMMIT_LOG_URI = "/kb/:keyspace/commit_log";
-        public static final String MERGE_URI = "/merge";
 
         /**
          * Concept Specific operations
