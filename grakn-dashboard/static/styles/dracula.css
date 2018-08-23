@@ -6,6 +6,7 @@
     Original dracula color scheme by Zeno Rocha (https://github.com/zenorocha/dracula-theme)
 
 */
+@import url("fonts.css");
 
 .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
     z-index: 2;
@@ -15,7 +16,7 @@
     width: 100%;
     color: #f8f8f2;
     text-shadow: 0 1px rgba(0, 0, 0, 0.3);
-    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    font-family: 'Lekton' !important;
     text-align: left;
     white-space: pre;
     word-spacing: normal;
