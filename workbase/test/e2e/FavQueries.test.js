@@ -88,7 +88,7 @@ describe('Favourite queries', () => {
     await app.client.waitUntilWindowLoaded();
 
     app.client.click('#delete-btn');
-    await sleep(5000);
+    await sleep(6000);
     const noQueriesSaved = await app.client.getText('#no-saved');
     assert.equal(noQueriesSaved, 'no saved queries');
   });
