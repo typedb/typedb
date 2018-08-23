@@ -5,16 +5,20 @@
       </div>
       <div class="center">
         <div class="graqlEditor-wrapper" v-bind:style="[currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
-          <textarea id="graqlEditor" ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
-          <div v-if="currentQuery.length" class="editor-tab">
-            <img class="tab-btn" @click="clearGraph" src="static/img/icons/icon_close.svg">
-            <img class="tab-btn" @click="showAddFavQuery = true" src="static/img/icons/icon_star.svg">
-            <img class="tab-btn" v-if="editorLinesNumber > 1" src="static/img/icons/icon_up_arrow.svg">
+          <div class="column">
+            <div class="row">
+              <textarea id="graqlEditor" ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
+              <div v-if="currentQuery.length" class="editor-tab">
+                <img class="tab-btn" @click="clearGraph" src="static/img/icons/icon_close.svg">
+                <img class="tab-btn" @click="toggleAddFavQuery" src="static/img/icons/icon_star.svg">
+                <img class="tab-btn" v-if="editorLinesNumber > 1" src="static/img/icons/icon_up_arrow.svg">
+              </div>
+            </div>
+            <div v-if="showAddFavQuery" class="add-fav-query">
+              <input type="text" class="grakn-input" v-model="currentQueryName" placeholder="query name">
+              <img class="btn tab-btn" @click="addFavQuery" :disabled="currentQueryName.length==0" src="static/img/icons/icon_floppy.svg">
+            </div>
           </div>
-        </div>
-        <div class="add-fav-query">
-          <input type="text" class="grakn-input" v-model="currentQueryName" placeholder="query name" v-focus>
-          <button id="save-fav-query" @click="addFavQuery" class="btn btn-default save-fav-query" :disabled="currentQueryName.length==0">Save</button>
         </div>
       </div>
       <div class="right-side">
@@ -39,22 +43,29 @@
 
 <style scoped>
 
-
-.fav-query-name {
-  width: 450px;
-  height: 25px;
-  background-color: var(--medium-color);
+.row {
   display: flex;
   flex-direction: row;
-  border-bottom: var(--container-border);
-  border-left: var(--container-border);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.add-fav-query{
+  display: flex;
+  flex-direction: row;
   position: relative;
+  justify-content: center;
+  align-items: center;
 }
 
 .editor-tab {
   align-items: center;
   width: 19px;
-  max-height: 45px; 
+  max-height: 57px; 
   flex-direction: column;
   display: flex;
   background-color: var(--medium-color);
@@ -63,7 +74,7 @@
 }
 
 .tab-btn {
-  height: 15px;
+  height: 20px;
   cursor: pointer;
 }
 .tab-btn:hover {
@@ -143,6 +154,7 @@ export default {
       codeMirror: {},
       editorLinesNumber: 1,
       showAddFavQuery: false,
+      currentQueryName: '',
     };
   },
   created() {
@@ -192,10 +204,10 @@ export default {
         this.editorLinesNumber = codeMirrorObj.lineCount();
       });
 
-      this.$refs.addFavQuery.$on('new-fav-query', (currentQueryName) => {
-        FavQueriesSettings.addFavQuery(currentQueryName, this.currentQuery, this.currentKeyspace);
-        this.$emit('refresh-fav-queries');
-      });
+      // this.$refs.addFavQuery.$on('new-fav-query', (currentQueryName) => {
+      //   FavQueriesSettings.addFavQuery(currentQueryName, this.currentQuery, this.currentKeyspace);
+      //   this.$emit('refresh-fav-queries');
+      // });
     });
   },
   methods: {
@@ -220,6 +232,15 @@ export default {
     metaTypeSelected(metaType) {
       this.codeMirror.setValue(`match $x sub ${metaType}; get;`);
       this.runQuery();
+    },
+    toggleAddFavQuery() {
+      this.showAddFavQuery = !this.showAddFavQuery;
+    },
+    addFavQuery() {
+      this.showAddFavQuery = false;
+      FavQueriesSettings.addFavQuery(this.currentQueryName, this.currentQuery, this.currentKeyspace);
+      this.$emit('refresh-fav-queries');
+      this.currentQueryName = '';
     },
   },
 };

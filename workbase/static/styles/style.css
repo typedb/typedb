@@ -153,12 +153,14 @@ input, textarea {
   display: block; }
 
 .grakn-input {
-  background-color: #2E2D2D;
+  background-color: var(--medium-color);
   color: white;
   outline: none;
   border: none;
   font-size: 95%;
-  padding: 4px; }
+  padding: 4px; 
+  width: 100%;
+}
 
 /* --- Flexes --- */
 .flex-1 {
