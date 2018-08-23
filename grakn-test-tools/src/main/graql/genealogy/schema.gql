@@ -59,7 +59,7 @@ parent-identifier sub identifier;
 death sub event
     has death-date;
 
-event-date sub attribute datatype string;
+event-date sub attribute datatype date;
 
 #confidence level: low-mid-high
 confidence sub attribute datatype string;
