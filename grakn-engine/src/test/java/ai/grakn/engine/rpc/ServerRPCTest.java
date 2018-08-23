@@ -29,7 +29,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerRPC;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;

@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.engine.ServerStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;

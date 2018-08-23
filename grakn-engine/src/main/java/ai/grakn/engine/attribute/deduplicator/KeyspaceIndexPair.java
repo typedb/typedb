@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.attribute.uniqueness;
+package ai.grakn.engine.attribute.deduplicator;
 
 import ai.grakn.Keyspace;
 import com.google.auto.value.AutoValue;

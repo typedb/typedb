@@ -1,11 +1,10 @@
-package ai.grakn.engine.attribute.uniqueness;
+package ai.grakn.engine.attribute.deduplicator;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.attribute.uniqueness.queue.Attribute;
-import ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue;
+import ai.grakn.engine.attribute.deduplicator.queue.Attribute;
+import ai.grakn.engine.attribute.deduplicator.queue.RocksDbQueue;
 import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Test;
 
 import java.io.IOException;

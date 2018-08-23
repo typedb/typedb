@@ -18,7 +18,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicatorDaemon;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Stopwatch;

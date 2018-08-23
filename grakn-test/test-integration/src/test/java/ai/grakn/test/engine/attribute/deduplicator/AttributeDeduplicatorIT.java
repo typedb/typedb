@@ -1,11 +1,11 @@
-package ai.grakn.test.engine.attribute.uniqueness;
+package ai.grakn.test.engine.attribute.deduplicator;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.engine.attribute.uniqueness.AttributeDeduplicator;
-import ai.grakn.engine.attribute.uniqueness.KeyspaceIndexPair;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicator;
+import ai.grakn.engine.attribute.deduplicator.KeyspaceIndexPair;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.graql.answer.ConceptMap;
@@ -26,7 +26,7 @@ import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
-public class AttributeDeduplicatorDaemonIT {
+public class AttributeDeduplicatorIT {
     @ClassRule
     public static EmbeddedCassandraContext cassandra = EmbeddedCassandraContext.create();
 

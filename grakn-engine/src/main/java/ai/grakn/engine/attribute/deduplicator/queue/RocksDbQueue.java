@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.attribute.uniqueness.queue;
+package ai.grakn.engine.attribute.deduplicator.queue;
 
 import java.nio.file.Path;
 import java.util.LinkedList;
@@ -32,10 +32,10 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
-import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
-import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.deserializeStringUtf8;
-import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
-import static ai.grakn.engine.attribute.uniqueness.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
+import static ai.grakn.engine.attribute.deduplicator.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
+import static ai.grakn.engine.attribute.deduplicator.queue.RocksDbQueue.SerialisationUtils.deserializeStringUtf8;
+import static ai.grakn.engine.attribute.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
+import static ai.grakn.engine.attribute.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
