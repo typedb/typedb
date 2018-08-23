@@ -254,8 +254,8 @@ jobs:
           - *attach_grakn_workspace
           - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
           - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
-          - run: cd grakn-core-${GRAKN_VERSION} && nohup ~/grakn server start
-          - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
+          - run: nohup ./grakn server start
+          - run: ./graql console -f ./examples/basic-genealogy.gql -k gene
           - run: cd workbase && npm install
           - run: cd workbase && npm run e2e
           - run: cd workbase && npm run build
