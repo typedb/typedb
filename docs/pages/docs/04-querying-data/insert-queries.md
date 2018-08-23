@@ -32,7 +32,7 @@ In the example below, we insert additional (fictional) information for a `person
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
 <pre class="language-graql"> <code>
-match $p has identifier "Mary Guthrie"; insert $p has middlename "Mathilda"; $p has birth-date "1902-01-01"; $p has death-date "1952-01-01"; $p has age 50;
+match $p has identifier "Mary Guthrie"; insert $p has middlename "Mathilda"; $p has birth-date 1902-01-01; $p has death-date 1952-01-01; $p has age 50;
 </code>
 </pre>
 </div>
