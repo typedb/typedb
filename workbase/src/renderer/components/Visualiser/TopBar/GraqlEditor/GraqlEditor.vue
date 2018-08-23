@@ -12,7 +12,10 @@
             <img class="tab-btn" v-if="editorLinesNumber > 1" src="static/img/icons/icon_up_arrow.svg">
           </div>
         </div>
-        <add-current-query :current-query="currentQuery" :toolTipShown="toolTipShown" v-on:toggle-tool-tip="toggleToolTip" ref="addFavQuery"></add-current-query>
+        <div class="add-fav-query">
+          <input type="text" class="grakn-input" v-model="currentQueryName" placeholder="query name" v-focus>
+          <button id="save-fav-query" @click="addFavQuery" class="btn btn-default save-fav-query" :disabled="currentQueryName.length==0">Save</button>
+        </div>
       </div>
       <div class="right-side">
         <button id="run-query" 
@@ -51,7 +54,7 @@
 .editor-tab {
   align-items: center;
   width: 19px;
-  height: 51px;
+  max-height: 45px; 
   flex-direction: column;
   display: flex;
   background-color: var(--medium-color);
@@ -60,7 +63,7 @@
 }
 
 .tab-btn {
-  height: 18px;
+  height: 15px;
   cursor: pointer;
 }
 .tab-btn:hover {
@@ -98,6 +101,7 @@ span {
     display: inline-flex;
     flex: 1;
     position: relative;
+    flex-direction: column;
 }
 
 .right-side {
@@ -124,7 +128,6 @@ import Spinner from '@/components/UIElements/Spinner.vue';
 import { RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
 import GraqlCodeMirror from './GraqlCodeMirror';
 import AddCurrentQuery from './AddCurrentQuery.vue';
-// import ScrollButton from './ScrollButton.vue';
 import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
 import ManagementUtils from '../../DataManagementUtils';
 

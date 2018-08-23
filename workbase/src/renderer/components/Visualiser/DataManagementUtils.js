@@ -1,4 +1,4 @@
-import QuerySettings from './TopBar/QuerySettings/QuerySettings';
+import QuerySettings from './RightBar/QuerySettings';
 import NodeSettings from './RightBar/NodeSettings';
 
 function buildValue(array) {

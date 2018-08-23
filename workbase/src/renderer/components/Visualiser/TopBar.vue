@@ -94,12 +94,11 @@ import KeyspacesHandler from '../shared/KeyspacesHandler/KeyspacesHandler.vue';
 import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
 import FavQueriesList from './TopBar/FavQueries/FavQueriesList.vue';
 import TypesPanel from './TopBar/TypesPanel.vue';
-import QuerySettings from './TopBar/QuerySettings/QuerySettings.vue';
 import FavQueriesSettings from './TopBar/FavQueries/FavQueriesSettings';
 
 export default {
   props: ['localStore'],
-  components: { KeyspacesHandler, GraqlEditor, FavQueriesList, TypesPanel, QuerySettings },
+  components: { KeyspacesHandler, GraqlEditor, FavQueriesList, TypesPanel },
   data() {
     return {
       favQueries: [],
