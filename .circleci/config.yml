@@ -286,7 +286,7 @@ jobs:
       - *restore_m2_cache
       - run:
           name: Setup GRAKN_VERSION Environment Variable
-            command: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-) >> $BASH_ENV
+          command: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-) >> $BASH_ENV
       - run: mvn versions:set -DnewVersion=test -DgenerateBackupPoms=false # sets version to be `test` so that we can refer to zip using always grakn-core-test
       - run: mvn --batch-mode install -T 2.5C -DskipTests=true
       - run: mkdir ~/grakn/artifacts
