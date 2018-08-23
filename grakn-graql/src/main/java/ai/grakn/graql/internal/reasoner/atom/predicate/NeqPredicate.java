@@ -38,8 +38,23 @@ import java.util.Set;
  */
 public abstract class NeqPredicate extends Predicate<Var> {
 
-    abstract boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv);
-    abstract int bindingHash(Equivalence<Atomic> equiv);
+    private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){
+        IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
+        IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
+        IdPredicate thatRefPredicate = that.getIdPredicate(that.getPredicate());
+        return ( (thisPredicate == null) ? (thisPredicate == thatPredicate) : equiv.equivalent(thisPredicate, thatPredicate) )
+                && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : equiv.equivalent(thisRefPredicate, thatRefPredicate) );
+    }
+
+    private int bindingHash(Equivalence<Atomic> equiv){
+        int hashCode = 1;
+        IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
+        IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
+        hashCode = hashCode * 37 + (idPredicate != null? equiv.hash(idPredicate) : 0);
+        hashCode = hashCode * 37 + (refIdPredicate != null? equiv.hash(refIdPredicate) : 0);
+        return hashCode;
+    }
 
     @Override
     public boolean isAlphaEquivalent(Object obj){

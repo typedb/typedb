@@ -18,16 +18,18 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.query.predicate.Predicates;
 import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Equivalence;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -35,38 +37,27 @@ import com.google.common.base.Equivalence;
 @AutoValue
 public abstract class NeqValuePredicate extends NeqPredicate {
 
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract Var getPredicate();
+    @Nullable public abstract Object getValue();
 
-    public static NeqValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
-        return new AutoValue_NeqValuePredicate(pattern.admin().var(), pattern, parent, extractPredicateVar(pattern));
+    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
+    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+
+    public static NeqValuePredicate create(Var varName, Var var, @Nullable Object value, ReasonerQuery parent){
+        VarPattern pattern = varName.val(Predicates.neq(value != null ? value : var));
+        return new AutoValue_NeqValuePredicate(varName, var, value, pattern, parent);
     }
+
     public static NeqValuePredicate create(Var varName, ai.grakn.graql.internal.query.predicate.NeqPredicate pred, ReasonerQuery parent) {
-        VarPatternAdmin pattern = parent.tx().graql().parser()
-                .parsePattern("{" + varName + " !== " + pred.getInnerVar().orElse(null) + ";}").admin()
-                .varPatterns().iterator().next();
-        return create(pattern, parent);
-    }
-    public static NeqValuePredicate create(NeqPredicate a, ReasonerQuery parent) {
-        return create(a.getPattern(), parent);
+        VarPatternAdmin innerVar = pred.getInnerVar().orElse(null);
+        Var var = innerVar != null? innerVar.var() : Graql.var();
+        Object value = pred.value().orElse(null);
+        return create(varName, var, value, parent);
     }
 
-    private static Var extractPredicateVar(VarPattern pattern) {
-        return pattern.admin().getProperties(ValueProperty.class).iterator().next().predicate().getInnerVar().get().var();
-    }
-
-    @Override
-    boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv) {
-        System.out.println("method not implemented!");
-        return false;
-    }
-
-    @Override
-    int bindingHash(Equivalence<Atomic> equiv) {
-        System.out.println("method not implemented!");
-        return 0;
+    public static NeqValuePredicate create(NeqValuePredicate a, ReasonerQuery parent) {
+        return create(a.getVarName(), a.getPredicate(), a.getValue(), parent);
     }
 
     @Override
@@ -79,8 +70,22 @@ public abstract class NeqValuePredicate extends NeqPredicate {
 
     @Override
     public boolean isSatisfied(ConceptMap sub) {
-        System.out.println("method not implemented!");
-        return false;
+        Object val = getValue();
+        if (val == null &&
+                (!sub.containsVar(getVarName()) || !sub.containsVar(getPredicate()))) return true;
+
+        Concept concept = sub.containsVar(getVarName())? sub.get(getVarName()) : null;
+        Concept referenceConcept = sub.containsVar(getPredicate())? sub.get(getPredicate()) : null;
+        return  concept != null
+                && concept.isAttribute()
+                && (
+                        (val != null && concept.asAttribute().value().equals(val))
+                                || (
+                                        referenceConcept != null
+                                                && referenceConcept.isAttribute()
+                                                && concept.asAttribute().value().equals(referenceConcept.asAttribute().value())
+                        )
+        );
     }
 
 }

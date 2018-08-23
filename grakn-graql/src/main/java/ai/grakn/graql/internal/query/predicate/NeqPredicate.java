@@ -20,6 +20,9 @@ package ai.grakn.graql.internal.query.predicate;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
+/**
+ *
+ */
 public class NeqPredicate extends ComparatorPredicate {
 
     /**

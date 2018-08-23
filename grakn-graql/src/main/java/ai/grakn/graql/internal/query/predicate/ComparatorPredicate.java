@@ -95,7 +95,7 @@ abstract class ComparatorPredicate implements ValuePredicate {
         });
     }
 
-    final Optional<Object> value() {
+    final public Optional<Object> value() {
         return value;
     }
 

@@ -51,6 +51,7 @@ public class AtomicFactory {
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
+        //get rid of duplicates
         return atoms.stream()
                 .filter(at -> atoms.stream()
                         .filter(Atom.class::isInstance)

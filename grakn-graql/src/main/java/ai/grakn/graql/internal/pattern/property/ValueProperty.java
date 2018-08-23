@@ -93,9 +93,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+    public Atomic mapToAtom(VarPatternAdmin parentVar, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        HasAttributeProperty has = parentVar.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
+        Var var = has != null? has.attribute().var() : parentVar.var();
         return predicate() instanceof NeqPredicate ?
-                NeqValuePredicate.create(var.var(), (NeqPredicate) predicate(), parent) :
-                ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
+                NeqValuePredicate.create(var, (NeqPredicate) predicate(), parent) :
+                ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var, this.predicate(), parent);
     }
 }
