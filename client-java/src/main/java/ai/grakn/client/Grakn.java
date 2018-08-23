@@ -53,13 +53,11 @@ import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
-import brave.Span;
-import brave.SpanCustomizer;
 import brave.Tracing;
-import brave.grpc.GrpcClientParser;
 import brave.grpc.GrpcTracing;
 import brave.propagation.TraceContext;
 import com.google.common.collect.AbstractIterator;
+import instrumentation.grpc.GrpcClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import zipkin2.reporter.AsyncReporter;
@@ -68,14 +66,11 @@ import zipkin2.reporter.urlconnection.URLConnectionSender;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import brave.grpc.CustomTracingClientInterceptor;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
@@ -116,7 +111,7 @@ public final class Grakn {
 
         channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
 //                .intercept(grpcTracing.newClientInterceptor())
-                .intercept(new CustomTracingClientInterceptor(grpcTracing))
+                .intercept(new GrpcClientInterceptor(tracing))
                 .usePlaintext(true).build();
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();

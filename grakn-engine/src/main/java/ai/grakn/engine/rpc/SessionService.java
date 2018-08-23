@@ -30,6 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
+import ai.grakn.engine.benchmark.GrpcMessageConversion;
 import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -42,11 +43,9 @@ import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
 import brave.propagation.TraceContext;
-import brave.propagation.TraceContextOrSamplingFlags;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import org.apache.htrace.Trace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +62,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import static brave.internal.HexCodec.toLowerHex;
-import static zipkin2.internal.HexCodec.lowerHexToUnsignedLong;
 
 /**
  *  Grakn RPC Session Service
@@ -125,45 +122,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
 
 
-        // TODO remove these into another class,
-        // TODO these are just temporary for quick dev
-
-        private TraceContext stringsToContext(String traceIdHighStr,
-                                              String traceIdLowStr,
-                                              String spanIdStr,
-                                              String parentIdStr) {
-
-            // traceIdHigh may be '00...00' but lowerHexToUnsignedLong doesn't like this
-            // use zipkin's conversion rather than brave's because brave's doesn't like zeros
-            long traceIdHigh = lowerHexToUnsignedLong(traceIdHighStr);
-            long traceIdLow = lowerHexToUnsignedLong(traceIdLowStr);
-            long spanId = lowerHexToUnsignedLong(spanIdStr);
-            Long parentId;
-            if (parentIdStr.length() == 0) {
-                parentId = null;
-            } else {
-                parentId = lowerHexToUnsignedLong(parentIdStr);
-            }
-            return constructContext(traceIdHigh, traceIdLow, spanId, parentId);
-        }
-
-        // helper method to obtain span or make a new one
-        private TraceContext constructContext(long traceIdHigh,
-                                              long traceIdLow,
-                                              long spanId,
-                                              Long parentId) {
-            TraceContext.Builder builder = TraceContext.newBuilder()
-                    .traceIdHigh(traceIdHigh)
-                    .traceId(traceIdLow)
-                    .spanId(spanId)
-                    .parentId(parentId)
-                    .sampled(true); // MUST set sampled=true to make sure can join
-            TraceContext context = builder.build();
-            return context;
-        }
-
-        // TODO end todo
-
         @Override
         public void onNext(Transaction.Req request) {
 
@@ -177,10 +135,17 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     String spanId = request.getMetadataOrThrow("spanId");
                     String parentId = request.getMetadataOrDefault("parentId", "");
 
-                    receivedTraceContext = stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
-//                    Span span = tracer.newChild(receivedTraceContext).kind(Span.Kind.SERVER);
-//                    submit(() -> handleRequest(request, span));
-                    submit(() -> handleRequest(request, receivedTraceContext));
+                    receivedTraceContext = GrpcMessageConversion.stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
+                    // hop context across thread boundaries
+                    // do this here in case we want to insert another span starting here, in this thread
+                    // to the handleRequest() invocation (measure queue time)
+                    // NOTE that doing this will flush the span started here, I think!
+                    Span queueSpan = Tracing.currentTracer()
+                            .newChild(receivedTraceContext)
+                            .name("Server receive queue")
+                            .start();
+
+                    submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
                 } else {
                     submit(() -> handleRequest(request));
                 }
@@ -199,7 +164,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             close(null);
         }
 
-        private void handleRequest(Transaction.Req request, TraceContext context) {
+        private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
+            queueSpan.finish(); // queue time has finished!
             // hop the span context across thread boundaries
             Tracer tracer = Tracing.currentTracer();
             tracer.startScopedSpanWithParent("Server handle request", context);
@@ -297,12 +263,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             tx = requestOpener.open(args);
             Transaction.Res response = ResponseBuilder.Transaction.open();
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void commit() {
             tx().commitAndGetLogs().ifPresent(postProcessor::submit);
             Transaction.Res response = ResponseBuilder.Transaction.commit();
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void query(Transaction.Query.Req request) {
@@ -313,18 +281,21 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Stream<Transaction.Res> responseStream = query.stream().map(ResponseBuilder.Transaction.Iter::query);
             Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void getSchemaConcept(Transaction.GetSchemaConcept.Req request) {
             Concept concept = tx().getSchemaConcept(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.getSchemaConcept(concept);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void getConcept(Transaction.GetConcept.Req request) {
             Concept concept = tx().getConcept(ConceptId.of(request.getId()));
             Transaction.Res response = ResponseBuilder.Transaction.getConcept(concept);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void getAttributes(Transaction.GetAttributes.Req request) {
@@ -336,12 +307,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             Transaction.Res response = ResponseBuilder.Transaction.getAttributesIterator(iteratorId);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void putEntityType(Transaction.PutEntityType.Req request) {
             EntityType entityType = tx().putEntityType(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.putEntityType(entityType);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void putAttributeType(Transaction.PutAttributeType.Req request) {
@@ -351,18 +324,21 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             AttributeType<?> attributeType = tx().putAttributeType(label, dataType);
             Transaction.Res response = ResponseBuilder.Transaction.putAttributeType(attributeType);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void putRelationshipType(Transaction.PutRelationType.Req request) {
             RelationshipType relationshipType = tx().putRelationshipType(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.putRelationshipType(relationshipType);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void putRole(Transaction.PutRole.Req request) {
             Role role = tx().putRole(Label.of(request.getLabel()));
             Transaction.Res response = ResponseBuilder.Transaction.putRole(role);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void putRule(Transaction.PutRule.Req request) {
@@ -373,6 +349,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Rule rule = tx().putRule(label, when, then);
             Transaction.Res response = ResponseBuilder.Transaction.putRule(rule);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private EmbeddedGraknTx<?> tx() {
@@ -383,6 +360,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
             Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
         private void next(Transaction.Iter.Req iterate) {
@@ -390,36 +368,36 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             onNextResponse(response);
+//            responseSender.onNext(response);
         }
 
-        // TODO naming
         private void onNextResponse(Transaction.Res response) {
             Tracer tracer = Tracing.currentTracer();
             if (tracer != null && tracer.currentSpan() != null) {
-                // DON'T pack the current tracing context back into response
-                // instead, back the originally received trace context!
-
-                Transaction.Res.Builder builder = response.toBuilder();
-
-                // span ID
-                String spanIdStr = toLowerHex(receivedTraceContext.spanId());
-                builder.putMetadata("spanId", spanIdStr);
-
-                // parent ID
-                Long parentId = receivedTraceContext.parentId();
-                if (parentId == null) {
-                    builder.putMetadata("parentId", "");
-                } else {
-                    builder.putMetadata("parentId", toLowerHex(parentId));
-                }
-
-                // Trace ID
-                String traceIdLow = toLowerHex(receivedTraceContext.traceId());
-                String traceIdHigh = toLowerHex(receivedTraceContext.traceIdHigh());
-                builder.putMetadata("traceIdLow", traceIdLow);
-                builder.putMetadata("traceIdHigh", traceIdHigh);
-                response = builder.build(); // update the request
-
+//                // DON'T pack the current tracing context back into response
+//                // instead, back the originally received trace context!
+//
+//                Transaction.Res.Builder builder = response.toBuilder();
+//
+//                // span ID
+//                String spanIdStr = toLowerHex(receivedTraceContext.spanId());
+//                builder.putMetadata("spanId", spanIdStr);
+//
+//                // parent ID
+//                Long parentId = receivedTraceContext.parentId();
+//                if (parentId == null) {
+//                    builder.putMetadata("parentId", "");
+//                } else {
+//                    builder.putMetadata("parentId", toLowerHex(parentId));
+//                }
+//
+//                // Trace ID
+//                String traceIdLow = toLowerHex(receivedTraceContext.traceId());
+//                String traceIdHigh = toLowerHex(receivedTraceContext.traceIdHigh());
+//                builder.putMetadata("traceIdLow", traceIdLow);
+//                builder.putMetadata("traceIdHigh", traceIdHigh);
+//                response = builder.build(); // update the request
+//
                 tracer.currentSpan().finish();
             }
             responseSender.onNext(response);

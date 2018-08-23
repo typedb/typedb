@@ -44,7 +44,6 @@ import ai.grakn.engine.rpc.OpenRequest;
 import brave.Tracing;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.urlconnection.URLConnectionSender;
-import brave.grpc.GrpcTracing;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
 
@@ -138,20 +137,15 @@ public class ServerFactory {
         // Brave Instrumentation
         AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 
+        // set a new global tracer with reporting
         Tracing tracing = Tracing.newBuilder()
                 .localServiceName("query-benchmark-server")
                 .supportsJoin(false)
                 .spanReporter(reporter)
                 .build();
 
-//        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-//                .addService(ServerInterceptors.intercept(
-//                        new SessionService(requestOpener, postProcessor), grpcTracing.newServerInterceptor()))
-//                .addService(ServerInterceptors.intercept(
-//                        new KeyspaceService(keyspaceStore), grpcTracing.newServerInterceptor()))
-//                  .intercept(grpcTracing.newServerInterceptor())
                 .addService(new SessionService(requestOpener, postProcessor))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();

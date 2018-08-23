@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import tarfile
+import sys
 
 cwd = os.getcwd()
 cwd_list = cwd.split('/')
@@ -17,15 +18,29 @@ parser.add_argument('--grakn-home-parent', dest="grakn_home_parent", type=str, r
                     help="directory to find xxx-SNAPSHOT.tar.gz in, default: ../grakn-dist/target",
                     default=None)
 parser.add_argument('--unpack-tar', dest="unpack_tar", default=False, action="store_true", help="Delete and re-untar the xxx-SNAPSHOT.tar.gz even if it exists already")
-build_benchmark_opts = parser.add_mutually_exclusive_group()
-build_benchmark_opts.add_argument('--build-benchmark', dest='build_benchmark', default=False, action="store_true", help="Build the benchmarking package")
-build_benchmark_opts.add_argument('--build-benchmark-alldeps', dest='build_benchmark_all', default=False, action="store_true", help="Build benchmarking and all its dependencies")
+
+build_benchmark_args = parser.add_mutually_exclusive_group()
+build_benchmark_args.add_argument('--build-benchmark', dest='build_benchmark', default=False, action="store_true", help="Build the benchmarking package")
+build_benchmark_args.add_argument('--build-benchmark-alldeps', dest='build_benchmark_all', default=False, action="store_true", help="Build benchmarking and all its dependencies")
+
+# override `concepts` tag in yaml file, don't generate any data
+parser.add_argument('--no-data-generation', dest='no_data_generation', default=False, action="store_true", help="Disable data generation, use existing Grakn data. Requires --keyspace")
+# override `schema` tag in yaml file, don't load a new schema
+parser.add_argument('--no-load-schema', dest='no_load_schema', default=False, action="sture_true", help="Use existing Grakn schema. Requires --keyspace")
+# set the keyspace to use with existing data/schema
+parser.add_argument('--keyspace', default=None, help="Specify keyspace to use")
+
 
 args = parser.parse_args()
+
+if (args.no_load_schema or args.no_data_generation) and args.keyspace is None:
+    print("Require --keyspace if disabling data generation or not loading a schema")
+    sys.exit()
 
 unpack_tar = args.unpack_tar
 build_benchmark = args.build_benchmark
 build_benchmark_and_deps = args.build_benchmark_all
+
 
 if args.build_grakn:
     unpack_tar = True       # override and force delete/unpack
@@ -99,6 +114,8 @@ for path, dirs, files in os.walk(grakn_home, 'services', 'lib'):
 # run benchmarking 
 classpath = ":".join(classpath)
 command = ['java', '-cp', classpath, 'manage.BenchmarkManager']
+args = ["--keyspace", args.keyspace, "--no-data-generation", args.no_data_generation, "--no-load-schema", args.no_load_schema]
+command += args
 print("...Running benchmarking")
 result = subprocess.run(command, cwd=grakn_root)
 result.check_returncode()

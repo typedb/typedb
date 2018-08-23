@@ -114,7 +114,6 @@ public class QueryExecutor {
 
                 Query query = queryIterator.next().withTx(tx);
 
-                tracer.newTrace();
                 Span batchSpan = tracer.newTrace().name("batch-query-span");
                 batchSpan.tag("numConcepts", Integer.toString(numConcepts));
                 batchSpan.tag("query", query.toString());
@@ -152,22 +151,14 @@ public class QueryExecutor {
                     }
                     counter ++;
                 }
+//                Thread.sleep(2000);
                 batchSpan.finish();
+                Thread.sleep(500);
             }
+            Thread.sleep(1500);
             System.out.println(counter);
-//            tracing.close();
         }
     }
 
 
-//    public static void main(String[] args) {
-//        String uri = "localhost:48555";
-//        String keyspace = "societal_model";
-//        QueryExecutor queryExecutor = new QueryExecutor(keyspace, uri, "generated_societal_model");
-//        try {
-//            queryExecutor.processStaticQueries(100, 400, new Date().getTime());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 }

@@ -31,6 +31,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 
 /**
@@ -65,15 +70,42 @@ public class BenchmarkManager {
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
 
+
+        CommandLine commandLine;
+        Option keyspace = Option.builder("k")
+                .longOpt("keyspace")
+                .required(false)
+                .desc("Specific keyspace to utilize (default: `name` in config yaml")
+                .type(String.class)
+                .build();
+        Option noDataGeneration = Option.builder("G")
+                .longOpt("no-data-generation")
+                .required(false)
+                .desc("Disable data generation")
+                .type(Boolean.class)
+                .build();
+        Option noSchemaLoad = Option.builder("S")
+                .longOpt("no-schema-load")
+                .required(false)
+                .desc("Disable loading a schema")
+                .type(Boolean.class)
+                .build();
+        Options options = new Options();
+        CommandLineParser parser = new DefaultParser();
+        options.addOption(keyspace);
+        options.addOption(noDataGeneration);
+        options.addOption(noSchemaLoad);
+
+
+        // TODO finish implementhing this
+
+
         String configFileName = args[0];
         ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
         BenchmarkConfigurationFile configFile = benchmarkConfigMapper.readValue(
                 new File(System.getProperty("user.dir") + configFileName),
                 BenchmarkConfigurationFile.class);
         BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFile);
-
-        // * pass schema file path to Generator
-        // * pass queries to QueryExecutor
 
 
         String uri = "localhost:48555";
@@ -86,8 +118,7 @@ public class BenchmarkManager {
                                             benchmarkConfiguration.getQueries());
         BenchmarkManager manager = new BenchmarkManager(dataGenerator, queryExecutor, 100);
 
-        List<Integer> numConceptsInRun = Arrays.asList(100, 250);
-        manager.run(numConceptsInRun);
+        manager.run(benchmarkConfiguration.getConceptsToBenchmark());
     }
 }
 

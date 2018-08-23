@@ -62,4 +62,8 @@ public class BenchmarkConfiguration {
     public List<String> getQueries() {
         return this.queries.getQueries();
     }
+
+    public List<Integer> getConceptsToBenchmark() {
+        return this.benchmarkConfigFile.getConceptsToBenchmark();
+    }
 }

@@ -19,6 +19,8 @@
 package configure;
 
 
+import java.util.List;
+
 /**
  * Absorbs a toplevel benchmark configuration file
  */
@@ -27,11 +29,11 @@ public class BenchmarkConfigurationFile {
     private String name;
     private String schema;
     private String queries;
+    private List<Integer> concepts;
 
     public void setName(String name) {
         this.name = name;
     }
-
     public String getName() {
         return this.name;
     }
@@ -39,7 +41,6 @@ public class BenchmarkConfigurationFile {
     public void setSchema(String schemaFile) {
         this.schema = schemaFile;
     }
-
     public String getSchemaFile() {
         return System.getProperty("user.dir") + this.schema;
     }
@@ -47,9 +48,16 @@ public class BenchmarkConfigurationFile {
     public void setQueries(String queriesYaml) {
         this.queries = queriesYaml;
     }
-
     public String getQueriesYamlFile() {
         return System.getProperty("user.dir") + this.queries;
     }
+
+    public void setConcepts(List<Integer> concepts) {
+        this.concepts = concepts;
+    }
+    public List<Integer> getConceptsToBenchmark() {
+        return this.concepts;
+    }
+
 }
 

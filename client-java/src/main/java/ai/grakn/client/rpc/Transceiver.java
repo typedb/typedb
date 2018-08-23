@@ -104,8 +104,6 @@ public class Transceiver implements AutoCloseable {
             request = builder.build(); // update the request
         }
 
-        System.out.println(request);
-
         if (responseListener.terminated.get()) {
             throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
         }
