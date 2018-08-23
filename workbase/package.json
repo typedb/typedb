@@ -1,12 +1,12 @@
 {
-  "license": "GPL-3.0",
+  "license": "AGPL-3.0-only",
   "repository": {
     "type": "git",
     "url": "https://github.com/graknlabs/grakn.git"
   },
   "name": "grakn-workbase",
-  "version": "0.0.1-SNAPSHOT",
-  "description": "Grakn Workbase",
+  "version": "1.4.0",
+  "description": "Grakn's IDE to perform knowledge engineering at scale, and control everything in your knowledge graph from development to production.",
   "author": "Grakn Labs",
   "homepage": "https://grakn.ai",
   "main": "./dist/electron/main.js",
@@ -23,7 +23,7 @@
     "e2e": "npm run pack && ./node_modules/jest/bin/jest.js ./test/e2e --runInBand"
   },
   "build": {
-    "productName": "GraknWorkbase",
+    "productName": "grakn-workbase",
     "appId": "ai.grakn.workbase",
     "directories": {
       "output": "build"
@@ -47,7 +47,9 @@
       ]
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "artifactName": "${productName}-${version}-mac.${ext}",
+      "target": "zip"
     },
     "win": {
       "icon": "build/icons/icon.ico"
@@ -55,6 +57,7 @@
     "linux": {
       "icon": "build/icons",
       "category": "Development",
+      "artifactName": "${productName}-${version}-linux.${ext}",
       "target": "tar.gz"
     }
   },
