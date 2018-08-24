@@ -93,15 +93,19 @@ public abstract class Binary extends Atom {
         return getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
     }
 
-    @Override
-    public boolean isAlphaEquivalent(Object obj) {
+    private boolean isEquivalent(Object obj, Equivalence<Atomic> equivalence){
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         Binary that = (Binary) obj;
         return  (this.isUserDefined() == that.isUserDefined())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.predicateBindingsEquivalent(that, AtomicEquivalence.AlphaEquivalence);
+                && this.predicateBindingsEquivalent(that, equivalence);
+    }
+
+    @Override
+    public boolean isAlphaEquivalent(Object obj) {
+        return isEquivalent(obj, AtomicEquivalence.AlphaEquivalence);
     }
 
     @Override
@@ -113,13 +117,7 @@ public abstract class Binary extends Atom {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        Binary that = (Binary) obj;
-        return  (this.isUserDefined() == that.isUserDefined())
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
+        return isEquivalent(obj, AtomicEquivalence.StructuralEquivalence);
     }
 
     @Override

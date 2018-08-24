@@ -75,8 +75,8 @@ public abstract class NeqIdPredicate extends NeqPredicate {
 
     @Override
     public boolean isSatisfied(ConceptMap sub) {
-        return sub.containsVar(getVarName())
-                && sub.containsVar(getPredicate())
-                && sub.get(getVarName()).equals(sub.get(getPredicate()));
+        return !sub.containsVar(getVarName())
+                || !sub.containsVar(getPredicate())
+                || !sub.get(getVarName()).equals(sub.get(getPredicate()));
     }
 }

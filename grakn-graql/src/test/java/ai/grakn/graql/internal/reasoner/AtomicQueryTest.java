@@ -976,10 +976,12 @@ public class AtomicQueryTest {
     public void testEquivalence_MultiPredicateResources(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$z has resource $u;$a >23; $a <27;}";
+
         String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
         String query2b = "{$a isa baseRoleEntity;$a has resource $p;$p <27;$p >23;}";
         String query2c = "{$x isa baseRoleEntity, has resource $a;$a >23; $a <27;}";
         String query2d = "{$x isa $type;$type label baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
+
         String query3 = "{$e isa baseRoleEntity;$e has resource > 23;}";
         String query3b = "{$p isa baseRoleEntity;$p has resource $a;$a >23;}";
         String query4 = "{$x isa baseRoleEntity;$x has resource $y;$y >27;$y <23;}";

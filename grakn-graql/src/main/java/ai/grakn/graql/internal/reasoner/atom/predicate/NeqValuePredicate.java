@@ -76,7 +76,9 @@ public abstract class NeqValuePredicate extends NeqPredicate {
                 getValue() :
                 predicate != null? predicate.getPredicate().equalsValue().orElse(null) : null;
         if (val == null &&
-                (!sub.containsVar(getVarName()) || !sub.containsVar(getPredicate()))) return true;
+                (!sub.containsVar(getVarName()) || !sub.containsVar(getPredicate()))) {
+            return true;
+        }
 
         Concept concept = sub.containsVar(getVarName())? sub.get(getVarName()) : null;
         Concept referenceConcept = sub.containsVar(getPredicate())? sub.get(getPredicate()) : null;
