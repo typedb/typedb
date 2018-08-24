@@ -82,12 +82,12 @@ public class AttributeDeduplicatorDaemon {
      * The attribute must have been inserted to the database, prior to calling this method.
      *
      * @param keyspace keyspace of the attribute
-     * @param value the value of the attribute
+     * @param index the value of the attribute
      * @param conceptId the concept id of the attribute
      */
-    public void markForDeduplication(Keyspace keyspace, String value, ConceptId conceptId) {
-        Attribute attribute = Attribute.create(keyspace, value, conceptId);
-        LOG.info("insert(" + attribute + ")");
+    public void markForDeduplication(Keyspace keyspace, String index, ConceptId conceptId) {
+        Attribute attribute = Attribute.create(keyspace, index, conceptId);
+        LOG.debug("insert(" + attribute + ")");
         queue.insert(attribute);
     }
 
@@ -105,11 +105,11 @@ public class AttributeDeduplicatorDaemon {
                 try {
                     List<Attribute> attributes = queue.read(QUEUE_GET_BATCH_MAX);
 
-                    LOG.info("starting a new batch to process these new attributes: " + attributes);
+                    LOG.debug("starting a new batch to process these new attributes: " + attributes);
 
                     // group the attributes into a set of unique (keyspace -> value) pair
                     Set<KeyspaceIndexPair> uniqueKeyValuePairs = attributes.stream()
-                            .map(attr -> KeyspaceIndexPair.create(attr.keyspace(), attr.value()))
+                            .map(attr -> KeyspaceIndexPair.create(attr.keyspace(), attr.index()))
                             .collect(Collectors.toSet());
 
                     // perform deduplicate for each (keyspace -> value)
@@ -117,7 +117,7 @@ public class AttributeDeduplicatorDaemon {
                         deduplicate(txFactory, keyspaceIndexPair);
                     }
 
-                    LOG.info("new attributes processed.");
+                    LOG.debug("new attributes processed.");
 
                     queue.ack(attributes);
                 }

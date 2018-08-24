@@ -106,7 +106,6 @@ public class RocksDbQueue implements AutoCloseable {
         while (it.isValid() && count < limit) {
             String id = deserializeStringUtf8(it.key());
             Attribute attr = deserialiseAttributeUtf8(it.value());
-            System.out.println("id = " + id + ", attr = " + attr);
             result.add(attr);
             it.next();
             count++;
@@ -165,7 +164,7 @@ public class RocksDbQueue implements AutoCloseable {
         static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(
                     "attribute-keyspace", attribute.keyspace().getValue(),
-                    "attribute-value", attribute.value(),
+                    "attribute-index", attribute.index(),
                     "attribute-concept-id", attribute.conceptId().getValue()
             );
             return serialiseStringUtf8(json.toString());
@@ -174,7 +173,7 @@ public class RocksDbQueue implements AutoCloseable {
         static Attribute deserialiseAttributeUtf8(byte[] attribute) {
             Json json = Json.read(deserializeStringUtf8(attribute));
             String keyspace = json.at("attribute-keyspace").asString();
-            String value = json.at("attribute-value").asString();
+            String value = json.at("attribute-index").asString();
             String conceptId = json.at("attribute-concept-id").asString();
             return Attribute.create(Keyspace.of(keyspace), value, ConceptId.of(conceptId));
         }

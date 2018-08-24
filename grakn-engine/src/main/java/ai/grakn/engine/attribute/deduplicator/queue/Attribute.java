@@ -23,16 +23,16 @@ import ai.grakn.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
 /**
- * 
+ *
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
 public abstract class Attribute {
     public abstract Keyspace keyspace();
-    public abstract String value();
+    public abstract String index();
     public abstract ConceptId conceptId();
 
-    public static Attribute create(Keyspace keyspace, String value, ConceptId conceptId) {
-        return new AutoValue_Attribute(keyspace, value, conceptId);
+    public static Attribute create(Keyspace keyspace, String index, ConceptId conceptId) {
+        return new AutoValue_Attribute(keyspace, index, conceptId);
     }
 }
