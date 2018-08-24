@@ -37,16 +37,19 @@ import java.util.ArrayList;
 
 /**
  *
- * TODO
+ * The class containing the actual de-duplication algorithm.
+ *
  * @author Ganeshwara Herawan Hananda
  */
 public class AttributeDeduplicator {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicator.class);
     /**
-     * Given an attributeValue, find the duplicates and merge them into a single unique attribute
+     * Deduplicate attributes that has the same value. A de-duplication process consists of picking a single attribute
+     * in the duplicates as the "merge target", copying every edges from every "other duplicates" to the merge target, and
+     * finally deleting that other duplicates.
      *
      * @param txFactory the factory object for accessing the database
-     * @param keyspaceIndexPair the index to be de-duplicated
+     * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
     public static void deduplicate(EngineGraknTxFactory txFactory, KeyspaceIndexPair keyspaceIndexPair) {
         try (EmbeddedGraknTx tx = txFactory.tx(keyspaceIndexPair.keyspace(), GraknTxType.WRITE)) {

@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
 /**
- * TODO
+ * 
  * @author Ganeshwara Herawan Hananda
  */
 @AutoValue

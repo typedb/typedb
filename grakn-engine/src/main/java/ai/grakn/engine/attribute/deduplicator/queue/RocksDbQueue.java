@@ -62,7 +62,7 @@ public class RocksDbQueue implements AutoCloseable {
             queueDb = RocksDB.open(options, path.toAbsolutePath().toString());
         }
         catch (RocksDBException e) {
-            throw new QueueException(e);
+            throw new RocksDbQueueException(e);
         }
     }
 
@@ -78,7 +78,7 @@ public class RocksDbQueue implements AutoCloseable {
             synchronized (this) { notifyAll(); }
         }
         catch (RocksDBException e) {
-            throw new QueueException(e);
+            throw new RocksDbQueueException(e);
         }
     }
 
@@ -128,14 +128,14 @@ public class RocksDbQueue implements AutoCloseable {
             try {
                 acks.delete(serialiseStringUtf8(attr.conceptId().getValue()));
             } catch (RocksDBException e) {
-                throw new QueueException(e);
+                throw new RocksDbQueueException(e);
             }
         }
         try {
             queueDb.write(writeOptions, acks);
         }
         catch (RocksDBException e) {
-            throw new QueueException(e);
+            throw new RocksDbQueueException(e);
         }
     }
 

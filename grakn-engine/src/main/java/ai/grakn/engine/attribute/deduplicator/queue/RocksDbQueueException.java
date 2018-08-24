@@ -19,11 +19,11 @@
 package ai.grakn.engine.attribute.deduplicator.queue;
 
 /**
- * TODO
+ *
  * @author Ganeshwara Herawan Hananda
  */
-class QueueException extends RuntimeException {
-    QueueException(Throwable cause) {
+class RocksDbQueueException extends RuntimeException {
+    RocksDbQueueException(Throwable cause) {
         super(cause);
     }
 }
