@@ -138,22 +138,6 @@ public class AttributeDeduplicatorIT {
             tx.commit();
         }
 
-        // verify
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.READ)) {
-            List<ConceptMap> conceptMaps = tx.graql().match(
-                    var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
-                    var("owner").isa(ownerLabel)).get().execute();
-            Set<String> owned = new HashSet<>();
-            Set<String> owner = new HashSet<>();
-            for (ConceptMap conceptMap: conceptMaps) {
-                owned.add(conceptMap.get("owned").asAttribute().id().getValue());
-                owner.add(conceptMap.get("owner").asAttribute().id().getValue());
-            }
-
-            assertThat(owned, hasSize(3));
-            assertThat(owner, hasSize(3));
-        }
-
         // deduplicate
         AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownedAttributeLabel + "-" + ownedAttributeValue));
         AttributeDeduplicator.deduplicate(txFactory, KeyspaceIndexPair.create(keyspace, "ATTRIBUTE-" + ownerLabel + "-" + ownerValue1));
