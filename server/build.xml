@@ -66,7 +66,7 @@
         <!-- static assets for dashboard -->
 
         <fileSet>
-            <directory>${main.basedir}/dashboard/static</directory>
+            <directory>${project.parent.basedir}/dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>

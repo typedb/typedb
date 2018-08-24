@@ -23,7 +23,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn</artifactId>
+    <artifactId>grakn-core</artifactId>
     <packaging>pom</packaging>
     <version>1.4.0-SNAPSHOT</version>
     <name>Grakn Core</name>
@@ -39,6 +39,7 @@
     </modules>
 
     <properties>
+        <grakn.version>1.4.0-SNAPSHOT</grakn.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.resource.encoding>UTF-8</project.resource.encoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -107,7 +108,7 @@
     </properties>
 
     <organization>
-      <name>GRAKN.AI</name>
+      <name>Grakn Labs</name>
       <url>https://grakn.ai</url>
     </organization>
 
@@ -141,8 +142,14 @@
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>Marco Scoppetta</name>
-            <email>marco@grakn.ai</email>
+            <name>James Fletcher</name>
+            <email>james@grakn.ai</email>
+            <organization>Grakn Labs</organization>
+            <organizationUrl>http://grakn.ai</organizationUrl>
+        </developer>
+        <developer>
+            <name>Joshua Send</name>
+            <email>joshua@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
@@ -153,8 +160,14 @@
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>James Fletcher</name>
-            <email>james@grakn.ai</email>
+            <name>Marco Scoppetta</name>
+            <email>marco@grakn.ai</email>
+            <organization>Grakn Labs</organization>
+            <organizationUrl>http://grakn.ai</organizationUrl>
+        </developer>
+        <developer>
+            <name>Soroush Saffari</name>
+            <email>soroush@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
@@ -177,7 +190,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -213,7 +226,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>client-java</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -224,7 +237,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>core.server</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -235,37 +248,37 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>core.console</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${grakn.version}</version>
             </dependency>
 
             <dependency>
@@ -971,6 +984,28 @@
         </pluginManagement>
 
         <plugins>
+            <!--<plugin>-->
+                <!--<artifactId>maven-assembly-plugin</artifactId>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>build grakn-core</id>-->
+                        <!--<phase>package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>single</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+                <!--<configuration>-->
+                    <!--<finalName>grakn-core-all-${project.version}</finalName>-->
+                    <!--<outputDirectory>${basedir}/dist</outputDirectory>-->
+                    <!--<tarLongFileMode>gnu</tarLongFileMode>-->
+                    <!--<descriptors>-->
+                        <!--<descriptor>server/build.xml</descriptor>-->
+                        <!--<descriptor>console/build.xml</descriptor>-->
+                    <!--</descriptors>-->
+                    <!--<appendAssemblyId>false</appendAssemblyId>-->
+                <!--</configuration>-->
+            <!--</plugin>-->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -1167,6 +1202,7 @@
                         <executions>
                             <execution>
                                 <id>attach-aggregate-javadocs</id>
+                                <phase>package</phase>
                                 <goals>
                                     <goal>aggregate-jar</goal>
                                 </goals>
