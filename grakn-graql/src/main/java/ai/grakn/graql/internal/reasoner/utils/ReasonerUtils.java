@@ -377,7 +377,7 @@ public class ReasonerUtils {
      * @return new Collection containing a minus a - b.
      * The cardinality of each element e in the returned Collection will be the cardinality of e in a minus the cardinality of e in b, or zero, whichever is greater.
      */
-    public static <T> Collection<T> subtract(Collection<T> a, Collection<T> b){
+    public static <T> List<T> listDifference(List<T> a, List<T> b){
         ArrayList<T> list = new ArrayList<>(a);
         b.forEach(list::remove);
         return list;

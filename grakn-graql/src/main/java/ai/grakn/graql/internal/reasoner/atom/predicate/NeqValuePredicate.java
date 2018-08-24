@@ -65,12 +65,16 @@ public abstract class NeqValuePredicate extends NeqPredicate {
 
     @Override
     public String toString(){
-        return "[" + getVarName() + " !== " + getPredicate() + "]";
+        return "[" + getVarName() + " !== " + getPredicate() + "]"
+                + (getValue() != null? "[" + getPredicate() + "/" + getValue() + "]" : "");
     }
 
     @Override
     public boolean isSatisfied(ConceptMap sub) {
-        Object val = getValue();
+        ValuePredicate predicate = getPredicate(getPredicate(), ValuePredicate.class);
+        Object val = getValue() != null?
+                getValue() :
+                predicate != null? predicate.getPredicate().equalsValue().orElse(null) : null;
         if (val == null &&
                 (!sub.containsVar(getVarName()) || !sub.containsVar(getPredicate()))) return true;
 
@@ -79,11 +83,11 @@ public abstract class NeqValuePredicate extends NeqPredicate {
         return  concept != null
                 && concept.isAttribute()
                 && (
-                        (val != null && concept.asAttribute().value().equals(val))
+                        (val != null && !concept.asAttribute().value().equals(val))
                                 || (
                                         referenceConcept != null
                                                 && referenceConcept.isAttribute()
-                                                && concept.asAttribute().value().equals(referenceConcept.asAttribute().value())
+                                                && !concept.asAttribute().value().equals(referenceConcept.asAttribute().value())
                         )
         );
     }

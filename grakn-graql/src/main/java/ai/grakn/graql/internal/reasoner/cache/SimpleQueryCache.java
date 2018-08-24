@@ -114,7 +114,7 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBas
                     })
                     .forEach(answers::add);
         } else {
-            if (!answer.vars().containsAll(query.getVarNames())){
+            if (!query.getVarNames().equals(answer.vars())){
                 throw GraqlQueryException.invalidQueryCacheEntry(query);
             }
             this.putEntry(query, new QueryAnswers(answer));
@@ -181,7 +181,6 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBas
         }
 
         //TODO should it create a cache entry?
-        System.out.println(ReasonerQueries.create(query, ans).getQuery());
         List<ConceptMap> answers = ReasonerQueries.create(query, ans).getQuery().execute();
         return answers.isEmpty()? new ConceptMapImpl() : answers.iterator().next();
     }

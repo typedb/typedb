@@ -936,7 +936,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 .filter(list -> {
                     List<RelationPlayer> listChildRps = list.stream().map(Pair::getKey).collect(Collectors.toList());
                     //NB: this preserves cardinality instead of removing all occuring instances which is what we want
-                    return ReasonerUtils.subtract(listChildRps, this.getRelationPlayers()).isEmpty();
+                    return ReasonerUtils.listDifference(listChildRps, this.getRelationPlayers()).isEmpty();
                 })
                 //check all parent rps mapped
                 .filter(list -> {

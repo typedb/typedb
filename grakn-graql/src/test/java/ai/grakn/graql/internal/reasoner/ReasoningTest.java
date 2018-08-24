@@ -28,6 +28,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.Iterables;
@@ -46,7 +47,6 @@ import java.util.function.Function;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
-import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -548,22 +548,40 @@ public class ReasoningTest {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void derivingResourceNotHavingSpecificValue() {
+    public void derivingResource_requireNotHavingSpecificValue() {
         QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
         String queryString = "match " +
                 "$x has derived-resource-string $val !== 'unattached';" +
                 "get;";
-        String queryString3 = "match " +
+        String queryString2 = "match " +
                 "$x has derived-resource-string $val;" +
                 "$unwanted 'unattached';" +
                 "$val !== $unwanted; get;";
-        String queryString2 = "match $x has derived-resource-string $val; $val 'value'; get;";
 
-        //qb.parse("match $x has attribute $val; $x != 'reattachable-resource-string';get;").execute();
+        String complementQueryString = "match $x has derived-resource-string $val 'unattached'; get;";
+        String completeQueryString = "match $x has derived-resource-string $val; get;";
 
-        List<?> execute = qb.parse(queryString).execute();
-        List<?> execute1 = qb.parse(queryString2).execute();
-        //assertQueriesEqual(query, query2);
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        List<ConceptMap> answersBis = qb.<GetQuery>parse(queryString2).execute();
+
+        List<ConceptMap> complement = qb.<GetQuery>parse(complementQueryString).execute();
+        List<ConceptMap> complete = qb.<GetQuery>parse(completeQueryString).execute();
+        List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
+
+        assertCollectionsEqual(expectedAnswers, answers);
+        assertCollectionsEqual(expectedAnswers, answersBis);
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void derivingResource_requireValuesToBeDifferent() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        String queryString = "match " +
+                "$x has derived-resource-string $val;" +
+                "$y has reattachable-resource-string $anotherVal;" +
+                "$val !== $anotherVal;" +
+                "get;";
+
+        qb.<GetQuery>parse(queryString).stream().forEach(ans -> assertNotEquals(ans.get("val"), ans.get("anotherVal")));
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -576,13 +594,12 @@ public class ReasoningTest {
                 "$value !== $unwantedValue;" +
                 "$value isa $type;" +
                 "$unwantedValue isa $type;" +
-                "$unwantedType label 'derivable-resource-string';" +
                 "$type != $unwantedType;" +
+                "$unwantedType label 'derivable-resource-string';" +
                 "get;";
         GetQuery query = qb.parse(queryString);
         List<ConceptMap> execute = query.execute();
         System.out.println();
-
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.

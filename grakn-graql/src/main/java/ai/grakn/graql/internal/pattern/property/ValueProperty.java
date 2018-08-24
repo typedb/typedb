@@ -97,7 +97,7 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
         HasAttributeProperty has = parentVar.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Var var = has != null? has.attribute().var() : parentVar.var();
         return predicate() instanceof NeqPredicate ?
-                NeqValuePredicate.create(var, (NeqPredicate) predicate(), parent) :
-                ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var, this.predicate(), parent);
+                NeqValuePredicate.create(var.asUserDefined(), (NeqPredicate) predicate(), parent) :
+                ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.asUserDefined(), this.predicate(), parent);
     }
 }
