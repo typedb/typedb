@@ -68,7 +68,8 @@ confidence sub attribute datatype string;
 
 person sub entity
     plays protagonist
-    plays spouse
+    plays spouse1
+    plays spouse2
     plays parent
     plays child
     plays sibling
@@ -98,13 +99,15 @@ relatives sub relationship
     is-abstract;
 
 marriage sub relatives
-    relates spouse
+    relates spouse1
+    relates spouse2
     relates husband
     relates wife
     has event-date;
-spouse sub role;
-husband sub spouse;
-wife sub spouse;
+spouse1 sub role;
+spouse2 sub role;
+husband sub role;
+wife sub role;
 
 parentship sub relatives
     relates parent
