@@ -104,7 +104,6 @@ public class RocksDbQueue implements AutoCloseable {
         it.seekToFirst();
         int count = 0;
         while (it.isValid() && count < limit) {
-            String id = deserializeStringUtf8(it.key());
             Attribute attr = deserialiseAttributeUtf8(it.value());
             result.add(attr);
             it.next();
