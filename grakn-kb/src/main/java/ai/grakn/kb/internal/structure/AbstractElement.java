@@ -20,9 +20,12 @@ package ai.grakn.kb.internal.structure;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -142,17 +145,17 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param value The new value of the unique property
      */
     public void propertyUnique(P key, String value){
-//        if(!tx().isBatchTx()) {
-//            GraphTraversal<Vertex, Vertex> traversal = tx().getTinkerTraversal().V().has(key.name(), value);
-//
-//            if(traversal.hasNext()){
-//                Vertex vertex = traversal.next();
-//                if(!vertex.equals(element()) || traversal.hasNext()){
-//                    if(traversal.hasNext()) vertex = traversal.next();
-//                    throw PropertyNotUniqueException.cannotChangeProperty(element(), vertex, key, value);
-//                }
-//            }
-//        }
+        if(!tx().isBatchTx()) {
+            GraphTraversal<Vertex, Vertex> traversal = tx().getTinkerTraversal().V().has(key.name(), value);
+
+            if(traversal.hasNext()){
+                Vertex vertex = traversal.next();
+                if(!vertex.equals(element()) || traversal.hasNext()){
+                    if(traversal.hasNext()) vertex = traversal.next();
+                    throw PropertyNotUniqueException.cannotChangeProperty(element(), vertex, key, value);
+                }
+            }
+        }
 
         property(key, value);
     }
