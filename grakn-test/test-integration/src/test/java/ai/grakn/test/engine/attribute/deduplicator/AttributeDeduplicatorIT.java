@@ -27,9 +27,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 public class AttributeDeduplicatorIT {
-    @ClassRule
-    public static EmbeddedCassandraContext cassandra = EmbeddedCassandraContext.create();
-
     @Test
     public void shouldDeduplicateAttributes() {
         // setup a keyspace & txFactory
