@@ -101,7 +101,7 @@ $rel2 has event-role "spouse";
 $s1 != $s2;
 }
 then
-{(spouse: $s1, spouse: $s2) isa marriage;};
+{(spouse1: $s1, spouse2: $s2) isa marriage;};
 
 
 #############################################################################
@@ -254,8 +254,7 @@ then
 
 parentsOfSpousesAreInLaws sub rule
 when
-{(spouse: $x, spouse: $y) isa marriage;
+{(spouse1: $x, spouse2: $y) isa marriage;
 (parent: $il, child: $y) isa parentship;}
 then
 {(parent-in-law: $il, child-in-law: $x) isa in-laws;};
-
