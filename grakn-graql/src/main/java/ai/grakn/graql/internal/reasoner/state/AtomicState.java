@@ -77,7 +77,9 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
         ConceptMap baseAnswer = state.getSubstitution();
         InferenceRule rule = state.getRule();
         Unifier unifier = state.getUnifier();
-        if (rule == null) answer = state.getSubstitution();
+        if (rule == null){
+            answer = baseAnswer.merge(query.getSubstitution());
+        }
         else{
             answer = rule.requiresMaterialisation(query.getAtom()) ?
                     materialisedAnswer(baseAnswer, rule, unifier) :

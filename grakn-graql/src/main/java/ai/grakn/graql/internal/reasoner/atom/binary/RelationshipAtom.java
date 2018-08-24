@@ -1015,8 +1015,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return Stream.of(substitution.merge(relationSub));
     }
 
-
-
     /**
      * if any {@link Role} variable of the parent is user defined rewrite ALL {@link Role} variables to user defined (otherwise unification is problematic)
      * @param parentAtom parent atom that triggers rewrite
