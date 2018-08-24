@@ -313,23 +313,19 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
 
-    public abstract Atom rewriteWithTypeVariable();
-
     /**
      * rewrites the atom to user-defined type variable
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    protected Atom rewriteWithTypeVariable(Atom parentAtom){
-        if (this.getPredicateVariable().isUserDefinedName() || !parentAtom.getPredicateVariable().isUserDefinedName()) return this;
-        return rewriteWithTypeVariable();
+    public Atom rewriteWithTypeVariable(Atom parentAtom){
+        if (parentAtom.getPredicateVariable().isUserDefinedName()
+                && !this.getPredicateVariable().isUserDefinedName()
+                && this.getClass() == parentAtom.getClass() ){
+            return rewriteWithTypeVariable();
+        }
+        return this;
     }
-
-    /**
-     * rewrites the atom to one with user defined relation variable
-     * @return rewritten atom
-     */
-    public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
      * rewrites the atom to one with suitably user-defined names depending on provided parent
@@ -337,6 +333,15 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public abstract Atom rewriteToUserDefined(Atom parentAtom);
+
+
+    public abstract Atom rewriteWithTypeVariable();
+
+    /**
+     * rewrites the atom to one with user defined relation variable
+     * @return rewritten atom
+     */
+    public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
      * @param parentAtom atom to be unified with
