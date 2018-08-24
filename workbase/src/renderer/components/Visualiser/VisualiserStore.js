@@ -2,7 +2,7 @@ import Vue from 'vue';
 import storage from '@/components/shared/PersistentStorage';
 import logger from '@/../Logger';
 import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
-import ManagementUtils from './DataManagementUtils';
+import ManagementUtils from './VisualiserUtils';
 import NodeSettings from './RightBar/NodeSettings';
 import Style from './Style';
 

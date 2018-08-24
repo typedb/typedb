@@ -1,10 +1,15 @@
 <template>
   <transition name="slideInDown" appear>
     <div class="graqlEditor-container">
-      <div class="left-side">            
+      <div class="left-side">
+
+        <vue-button @click="toggleFavQueriesList" icon="book" intent="primary"></vue-button>
+        <!--<vue-tooltip content="hello" targetClassName="test"></vue-tooltip>-->
+
+
       </div>
       <div class="center">
-        <div class="graqlEditor-wrapper" v-bind:style="[currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
+        <div class="graqlEditor-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
           <div class="column">
             <div class="row">
               <textarea id="graqlEditor" ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
@@ -19,22 +24,55 @@
               <img class="btn tab-btn" @click="addFavQuery" :disabled="currentQueryName.length==0" src="static/img/icons/icon_floppy.svg">
             </div>
           </div>
+          <div v-if="showFavQueriesList" class="fav-query-list">
+
+            <img class="close-container" @click="showFavQueriesList = false" src="static/img/icons/icon_close.svg">
+            <div class="panel-body" v-if="favQueries.length">
+              <div class="fav-query-item" v-for="(query,index) in favQueries" :key="index">
+                <div class="fav-query-left">
+                  <span class="query-name">{{query.name}}</span>
+                  <div class="fav-query-btns">
+                    <button class="btn" @click="typeFavQuery(query.value)">USE</button>
+                    <button class="btn" @click="removeFavQuery(index, query.name)"><i class="fas fa-trash-alt"></i></button>
+                    <img class="btn tab-btn" @click="clearGraph" src="static/img/icons/icon_edit.svg">
+                  </div>
+                </div>
+                <div class="fav-query-right">
+                  <input type="text" class="grakn-input" v-model="query.value">
+                </div>
+
+
+                </div>
+            </div>
+            <div class="panel-body" v-else>
+                <div class="dd-item">
+                    <div class="no-saved">
+                        no saved queries
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+          </div>
         </div>
       </div>
       <div class="right-side">
-        <button id="run-query" 
-          @click="runQuery" :class="{'disabled':(currentKeyspace || !currentQuery.length)}" 
-          class="btn top-bar-btn" ref="runQueryButton">
-          <img src="static/img/icons/icon_play_circle.svg">
-        </button>
-        <button 
-          id="clear"
-          :class="{'disabled':(currentKeyspace || !currentQuery.length)}"
-          @click="clearGraph" 
-          class="btn top-bar-btn" 
+        <vue-button
+          @click="runQuery"
+          icon="play"
+          intent="primary"
+          ref="runQueryButton">
+        </vue-button>
+        <vue-button
+          @click="clearGraph"
+          icon="refresh"
+          intent="primary"
           ref="clearButton">
-          <img src="static/img/icons/icon_refresh.svg">
-        </button>
+        </vue-button>
         <Spinner className="spinner-data" :localStore="localStore"></Spinner>
       </div>
     </div>
@@ -42,6 +80,52 @@
 </template>
 
 <style scoped>
+.close-container{
+  position: absolute;
+  right: 0px;
+  top:0px;
+  height: 15px;
+}
+
+.fav-query-left{
+  padding: var(--container-padding);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: solid 1px var(--border-light-color);
+}
+
+.fav-query-right {
+  padding: var(--container-padding);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fav-query-btns{
+  display: flex;
+  flex-direction: row;
+}
+
+.fav-query-item{
+  display: flex;
+  flex-direction: row;
+  border-bottom: solid 0.5px var(--border-light-color);
+  border-top: solid 0.5px var(--border-light-color);
+  padding-top: 5px;
+}
+.fav-query-list {
+width: 100%;
+background-color: var(--light-color);
+margin-top: 10px;
+padding: var(--container-padding);
+border: var(--container-border);
+max-height: 125px;
+overflow: auto;
+position: relative;
+}
 
 .row {
   display: flex;
@@ -52,6 +136,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  background-color: #0f0f0f;
+  border-bottom: 1px solid #00eca2;
 }
 
 .add-fav-query{
@@ -65,7 +151,7 @@
 .editor-tab {
   align-items: center;
   width: 19px;
-  max-height: 57px; 
+  max-height: 57px;
   flex-direction: column;
   display: flex;
   background-color: var(--medium-color);
@@ -89,14 +175,12 @@ span {
 .graqlEditor-wrapper {
     z-index: 3;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     flex: 1;
     border-radius: 3px;
     position: absolute;
     width: 100%;
     top: -15px;
-    background-color: #0f0f0f;
-    border-bottom: 1px solid #00eca2;
 }
 
 .types-wrapper {
@@ -140,7 +224,8 @@ import { RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
 import GraqlCodeMirror from './GraqlCodeMirror';
 import AddCurrentQuery from './AddCurrentQuery.vue';
 import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
-import ManagementUtils from '../../DataManagementUtils';
+import ManagementUtils from '../../VisualiserUtils';
+
 
 export default {
   name: 'GraqlEditor',
@@ -154,7 +239,9 @@ export default {
       codeMirror: {},
       editorLinesNumber: 1,
       showAddFavQuery: false,
+      showFavQueriesList: false,
       currentQueryName: '',
+      favQueries: [],
     };
   },
   created() {
@@ -179,6 +266,7 @@ export default {
       this.codeMirror.setCursor(this.codeMirror.lineCount(), 0);
     },
     currentKeyspace() {
+      this.refreshFavQueries();
       if (this.currentKeyspace) {
         this.codeMirror.setOption('readOnly', false);
       }
@@ -203,11 +291,6 @@ export default {
         this.localStore.setCurrentQuery(codeMirrorObj.getValue());
         this.editorLinesNumber = codeMirrorObj.lineCount();
       });
-
-      // this.$refs.addFavQuery.$on('new-fav-query', (currentQueryName) => {
-      //   FavQueriesSettings.addFavQuery(currentQueryName, this.currentQuery, this.currentKeyspace);
-      //   this.$emit('refresh-fav-queries');
-      // });
     });
   },
   methods: {
@@ -239,8 +322,24 @@ export default {
     addFavQuery() {
       this.showAddFavQuery = false;
       FavQueriesSettings.addFavQuery(this.currentQueryName, this.currentQuery, this.currentKeyspace);
-      this.$emit('refresh-fav-queries');
+      this.refreshFavQueries();
       this.currentQueryName = '';
+    },
+    removeFavQuery(index, queryName) {
+      FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
+      this.favQueries.splice(index, 1);
+    },
+    typeFavQuery(query) {
+      this.localStore.setCurrentQuery(query);
+    },
+    toggleFavQueriesList() {
+      this.showFavQueriesList = !this.showFavQueriesList;
+    },
+    refreshFavQueries() {
+      this.favQueries = this.objectToArray(FavQueriesSettings.getFavQueries(this.currentKeyspace));
+    },
+    objectToArray(object) {
+      return Object.keys(object).map(key => ({ name: key, value: object[key].replace('\n', '') }));
     },
   },
 };

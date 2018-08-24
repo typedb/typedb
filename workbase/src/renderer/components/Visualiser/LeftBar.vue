@@ -3,9 +3,9 @@
     <div class="minimize-command-bar" @click="toggleCommandsBar">
       <img class="minimize-arrow" :src="(minimizeCommandsBar) ? 'static/img/icons/icon_right_arrow.png' : 'static/img/icons/icon_left_arrow.png'">
     </div>
-    <div v-if="!minimizeCommandsBar" class="title">
+    <!-- <div v-if="!minimizeCommandsBar" class="title">
       commands
-    </div>
+    </div> -->
     <div class="command-list">
       <div class="command-item">
         <!-- <button class="btn command-btn">M</button>

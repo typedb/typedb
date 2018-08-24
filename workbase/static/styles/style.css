@@ -3,28 +3,103 @@
 
 
 :root {
-  --border-color: #1a1a1a;
+  --border-darkest-color: #1a1a1a;
+  --border-dark-color: #202020;
   --border-light-color: #333333;
 
-  --button-color: #2b2b2b;
+  --button-color: #333333;
   --button-hover-color: #06b17b;
   --button-select-color: #06b17b;
-  
-  --dark-color: #2b2b2b;
-  --medium-color: #363636;
-  --light-color: #404040;
+
+  /* gray */
+  --black: #000000;
+  --gray-1: #262626;
+  --gray-2: #333333;
+  --gray-3: #444444;
+  --gray-4: #555555;
+  --gray-5: #666666;
+
+  /* green */
+  --green-1: #008438;
+  --green-2: #00b85c;
+  --green-3: #00dd76;
+  --green-4: #00eca1; /* grakn green */
+  --green-5: #b7f7d7;
+
+  /* purple */
+  --purple-1: #3e266d; /* grakn purple */
+  --purple-2: #534190;
+  --purple-3: #6254a6;
+  --purple-4: #8d89c1;
+
+  --font-default: #C8C8C8;
+  --font-faded: #777777;
 
   --container-padding: 5px;
   --btn-padding: 2px;
 
-  --container-border: 1px solid black;
+  --container-dark-border: 1px solid var(--border-darkest-color);
+}
+
+.vue-button {
+  background: var(--button-color) none !important;
+  border: 1px solid var(--border-dark-color) !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.vue-button:hover {
+  border: 1px solid var(--purple-3) !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
 }
 
 
+.vue-button:active {
+  border: 1px solid var(--purple-4) !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+}
 
 
+.vue-button:focus {
+  outline: none;
+}
 
+.vue-input .bp3-input {
+  background-color: var(--button-color);
+  color: var(--font-default);
+  font-size: 11px;
+  height: 22px;
+  border: 1px solid var(--border-dark-color);
+  margin: 5px;
+  padding: 5px;
+  caret-color: var(--green-4);
+  line-height: normal;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
 
+.vue-input .bp3-input::placeholder {
+color: var(--font-faded);
+}
+
+.vue-input .bp3-input:hover {
+  border: 1px solid var(--purple-3);
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
+.vue-input .bp3-input:focus {
+  border: 1px solid var(--purple-3);
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
+.vue-input:focus {
+  -webkit-box-shadow: 0 0 0 1px var(--green-3), 0 0 0 3px var(--green-4), inset 0 1px 1px var(--green-5);
+  box-shadow: 0 0 0 1px var(--green-3), 0 0 0 3px var(--green-4), inset 0 1px 1px var(--green-5);
+}
 
 
 /*Reset CSS*/
@@ -65,7 +140,7 @@ html {
   vertical-align: middle;
   -webkit-tap-highlight-color: transparent;
   border-radius: 4px;
-  font-weight: lighter; 
+  font-weight: lighter;
   background-color: var(--button-color);
   color: #fff;
   cursor: pointer;
@@ -82,7 +157,7 @@ html {
 }
 
 .btn:hover {
-  background-color: var(--button-hover-color); 
+  background-color: var(--button-hover-color);
 }
 
 .btn-selected {
@@ -94,11 +169,11 @@ html {
   min-width: 30px;
 }
 
-body {
-  font-family: "Titillium_thin";
+body *{
+  font-family: "TitilliumWeb-Light", sans-serif;
   font-size: 12px;
   font-weight: 400;
-  color: white;
+  color: var(--font-default);
 }
 
 body {
@@ -106,7 +181,7 @@ body {
   -ms-overflow-style: none;
   overflow: -moz-scrollbars-none;
   position: relative;
-  height: 100%; 
+  height: 100%;
 }
 
 body::-webkit-scrollbar {
@@ -158,7 +233,7 @@ input, textarea {
   outline: none;
   border: none;
   font-size: 95%;
-  padding: 4px; 
+  padding: 4px;
   width: 100%;
 }
 

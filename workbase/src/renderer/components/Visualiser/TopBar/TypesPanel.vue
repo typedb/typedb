@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button :class="{'disabled':currentKeyspace, 'btn-selected':toolTipShown === 'typesPanel'}" @click="togglePanel" class="btn top-bar-btn types-btn" id="types-panel">
+    <button :class="{'disabled':!currentKeyspace, 'btn-selected':toolTipShown === 'typesPanel'}" @click="togglePanel" class="btn top-bar-btn types-btn" id="types-panel">
         Types
         <!-- <img class="types-arrow" :src="(toolTipShown === 'typesPanel') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'"> -->
     </button> 

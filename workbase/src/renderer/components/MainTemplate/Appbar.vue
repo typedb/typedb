@@ -12,8 +12,9 @@
 
 .nav-wrapper {
     display: flex;
-    padding-top: 5px;
+    padding-top: 7px;
     justify-content: center;
+    align-items: center;
 }
 
 .navbar-fixed {
@@ -23,7 +24,7 @@
 
     /* Make navbar draggable area in app.*/
     -webkit-app-region:drag;
-    border-bottom: 1px solid #232323;
+    border-bottom: var(--container-dark-border);
 }
 
 .dark .navbar-fixed{
@@ -39,19 +40,5 @@
 <script>
 
 export default {
-
-  data() {
-    return {
-
-    };
-  },
-  created() {},
-  mounted() {
-    this.$nextTick(() => {
-    });
-  },
-  methods: {
-
-  },
 };
 </script>

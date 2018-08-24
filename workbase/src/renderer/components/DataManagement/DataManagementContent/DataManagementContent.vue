@@ -1,8 +1,8 @@
 <template>
-  <transition name="fade" appear> 
-    <div class="visulaiser-wrapper test"> 
+  <transition name="fade" appear>
+    <div class="visualiser-wrapper test">
       <top-bar :localStore="localStore"></top-bar>
-      <div class="lower">     
+      <div class="lower">
         <left-bar></left-bar>
         <div class="center">
           <graph-canvas :localStore="localStore"></graph-canvas>
@@ -12,17 +12,17 @@
       </div>
     </div>
 
-    <!-- <div class="design-wrapper"> 
-        <commands-modal></commands-modal> 
+    <!-- <div class="design-wrapper">
+        <commands-modal></commands-modal>
         <menu-bar :localStore="localStore"></menu-bar>
         <div class="design-content">
             <div class="center">
                 <node-panel :localStore="localStore"></node-panel>
                 <context-menu :localStore="localStore" v-on:open-node-settings="showNodeSettingsPanel=true"></context-menu>
                 <graph-canvas :localStore="localStore"></graph-canvas>
-                <node-settings-panel 
-                    :localStore="localStore" 
-                    :showPanel="showNodeSettingsPanel" 
+                <node-settings-panel
+                    :localStore="localStore"
+                    :showPanel="showNodeSettingsPanel"
                     v-on:close-panel="showNodeSettingsPanel=false"
                 ></node-settings-panel>
             </div>
@@ -30,13 +30,13 @@
         <div id="cmdBtn" class="cmd">
             <i class="fas fa-info-circle"></i>
         </div>
-        <canvas-tool-tip :localStore="localStore"></canvas-tool-tip> 
+        <canvas-tool-tip :localStore="localStore"></canvas-tool-tip>
     </div> -->
   </transition>
 </template>
 
 <style scoped>
-.visulaiser-wrapper {
+.visualiser-wrapper {
   display: flex;
   flex-direction: column;
   width: 100%;

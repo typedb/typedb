@@ -1,9 +1,9 @@
 <template>
 <div class="keyspaces-wrapper">
-    <div class="list-keyspaces-btn" @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}">
-        <h1 id="keyspaces" class="current-keyspace" >{{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}</h1>    
-        <img class="keyspaces-arrow" :src="(toolTipShown === 'keyspaces') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'">
-    </div>
+    <button @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}" class="btn top-bar-btn">
+      {{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}
+      <img class="keyspaces-arrow" :src="(toolTipShown === 'keyspaces') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'">
+    </button>
     <transition name="slide-down-fade">
         <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-if="toolTipShown === 'keyspaces'">
             <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
@@ -51,6 +51,7 @@ li:hover {
     right:5px;
     background-color: #282828; 
     border-radius: 6%;
+    z-index: 1;
 }
 
 .ks-key {

@@ -2,38 +2,44 @@
   <div class="top-bar-container">
     <div class="left">
       <img src="static/img/logo-text.png" class="grakn-icon">
-      <h1>visualiser</h1>
+      <h1 class="page-title">visualiser</h1>
     </div>
     <div class="center">
-      <fav-queries-list 
-        :currentKeyspace="currentKeyspace" 
-        :favQueries="favQueries" 
-        :toolTipShown="toolTipShown" 
-        v-on:toggle-tool-tip="toggleToolTip" 
-        ref="savedQueries">
-      </fav-queries-list>
-      <types-panel 
-        :localStore="localStore" 
-        :currentKeyspace="currentKeyspace" 
-        :toolTipShown="toolTipShown" 
-        v-on:type-selected="typeSelected" 
-        v-on:meta-type-selected="metaTypeSelected"
-        v-on:toggle-tool-tip="toggleToolTip"> 
-      </types-panel>
-      <graql-editor 
-        :localStore="localStore" 
-        v-on:refresh-fav-queries="refreshFavQueries" 
-        :toolTipShown="toolTipShown" 
-        v-on:toggle-tool-tip="toggleToolTip" 
-        ref="graqlEditor">
-      </graql-editor>
+
+
+      <vue-button icon="book" intent="primary"></vue-button>
+      <vue-input placeholder="query name"></vue-input>
+
+        <!-- <fav-queries-list
+          :currentKeyspace="currentKeyspace"
+          :favQueries="favQueries"
+          :toolTipShown="toolTipShown"
+          v-on:toggle-tool-tip="toggleToolTip"
+          ref="savedQueries">
+        </fav-queries-list> -->
+      <!--<types-panel-->
+        <!--:localStore="localStore"-->
+        <!--:currentKeyspace="currentKeyspace"-->
+        <!--:toolTipShown="toolTipShown"-->
+        <!--v-on:type-selected="typeSelected"-->
+        <!--v-on:meta-type-selected="metaTypeSelected"-->
+        <!--v-on:toggle-tool-tip="toggleToolTip">-->
+      <!--</types-panel>-->
+      <!--<graql-editor-->
+        <!--:favQueries="favQueries"-->
+        <!--:localStore="localStore"-->
+        <!--v-on:refresh-fav-queries="refreshFavQueries"-->
+        <!--:toolTipShown="toolTipShown"-->
+        <!--v-on:toggle-tool-tip="toggleToolTip"-->
+        <!--ref="graqlEditor">-->
+      <!--</graql-editor>-->
     </div>
     <div class="right">
-      <keyspaces-handler 
-        :localStore="localStore" 
-        :toolTipShown="toolTipShown" 
-        v-on:toggle-tool-tip="toggleToolTip">
-      </keyspaces-handler>
+      <!--<keyspaces-handler-->
+        <!--:localStore="localStore"-->
+        <!--:toolTipShown="toolTipShown"-->
+        <!--v-on:toggle-tool-tip="toggleToolTip">-->
+      <!--</keyspaces-handler>-->
     </div>
   </div>
 </template>
@@ -43,10 +49,14 @@ $width-left: 180px;
 $width-right: 220px;
 $min-width-center: 700px;
 
+.page-title {
+  color: var(--font-color);
+}
+
 .top-bar-container {
   width: 100%;
   height: 50px;
-  background-color: var(--light-color);
+  background-color: var(--gray-1);
   position: relative;
   flex-direction: row;
   display: flex;
@@ -59,9 +69,10 @@ $min-width-center: 700px;
   height: 100%;
   display: flex;
   align-items: center;
+  vertical-align: middle;
   justify-content: space-between;
   // border-right: 1px solid white;
-  padding: var(--container-padding);
+  padding: var(--container-dark-border);
 }
 
 .grakn-icon {
@@ -75,7 +86,9 @@ $min-width-center: 700px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  // justify-content: center;
+  justify-content: center;
+  vertical-align: middle;
+  padding: var(--container-padding);
 }
 
 .right {
@@ -106,15 +119,15 @@ export default {
     };
   },
   mounted() {
-    this.$nextTick(() => {
-      this.$refs.savedQueries.$on('type-fav-query', (favQuery) => {
-        this.localStore.setCurrentQuery(favQuery);
-      });
+    // this.$nextTick(() => {
+    //   this.$refs.savedQueries.$on('type-fav-query', (favQuery) => {
+    //     this.localStore.setCurrentQuery(favQuery);
+    //   });
 
-      this.$refs.savedQueries.$on('remove-fav-query', (queryName) => {
-        FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
-      });
-    });
+    //   this.$refs.savedQueries.$on('remove-fav-query', (queryName) => {
+    //     FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
+    //   });
+    // });
   },
   computed: {
     currentKeyspace() {

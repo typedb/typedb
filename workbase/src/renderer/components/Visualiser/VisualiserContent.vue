@@ -1,8 +1,8 @@
 <template>
-  <transition name="fade" appear> 
-    <div class="visulaiser-wrapper"> 
+  <transition name="fade" appear>
+    <div class="visualiser-wrapper">
       <top-bar :localStore="localStore"></top-bar>
-      <div class="lower">     
+      <div class="lower">
         <left-bar></left-bar>
         <div class="center">
           <graph-canvas :localStore="localStore"></graph-canvas>
@@ -15,13 +15,14 @@
 </template>
 
 <style scoped>
-.visulaiser-wrapper {
+
+.visualiser-wrapper {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
   position: absolute;
-  /* background-color: var(--dark-color); */
+  background-color: var(--border-darkest-color);
 }
 
 .lower {
@@ -48,7 +49,7 @@ import LeftBar from './LeftBar.vue';
 import RightBar from './RightBar.vue';
 import BottomBar from './BottomBar.vue';
 
-import DataManagementStore from './DataManagementStore';
+import DataManagementStore from './VisualiserStore';
 import GraphCanvas from '../shared/GraphCanvas/GraphCanvas.vue';
 
 export default {
@@ -78,7 +79,7 @@ export default {
     if (!this.keyspaceSelected) {
       this.notifyNoKeyspace = setTimeout(() => {
         if (isDataManagement(this.$route) && this.$store.getters.isGraknRunning) {
-          this.$notifyInfo('Please select a keyspace to start exploring data!');
+          // this.$notifyInfo('Please select a keyspace to start exploring data!');
         }
       }, 10000);
     }

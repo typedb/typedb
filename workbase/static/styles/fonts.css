@@ -1,20 +1,14 @@
 /* Google Lekton font */
 @font-face {
     font-family: 'Lekton';
-    src: url('../fonts/lekton/Lekton-Regular.ttf');
+    src: url('../fonts/Lekton/Lekton-Regular.ttf');
 }
 
 
-/* Titillium font */
+/* Titillium Web font */
 
-/* Regular */
+/* Light */
 @font-face {
-    font-family: 'Titillium_regular';
-    src: url('../fonts/Titillium/Titillium-Regular.otf');
-}
-
-/* Thin */
-@font-face {
-    font-family: 'Titillium_thin';
-    src: url('../fonts/Titillium/Titillium-Thin.otf');
+    font-family: 'TitilliumWeb-Light';
+    src: url('../fonts/TitilliumWeb/TitilliumWeb-Light.ttf');
 }

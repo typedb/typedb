@@ -12,109 +12,109 @@
                         <td style="text-align:center;">
                             <i class="far fa-star"></i>
                             Starred Queries
-                        </td>  
+                        </td>
                         <td>
                             List all the saved queries
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
-                            Types 
+                            Types
                             <caret-icon style="vertical-align:middle;"></caret-icon>
-                        </td>  
+                        </td>
                         <td>
                             Drop down list to show what is in the schema
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             <img src="static/img/icons/icon_add_white.svg">
-                        </td>  
+                        </td>
                         <td>
                             Save current query to starred queries
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             <i class="fas fa-chevron-circle-right"></i>
                             OR "ENTER"
-                        </td>  
+                        </td>
                         <td>
                             To visualize knowlege graph
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             <i class="far fa-times-circle"></i>
-                        </td>  
+                        </td>
                         <td>
                             To clear the query
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             <i class="fa fa-cog"></i>
-                        </td>  
+                        </td>
                         <td>
                             Toggle query settings
-                        </td>                             
-                    </tr>             
+                        </td>
+                    </tr>
                     <tr>
                         <td style="text-align:center;">
                             limit Query
-                        </td>  
+                        </td>
                         <td>
                             Can be used to limit the number of results returned
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             limit neighbours
-                        </td>  
+                        </td>
                         <td>
                             Can be used to limit the number of results linked to a node
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             Autoload role players
-                        </td>  
+                        </td>
                         <td>
                             Loads the role players of a relationship
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             Single click on node
-                        </td>  
+                        </td>
                         <td>
                             Bring up information about node
-                        </td>                             
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align:center;">
                             Double click on node
-                        </td>  
+                        </td>
                         <td>
                             Show relationships associated with the node
-                        </td>                             
-                    </tr> 
+                        </td>
+                    </tr>
                     <tr>
                         <td style="text-align:center;">
                             Right click
-                        </td>  
+                        </td>
                         <td>
                             Open graph menu
-                        </td>                             
-                    </tr>  
+                        </td>
+                    </tr>
                     <tr>
                         <td style="text-align:center;">
                             {{crtlOrCmd}} + click on nodes
-                        </td>  
+                        </td>
                         <td>
                             Select multiple nodes
-                        </td>                             
-                    </tr>                  
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -223,7 +223,7 @@ td {
 }
 
 
-/* The Close Button */
+/* The Close VueButton.vue */
 
 .closeCmd {
     color: white;
