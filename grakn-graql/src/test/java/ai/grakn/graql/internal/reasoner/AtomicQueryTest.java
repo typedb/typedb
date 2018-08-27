@@ -787,25 +787,25 @@ public class AtomicQueryTest {
     }
 
     private void testEquivalence_DifferentTypeVariants(EmbeddedGraknTx<?> graph, String keyword, String label, String label2){
-        String query = "{$x " + keyword + " " + label + ";}";
-        String query2 = "{$y " + keyword + " $type;$type label " + label +";}";
-        String query3 = "{$z " + keyword + " $t;$t label " + label +";}";
-        String query4 = "{$x " + keyword + " $y;}";
-        String query5 = "{$x " + keyword + " " + label2 + ";}";
+        String base = "{$x " + keyword + " " + label + ";}";
+        String indirectLabel = "{$y " + keyword + " $type;$type label " + label +";}";
+        String anotherIndirectLabel = "{$z " + keyword + " $t;$t label " + label +";}";
+        String unboundPredicateVar = "{$x " + keyword + " $y;}";
+        String anotherBase = "{$x " + keyword + " " + label2 + ";}";
 
-        queryEquivalence(query, query2, true, graph);
-        queryEquivalence(query, query3, true, graph);
-        queryEquivalence(query, query4, false, graph);
-        queryEquivalence(query, query5, false, graph);
+        queryEquivalence(base, indirectLabel, true, graph);
+        queryEquivalence(base, anotherIndirectLabel, true, graph);
+        queryEquivalence(base, unboundPredicateVar, false, graph);
+        queryEquivalence(base, anotherBase, false, graph);
 
-        queryEquivalence(query2, query3, true, graph);
-        queryEquivalence(query2, query4, false, graph);
-        queryEquivalence(query2, query5, false, graph);
+        queryEquivalence(indirectLabel, anotherIndirectLabel, true, graph);
+        queryEquivalence(indirectLabel, unboundPredicateVar, false, graph);
+        queryEquivalence(indirectLabel, anotherBase, false, graph);
 
-        queryEquivalence(query3, query4, false, graph);
-        queryEquivalence(query3, query5, false, graph);
+        queryEquivalence(anotherIndirectLabel, unboundPredicateVar, false, graph);
+        queryEquivalence(anotherIndirectLabel, anotherBase, false, graph);
 
-        queryEquivalence(query4, query5, false, graph);
+        queryEquivalence(unboundPredicateVar, anotherBase, false, graph);
     }
 
     @Test
@@ -844,9 +844,11 @@ public class AtomicQueryTest {
     public void testEquivalence_TypesWithSubstitution(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$y isa baseRoleEntity;}";
+
         String query2 = "{$x isa baseRoleEntity; $x id 'X';}";
         String query2b = "{$r isa baseRoleEntity; $r id 'X';}";
         String query2c = "{$e isa $t;$t label baseRoleEntity;$e id 'X';}";
+
         String query3s2 = "{$z isa baseRoleEntity; $z id 'Y';}";
         String query4s1 = "{$a isa baseRoleEntity; $b id 'X';}";
         String query5 = "{$e isa baseRoleEntity ; $e != $f;}";
@@ -864,14 +866,14 @@ public class AtomicQueryTest {
         queryEquivalence(query, query7, false, graph);
 
         queryEquivalence(query2, query2b, true, graph);
-        queryEquivalence(query2, query2c, true, graph);
+        queryEquivalence(query2, query2c, true,  graph);
         queryEquivalence(query2, query3s2, false, true, graph);
         queryEquivalence(query2, query4s1, false, graph);
         queryEquivalence(query2, query5, false, graph);
         queryEquivalence(query2, query6, false, graph);
         queryEquivalence(query2, query7, false, graph);
 
-        queryEquivalence(query2b, query2c, true, graph);
+        queryEquivalence(query2b, query2c, true,  graph);
         queryEquivalence(query2b, query3s2, false, true, graph);
         queryEquivalence(query2b, query4s1, false, graph);
         queryEquivalence(query2b, query5, false, graph);
@@ -1323,7 +1325,7 @@ public class AtomicQueryTest {
     }
 
     private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
-        assertEquals("Query: " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
+        assertEquals(equiv + ": query " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
         if (queryExpectation) {

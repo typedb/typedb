@@ -66,6 +66,9 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         protected int doHash(ReasonerQuery q) {
             return equivalenceHash(q, Atomic.class, AtomicEquivalence.Equality);
         }
+
+        @Override
+        public String toString(){ return "ReasonerQueryEquivalence::Equality";}
     };
 
     public final static Equivalence<ReasonerQuery> AlphaEquivalence = new ReasonerQueryEquivalence(){
@@ -79,6 +82,9 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         protected int doHash(ReasonerQuery q) {
             return equivalenceHash(q, Atomic.class, AtomicEquivalence.AlphaEquivalence);
         }
+
+        @Override
+        public String toString(){ return "ReasonerQueryEquivalence::AlphaEquivalence";}
     };
 
     public final static Equivalence<ReasonerQuery> StructuralEquivalence = new ReasonerQueryEquivalence(){
@@ -92,5 +98,8 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         protected int doHash(ReasonerQuery q) {
             return equivalenceHash(q, Atom.class, AtomicEquivalence.StructuralEquivalence);
         }
+
+        @Override
+        public String toString(){ return "ReasonerQueryEquivalence::StructuralEquivalence";}
     };
 }

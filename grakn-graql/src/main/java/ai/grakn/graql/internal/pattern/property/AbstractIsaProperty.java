@@ -91,7 +91,7 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
 
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typePattern = this.type();
-        Var typeVariable = typePattern.var();
+        Var typeVariable = typePattern.var().asUserDefined();
 
         IdPredicate predicate = getIdPredicate(typeVariable, typePattern, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
