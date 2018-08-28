@@ -209,6 +209,12 @@ public class ReasoningTest {
         EmbeddedGraknTx<?> tx = resourceOwnership.tx();
         QueryBuilder qb = tx.graql().infer(true);
 
+        /**
+         * $step isa step;
+         $module isa module;
+
+         */
+
         String attributeName = "name";
         String queryString = "match $x has " + attributeName + " $y; get;";
 
@@ -220,6 +226,8 @@ public class ReasoningTest {
 
         List<ConceptMap> implicitAnswers = qb.<GetQuery>parse(implicitQueryString).execute();
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+
+        tx.getMetaEntityType().instances().forEach(entity -> assertThat(entity.attributes().collect(toSet()), empty()));
 
         assertThat(answers, empty());
         assertCollectionsEqual(implicitAnswers, answers);
