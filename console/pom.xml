@@ -20,13 +20,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>grakn-core</artifactId>
-        <groupId>ai.grakn</groupId>
-        <version>1.4.0-SNAPSHOT</version>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>ai.grakn</groupId>
+        <artifactId>core.build</artifactId>
+        <version>1.4.0-SNAPSHOT</version>
+        <relativePath>../build/pom.xml</relativePath>
+    </parent>
     <artifactId>core.console</artifactId>
 
     <dependencies>
@@ -105,10 +106,10 @@
                 </executions>
                 <configuration>
                     <finalName>grakn-core-console-${project.version}</finalName>
-                    <outputDirectory>${project.parent.basedir}/dist</outputDirectory>
+                    <outputDirectory>${project.basedir}/../dist</outputDirectory>
                     <tarLongFileMode>gnu</tarLongFileMode>
                     <descriptors>
-                        <descriptor>build.xml</descriptor>
+                        <descriptor>assembly.xml</descriptor>
                     </descriptors>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>

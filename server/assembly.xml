@@ -27,7 +27,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>${project.parent.basedir}</directory>
+            <directory>${basedir}/../</directory>
             <includes>
                 <include>grakn-core</include>
             </includes>
@@ -37,7 +37,7 @@
         <!-- changelog license readme -->
 
         <fileSet>
-            <directory>${project.parent.basedir}</directory>
+            <directory>${basedir}/../</directory>
             <includes>
                 <include>LICENSE</include>
                 <include>README.md</include>
@@ -66,7 +66,7 @@
         <!-- static assets for dashboard -->
 
         <fileSet>
-            <directory>${project.parent.basedir}/dashboard/static</directory>
+            <directory>${basedir}/../dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>
