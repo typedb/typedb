@@ -42,37 +42,15 @@ import static ai.grakn.graql.Graql.var;
 public class QueryExecutor {
 
     private final String uri;
-    private final String dataSetName;
+    private final String executionName;
     private final String keyspace;
 
     final List<Query> queries;
 
-//    static {
-////        queries.add(Graql.match(Graql.var("x").isa("company")).limit(5).get());
-//        queries.add(Graql.match(Graql.var("x").isa("company")).limit(5).get("x"));
-////        queries.add(Graql.match(Graql.var("x").isa("person")).limit(5).get());
-//        queries.add(Graql.match(Graql.var("x").isa("person")).limit(5).get("x"));
-////        queries.add(Graql.match(Graql.var("x").isa("name")).limit(5).get());
-//        queries.add(Graql.match(Graql.var("x").isa("name")).limit(5).get("x"));
-//        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "Google")).limit(5).get("x"));
-//
-//        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "Facebook").has("rating", 40)).limit(5).get("x"));
-//        queries.add(Graql.match(Graql.var("x").isa("employment")
-//                .rel("employer", Graql.var("c"))
-//                .rel("employee", Graql.var("e"))
-//                .has("name", "Facebook")
-//                .has("rating", 40))
-//                .limit(5).get("e"));
-//        queries.add(Graql.match(Graql.var("x").isa("company").has("name", "JetBrains")).aggregate(count()));
-//        queries.add(Graql.match(Graql.var("x").isa("rating")).aggregate(count()));
-//        queries.add(Graql.match(Graql.var("x").isa("name").has("rating", Graql.var("r"))).aggregate(count()));
-//        queries.add(Graql.match(Graql.var("x").isa("name").has("rating", 5)).aggregate(count()));
-//    }
-
-    public QueryExecutor(String keyspace, String uri, String dataSetName, List<String> queryStrings) {
+    public QueryExecutor(String keyspace, String uri, String executionName, List<String> queryStrings) {
         this.keyspace = keyspace;
         this.uri = uri;
-        this.dataSetName = dataSetName;
+        this.executionName = executionName;
 
         // convert Graql strings into Query types
         this.queries = queryStrings.stream()
@@ -103,17 +81,6 @@ public class QueryExecutor {
     }
 
     void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, String msg) throws Exception {
-        // create tracing before the Grakn client is instantiated
-//        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-//        Tracing tracing = Tracing.newBuilder()
-//                .localServiceName("query-benchmark-client-entry")
-//                .spanReporter(reporter)
-//                .supportsJoin(true)
-//                .build();
-//        Tracer tracer = tracing.tracer();
-//        System.out.println("QueryExecutor tracer: ");
-//        System.out.println(tracer);
-
         // instantiate grakn client
         Grakn client = new Grakn(new SimpleURI(uri));
         Grakn.Session session = client.session(Keyspace.of(keyspace));
@@ -121,41 +88,26 @@ public class QueryExecutor {
         try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
 
 
-//             BraveTracer braveTracer = BraveTracer.create(tracing);
             Tracer tracer = Tracing.currentTracer();
 
             Iterator<Query> queryIterator = queryStream.iterator();
-
             int counter = 0;
             while (queryIterator.hasNext()) {
 
                 Query query = queryIterator.next().withTx(tx);
 
                 Span batchSpan = tracer.newTrace().name("batch-query-span");
-                batchSpan.tag("numConcepts", Integer.toString(numConcepts));
+                batchSpan.tag("concepts", Integer.toString(numConcepts));
                 batchSpan.tag("query", query.toString());
-                batchSpan.tag("dataSetName", this.dataSetName);
+                batchSpan.tag("executionName", this.executionName);
                 if (msg != null) {
                     batchSpan.tag("extraTag", msg);
                 }
                 batchSpan.start();
 
 
-//                BraveSpanBuilder queryBatchSpanBuilder = braveTracer.buildSpan("querySpan")
-//                        .withTag("numConcepts", numConcepts)
-//                        .withTag("query", query.toString())
-//                        .withTag("dataSetName", this.dataSetName)
-//                        .withTag("runStartDateTime", runTimeStamp);
-
-//                BraveSpan queryBatchSpan = queryBatchSpanBuilder.start();
-
                 for (int i = 0; i < numRepeats; i++) {
 
-//                    BraveSpanBuilder querySpanBuilder = braveTracer.buildSpan("querySpan")
-//                            .withTag("repetition", i)
-//                            .asChildOf(queryBatchSpan);
-
-//                    ScopedSpan span = tracer.startScopedSpanWithParent("query-span", batchSpan.context());
                     Span span = tracer.newChild(batchSpan.context()).name("query-span");
                     span.tag("repetition", Integer.toString(i));
                     span.start();
@@ -170,7 +122,6 @@ public class QueryExecutor {
                     }
                     counter ++;
                 }
-//                Thread.sleep(2000);
                 batchSpan.finish();
                 Thread.sleep(500);
             }

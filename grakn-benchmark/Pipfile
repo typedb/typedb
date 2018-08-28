@@ -5,6 +5,10 @@ name = "pypi"
 
 [packages]
 dash = "*"
+plotly = "*"
+elasticsearch = "*"
+dash-core-components = "*"
+dash-html-components = "*"
 
 [dev-packages]
 

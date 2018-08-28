@@ -99,7 +99,7 @@ public class DataGenerator {
     }
 
     public void loadSchema() {
-        System.out.println("Initialising keyspace...");
+        System.out.println("Initialising keyspace `" + this.keyspace + "`...");
         SchemaManager.initialise(this.getSession(), schemaGraqlQueries);
         System.out.println("done");
     }

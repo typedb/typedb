@@ -30,6 +30,9 @@ parser.add_argument('--no-load-schema', dest='no_load_schema', default=False, ac
 # set the keyspace to use with existing data/schema
 parser.add_argument('--keyspace', default=None, help="Specify a keyspace to use")
 
+# set the name for the this particular execution
+parser.add_argument('--execution-name', dest='execution_name', default="", help="A name for this specific execution of the benchmarking configuration")
+
 
 args = parser.parse_args()
 
@@ -114,7 +117,7 @@ for path, dirs, files in os.walk(grakn_home, 'services', 'lib'):
 # run benchmarking 
 classpath = ":".join(classpath)
 command = ['java', '-cp', classpath, 'manage.BenchmarkManager']
-args = ["--keyspace", args.keyspace, "--no-data-generation", args.no_data_generation, "--no-load-schema", args.no_load_schema]
+args = ["--keyspace", args.keyspace, "--no-data-generation", args.no_data_generation, "--no-load-schema", args.no_load_schema, '--execution-name', args.execution_name]
 command += args
 print("...Running benchmarking")
 result = subprocess.run(command, cwd=grakn_root)

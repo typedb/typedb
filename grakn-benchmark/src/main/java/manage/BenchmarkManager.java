@@ -27,13 +27,18 @@ import generator.DataGenerator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 
 /**
@@ -87,35 +92,58 @@ public class BenchmarkManager {
         }
     }
 
-    public static void main(String[] args) throws FileNotFoundException, IOException {
+    public static void main(String[] args) throws IOException {
 
-        CommandLine commandLine;
+        Option configFileOption = Option.builder("c")
+                .longOpt("config")
+                .hasArg(true)
+                .desc("Benchmarking YAML file (required)")
+                .required(true)
+                .type(String.class)
+                .build();
+
         Option keyspaceOption = Option.builder("k")
                 .longOpt("keyspace")
                 .required(false)
+                .hasArg(true)
                 .desc("Specific keyspace to utilize (default: `name` in config yaml")
                 .type(String.class)
                 .build();
-        Option noDataGenerationOption = Option.builder("G")
+        Option noDataGenerationOption = Option.builder("ng")
                 .longOpt("no-data-generation")
                 .required(false)
                 .desc("Disable data generation")
                 .type(Boolean.class)
                 .build();
-        Option noSchemaLoadOption = Option.builder("S")
+        Option noSchemaLoadOption = Option.builder("ns")
                 .longOpt("no-schema-load")
                 .required(false)
                 .desc("Disable loading a schema")
                 .type(Boolean.class)
                 .build();
+        Option executionNameOption = Option.builder("n")
+                .longOpt("execution-name")
+                .hasArg(true)
+                .required(false)
+                .desc("Name for specific execution of the config file")
+                .type(String.class)
+                .build();
         Options options = new Options();
-        CommandLineParser parser = new DefaultParser();
+        options.addOption(configFileOption);
         options.addOption(keyspaceOption);
         options.addOption(noDataGenerationOption);
         options.addOption(noSchemaLoadOption);
+        options.addOption(executionNameOption);
+        CommandLineParser parser = new DefaultParser();
+        CommandLine arguments;
+        try {
+            arguments = parser.parse(options, args);
+        } catch (ParseException e) {
+            (new HelpFormatter()).printHelp("Benchmarking options", options);
+            throw new RuntimeException(e.getMessage());
+        }
 
-
-        String configFileName = args[0];
+        String configFileName = arguments.getOptionValue("config");
         ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
         BenchmarkConfigurationFile configFile = benchmarkConfigMapper.readValue(
                 new File(System.getProperty("user.dir") + configFileName),
@@ -124,31 +152,33 @@ public class BenchmarkManager {
 
 
         // use given keyspace string if exists, otherwise use yaml file `name` tag
-        String keyspace = keyspaceOption.getValue(benchmarkConfiguration.getDefaultKeyspace());
+        String keyspace = arguments.getOptionValue("keyspace", benchmarkConfiguration.getDefaultKeyspace());
 
         // loading a schema file, enabled by default
-        String noSchemaLoadString = noSchemaLoadOption.getValue("false");
-        boolean noSchemaLoad = Boolean.parseBoolean(noSchemaLoadString);
+        boolean noSchemaLoad = arguments.hasOption("no-schema-load") ? true : false;
         benchmarkConfiguration.setNoSchemaLoad(noSchemaLoad);
 
         // generate data true/false, else default to do generate data
-        String noDataGenerationString = noDataGenerationOption.getValue("false");
-        boolean noDataGeneration = Boolean.parseBoolean(noDataGenerationString);
+        boolean noDataGeneration = arguments.hasOption("no-data-generation") ? true : false;
         benchmarkConfiguration.setNoDataGeneration(noDataGeneration);
+
+        // generate a name for this specific execution of the benchmarking
+        String executionName = arguments.getOptionValue("execution-name", "");
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        String dateString = dateFormat.format(new Date());
+        executionName = String.format("%s %s %s",dateString, benchmarkConfiguration.getName(), executionName);
+
 
         String uri = "localhost:48555";
 
-        DataGenerator dataGenerator;
-        if (benchmarkConfiguration.noDataGeneration()) {
-            // no data generation means NEITHER schema load NOR data generate
-            dataGenerator = null;
-        } else {
-            dataGenerator = new DataGenerator(keyspace, uri, benchmarkConfiguration.getSchema());
-        }
+        // no data generation means NEITHER schema load NOR data generate
+        DataGenerator dataGenerator = benchmarkConfiguration.noDataGeneration() ?
+                null :
+                new DataGenerator(keyspace, uri, benchmarkConfiguration.getSchema());
 
         QueryExecutor queryExecutor = new QueryExecutor(keyspace,
                                             uri,
-                                            "generated_" + benchmarkConfiguration.getName(),
+                                            executionName,
                                             benchmarkConfiguration.getQueries());
         BenchmarkManager manager = new BenchmarkManager(benchmarkConfiguration, dataGenerator, queryExecutor);
         manager.run();
