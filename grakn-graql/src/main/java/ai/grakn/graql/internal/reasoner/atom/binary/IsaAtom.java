@@ -223,8 +223,6 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
-        return parentAtom.getPredicateVariable().isUserDefinedName()?
-                rewriteWithTypeVariable() :
-                this;
+        return this.rewriteWithTypeVariable(parentAtom);
     }
 }

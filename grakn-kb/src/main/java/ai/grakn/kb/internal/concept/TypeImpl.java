@@ -282,8 +282,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
             //Get everything that this can play bot including the supers
             Set<Role> plays = new HashSet<>(directPlays().keySet());
-            subs().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
-                    forEach(play -> plays.add((Role) play));
+            subs().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).forEach(plays::add);
 
             superPlays.removeAll(plays);
 
@@ -370,6 +369,27 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return getThis();
     }
 
+    private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
+                                     Role ownerRole, Role valueRole, RelationshipType relationshipType){
+        AttributeType attributeTypeSuper = attributeType.sup();
+        Label superLabel = attributeTypeSuper.label();
+        Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+        Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+        RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
+                relates(ownerRoleSuper).relates(valueRoleSuper);
+
+        //Create the super type edges from sub role/relations to super roles/relation
+        ownerRole.sup(ownerRoleSuper);
+        valueRole.sup(valueRoleSuper);
+        relationshipType.sup(relationshipTypeSuper);
+
+        if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) {
+            //Make sure the supertype attribute is linked with the role as well
+            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
+            updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationshipTypeSuper);
+        }
+
+    }
     /**
      * Creates a relation type which allows this type and a {@link ai.grakn.concept.Attribute} type to be linked.
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
@@ -380,14 +400,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @return The {@link Type} itself
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
-        //Check if this is a met type
-        checkSchemaMutationAllowed();
-
-        //Check if attribute type is the meta
-        if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.label())){
-            throw GraknTxOperationException.metaTypeImmutable(attributeType.label());
-        }
-
         Label attributeLabel = attributeType.label();
         Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
         Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
@@ -395,41 +407,40 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 relates(ownerRole).
                 relates(valueRole);
 
-        //Linking with ako structure if present
-        AttributeType attributeTypeSuper = attributeType.sup();
-        Label superLabel = attributeTypeSuper.label();
-        if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
-                    relates(ownerRoleSuper).relates(valueRoleSuper);
-
-            //Create the super type edges from sub role/relations to super roles/relation
-            ownerRole.sup(ownerRoleSuper);
-            valueRole.sup(valueRoleSuper);
-            relationshipType.sup(relationshipTypeSuper);
-
-            //Make sure the supertype attribute is linked with the role as well
-            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
-        }
-
+        //this plays ownerRole;
         this.play(ownerRole, required);
         //TODO: Use explicit cardinality of 0-1 rather than just false
+        //attributeType plays valueRole;
         ((AttributeTypeImpl) attributeType).play(valueRole, false);
+
+        updateAttributeRelationHierarchy(attributeType, has, hasValue, hasOwner, ownerRole, valueRole, relationshipType);
 
         return getThis();
     }
 
     @Override
     public T has(AttributeType attributeType){
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, attributeType);
+        checkAttributeAttachmentLegal(Schema.ImplicitType.KEY_OWNER, attributeType);
         return has(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
     }
 
     @Override
     public T key(AttributeType attributeType) {
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_OWNER, attributeType);
+        checkAttributeAttachmentLegal(Schema.ImplicitType.HAS_OWNER, attributeType);
         return has(attributeType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
+    }
+
+    private void checkAttributeAttachmentLegal(Schema.ImplicitType implicitType, AttributeType attributeType){
+        checkSchemaMutationAllowed();
+        checkIfHasTargetMeta(attributeType);
+        checkNonOverlapOfImplicitRelations(implicitType, attributeType);
+    }
+
+    private void checkIfHasTargetMeta(AttributeType attributeType){
+        //Check if attribute type is the meta
+        if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.label())){
+            throw GraknTxOperationException.metaTypeImmutable(attributeType.label());
+        }
     }
 
     /**

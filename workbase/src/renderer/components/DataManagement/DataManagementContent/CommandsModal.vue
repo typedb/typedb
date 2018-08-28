@@ -223,7 +223,7 @@ td {
 }
 
 
-/* The Close VueButton.vue */
+/* The Close Button */
 
 .closeCmd {
     color: white;

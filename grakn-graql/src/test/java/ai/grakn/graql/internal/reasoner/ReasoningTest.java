@@ -19,13 +19,16 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
+import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.SampleKBContext;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -164,9 +167,63 @@ public class ReasoningTest {
     @ClassRule
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
 
+    @ClassRule
+    public static final SampleKBContext resourceOwnership = SampleKBContext.load("resourceOwnershipTest.gql");
+
+    @ClassRule
+    public static final SampleKBContext resourceHierarchy = SampleKBContext.load("resourceHierarchy.gql");
+
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
+
+    @Test
+    public void resourceHierarchiesAreRespected() {
+        EmbeddedGraknTx<?> tx = resourceHierarchy.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+
+        Set<RelationshipType> relTypes = tx.getMetaRelationType().subs().collect(toSet());
+        List<ConceptMap> attributeSubs = qb.<GetQuery>parse("match $x sub attribute; get;").execute();
+        List<ConceptMap> attributeRelationSubs = qb.<GetQuery>parse("match $x sub @has-attribute; get;").execute();
+
+        assertEquals(attributeSubs.size(), attributeRelationSubs.size());
+        assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationshipType).allMatch(relTypes::contains));
+
+        List<ConceptMap> baseResourceSubs = qb.<GetQuery>parse("match $x sub baseResource; get;").execute();
+        List<ConceptMap> baseResourceRelationSubs = qb.<GetQuery>parse("match $x sub @has-baseResource; get;").execute();
+        assertEquals(baseResourceSubs.size(), baseResourceRelationSubs.size());
+
+        assertEquals(
+                Sets.newHashSet(
+                        tx.getAttributeType("extendedResource"),
+                        tx.getAttributeType("anotherExtendedResource"),
+                        tx.getAttributeType("furtherExtendedResource"),
+                        tx.getAttributeType("simpleResource")
+                ),
+                tx.getEntityType("genericEntity").attributes().collect(toSet())
+        );
+    }
+
+    @Test
+    public void resourceOwnershipNotPropagatedWithinRelation() {
+        EmbeddedGraknTx<?> tx = resourceOwnership.tx();
+        QueryBuilder qb = tx.graql().infer(true);
+
+        String attributeName = "name";
+        String queryString = "match $x has " + attributeName + " $y; get;";
+
+        String implicitQueryString = "match " +
+                "(" +
+                HAS_OWNER.getLabel(attributeName).getValue() + ": $x, " +
+                HAS_VALUE.getLabel(attributeName).getValue() + ": $y " +
+                ") isa " + HAS.getLabel(attributeName).getValue() + ";get;";
+
+        List<ConceptMap> implicitAnswers = qb.<GetQuery>parse(implicitQueryString).execute();
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+
+        assertThat(answers, empty());
+        assertCollectionsEqual(implicitAnswers, answers);
+    }
 
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationOfReflexiveRelations() {

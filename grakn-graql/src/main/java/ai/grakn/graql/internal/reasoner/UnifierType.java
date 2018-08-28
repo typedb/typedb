@@ -18,11 +18,15 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UnifierComparison;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
+import java.util.HashMap;
+import java.util.Map;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 
@@ -38,7 +42,10 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTy
 public enum UnifierType implements UnifierComparison {
 
     /**
+     *
      * Exact unifier, requires type and id predicate bindings to match.
+     * Used in {@link ai.grakn.graql.internal.reasoner.cache.QueryCache} comparisons
+     * .
      */
     EXACT {
         @Override
@@ -55,10 +62,14 @@ public enum UnifierType implements UnifierComparison {
         public boolean atomicCompatibility(Atomic parent, Atomic child) {
             return parent == null || parent.isCompatibleWith(child);
         }
+
     },
 
     /**
+     *
      * Rule unifier, found between queries and rule heads, allows rule heads to be more specific than matched queries.
+     * Used in rule matching.
+     *
      */
     RULE {
         @Override
@@ -75,10 +86,23 @@ public enum UnifierType implements UnifierComparison {
         public boolean atomicCompatibility(Atomic parent, Atomic child) {
             return child == null || parent == null || parent.isCompatibleWith(child);
         }
+
+        @Override
+        public boolean attributeCompatibility(Atomic parent, Atomic child, Var parentVar, Var childVar){
+            Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
+            parent.getParentQuery().getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
+            Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();
+            child.getParentQuery().getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
+            return childRes.values().stream()
+                    .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
+        }
     },
 
     /**
+     *
      * Similar to rule one with addition to allowing id predicates to differ.
+     * Used in {@link ai.grakn.graql.internal.reasoner.cache.StructuralCache} comparisons.
+     *
      */
     STRUCTURAL {
         @Override
@@ -95,5 +119,6 @@ public enum UnifierType implements UnifierComparison {
         public boolean atomicCompatibility(Atomic parent, Atomic child) {
             return (parent == null) == (child == null);
         }
+
     }
 }

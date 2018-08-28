@@ -32,21 +32,37 @@ Begin by importing Grakn:
 const Grakn = require('grakn');
 ```
 
-Now you can create a new session and open a new Grakn transaction:
+You can then instantiate a client, open a session, and create transactions. 
 
+> Note that new versions of Grakn client now use the default port **48555**. Port 4567 was the default port on older clients.
 ```
+
 const grakn = new Grakn('localhost:48555');
 const session = grakn.session('keyspace');
 const tx = await session.transaction(Grakn.txType.WRITE);
 ```
 
-Execute Graql query (this example works inside an `async` function):
+Execute Graql queries:
+
 
 ```
+// Example of match query
 const resultIterator = await tx.query("match $x isa person; limit 10; get;"); // This will return an Iterator of ConceptMap Answer
 const answer = await resultIterator.next(); // Take first ConceptMap Answer
 const person = answer.map().get('x'); // Access map in Answer with answer.map() and take Concept associated to variable x from 'match $x isa person; get;'
 tx.close();
+```
+
+NOTE: the `query()` method almost immediately returns an iterator - this is because the actual result retrieval is done lazily every time
+`.next()` is invoked on a specific iterator
+
+```
+// Example of insert query
+const iterator = await tx.query("insert $x isa person, has birth-date 2018-08-06;"); // Insert query returns Iterator of ConceptMap Answer containing inserted concepts
+// On Iterators of ConceptMap Answers is possible to use the collectConcept method to consume the whole iterator and obtain an array of Concepts
+const concepts = (await iterator.collectConcepts()); 
+const person = concepts[0];
+tx.commit(); // Remember to commit your changes so that they get persisted in the graph! This will also close the transaction.
 ```
 
 # API Reference
@@ -108,6 +124,9 @@ on every iterator the following methods are available:
 | async `next()`            | *IteratorElement* or *null* | Retrieves next element or returns null when no more elements are available                                                                                                                                                                                                |
 | async `collect()`         | Array of *IteratorElement*  | Consumes the iterator and collect all the elements into an array                                                                                                                                                                                                          |
 | async `collectConcepts()` | Array of *Concept*          | Consumes the iterator and return array of Concepts. **This helper is only available on Iterator containing ConceptMap Answer, returned by transaction.query().**. It is useful when one wants to work directly on Concepts without the need to traverse the result map or access the explanation. |
+
+NOTE: these iterators represent a lazy evaluation of a query or method on the Grakn server, and will be created very quickly. 
+The actual work is performed when the iterator is consumed, creating an RPC to the server to obtain the next concrete Answer or Concept.
 
 **IteratorElement**
 

@@ -207,7 +207,7 @@ public enum ErrorMessage {
     INVALID_CACHE_ENTRY("Query cache entry for query [%s] contains invalid entry."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),
     NON_EXISTENT_UNIFIER("Could not proceed with unification as the unifier doesn't exist."),
-    ILLEGAL_ATOM_CONVERSION("Attempted illegal conversion of atom [%s]."),
+    ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
