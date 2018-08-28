@@ -1,5 +1,5 @@
 <template>
-    <div ref="graknButton"></div>
+    <div ref="vueButton"></div>
 </template>
 
 <style scoped>
@@ -28,7 +28,7 @@
           loading: this.loading,
           rightIcon: this.rightIcon,
           className: 'vue-button',
-        }), this.$refs.graknButton);
+        }), this.$refs.vueButton);
       });
     },
   };

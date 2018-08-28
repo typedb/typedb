@@ -1,5 +1,5 @@
 <template>
-    <div class="vue-menu-item" id="vue-menu-item"></div>
+    <div ref="vueMenuItem"></div>
 </template>
 
 <style scoped>
@@ -14,11 +14,9 @@
 
   export default {
     name: 'VueMenuItem',
-    props: ['active', 'children', 'diabled', 'icon', 'intent', 'label', 'text'],
+    props: ['active', 'children', 'disabled', 'icon', 'intent', 'label', 'text'],
     mounted() {
       this.$nextTick(() => {
-        const menuItemElement = document.getElementById('vue-menu-item');
-
         ReactDom.render(React.createElement(MenuItem, {
           className: 'vue-menu-item',
           active: this.active,
@@ -28,7 +26,7 @@
           intent: this.intent,
           label: this.label,
           text: this.text,
-        }), menuItemElement);
+        }), this.$refs.vueMenuItem);
       });
     },
   };

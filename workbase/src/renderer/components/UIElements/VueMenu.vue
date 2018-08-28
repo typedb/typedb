@@ -1,13 +1,9 @@
 <template>
-    <div id="vue-menu"></div>
+    <div id="test" ref="vueMenu"></div>
 </template>
 
-<style scoped>
-
-</style>
-
 <script>
-  import { Menu } from '@blueprintjs/core';
+  import { Menu, MenuItem } from '@blueprintjs/core';
 
   import ReactDom from 'react-dom';
   import React from 'react';
@@ -17,13 +13,17 @@
     props: ['large', 'ulRef'],
     mounted() {
       this.$nextTick(() => {
-        const menuElement = document.getElementById('vue-menu');
+        const item = React.createElement(MenuItem, {
+          className: 'vue-menu-item',
+          text: 'test',
+          intent: 'primary',
+        });
 
         ReactDom.render(React.createElement(Menu, {
           className: 'vue-menu',
           large: this.large,
           ulRef: this.ulRef,
-        }), menuElement);
+        }, item, item), this.$refs.vueMenu);
       });
     },
   };

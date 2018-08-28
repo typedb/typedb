@@ -1,5 +1,5 @@
 <template>
-    <div id="vue-menu-divider"></div>
+    <div ref="vueMenuDivider"></div>
 </template>
 
 <style scoped>
@@ -17,13 +17,11 @@
     props: ['children', 'title'],
     mounted() {
       this.$nextTick(() => {
-        const menuDividerElement = document.getElementById('vue-menu-divider');
-
         ReactDom.render(React.createElement(MenuDivider, {
           className: 'vue-menu-divider',
           children: this.children,
           title: this.title,
-        }), menuDividerElement);
+        }), this.$refs.vueMenuDivider);
       });
     },
   };

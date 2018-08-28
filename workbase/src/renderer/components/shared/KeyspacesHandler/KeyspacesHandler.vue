@@ -1,9 +1,15 @@
 <template>
 <div class="keyspaces-wrapper">
-    <button @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}" class="btn top-bar-btn">
-      {{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}
-      <img class="keyspaces-arrow" :src="(toolTipShown === 'keyspaces') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'">
-    </button>
+    <!--<button @click="(isGraknRunning) ? toggleToolTip() : false" :class="{'disabled':!isGraknRunning}" class="btn top-bar-btn">-->
+      <!--{{(currentKeyspace !== null) ? currentKeyspace : 'keyspace'}}-->
+      <!--<img class="keyspaces-arrow" :src="(toolTipShown === 'keyspaces') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'">-->
+    <!--</button>-->
+
+    <!--<vue-menu></vue-menu>-->
+    <vue-popover position="RIGHT_TOP"></vue-popover>
+
+    <!--<div @click="(isGraknRunning) ? toggleToolTip() : false"><vue-button rightIcon="key" intent="primary" :text="(currentKeyspace !== null) ? currentKeyspace : 'keyspace'"></vue-button></div>-->
+
     <transition name="slide-down-fade">
         <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-if="toolTipShown === 'keyspaces'">
             <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
@@ -14,26 +20,6 @@
 </template>
 
 <style scoped>
-
-.list-keyspaces-btn {
-    display: flex;
-    flex-direction: row;
-    border: var(--container-border);
-    border-radius: 6px;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: var(--container-padding);
-}
-
-.current-keyspace {
-    color: #00eca2;
-}
-
-.keyspaces-arrow{
-  height: 20px;
-  fill: white;
-}
 
 li {
     border-bottom: 2px solid rgb(58, 58, 58);
@@ -49,7 +35,7 @@ li:hover {
     margin-top: 5px;
     padding: 5px 10px;
     right:5px;
-    background-color: #282828; 
+    background-color: #282828;
     border-radius: 6%;
     z-index: 1;
 }

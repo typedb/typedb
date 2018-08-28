@@ -1,5 +1,5 @@
 <template>
-    <div id="vue-popover"></div>
+    <div ref="vuePopover"></div>
 </template>
 
 <style scoped>
@@ -25,17 +25,16 @@
       'position',
       'target',
       'targetClassName',
-      'transitionDuration'],
+      'transitionDuration',
+    ],
 
     mounted() {
       this.$nextTick(() => {
-        const popoverElement = document.getElementById('vue-popover');
-
         ReactDom.render(React.createElement(Popover, {
           className: 'vue-popover',
           autoFocus: this.autoFocus,
           canEscapeKeyClose: this.canEscapeKeyClose,
-          content: this.content,
+          content: document.getElementById('test'),
           disabled: this.disabled,
           hasBackdrop: this.hasBackdrop,
           isOpen: this.isOpen,
@@ -44,7 +43,7 @@
           target: this.content,
           targetClassName: this.targetClassName,
           transitionDuration: this.transitionDuration,
-        }), popoverElement);
+        }), this.$refs.vuePopover);
       });
     },
   };

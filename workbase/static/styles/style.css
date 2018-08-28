@@ -8,8 +8,8 @@
   --border-light-color: #333333;
 
   --button-color: #333333;
-  --button-hover-color: #06b17b;
-  --button-select-color: #06b17b;
+  --button-hover-border-color: var(--purple-3);
+  --button-active-border-color: var(--purple-4);
 
   /* gray */
   --black: #000000;
@@ -49,18 +49,16 @@
 }
 
 .vue-button:hover {
-  border: 1px solid var(--purple-3) !important;
+  border: 1px solid var(--button-hover-border-color) !important;
   -webkit-box-shadow: none !important;
   box-shadow: none !important;
 }
-
 
 .vue-button:active {
-  border: 1px solid var(--purple-4) !important;
+  border: 1px solid var(--button-active-border-color) !important;
   -webkit-box-shadow: none !important;
   box-shadow: none !important;
 }
-
 
 .vue-button:focus {
   outline: none;

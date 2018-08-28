@@ -7,8 +7,8 @@
     <div class="center">
 
 
-      <vue-button icon="book" intent="primary"></vue-button>
-      <vue-input placeholder="query name"></vue-input>
+      <!--<vue-button icon="book" intent="primary"></vue-button>-->
+      <!--<vue-input placeholder="query name"></vue-input>-->
 
         <!-- <fav-queries-list
           :currentKeyspace="currentKeyspace"
@@ -25,28 +25,28 @@
         <!--v-on:meta-type-selected="metaTypeSelected"-->
         <!--v-on:toggle-tool-tip="toggleToolTip">-->
       <!--</types-panel>-->
-      <!--<graql-editor-->
-        <!--:favQueries="favQueries"-->
-        <!--:localStore="localStore"-->
-        <!--v-on:refresh-fav-queries="refreshFavQueries"-->
-        <!--:toolTipShown="toolTipShown"-->
-        <!--v-on:toggle-tool-tip="toggleToolTip"-->
-        <!--ref="graqlEditor">-->
-      <!--</graql-editor>-->
+      <graql-editor
+        :favQueries="favQueries"
+        :localStore="localStore"
+        v-on:refresh-fav-queries="refreshFavQueries"
+        :toolTipShown="toolTipShown"
+        v-on:toggle-tool-tip="toggleToolTip"
+        ref="graqlEditor">
+      </graql-editor>
     </div>
     <div class="right">
-      <!--<keyspaces-handler-->
-        <!--:localStore="localStore"-->
-        <!--:toolTipShown="toolTipShown"-->
-        <!--v-on:toggle-tool-tip="toggleToolTip">-->
-      <!--</keyspaces-handler>-->
+      <keyspaces-handler
+        :localStore="localStore"
+        :toolTipShown="toolTipShown"
+        v-on:toggle-tool-tip="toggleToolTip">
+      </keyspaces-handler>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 $width-left: 180px;
-$width-right: 220px;
+$width-right: 180px;
 $min-width-center: 700px;
 
 .page-title {
@@ -71,7 +71,6 @@ $min-width-center: 700px;
   align-items: center;
   vertical-align: middle;
   justify-content: space-between;
-  // border-right: 1px solid white;
   padding: var(--container-dark-border);
 }
 
@@ -95,7 +94,6 @@ $min-width-center: 700px;
   width: $width-right;
   height: 100%;
   display: flex;
-  // border-left: 1px solid white;
   padding: var(--container-padding);
   justify-content: flex-end;
   align-items: center;
