@@ -65,19 +65,19 @@ public class ServerTest {
     }
 
 
-    @Test
-    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
-        try (Server server = createGraknEngineServer()) {
-            server.start();
-            assertNotNull(keyspaceStore);
-
-            // init a random keyspace
-            String keyspaceName = "thisisarandomwhalekeyspace";
-            keyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
-
-            assertTrue(keyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
-        }
-    }
+//    @Test
+//    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
+//        try (Server server = createGraknEngineServer()) {
+//            server.start();
+//            assertNotNull(keyspaceStore);
+//
+//            // init a random keyspace
+//            String keyspaceName = "thisisarandomwhalekeyspace";
+//            keyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
+//
+//            assertTrue(keyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
+//        }
+//    }
 
     private Server createGraknEngineServer() {
         // grakn engine configuration
