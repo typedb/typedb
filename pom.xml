@@ -921,6 +921,7 @@
     </repositories>
 
     <build>
+        <directory>build/target</directory>
         <pluginManagement>
             <plugins>
                 <plugin>
