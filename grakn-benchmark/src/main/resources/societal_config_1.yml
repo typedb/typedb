@@ -5,6 +5,7 @@ concepts:
   - 100
   - 250
   - 500
+repeatsPerQuery: 100
 # concurrency:
 #   clients: 1
   # mixed:

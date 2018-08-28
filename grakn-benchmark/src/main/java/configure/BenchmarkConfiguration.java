@@ -35,6 +35,8 @@ public class BenchmarkConfiguration {
 
     private QueriesConfigurationFile queries;
     private List<String> schemaGraql;
+    private boolean noSchemaLoad = true;
+    private boolean noDataGeneration = true;
     private BenchmarkConfigurationFile benchmarkConfigFile;
 
     public BenchmarkConfiguration(BenchmarkConfigurationFile config) throws IOException {
@@ -55,8 +57,23 @@ public class BenchmarkConfiguration {
         return this.benchmarkConfigFile.getName();
     }
 
+    public String getDefaultKeyspace() {
+        String name = this.getName();
+        // remove spaces
+        name = name.replace(' ', '_');
+        if (name.length() > 48) {
+            return name.substring(0, 48);
+        } else {
+            return name;
+        }
+    }
+
     public List<String> getSchema() {
-        return this.schemaGraql;
+        if (this.noSchemaLoad) {
+            return null;
+        } else {
+            return this.schemaGraql;
+        }
     }
 
     public List<String> getQueries() {
@@ -64,6 +81,31 @@ public class BenchmarkConfiguration {
     }
 
     public List<Integer> getConceptsToBenchmark() {
-        return this.benchmarkConfigFile.getConceptsToBenchmark();
+        if (this.noDataGeneration) {
+            return null;
+        } else {
+            return this.benchmarkConfigFile.getConceptsToBenchmark();
+        }
     }
+
+    public void setNoSchemaLoad(boolean loadSchema) {
+        this.noSchemaLoad = loadSchema;
+    }
+    public boolean noSchemaLoad() {
+        // we also don't load the schema
+        // if the data generation is disabled
+        return this.noDataGeneration || this.noSchemaLoad;
+    }
+
+    public void setNoDataGeneration(boolean generateData) {
+        this.noDataGeneration = generateData;
+    }
+    public boolean noDataGeneration() {
+        return this.noDataGeneration;
+    }
+
+    public int noQueryRepetitions() {
+        return this.benchmarkConfigFile.getRepeatsPerQuery();
+    }
+
 }

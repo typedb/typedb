@@ -72,7 +72,10 @@ public class DataGenerator {
     public static final int RANDOM_SEED = 1;
     private int iteration = 0;
 
+
     private Random rand;
+
+    private boolean initialized = false;
     private HashSet<EntityType> entityTypes;
     private HashSet<RelationshipType> relationshipTypes;
     private HashSet<AttributeType> attributeTypes;
@@ -92,7 +95,16 @@ public class DataGenerator {
         this.uri = uri;
         this.schemaGraqlQueries = schemaGraqlQueries;
         this.rand = new Random(RANDOM_SEED);
-        this.reset();
+        this.iteration = 0;
+    }
+
+    public void loadSchema() {
+        System.out.println("Initialising keyspace...");
+        SchemaManager.initialise(this.getSession(), schemaGraqlQueries);
+        System.out.println("done");
+    }
+
+    public void initializeGeneration() {
         entityStrategies = new RouletteWheelCollection<>(this.rand);
         relationshipStrategies = new RouletteWheelCollection<>(this.rand);
         attributeStrategies = new RouletteWheelCollection<>(this.rand);
@@ -314,6 +326,8 @@ public class DataGenerator {
         this.operationStrategies.add(0.6, this.entityStrategies);
         this.operationStrategies.add(0.2, this.relationshipStrategies);
         this.operationStrategies.add(0.2, this.attributeStrategies);
+
+        this.initialized = true;
     }
 
     private Grakn.Session getSession() {
@@ -321,6 +335,9 @@ public class DataGenerator {
     }
 
     public void generate(int numConceptsLimit) {
+        if (!this.initialized) {
+            throw new GeneratorUninitializedException("generate() can only be called after initializing the generation strategies");
+        }
         /*
         This method can be called multiple times, with a higher numConceptsLimit each time, so that the generation can be
         effectively paused while benchmarking takes place
@@ -371,12 +388,6 @@ public class DataGenerator {
                 });
     }
 
-    public void reset() {
-        System.out.println("Initialising keyspace...");
-        SchemaManager.initialise(this.getSession(), schemaGraqlQueries);
-        System.out.println("done");
-        this.iteration = 0;
-    }
 
 //    public static void main(String[] args) {
 //        String uri = "localhost:48555";

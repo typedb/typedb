@@ -23,6 +23,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.answer.Value;
 import ai.grakn.util.SimpleURI;
 import brave.Span;
 import brave.Tracer;
@@ -32,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ai.grakn.graql.Graql.var;
 
 /**
  *
@@ -77,15 +80,29 @@ public class QueryExecutor {
                         .collect(Collectors.toList());
     }
 
-    public void processStaticQueries(int numRepeats, int numConcepts, Number runTimeStamp) {
+    public void processStaticQueries(int numRepeats, int numConcepts, String extraMessage) {
         try {
-            this.processQueries(queries.stream(), numRepeats, numConcepts, runTimeStamp);
+            this.processQueries(queries.stream(), numRepeats, numConcepts, extraMessage);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, Number runTimeStamp) throws Exception {
+    public void processStaticQueries(int numRepeats, int numConcepts) {
+        processStaticQueries(numRepeats, numConcepts, null);
+    }
+
+    public int aggregateCount() {
+        Grakn client = new Grakn(new SimpleURI(uri));
+        Grakn.Session session = client.session(Keyspace.of(keyspace));
+
+        try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
+            List<Value> count = tx.graql().match(var("x").isa("thing")).aggregate(Graql.count()).execute();
+            return count.get(0).number().intValue();
+        }
+    }
+
+    void processQueries(Stream<Query> queryStream, int numRepeats, int numConcepts, String msg) throws Exception {
         // create tracing before the Grakn client is instantiated
 //        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 //        Tracing tracing = Tracing.newBuilder()
@@ -118,7 +135,9 @@ public class QueryExecutor {
                 batchSpan.tag("numConcepts", Integer.toString(numConcepts));
                 batchSpan.tag("query", query.toString());
                 batchSpan.tag("dataSetName", this.dataSetName);
-                batchSpan.tag("runStartDateTime", runTimeStamp.toString());
+                if (msg != null) {
+                    batchSpan.tag("extraTag", msg);
+                }
                 batchSpan.start();
 
 

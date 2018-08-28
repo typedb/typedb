@@ -30,6 +30,7 @@ public class BenchmarkConfigurationFile {
     private String schema;
     private String queries;
     private List<Integer> concepts;
+    private Integer repeatsPerQuery;
 
     public void setName(String name) {
         this.name = name;
@@ -59,5 +60,11 @@ public class BenchmarkConfigurationFile {
         return this.concepts;
     }
 
+    public void setRepeatsPerQuery(Integer repeatsPerQuery) {
+        this.repeatsPerQuery = repeatsPerQuery;
+    }
+    public int getRepeatsPerQuery() {
+        return this.repeatsPerQuery;
+    }
 }
 

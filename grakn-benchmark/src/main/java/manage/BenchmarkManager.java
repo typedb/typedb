@@ -27,8 +27,6 @@ import generator.DataGenerator;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.CommandLine;
@@ -45,46 +43,66 @@ public class BenchmarkManager {
     private DataGenerator dataGenerator;
     private QueryExecutor queryExecutor;
     private int numQueryRepetitions;
+    private BenchmarkConfiguration configuration;
 
-    public BenchmarkManager(DataGenerator dataGenerator, QueryExecutor queryExecutor, int numQueryRepetitions) {
+    public BenchmarkManager(BenchmarkConfiguration configuration, DataGenerator dataGenerator, QueryExecutor queryExecutor) {
         this.dataGenerator = dataGenerator;
         this.queryExecutor = queryExecutor;
-        this.numQueryRepetitions = numQueryRepetitions;
+        this.numQueryRepetitions = configuration.noQueryRepetitions();
+        this.configuration = configuration;
     }
 
-    public void run(List<Integer> numConceptsInRun) {
-        Number timestamp = this.runStartDateTime();
-        for (int numConcepts : numConceptsInRun) {
-            this.dataGenerator.generate(numConcepts);
-            this.queryExecutor.processStaticQueries(numQueryRepetitions, numConcepts, timestamp);
+    public void run() {
+        // load schema if not disabled
+        if (!this.configuration.noSchemaLoad()) {
+            this.dataGenerator.loadSchema();
         }
+
+        // initialize data generation if not disabled
+        if (!this.configuration.noDataGeneration()) {
+            this.dataGenerator.initializeGeneration();
+        }
+
+        // run a variable dataset size or the pre-initialized one
+        if (this.configuration.noDataGeneration()) {
+            // count the current size of the DB
+            int numConcepts = this.queryExecutor.aggregateCount();
+            // only 1 point to profile at
+            this.queryExecutor.processStaticQueries(numQueryRepetitions, numConcepts, "Preconfigured DB - no data gen");
+        } else {
+            this.runAtConcepts(this.configuration.getConceptsToBenchmark());
+        }
+
     }
 
     /**
-     * Used to generate a timestamp for each benchmarking run
-     * @return
+     * Given a list of database sizes to perform profiling at,
+     * Populate the DB to a given size, then run the benchmark
+     * @param numConceptsInRun
      */
-    private Number runStartDateTime(){
-        return new Date().getTime();
+    private void runAtConcepts(List<Integer> numConceptsInRun) {
+        for (int numConcepts : numConceptsInRun) {
+            this.dataGenerator.generate(numConcepts);
+            this.queryExecutor.processStaticQueries(numQueryRepetitions, numConcepts);
+        }
     }
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
 
-
         CommandLine commandLine;
-        Option keyspace = Option.builder("k")
+        Option keyspaceOption = Option.builder("k")
                 .longOpt("keyspace")
                 .required(false)
                 .desc("Specific keyspace to utilize (default: `name` in config yaml")
                 .type(String.class)
                 .build();
-        Option noDataGeneration = Option.builder("G")
+        Option noDataGenerationOption = Option.builder("G")
                 .longOpt("no-data-generation")
                 .required(false)
                 .desc("Disable data generation")
                 .type(Boolean.class)
                 .build();
-        Option noSchemaLoad = Option.builder("S")
+        Option noSchemaLoadOption = Option.builder("S")
                 .longOpt("no-schema-load")
                 .required(false)
                 .desc("Disable loading a schema")
@@ -92,12 +110,9 @@ public class BenchmarkManager {
                 .build();
         Options options = new Options();
         CommandLineParser parser = new DefaultParser();
-        options.addOption(keyspace);
-        options.addOption(noDataGeneration);
-        options.addOption(noSchemaLoad);
-
-
-        // TODO finish implementhing this
+        options.addOption(keyspaceOption);
+        options.addOption(noDataGenerationOption);
+        options.addOption(noSchemaLoadOption);
 
 
         String configFileName = args[0];
@@ -108,17 +123,35 @@ public class BenchmarkManager {
         BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFile);
 
 
-        String uri = "localhost:48555";
-        String keyspace = "societal_model";
+        // use given keyspace string if exists, otherwise use yaml file `name` tag
+        String keyspace = keyspaceOption.getValue(benchmarkConfiguration.getDefaultKeyspace());
 
-        DataGenerator dataGenerator = new DataGenerator(keyspace, uri, benchmarkConfiguration.getSchema());
+        // loading a schema file, enabled by default
+        String noSchemaLoadString = noSchemaLoadOption.getValue("false");
+        boolean noSchemaLoad = Boolean.parseBoolean(noSchemaLoadString);
+        benchmarkConfiguration.setNoSchemaLoad(noSchemaLoad);
+
+        // generate data true/false, else default to do generate data
+        String noDataGenerationString = noDataGenerationOption.getValue("false");
+        boolean noDataGeneration = Boolean.parseBoolean(noDataGenerationString);
+        benchmarkConfiguration.setNoDataGeneration(noDataGeneration);
+
+        String uri = "localhost:48555";
+
+        DataGenerator dataGenerator;
+        if (benchmarkConfiguration.noDataGeneration()) {
+            // no data generation means NEITHER schema load NOR data generate
+            dataGenerator = null;
+        } else {
+            dataGenerator = new DataGenerator(keyspace, uri, benchmarkConfiguration.getSchema());
+        }
+
         QueryExecutor queryExecutor = new QueryExecutor(keyspace,
                                             uri,
                                             "generated_" + benchmarkConfiguration.getName(),
                                             benchmarkConfiguration.getQueries());
-        BenchmarkManager manager = new BenchmarkManager(dataGenerator, queryExecutor, 100);
-
-        manager.run(benchmarkConfiguration.getConceptsToBenchmark());
+        BenchmarkManager manager = new BenchmarkManager(benchmarkConfiguration, dataGenerator, queryExecutor);
+        manager.run();
     }
 }
 

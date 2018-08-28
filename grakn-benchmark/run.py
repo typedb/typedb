@@ -28,7 +28,7 @@ parser.add_argument('--no-data-generation', dest='no_data_generation', default=F
 # override `schema` tag in yaml file, don't load a new schema
 parser.add_argument('--no-load-schema', dest='no_load_schema', default=False, action="sture_true", help="Use existing Grakn schema. Requires --keyspace")
 # set the keyspace to use with existing data/schema
-parser.add_argument('--keyspace', default=None, help="Specify keyspace to use")
+parser.add_argument('--keyspace', default=None, help="Specify a keyspace to use")
 
 
 args = parser.parse_args()
