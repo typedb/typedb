@@ -38,8 +38,12 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
@@ -72,9 +76,11 @@ public class ServerTest {
         }
     }
 
-    private Server createGraknEngineServer() {
+    private Server createGraknEngineServer() throws IOException {
+        final Path testDataDir = Paths.get("/", "tmp", "test-data-dir", UUID.randomUUID().toString());
+        Files.createDirectories(testDataDir);
         GraknConfig config = GraknConfig.create();
-        config.setConfigProperty(GraknConfigKey.DATA_DIR, "/tmp");
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, testDataDir.toAbsolutePath().toString());
 
         EngineID engineId = EngineID.me();
         ServerStatus status = new ServerStatus();
