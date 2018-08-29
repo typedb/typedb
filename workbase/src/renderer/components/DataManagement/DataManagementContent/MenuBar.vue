@@ -5,11 +5,6 @@
         <div class="left">
         </div>
         <div class="center">
-          <test-component>
-            <h1 @click="()=>{console.log('hi');}">
-              About Me
-            </h1>
-          </test-component>
           <fav-queries-list 
             :currentKeyspace="currentKeyspace" 
             :favQueries="favQueries" 
@@ -127,10 +122,10 @@ import FavQueriesList from './MenuBar/FavQueries/FavQueriesList.vue';
 import TypesPanel from './MenuBar/TypesPanel.vue';
 import QuerySettings from './MenuBar/QuerySettings/QuerySettings.vue';
 import FavQueriesSettings from './MenuBar/FavQueries/FavQueriesSettings';
-import TestComponent from './TestComponent';
+
 export default {
   props: ['localStore'],
-  components: { KeyspacesHandler, GraqlEditor, FavQueriesList, TypesPanel, QuerySettings, TestComponent },
+  components: { KeyspacesHandler, GraqlEditor, FavQueriesList, TypesPanel, QuerySettings },
   data() {
     return {
       favQueries: [],
