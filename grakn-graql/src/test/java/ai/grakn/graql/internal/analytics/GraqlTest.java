@@ -83,17 +83,17 @@ public class GraqlTest {
         session = sessionContext.newSession();
     }
 
-//    @Test
-//    public void testGraqlCount() throws InvalidKBException {
-//        addSchemaAndEntities();
-//        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-//            assertEquals(6, graph.graql().<ComputeQuery<Value>>parse("compute count;")
-//                    .execute().get(0).number().intValue());
-//
-//            assertEquals(3, graph.graql().<ComputeQuery<Value>>parse("compute count in [thingy, thingy];")
-//                    .execute().get(0).number().intValue());
-//        }
-//    }
+    @Test
+    public void testGraqlCount() throws InvalidKBException {
+        addSchemaAndEntities();
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            assertEquals(6, graph.graql().<ComputeQuery<Value>>parse("compute count;")
+                    .execute().get(0).number().intValue());
+
+            assertEquals(3, graph.graql().<ComputeQuery<Value>>parse("compute count in [thingy, thingy];")
+                    .execute().get(0).number().intValue());
+        }
+    }
 
     @Test
     public void testDegrees() {
