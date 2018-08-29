@@ -98,6 +98,7 @@ public class AttributeDeduplicatorDaemon {
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {
+        stopDaemon = false;
         CompletableFuture<Void> daemon = CompletableFuture.supplyAsync(() -> {
             LOG.info("startDeduplicationDaemon() - attribute de-duplicator daemon started.");
             while (!stopDaemon) {
