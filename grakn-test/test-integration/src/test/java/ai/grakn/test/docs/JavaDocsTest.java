@@ -69,82 +69,82 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 public class JavaDocsTest {
 
-    private static final Pattern TAG_JAVA = markdownOrHtml("java");
-
-    private static String groovyPrefix;
-
-    @Parameterized.Parameter(0)
-    public File file;
-
-    @Parameterized.Parameter(1)
-    public Path name;
-
-    private static int numFound = 0;
-
-    @ClassRule
-    public static EngineContext engine = EngineContext.create();
-
-    public static String knowledgeBaseName;
-
-    @Parameterized.Parameters(name = "{1}")
-    public static Collection files() {
-        return allMarkdownFiles().stream()
-                .map(file -> new Object[] {file, PAGES.toPath().relativize(file.toPath())})
-                .collect(toList());
-    }
-
-    @BeforeClass
-    public static void loadGroovyPrefix() throws IOException {
-        groovyPrefix = new String(Files.readAllBytes(Paths.get("src/test/java/ai/grakn/test/docs/prefix.groovy")));
-    }
-
-    @AfterClass
-    public static void assertEnoughExamplesFound() {
-        if (numFound < 8) {
-            fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
-        }
-    }
-
-    @Test
-    public void testExamplesValidGroovy() throws IOException {
-        byte[] encoded = Files.readAllBytes(file.toPath());
-
-        String contents = new String(encoded, StandardCharsets.UTF_8);
-
-        knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
-
-        Matcher matcher = TAG_JAVA.matcher(contents);
-
-        String groovyString = "";
-        boolean foundGroovy = false;
-
-        while (matcher.find()) {
-            String match = matcher.group(2);
-
-            String trimmed = match.trim();
-
-            if (!(trimmed.startsWith("-test-ignore") || trimmed.startsWith("<!--test-ignore-->"))) {
-                numFound += 1;
-                groovyString += matcher.group(2) + "\n";
-                foundGroovy = true;
-            }
-        }
-
-        String indented = DocTestUtil.indent(groovyString);
-        groovyString = groovyPrefix.replaceFirst("\\$putTheBodyHere", Matcher.quoteReplacement(indented));
-
-        if (foundGroovy) {
-            String fileAndLine = file.getName() + ":1";
-            assertGroovyStringValid(fileAndLine, groovyString);
-        }
-    }
-
-    private void assertGroovyStringValid(String fileAndLine, String groovyString) {
-        try {
-            Eval.me(groovyString.replaceAll("\\$", "\\\\\\$"));
-        } catch (Exception e) {
-            e.printStackTrace();
-            codeBlockFail(fileAndLine, groovyString, e.getMessage());
-        }
-    }
+//    private static final Pattern TAG_JAVA = markdownOrHtml("java");
+//
+//    private static String groovyPrefix;
+//
+//    @Parameterized.Parameter(0)
+//    public File file;
+//
+//    @Parameterized.Parameter(1)
+//    public Path name;
+//
+//    private static int numFound = 0;
+//
+//    @ClassRule
+//    public static EngineContext engine = EngineContext.create();
+//
+//    public static String knowledgeBaseName;
+//
+//    @Parameterized.Parameters(name = "{1}")
+//    public static Collection files() {
+//        return allMarkdownFiles().stream()
+//                .map(file -> new Object[] {file, PAGES.toPath().relativize(file.toPath())})
+//                .collect(toList());
+//    }
+//
+//    @BeforeClass
+//    public static void loadGroovyPrefix() throws IOException {
+//        groovyPrefix = new String(Files.readAllBytes(Paths.get("src/test/java/ai/grakn/test/docs/prefix.groovy")));
+//    }
+//
+//    @AfterClass
+//    public static void assertEnoughExamplesFound() {
+//        if (numFound < 8) {
+//            fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
+//        }
+//    }
+//
+//    @Test
+//    public void testExamplesValidGroovy() throws IOException {
+//        byte[] encoded = Files.readAllBytes(file.toPath());
+//
+//        String contents = new String(encoded, StandardCharsets.UTF_8);
+//
+//        knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
+//
+//        Matcher matcher = TAG_JAVA.matcher(contents);
+//
+//        String groovyString = "";
+//        boolean foundGroovy = false;
+//
+//        while (matcher.find()) {
+//            String match = matcher.group(2);
+//
+//            String trimmed = match.trim();
+//
+//            if (!(trimmed.startsWith("-test-ignore") || trimmed.startsWith("<!--test-ignore-->"))) {
+//                numFound += 1;
+//                groovyString += matcher.group(2) + "\n";
+//                foundGroovy = true;
+//            }
+//        }
+//
+//        String indented = DocTestUtil.indent(groovyString);
+//        groovyString = groovyPrefix.replaceFirst("\\$putTheBodyHere", Matcher.quoteReplacement(indented));
+//
+//        if (foundGroovy) {
+//            String fileAndLine = file.getName() + ":1";
+//            assertGroovyStringValid(fileAndLine, groovyString);
+//        }
+//    }
+//
+//    private void assertGroovyStringValid(String fileAndLine, String groovyString) {
+//        try {
+//            Eval.me(groovyString.replaceAll("\\$", "\\\\\\$"));
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            codeBlockFail(fileAndLine, groovyString, e.getMessage());
+//        }
+//    }
 }
