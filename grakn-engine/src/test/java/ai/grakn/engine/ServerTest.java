@@ -32,7 +32,6 @@ import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -44,6 +43,7 @@ import java.util.Collections;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class ServerTest {
 
@@ -55,59 +55,48 @@ public class ServerTest {
     @Rule
     public final SessionContext sessionContext = SessionContext.create();
 
-    GraknConfig config = GraknConfig.create();
-    spark.Service sparkHttp = spark.Service.ignite();
-    private KeyspaceStore keyspaceStore;
+    private KeyspaceStore keyspaceStoreUnderTest;
 
-    @After
-    public void tearDown() {
-        sparkHttp.stop();
+    @Test
+    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
+        assertNull(keyspaceStoreUnderTest);
+        try (Server server = createGraknEngineServer()) {
+            server.start();
+            assertNotNull(keyspaceStoreUnderTest);
+
+            // init a random keyspace
+            String keyspaceName = "thisisarandomwhalekeyspace";
+            keyspaceStoreUnderTest.addKeyspace(Keyspace.of(keyspaceName));
+
+            assertTrue(keyspaceStoreUnderTest.containsKeyspace(Keyspace.of(keyspaceName)));
+        }
     }
 
-
-//    @Test
-//    public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
-//        try (Server server = createGraknEngineServer()) {
-//            server.start();
-//            assertNotNull(keyspaceStore);
-//
-//            // init a random keyspace
-//            String keyspaceName = "thisisarandomwhalekeyspace";
-//            keyspaceStore.addKeyspace(Keyspace.of(keyspaceName));
-//
-//            assertTrue(keyspaceStore.containsKeyspace(Keyspace.of(keyspaceName)));
-//        }
-//    }
-
     private Server createGraknEngineServer() {
-        // grakn engine configuration
+        GraknConfig config = GraknConfig.create();
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, "/tmp");
+
         EngineID engineId = EngineID.me();
         ServerStatus status = new ServerStatus();
-
         MetricRegistry metricRegistry = new MetricRegistry();
-
-        // distributed locks
         LockProvider lockProvider = new ProcessWideLockProvider();
 
-        keyspaceStore = KeyspaceStoreFake.of();
+        keyspaceStoreUnderTest = KeyspaceStoreFake.of();
+        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStoreUnderTest);
 
-        // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
-
-
-        // post-processing
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
 
-        // http services: spark, http controller, and gRPC server
+        // communication services: spark, http controller, and gRPC server
         spark.Service sparkHttp = spark.Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
         io.grpc.Server server = ServerBuilder.forPort(grpcPort).addService(new SessionService(requestOpener, attributeDeduplicatorDaemon)).build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
+
         return ServerFactory.createServer(engineId, config, status,
                 sparkHttp, httpControllers, rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+                lockProvider, attributeDeduplicatorDaemon, keyspaceStoreUnderTest);
     }
 }
