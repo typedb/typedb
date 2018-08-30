@@ -44,7 +44,6 @@ import static ai.grakn.graql.Graql.var;
 
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
-    private ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
     private Grakn localhostGrakn = new Grakn(new SimpleURI("localhost:48555"));
     private Path queuePath = DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY.resolve("db").resolve("queue");
 
@@ -71,9 +70,10 @@ public class AttributeDeduplicatorE2E {
     }
 
     @Test
-    public void shouldDeduplicate10AttributesWithDuplicates() throws RocksDBException, InterruptedException, ExecutionException {
+    public void shouldDeduplicateAttributes() throws RocksDBException, InterruptedException, ExecutionException {
         int numOfUniqueNames = 10;
         int numOfDuplicatesPerName = 673;
+        ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
 
         LOG.info("initiating the shouldDeduplicate10AttributesWithDuplicates test...");
         try (Grakn.Session session = localhostGrakn.session(Keyspace.of("attribute_deduplicator_e2e"))) {
@@ -114,20 +114,21 @@ public class AttributeDeduplicatorE2E {
     private static void insertNameShuffled(Grakn.Session session, int nameCount, int duplicatePerNameCount, ExecutorService executorService)
             throws ExecutionException, InterruptedException {
 
-        List<Integer> duplicatedNames = new ArrayList<>();
+        List<String> duplicatedNames = new ArrayList<>();
         for (int i = 0; i < nameCount; ++i) {
             for (int j = 0; j < duplicatePerNameCount; ++j) {
-                duplicatedNames.add(i);
+                String name = "lorem ipsum dolor sit amet " + i;
+                duplicatedNames.add(name);
             }
         }
 
         Collections.shuffle(duplicatedNames, new Random(1));
 
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
-        for (int name: duplicatedNames) {
+        for (String name: duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
-                    tx.graql().insert(var().isa("name").val(Integer.toString(name))).execute();
+                    tx.graql().insert(var().isa("name").val(name)).execute();
                     tx.commit();
                 }
                 return null;
