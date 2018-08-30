@@ -66,122 +66,122 @@ import static org.mockito.Mockito.when;
  */
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
-//
-//    private static final Pattern TAG_GRAQL = markdownOrHtml("graql");
-//    private static final Pattern TEMPLATE_GRAQL = markdownOrHtml("graql-template");
-//
-//    private static final Pattern SHELL_GRAQL = Pattern.compile("^*>>>(.*?)$", Pattern.MULTILINE);
-//
-//    @Parameterized.Parameter(0)
-//    public File file;
-//
-//    @Parameterized.Parameter(1)
-//    public Path name;
-//
-//    private static final Pattern GRAQL_COMMIT = Pattern.compile("^(.*?)(\\scommit;?)?$", Pattern.DOTALL);
-//
-//    private static int numFound = 0;
-//
-//    @ClassRule
-//    public static EngineContext engine = EngineContext.create();
-//
-//    @Parameterized.Parameters(name = "{1}")
-//    public static Collection<Object[]> files() {
-//        return allMarkdownFiles().stream()
-//                .map(file -> new Object[] {file, PAGES.toPath().relativize(file.toPath())})
-//                .collect(toList());
-//    }
-//
-//    @AfterClass
-//    public static void assertEnoughExamplesFound() {
-//        if (numFound < 10) {
-//            fail("Only found " + numFound + " Graql examples. Perhaps the regex is wrong?");
-//        }
-//    }
-//
-//    @Test
-//    public void testExamplesValidSyntax() throws IOException {
-//        byte[] encoded = new byte[0];
-//        try {
-//            encoded = Files.readAllBytes(file.toPath());
-//        } catch (IOException e) {
-//            fail();
-//        }
-//
-//        String contents = new String(encoded, StandardCharsets.UTF_8);
-//
-//        String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
-//
-//        try (GraknTx graph = DocTestUtil.getTestGraph(engine.grpcUri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
-//            executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
-//
-//            // TODO: Fix issue with this test when template expects data in a certain format
-////            executeAssertionOnContents(graph, TEMPLATE_GRAQL, file, contents, this::assertGraqlTemplateValidSyntax);
-//        }
-//    }
-//
-//    private void executeAssertionOnContents(GraknTx graph, Pattern pattern, File file, String contents,
-//                                            TriConsumer<GraknTx, String, String> assertion) throws IOException {
-//        Matcher matcher = pattern.matcher(contents);
-//
-//        while (matcher.find()) {
-//            numFound += 1;
-//
-//            String graqlString = matcher.group("query");
-//
-//            System.out.println(graqlString);
-//
-//            String trimmed = graqlString.trim();
-//
-//            if (!(trimmed.startsWith("test-ignore") || trimmed.startsWith("<!--test-ignore-->"))) {
-//                String fileAndLine = file.getName() + ":" + getLineNumber(contents, matcher.toMatchResult().start());
-//
-//                assertion.accept(graph, fileAndLine, graqlString);
-//            }
-//        }
-//    }
-//
-//    private void assertGraqlCodeblockValidSyntax(GraknTx graph, String fileAndLine, String block) {
-//        Matcher shellMatcher = SHELL_GRAQL.matcher(block);
-//
-//        if (shellMatcher.find()) {
-//            while (shellMatcher.find()) {
-//                String graqlString = shellMatcher.group(1);
-//                assertGraqlStringValidSyntax(graph, fileAndLine, graqlString);
-//            }
-//        } else {
-//            assertGraqlStringValidSyntax(graph, fileAndLine, block);
-//        }
-//    }
-//
-//    private void assertGraqlStringValidSyntax(GraknTx graph, String fileAndLine, String graqlString) {
-//        try {
-//            parse(graph, graqlString);
-//        } catch (GraknException e1) {
-//            DocTestUtil.codeBlockFail(fileAndLine, graqlString, e1.getMessage());
-//        }
-//    }
-//
-//    private void assertGraqlTemplateValidSyntax(GraknTx graph, String fileName, String templateBlock){
-//        // An endless map where you always end up back where you started like in Zelda
-//        Map<String, Object> data = Mockito.mock(Map.class);
-//        when(data.containsKey(any())).thenReturn(true);
-//        when(data.get(any())).thenReturn(data);
-//        when(data.toString()).thenReturn("\"MOCK\"");
-//
-//        try {
-//            graph.graql().parser().parseTemplate(templateBlock, data);
-//        } catch (GraqlSyntaxException e){
-//            DocTestUtil.codeBlockFail(fileName, templateBlock, e.getMessage());
-//        } catch (Exception e){}
-//    }
-//
-//    private void parse(GraknTx graph, String line) {
-//        // TODO: should `commit` be considered valid Graql? It strictly isn't.
-//        Matcher matcher = GRAQL_COMMIT.matcher(line);
-//        matcher.find();
-//        line = matcher.group(1);
-//        graph.graql().parser().parseList(line).forEach(Query::execute);
-//    }
+
+    private static final Pattern TAG_GRAQL = markdownOrHtml("graql");
+    private static final Pattern TEMPLATE_GRAQL = markdownOrHtml("graql-template");
+
+    private static final Pattern SHELL_GRAQL = Pattern.compile("^*>>>(.*?)$", Pattern.MULTILINE);
+
+    @Parameterized.Parameter(0)
+    public File file;
+
+    @Parameterized.Parameter(1)
+    public Path name;
+
+    private static final Pattern GRAQL_COMMIT = Pattern.compile("^(.*?)(\\scommit;?)?$", Pattern.DOTALL);
+
+    private static int numFound = 0;
+
+    @ClassRule
+    public static EngineContext engine = EngineContext.create();
+
+    @Parameterized.Parameters(name = "{1}")
+    public static Collection<Object[]> files() {
+        return allMarkdownFiles().stream()
+                .map(file -> new Object[] {file, PAGES.toPath().relativize(file.toPath())})
+                .collect(toList());
+    }
+
+    @AfterClass
+    public static void assertEnoughExamplesFound() {
+        if (numFound < 10) {
+            fail("Only found " + numFound + " Graql examples. Perhaps the regex is wrong?");
+        }
+    }
+
+    @Test
+    public void testExamplesValidSyntax() throws IOException {
+        byte[] encoded = new byte[0];
+        try {
+            encoded = Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            fail();
+        }
+
+        String contents = new String(encoded, StandardCharsets.UTF_8);
+
+        String knowledgeBaseName = DocTestUtil.getKnowledgeBaseName(contents);
+
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.grpcUri(), knowledgeBaseName).transaction(GraknTxType.WRITE)) {
+            executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
+
+            // TODO: Fix issue with this test when template expects data in a certain format
+//            executeAssertionOnContents(graph, TEMPLATE_GRAQL, file, contents, this::assertGraqlTemplateValidSyntax);
+        }
+    }
+
+    private void executeAssertionOnContents(GraknTx graph, Pattern pattern, File file, String contents,
+                                            TriConsumer<GraknTx, String, String> assertion) throws IOException {
+        Matcher matcher = pattern.matcher(contents);
+
+        while (matcher.find()) {
+            numFound += 1;
+
+            String graqlString = matcher.group("query");
+
+            System.out.println(graqlString);
+
+            String trimmed = graqlString.trim();
+
+            if (!(trimmed.startsWith("test-ignore") || trimmed.startsWith("<!--test-ignore-->"))) {
+                String fileAndLine = file.getName() + ":" + getLineNumber(contents, matcher.toMatchResult().start());
+
+                assertion.accept(graph, fileAndLine, graqlString);
+            }
+        }
+    }
+
+    private void assertGraqlCodeblockValidSyntax(GraknTx graph, String fileAndLine, String block) {
+        Matcher shellMatcher = SHELL_GRAQL.matcher(block);
+
+        if (shellMatcher.find()) {
+            while (shellMatcher.find()) {
+                String graqlString = shellMatcher.group(1);
+                assertGraqlStringValidSyntax(graph, fileAndLine, graqlString);
+            }
+        } else {
+            assertGraqlStringValidSyntax(graph, fileAndLine, block);
+        }
+    }
+
+    private void assertGraqlStringValidSyntax(GraknTx graph, String fileAndLine, String graqlString) {
+        try {
+            parse(graph, graqlString);
+        } catch (GraknException e1) {
+            DocTestUtil.codeBlockFail(fileAndLine, graqlString, e1.getMessage());
+        }
+    }
+
+    private void assertGraqlTemplateValidSyntax(GraknTx graph, String fileName, String templateBlock){
+        // An endless map where you always end up back where you started like in Zelda
+        Map<String, Object> data = Mockito.mock(Map.class);
+        when(data.containsKey(any())).thenReturn(true);
+        when(data.get(any())).thenReturn(data);
+        when(data.toString()).thenReturn("\"MOCK\"");
+
+        try {
+            graph.graql().parser().parseTemplate(templateBlock, data);
+        } catch (GraqlSyntaxException e){
+            DocTestUtil.codeBlockFail(fileName, templateBlock, e.getMessage());
+        } catch (Exception e){}
+    }
+
+    private void parse(GraknTx graph, String line) {
+        // TODO: should `commit` be considered valid Graql? It strictly isn't.
+        Matcher matcher = GRAQL_COMMIT.matcher(line);
+        matcher.find();
+        line = matcher.group(1);
+        graph.graql().parser().parseList(line).forEach(Query::execute);
+    }
 
 }

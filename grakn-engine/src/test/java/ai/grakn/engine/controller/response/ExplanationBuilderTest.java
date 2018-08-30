@@ -38,9 +38,9 @@ import static org.junit.Assert.assertTrue;
 
 public class ExplanationBuilderTest {
 
-//    @ClassRule
-//    public static SampleKBContext genealogyKB = GenealogyKB.context();
-//
+    @ClassRule
+    public static SampleKBContext genealogyKB = GenealogyKB.context();
+
 //    //NOTE: This test ix expected to be slower than average.
 //    @Test
 //    public void whenExplainInferred_returnsLinkedExplanation() {
