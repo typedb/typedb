@@ -50,7 +50,7 @@ public class GraknEngineStartTest {
     }
 
     @Test
-    public void whenStartingMultipleEngines_InitializationSucceeds() throws InterruptedException {
+    public void whenStartingMultipleEngines_InitializationSucceeds() {
         HashSet<CompletableFuture<Void>> futures = new HashSet<>();
 
         //Check That They Running
@@ -62,7 +62,7 @@ public class GraknEngineStartTest {
     }
 
     @Test
-    public void whenStartingAndCreatingKeyspace_InitializationSucceeds() throws InterruptedException {
+    public void whenStartingAndCreatingKeyspace_InitializationSucceeds() {
         engines.forEach(engine ->{
             engine.systemKeyspace().addKeyspace(Keyspace.of("grakn"));
         });

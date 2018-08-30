@@ -43,13 +43,16 @@ import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
 import io.grpc.ServerBuilder;
+import org.apache.commons.io.FileUtils;
 import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -73,9 +76,19 @@ public class EngineContext extends CompositeTestRule {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
+    /**
+     * This is the equivalent of $GRAKN_HOME/db but for testing.
+     *
+     * Every instance of an EngineContext should have its own data dir and it is accomplished by using TemporaryFolder,
+     * which is a JUnit class. Another bonus which it has is the guarantee that the folder will be deleted after the test
+     * has finished.
+     *
+     * The dataDirTmp instance is listed as one of the rules under the testRules() method.
+     *
+     */
+    private Path dataDirTmp;
     private Server server;
-
-    private final GraknConfig config;
+    private GraknConfig config;
     private spark.Service sparkHttp;
 
     public KeyspaceStore systemKeyspace() {
@@ -91,15 +104,7 @@ public class EngineContext extends CompositeTestRule {
     private EngineGraknTxFactory engineGraknTxFactory;
 
     private EngineContext() {
-        config = createTestConfig();
-    }
 
-    private EngineContext(GraknConfig config) {
-        this.config = config;
-    }
-
-    public static EngineContext create(GraknConfig config) {
-        return new EngineContext(config);
     }
 
     /**
@@ -129,19 +134,17 @@ public class EngineContext extends CompositeTestRule {
 
     @Override
     protected final List<TestRule> testRules() {
-        return ImmutableList.of(
-                SessionContext.create()
-        );
+        return ImmutableList.of(SessionContext.create());
     }
 
     @Override
     protected final void before() throws Throwable {
+        dataDirTmp = Files.createTempDirectory("db-for-test");
+        config = createTestConfig(dataDirTmp.toString());
         RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
-
-        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
 
         // To ensure consistency b/w test profiles and configuration files, when not using Janus
         // for a unit tests in an IDE, add the following option:
@@ -183,9 +186,12 @@ public class EngineContext extends CompositeTestRule {
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
             sparkHttp.stop();
+            FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
         }
+
+
     }
 
     private void clearGraphs() {
@@ -223,9 +229,9 @@ public class EngineContext extends CompositeTestRule {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    public static GraknConfig createTestConfig() {
+    public static GraknConfig createTestConfig(String dataDir) {
         GraknConfig config = GraknConfig.create();
-
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
 
         return config;

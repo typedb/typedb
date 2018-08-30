@@ -32,6 +32,9 @@ import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.test.rule.SessionContext;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
+import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -40,10 +43,8 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
@@ -56,10 +57,23 @@ public class ServerTest {
 
     @Rule
     public final SystemOutRule stdout = new SystemOutRule();
+
     @Rule
     public final SessionContext sessionContext = SessionContext.create();
 
+    private Path dataDirTmp;
+
     private KeyspaceStore keyspaceStoreUnderTest;
+
+    @Before
+    public void setup() throws IOException {
+        dataDirTmp = Files.createTempDirectory("db-for-test");
+    }
+
+    @After
+    public void teardown() throws IOException {
+        FileUtils.deleteDirectory(dataDirTmp.toFile());
+    }
 
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded() throws IOException {
@@ -76,11 +90,9 @@ public class ServerTest {
         }
     }
 
-    private Server createGraknEngineServer() throws IOException {
-        final Path testDataDir = Paths.get("/", "tmp", "test-data-dir", UUID.randomUUID().toString());
-        Files.createDirectories(testDataDir);
+    private Server createGraknEngineServer() {
         GraknConfig config = GraknConfig.create();
-        config.setConfigProperty(GraknConfigKey.DATA_DIR, testDataDir.toAbsolutePath().toString());
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDirTmp.toString());
 
         EngineID engineId = EngineID.me();
         ServerStatus status = new ServerStatus();
