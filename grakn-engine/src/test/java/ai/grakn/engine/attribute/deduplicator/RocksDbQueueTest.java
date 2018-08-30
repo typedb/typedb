@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import static org.hamcrest.MatcherAssert.*;
 public class RocksDbQueueTest {
     @Test
     public void shouldBeAbleToInsertNewAttributes() throws InterruptedException, IOException {
-        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes = Arrays.asList(
                     Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -44,7 +45,7 @@ public class RocksDbQueueTest {
 
     @Test
     public void readButUnackedAttributesShouldRemainInTheQueue() throws InterruptedException, IOException {
-        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes = Arrays.asList(
                     Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -67,7 +68,7 @@ public class RocksDbQueueTest {
 
     @Test
     public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException, IOException {
-        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         try (RocksDbQueue queue = new RocksDbQueue(queuePath)) {
             List<Attribute> attributes1 = Arrays.asList(
                     Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")),
@@ -102,7 +103,7 @@ public class RocksDbQueueTest {
      */
     @Test
     public void theReadMethodMustWaitUntilTheQueueBecomesNonEmpty() throws InterruptedException, IOException {
-        Path queuePath = Paths.get("./queue-" + UUID.randomUUID().toString());
+        Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         List<String> verifyOrderOfOperation = new ArrayList<>();
         RocksDbQueue queue = new RocksDbQueue(queuePath);
 
