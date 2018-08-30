@@ -15,6 +15,7 @@ import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.util.Schema;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -29,6 +30,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 public class AttributeDeduplicatorIT {
+    @Rule
+    public EmbeddedCassandraContext cassandraContext = EmbeddedCassandraContext.create();
+
     @Test
     public void shouldDeduplicateAttributes() {
         // setup a keyspace & txFactory
