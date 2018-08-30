@@ -203,12 +203,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Set<Integer> typeIds = completeAttributeTypes.stream()
                 .flatMap(t -> (Stream<AttributeType>) t.subs())
                 .map(SchemaConcept::label)
-                .map(Schema.ImplicitType.HAS::getLabel)
+                .flatMap(label -> Stream.of(
+                        Schema.ImplicitType.HAS.getLabel(label),
+                        Schema.ImplicitType.KEY.getLabel(label))
+                )
                 .map(label -> vertex().tx().convertToId(label))
                 .filter(id -> !id.equals(LabelId.invalid()))
                 .map(LabelId::getValue)
                 .collect(toSet());
 
+        //NB: need extra check cause it seems valid types can still produce invalid ids
         GraphTraversal<Object, Vertex> shortcutTraversal = !typeIds.isEmpty()?
                 __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                         as("edge").
