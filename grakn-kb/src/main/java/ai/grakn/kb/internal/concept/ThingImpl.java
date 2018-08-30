@@ -194,14 +194,14 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     <X extends Thing> Stream<X> getShortcutNeighbours(){
-        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+        GraphTraversal<Vertex, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 as("edge").
                 outV().
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 where(P.neq("edge")).
                 inV();
 
-        GraphTraversal<Object, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
+        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
 
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
