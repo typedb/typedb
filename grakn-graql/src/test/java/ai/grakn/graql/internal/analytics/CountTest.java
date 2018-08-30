@@ -132,95 +132,95 @@ public class CountTest {
         Assert.assertEquals(3L, result.iterator().next().longValue());
     }
 
-//    @Test
-//    public void testHasResourceEdges() {
-//        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-//            EntityType person = graph.putEntityType("person");
-//            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-//            person.has(name);
-//            Entity aPerson = person.create();
-//            aPerson.has(name.create("jason"));
-//            graph.commit();
-//        }
-//
-//        Value count;
-//        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-//            count = graph.graql().compute(COUNT).execute().get(0);
-//            assertEquals(1, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).includeAttributes(true).execute().get(0);
-//            assertEquals(3L, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("name").execute().get(0);
-//            assertEquals(1, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("@has-name").execute().get(0);
-//            assertEquals(1, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("@has-name", "thing").execute().get(0);
-//            assertEquals(3, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
-//            assertEquals(2, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("relationship").execute().get(0);
-//            assertEquals(0, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
-//            assertEquals(1, count.number().intValue());
-//        }
-//
-//        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
-//
-//            // manually construct the relation type and instance
-//            EntityType person = graph.getEntityType("person");
-//            Entity aPerson = person.create();
-//            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-//            Attribute jason = name.create("jason");
-//
-//            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
-//            person.plays(resourceOwner);
-//            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
-//            name.plays(resourceValue);
-//
-//            RelationshipType relationshipType =
-//                    graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
-//                            .relates(resourceOwner).relates(resourceValue);
-//            relationshipType.create()
-//                    .assign(resourceOwner, aPerson)
-//                    .assign(resourceValue, jason);
-//            graph.commit();
-//        }
-//
-//        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
-//            count = graph.graql().compute(COUNT).execute().get(0);
-//            assertEquals(2, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).includeAttributes(true).execute().get(0);
-//            assertEquals(5, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("name").execute().get(0);
-//            assertEquals(1, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).includeAttributes(true).in("name").execute().get(0);
-//            assertEquals(1, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("@has-name").execute().get(0);
-//            assertEquals(2, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("@has-name", "thing").execute().get(0);
-//            assertEquals(5, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
-//            assertEquals(3, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("relationship").execute().get(0);
-//            assertEquals(0, count.number().intValue());
-//
-//            count = graph.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
-//            assertEquals(2, count.number().intValue());
-//        }
-//    }
+    @Test
+    public void testHasResourceEdges() {
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            EntityType person = graph.putEntityType("person");
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            person.has(name);
+            Entity aPerson = person.create();
+            aPerson.has(name.create("jason"));
+            graph.commit();
+        }
+
+        Value count;
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            count = graph.graql().compute(COUNT).execute().get(0);
+            assertEquals(1, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).includeAttributes(true).execute().get(0);
+            assertEquals(3L, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("name").execute().get(0);
+            assertEquals(1, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("@has-name").execute().get(0);
+            assertEquals(1, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("@has-name", "thing").execute().get(0);
+            assertEquals(3, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
+            assertEquals(2, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("relationship").execute().get(0);
+            assertEquals(0, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
+            assertEquals(1, count.number().intValue());
+        }
+
+        try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+
+            // manually construct the relation type and instance
+            EntityType person = graph.getEntityType("person");
+            Entity aPerson = person.create();
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            Attribute jason = name.create("jason");
+
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
+            person.plays(resourceOwner);
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
+            name.plays(resourceValue);
+
+            RelationshipType relationshipType =
+                    graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                            .relates(resourceOwner).relates(resourceValue);
+            relationshipType.create()
+                    .assign(resourceOwner, aPerson)
+                    .assign(resourceValue, jason);
+            graph.commit();
+        }
+
+        try (GraknTx graph = session.transaction(GraknTxType.READ)) {
+            count = graph.graql().compute(COUNT).execute().get(0);
+            assertEquals(2, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).includeAttributes(true).execute().get(0);
+            assertEquals(5, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("name").execute().get(0);
+            assertEquals(1, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).includeAttributes(true).in("name").execute().get(0);
+            assertEquals(1, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("@has-name").execute().get(0);
+            assertEquals(2, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("@has-name", "thing").execute().get(0);
+            assertEquals(5, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("@has-name", "name").execute().get(0);
+            assertEquals(3, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("relationship").execute().get(0);
+            assertEquals(0, count.number().intValue());
+
+            count = graph.graql().compute(COUNT).in("relationship").includeAttributes(true).execute().get(0);
+            assertEquals(2, count.number().intValue());
+        }
+    }
 
     @Test
     public void testHasResourceVerticesAndEdges() {

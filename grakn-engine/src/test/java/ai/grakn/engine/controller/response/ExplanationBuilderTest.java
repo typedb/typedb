@@ -41,58 +41,58 @@ public class ExplanationBuilderTest {
     @ClassRule
     public static SampleKBContext genealogyKB = GenealogyKB.context();
 
-//    //NOTE: This test ix expected to be slower than average.
-//    @Test
-//    public void whenExplainInferred_returnsLinkedExplanation() {
-//        Label person = Label.of("person");
-//        Label siblings = Label.of("siblings");
-//        Label parentship = Label.of("parentship");
-//
-//        String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
-//        genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
-//                .forEach(answer -> {
-//            String cousin1 = answer.get("x").id().getValue();
-//            String cousin2 = answer.get("y").id().getValue();
-//
-//            String specificQuery = "match " +
-//                    "$x id " + cousin1 + ";" +
-//                    "$y id " + cousin2 + ";" +
-//                    "(cousin: $x, cousin: $y) isa cousins; limit 1;get;";
-//
-//            GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
-//            ConceptMap specificAnswer = query.execute().stream().findFirst().orElse(new ConceptMapImpl());
-//
-//            Set<ConceptId> originalEntityIds = specificAnswer.explanation().getAnswers().stream()
-//                    .flatMap(ans -> ans.concepts().stream())
-//                    .map(ai.grakn.concept.Concept::id)
-//                    .collect(Collectors.toSet());
-//
-//            List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer);
-//
-//            Set<ConceptId> entityIds = explanation.stream()
-//                    .flatMap(exp -> exp.conceptMap().values().stream())
-//                    .filter(c -> c.baseType().equals("ENTITY"))
-//                    .map(Concept::id)
-//                    .collect(Collectors.toSet());
-//
-//            //ensure we deal with the same entities
-//            assertEquals(originalEntityIds, entityIds);
-//
-//            assertEquals(3, explanation.size());
-//            explanation.forEach(explanationAnswer -> {
-//                explanationAnswer.conceptMap().values().forEach(concept ->{
-//                    Schema.BaseType baseType = Schema.BaseType.valueOf(concept.baseType());
-//                    Label typeLabel = ((Thing) concept).type().label();
-//                    switch(baseType){
-//                        case ENTITY:
-//                            assertEquals(person, typeLabel);
-//                            break;
-//                        case RELATIONSHIP:
-//                            assertTrue(typeLabel.equals(siblings) || typeLabel.equals(parentship));
-//                            break;
-//                    }
-//                });
-//            });
-//        });
-//    }
+    //NOTE: This test ix expected to be slower than average.
+    @Test
+    public void whenExplainInferred_returnsLinkedExplanation() {
+        Label person = Label.of("person");
+        Label siblings = Label.of("siblings");
+        Label parentship = Label.of("parentship");
+
+        String mainQuery = "match ($x, $y) isa cousins; limit 15; get;";
+        genealogyKB.tx().graql().infer(true).parser().<GetQuery>parseQuery(mainQuery)
+                .forEach(answer -> {
+            String cousin1 = answer.get("x").id().getValue();
+            String cousin2 = answer.get("y").id().getValue();
+
+            String specificQuery = "match " +
+                    "$x id " + cousin1 + ";" +
+                    "$y id " + cousin2 + ";" +
+                    "(cousin: $x, cousin: $y) isa cousins; limit 1;get;";
+
+            GetQuery query = genealogyKB.tx().graql().infer(true).parse(specificQuery);
+            ConceptMap specificAnswer = query.execute().stream().findFirst().orElse(new ConceptMapImpl());
+
+            Set<ConceptId> originalEntityIds = specificAnswer.explanation().getAnswers().stream()
+                    .flatMap(ans -> ans.concepts().stream())
+                    .map(ai.grakn.concept.Concept::id)
+                    .collect(Collectors.toSet());
+
+            List<Answer> explanation = ExplanationBuilder.buildExplanation(specificAnswer);
+
+            Set<ConceptId> entityIds = explanation.stream()
+                    .flatMap(exp -> exp.conceptMap().values().stream())
+                    .filter(c -> c.baseType().equals("ENTITY"))
+                    .map(Concept::id)
+                    .collect(Collectors.toSet());
+
+            //ensure we deal with the same entities
+            assertEquals(originalEntityIds, entityIds);
+
+            assertEquals(3, explanation.size());
+            explanation.forEach(explanationAnswer -> {
+                explanationAnswer.conceptMap().values().forEach(concept ->{
+                    Schema.BaseType baseType = Schema.BaseType.valueOf(concept.baseType());
+                    Label typeLabel = ((Thing) concept).type().label();
+                    switch(baseType){
+                        case ENTITY:
+                            assertEquals(person, typeLabel);
+                            break;
+                        case RELATIONSHIP:
+                            assertTrue(typeLabel.equals(siblings) || typeLabel.equals(parentship));
+                            break;
+                    }
+                });
+            });
+        });
+    }
 }

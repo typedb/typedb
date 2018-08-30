@@ -288,32 +288,32 @@ public class ExplanationTest {
                 });
     }
 
-//    @Test
-//    public void testExplanationConsistency(){
-//        GraknTx genealogyGraph = genealogyKB.tx();
-//        final long limit = 3;
-//        QueryBuilder iqb = genealogyGraph.graql().infer(true);
-//        String queryString = "match " +
-//                "($x, $y) isa cousins;" +
-//                "limit " + limit + ";"+
-//                "get;";
-//
-//        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-//
-//        assertEquals(answers.size(), limit);
-//        answers.forEach(answer -> {
-//            testExplanation(answer);
-//
-//            String specificQuery = "match " +
-//                    "$x id '" + answer.get(var("x")).id().getValue() + "';" +
-//                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
-//                    "(cousin: $x, cousin: $y) isa cousins;" +
-//                    "limit 1; get;";
-//            ConceptMap specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
-//            assertEquals(answer, specificAnswer);
-//            testExplanation(specificAnswer);
-//        });
-//    }
+    @Test
+    public void testExplanationConsistency(){
+        GraknTx genealogyGraph = genealogyKB.tx();
+        final long limit = 3;
+        QueryBuilder iqb = genealogyGraph.graql().infer(true);
+        String queryString = "match " +
+                "($x, $y) isa cousins;" +
+                "limit " + limit + ";"+
+                "get;";
+
+        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+
+        assertEquals(answers.size(), limit);
+        answers.forEach(answer -> {
+            testExplanation(answer);
+
+            String specificQuery = "match " +
+                    "$x id '" + answer.get(var("x")).id().getValue() + "';" +
+                    "$y id '" + answer.get(var("y")).id().getValue() + "';" +
+                    "(cousin: $x, cousin: $y) isa cousins;" +
+                    "limit 1; get;";
+            ConceptMap specificAnswer = Iterables.getOnlyElement(iqb.<GetQuery>parse(specificQuery).execute());
+            assertEquals(answer, specificAnswer);
+            testExplanation(specificAnswer);
+        });
+    }
 
     private void testExplanation(Collection<ConceptMap> answers){
         answers.forEach(this::testExplanation);

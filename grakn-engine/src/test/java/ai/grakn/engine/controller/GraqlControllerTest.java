@@ -139,13 +139,13 @@ public class GraqlControllerTest {
     }
 
     //TODO: This test should be improved
-//    @Test
-//    public void whenExecutingExplainQuery_responseIsValid() {
-//        String keyspace = genealogyKB.tx().keyspace().getValue();
-//        Response response = sendExplanationQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", keyspace);
-//        List<Json> json = Json.read(response.body().asString()).asJsonList();
-//        assertEquals(3, json.size());
-//    }
+    @Test
+    public void whenExecutingExplainQuery_responseIsValid() {
+        String keyspace = genealogyKB.tx().keyspace().getValue();
+        Response response = sendExplanationQuery("match ($x,$y) isa cousins; offset 0; limit 1; get;", keyspace);
+        List<Json> json = Json.read(response.body().asString()).asJsonList();
+        assertEquals(3, json.size());
+    }
 
     @Test
     public void testInsertQuery() {
