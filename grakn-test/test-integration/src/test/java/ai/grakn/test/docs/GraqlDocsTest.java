@@ -64,7 +64,7 @@ import static org.mockito.Mockito.when;
  *     Each example is run using a pre-loaded graph. Go to {@link DocTestUtil#loaders} for more information.
  * </p>
  */
-@RunWith(Parameterized.class)
+//@RunWith(Parameterized.class)
 public class GraqlDocsTest {
 //
 //    private static final Pattern TAG_GRAQL = markdownOrHtml("graql");

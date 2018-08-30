@@ -66,7 +66,7 @@ import static org.junit.Assume.assumeTrue;
  * </p>
  */
 
-@RunWith(Parameterized.class)
+//@RunWith(Parameterized.class)
 public class JavaDocsTest {
 
 //    private static final Pattern TAG_JAVA = markdownOrHtml("java");
