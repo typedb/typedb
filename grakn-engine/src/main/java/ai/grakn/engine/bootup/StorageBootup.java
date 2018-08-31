@@ -143,7 +143,8 @@ public class StorageBootup {
 
             BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
 
-            if(isStorageRunning.stdout().trim().equals("running")) {
+            //TODO: fix logging problem (older version of nett-all solves it but breaks gRPC logging)
+            if(isStorageRunning.stdout().trim().endsWith("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
