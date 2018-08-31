@@ -86,7 +86,7 @@ public class EmbeddedCassandraContext extends ExternalResource {
             } catch (TTransportException | IOException e) {
                 throw new RuntimeException("Cannot start Embedded Cassandra", e);
             } catch (ConfigurationException e) {
-                LOG.error("Cassandra already running! Attempting to continue.");
+                LOG.error("Failed to start Embedded Cassandra:", e);
             }
         }
         IN_CASSANDRA_CONTEXT.incrementAndGet();
