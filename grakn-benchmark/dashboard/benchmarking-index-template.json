@@ -1,0 +1,46 @@
+{
+"index_patterns": ["benchmarking:span-*"],
+"settings": {
+    "mapper": {
+        "dynamic": true
+    }
+},
+"mappings": {
+    "_default_": {
+        "dynamic_templates": [
+            {
+              "integers": {
+                "match_mapping_type": "long",
+                "mapping": {
+                  "type": "long"
+                }
+              }
+            }
+        ]
+    },
+    "span": {
+        "properties": {
+            "tags.concepts": {
+                "type": "long"
+            },
+            "traceId": {
+                "type": "keyword", 
+                "norms": "false"
+            },
+            "name": {
+                "type": "keyword",
+                "norms": "false"
+            },
+            "annotations": {
+                "type": "object",
+                "enabled": "true"
+            },
+            "tags": {
+                "enabled": true,
+                "dynamic": true,
+                "type": "object"
+            }
+        }
+    }
+}
+}

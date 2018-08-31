@@ -9,8 +9,11 @@ plotly = "*"
 elasticsearch = "*"
 dash-core-components = "*"
 dash-html-components = "*"
+numpy = "*"
+pandas = "*"
 
 [dev-packages]
+ipython = "*"
 
 [requires]
 python_version = "3.6"

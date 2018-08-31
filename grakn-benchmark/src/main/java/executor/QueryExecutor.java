@@ -100,6 +100,7 @@ public class QueryExecutor {
                 batchSpan.tag("concepts", Integer.toString(numConcepts));
                 batchSpan.tag("query", query.toString());
                 batchSpan.tag("executionName", this.executionName);
+                batchSpan.tag("repetitions", Integer.toString(numRepeats));
                 if (msg != null) {
                     batchSpan.tag("extraTag", msg);
                 }

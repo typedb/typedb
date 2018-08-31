@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -166,8 +167,7 @@ public class BenchmarkManager {
         String executionName = arguments.getOptionValue("execution-name", "");
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         String dateString = dateFormat.format(new Date());
-        executionName = String.format("%s %s %s",dateString, benchmarkConfiguration.getName(), executionName);
-
+        executionName = String.join(" ", Arrays.asList(dateString, benchmarkConfiguration.getName(), executionName));
 
         String uri = "localhost:48555";
 
