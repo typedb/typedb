@@ -216,6 +216,11 @@
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.boundary</groupId>
+            <artifactId>high-scale-lib</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -94,6 +94,7 @@
         <skip.deploy.dist>false</skip.deploy.dist>
         <commons-configuration.version>1.10</commons-configuration.version>
         <commons-lang.version>2.6</commons-lang.version>
+        <high-scale-lib.version>1.0.6</high-scale-lib.version>
     </properties>
 
     <scm>
@@ -491,6 +492,11 @@
                         <artifactId>org.apache.servicemix.bundles.commons-csv</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.boundary</groupId>
+                <artifactId>high-scale-lib</artifactId>
+                <version>${high-scale-lib.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.spark</groupId>
