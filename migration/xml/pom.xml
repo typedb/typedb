@@ -34,5 +34,15 @@
             <groupId>ai.grakn</groupId>
             <artifactId>migration-base</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+        </dependency>
     </dependencies>
 </project>
