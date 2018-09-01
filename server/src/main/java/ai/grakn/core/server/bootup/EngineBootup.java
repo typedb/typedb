@@ -200,7 +200,7 @@ public class EngineBootup {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_START_ENGINE_JAR_NOT_FOUND.getMessage());
         }
         Stream<File> jars = Stream.of(jarFiles);
-        File conf = Paths.get("./conf").toFile(); // $GRAKN_HOME/conf
+        File conf = Paths.get("conf").toFile(); // $GRAKN_HOME/conf
         String classPath = ":"+Stream.concat(jars, Stream.of(conf))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(f -> f.toPath().toString())

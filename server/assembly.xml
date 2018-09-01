@@ -16,18 +16,14 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
-    <id>build core.server</id>
-    <formats>
-        <format>tar.gz</format>
-        <format>zip</format>
-    </formats>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+
+    <id>assembly.core.server</id>
 
     <fileSets>
         <fileSet>
-            <directory>${basedir}/../</directory>
+            <directory>${core.basedir}</directory>
             <includes>
                 <include>grakn-core</include>
             </includes>
@@ -37,7 +33,7 @@
         <!-- changelog license readme -->
 
         <fileSet>
-            <directory>${basedir}/../</directory>
+            <directory>${core.basedir}</directory>
             <includes>
                 <include>LICENSE</include>
                 <include>README.md</include>
@@ -46,7 +42,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>${basedir}/src/services/</directory>
+            <directory>${core.server.basedir}/src/services/</directory>
             <includes>
                 <include>**</include>
             </includes>
@@ -56,7 +52,7 @@
         <!-- grakn.properties and logback.xml -->
 
         <fileSet>
-            <directory>${basedir}/conf</directory>
+            <directory>${core.server.basedir}/conf</directory>
             <includes>
                 <include>**</include>
             </includes>
@@ -66,7 +62,7 @@
         <!-- static assets for dashboard -->
 
         <fileSet>
-            <directory>${basedir}/../dashboard/static</directory>
+            <directory>${core.dashboard.basedir}/static</directory>
             <includes>
                 <include>**</include>
             </includes>
@@ -116,7 +112,7 @@
         <!-- Redis Package -->
 
         <fileSet>
-            <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
+            <directory>${core.server.basedir}/target/redis-prebuilt-redis-3.2.9</directory>
             <excludes>
                 <exclude>README.md</exclude>
             </excludes>
@@ -126,13 +122,13 @@
 
     <dependencySets>
         <dependencySet>
-            <outputDirectory>services/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
             <useProjectArtifact>true</useProjectArtifact>
             <includes>
                 <include>*:*:jar:*</include>
             </includes>
+            <outputDirectory>services/lib</outputDirectory>
         </dependencySet>
     </dependencySets>
 

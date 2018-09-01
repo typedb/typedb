@@ -48,16 +48,16 @@ public class GraknConfig {
     private final Properties prop;
 
     /**
-     * The path to the config file currently in use. Default: ./conf/main/grakn.properties
+     * The path to the config file currently in use. Default: ./conf/grakn.properties
      */
-    private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "main", "grakn.properties");
+    private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "grakn.properties");
 
     public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
 
-    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn-core", "grakn-ascii.txt"));
+    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn-core", "grakn-core-ascii.txt"));
 
     private static GraknConfig defaultConfig = null;
 

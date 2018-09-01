@@ -36,16 +36,8 @@ update_classpath_for_lib() {
 }
 
 update_classpath_for_conf() {
-    # Add path containing grakn.properties and logback.xml
-    CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
-}
-
-grakn_jar_classpath() {
-    for jar in "${GRAKN_HOME}"/services/lib/core.console-*.jar; do
-        if [[ $jar != *slf4j-log4j12* ]] ; then
-            CLASSPATH="$CLASSPATH":"$jar"
-        fi
-    done
+  # Add path containing grakn.properties and logback.xml
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/
 }
 
 exit_if_java_not_found() {
@@ -73,6 +65,7 @@ if [ -z "$1" ]; then
     echo "  Console:         grakn-core console [--help]"
 elif [ "$1" = "console" ]; then
     if [ -f ./services/lib/core.console-*.jar ]; then
+        update_classpath_for_conf
         update_classpath_for_lib
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.core.console.Graql "$@"
     else
@@ -81,8 +74,8 @@ elif [ "$1" = "console" ]; then
     fi
 elif [ "$1" = "server" ]; then
     if [ -f ./services/lib/core.server-*.jar ]; then
-        update_classpath_for_lib
         update_classpath_for_conf
+        update_classpath_for_lib
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.core.server.bootup.GraknBootup $@
     else
         echo "Grakn Core Server is not included in this Grakn distribution."

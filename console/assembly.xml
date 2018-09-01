@@ -16,18 +16,14 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
-    <id>build core.console</id>
-    <formats>
-        <format>tar.gz</format>
-        <format>zip</format>
-    </formats>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+
+    <id>assembly.core.console</id>
 
     <fileSets>
         <fileSet>
-            <directory>${basedir}/../</directory>
+            <directory>${core.basedir}</directory>
             <includes>
                 <include>grakn-core</include>
             </includes>
@@ -37,24 +33,34 @@
         <!-- changelog license readme -->
 
         <fileSet>
-            <directory>${basedir}/../</directory>
+            <directory>${core.basedir}</directory>
             <includes>
                 <include>LICENSE</include>
                 <include>README.md</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>
+
+        <!-- logback.xml -->
+
+        <fileSet>
+            <directory>${core.console.basedir}/conf</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+            <outputDirectory>conf</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <dependencySets>
         <dependencySet>
-            <outputDirectory>services/lib</outputDirectory>
             <unpack>false</unpack>
             <scope>runtime</scope>
             <useProjectArtifact>true</useProjectArtifact>
             <includes>
                 <include>*:*:jar:*</include>
             </includes>
+            <outputDirectory>services/lib</outputDirectory>
         </dependencySet>
     </dependencySets>
 

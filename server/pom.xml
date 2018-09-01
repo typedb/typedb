@@ -223,22 +223,25 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>build core.server</id>
+                        <id>assembly.core.server</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
+                        <configuration>
+                            <outputDirectory>${core.basedir}/dist</outputDirectory>
+                            <finalName>grakn-core-server-${project.version}</finalName>
+                            <formats>
+                                <format>zip</format>
+                            </formats>
+                            <tarLongFileMode>gnu</tarLongFileMode>
+                            <descriptors>
+                                <descriptor>assembly.xml</descriptor>
+                            </descriptors>
+                            <appendAssemblyId>false</appendAssemblyId>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <finalName>grakn-core-server-${project.version}</finalName>
-                    <outputDirectory>${project.basedir}/../dist</outputDirectory>
-                    <tarLongFileMode>gnu</tarLongFileMode>
-                    <descriptors>
-                        <descriptor>assembly.xml</descriptor>
-                    </descriptors>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
             </plugin>
 
             <plugin>

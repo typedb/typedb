@@ -21,15 +21,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>migration-sql</artifactId>
+
     <parent>
         <artifactId>core.migration</artifactId>
         <groupId>ai.grakn</groupId>
         <version>1.4.0-SNAPSHOT</version>
     </parent>
-    <properties>
-        <main.basedir>${project.parent.parent.basedir}</main.basedir>
-    </properties>
+    <artifactId>migration-sql</artifactId>
+
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
