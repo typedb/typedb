@@ -353,9 +353,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
         if (vertices.hasNext()) {
             Vertex vertex = vertices.next();
-            if (vertices.hasNext()) {
-                LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
-            }
             return Optional.of(factory().buildConcept(vertex));
         } else {
             return Optional.empty();
