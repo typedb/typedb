@@ -20,7 +20,7 @@ package ai.grakn.kb.internal.computer;
 import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
 
 /**
- * Override JanusGraph
+ * Override JanusGraph's Cassandra3InputFormat class
  */
 public class GraknCassandra3InputFormat extends GiraphInputFormat {
     public GraknCassandra3InputFormat() {

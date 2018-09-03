@@ -116,7 +116,6 @@ public class GraknCqlBridgeRecordReader extends RecordReader<StaticBuffer, Itera
             }
             // create a Cluster instance
             String[] locations = split.getLocations();
-//            cluster = CqlConfigHelper.getInputCluster(locations, conf);
             // disregard the conf as it brings some unforeseen issues.
             cluster = Cluster.builder()
                     .addContactPoints(locations)

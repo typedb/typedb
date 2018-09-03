@@ -40,13 +40,16 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Override JanusGraph
+ * Override JanusGraph's Cassandra3BinaryInputFormat class
+ *
+ * This class removes dependency from columnFamilyInput (which does not exist in Cassandra 3.x)
+ * and instead it relies on the new CqlInputFormat.
  */
 public class GraknBinaryInputFormat extends AbstractBinaryInputFormat {
     private static final Logger log = LoggerFactory.getLogger(GraknBinaryInputFormat.class);
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
     private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
-    private final CqlInputFormat columnFamilyInputFormat = new CqlInputFormat();
+    private final CqlInputFormat cqlInputFormat = new CqlInputFormat();
     RecordReader<StaticBuffer, Iterable<Entry>> janusgraphRecordReader;
 
     public GraknBinaryInputFormat() {
@@ -57,7 +60,7 @@ public class GraknBinaryInputFormat extends AbstractBinaryInputFormat {
     }
 
     public List<InputSplit> getSplits(JobContext jobContext) throws IOException {
-        return this.columnFamilyInputFormat.getSplits(jobContext);
+        return this.cqlInputFormat.getSplits(jobContext);
     }
 
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {

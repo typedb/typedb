@@ -497,7 +497,6 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                 sparkConfiguration.setProperty(newKey, sparkConfiguration.getString(key));
             }
         });
-        sparkConfiguration.setProperty("gremlin.hadoop.graphReader", "ai.grakn.kb.internal.computer.GraknCassandra3InputFormat");
     }
 
     /////////////////

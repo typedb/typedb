@@ -78,7 +78,7 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
         try {
             JanusGraphCleanup.clear(getTinkerPopGraph());
         } catch (BackendException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
