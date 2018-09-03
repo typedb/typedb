@@ -22,13 +22,11 @@ public class ClientJavaE2EConstants {
 
     public static void assertGraknRunning() {
         assertThat("assertGraknRunning() failed because /tmp/grakn-engine.pid is not found", Paths.get("/tmp/grakn-engine.pid").toFile().exists(), equalTo(true));
-        assertThat("assertGraknRunning() failed because /tmp/grakn-queue.pid is not found", Paths.get("/tmp/grakn-queue.pid").toFile().exists(), equalTo(true));
         assertThat("assertGraknRunning() failed because /tmp/grakn-storage.pid is not found", Paths.get("/tmp/grakn-storage.pid").toFile().exists(), equalTo(true));
     }
 
     public static void assertGraknStopped() {
         assertThat("assertGraknStopped() failed because /tmp/grakn-engine.pid exists", Paths.get("/tmp/grakn-engine.pid").toFile().exists(), equalTo(false));
-        assertThat("assertGraknStopped() failed because /tmp/grakn-queue.pid exists", Paths.get("/tmp/grakn-queue.pid").toFile().exists(), equalTo(false));
         assertThat("assertGraknStopped() failed because /tmp/grakn-storage.pid exists", Paths.get("/tmp/grakn-storage.pid").toFile().exists(), equalTo(false));
     }
 

@@ -137,18 +137,6 @@
                 <groupId>com.googlecode.maven-download-plugin</groupId>
                 <artifactId>download-maven-plugin</artifactId>
                 <executions>
-                    <execution><!-- Get redis and package into the distribution -->
-                        <id>download-redis</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>wget</goal>
-                        </goals>
-                        <configuration>
-                            <url>https://github.com/graknlabs/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
-                            <unpack>true</unpack>
-                            <outputDirectory>${project.basedir}/target</outputDirectory>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>install-shunit2</id>
                         <phase>integration-test</phase>

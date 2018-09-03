@@ -747,7 +747,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = txCache().getShardingCount();
-        Map<String, ConceptId> newAttributes = txCache().getNewAttributes();
+        Map<String, Set<ConceptId>> newAttributes = txCache().getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         commitTransactionInternal();
@@ -756,9 +756,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
         //If we have logs to commit get them and add them
         if (logsExist) {
-            Map<String, Set<ConceptId>> attributes = newAttributes.entrySet().stream().
-                    collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.singleton(e.getValue())));
-            return Optional.of(CommitLog.create(keyspace(), newInstances, attributes));
+            return Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
         }
 
 

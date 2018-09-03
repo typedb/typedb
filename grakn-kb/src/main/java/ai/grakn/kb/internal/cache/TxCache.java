@@ -32,6 +32,8 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.structure.Casting;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,7 +85,7 @@ public class TxCache{
     //New attributes are tracked so that we can merge any duplicate attributes in post.
     // This is a map of attribute indices to concept ids
     // The index and id are directly cached to prevent unneeded reads
-    private Map<String, ConceptId> newAttributes = new HashMap<>();
+    private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
@@ -203,7 +205,7 @@ public class TxCache{
         modifiedRules.remove(concept);
 
         if(concept.isAttribute()) {
-            newAttributes.remove(AttributeImpl.from(concept.asAttribute()).getIndex());
+            newAttributes.removeAll(AttributeImpl.from(concept.asAttribute()).getIndex());
         }
 
         if(concept.isRelationship()){
@@ -319,8 +321,10 @@ public class TxCache{
     public void addNewAttribute(String index, ConceptId conceptId){
         newAttributes.put(index, conceptId);
     }
-    public Map<String, ConceptId> getNewAttributes() {
-        return newAttributes;
+    public Map<String, Set<ConceptId>> getNewAttributes() {
+        Map<String, Set<ConceptId>> map = new HashMap<>();
+        newAttributes.asMap().forEach((attrValue, conceptIds) -> map.put(attrValue, new HashSet<>(conceptIds)));
+        return map;
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------

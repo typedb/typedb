@@ -15,27 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.engine.lock;
 
-import java.util.concurrent.locks.Lock;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+package ai.grakn.engine.attribute.deduplicator.queue;
 
 /**
- * Provider for Jedis lock
  *
- * @author Domenico Corapi
+ * @author Ganeshwara Herawan Hananda
  */
-public class JedisLockProvider implements LockProvider {
-
-    private Pool<Jedis> client;
-
-    public JedisLockProvider(Pool<Jedis> client) {
-        this.client = client;
-    }
-
-    @Override
-    public Lock getLock(String lockName) {
-        return new JedisLock(client, lockName);
+class RocksDbQueueException extends RuntimeException {
+    RocksDbQueueException(Throwable cause) {
+        super(cause);
     }
 }

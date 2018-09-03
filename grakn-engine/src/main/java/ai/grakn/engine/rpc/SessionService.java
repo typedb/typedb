@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.ServerRPC;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
@@ -62,15 +62,15 @@ import java.util.stream.Stream;
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
-    private PostProcessor postProcessor;
+    private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
-    public SessionService(OpenRequest requestOpener, PostProcessor postProcessor) {
+    public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
         this.requestOpener = requestOpener;
-        this.postProcessor = postProcessor;
+        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
     }
 
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return TransactionListener.create(responseSender, requestOpener, postProcessor);
+        return TransactionListener.create(responseSender, requestOpener, attributeDeduplicatorDaemon);
     }
 
 
@@ -84,23 +84,23 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private final OpenRequest requestOpener;
-        private final PostProcessor postProcessor;
+        private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
         private final Iterators iterators = Iterators.create();
 
         @Nullable
         private EmbeddedGraknTx<?> tx = null;
 
-        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, PostProcessor postProcessor) {
+        private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
             this.responseSender = responseSender;
             this.threadExecutor = threadExecutor;
             this.requestOpener = requestOpener;
-            this.postProcessor = postProcessor;
+            this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
         }
 
-        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, PostProcessor postProcessor) {
+        public static TransactionListener create(StreamObserver<Transaction.Res> responseSender, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
             ExecutorService threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
-            return new TransactionListener(responseSender, threadExecutor, requestOpener, postProcessor);
+            return new TransactionListener(responseSender, threadExecutor, requestOpener, attributeDeduplicatorDaemon);
         }
 
         private static <T> T nonNull(@Nullable T item) {
@@ -223,10 +223,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void commit() {
-            tx().commitAndGetLogs().ifPresent(postProcessor::submit);
+            tx().commitAndGetLogs().ifPresent(commitLog ->
+                    commitLog.attributes().forEach((attributeIndex, conceptIds) ->
+                            conceptIds.forEach(id -> attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), attributeIndex, id))
+                    ));
             responseSender.onNext(ResponseBuilder.Transaction.commit());
         }
-
         private void query(SessionProto.Transaction.Query.Req request) {
             Query<?> query = tx().graql()
                     .infer(request.getInfer().equals(Transaction.Query.INFER.TRUE))

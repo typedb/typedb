@@ -16,31 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.task;
+package ai.grakn.engine.attribute.deduplicator;
+
+import ai.grakn.Keyspace;
+import com.google.auto.value.AutoValue;
 
 /**
- * <p>
- *     Defines the API which must be implemented in order to be able to run the task in the background
- * </p>
+ * A class to hold a keyspace and an index together.
  *
- * @author Filipe Peliz Pinto Teixeira
+ * @author Ganeshwara Herawan Hananda
  */
-public interface BackgroundTask extends AutoCloseable{
+@AutoValue
+public abstract class KeyspaceIndexPair {
+    public abstract Keyspace keyspace();
+    public abstract String index();
 
-    /**
-     * @return The amount of seconds to wait between running this job.
-     */
-    default int period(){
-        return 60;
+    public static KeyspaceIndexPair create(Keyspace keyspace, String index) {
+        return new AutoValue_KeyspaceIndexPair(keyspace, index);
     }
-
-    /**
-     * The primary method to execute when the {@link BackgroundTask} starts executing
-     */
-    void run();
-
-    /**
-     * Shutdown the task. This is useful if the task creates it's own processes
-     */
-    void close();
 }

@@ -68,7 +68,6 @@
         <antlr4.visitor>true</antlr4.visitor>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.2.3</logback.version>
-        <redis-mock.version>0.1.5</redis-mock.version>
         <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
@@ -82,11 +81,9 @@
         <quickcheck.version>0.7</quickcheck.version>
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
-        <redis.version>2.9.0</redis.version>
         <metrics.version>3.2.3</metrics.version>
         <bytebuddy.version>1.6.14</bytebuddy.version>
         <jmh-core.version>1.19</jmh-core.version>
-        <redis-test.version>0.6</redis-test.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
         <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
         <jackson.version>2.8.5</jackson.version>
@@ -111,6 +108,7 @@
         <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
+        <rocksdbjni.version>5.14.2</rocksdbjni.version>
     </properties>
 
     <organization>
@@ -640,6 +638,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdbjni.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
                 <version>${netty.version}</version>
@@ -724,11 +727,6 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>${netty-all.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>redis.clients</groupId>
-                <artifactId>jedis</artifactId>
-                <version>${redis.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -837,13 +835,6 @@
             </dependency>
 
             <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>redis-mock</artifactId>
-                <version>${redis-mock.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito.version}</version>
@@ -865,12 +856,6 @@
                 <groupId>com.pholser</groupId>
                 <artifactId>junit-quickcheck-generators</artifactId>
                 <version>${quickcheck.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.github.kstyrc</groupId>
-                <artifactId>embedded-redis</artifactId>
-                <version>${redis-test.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
