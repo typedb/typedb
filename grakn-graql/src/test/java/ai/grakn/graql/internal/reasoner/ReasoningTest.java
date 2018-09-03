@@ -221,6 +221,9 @@ public class ReasoningTest {
         List<ConceptMap> implicitAnswers = qb.<GetQuery>parse(implicitQueryString).execute();
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
+        tx.getMetaEntityType().instances().forEach(entity -> assertThat(entity.attributes().collect(toSet()), empty()));
+        tx.admin().getAttributeType("name").instances().forEach(attribute -> assertThat(attribute.owners().collect(toSet()), empty()));
+
         assertThat(answers, empty());
         assertCollectionsEqual(implicitAnswers, answers);
     }

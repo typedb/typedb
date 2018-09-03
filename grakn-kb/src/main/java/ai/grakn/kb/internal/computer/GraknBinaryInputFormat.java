@@ -43,7 +43,7 @@ import java.util.List;
  * Override JanusGraph's Cassandra3BinaryInputFormat class
  *
  * This class removes dependency from columnFamilyInput (which does not exist in Cassandra 3.x)
- * and instead it relies on the new CqlInputFormat.
+ * and instead it relies on the newer CqlInputFormat.
  */
 public class GraknBinaryInputFormat extends AbstractBinaryInputFormat {
     private static final Logger log = LoggerFactory.getLogger(GraknBinaryInputFormat.class);

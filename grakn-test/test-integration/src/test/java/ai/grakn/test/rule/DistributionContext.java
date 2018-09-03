@@ -69,9 +69,7 @@ public class DistributionContext extends CompositeTestRule {
     private Process engineProcess;
     private int port = 4567;
     private boolean inheritIO = true;
-    private int redisPort = 6379;
     private final SessionContext session = SessionContext.create();
-    private final InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
 
     // prevent initialization with the default constructor
     private DistributionContext() {
@@ -92,14 +90,14 @@ public class DistributionContext extends CompositeTestRule {
 
     @Override
     protected List<TestRule> testRules() {
-        return ImmutableList.of(session, redis);
+        return ImmutableList.of(session);
     }
 
     @Override
     public void before() throws Throwable {
         assertPackageBuilt();
         unzipDistribution();
-        engineProcess = newEngineProcess(port, redisPort);
+        engineProcess = newEngineProcess(port);
         waitForEngine();
         RestAssured.baseURI = uri().toURI().toString();
     }
@@ -135,11 +133,10 @@ public class DistributionContext extends CompositeTestRule {
         zipped.extractAll(TARGET_DIRECTORY.toAbsolutePath().toString());
     }
 
-    private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {
+    private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
         GraknConfig config = GraknConfig.create();
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", redisPort).toString()));
         // To speed up tests of failure cases
         config.setConfigProperty(GraknConfigKey.TASKS_RETRY_DELAY, 60);
 

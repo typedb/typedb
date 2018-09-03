@@ -117,21 +117,6 @@
                 <exclude>*/**</exclude>
             </excludes>
         </fileSet>
-        <fileSet>
-            <directory>.</directory>
-            <outputDirectory>db/redis</outputDirectory>
-            <excludes>
-                <exclude>*/**</exclude>
-            </excludes>
-        </fileSet>
-        <!-- Redis Package -->
-        <fileSet>
-            <outputDirectory>services/redis</outputDirectory>
-            <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
-            <excludes>
-                <exclude>README.md</exclude>
-            </excludes>
-        </fileSet>
     </fileSets>
     <dependencySets>
         <dependencySet>

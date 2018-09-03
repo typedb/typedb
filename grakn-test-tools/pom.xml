@@ -56,26 +56,6 @@
             <artifactId>cassandra-driver-core</artifactId>
         </dependency>
 
-        <!-- Used for creating a embedded Redis for benchmark testing -->
-        <dependency>
-            <groupId>com.github.kstyrc</groupId>
-            <artifactId>embedded-redis</artifactId>
-            <scope>compile</scope>
-        </dependency>
-
-        <!-- Used for creating a in memory mock Redis for testing -->
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>redis-mock</artifactId>
-            <scope>compile</scope>
-        </dependency>
-
-        <!-- Used For Testing Redis Functionality -->
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>
