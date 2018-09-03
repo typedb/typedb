@@ -82,7 +82,7 @@ duration_graph = dcc.Graph(
 # 3. When needed, for a specific traceID (ie number of concepts + query + benchmark run combination),
 #    create a DataFrame by querying for traces with this traceID as parent (=> repetitions)
 #    create a repetitions vs direct children table (with more queries with parent span ID)
-active_concepts = set(data.index.tolist()) # just take all for now
+active_concepts = set(data.index.tolist()) # just take all for now, removing duplicates
 active_queries = data.columns.unique(0).tolist()
 
 # want to form a new index of (queries, concepts, duration/spanobject)
@@ -92,16 +92,6 @@ query_concepts_index = pd.MultiIndex.from_product([active_queries, active_concep
 
 # create an empty dataframe for this, preallocating the number of rows needed
 toplevel_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(repetitions)) 
-
-
-def spans_graph(spanlist):
-
-
-    pass
-
-    
-
-
 # lets populate this large table
 for query in active_queries:
     for concepts in active_concepts:
@@ -116,55 +106,22 @@ for query in active_queries:
 
 
 
-
-
-
-
-# slice this table into SpanLists for aggregation
-
-
-test1 = [1.0, 10.0]
-test2 = [2.0, 11.0]
-test3 = [4.0, 13.0]
-test4 = [5.0, 14.0]
-xs = [1.0, 1.0]
-test_candlestick = go.Candlestick(x=xs,open=test2,high=test4,low=test1,close=test3)
-test_graph = dcc.Graph(
-        id="candlestick test",
-        figure={
-            'data': test_candlestick,
-            'layout': go.Layout(title="test candlestick")
-            }
-        )
-
-open_data = [33.0, 33.3, 33.5, 33.0, 34.1]
-high_data = [33.1, 33.3, 33.6, 33.2, 34.8]
-low_data = [32.7, 32.7, 32.8, 32.6, 32.8]
-close_data = [33.0, 32.9, 33.3, 33.1, 33.1]
-dates = [datetime.datetime(year=2013, month=10, day=10),
-         datetime.datetime(year=2013, month=11, day=10),
-         datetime.datetime(year=2013, month=12, day=10),
-         datetime.datetime(year=2014, month=1, day=10),
-         datetime.datetime(year=2014, month=2, day=10)]
-
-test_graph = go.Candlestick(x=dates,
-                       open=open_data,
-                       high=high_data,
-                       low=low_data,
-                       close=close_data)
-test_graph = dcc.Graph(
-        id="test",
-        figure={
-            'data': test_graph,
-            'layout': go.Layout()
-            }
-        )
-
-
 class SpanList(object):
+    """ 
+    A Holder of slices of the same data from different executions of the same experiment 
+    (eg. all the children of the batch span called "server queue")
+    These slices can then be queries for their values
+    Or can be asked to generate a list of child SpanLists than each contain conrresponding
+    spans that are children of the current SpanLists
+
+    In short, container for Spans of the same type/name, useful for aggregation & requesting children
+    """
 
     def __init__(self, es_utility, dataframe):
-        """ Takes an [excerpt of] a dataframe. Rows are elements to aggregate on retrieval """
+        """
+        Takes an [excerpt of] a dataframe with columns (query, concepts, ("duration", "span")) 
+        Rows are elements to aggregate on retrieval 
+        """
         self.es_utility = es_utility
         self.dataframe = dataframe
 
@@ -172,7 +129,8 @@ class SpanList(object):
         self.child_names = self._retrieve_child_names()
 
         # compute commonalities to this set of spans
-        spans = data['spans'].tolist() # get the raw _source dictionary
+        spans = dataframe.xs('span', level='duration_spanobject', axis=1)# get the raw _source dictionary
+        spans = spans.values.ravel()
         all_data = []
         self.all_span_ids = []
         for span in spans:
@@ -185,7 +143,7 @@ class SpanList(object):
                     continue # not hashable type
             all_data.append(items)
         # perform intersection over all these sets to find common keys
-        self.common_data = set.intersection(*all_data)
+        self.common_data = dict(set.intersection(*all_data))
 
 
     def get_name(self):
@@ -198,6 +156,9 @@ class SpanList(object):
     def get_stddev(self):
         """ Compute sample standard deviation of the duration column """
         return self.dataframe['duration'].std()
+
+    def get_values_np(self):
+        return self.dataframe.xs('duration', level='duration_spanobject', axis=1).values.ravel()
         
 
     def _retrieve_child_names(self):
@@ -207,36 +168,125 @@ class SpanList(object):
 
         # retrieve first row
         a_child = self.dataframe.iloc[0]
-        child_span_id = a_child['id']
-        return set([self.es_utility.get_child_names(parent_id=child_span_id)])
+        child_span = a_child.xs('span', level='duration_spanobject')[0]
+        child_span_id = child_span['id']
+        return set(self.es_utility.get_child_names(parent_id=child_span_id))
 
    
     def get_child_spanlists(self):
         
-        for child_name in self.child_names:
-            child_spans = self.es_utility.get_named_span_with_parents(child_name,
-                                            self.all_span_ids)
-
-            # create the dataframe
-            data = {
-                "duration": [int(span['duration']) for span in child_spans],
-                "spans": child_spans
-                }
-            dataframe = pd.DataFrame(data)
-
-            return SpanList(self.es_utility, dataframe)
+        repetitions = len(self.all_span_ids)
+        columns_index = pd.RangeIndex(repetitions)
+#        number_of_children = self.es_utility.get_number_of_children(parent_id)
+        rows_index = pd.MultiIndex([["child"],["duration", "span"]], labels=[[0,0], [0,1]], names=["orderedchild", "duration_spanobject"])
+        child_data = pd.DataFrame(index=rows_index, columns=columns_index)
 
 
+        # This needs to be rewritten to do the following:
+        # because not every child has a unique name
+        # we need to retrieve all children of a parentID, sorted by timestamp
+        # these are inserted into a dataframe
+        # once we have a table of children vs repetition,
+        # take columns of the table as SpanLists
+
+        for i, parent_id in enumerate(self.all_span_ids):
+            sorted_child_spans = self.es_utility.get_spans_with_parent(parent_id, sorting={"timestamp": "asc"})
+            durations = [span['duration'] for span in sorted_child_spans]
+            print(child_data)
+            print(child_data[(i, "duration"), 0])
+            child_data.loc[(i, "duration"), 0] = np.array(durations).T
+            child_data.loc[(i, "span"), 0] = sorted_child_spans
+
+        print(child_data)
+        return
+
+
+#        for child_name in self.child_names:
+#            sandu0
+#
+#            child_spans = self.es_utility.get_sorted_named_span_with_parents(child_name,
+#                                            self.all_span_ids)
+#
+#            # create the dataframe
+#            data = {
+#                "duration": [int(span['duration']) for span in child_spans],
+#                "span": child_spans
+#                }
+#            index = pd.MultiIndex(levels=[["duration", "span"]], labels=[[0,1]], names=["duration_spanobject"])
+#            dataframe = pd.DataFrame(data)
+#            dataframe.columns = index
+#            children.append(SpanList(self.es_utility, dataframe))
+        return children
+
+# define how to make bar graphs from SpanList[]
+
+def spanlists_to_bar(category, spanlists):
+
+    data = []
+    for spanlist in spanlists:
+        x_data = spanlist.get_values_np()
+        data.append({
+            "x" : x_data,
+            "y" : [category] * x_data.shape[0],
+            "name" : spanlist.get_name(),
+            "boxmean": True,
+            "orientation": 'h',
+            "type": 'box'
+            })
+
+    return data
 
 
 
 
+def spans_graph(name, toplevel_spanlists):
+    layout = {
+        'xaxis': {
+            'title': name,
+            'zeroline': False
+        },
+        'boxmode': 'group'
+    }
+
+    toplevel_data = spanlists_to_bar("0", toplevel_spanlists)
+    data = toplevel_data
+
+    if len(toplevel_spanlists) == 1:
+        # automatically expand if only 1 child 
+        level_one_data = spanlists_to_bar("1", toplevel_spanlists[0].get_child_spanlists())
+        data += level_one_data
+
+    figure = dcc.Graph(
+                id='Spans Graph ' + name,
+                figure={
+                    'data': data,
+                    'layout': go.Layout(
+                                title=name, 
+                                boxmode=layout['boxmode'],
+                                xaxis=layout['xaxis']
+                            )
+                    }
+                )
+    return figure
 
 
+# slice toplevel breakdown table into SpanLists for aggregation
+current_single_active_concepts = max(active_concepts)
+span_graphs = []
 
+for query in toplevel_breakdown:
+    # extract first repetition for one graph
+    first_repetition = toplevel_breakdown.loc[0:0, (query, current_single_active_concepts)]
+    first_spanlist = SpanList(es_utility, first_repetition) 
+    first_graph = spans_graph("Query: {0} \n Repetition 0".format(query), [first_spanlist])
+    span_graphs.append(first_graph)
 
-
-
+    # other 1-N repetitions
+    others_repetitions = toplevel_breakdown.loc[1:, (query, current_single_active_concepts)]
+    others_spanlist = SpanList(es_utility, others_repetitions)
+    others_graph = spans_graph("Query {0} \n Other Repetitions".format(query), [others_spanlist])
+    span_graphs.append(others_graph)
+    
 
 
 
@@ -247,7 +297,6 @@ class SpanList(object):
 #  => this also can be used to calculate query timing coverage
 # 4. On request to drill down, create new data frame with the selected span ID as parent
 # These dataframes can be sliced by repetition easily
-# 
 
 
 
@@ -260,7 +309,7 @@ app.layout = html.Div(children=[
     html.H1("Grakn Benchmarking Dashboard"),
     sidebar,
     duration_graph,
-    test_graph 
+    span_graphs[0]
     ])
 
 app.css.append_css({

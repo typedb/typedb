@@ -93,10 +93,13 @@ class ElasticsearchUtility(object):
                 "term": {
                     "parentId": parent_id 
                     }
-                }
-            }
+                },
+            "sort": [
+            ]
+        }
+
         if sorting is not None:
-            query['sort'] = sorting
+            query['sort'].append(sorting)
 
         spans_iter = helpers.scan(self.es,
                 index = self.indices,
@@ -146,12 +149,17 @@ class ElasticsearchUtility(object):
             "size": 0
             }
 
-        child_names_aggregate_iter = helpers.scan(self.es,
+        child_names_aggregated = self.es.search(
                 index=self.indices,
                 doc_type=doc_type,
-                query=query)
+                size=10000,
+                body=query)
 
-        return [bucket['key'] for bucket in child_names_aggregate_iter['aggregations']['group_by_name']['buckets']]
+
+        # TODO figure out why this is still returning hits that formed the aggregate even though size is 0
+        # print(child_names_aggregated)
+
+        return [bucket['key'] for bucket in child_names_aggregated['aggregations']['group_by_name']['buckets']]
 
 
 
