@@ -44,6 +44,10 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
+            <artifactId>grakn-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
             <artifactId>grakn-graql</artifactId>
         </dependency>
         <dependency>
