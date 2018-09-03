@@ -5,8 +5,7 @@ define
 person sub entity
     plays parent
     plays child
-    plays spouse1
-    plays spouse2
+    plays spouse
     plays sibling
     plays cousin
 
@@ -35,12 +34,10 @@ gender sub attribute datatype string;
 # Roles and Relations
 
 marriage sub relationship
-    relates spouse1
-    relates spouse2
+    relates spouse
     has picture;
 
-spouse1 sub role;
-spouse2 sub role;
+spouse sub role;
 
 parentship sub relationship
     relates parent
@@ -272,30 +269,30 @@ $78064 isa parentship (parent: $295032, child: $8288);
 $86256 (parent: $20552, child: $40988704) isa parentship;
 $94448 (parent: $41025568, child: $40968224) isa parentship;
 $24824 (parent: $307416, child: $41361488) isa parentship;
-$4096 (spouse2: $295032, spouse1: $250080) isa marriage;
-$12288 (spouse2: $266336, spouse1: $319680) isa marriage;
-$20480 has picture "http:\/\/2.bp.blogspot.com\/-AT7bLradHgU\/TsfF8VuBpaI\/AAAAAAAAADA\/uodQOYjQikE\/s1600\/willsusieanothercouplesm.jpg" (spouse2: $118840, spouse1: $32904) isa marriage;
-$32768 (spouse2: $86144, spouse1: $299128) isa marriage;
-$204816464 (spouse2: $356544, spouse1: $41316376) isa marriage;
-$204824656 (spouse2: $41095248, spouse1: $237784) isa marriage;
-$204828752 (spouse2: $41291856, spouse1: $389216) isa marriage;
-$40980728 (spouse2: $81976, spouse1: $49344) isa marriage;
-$40984728 (spouse2: $53440, spouse1: $389216) isa marriage;
-$40992920 isa marriage (spouse2: $344120, spouse1: $82040);
-$40997016 (spouse2: $41127960, spouse1: $40980536) isa marriage;
-$81924296 (spouse2: $118840, spouse1: $184376) isa marriage;
-$81932328 (spouse2: $41324624, spouse1: $119000) isa marriage;
-$81952808 (spouse2: $188608, spouse1: $196728) isa marriage;
-$81957064 (spouse2: $20552, spouse1: $41025568) isa marriage;
-$122884216 (spouse2: $57472, spouse1: $41406488) isa marriage;
-$40972456 (spouse2: $40964120, spouse1: $8248) isa marriage;
-$40976552 (spouse2: $102520, spouse1: $41185360) isa marriage;
-$40980648 (spouse2: $40968224, spouse1: $41096) isa marriage;
-$40988840 (spouse2: $41349200, spouse1: $249976) isa marriage;
-$81924152 (spouse2: $135288, spouse1: $41340952) isa marriage;
-$81936440 (spouse2: $41209936, spouse1: $282848) isa marriage;
+$4096 (spouse: $295032, spouse: $250080) isa marriage;
+$12288 (spouse: $266336, spouse: $319680) isa marriage;
+$20480 has picture "http:\/\/2.bp.blogspot.com\/-AT7bLradHgU\/TsfF8VuBpaI\/AAAAAAAAADA\/uodQOYjQikE\/s1600\/willsusieanothercouplesm.jpg" (spouse: $118840, spouse: $32904) isa marriage;
+$32768 (spouse: $86144, spouse: $299128) isa marriage;
+$204816464 (spouse: $356544, spouse: $41316376) isa marriage;
+$204824656 (spouse: $41095248, spouse: $237784) isa marriage;
+$204828752 (spouse: $41291856, spouse: $389216) isa marriage;
+$40980728 (spouse: $81976, spouse: $49344) isa marriage;
+$40984728 (spouse: $53440, spouse: $389216) isa marriage;
+$40992920 isa marriage (spouse: $344120, spouse: $82040);
+$40997016 (spouse: $41127960, spouse: $40980536) isa marriage;
+$81924296 (spouse: $118840, spouse: $184376) isa marriage;
+$81932328 (spouse: $41324624, spouse: $119000) isa marriage;
+$81952808 (spouse: $188608, spouse: $196728) isa marriage;
+$81957064 (spouse: $20552, spouse: $41025568) isa marriage;
+$122884216 (spouse: $57472, spouse: $41406488) isa marriage;
+$40972456 (spouse: $40964120, spouse: $8248) isa marriage;
+$40976552 (spouse: $102520, spouse: $41185360) isa marriage;
+$40980648 (spouse: $40968224, spouse: $41096) isa marriage;
+$40988840 (spouse: $41349200, spouse: $249976) isa marriage;
+$81924152 (spouse: $135288, spouse: $41340952) isa marriage;
+$81936440 (spouse: $41209936, spouse: $282848) isa marriage;
 
-$81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
+$81940536 (spouse: $233568, spouse: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 
 define
 
@@ -308,7 +305,7 @@ define
 
 genderizeMarriages sub rule
 when
-{(spouse1: $s1, spouse2: $s2) isa marriage;
+{(spouse: $s1, spouse: $s2) isa marriage;
 $s1 has gender "male";
 }
 then
@@ -316,7 +313,7 @@ then
 
 genderizeMarriages2 sub rule
 when
-{(spouse1: $s1, spouse2: $s2) isa marriage;
+{(spouse: $s1, spouse: $s2) isa marriage;
 $s1 has gender "female";
 }
 then
