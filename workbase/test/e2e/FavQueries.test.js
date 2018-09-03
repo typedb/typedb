@@ -59,9 +59,8 @@ describe('Favourite queries', () => {
     await sleep(1000);
 
     app.client.click('#fav-queries-btn');
-    await app.client.waitUntilWindowLoaded();
 
-    await sleep(3000);
+    await sleep(9000);
 
     const queryNameSaved = await app.client.getText('#list-key');
     await sleep(1000);
@@ -77,7 +76,7 @@ describe('Favourite queries', () => {
 
     app.client.click('#use-btn');
     app.client.click('#run-query');
-    await sleep(3000);
+    await sleep(10000);
 
     noOfNodes = await app.client.getText('#nodes');
     assert.equal(noOfNodes, 'nodes: 2');
@@ -88,7 +87,7 @@ describe('Favourite queries', () => {
     await app.client.waitUntilWindowLoaded();
 
     app.client.click('#delete-btn');
-    await sleep(2000);
+    await sleep(10000);
     const noQueriesSaved = await app.client.getText('#no-saved');
     assert.equal(noQueriesSaved, 'no saved queries');
   });
