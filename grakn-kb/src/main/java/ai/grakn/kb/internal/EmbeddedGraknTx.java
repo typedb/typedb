@@ -353,6 +353,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
         if (vertices.hasNext()) {
             Vertex vertex = vertices.next();
+            if (vertices.hasNext()) {
+                LOG.warn(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
+            }
             return Optional.of(factory().buildConcept(vertex));
         } else {
             return Optional.empty();
@@ -802,6 +805,108 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         duplicated.remove(mainConcept);
 
         return duplicated;
+    }
+
+    /**
+     * Check if there are duplicate resources in the provided set of vertex IDs
+     *
+     * @param index             index of the resource to find duplicates of
+     * @param resourceVertexIds vertex Ids containing potential duplicates
+     * @return true if there are duplicate resources and PostProcessing can proceed
+     */
+    public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
+        //This is done to ensure we merge into the indexed casting.
+        Optional<AttributeImpl<?>> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
+        return mainResource.filter(attribute -> getDuplicates(attribute, resourceVertexIds).size() > 0).isPresent();
+    }
+
+    /**
+     * Merges the provided duplicate resources
+     *
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
+     * @return True if a commit is required.
+     */
+    public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
+        //This is done to ensure we merge into the indexed casting.
+        Optional<AttributeImpl<?>> mainResourceOp = this.getConcept(Schema.VertexProperty.INDEX, index);
+        if (!mainResourceOp.isPresent()) {
+            LOG.debug(String.format("Could not post process concept with index {%s} due to not finding the concept", index));
+            return false;
+        }
+        AttributeImpl<?> mainResource = mainResourceOp.get();
+        Set<AttributeImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
+
+        if (duplicates.size() > 0) {
+            //Remove any resources associated with this index that are not the main resource
+            for (Attribute otherAttribute : duplicates) {
+                Stream<Relationship> otherRelations = otherAttribute.relationships();
+
+                //Copy the actual relation
+                otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherAttribute, otherRelation));
+
+                //Delete the node
+                AttributeImpl.from(otherAttribute).deleteNode();
+            }
+
+            //Restore the index
+            String newIndex = mainResource.getIndex();
+            //NOTE: Vertex Element is used directly here otherwise property is not actually restored!
+            //NOTE: Remove or change this line at your own peril!
+            mainResource.vertex().element().property(Schema.VertexProperty.INDEX.name(), newIndex);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param main              The main instance to possibly acquire a new relation
+     * @param other             The other instance which already posses the relation
+     * @param otherRelationship The other relation to potentially be absorbed
+     */
+    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship) {
+        //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
+        //This allows us to find relations far more quickly.
+        Optional<RelationshipReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
+
+        if (reifiedRelation.isPresent()) {
+            copyRelationshipReified(main, other, otherRelationship);
+        } else {
+            copyRelationshipEdge(main, other, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
+        }
+    }
+
+    /**
+     * Copy a relation which has been reified - {@link RelationshipReified}
+     */
+    private void copyRelationshipReified(Attribute main, Attribute other, Relationship otherRelationship) {
+        //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
+        otherRelationship.rolePlayersMap().forEach((role, instances) -> {
+            Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
+            if (instances.contains(other) && relationReified.isPresent()) {
+                relationReified.get().putRolePlayerEdge(role, main);
+            }
+        });
+    }
+
+    /**
+     * Copy a relation which is an edge - {@link RelationshipEdge}
+     */
+    private void copyRelationshipEdge(Attribute main, Attribute other, RelationshipEdge relationEdge) {
+        ConceptVertex newOwner;
+        ConceptVertex newValue;
+
+        if (relationEdge.owner().equals(other)) {//The resource owns another resource which it needs to replace
+            newOwner = ConceptVertex.from(main);
+            newValue = ConceptVertex.from(relationEdge.value());
+        } else {//The resource is owned by another Entity
+            newOwner = ConceptVertex.from(relationEdge.owner());
+            newValue = ConceptVertex.from(main);
+        }
+
+        EdgeElement edge = newOwner.vertex().putEdge(newValue.vertex(), Schema.EdgeLabel.ATTRIBUTE);
+        factory().buildRelation(edge, relationEdge.type(), relationEdge.ownerRole(), relationEdge.valueRole());
     }
 
     /**
