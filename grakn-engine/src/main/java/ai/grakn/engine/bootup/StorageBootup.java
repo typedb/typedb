@@ -143,8 +143,7 @@ public class StorageBootup {
 
             BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
 
-            //TODO: fix logging problem
-            if(isStorageRunning.stdout().trim().endsWith("running")) {
+            if(isStorageRunning.stdout().trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
