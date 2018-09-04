@@ -35,6 +35,7 @@ existing_executions_radio = dcc.RadioItems(
 print("Building overview data...")
 
 # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint [DONE]
+def update_dashboard_for_execution(execution):
 spans_for_execution = es_utility.get_spans_with_experiment_name(sorted_executions[0])
 query_concepts_map = {} # collect data into a map
 repetitions = None      # store how many repetitions each query has been executed for, for later use
