@@ -68,7 +68,6 @@ public class DistributionContext extends CompositeTestRule {
 
     private Process engineProcess;
     private int port = 4567;
-    private boolean inheritIO = true;
     private final SessionContext session = SessionContext.create();
 
     // prevent initialization with the default constructor
@@ -77,11 +76,6 @@ public class DistributionContext extends CompositeTestRule {
 
     public static DistributionContext create(){
         return new DistributionContext();
-    }
-
-    public DistributionContext inheritIO(boolean inheritIO) {
-        this.inheritIO = inheritIO;
-        return this;
     }
 
     public SimpleURI uri(){
@@ -155,7 +149,7 @@ public class DistributionContext extends CompositeTestRule {
 
         // Start process
         ProcessBuilder processBuilder = new ProcessBuilder(commands);
-        if (inheritIO) processBuilder.inheritIO();
+        processBuilder.inheritIO();
         return processBuilder.start();
     }
 
