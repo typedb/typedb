@@ -106,12 +106,12 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @return The list of all Instances which posses this resource
+     * @return The list of all Instances which possess this resource
      */
     @Override
     public Stream<Thing> owners() {
         //Get Owner via implicit structure
-        Stream<Thing> implicitOwners = getShortcutNeighbours();
+        Stream<Thing> implicitOwners = getShortcutNeighbours(false);
         //Get owners via edges
         Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
 

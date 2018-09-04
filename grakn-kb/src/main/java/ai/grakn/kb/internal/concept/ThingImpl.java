@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -150,7 +150,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     @Override
     public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
-        return attributes(getShortcutNeighbours(), attributeTypesIds);
+        return attributes(getShortcutNeighbours(true), attributeTypesIds);
     }
 
     @Override
@@ -164,7 +164,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if(keyTypeIds.isEmpty()) return Stream.empty();
 
-        return attributes(getShortcutNeighbours(), keyTypeIds);
+        return attributes(getShortcutNeighbours(true), keyTypeIds);
     }
 
     /**
@@ -196,30 +196,45 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(edge -> Casting.withThing(edge, this));
     }
 
-    <X extends Thing> Stream<X> getShortcutNeighbours(AttributeType... attributeTypes){
-        Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
-        if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
-
-        Set<Integer> typeIds = completeAttributeTypes.stream()
-                .flatMap(t -> (Stream<AttributeType>) t.subs())
-                .map(SchemaConcept::label)
-                .flatMap(label -> Stream.of(
-                        Schema.ImplicitType.HAS.getLabel(label),
-                        Schema.ImplicitType.KEY.getLabel(label))
-                )
+    private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes){
+        return labels.stream()
+                .flatMap(label -> implicitTypes.stream().map(it -> it.getLabel(label)))
                 .map(label -> vertex().tx().convertToId(label))
                 .filter(id -> !id.equals(LabelId.invalid()))
                 .map(LabelId::getValue)
                 .collect(toSet());
+    }
+
+    <X extends Thing> Stream<X> getShortcutNeighbours(boolean ownerToValueOrdering, AttributeType... attributeTypes){
+        Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
+        if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
+
+        Set<Label> attributeHierachyLabels = completeAttributeTypes.stream()
+                .flatMap(t -> (Stream<AttributeType>) t.subs())
+                .map(SchemaConcept::label)
+                .collect(toSet());
+
+        Set<Integer> ownerRoleIds = implicitLabelsToIds(
+                attributeHierachyLabels,
+                Sets.newHashSet(
+                        Schema.ImplicitType.HAS_OWNER,
+                        Schema.ImplicitType.KEY_OWNER
+                ));
+        Set<Integer> valueRoleIds = implicitLabelsToIds(
+                attributeHierachyLabels,
+                Sets.newHashSet(
+                        Schema.ImplicitType.HAS_VALUE,
+                        Schema.ImplicitType.KEY_VALUE
+                ));
 
         //NB: need extra check cause it seems valid types can still produce invalid ids
-        GraphTraversal<Object, Vertex> shortcutTraversal = !typeIds.isEmpty()?
+        GraphTraversal<Object, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty())?
                 __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                         as("edge").
-                        has(RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(typeIds)).
+                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering? ownerRoleIds : valueRoleIds)).
                         outV().
                         outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        has(RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(typeIds)).
+                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering? valueRoleIds : ownerRoleIds)).
                         where(P.neq("edge")).
                         inV()
                 :
