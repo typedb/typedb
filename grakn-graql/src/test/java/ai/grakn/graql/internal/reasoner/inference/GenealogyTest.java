@@ -199,7 +199,7 @@ public class GenealogyTest {
         assertEquals(marriageInstances.size(), noOfMarriageRelations);
         //for each marriage relation we can swap the roles hence the factor of 2
         assertEquals(marriageInstancesWithRPs.size(), 2* noOfMarriageRelations);
-        assertEquals(marriageInstancesWithRPsandRoles.size(), 2 * noOfMarriageRelations);
+        assertEquals(marriageInstancesWithRPsandRoles.size(), noOfMarriageRelations);
     }
 
     /*
