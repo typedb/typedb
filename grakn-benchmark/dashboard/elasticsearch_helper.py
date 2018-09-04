@@ -104,11 +104,14 @@ class ElasticsearchUtility(object):
         spans_iter = helpers.scan(self.es,
                 index = self.indices,
                 doc_type=doc_type,
+                preserve_order=True, # NOTE this may be expensive!
                 query=query)
 
-        tmp = list(spans_iter)
+        return [doc['_source'] for doc in spans_iter]
 
-        return [doc['_source'] for doc in tmp]
+    def get_number_of_children(self, parent_id, doc_type='span'):
+        children = self.get_spans_with_parent(parent_id)
+        return len(children)
 
     def get_named_span_with_parents(self, name, parent_ids, doc_type='span'):
         """ Retrieve spans with any of the given parent_ids """

@@ -111,8 +111,10 @@ public class GrpcClientInterceptor implements ClientInterceptor {
                     String spanId = txReq.getMetadataOrThrow("spanId");
                     String parentId = txReq.getMetadataOrDefault("parentId", "");
 
+                    String msgField= txReq.getReqCase().name();
+
                     TraceContext reconstructedContext = GrpcMessageConversion.stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
-                    currentClientSpan = tracer.newChild(reconstructedContext).name("Client req msg");
+                    currentClientSpan = tracer.newChild(reconstructedContext).name("Client: " + msgField);
                     currentClientSpan.start();
                     if (LOG.isDebugEnabled()) {
                         currentClientSpan.tag("sendMessage", message.toString());
