@@ -133,7 +133,7 @@ public class DistributionContext extends CompositeTestRule {
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
         // To speed up tests of failure cases
         config.setConfigProperty(GraknConfigKey.TASKS_RETRY_DELAY, 60);
-
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, "/tmp/");
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");
         propertiesFile.deleteOnExit();
