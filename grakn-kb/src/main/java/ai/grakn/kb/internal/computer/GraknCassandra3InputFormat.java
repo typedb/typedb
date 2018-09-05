@@ -15,18 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+package ai.grakn.kb.internal.computer;
 
-package ai.grakn.engine.data;
+import org.janusgraph.hadoop.formats.util.GiraphInputFormat;
 
 /**
- * The {@link QueueSanityCheck} class is responsible for performing sanity check of the Queue component
- *
- * @author Ganeshwara Herawan Hananda
+ * Override JanusGraph's Cassandra3InputFormat class
  */
-public interface QueueSanityCheck {
-    void testConnection();
-
-    void checkVersion();
-
-    void close();
+public class GraknCassandra3InputFormat extends GiraphInputFormat {
+    public GraknCassandra3InputFormat() {
+        super(new GraknBinaryInputFormat());
+    }
 }

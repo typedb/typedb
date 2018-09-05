@@ -16,36 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.task.postprocessing;
+package ai.grakn.engine.attribute.deduplicator.queue;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-
-import javax.annotation.Nullable;
-import java.util.Set;
+import com.google.auto.value.AutoValue;
 
 /**
- * <p>
- *     Stores a list of indices and vertex ids representing those indices which need to be post processed
- * </p>
  *
- * @author lolski
+ * @author Ganeshwara Herawan Hananda
  */
+@AutoValue
+public abstract class Attribute {
+    public abstract Keyspace keyspace();
+    public abstract String index();
+    public abstract ConceptId conceptId();
 
-public interface IndexStorage {
-    /**
-     * Add an index to the list of indices which needs to be post processed
-     */
-    void addIndex(Keyspace keyspace, String index, Set<ConceptId> conceptIds);
-
-    /**
-     * Gets and removes the next index to post process
-     */
-    @Nullable
-    String popIndex(Keyspace keyspace);
-
-    /**
-     * Gets and removes all the ids which we need to post process
-     */
-    Set<ConceptId> popIds(Keyspace keyspace, String index);
+    public static Attribute create(Keyspace keyspace, String index, ConceptId conceptId) {
+        return new AutoValue_Attribute(keyspace, index, conceptId);
+    }
 }

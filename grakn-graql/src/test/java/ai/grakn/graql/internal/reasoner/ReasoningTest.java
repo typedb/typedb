@@ -188,6 +188,20 @@ public class ReasoningTest {
 
         assertEquals(attributeSubs.size(), attributeRelationSubs.size());
         assertTrue(attributeRelationSubs.stream().map(ans -> ans.get("x")).map(Concept::asRelationshipType).allMatch(relTypes::contains));
+
+        List<ConceptMap> baseResourceSubs = qb.<GetQuery>parse("match $x sub baseResource; get;").execute();
+        List<ConceptMap> baseResourceRelationSubs = qb.<GetQuery>parse("match $x sub @has-baseResource; get;").execute();
+        assertEquals(baseResourceSubs.size(), baseResourceRelationSubs.size());
+
+        assertEquals(
+                Sets.newHashSet(
+                        tx.getAttributeType("extendedResource"),
+                        tx.getAttributeType("anotherExtendedResource"),
+                        tx.getAttributeType("furtherExtendedResource"),
+                        tx.getAttributeType("simpleResource")
+                ),
+                tx.getEntityType("genericEntity").attributes().collect(toSet())
+        );
     }
 
     @Test
@@ -206,6 +220,9 @@ public class ReasoningTest {
 
         List<ConceptMap> implicitAnswers = qb.<GetQuery>parse(implicitQueryString).execute();
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+
+        tx.getMetaEntityType().instances().forEach(entity -> assertThat(entity.attributes().collect(toSet()), empty()));
+        tx.admin().getAttributeType("name").instances().forEach(attribute -> assertThat(attribute.owners().collect(toSet()), empty()));
 
         assertThat(answers, empty());
         assertCollectionsEqual(implicitAnswers, answers);

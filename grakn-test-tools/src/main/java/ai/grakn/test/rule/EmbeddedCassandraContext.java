@@ -68,7 +68,7 @@ public class EmbeddedCassandraContext extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
         if (CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
@@ -83,10 +83,8 @@ public class EmbeddedCassandraContext extends ExternalResource {
                 }
                 LOG.info("cassandra started.");
 
-            } catch (TTransportException | IOException e) {
+            } catch (TTransportException | IOException | ConfigurationException e) {
                 throw new RuntimeException("Cannot start Embedded Cassandra", e);
-            } catch (ConfigurationException e) {
-                LOG.error("Cassandra already running! Attempting to continue.");
             }
         }
         IN_CASSANDRA_CONTEXT.incrementAndGet();

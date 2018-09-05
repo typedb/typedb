@@ -53,4 +53,12 @@ public interface UnifierComparison {
      * @return true if typing the typeVar with type is compatible with role configuration of the provided query
      */
     boolean typePlayability(ReasonerQuery query, Var var, Type type);
+
+    /**
+     *
+     * @param parent {@link Atomic} of parent expression
+     * @param child {@link Atomic} of child expression
+     * @return true if child has attributes compatible with parent's
+     */
+    default boolean attributeCompatibility(Atomic parent, Atomic child, Var parentVar, Var childVar){ return true;}
 }

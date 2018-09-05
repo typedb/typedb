@@ -271,16 +271,4 @@ public class AttributeTest extends TxTestBase {
         assertFalse(attribute.isInferred());
         assertTrue(attributeInferred.isInferred());
     }
-
-    @Test
-    public void whenCreatingAnInferredAttributeWhichIsAlreadyNonInferred_Throw(){
-        AttributeTypeImpl at = AttributeTypeImpl.from(tx.putAttributeType("at", AttributeType.DataType.STRING));
-        Attribute attribute = at.create("blergh");
-
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.nonInferredThingExists(attribute).getMessage());
-
-        at.putAttributeInferred("blergh");
-    }
-
 }

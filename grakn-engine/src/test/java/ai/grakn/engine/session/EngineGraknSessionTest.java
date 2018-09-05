@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -27,17 +26,15 @@ import ai.grakn.engine.GraknConfig;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.KeyspaceStoreFake;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.JedisLockProvider;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.GraknTxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.InMemoryRedisContext;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknTestUtil;
-import ai.grakn.util.SimpleURI;
-import com.google.common.collect.Iterables;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -54,10 +51,6 @@ public class EngineGraknSessionTest {
 
     private static EngineGraknTxFactory graknFactory;
 
-    @ClassRule
-    public static InMemoryRedisContext inMemoryRedisContext = InMemoryRedisContext.create(new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST))).getPort());
-
-
     //Needed to start cass depending on profile
     @ClassRule
     public static final SessionContext sessionContext = SessionContext.create();
@@ -67,7 +60,7 @@ public class EngineGraknSessionTest {
 
     @BeforeClass
     public static void beforeClass() {
-        JedisLockProvider lockProvider = new JedisLockProvider(inMemoryRedisContext.jedisPool());
+        LockProvider lockProvider = new ProcessWideLockProvider();
         KeyspaceStore keyspaceStore = KeyspaceStoreFake.of();
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         graknFactory.keyspaceStore().loadSystemSchema();

@@ -64,7 +64,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
-        vertexElement.propertyUnique(Schema.VertexProperty.INDEX, index);
+        vertexElement.property(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
         vertexElement.tx().txCache().addNewAttribute(index, attribute.id());
