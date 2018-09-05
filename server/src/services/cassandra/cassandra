@@ -109,7 +109,7 @@ launch_service()
     foreground="$3"
     props="$4"
     class="$5"
-    cassandra_parms+=("-Dlogback.configurationFile=`abs_path`/../../services/cassandra/cassandra-logback.xml")
+    cassandra_parms+=("-Dlogback.configurationFile=`abs_path`/../../services/cassandra/logback.xml")
     cassandra_parms+=("-Dcassandra.logdir=$logpath")
 
     if [ "x$pidpath" != "x" ]; then

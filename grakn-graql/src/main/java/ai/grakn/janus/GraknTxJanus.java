@@ -32,6 +32,7 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.util.JanusGraphCleanup;
+import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -75,7 +76,11 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
 
     @Override
     public void clearGraph() {
-        JanusGraphCleanup.clear(getTinkerPopGraph());
+        try {
+            JanusGraphCleanup.clear(getTinkerPopGraph());
+        } catch (BackendException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

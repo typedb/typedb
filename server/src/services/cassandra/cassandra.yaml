@@ -114,6 +114,8 @@ data_file_directories:
 
 # commit log
 commitlog_directory: db/cassandra/commitlog
+hints_directory: db/cassandra/data/hints
+cdc_raw_directory: db/cassandra/data/cdc_raw
 
 # policy for data disk failures:
 # die: shut down gossip and client transports and kill the JVM for any fs errors or
