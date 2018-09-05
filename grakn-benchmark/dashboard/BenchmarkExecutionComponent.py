@@ -21,8 +21,8 @@ class BenchmarkExecutionComponent(object):
 
         self.app = app
         self.es_utility = es_utility
-        self.execution_name = execution_name
-
+        self.execution_name = execution_name.strip()
+        self.unique_name = self.execution_name.replace(" ", '-').replace(":", '_')
 
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint
         # note: this builds for all the queries right away since this isn't that expensive
@@ -37,12 +37,29 @@ class BenchmarkExecutionComponent(object):
         self.toplevel_query_breakdown = None
         self._allocate_toplevel_query_breakdown()
 
+        # --- runtime decorator attachment --- 
+        # _render_overview
+        self._render_overview = self.app.callback(
+                dash.dependencies.Output("overview-{0}".format(self.unique_name), "children"),
+                [
+                    dash.dependencies.Input("query-selector-{0}".format(self.unique_name), "value")
+                ])(self._render_overview)
+
+        # _render_query_breakdown
+        self._render_query_breakdown = self.app.callback(
+                dash.dependencies.Output("query-breakdowns-{0}".format(self.unique_name), "children"),
+                [
+                    dash.dependencies.Input("concepts-radio-{0}".format(self.unique_name), "value"),
+                    dash.dependencies.Input("query-selector-{0}".format(self.unique_name), "value")
+                ])(self._render_query_breakdown)
+
         print("...finished creating BenchmarkExecutionComponent")
 
 
     def _allocate_toplevel_query_breakdown(self):
         print("Begin allocating toplevel_query_breakdown pandas DataFrame...")
         query_concepts_index, _ = pd.MultiIndex.from_product([self.sorted_all_queries, self.sorted_all_concept_numbers, ["duration", "span"]], names=['query', 'concepts', 'duration_spanobject']).sortlevel() # sorted index is faster
+        print("self.repetitions: {0}".format(self.repetitions))
         self.toplevel_query_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(self.repetitions)) 
         print("...finished allocating toplevel_query_breakdown dataframe")
 
@@ -59,10 +76,10 @@ class BenchmarkExecutionComponent(object):
                 """ Takes self and the function's original arguments """
                 print("Called inner callback!")
                 print(self, args)
-                dash_output = dash.dependencies.Output(output[0]+self.execution_name, output[1])
+                dash_output = dash.dependencies.Output(output[0]+self.unique_name, output[1])
                 dash_inputs = []
                 for input in inputs:
-                    dash_inputs.append(dash.dependencies.Input(input[0]+self.execution_name, input[1]))
+                    dash_inputs.append(dash.dependencies.Input(input[0]+self.unique_name, input[1]))
                 # act on the decorator directly
                 return self.app.callback(dash_output, dash_inputs)(decorated)(self, *args)
             return exec_dash_callback
@@ -73,36 +90,33 @@ class BenchmarkExecutionComponent(object):
         print("BenchmarkExecutionComponent.full_render")
 
         query_selector = dcc.Dropdown(
-            id='query-selector-{0}'.format(self.execution_name),
+            id='query-selector-{0}'.format(self.unique_name),
             options=[{'label':q, 'value':q} for q in self.sorted_all_queries],
             value=self.sorted_all_queries,
             multi=True
         )
         concepts_selector = dcc.RadioItems(
-            id='concepts-radio-{0}'.format(self.execution_name),
+            id='concepts-radio-{0}'.format(self.unique_name),
             options=[{'label': n, 'value': n} for n in self.sorted_all_concept_numbers],
             value=self.sorted_all_concept_numbers[-1]
         )
 
-        return html.Div(
-            id='component-{0}'.format(self.execution_name),
+        rendered = html.Div(
+            id='component-{0}'.format(self.unique_name),
             children=[
                 query_selector,
                 concepts_selector,
                 html.Div(
-                    id='overview-{0}'.format(self.execution_name)
+                    id='overview-{0}'.format(self.unique_name)
                 ),
                 html.Div(
-                    id='query-breakdowns-{0}'.format(self.execution_name)
+                    id='query-breakdowns-{0}'.format(self.unique_name)
                 )
             ]
         )
 
+        return rendered
 
-    @selfname_dashcallback(
-        output=("overview-", "children"),
-        inputs=[("query-selector-", "value")]
-    )
     def _render_overview(self, value='all'):
         """ Renders the overview graph. Can be extended with a filter/dropdown of some sort (treated as a callback already) """
         
@@ -125,7 +139,7 @@ class BenchmarkExecutionComponent(object):
         bargraphs = self._dataframe_to_bars(filtered_dataframe)
         
         duration_graph = dcc.Graph(
-            id='duration-data-{0}'.format(self.execution_name),
+            id='duration-data-{0}'.format(self.unique_name),
             figure={
                 'data': bargraphs,
                 'layout': go.Layout(
@@ -137,10 +151,6 @@ class BenchmarkExecutionComponent(object):
         return duration_graph 
 
 
-    @selfname_dashcallback(
-        output=("query-breakdowns-", "children"),
-        inputs=[("concepts-radio-", "value"), ("query-selector-", "value")]
-    )
     def _render_query_breakdown(self, value='maxconcepts', queries='all'):
         """ Render the query breakdowns """
         print("BenchmarkExecutionComponent._render_query_breakdown")

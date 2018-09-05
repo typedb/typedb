@@ -12,6 +12,9 @@ from BenchmarkExecutionComponent import BenchmarkExecutionComponent
 
 
 app = dash.Dash()
+# supress callback exceptions for nonexistant labels
+# since we're dynamically adding callbacks
+app.config.supress_callback_exceptions = True
 es_utility = es_helper.ElasticsearchUtility()
 
 def get_sorted_executions(es):
@@ -38,17 +41,26 @@ sidebar = html.Div(children=[
     html.H3("Benchmarks"),
     existing_executions_radio
     ], className="sidebar")
-
-active_benchmark = html.Div( id='active-benchmark')
-app.layout = html.Div(children=[
+active_benchmark = html.Div(id='active-benchmark')
+layout = html.Div(children=[
         html.H1("Grakn Benchmarking Dashboard"),
+        html.Div(id="hidden stuff",
+            style={'display': 'none'},
+            children=[
+                 dcc.Graph(id="adsfasdf"),
+                 dcc.Dropdown(id="asdfasdfasdf")
+             ],
+        ),
         sidebar,
-        active_benchmark
+        active_benchmark,
+        html.Div(id='test-output')
     ])
 
 app.css.append_css({
     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
 })
+app.layout = layout
+
 
 
 # ---- interactivity functionality ----
@@ -60,7 +72,19 @@ executions = {}
 def execution_updated(execution_name):
     if execution_name not in executions:
         executions[execution_name] = BenchmarkExecutionComponent(app, es_utility, execution_name)
+    print(app.callback_map)
     return executions[execution_name].full_render()
+    # return dcc.RadioItems(
+    #     id='test-output',
+    #     options = [{'label': x, 'value': x} for x in sorted_executions],
+    #     value=sorted_executions[-1]
+    # )
+
+@app.callback(
+    dash.dependencies.Output('test-output', 'children'),
+    [dash.dependencies.Input('test-input', 'value')])
+def test(value):
+    return value
 
 
 
