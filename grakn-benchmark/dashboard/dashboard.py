@@ -39,9 +39,11 @@ sidebar = html.Div(children=[
     existing_executions_radio
     ], className="sidebar")
 
+active_benchmark = html.Div( id='active-benchmark')
 app.layout = html.Div(children=[
         html.H1("Grakn Benchmarking Dashboard"),
-        sidebar
+        sidebar,
+        active_benchmark
     ])
 
 app.css.append_css({
@@ -53,7 +55,7 @@ app.css.append_css({
 
 executions = {}
 @app.callback(
-    dash.dependencies.Output('active_benchmark', 'children'),
+    dash.dependencies.Output('active-benchmark', 'children'),
     [dash.dependencies.Input('existing-executions-radio', 'value')])
 def execution_updated(execution_name):
     if execution_name not in executions:

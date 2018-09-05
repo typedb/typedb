@@ -17,6 +17,8 @@ def inorder(l, reverse=False):
 class BenchmarkExecutionComponent(object):
 
     def __init__(self, app, es_utility, execution_name):
+        print("Creating BenchmarkExecutionComponent...")
+
         self.app = app
         self.es_utility = es_utility
         self.execution_name = execution_name
@@ -35,24 +37,19 @@ class BenchmarkExecutionComponent(object):
         self.toplevel_query_breakdown = None
         self._allocate_toplevel_query_breakdown()
 
-
-        
-        """
-        Next steps:
-            Test decorators
-        """
-
-
+        print("...finished creating BenchmarkExecutionComponent")
 
 
     def _allocate_toplevel_query_breakdown(self):
+        print("Begin allocating toplevel_query_breakdown pandas DataFrame...")
         query_concepts_index, _ = pd.MultiIndex.from_product([self.sorted_all_queries, self.sorted_all_concept_numbers, ["duration", "span"]], names=['query', 'concepts', 'duration_spanobject']).sortlevel() # sorted index is faster
         self.toplevel_query_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(self.repetitions)) 
+        print("...finished allocating toplevel_query_breakdown dataframe")
 
 
     def selfname_dashcallback(output, inputs):
         """ Append a unique part to the given input/output names """
-        print("calling outer decorator!")
+        print("Calling outer decorator!")
         print(output, inputs)
         def middle_callback(decorated):
             """ Takes in the decorated function """
@@ -60,7 +57,7 @@ class BenchmarkExecutionComponent(object):
             print(decorated)
             def exec_dash_callback(self, *args):
                 """ Takes self and the function's original arguments """
-                print("called inner callback!")
+                print("Called inner callback!")
                 print(self, args)
                 dash_output = dash.dependencies.Output(output[0]+self.execution_name, output[1])
                 dash_inputs = []
@@ -73,16 +70,30 @@ class BenchmarkExecutionComponent(object):
 
 
     def full_render(self):
+        print("BenchmarkExecutionComponent.full_render")
+
+        query_selector = dcc.Dropdown(
+            id='query-selector-{0}'.format(self.execution_name),
+            options=[{'label':q, 'value':q} for q in self.sorted_all_queries],
+            value=self.sorted_all_queries,
+            multi=True
+        )
+        concepts_selector = dcc.RadioItems(
+            id='concepts-radio-{0}'.format(self.execution_name),
+            options=[{'label': n, 'value': n} for n in self.sorted_all_concept_numbers],
+            value=self.sorted_all_concept_numbers[-1]
+        )
+
         return html.Div(
             id='component-{0}'.format(self.execution_name),
             children=[
+                query_selector,
+                concepts_selector,
                 html.Div(
-                    id='overview-{0}'.format(self.execution_name),
-                    value='all'
+                    id='overview-{0}'.format(self.execution_name)
                 ),
                 html.Div(
-                    id='query-breakdowns-{0}'.format(self.execution_name),
-                    value=self.sorted_all_concept_numbers[-1]
+                    id='query-breakdowns-{0}'.format(self.execution_name)
                 )
             ]
         )
@@ -90,10 +101,12 @@ class BenchmarkExecutionComponent(object):
 
     @selfname_dashcallback(
         output=("overview-", "children"),
-        inputs=[("overview-", "value")]
+        inputs=[("query-selector-", "value")]
     )
-    def _render_overview(self, value="all"):
+    def _render_overview(self, value='all'):
         """ Renders the overview graph. Can be extended with a filter/dropdown of some sort (treated as a callback already) """
+        
+        print("BenchmarkExecutionComponent._render_overview")
         
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint [DONE]
         # 2. Generate a bar graph based on this dataframe, possibly filtered [DONE]
@@ -102,9 +115,13 @@ class BenchmarkExecutionComponent(object):
         # may be filtered to a specific column
         elif value in self.overview_data:
             filtered_dataframe = self.overview_data[value]
+        elif type(value) == list:
+            filtered_dataframe = self.overview_data[value] # list indexing!
         else:
             print("Unknown query filter value: {0}".format(value))
             return None
+        print("Filtered overview data to: ")
+        print(filtered_dataframe)
         bargraphs = self._dataframe_to_bars(filtered_dataframe)
         
         duration_graph = dcc.Graph(
@@ -122,10 +139,11 @@ class BenchmarkExecutionComponent(object):
 
     @selfname_dashcallback(
         output=("query-breakdowns-", "children"),
-        inputs=[("query-breakdowns-", "value")]
+        inputs=[("concepts-radio-", "value"), ("query-selector-", "value")]
     )
     def _render_query_breakdown(self, value='maxconcepts', queries='all'):
         """ Render the query breakdowns """
+        print("BenchmarkExecutionComponent._render_query_breakdown")
 
         print("Rendering query breakdown")
 
@@ -144,10 +162,7 @@ class BenchmarkExecutionComponent(object):
         elif queries in self.sorted_all_queries:
             queries_to_plot = [queries]
         elif type(queries) == list:
-            queries_to_plot = []
-            for q in queries:
-                if q in self.sorted_all_queries:
-                    queries_to_plot .append(q)
+            queries_to_plot = queries 
         else:
             print("Cannot handle query breakdowns for queries: {0}".format(queries))
             return None
@@ -282,7 +297,7 @@ class BenchmarkExecutionComponent(object):
         # and in columns query, duration or traceID columns (last two alternate)
         index, _ = pd.MultiIndex.from_tuples(query_concepts_map.keys(), names=['query', 'duration_traceid']).sortlevel()
         self.overview_data = pd.DataFrame(query_concepts_map, columns=index)
-        
+        print("...finished building overview data") 
 
 
 
