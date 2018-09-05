@@ -16,17 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.data;
+package ai.grakn.core.server.attribute.deduplicator.queue;
+
+import ai.grakn.Keyspace;
+import ai.grakn.concept.ConceptId;
+import com.google.auto.value.AutoValue;
 
 /**
- * The {@link QueueSanityCheck} class is responsible for performing sanity check of the Queue component
  *
  * @author Ganeshwara Herawan Hananda
  */
-public interface QueueSanityCheck {
-    void testConnection();
+@AutoValue
+public abstract class Attribute {
+    public abstract Keyspace keyspace();
+    public abstract String index();
+    public abstract ConceptId conceptId();
 
-    void checkVersion();
-
-    void close();
+    public static Attribute create(Keyspace keyspace, String index, ConceptId conceptId) {
+        return new AutoValue_Attribute(keyspace, index, conceptId);
+    }
 }

@@ -100,24 +100,6 @@
             </excludes>
             <outputDirectory>db/cassandra/saved_caches</outputDirectory>
         </fileSet>
-
-        <fileSet>
-            <directory>.</directory>
-            <excludes>
-                <exclude>*/**</exclude>
-            </excludes>
-            <outputDirectory>db/redis</outputDirectory>
-        </fileSet>
-
-        <!-- Redis Package -->
-
-        <fileSet>
-            <directory>${core.server.basedir}/target/redis-prebuilt-redis-3.2.9</directory>
-            <excludes>
-                <exclude>README.md</exclude>
-            </excludes>
-            <outputDirectory>services/redis</outputDirectory>
-        </fileSet>
     </fileSets>
 
     <dependencySets>

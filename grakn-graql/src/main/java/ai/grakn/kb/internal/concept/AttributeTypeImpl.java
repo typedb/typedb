@@ -128,8 +128,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
-        return putInstance(Schema.BaseType.ATTRIBUTE,
-                () -> attribute(value), instanceBuilder, isInferred);
+        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attribute(value), instanceBuilder, isInferred);
     }
 
     /**

@@ -43,7 +43,7 @@ Alternatively, you can also use `with` statements as follows:
 ```
 client = grakn.Grakn(uri="localhost:48555")
 with client.session(keyspace="mykeyspace") as session:
-    with session.transaction(grakn.TxType.READ):
+    with session.transaction(grakn.TxType.READ) as tx:
         ...
 ```
 to automatically close sessions and transactions.

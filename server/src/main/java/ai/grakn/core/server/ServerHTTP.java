@@ -20,13 +20,13 @@ package ai.grakn.core.server;
 
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.controller.ConceptController;
 import ai.grakn.core.server.controller.GraqlController;
 import ai.grakn.core.server.controller.HttpController;
 import ai.grakn.core.server.controller.SystemController;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.core.server.printer.JacksonPrinter;
-import ai.grakn.core.server.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
@@ -53,13 +53,13 @@ public class ServerHTTP {
     private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final ServerStatus serverStatus;
-    private final PostProcessor postProcessor;
+    private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
     private final ServerRPC rpcServerRPC;
     private final Collection<HttpController> additionalCollaborators;
 
     public ServerHTTP(
             GraknConfig prop, Service spark, EngineGraknTxFactory factory, MetricRegistry metricRegistry,
-            ServerStatus serverStatus, PostProcessor postProcessor,
+            ServerStatus serverStatus, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon,
             ServerRPC rpcServerRPC,
             Collection<HttpController> additionalCollaborators
     ) {
@@ -68,7 +68,7 @@ public class ServerHTTP {
         this.factory = factory;
         this.metricRegistry = metricRegistry;
         this.serverStatus = serverStatus;
-        this.postProcessor = postProcessor;
+        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
         this.rpcServerRPC = rpcServerRPC;
         this.additionalCollaborators = additionalCollaborators;
     }
@@ -88,7 +88,7 @@ public class ServerHTTP {
         JacksonPrinter printer = JacksonPrinter.create();
 
         // Start all the DEFAULT controllers
-        new GraqlController(factory, postProcessor, printer, metricRegistry).start(spark);
+        new GraqlController(factory, attributeDeduplicatorDaemon, printer, metricRegistry).start(spark);
         new ConceptController(factory, metricRegistry).start(spark);
         new SystemController(prop, factory.keyspaceStore(), serverStatus, metricRegistry).start(spark);
 

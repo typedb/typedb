@@ -19,30 +19,20 @@
 package ai.grakn.core.server;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.controller.HttpController;
-import ai.grakn.core.server.data.QueueSanityCheck;
-import ai.grakn.core.server.data.RedisSanityCheck;
-import ai.grakn.core.server.data.RedisWrapper;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
+import ai.grakn.core.server.lock.ProcessWideLockProvider;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.core.server.lock.JedisLockProvider;
 import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.rpc.KeyspaceService;
 import ai.grakn.core.server.rpc.ServerOpenRequest;
 import ai.grakn.core.server.rpc.SessionService;
-import ai.grakn.core.server.task.BackgroundTaskRunner;
-import ai.grakn.core.server.task.postprocessing.CountPostProcessor;
-import ai.grakn.core.server.task.postprocessing.CountStorage;
-import ai.grakn.core.server.task.postprocessing.IndexPostProcessor;
-import ai.grakn.core.server.task.postprocessing.IndexStorage;
-import ai.grakn.core.server.task.postprocessing.PostProcessingTask;
-import ai.grakn.core.server.task.postprocessing.PostProcessor;
-import ai.grakn.core.server.task.postprocessing.redisstorage.RedisCountStorage;
-import ai.grakn.core.server.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.core.server.util.EngineID;
 import ai.grakn.core.server.rpc.OpenRequest;
 import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
+import spark.Service;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -66,13 +56,8 @@ public class ServerFactory {
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        // redis
-        RedisWrapper redisWrapper = RedisWrapper.create(config);
-        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
-
         // distributed locks
-        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
-
+        LockProvider lockProvider = new ProcessWideLockProvider();
 
         KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
@@ -81,18 +66,14 @@ public class ServerFactory {
 
 
         // post-processing
-        IndexStorage indexStorage =  RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
-        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
 
         // http services: spark, http controller, and gRPC server
-        spark.Service sparkHttp = spark.Service.ignite();
+        Service sparkHttp = Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, postProcessor, keyspaceStore);
+        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicatorDaemon, keyspaceStore);
 
-        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
+        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
@@ -102,16 +83,14 @@ public class ServerFactory {
 
     public static Server createServer(
             EngineID engineId, GraknConfig config, ServerStatus serverStatus,
-            spark.Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
+            Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
             EngineGraknTxFactory engineGraknTxFactory,
             MetricRegistry metricRegistry,
-            QueueSanityCheck queueSanityCheck, LockProvider lockProvider, PostProcessor postProcessor, KeyspaceStore keyspaceStore) {
+            LockProvider lockProvider, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
 
-        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, postProcessor, rpcServerRPC, httpControllers);
+        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, attributeDeduplicatorDaemon, rpcServerRPC, httpControllers);
 
-        BackgroundTaskRunner taskRunner = configureBackgroundTaskRunner(config, engineGraknTxFactory, postProcessor.index());
-
-        Server server = new Server(engineId, config, serverStatus, lockProvider, queueSanityCheck, httpHandler, taskRunner, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockProvider, httpHandler, attributeDeduplicatorDaemon, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);
@@ -119,19 +98,12 @@ public class ServerFactory {
         return server;
     }
 
-    private static BackgroundTaskRunner configureBackgroundTaskRunner(GraknConfig graknEngineConfig, EngineGraknTxFactory factory, IndexPostProcessor postProcessor) {
-        PostProcessingTask postProcessingTask = new PostProcessingTask(factory, postProcessor, graknEngineConfig);
-        BackgroundTaskRunner taskRunner = new BackgroundTaskRunner(graknEngineConfig);
-        taskRunner.register(postProcessingTask);
-        return taskRunner;
-    }
-
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, PostProcessor postProcessor, KeyspaceStore keyspaceStore){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
-                .addService(new SessionService(requestOpener, postProcessor))
+                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
 

@@ -15,27 +15,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.core.server.lock;
 
-import java.util.concurrent.locks.Lock;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
+package ai.grakn.core.server.attribute.deduplicator;
+
+import ai.grakn.Keyspace;
+import com.google.auto.value.AutoValue;
 
 /**
- * Provider for Jedis lock
+ * A class to hold a keyspace and an index together.
  *
- * @author Domenico Corapi
+ * @author Ganeshwara Herawan Hananda
  */
-public class JedisLockProvider implements LockProvider {
+@AutoValue
+public abstract class KeyspaceIndexPair {
+    public abstract Keyspace keyspace();
+    public abstract String index();
 
-    private Pool<Jedis> client;
-
-    public JedisLockProvider(Pool<Jedis> client) {
-        this.client = client;
-    }
-
-    @Override
-    public Lock getLock(String lockName) {
-        return new JedisLock(client, lockName);
+    public static KeyspaceIndexPair create(Keyspace keyspace, String index) {
+        return new AutoValue_KeyspaceIndexPair(keyspace, index);
     }
 }

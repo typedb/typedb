@@ -18,11 +18,9 @@
 package ai.grakn.core.server;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.data.QueueSanityCheck;
+import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.lock.LockProvider;
-import ai.grakn.core.server.task.BackgroundTaskRunner;
 import ai.grakn.core.server.util.EngineID;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,43 +44,35 @@ public class Server implements AutoCloseable {
     private final GraknConfig config;
     private final ServerStatus serverStatus;
     private final LockProvider lockProvider;
-    private final QueueSanityCheck queueSanityCheck;
     private final ServerHTTP httpHandler;
-    private final BackgroundTaskRunner backgroundTaskRunner;
+    private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     private final KeyspaceStore keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, QueueSanityCheck queueSanityCheck, ServerHTTP httpHandler, BackgroundTaskRunner backgroundTaskRunner, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
-        this.queueSanityCheck = queueSanityCheck;
         // Lock provider
         this.lockProvider = lockProvider;
         this.keyspaceStore = keyspaceStore;
         this.httpHandler = httpHandler;
         this.engineId = engineId;
-        this.backgroundTaskRunner = backgroundTaskRunner;
+        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
     }
 
     public void start() throws IOException {
-        queueSanityCheck.testConnection();
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 config.getProperty(GraknConfigKey.SERVER_HOST_NAME),
                 config.getProperty(GraknConfigKey.SERVER_PORT));
         synchronized (this){
-            queueSanityCheck.checkVersion();
             lockAndInitializeSystemSchema();
             httpHandler.startHTTP();
         }
+        attributeDeduplicatorDaemon.startDeduplicationDaemon();
         serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
-    }
-
-    @VisibleForTesting
-    public BackgroundTaskRunner backgroundTaskRunner(){
-        return backgroundTaskRunner;
     }
 
     @Override
@@ -94,8 +84,7 @@ public class Server implements AutoCloseable {
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
             }
-            queueSanityCheck.close();
-            backgroundTaskRunner.close();
+            attributeDeduplicatorDaemon.stopDeduplicationDaemon();
         }
     }
 

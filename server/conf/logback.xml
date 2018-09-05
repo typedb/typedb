@@ -19,7 +19,6 @@
 <configuration debug="false">
 
     <property name="graknLogFileName" value="grakn.log"/>
-    <property name="graknPPLogFileName" value="grakn-postprocessing.log"/>
 
     <!--Configure a properties file (located on the classpath) from which values can be referenced-->
     <property resource="grakn.properties"/>
@@ -43,7 +42,7 @@
         </encoder>
     </appender>
 
-    <!--Configure the "main" appender used for all non-post processing Grakn logs. Logs are kept for
+    <!--Configure the "main" appender used for Grakn. Logs are kept for
         60 days and each file is capped at 50MB, but at most 1GB -->
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${configuredLogDir}/${graknLogFileName}</file>
@@ -52,20 +51,6 @@
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
-            <maxFileSize>50MB</maxFileSize>
-            <maxHistory>60</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
-        </rollingPolicy>
-    </appender>
-
-    <!--Configure the post processing appender used for logs in the post processing package-->
-    <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${configuredLogDir}/${graknPPLogFileName}</file>
-        <encoder>
-            <pattern>%date{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
@@ -93,13 +78,4 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <!--Post Processing logs go to separate log file-->
-    <logger name="ai.grakn.core.server.task.postprocessing" level="${log.level:-INFO}" additivity="false">
-        <appender-ref ref="POST-PROCESSING"/>
-    </logger>
-
-    <!-- It is possible to change the logging level to a more granular level. For example:-->
-    <!--<logger name="ai.grakn.core.server.postprocessing.PostProcessing" level="DEBUG">-->
-        <!--<appender-ref ref="FILE"/>-->
-    <!--</logger>-->
 </configuration>
