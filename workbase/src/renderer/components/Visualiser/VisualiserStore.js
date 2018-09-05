@@ -3,7 +3,6 @@ import storage from '@/components/shared/PersistentStorage';
 import logger from '@/../Logger';
 import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
 import ManagementUtils from './VisualiserUtils';
-import NodeSettings from './RightBar/NodeSettings';
 import Style from './Style';
 
 import { RUN_CURRENT_QUERY, TOGGLE_LABEL, TOGGLE_COLOUR } from '../shared/StoresActions';
@@ -111,7 +110,6 @@ const methods = {
     }
     return ManagementUtils.filterImplicitTypes(concepts);
   },
-  getLabelBySelectedType() { return NodeSettings.getTypeLabels(this.getSelectedNode().type); },
 
   // getters
   getCurrentQuery() {

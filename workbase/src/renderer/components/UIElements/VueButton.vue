@@ -14,9 +14,25 @@
 
   export default {
     name: 'VueButton',
-    props: ['text', 'intent', 'icon', 'active', 'alignText', 'disabled', 'fill', 'loading', 'rightIcon'],
+    props: ['text', 'intent', 'icon', 'active', 'alignText', 'disabled', 'fill', 'loading', 'rightIcon', 'small', 'className'],
     mounted() {
       this.$nextTick(() => {
+        this.renderButton();
+      });
+    },
+    watch: {
+      className() {
+        this.renderButton();
+      },
+      loading() {
+        this.renderButton();
+      },
+      disabled() {
+        this.renderButton();
+      },
+    },
+    methods: {
+      renderButton() {
         ReactDom.render(React.createElement(Button, {
           text: this.text,
           intent: this.intent,
@@ -27,9 +43,11 @@
           fill: this.fill,
           loading: this.loading,
           rightIcon: this.rightIcon,
-          className: 'vue-button',
+          small: this.small,
+          className: this.className,
+          onClick: () => { this.$emit('clicked'); },
         }), this.$refs.vueButton);
-      });
+      },
     },
   };
 </script>

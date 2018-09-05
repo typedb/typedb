@@ -1,176 +1,76 @@
 <template>
-  <div class="top-bar-container">
-    <div class="left">
-      <img src="static/img/logo-text.png" class="grakn-icon">
-      <h1 class="page-title">visualiser</h1>
-    </div>
-    <div class="center">
+    <div class="top-bar-container">
+        <div class="left">
+            <img src="static/img/logo-text.png" class="grakn-icon">
+            <h1>visualiser</h1>
+        </div>
 
+        <div class="center">
+            <graql-editor :localStore="localStore"></graql-editor>
+        </div>
 
-      <!--<vue-button icon="book" intent="primary"></vue-button>-->
-      <!--<vue-input placeholder="query name"></vue-input>-->
-
-        <!-- <fav-queries-list
-          :currentKeyspace="currentKeyspace"
-          :favQueries="favQueries"
-          :toolTipShown="toolTipShown"
-          v-on:toggle-tool-tip="toggleToolTip"
-          ref="savedQueries">
-        </fav-queries-list> -->
-      <!--<types-panel-->
-        <!--:localStore="localStore"-->
-        <!--:currentKeyspace="currentKeyspace"-->
-        <!--:toolTipShown="toolTipShown"-->
-        <!--v-on:type-selected="typeSelected"-->
-        <!--v-on:meta-type-selected="metaTypeSelected"-->
-        <!--v-on:toggle-tool-tip="toggleToolTip">-->
-      <!--</types-panel>-->
-      <graql-editor
-        :favQueries="favQueries"
-        :localStore="localStore"
-        v-on:refresh-fav-queries="refreshFavQueries"
-        :toolTipShown="toolTipShown"
-        v-on:toggle-tool-tip="toggleToolTip"
-        ref="graqlEditor">
-      </graql-editor>
+        <div class="right">
+            <keyspaces-handler :localStore="localStore"></keyspaces-handler>
+        </div>
     </div>
-    <div class="right">
-      <keyspaces-handler
-        :localStore="localStore"
-        :toolTipShown="toolTipShown"
-        v-on:toggle-tool-tip="toggleToolTip">
-      </keyspaces-handler>
-    </div>
-  </div>
 </template>
 
-<style lang="scss" scoped>
-$width-left: 180px;
-$width-right: 180px;
-$min-width-center: 700px;
+<style scoped>
 
-.page-title {
-  color: var(--font-color);
-}
+    .top-bar-container {
+        background-color: var(--gray-1);
+        border-bottom: var(--container-darkest-border);
+        width: 100%;
+        height: 50px;
+        position: relative;
+        flex-direction: row;
+        display: flex;
+        justify-content: space-between;
+        z-index: 1;
+    }
 
-.top-bar-container {
-  width: 100%;
-  height: 50px;
-  background-color: var(--gray-1);
-  position: relative;
-  flex-direction: row;
-  display: flex;
-  justify-content: space-between;
-  border-bottom: var(--container-border);
-  }
+    .left {
+        padding: var(--container-padding);
+        width: 180px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        vertical-align: middle;
+        justify-content: space-between;
+    }
 
-.left {
-  width: $width-left;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  vertical-align: middle;
-  justify-content: space-between;
-  padding: var(--container-dark-border);
-}
+    .grakn-icon {
+        height: 25px;
+        margin-right: 5px;
+    }
 
-.grakn-icon {
-  height: 25px;
-  margin-right: 5px;
-}
+    .center {
+        padding: var(--container-padding);
+        height: 100%;
+        min-width: 700px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+    }
 
-.center {
-  height: 100%;
-  min-width: $min-width-center;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-  padding: var(--container-padding);
-}
-
-.right {
-  width: $width-right;
-  height: 100%;
-  display: flex;
-  padding: var(--container-padding);
-  justify-content: flex-end;
-  align-items: center;
-}
+    .right {
+        padding: var(--container-padding);
+        width: 180px;
+        height: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        }
 </style>
 
 <script>
-import KeyspacesHandler from '../shared/KeyspacesHandler/KeyspacesHandler.vue';
-import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
-import FavQueriesList from './TopBar/FavQueries/FavQueriesList.vue';
-import TypesPanel from './TopBar/TypesPanel.vue';
-import FavQueriesSettings from './TopBar/FavQueries/FavQueriesSettings';
+    import KeyspacesHandler from '../shared/KeyspacesHandler/KeyspacesHandler.vue';
+    import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
 
-export default {
-  props: ['localStore'],
-  components: { KeyspacesHandler, GraqlEditor, FavQueriesList, TypesPanel },
-  data() {
-    return {
-      favQueries: [],
-      toolTipShown: undefined,
+    export default {
+      props: ['localStore'],
+      components: { KeyspacesHandler, GraqlEditor },
     };
-  },
-  mounted() {
-    // this.$nextTick(() => {
-    //   this.$refs.savedQueries.$on('type-fav-query', (favQuery) => {
-    //     this.localStore.setCurrentQuery(favQuery);
-    //   });
-
-    //   this.$refs.savedQueries.$on('remove-fav-query', (queryName) => {
-    //     FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
-    //   });
-    // });
-  },
-  computed: {
-    currentKeyspace() {
-      return this.localStore.getCurrentKeyspace();
-    },
-    selectedNode() {
-      return this.localStore.getSelectedNodes();
-    },
-  },
-  watch: {
-    currentKeyspace() {
-      this.refreshFavQueries();
-    },
-    selectedNode() {
-      if (this.selectedNode) {
-        this.toolTipShown = undefined;
-      }
-    },
-  },
-  methods: {
-    // Used by TypesPanel when clicking on rectangle containing a meta type
-    typeSelected(type) {
-      this.$refs.graqlEditor.$emit('type-selected', type);
-      this.toggleToolTip();
-    },
-    // Used by TypesPanel when clicking on types or all types
-    metaTypeSelected(metaType) {
-      this.$refs.graqlEditor.$emit('meta-type-selected', metaType);
-      this.toggleToolTip();
-    },
-    refreshFavQueries() {
-      this.favQueries = this.objectToArray(FavQueriesSettings.getFavQueries(this.currentKeyspace));
-    },
-    toggleToolTip(val) {
-      if (this.toolTipShown === val) {
-        this.toolTipShown = undefined;
-      } else {
-        this.toolTipShown = val;
-        this.localStore.visFacade.container.visualiser.getNetwork().unselectAll();
-        this.localStore.setSelectedNodes(null);
-      }
-    },
-    objectToArray(object) {
-      return Object.keys(object).map(key => ({ name: key, value: object[key].replace('\n', '') }));
-    },
-  },
-};
 </script>

@@ -5,17 +5,21 @@
       <!--<img class="keyspaces-arrow" :src="(toolTipShown === 'keyspaces') ? 'static/img/icons/icon_up_arrow.svg' : 'static/img/icons/icon_down_arrow.svg'">-->
     <!--</button>-->
 
-    <!--<vue-menu></vue-menu>-->
-    <vue-popover position="RIGHT_TOP"></vue-popover>
+    <!--<vue-menu>-->
+        <!--<div text="hello" intent="primary" key="hello">asdasd</div>-->
+    <!--</vue-menu>-->
+
+    <vue-popover :button="keyBtn" :items="keyspaces" v-on:emit-item="setKeyspace"></vue-popover>
+
 
     <!--<div @click="(isGraknRunning) ? toggleToolTip() : false"><vue-button rightIcon="key" intent="primary" :text="(currentKeyspace !== null) ? currentKeyspace : 'keyspace'"></vue-button></div>-->
 
-    <transition name="slide-down-fade">
-        <ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-if="toolTipShown === 'keyspaces'">
-            <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
-            <li :id="ks" class="ks-key" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
-        </ul>
-    </transition>
+    <!--<transition name="slide-down-fade">-->
+        <!--<ul id="keyspaces-list" class="keyspaces-list z-depth-3" v-if="toolTipShown === 'keyspaces'">-->
+            <!--<div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>-->
+            <!--<li :id="ks" class="ks-key" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>-->
+        <!--</ul>-->
+    <!--</transition>-->
 </div>
 </template>
 
@@ -50,20 +54,36 @@ li:hover {
 </style>
 
 <script>
-import CaretIcon from '@/components/UIElements/CaretIcon.vue';
+
+import * as React from 'react';
+import { Button } from '@blueprintjs/core';
+
 
 import { CURRENT_KEYSPACE_CHANGED } from '../StoresActions';
 
 export default {
   name: 'KeyspacesList',
   props: ['localStore', 'toolTipShown'],
-  components: { CaretIcon },
+  data() {
+    return {
+      keyspaceItems: [],
+      keyBtn: null,
+    };
+  },
   computed: {
     keyspaces() {
       return this.$store.getters.allKeyspaces;
     },
     currentKeyspace() { return this.localStore.getCurrentKeyspace(); },
     isGraknRunning() { return this.$store.getters.isGraknRunning; },
+  },
+  created() {
+    this.keyBtn = React.createElement(Button, {
+      text: (this.currentKeyspace !== null) ? this.currentKeyspace : 'keyspace',
+      rightIcon: 'key',
+      intent: 'primary',
+      className: 'vue-button',
+    });
   },
   watch: {
     keyspaces(val) {
@@ -74,6 +94,14 @@ export default {
       if (!val) {
         this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in Grakn URI are correct', 'top-center');
       }
+    },
+    currentKeyspace() {
+      this.keyBtn = React.createElement(Button, {
+        text: (this.currentKeyspace !== null) ? this.currentKeyspace : 'keyspace',
+        rightIcon: 'key',
+        intent: 'primary',
+        className: 'vue-button',
+      });
     },
   },
   methods: {

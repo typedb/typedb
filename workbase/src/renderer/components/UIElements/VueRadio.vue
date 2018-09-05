@@ -1,5 +1,5 @@
 <template>
-    <div id="vue-radio"></div>
+    <div ref="vueRadio"></div>
 </template>
 
 <style scoped>
@@ -17,8 +17,6 @@
     props: ['alignIndicator', 'checked', 'defaultChecked', 'disabled', 'inline', 'label'],
     mounted() {
       this.$nextTick(() => {
-        const radioElement = document.getElementById('vue-radio');
-
         ReactDom.render(React.createElement(Radio, {
           className: 'vue-radio',
           alignIndicator: this.alignIndicator,
@@ -27,7 +25,7 @@
           disabled: this.disabled,
           inline: this.inline,
           label: this.label,
-        }), radioElement);
+        }), this.$refs.vueRadio);
       });
     },
   };

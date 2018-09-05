@@ -1,186 +1,130 @@
 <template>
-<div>
-    <button @click="loadFavQueries" class="btn top-bar-btn" :class="{'disabled':currentKeyspace, 'btn-selected':toolTipShown === 'favourites'}" id="fav-queries-btn">
-        <img src="static/img/icons/icon_star.svg">
-    </button>
-    <transition name="slide-fade">
-        <div v-if="toolTipShown === 'favourites'" class="dropdown-content" id="fav-queries-list">
-            <i @click="closeFavQueriesList" :style="'font-size:13px;'" class="fas fa-times cross"></i>
-            <div class="panel-heading">
-                <h4 :style="'padding-right:10px;'">saved queries</h4>
-            </div>
-            <div class="divide"></div>
-            <div class="panel-body" v-if="favQueries.length">
-                <div class="dd-item" v-for="(query,index) in favQueries" :key="index">
-                    <div class="full-query">
-                        <span class="list-key" id="list-key"> {{query.name}}</span>
-                    </div>
-                    <div class="line-buttons">
-                        <button id='use-btn' class="btn use-btn" @click="typeFavQuery(query.value)">USE</button>
-                        <button id='delete-btn' class="btn delete-btn" @click="removeFavQuery(index, query.name)"><i class="fas fa-trash-alt"></i></button>
+    <div class="fav-query-list">
+        <div @click="$emit('close-fav-queries-panel')"><vue-icon class="close-container" icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>
+        <div class="panel-body" v-if="favQueries.length">
+            <div class="fav-query-item" v-for="(query,index) in favQueries" :key="index">
+                <div class="fav-query-left">
+                    <span class="query-name">{{query.name}}</span>
+                    <div class="fav-query-btns">
+                        <vue-button v-on:clicked="typeFavQuery(query.value)" text="USE" className="vue-button"></vue-button>
+                        <vue-button v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+                        <!--<div><vue-button icon="edit"></vue-button></div>-->
                     </div>
                 </div>
-            </div>
-            <div class="panel-body" v-else>
-                <div class="dd-item">
-                    <div class="no-saved" id="no-saved">
-                        no saved queries
-                    </div>
+                <div class="fav-query-right">
+                    <!--<input type="text" class="grakn-input" v-model="query.value">-->
+                    <input ref="favQuery" :value="query.value">
                 </div>
             </div>
         </div>
-    </transition>
-</div>
+        <div class="panel-body" v-else>
+            <div class="dd-item">
+                <div class="no-saved">
+                    no saved queries
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <style scoped>
-.disabled{
-    opacity:0.5;
-    cursor: default;
-}
 
-.slide-fade-enter-active {
-    transition: all .6s ease;
-}
-.slide-fade-leave-active {
-    transition: all .3s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-}
-.slide-fade-enter,
-.slide-fade-leave-active {
-    transform: translateY(-10px);
-    opacity: 0;
-}
+    .close-container{
+        position: absolute;
+        right: 0px;
+        top:0px;
+        height: 15px;
+        z-index: 1;
+    }
 
-.panel-filled {
-    background-color: rgba(68, 70, 79, 1);
-}
+    .fav-query-left{
+        padding: var(--container-padding);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
 
-.bold {
-    font-weight: bold;
-}
+    }
 
-.no-saved {
-    margin-bottom: 15px;
-}
+    .fav-query-right {
+        padding: var(--container-padding);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+    }
 
-.divide {
-  border-bottom: 1px solid #606060;
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
+    .fav-query-btns{
+        display: flex;
+        flex-direction: row;
+    }
 
-.use-btn {
-    padding: 7px;
-    height: 30px;
-    line-height: 1em;
-}
-.delete-btn {
-    padding: 7px;
-    height: 30px;
-    line-height: 1em;
-}
+    .query-name {
+        margin-bottom: 5px;
+    }
 
-a {
-    margin-left: auto;
-}
+    .fav-query-item{
+        border-top: var(--container-light-border);
+        display: flex;
+        flex-direction: row;
+        padding-top: 5px;
+    }
 
-.fa-times{
-    cursor: pointer;
-    position: absolute;
-    right: 1px;
-    top: 1px;
-    padding: 2px;
-    height: 14px;
-    line-height: 1em;
-}
-
-.fa-times:hover{
-    color: #06b17b;
-}
-
-.panel-heading {
-    margin-bottom: 10px;
-    font-size: 18px;
-    text-align: center;
-}
-
-.page-header-icon {
-    font-size: 20px;
-    float: left;
-    margin-right: 10px;
-}
-
-.panel-body {
-    display: flex;
-    flex-direction: column;
-}
-
-.fa-trash-alt {
-    font-size: 15px;
-}
-
-.dd-item {
-    display: flex;
-    align-items: center;
-    margin-top: 5px;
-    padding-left: 7px;
-}
-
-.list-key {
-    display: inline-flex;
-    flex: 1;
-}
-
-.line-buttons {
-    display: inline-flex;
-    align-items: center;
-}
-
-.dropdown-content {
-    position: absolute;
-    top: 100%;
-    z-index: 2;
-    padding: 10px;
-    margin-top: 5px;
-    background-color: #282828;
-}
-
-/* Show the tooltip text when you mouse over the tooltip container */
-
-.full-query {
-    display: inline-flex;
-    position: relative;
-    border-bottom: 1px solid #606060;
-    padding-bottom: 5px;
-    flex: 3;
-    margin-right: 10px;
-}
+    .fav-query-list {
+        background-color: var(--gray-2);
+        padding: var(--container-padding);
+        border: var(--container-darkest-border);
+        width: 100%;
+        margin-top: 10px;
+        max-height: 142px;
+        overflow: auto;
+        position: relative;
+    }
 </style>
 
 <script>
+  import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
+  import GraqlCodeMirror from '../GraqlEditor/GraqlCodeMirror';
 
-export default {
-  name: 'FavQueriesList',
-  props: ['currentKeyspace', 'favQueries', 'toolTipShown'],
-  methods: {
-    loadFavQueries() {
-      if (!(this.toolTipShown === 'favourites')) {
-        this.$emit('toggle-tool-tip', 'favourites');
-      } else {
-        this.$emit('toggle-tool-tip');
-      }
+
+  export default {
+    name: 'FavQueriesList',
+    props: ['localStore', 'currentKeyspace', 'favQueries'],
+    data() {
+      return {
+        codeMirror: {},
+      };
     },
-    closeFavQueriesList() {
-      this.$emit('toggle-tool-tip');
+    mounted() {
+      this.$nextTick(() => {
+        this.renderQueries();
+      });
     },
-    removeFavQuery(index, queryName) {
-      this.$emit('remove-fav-query', queryName);
-      this.favQueries.splice(index, 1);
+    watch: {
+      favQueries() {
+        this.$nextTick(() => {
+          this.renderQueries();
+        });
+      },
     },
-    typeFavQuery(query) {
-      this.$emit('type-fav-query', query);
-      this.$emit('toggle-tool-tip');
+    methods: {
+      typeFavQuery(query) {
+        this.localStore.setCurrentQuery(query);
+      },
+      removeFavQuery(index, queryName) {
+        FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
+        this.favQueries.splice(index, 1);
+      },
+      renderQueries() {
+        const savedQueries = this.$refs.favQuery;
+        savedQueries.forEach((q) => {
+          if (q.style.display !== 'none') {
+            this.codeMirror = GraqlCodeMirror.getCodeMirror(q);
+            this.codeMirror.setOption('readOnly', 'nocursor');
+          }
+        });
+      },
     },
-  },
-};
+  };
 </script>

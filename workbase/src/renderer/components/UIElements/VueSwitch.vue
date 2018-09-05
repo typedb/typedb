@@ -1,5 +1,5 @@
 <template>
-    <div id="vue-switch"></div>
+    <div ref="vueSwitch"></div>
 </template>
 
 <style scoped>
@@ -17,8 +17,11 @@
     props: ['alignIndicator', 'checked', 'defaultChecked', 'disabled', 'inline', 'label'],
     mounted() {
       this.$nextTick(() => {
-        const switchElement = document.getElementById('vue-switch');
-
+        this.renderSwitch();
+      });
+    },
+    methods: {
+      renderSwitch() {
         ReactDom.render(React.createElement(Switch, {
           className: 'vue-switch',
           alignIndicator: this.alignIndicator,
@@ -27,8 +30,11 @@
           disabled: this.disabled,
           inline: this.inline,
           label: this.label,
-        }), switchElement);
-      });
+          onChange: (x) => {
+            this.$emit('switch-changed', x.target.checked);
+          },
+        }), this.$refs.vueSwitch);
+      },
     },
   };
 </script>

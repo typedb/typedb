@@ -18,6 +18,7 @@ import VueTabs from './components/UIElements/VueTabs.vue';
 import VueTab from './components/UIElements/VueTab.vue';
 import VueIcon from './components/UIElements/VueIcon.vue';
 import VueTooltip from './components/UIElements/VueTooltip.vue';
+import VueTable from './components/UIElements/VueTable.vue';
 
 
 // Modules
@@ -53,6 +54,7 @@ Vue.component('vue-tabs', VueTabs);
 Vue.component('vue-tab', VueTab);
 Vue.component('vue-icon', VueIcon);
 Vue.component('vue-tooltip', VueTooltip);
+Vue.component('vue-table', VueTable);
 
 
 // Define a Vue Router and map all the routes to components - as defined in the routes.js file.

@@ -7,7 +7,7 @@
 </style>
 
 <script>
-  import { Popover } from '@blueprintjs/core';
+  import { Menu, MenuItem, Popover, Position } from '@blueprintjs/core';
 
   import ReactDom from 'react-dom';
   import React from 'react';
@@ -26,25 +26,62 @@
       'target',
       'targetClassName',
       'transitionDuration',
+      'button',
+      'items',
     ],
-
+    data() {
+      return {
+        menuElement: null,
+        popoverElement: null,
+      };
+    },
+    watch: {
+      items() {
+        this.renderMenu();
+        ReactDom.render(this.popoverElement, this.$refs.vuePopover);
+      },
+      button() {
+        this.renderMenu();
+        ReactDom.render(this.popoverElement, this.$refs.vuePopover);
+      },
+    },
+    created() {
+      if (this.items) this.renderMenu();
+    },
     mounted() {
       this.$nextTick(() => {
-        ReactDom.render(React.createElement(Popover, {
+        ReactDom.render(this.popoverElement, this.$refs.vuePopover);
+      });
+    },
+    methods: {
+      renderMenu() {
+        const itemElements = this.items.map(x => React.createElement(MenuItem, {
+          className: 'vue-menu-item',
+          text: x,
+          key: x,
+          onClick: () => { this.$emit('emit-item', x); },
+        }));
+        this.menuElement = React.createElement(Menu, {
+          className: 'vue-menu',
+          large: this.large,
+          ulRef: this.ulRef,
+        }, itemElements);
+
+        this.popoverElement = React.createElement(Popover, {
           className: 'vue-popover',
           autoFocus: this.autoFocus,
           canEscapeKeyClose: this.canEscapeKeyClose,
-          content: document.getElementById('test'),
+          content: this.menuElement,
           disabled: this.disabled,
           hasBackdrop: this.hasBackdrop,
           isOpen: this.isOpen,
           popoverClassName: this.popoverClassName,
-          position: this.position,
-          target: this.content,
+          position: Position.BOTTOM_LEFT,
+          target: this.button,
           targetClassName: this.targetClassName,
           transitionDuration: this.transitionDuration,
-        }), this.$refs.vuePopover);
-      });
+        });
+      },
     },
   };
 </script>

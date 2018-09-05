@@ -1,5 +1,5 @@
 <template>
-    <div id="vue-input"></div>
+    <div ref="vueInput"></div>
 </template>
 
 <style scoped>
@@ -17,8 +17,6 @@
     props: ['text', 'intent', 'defaultValue', 'disabled', 'leftIcon', 'placeholder', 'rightElement', 'value'],
     mounted() {
       this.$nextTick(() => {
-        const inputElement = document.getElementById('vue-input');
-
         ReactDom.render(React.createElement(InputGroup, {
           className: 'vue-input',
           defaultValue: this.defaultValue,
@@ -29,7 +27,8 @@
           rightElement: this.rightElement,
           value: this.value,
           type: 'text',
-        }), inputElement);
+          onChange: (val) => { this.$emit('input-changed', val.target.value); },
+        }), this.$refs.vueInput);
       });
     },
   };

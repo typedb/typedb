@@ -49,7 +49,8 @@
 }
 
 .cm-s-dracula .CodeMirror-cursor {
-    border-left: solid thin #f8f8f0;
+    border-left: 7px solid var(--green-4);
+    opacity: 0.5;
 }
 
 .cm-s-dracula .CodeMirror-linenumber {

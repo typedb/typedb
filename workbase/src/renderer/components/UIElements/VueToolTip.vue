@@ -18,7 +18,7 @@
     mounted() {
       this.$nextTick(() => {
         ReactDom.render(React.createElement(Tooltip, {
-          className: 'vue-button',
+          className: 'vue-tooltip',
           autoFocus: this.autofocus,
           content: this.content,
           defaultIsOpen: this.defaultIsOpen,

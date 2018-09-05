@@ -1,5 +1,5 @@
 <template>
-    <div id="vue-icon"></div>
+    <div ref="vueIcon"></div>
 </template>
 
 <style scoped>
@@ -14,21 +14,28 @@
 
   export default {
     name: 'VueIcon',
-    props: ['color', 'icon', 'iconSize', 'style', 'intent', 'title'],
+    props: ['color', 'icon', 'iconSize', 'intent', 'title', 'className'],
     mounted() {
       this.$nextTick(() => {
-        const iconElement = document.getElementById('vue-icon');
-
+        this.renderIcon();
+      });
+    },
+    watch: {
+      icon() {
+        this.renderIcon();
+      },
+    },
+    methods: {
+      renderIcon() {
         ReactDom.render(React.createElement(Icon, {
-          className: 'vue-icon',
+          className: this.className,
           color: this.color,
           icon: this.icon,
           iconSize: this.iconSize,
-          style: this.style,
           intent: this.intent,
           title: this.title,
-        }), iconElement);
-      });
+        }), this.$refs.vueIcon);
+      },
     },
   };
 </script>
