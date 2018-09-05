@@ -103,8 +103,8 @@ marriage sub relatives
     relates wife
     has event-date;
 spouse sub role;
-husband sub role;
-wife sub role;
+husband sub spouse;
+wife sub spouse;
 
 parentship sub relatives
     relates parent
