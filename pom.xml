@@ -50,9 +50,9 @@
         <project.resource.encoding>UTF-8</project.resource.encoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <tinkerpop.version>3.2.9</tinkerpop.version>
+        <tinkerpop.version>3.3.3</tinkerpop.version>
         <junit.version>4.12</junit.version>
-        <janus.version>0.2.0</janus.version>
+        <janus.version>0.3.0</janus.version>
         <guava.version>19.0</guava.version>
         <antlr.version>4.5</antlr.version>
         <jline.version>2.12</jline.version>
@@ -72,8 +72,8 @@
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
-        <cassandra-unit.version>2.1.9.2</cassandra-unit.version>
-        <cassandra-all.version>2.1.17</cassandra-all.version>
+        <cassandra-unit.version>3.5.0.1</cassandra-unit.version>
+        <cassandra-all.version>3.11.3</cassandra-all.version>
         <h2-database.version>1.4.192</h2-database.version>
         <systen-rules.version>1.16.0</systen-rules.version>
         <mockito.version>2.6.4</mockito.version>
@@ -85,16 +85,16 @@
         <bytebuddy.version>1.6.14</bytebuddy.version>
         <jmh-core.version>1.19</jmh-core.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
-        <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
+        <cassandra-driver-core.version>3.5.1</cassandra-driver-core.version>
         <jackson.version>2.8.5</jackson.version>
         <prometheus.version>0.0.13</prometheus.version>
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
         <grpc.version>1.8.0</grpc.version>
-        <netty-all.version>4.1.16.Final</netty-all.version>
+        <netty-all.version>4.1.29.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
-        <netty.version>1.1.33.Fork19</netty.version>
+        <netty.version>2.0.14.Final</netty.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
@@ -105,9 +105,9 @@
         <reactivex.version>1.3.2</reactivex.version>
         <zip4j.version>1.3.2</zip4j.version>
         <zt-exec.version>1.10</zt-exec.version>
-        <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
+        <astyanax.version>3.10.1</astyanax.version>
         <rocksdbjni.version>5.14.2</rocksdbjni.version>
     </properties>
 
@@ -383,6 +383,10 @@
                         <artifactId>jcl-over-slf4j</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-nop</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>log4j</groupId>
                         <artifactId>log4j</artifactId>
                     </exclusion>
@@ -419,11 +423,6 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>log4j-over-slf4j</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-nop</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
@@ -492,6 +491,26 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-core</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-thrift</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-cassandra</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-recipes</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.janusgraph</groupId>
                 <artifactId>janusgraph-cassandra</artifactId>
                 <version>${janus.version}</version>
@@ -523,6 +542,10 @@
                     <exclusion>
                         <groupId>ch.qos.logback</groupId>
                         <artifactId>logback-classic</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.apache.servicemix.bundles</groupId>
@@ -585,6 +608,10 @@
                     <exclusion>
                         <groupId>log4j</groupId>
                         <artifactId>log4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
