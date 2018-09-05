@@ -27,6 +27,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
@@ -48,8 +49,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -121,7 +124,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             Role role = casting.getRole();
             relationship.unassign(role, this);
             return relationship;
-        }).collect(Collectors.toSet());
+        }).collect(toSet());
 
         vertex().tx().txCache().removedInstance(type().id());
         deleteNode();
@@ -146,14 +149,14 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
-        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(Collectors.toSet());
+        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
         return attributes(getShortcutNeighbours(), attributeTypesIds);
     }
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType... attributeTypes){
-        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(Collectors.toSet());
-        Set<ConceptId> keyTypeIds = type().keys().map(Concept::id).collect(Collectors.toSet());
+        Set<ConceptId> attributeTypesIds = Arrays.stream(attributeTypes).map(Concept::id).collect(toSet());
+        Set<ConceptId> keyTypeIds = type().keys().map(Concept::id).collect(toSet());
 
         if(!attributeTypesIds.isEmpty()){
             keyTypeIds = Sets.intersection(attributeTypesIds, keyTypeIds);
@@ -193,15 +196,41 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(edge -> Casting.withThing(edge, this));
     }
 
-    <X extends Thing> Stream<X> getShortcutNeighbours(){
-        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                as("edge").
-                outV().
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                where(P.neq("edge")).
-                inV();
+    <X extends Thing> Stream<X> getShortcutNeighbours(AttributeType... attributeTypes){
+        Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
+        if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
 
-        GraphTraversal<Object, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
+        Set<Integer> typeIds = completeAttributeTypes.stream()
+                .flatMap(t -> (Stream<AttributeType>) t.subs())
+                .map(SchemaConcept::label)
+                .flatMap(label -> Stream.of(
+                        Schema.ImplicitType.HAS.getLabel(label),
+                        Schema.ImplicitType.KEY.getLabel(label))
+                )
+                .map(label -> vertex().tx().convertToId(label))
+                .filter(id -> !id.equals(LabelId.invalid()))
+                .map(LabelId::getValue)
+                .collect(toSet());
+
+        //NB: need extra check cause it seems valid types can still produce invalid ids
+        GraphTraversal<Vertex, Vertex> shortcutTraversal = !typeIds.isEmpty()?
+                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        as("edge").
+                        has(RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(typeIds)).
+                        outV().
+                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        has(RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(typeIds)).
+                        where(P.neq("edge")).
+                        inV()
+                :
+                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        as("edge").
+                        outV().
+                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        where(P.neq("edge")).
+                        inV();
+
+        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
 
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
@@ -227,7 +256,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         if(roles.length == 0){
             traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());
         } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(Collectors.toSet());
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
             traversal.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }

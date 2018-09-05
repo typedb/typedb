@@ -38,6 +38,11 @@
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
         <!--Spark Computer Dependencies-->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
@@ -54,6 +59,15 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+        </dependency>
+        <!--Adding direct dependency to Janus so that we can re-implement some of their classes making them compatible with Cassandra 3-->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-hadoop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cassandra</artifactId>
         </dependency>
     </dependencies>
 

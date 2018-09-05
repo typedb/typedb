@@ -46,4 +46,5 @@
     </logger>
 
     <logger name="com.thinkaurelius.thrift" level="ERROR"/>
+    <logger name="io.netty.util.internal.*" level="ERROR"/>
 </configuration>
