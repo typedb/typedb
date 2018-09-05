@@ -4,7 +4,14 @@ import dash_core_components as dcc
 import plotly.graph_objs as go
 import numpy as np
 import pandas as pd 
+from SpanList import SpanList
 
+
+def inorder(l, reverse=False):
+    if not reverse:
+        return all(a<=b for (a,b) in zip(l, l[1:]))
+    else:
+        return all(b<=a for (a,b) in zip(l, l[1:]))
 
 
 class BenchmarkExecutionComponent(object):
@@ -17,34 +24,30 @@ class BenchmarkExecutionComponent(object):
 
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint
         # note: this builds for all the queries right away since this isn't that expensive
+        self.overview_data = None
+        self.repetitions = None         
         self._build_overview_data()
+        # the indexes are pre-sorted for effiency
+        self.sorted_all_concept_numbers = self.overview_data.index.unique().tolist()
+        self.sorted_all_queries = self.overview_data.columns.unique(0).tolist()
+        assert inorder(self.sorted_all_concept_numbers), "Concept numbers not sorted!"
+        assert inorder(self.sorted_all_queries), "Queries not sorted!"
         self.toplevel_query_breakdown = None
-        self.repetitions = None         # TODO fill this
         self._allocate_toplevel_query_breakdown()
 
 
         
-
-
         """
-
         Next steps:
-            Fill out toplevel_query_breakdown when requested
-            plot
             Test decorators
         """
 
 
 
 
-
-
     def _allocate_toplevel_query_breakdown(self):
-        concept_numbers = set(self.overview_data.index.tolist())
-        queries = self.overview_data.columns.unique(0).tolist()
-        query_concepts_index, _ = pd.MultiIndex.from_product([sorted(active_queries), active_concepts, ["duration", "span"]], 
-            names=['query', 'concepts', 'duration_spanobject']).sortlevel() # sorted index is faster
-        self.toplevel_query_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(repetitions)) 
+        query_concepts_index, _ = pd.MultiIndex.from_product([self.sorted_all_queries, self.sorted_all_concept_numbers, ["duration", "span"]], names=['query', 'concepts', 'duration_spanobject']).sortlevel() # sorted index is faster
+        self.toplevel_query_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(self.repetitions)) 
 
 
     def selfname_dashcallback(output, inputs):
@@ -79,7 +82,7 @@ class BenchmarkExecutionComponent(object):
                 ),
                 html.Div(
                     id='query-breakdowns-{0}'.format(self.execution_name),
-                    value='maxconcepts'
+                    value=self.sorted_all_concept_numbers[-1]
                 )
             ]
         )
@@ -118,23 +121,120 @@ class BenchmarkExecutionComponent(object):
 
 
     @selfname_dashcallback(
-        input=("query-breakdowns-", "value"),
-        outputs=[("query-breakdowns-", "children")]
+        output=("query-breakdowns-", "children"),
+        inputs=[("query-breakdowns-", "value")]
     )
-    def _render_query_breakdown(self, value='maxconcepts'):
+    def _render_query_breakdown(self, value='maxconcepts', queries='all'):
         """ Render the query breakdowns """
 
-
-        i
+        print("Rendering query breakdown")
 
         # call we pass lists through the HTML callback?
-        if value == 'max':
+        if value == 'maxconcepts':
             # find the largest concepts size
-        elif type(value) == List):
-            # find the ones to plot and plot those sequentially
+            concepts_to_plot = self.sorted_all_concept_numbers[-1]
+        elif value in self.sorted_all_concept_numbers:
+            # plot a specific 
+            concepts_to_plot = value
         else:
             print("Unrecognized query breakdown specification: {0}".format(value))
             return None
+        if queries == 'all':
+            queries_to_plot = self.sorted_all_queries
+        elif queries in self.sorted_all_queries:
+            queries_to_plot = [queries]
+        elif type(queries) == list:
+            queries_to_plot = []
+            for q in queries:
+                if q in self.sorted_all_queries:
+                    queries_to_plot .append(q)
+        else:
+            print("Cannot handle query breakdowns for queries: {0}".format(queries))
+            return None
+    
+        # now have concepts_to_plot: int, and queries_to_plot: str[]
+        # self.query_breakdown_data gets reused via slicing
+        self._fill_query_breakdown_data(concepts_to_plot, queries_to_plot)
+
+        div = html.Div(
+            children=[
+                html.H3("Query Breakdowns -- {0} concepts".format(concepts_to_plot))
+            ])
+
+        # convert breakdown data into SpanList objects
+        # TODO reuse SpanLists
+
+        for query in queries_to_plot:
+            root_spanlists = self._get_spanlists(concepts_to_plot, query, split_repetitions_at=1)
+
+            # create graphs for this query/concepts combination
+            query_breakdown_container = html.Div(
+                children=[
+                    html.H5(query)
+                ]
+            )
+
+            for spanlist in root_spanlists:
+                name = spanlist.get_name()
+                num_rows = spanlist.get_num_rows()
+                if spanlist.get_num_rows() == 1:
+                    style = 'bar'
+                    layout_options = {'barmode': 'stack'} 
+                else:
+                    style = 'box'
+                    layout_options = {}
+                graph =  SpanListsListGraph(graph_name=name,
+                                            root_spanlists=[spanlist],
+                                            style=style,
+                                            layout_options=layout_options)
+                query_breakdown_container.append(graph.get_figure())
+            
+            # add these graphs to the Query Breakdowns div
+            div.children.append(query_breakdown_container)
+
+        return div
+
+        
+
+    def _get_spanlists(self, concepts, query, split_repetitions_at=1):
+        """ Generate 1 or two spanlists per N repetitions. Set split_repetitions_at=0 to not split """
+        # TODO validate split_repetitions_at is valid on lower AND upper range
+        
+        spanlists = []
+        first_split = self.toplevel_query_breakdown[0:split_repetitions_at-1, (query, concepts)]
+        second_split = self.toplevel_query_breakdown[split_repetitions_at:, (query, concepts)]
+        
+        if first_split.size != 0:
+            spanlists.append(SpanList(self.es_utility, first_split, name="Repetitions [0:{0})".format(split_repetitions_at)))
+        if second_split.size != 0:
+            spanlists.append(SpanList(self.es_utility, second_split, name="Repetitions [{0}:)".format(split_repetitions_at)))
+
+        return spanlists
+
+
+    def _fill_query_breakdown_data(self, num_concepts, queries):
+        """ Fill in any missing data in self.toplevel_query_breakdown. Operates columnwise.
+        num_concepts: int
+        queries: str[]
+        """
+        print("Collecting query breakdown data")
+
+        # fill in any missing data in self.toplevel_query_breakdown
+        for query in queries:
+            # this corresponds to a (query, num_concepts) bigcolumn in the toplevel_query_breakdown
+            column = self.toplevel_query_breakdown[(query, num_concepts)]
+            is_filled = column.isnull().values.any()
+            if not is_filled:
+                # retrieve spanId that is the parent from the duration data
+                batch_span_id = self.overview_data.loc[num_concepts, (query, "batchSpanId")]
+                # retrieve all spans with this as parent
+                query_spans = self.es_utility.get_spans_with_parent(batch_span_id)
+                for query_span in query_spans:
+                    # have to manually parse repetition into int since they're not sorted because ES isn't parsing longs correctly
+                    repetition = int(query_span['tags']['repetition'])
+                    self.toplevel_query_breakdown.loc[repetition, (query, num_concepts)] = [query_span['duration'], query_span]
+
+
 
 
     def _dataframe_to_bars(self, dataframe):
@@ -164,11 +264,10 @@ class BenchmarkExecutionComponent(object):
         print("Building overview data...")
         spans_for_execution = self.es_utility.get_spans_with_experiment_name(self.execution_name)
         query_concepts_map = {} # collect data into a map
-        repetitions = None      # store how many repetitions each query has been executed for, for later use
         for span in spans_for_execution:
             query = span['tags']['query']
-            if repetitions is None:
-                repetitions = int(span['tags']['repetitions'])
+            if self.repetitions is None:
+                self.repetitions = int(span['tags']['repetitions'])
             batch_span_id = span['id']
             num_concepts = int(span['tags']['concepts'])
             duration_us = float(span['duration'])
@@ -185,4 +284,134 @@ class BenchmarkExecutionComponent(object):
         self.overview_data = pd.DataFrame(query_concepts_map, columns=index)
         
 
+
+
+
+
+class SpanListsListGraph(object):
+    """ TODO convert this to pandas dataframe to avoid recomputing? """
+
+    def __init__(self, graph_name, root_spanlists, style='box', layout_options={}):
+        self.graph_name = graph_name
+        self.style = style
+        self.layout_options = layout_options
+
+        self.levels = {}
+        self.levels[0] = {
+           'spanlists': root_spanlists,
+           'data': self._spanlists_to_plot_definition("Root Span", root_spanlists, style=self.style),
+           'descendsfrom': 0 # used to avoid deleting stuff that is arleady computed
+        }
         
+        self._expand_single_spans()
+
+    def _expand_single_spans(self):
+        """ If the deepest spanlist[] only has 1 spanlist, automatically expand it """
+        max_level, num_spans = self.get_max_level_and_num_spans()
+        while num_spans == 1:
+            next_level_name = "Level {0}".format(max_level+1)
+            max_level_spanlists = self.levels[max_level]['spanlists']
+            # compute the child spanlists
+            children = max_level_spanlists[0].get_child_spanlists()
+            next_level_data = self._spanlists_to_plot_definition(next_level_name, children, style=self.style)
+            self.levels[max_level+1] = {
+                'spanlists': children,
+                'data': next_level_data,
+                'descendsfrom': 0 # auto-expand is always child number 0
+            }
+            
+            max_level, num_spans = self.get_max_level_and_num_spans()
+
+
+    def get_plot_data(self):
+        data = []
+        for level in self.levels:
+            data += self.levels[level]['data']
+        return data
+        
+
+    def get_current_max_level(self):
+        return max(self.levels.keys())
+
+
+    def get_max_level_and_num_spans(self):
+        max_level = self.get_current_max_level()
+        return max_level, len(self.levels[max_level]["spanlists"])
+
+
+    def selectable_spans_at_level(self, level):
+        spanlists = self.levels[level]["spanlists"]
+        names = [(i, spanlist.get_name()) for i,spanlist in enumerate(spanlists)]
+        return names
+
+    def expand_span_at_level(self, level_number, spannumber, spanname):
+        # TODO this can be made more efficient with a look up from childname to spanlists if needed
+        
+        # first clear out the data that is stored
+        if level_number not in self.levels:
+            raise Exception("Cannot expand a level that isn't current computed")
+
+        level = self.levels[level_number]
+        if level_number+1 in self.levels:
+            next_level = self.levels[level_number+1]
+            if spannumber == next_level['descendsfrom']:
+                # TODO what to do here if matches computed value in terms of rendering
+                return # nothing to update
+        
+        # delete all further levels down 
+        for i in range(level+1, self.get_current_max_level()):
+            del self.levels[i]
+
+        # recompute level_number + 1 
+        spanlist = level['spanlists'][spannumber]
+        children = spanlist.get_child_spanlists()
+        self.levels[level_number + 1] = {
+                'spanlists': children,
+                'data': self._spanlists_to_plot_definition("Level {0}".format(level_number+1), children, style=self.style),
+                'descendsfrom': spannumber
+            }
+
+        # expand further if there's only 1 span
+        self._expand_single_spans()
+
+        # TODO, what to do here, return new get_plot_data? How to hook into callback system
+
+
+
+    def get_figure(self):
+        layout = go.Layout(
+                boxmode='group',
+                xaxis={
+                    'title': self.graph_name,
+                    'zeroline': True
+                },
+                yaxis={
+                    'autorange': 'reversed',
+                    'type': 'category'
+                },
+                **self.layout_options
+            )
+
+        figure = dcc.Graph(
+                    figure={
+                        'data': self.get_plot_data(),
+                        'layout': layout
+                    })
+
+        return figure
+
+
+    def _spanlists_to_plot_definition(self, category, spanlists, style='box'):
+        """ SpanList[] to definitions of box or bar plot """
+        data = []
+        for spanlist in spanlists:
+            x_data = spanlist.get_values_np()
+            data.append({
+                "x" : x_data,
+                "y" : [category] * x_data.shape[0],
+                "name" : spanlist.get_name(),
+                "boxmean": True,
+                "orientation": 'h',
+                "type": style
+                })
+        return data
