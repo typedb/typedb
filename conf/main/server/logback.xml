@@ -26,12 +26,12 @@
     <!--Extract the directory of the grakn logs from the properties file. If the path is relative it
     will be appended to the directory containing grakn (system property grakn.dir). Otherwise the absolute
     path is used. -->
-    <if condition='property("log.dirs").startsWith("/")'>
+    <if condition='property("log.dir").startsWith("/")'>
         <then>
-            <property name="configuredLogDir" value="${log.dirs}" />
+            <property name="configuredLogDir" value="${log.dir}" />
         </then>
         <else>
-            <property name="configuredLogDir" value="${grakn.dir}/${log.dirs}" />
+            <property name="configuredLogDir" value="${grakn.dir}/${log.dir}" />
         </else>
     </if>
 
