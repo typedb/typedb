@@ -199,7 +199,7 @@ If you want to tidy your display to align the nodes horizontally or vertically, 
 
 ## Console
 
-You can use this console to make queries instead of running a Graql shell in your terminal. You can run `match` and `compute` queries, but because the visualiser is read-only, you cannot make insertions.
+You can use this console to view the answers of queries you run, instead of running a Graql shell in your terminal. You can run `match` and `compute` queries, but because the visualiser is read-only, you cannot make insertions.
 
 ## Tasks
 
