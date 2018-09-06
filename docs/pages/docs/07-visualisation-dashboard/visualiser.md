@@ -84,11 +84,11 @@ To clear the entire knowledge graph area, press Shift + the "Clear" button.
 
 ### Investigate a Node
 
-A single click on any node in the knowledge graph brings up a pane of information about the node at the top right hand side of the screen. The information displayed includes the ID of the node, its type and any resources associated with it, as shown in the figure below.
+A single click on any node in the knowledge graph brings up a pane of information about the node at the top right hand side of the screen. The information displayed includes the ID of the node, its type and any attributes associated with it, as shown in the figure below.
 
 ![Single click](/images/single-click-info-pane.png)
 
-Holding shift and making a click on a node also brings up the resources associated with it, displaying them in the knowledge graph, as shown.
+Holding shift and making a double click on a node also brings up the attributes associated with it, displaying them in the knowledge graph, as shown.
 
 ![Single click](/images/shift-click.png)
 
