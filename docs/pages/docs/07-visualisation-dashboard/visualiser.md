@@ -201,14 +201,6 @@ If you want to tidy your display to align the nodes horizontally or vertically, 
 
 You can use this console to view the answers of queries you run, instead of running a Graql shell in your terminal. You can run `match` and `compute` queries, but because the visualiser is read-only, you cannot make insertions.
 
-## Tasks
-
-The tasks page is used to monitor the asynchronous tasks run by Grakn engine, and stop them if necessary. Tasks shown are those that perform loading or post processing, which is triggered after loading. It is possible to list, filter, sort and stop tasks.
-
-## Config
-
-This pane displays a view on the Grakn configuration file, showing configurable properties and their values.
-
 ## Documentation
 
 This opens a separate tab in your browser and points it to the Grakn documentation portal. It may be how you ended up on this page!
