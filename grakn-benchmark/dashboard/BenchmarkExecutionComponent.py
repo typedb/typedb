@@ -13,16 +13,18 @@ def inorder(l, reverse=False):
     else:
         return all(b<=a for (a,b) in zip(l, l[1:]))
 
+def string_to_html_id(s):
+    return s.replace(" ", '-').replace(':', '_').replace(";",'_').replace("\"", "_").replace("$", "-")
 
 class BenchmarkExecutionComponent(object):
 
-    def __init__(self, app, es_utility, execution_name):
+    def __init__(self, app, es_utility, execution_name, unique_number):
         print("Creating BenchmarkExecutionComponent...")
 
         self.app = app
         self.es_utility = es_utility
         self.execution_name = execution_name.strip()
-        self.unique_name = self.execution_name.replace(" ", '-').replace(":", '_')
+        self.unique_number = unique_number
 
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint
         # note: this builds for all the queries right away since this isn't that expensive
@@ -37,23 +39,34 @@ class BenchmarkExecutionComponent(object):
         self.toplevel_query_breakdown = None
         self._allocate_toplevel_query_breakdown()
 
-        # --- runtime decorator attachment --- 
-        # _render_overview
-        self._render_overview = self.app.callback(
-                dash.dependencies.Output("overview-{0}".format(self.unique_name), "children"),
-                [
-                    dash.dependencies.Input("query-selector-{0}".format(self.unique_name), "value")
-                ])(self._render_overview)
-
-        # _render_query_breakdown
-        self._render_query_breakdown = self.app.callback(
-                dash.dependencies.Output("query-breakdowns-{0}".format(self.unique_name), "children"),
-                [
-                    dash.dependencies.Input("concepts-radio-{0}".format(self.unique_name), "value"),
-                    dash.dependencies.Input("query-selector-{0}".format(self.unique_name), "value")
-                ])(self._render_query_breakdown)
-
         print("...finished creating BenchmarkExecutionComponent")
+
+
+    @staticmethod
+    def get_required_callback_definitions(unique_number):
+        return {
+            '_render_overview': (
+                dash.dependencies.Output("overview-{0}".format(unique_number), "children"),
+                [
+                    dash.dependencies.Input("query-selector-{0}".format(unique_number), "value")
+                ]
+            ),
+            '_render_query_breakdown': (
+                dash.dependencies.Output("query-breakdowns-{0}".format(unique_number), "children"),
+                [
+                    dash.dependencies.Input("concepts-radio-{0}".format(unique_number), "value"),
+                    dash.dependencies.Input("query-selector-{0}".format(unique_number), "value")
+                ]
+            )
+        }
+
+    def route_callback(self, method_name, *args):
+        if method_name == '_render_overview':
+            return self._render_overview(*args)
+        elif method_name == '_render_query_breakdown':
+            return self._render_query_breakdown(*args)
+        else:
+            print("Unknown method name in route_callback: {0}".format(method_name))
 
 
     def _allocate_toplevel_query_breakdown(self):
@@ -64,53 +77,41 @@ class BenchmarkExecutionComponent(object):
         print("...finished allocating toplevel_query_breakdown dataframe")
 
 
-    def selfname_dashcallback(output, inputs):
-        """ Append a unique part to the given input/output names """
-        print("Calling outer decorator!")
-        print(output, inputs)
-        def middle_callback(decorated):
-            """ Takes in the decorated function """
-            print("Called middle callback!")
-            print(decorated)
-            def exec_dash_callback(self, *args):
-                """ Takes self and the function's original arguments """
-                print("Called inner callback!")
-                print(self, args)
-                dash_output = dash.dependencies.Output(output[0]+self.unique_name, output[1])
-                dash_inputs = []
-                for input in inputs:
-                    dash_inputs.append(dash.dependencies.Input(input[0]+self.unique_name, input[1]))
-                # act on the decorator directly
-                return self.app.callback(dash_output, dash_inputs)(decorated)(self, *args)
-            return exec_dash_callback
-        return middle_callback
-
-
     def full_render(self):
         print("BenchmarkExecutionComponent.full_render")
 
         query_selector = dcc.Dropdown(
-            id='query-selector-{0}'.format(self.unique_name),
+            id='query-selector-{0}'.format(self.unique_number),
             options=[{'label':q, 'value':q} for q in self.sorted_all_queries],
             value=self.sorted_all_queries,
             multi=True
         )
         concepts_selector = dcc.RadioItems(
-            id='concepts-radio-{0}'.format(self.unique_name),
+            id='concepts-radio-{0}'.format(self.unique_number),
             options=[{'label': n, 'value': n} for n in self.sorted_all_concept_numbers],
             value=self.sorted_all_concept_numbers[-1]
         )
 
         rendered = html.Div(
-            id='component-{0}'.format(self.unique_name),
+            id='component-{0}'.format(self.unique_number),
             children=[
-                query_selector,
-                concepts_selector,
+                html.H5("Repetitions: {0}".format(self.repetitions)),
                 html.Div(
-                    id='overview-{0}'.format(self.unique_name)
+                    children=[
+                        html.H5("Queries executed"),
+                        query_selector
+                    ]
                 ),
                 html.Div(
-                    id='query-breakdowns-{0}'.format(self.unique_name)
+                    id='overview-{0}'.format(self.unique_number)
+                ),
+                html.Div(children=[
+                    html.H5("Number of concepts benchmarked"),
+                    concepts_selector
+                    ]
+                ),
+                html.Div(
+                    id='query-breakdowns-{0}'.format(self.unique_number)
                 )
             ]
         )
@@ -121,25 +122,24 @@ class BenchmarkExecutionComponent(object):
         """ Renders the overview graph. Can be extended with a filter/dropdown of some sort (treated as a callback already) """
         
         print("BenchmarkExecutionComponent._render_overview")
-        
+
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint [DONE]
         # 2. Generate a bar graph based on this dataframe, possibly filtered [DONE]
         if value == "all":
             filtered_dataframe = self.overview_data
-        # may be filtered to a specific column
-        elif value in self.overview_data:
-            filtered_dataframe = self.overview_data[value]
+        # may be filtered to a specific set of columns
         elif type(value) == list:
             filtered_dataframe = self.overview_data[value] # list indexing!
+        # may be filtered to one column (mostly for manual triggering)
+        elif type(value) == str and value in self.overview_data:
+            filtered_dataframe = self.overview_data[value]
         else:
             print("Unknown query filter value: {0}".format(value))
             return None
-        print("Filtered overview data to: ")
-        print(filtered_dataframe)
         bargraphs = self._dataframe_to_bars(filtered_dataframe)
         
         duration_graph = dcc.Graph(
-            id='duration-data-{0}'.format(self.unique_name),
+            id='duration-data-{0}'.format(self.unique_number),
             figure={
                 'data': bargraphs,
                 'layout': go.Layout(
@@ -169,10 +169,10 @@ class BenchmarkExecutionComponent(object):
             return None
         if queries == 'all':
             queries_to_plot = self.sorted_all_queries
-        elif queries in self.sorted_all_queries:
-            queries_to_plot = [queries]
         elif type(queries) == list:
-            queries_to_plot = queries 
+            queries_to_plot = queries
+        elif type(queries) == str and queries in self.sorted_all_queries:
+            queries_to_plot = [queries]
         else:
             print("Cannot handle query breakdowns for queries: {0}".format(queries))
             return None
@@ -195,13 +195,13 @@ class BenchmarkExecutionComponent(object):
             # create graphs for this query/concepts combination
             query_breakdown_container = html.Div(
                 children=[
+                    html.Hr(),
                     html.H5(query)
                 ]
             )
 
-            for spanlist in root_spanlists:
-                name = spanlist.get_name()
-                num_rows = spanlist.get_num_rows()
+            for (i, spanlist) in enumerate(root_spanlists):
+                name = spanlist.get_assigned_name()
                 if spanlist.get_num_rows() == 1:
                     style = 'bar'
                     layout_options = {'barmode': 'stack'} 
@@ -212,27 +212,25 @@ class BenchmarkExecutionComponent(object):
                                             root_spanlists=[spanlist],
                                             style=style,
                                             layout_options=layout_options)
-                query_breakdown_container.append(graph.get_figure())
-            
+                query_breakdown_container.children.append(graph.get_figure("breakdown-{0}-{1}-{2}".format(self.unique_number, string_to_html_id(query), i), self.app))
             # add these graphs to the Query Breakdowns div
             div.children.append(query_breakdown_container)
 
         return div
 
-        
+
 
     def _get_spanlists(self, concepts, query, split_repetitions_at=1):
         """ Generate 1 or two spanlists per N repetitions. Set split_repetitions_at=0 to not split """
         # TODO validate split_repetitions_at is valid on lower AND upper range
-        
         spanlists = []
-        first_split = self.toplevel_query_breakdown[0:split_repetitions_at-1, (query, concepts)]
-        second_split = self.toplevel_query_breakdown[split_repetitions_at:, (query, concepts)]
-        
+        first_split = self.toplevel_query_breakdown.loc[0:split_repetitions_at-1, (query, concepts)]
+        second_split = self.toplevel_query_breakdown.loc[split_repetitions_at:, (query, concepts)]
+
         if first_split.size != 0:
             spanlists.append(SpanList(self.es_utility, first_split, name="Repetitions [0:{0})".format(split_repetitions_at)))
         if second_split.size != 0:
-            spanlists.append(SpanList(self.es_utility, second_split, name="Repetitions [{0}:)".format(split_repetitions_at)))
+            spanlists.append(SpanList(self.es_utility, second_split, name="Repetitions [{0}:{1})".format(split_repetitions_at, self.repetitions)))
 
         return spanlists
 
@@ -248,8 +246,8 @@ class BenchmarkExecutionComponent(object):
         for query in queries:
             # this corresponds to a (query, num_concepts) bigcolumn in the toplevel_query_breakdown
             column = self.toplevel_query_breakdown[(query, num_concepts)]
-            is_filled = column.isnull().values.any()
-            if not is_filled:
+            not_filled = column.isnull().values.any()
+            if not_filled:
                 # retrieve spanId that is the parent from the duration data
                 batch_span_id = self.overview_data.loc[num_concepts, (query, "batchSpanId")]
                 # retrieve all spans with this as parent
@@ -258,8 +256,6 @@ class BenchmarkExecutionComponent(object):
                     # have to manually parse repetition into int since they're not sorted because ES isn't parsing longs correctly
                     repetition = int(query_span['tags']['repetition'])
                     self.toplevel_query_breakdown.loc[repetition, (query, num_concepts)] = [query_span['duration'], query_span]
-
-
 
 
     def _dataframe_to_bars(self, dataframe):
@@ -310,8 +306,7 @@ class BenchmarkExecutionComponent(object):
         print("...finished building overview data") 
 
 
-
-
+testing_inserted = False
 
 class SpanListsListGraph(object):
     """ TODO convert this to pandas dataframe to avoid recomputing? """
@@ -366,7 +361,7 @@ class SpanListsListGraph(object):
 
     def selectable_spans_at_level(self, level):
         spanlists = self.levels[level]["spanlists"]
-        names = [(i, spanlist.get_name()) for i,spanlist in enumerate(spanlists)]
+        names = [(i, spanlist.get_spans_name()) for i, spanlist in enumerate(spanlists)]
         return names
 
     def expand_span_at_level(self, level_number, spannumber, spanname):
@@ -403,7 +398,8 @@ class SpanListsListGraph(object):
 
 
 
-    def get_figure(self):
+    def get_figure(self, id, app):
+        id = string_to_html_id(id)
         layout = go.Layout(
                 boxmode='group',
                 xaxis={
@@ -418,12 +414,25 @@ class SpanListsListGraph(object):
             )
 
         figure = dcc.Graph(
+                    id=id,
                     figure={
                         'data': self.get_plot_data(),
                         'layout': layout
                     })
 
+        global testing_inserted
+        if not testing_inserted:
+            print("!!!!! Adding callback for html id: {0}".format(id))
+            self.figure_clicked = app.callback(
+                dash.dependencies.Output('testing-output', 'children'),
+                [dash.dependencies.Input(id, 'clickData')]
+            )(self.figure_clicked)
+            testing_inserted = True
+
         return figure
+
+    def figure_clicked(self, *values):
+        print(values)
 
 
     def _spanlists_to_plot_definition(self, category, spanlists, style='box'):
@@ -434,7 +443,7 @@ class SpanListsListGraph(object):
             data.append({
                 "x" : x_data,
                 "y" : [category] * x_data.shape[0],
-                "name" : spanlist.get_name(),
+                "name" : spanlist.get_spans_name(),
                 "boxmean": True,
                 "orientation": 'h',
                 "type": style

@@ -51,8 +51,11 @@ class SpanList(object):
     def get_num_rows(self):
         return self.dataframe.shape[0]
 
-    def get_name(self):
+    def get_spans_name(self):
         return self.common_data['name']
+
+    def get_assigned_name(self):
+        return self.name
 
     def get_mean(self):
         """ Compute mean of these durations """
@@ -122,11 +125,18 @@ class SpanList(object):
         for col in child_data.columns.levels[0].unique():
             column_data = child_data.loc[:, col]
             counts = Counter(x['name'] for x in column_data.loc[:, "span"])
-            print(counts)
-            if len(counts) > 1:
-                print("HELP! Out of order sorting??")
-                print(column_data)
 
-            child_spanlists.append(SpanList(self.es_utility, child_data.loc[:, col], name="child"))
+            # TODO short term hack to ignore out of order rows by voting
+            argmax = counts.most_common(1)[0][0]
+            matches = [True if span['name'] == argmax else False for span in column_data.loc[:, "span"]]
+            matching_rows = column_data.loc[matches]
+
+            if len(counts) > 1:
+                print(counts)
+                print("HELP! Out of order sorting??")
+                print("Fixed by ignoring by voting")
+                print("TODO fix elasticsearch properly...")
+
+            child_spanlists.append(SpanList(self.es_utility, matching_rows, name="child"))
 
         return child_spanlists
