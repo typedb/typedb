@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 import Style from './Style';
 import NodeSettings from './DataManagementContent/NodeSettingsPanel/NodeSettings';
 import QuerySettings from './DataManagementContent/MenuBar/QuerySettings/QuerySettings';

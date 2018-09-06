@@ -1,24 +1,19 @@
 import QuerySettings from './DataManagementContent/MenuBar/QuerySettings/QuerySettings';
 
 function loadNeighbours(node, neighboursLimit) {
-  let query;
   switch (node.baseType) {
     case 'ENTITY_TYPE':
     case 'ATTRIBUTE_TYPE':
     case 'RELATIONSHIP_TYPE':
     case 'ENTITY':
-      query = `match $x id "${node.id}"; $y isa entity; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get;`;
-      break;
+      return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get;`;
     case 'ATTRIBUTE':
-      query = `match $x id "${node.id}"; $y isa entity; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get;`;
-      break;
+      return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get;`;
     case 'RELATIONSHIP':
-      query = `match $r id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $r, $x;`;
-      break;
+      return `match $r id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $r, $x;`;
     default:
       throw new Error(`Unrecognised baseType of thing: ${node.baseType}`);
   }
-  return query;
 }
 
 function limitQuery(query) {
