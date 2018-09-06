@@ -36,30 +36,6 @@
             <artifactId>grakn-graql</artifactId>
         </dependency>
         <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-base</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-sql</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-xml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-csv</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-json</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>migration-export</artifactId>
-        </dependency>
-        <dependency>
             <groupId>jline</groupId>
             <artifactId>jline</artifactId>
         </dependency>

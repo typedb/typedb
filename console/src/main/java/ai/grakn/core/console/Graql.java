@@ -18,12 +18,6 @@
 
 package ai.grakn.core.console;
 
-import ai.grakn.migration.csv.CSVMigrator;
-import ai.grakn.migration.export.Main;
-import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.migration.sql.SQLMigrator;
-import ai.grakn.migration.xml.XmlMigrator;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
 import org.apache.commons.cli.ParseException;
@@ -77,42 +71,12 @@ public class Graql {
 
                 GraqlConsole.start(options, HISTORY_FILENAME, System.out, System.err);
                 break;
-            case "migrate":
-                migrate(valuesFrom(args, 1));
-                break;
             case "version":
                 version();
                 break;
             default: help();
         }
 
-    }
-
-    private void migrate(String[] args) {
-        String option = args.length > 0 ? args[0] : "";
-
-        switch (option) {
-            case "csv":
-                CSVMigrator.main(valuesFrom(args, 1));
-                break;
-            case "json":
-                JsonMigrator.main(valuesFrom(args, 1));
-                break;
-            case "owl":
-                System.err.println(ErrorMessage.OWL_NOT_SUPPORTED.getMessage());
-                break;
-            case "export":
-                Main.main(valuesFrom(args, 1));
-                break;
-            case "sql":
-                SQLMigrator.main(valuesFrom(args, 1));
-                break;
-            case "xml":
-                XmlMigrator.main(valuesFrom(args, 1));
-                break;
-            default:
-                help();
-        }
     }
 
     private String[] valuesFrom(String[] args, int index) {
@@ -124,7 +88,6 @@ public class Graql {
                 "\n" +
                 "COMMAND:\n" +
                 "console  Start a REPL console for running Graql queries. Defaults to connecting to http://localhost\n" +
-                "migrate  Run migration from a file\n" +
                 "version  Print Grakn version\n" +
                 "help     Print this message");
 

@@ -106,7 +106,6 @@
         <module>console</module>
         <module>server</module>
         <module>dashboard</module>
-        <module>migration</module>
         <module>client-java</module>
     </modules>
 </project>

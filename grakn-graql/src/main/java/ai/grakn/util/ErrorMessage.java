@@ -146,9 +146,6 @@ public enum ErrorMessage {
             "Cannot produce graph"),
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
-    //--------------------------------------------- Migration Errors -----------------------------------------------
-    OWL_NOT_SUPPORTED("Owl migration is not supported anymore"),
-
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TX("no graph provided"),
 
