@@ -228,7 +228,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 ));
 
         //NB: need extra check cause it seems valid types can still produce invalid ids
-        GraphTraversal<Object, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty())?
+        GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty())?
                 __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                         as("edge").
                         has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering? ownerRoleIds : valueRoleIds)).
@@ -245,7 +245,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                         where(P.neq("edge")).
                         inV();
 
-        GraphTraversal<Object, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
+        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
 
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().

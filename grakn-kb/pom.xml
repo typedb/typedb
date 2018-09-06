@@ -60,6 +60,15 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
         </dependency>
+        <!--Adding direct dependency to Janus so that we can re-implement some of their classes making them compatible with Cassandra 3-->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-hadoop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-cassandra</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
