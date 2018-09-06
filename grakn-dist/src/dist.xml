@@ -31,6 +31,7 @@
             <directory>${basedir}/src</directory>
             <includes>
                 <include>grakn</include>
+                <include>grakn.bat</include>
                 <include>graql</include>
             </includes>
         </fileSet>

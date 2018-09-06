@@ -52,9 +52,11 @@ public class StorageBootup {
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
-    private static final Path STORAGE_PIDFILE = Paths.get(File.separator,"tmp","grakn-storage.pid");
+    private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"),"grakn-storage.pid");
     private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
+    private static final Path WINDOWS_STORAGE_BIN = Paths.get("services", "cassandra", "cassandra.bat");
     private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool");
+    private static final Path WINDOWS_NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool.bat");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
 
     private BootupProcessExecutor bootupProcessExecutor;
@@ -124,12 +126,13 @@ public class StorageBootup {
      */
     private void start() {
         // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
-        List<String> storageCmd = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
+        String localStorageBin = isWindows() ? WINDOWS_STORAGE_BIN.toString() : STORAGE_BIN.toString();
+        List<String> storageCmd = Arrays.asList(localStorageBin, "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
         List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
 
         // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
-        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(SH, "-c",
-                NODETOOL_BIN.toString().replace(" ", "\\ ") + " statusthrift | tr -d '\n\r'");
+        String localNodetoolBin = isWindows() ? WINDOWS_NODETOOL_BIN.toString() : NODETOOL_BIN.toString();
+        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(localNodetoolBin.replace(" ", "\\ "),"statusthrift");
 
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
@@ -143,7 +146,8 @@ public class StorageBootup {
 
             BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
 
-            if(isStorageRunning.stdout().trim().equals("running")) {
+            //TODO: fix logging
+            if(isStorageRunning.stdout().trim().endsWith("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -164,5 +168,9 @@ public class StorageBootup {
 
     private Path getStorageLogPathFromGraknProperties() {
         return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+    }
+
+    private boolean isWindows(){
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 }

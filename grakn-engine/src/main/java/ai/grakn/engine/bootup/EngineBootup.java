@@ -155,18 +155,16 @@ public class EngineBootup {
                 Thread.currentThread().interrupt();
             }
         }
-
-        String errorMessage = "";
-        try {
-            errorMessage = "Process exited with code '" + startEngineAsync.get().exitCode() + "': '" + startEngineAsync.get().stderr() + "'";
-        }
-        catch (InterruptedException | ExecutionException e) {
-            // Do nothing
-        }
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ".");
-        System.err.println(errorMessage);
-        throw new BootupException();
+        try {
+            String errorMessage = "Process exited with code '" + startEngineAsync.get().exitCode() + "': '" + startEngineAsync.get().stderr() + "'";
+            System.err.println(errorMessage);
+            throw new BootupException();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new BootupException(e);
+        }
 
     }
 
