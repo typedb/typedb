@@ -1,12 +1,8 @@
 import dash
 import dash_html_components as html
 import dash_core_components as dcc
-import plotly.graph_objs as go
 import elasticsearch_helper as es_helper
 import datetime
-import numpy as np
-import pandas as pd
-import time
 
 from BenchmarkExecutionComponent import BenchmarkExecutionComponent
 
@@ -34,6 +30,7 @@ sorted_executions = get_sorted_executions(es_utility)
 
 
 def get_sidebar(sorted_executions):
+    """ Generate HTML for the list of benchmark executions as a column """
     existing_executions_radio = dcc.RadioItems(
         id="existing-executions-radio",
         options=[{'label': x, 'value': x} for x in sorted_executions],
@@ -49,10 +46,10 @@ def get_sidebar(sorted_executions):
 
 
 def get_benchmark_column(benchmark, width="11"):
+    """ Generate HTML for the benchmark column """
     return html.Div(className="col-xl-"+width, children=[
         benchmark
     ])
-
 
 
 print("Generating layout...")
@@ -75,9 +72,6 @@ layout = html.Div(children=[
     ])
 
 # bootstrap CSS
-# app.css.append_css({
-#     'external_url': 'https://codepen.io/chriddyp/pen/bWLwgP.css'
-# })
 app.css.append_css({
     'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
 })
@@ -102,6 +96,7 @@ def execution_updated(execution_name):
     return executions[execution_name].full_render()
 
 
+# pre-compute the controls we will need to generate graphs, all callbacks must be declared befored server starts
 for i, execution_name in enumerate(sorted_executions):
     # create a app.callback for each possible required callback in BenchmarkExecutionComponent
     callback_definitions = BenchmarkExecutionComponent.get_required_callback_definitions(i)

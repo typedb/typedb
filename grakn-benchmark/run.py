@@ -26,12 +26,15 @@ build_benchmark_args.add_argument('--build-benchmark-alldeps', dest='build_bench
 # override `concepts` tag in yaml file, don't generate any data
 parser.add_argument('--no-data-generation', dest='no_data_generation', default=False, action="store_true", help="Disable data generation, use existing Grakn data. Requires --keyspace")
 # override `schema` tag in yaml file, don't load a new schema
-parser.add_argument('--no-load-schema', dest='no_load_schema', default=False, action="sture_true", help="Use existing Grakn schema. Requires --keyspace")
+parser.add_argument('--no-load-schema', dest='no_load_schema', default=False, action="store_true", help="Use existing Grakn schema. Requires --keyspace")
 # set the keyspace to use with existing data/schema
 parser.add_argument('--keyspace', default=None, help="Specify a keyspace to use")
 
 # set the name for the this particular execution
 parser.add_argument('--execution-name', dest='execution_name', default="", help="A name for this specific execution of the benchmarking configuration")
+
+# need the ignite bin folder
+parser.add_argument('--ignite-dir', dest='ignite_dir', required=True, help="The full path of the `apache-ignite-fabric-x.x.x-bin` directory to find .jar files required")
 
 
 args = parser.parse_args()
@@ -106,19 +109,34 @@ if unpack_tar or snapshot_dir_name not in existing_files:
     subprocess.run(['./grakn', 'server', 'start'], cwd=grakn_home)
 
 
+def recursive_search(start, accept):
+    found = []
+    for path, dirs, files in os.walk(start):
+        for f in files:
+            if accept(f):
+                found.append(os.path.join(path, f))
+    return found
+
 
 # at this point we can build the classpath
-for path, dirs, files in os.walk(grakn_home, 'services', 'lib'):
-    for f in files:
-        if f.endswith('.jar'):
-            classpath.append(os.path.join(path, f))
+classpath += recursive_search(os.path.join(grakn_home, 'services', 'lib'), accept=lambda f: f.endswith('.jar'))
+classpath += recursive_search(args.ignite_dir, accept=lambda f: f.endswith('.jar'))
+classpath.append(os.path.join(grakn_root, 'grakn-benchmark', 'conf'))
 
 
 # run benchmarking 
 classpath = ":".join(classpath)
 command = ['java', '-cp', classpath, 'manage.BenchmarkManager']
-args = ["--keyspace", args.keyspace, "--no-data-generation", args.no_data_generation, "--no-load-schema", args.no_load_schema, '--execution-name', args.execution_name]
-command += args
+run_args = ['--config', args.config, '--execution-name', args.execution_name]
+if args.keyspace is not None:
+    run_args += ["--keyspace", args.keyspace]
+if args.no_data_generation:
+    run_args.append("--no-data-generation")
+if args.no_load_schema:
+    run_args.append("--no-load-schema")
+command += run_args
 print("...Running benchmarking")
+print(command)
+print(grakn_root)
 result = subprocess.run(command, cwd=grakn_root)
 result.check_returncode()

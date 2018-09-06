@@ -43,8 +43,8 @@ class BenchmarkExecutionComponent(object):
 
 
     @staticmethod
-    def get_required_callback_definitions(unique_number):
-        return {
+    def get_required_callback_definitions(unique_number, graph_callbacks=100):
+        rendering_callbacks = {
             '_render_overview': (
                 dash.dependencies.Output("overview-{0}".format(unique_number), "children"),
                 [
@@ -59,6 +59,13 @@ class BenchmarkExecutionComponent(object):
                 ]
             )
         }
+
+        # graph_calbacks = {}
+        # for i in range(graph_callbacks):
+        #     # `i` corresponds t
+        #     graph_callbacks
+
+        return rendering_callbacks
 
     def route_callback(self, method_name, *args):
         if method_name == '_render_overview':
