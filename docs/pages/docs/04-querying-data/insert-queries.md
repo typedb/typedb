@@ -113,7 +113,8 @@ Set the value of the concept.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
 <pre class="language-graql"> <code>
-insert == "Ash" isa surname;
+insert $x == "Ash" isa surname;
+insert $x isa surname "Ash";
 </code>
 </pre>
 </div>
