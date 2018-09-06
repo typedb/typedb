@@ -10,10 +10,12 @@ KB: plants
 ---
 
 ## Introduction
+
 This is reference documenation for how to migrate XML data into grakn. Make sure you have set up the [Grakn environment](../get-started/setup-guide) before continuing.
 
 ## Migration Shell Script for XML
-The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
+
+The migration shell script can be found in _/bin_ directory of your Grakn environment. We will illustrate its usage in an example below:
 
 ```bash
 usage: graql migrate xml -template <arg> -input <arg> -keyspace <arg> -element <arg> -schema <arg> [-help] [-no] [-batch <arg>] [-active <arg>] [-uri <arg>] [-retry <arg>] [-verbose]
@@ -43,9 +45,9 @@ OPTIONS
 
 The steps to migrate XML data to GRAKN.AI are:
 
-* define a schema for the data to derive the full benefit of a knowledge graph
-* create templated Graql to map the XML data to the schema
-* invoke the Grakn migrator through the shell script or Java API. The XML migrator will apply the template to each instance of the specified element `-element`, replacing the sections indicated in the template with provided data: the XML tags are the key to be used in the brackets `<>` and the content of each tag are the value of that key.
+- define a schema for the data to derive the full benefit of a knowledge graph
+- create templated Graql to map the XML data to the schema
+- invoke the Grakn migrator through the shell script or Java API. The XML migrator will apply the template to each instance of the specified element `-element`, replacing the sections indicated in the template with provided data: the XML tags are the key to be used in the brackets `<>` and the content of each tag are the value of that key.
 
 {% include note.html content="XML Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [migration langauge documentatino](../migrating-data/migration-language) to find out more." %}
 
@@ -63,7 +65,7 @@ TO work through
 </PEOPLE>
 ```
 
-**Note: the above is *very* bad XML and is only being used to illustrate the reaches of the migration language**
+**Note: the above is _very_ bad XML and is only being used to illustrate the reaches of the migration language**
 
 Any input XML data will be converted into a format that Grakn migration understands, which is structurally similar to JSON.
 
@@ -92,7 +94,7 @@ Nodes can be migrated using their tags as the keys in the template. To migrate t
 insert $x isa person has name <PERSON[0].textContent>;
 ```
 
-To refer to the content of a node that is the current context of the template we can use the only the `textContext` indicator.
+To refer to the content of a node that is the current context of the template we can use only the `textContent` indicator.
 
 ```graql-skip-test
 for(<PERSON>) do {
@@ -128,9 +130,9 @@ To learn more about how to write an XML Schema, see the [W3 documentation](https
 
 There are three supported types that can be extracted from an XML schema.
 
-* boolean (xml: `type="xs:boolean"`)
-* int (xml: `type="xs:integer"`)
-* double (xml: `type="xs:double"`)
+- boolean (xml: `type="xs:boolean"`)
+- int (xml: `type="xs:integer"`)
+- double (xml: `type="xs:double"`)
 
 Without a schema all values are considered as strings in the Grakn representation. By specifying the type of the data in the XML schema, you can avoid doing manual conversions in the templates.
 
@@ -152,15 +154,15 @@ Without a schema, the Grakn representation will assume there can be more than on
 
 ```json
 {
-    "pets": [
+  "pets": [
+    {
+      "cat": [
         {
-            "cat": [
-                {
-                    "textContent": "Larry"
-                }
-            ]
+          "textContent": "Larry"
         }
-    ]
+      ]
+    }
+  ]
 }
 ```
 
@@ -178,13 +180,13 @@ These XML restraints allow the Grakn representation to be contrained as follows:
 
 ```json
 {
-    "pets": [
-        {
-            "cat": {
-                "textContent": "Larry"
-            }
-        }
-    ]
+  "pets": [
+    {
+      "cat": {
+        "textContent": "Larry"
+      }
+    }
+  ]
 }
 ```
 
@@ -244,7 +246,7 @@ price sub attribute datatype double;
 availability sub attribute datatype long;
 ```
 
-We want to insert one `plant` entity in the knowledge graph per `PLANT` tag in the XML data. This means that me must specify main element of the XML migration to be "PLANT". In the migration script you would do so by adding the parameter: `-element PLANT`.
+We want to insert one `plant` entity in the knowledge graph per `PLANT` tag in the XML data. This means that we must specify main element of the XML migration to be "PLANT". In the migration script you would do so by adding the parameter: `-element PLANT`.
 
 The XML template will be applied to each of the specified elements:
 
@@ -283,6 +285,6 @@ insert $plant0 isa plant has common "Columbine" has botanical "Aquilegia canaden
 insert $plant0 isa plant has common "Marsh Marigold" has botanical "Caltha palustris" has zone "4" has light "Mostly Sunny" has availability 51799;
 ```
 
-
 ## Where Next?
-You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn). An example of JSON migration using the Java API can be found on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy).
+
+You can find further documentation about migration in our API reference documentation (which is in the _/docs_ directory of the distribution zip file, and also online [here](http://javadoc.io/doc/ai.grakn/grakn). An example of JSON migration using the Java API can be found on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy).

@@ -178,8 +178,8 @@ Match things that have a relationship with the given variable. If a role is prov
 <pre class="language-graql">
 <code>
 match $x isa person; ($x, $y); get;
-match $x isa person; (spouse:$x, $y); get;
-match $x isa person; (spouse:$x, $y); $x has identifier $xn; $y has identifier $yn; get;
+match $x isa person; (wife:$x, $y); get;
+match $x isa person; (wife:$x, $y); $x has identifier $xn; $y has identifier $yn; get;
 </code>
 </pre>
 </div>
@@ -187,10 +187,10 @@ match $x isa person; (spouse:$x, $y); $x has identifier $xn; $y has identifier $
 <pre class="language-java">
 <code>
 qb.match(var("x").isa("person"), var().rel("x").rel("y")).get();
-qb.match(var("x").isa("person"), var().rel("spouse", "x").rel("y")).get();
+qb.match(var("x").isa("person"), var().rel("wife", "x").rel("y")).get();
 qb.match(
   var("x").isa("person"),
-  var().rel("spouse", "x").rel("x"),
+  var().rel("wife", "x").rel("x"),
   var("x").has("identifier", var("xn")),
   var("y").has("identifier", var("yn"))
 ).get();
