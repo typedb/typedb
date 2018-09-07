@@ -19,14 +19,13 @@ if "%OS%" == "Windows_NT" setlocal
 
 pushd "%~dp0"
 call cassandra.in.bat
-
-if NOT DEFINED CASSANDRA_HOME set CASSANDRA_HOME=%~dp0..
+pushd %~dp0..
+set CASSANDRA_HOME=%CD%
+popd
 if NOT DEFINED JAVA_HOME goto :err
 
-set CASSANDRA_PARAMS=%CASSANDRA_PARAMS% -Dcassandra.logdir="%CASSANDRA_HOME%\logs"
-set CASSANDRA_PARAMS=%CASSANDRA_PARAMS% -Dcassandra.storagedir="%CASSANDRA_HOME%\data"
-
-"%JAVA_HOME%\bin\java" -cp %CASSANDRA_CLASSPATH% %CASSANDRA_PARAMS% -Dlogback.configurationFile=logback-tools.xml org.apache.cassandra.tools.NodeTool %*
+set "CLASSPATH=%CASSANDRA_HOME%\lib\*"
+"%JAVA_HOME%\bin\java" -cp "%CASSANDRA_CLASSPATH%" -Dlogback.configurationFile=logback.xml org.apache.cassandra.tools.NodeTool %*
 goto finally
 
 :err

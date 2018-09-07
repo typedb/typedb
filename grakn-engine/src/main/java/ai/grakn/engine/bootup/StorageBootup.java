@@ -127,8 +127,13 @@ public class StorageBootup {
     private void start() {
         // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
         String localStorageBin = isWindows() ? WINDOWS_STORAGE_BIN.toString() : STORAGE_BIN.toString();
-        List<String> storageCmd = Arrays.asList(localStorageBin, "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
-        List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
+        List<String> storageCmd_EscapeWhitespace;
+        if(isWindows()){
+            storageCmd_EscapeWhitespace = Arrays.asList("cmd", "/C", localStorageBin, "-p", "\""+STORAGE_PIDFILE.toString()+"\"", "-l", "\""+getStorageLogPathFromGraknProperties().toAbsolutePath().toString()+"\"");
+        }else{
+           storageCmd_EscapeWhitespace = Arrays.asList(localStorageBin, "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString()).stream()
+                   .map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
+        }
 
         // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
         String localNodetoolBin = isWindows() ? WINDOWS_NODETOOL_BIN.toString() : NODETOOL_BIN.toString();
@@ -146,8 +151,8 @@ public class StorageBootup {
 
             BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
 
-            //TODO: fix logging
-            if(isStorageRunning.stdout().trim().endsWith("running")) {
+
+            if(isStorageRunning.stdout().trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -163,7 +168,7 @@ public class StorageBootup {
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ". ");
         System.err.println(errorMessage);
-        throw new BootupException();
+        throw new BootupException(startStorage.stderr());
     }
 
     private Path getStorageLogPathFromGraknProperties() {
