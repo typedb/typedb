@@ -1,8 +1,8 @@
 <template>
     <div class="panel-container">
-        <div @click="toggleContent" class="panel-header" v-bind:style="{ opacity: (this.nodes && this.nodes.length === 1) ? 1 : 0.5 }">
+        <div @click="toggleContent" class="panel-header">
             <vue-icon :icon="(showAttributesPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" ></vue-icon>
-            <h1>ATTRIBUTES</h1>
+            <h1>Attributes</h1>
         </div>
         <div class="content" v-show="showAttributesPanel">
             <p v-if="!attributes.length">There are no attributes available for this type of node.</p>
@@ -81,6 +81,7 @@
 
     .content {
         padding: var(--container-padding);
+        border-bottom: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
         max-height: 280px;

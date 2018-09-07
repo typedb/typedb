@@ -4,7 +4,7 @@
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
   height: auto;
-  min-height: 28px !important;
+  min-height: 22px !important;
   color: black;
   width: 100%;
 }

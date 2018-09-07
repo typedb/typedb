@@ -7,7 +7,7 @@
                 <div class="center">
                     <context-menu :localStore="localStore"></context-menu>
                     <graph-canvas :localStore="localStore"></graph-canvas>
-                    <bottom-bar :localStore="localStore"></bottom-bar>
+                    <!--<bottom-bar :localStore="localStore"></bottom-bar>-->
                 </div>
                 <right-bar :localStore="localStore"></right-bar>
             </div>
@@ -23,7 +23,7 @@
     width: 100%;
     height: 100%;
     position: absolute;
-    background-color: var(--border-darkest-color);
+    background-color: #1B1B1B;
 }
 
 .lower {

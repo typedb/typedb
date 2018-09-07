@@ -1,8 +1,8 @@
 <template>
     <div class="panel-container">
-        <div @click="toggleContent" class="panel-header" v-bind:style="{ opacity: (nodes && nodes.length === 1) ? 1 : 0.5 }">
+        <div @click="toggleContent" class="panel-header">
             <vue-icon :icon="(showConceptInfoContent) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
-            <h1>CONCEPT INFO</h1>
+            <h1>Identity</h1>
         </div>
         <div class="content" v-show="showConceptInfoContent">
             <div class="content-item">
@@ -74,6 +74,8 @@
         flex-direction: column;
         max-height: 80px;
         justify-content: center;
+        border-bottom: var(--container-darkest-border);
+
     }
 
     .content-item {

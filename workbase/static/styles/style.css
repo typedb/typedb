@@ -3,22 +3,22 @@
 
 
 :root {
-  --border-darkest-color: #1a1a1a;
-  --border-dark-color: #202020;
-  --border-light-color: #333333;
+  --border-darkest-color: #1c1c1c;
+  --border-dark-color: #242424;
+  --border-light-color: #282828;
 
   --container-darkest-border: 1px solid var(--border-darkest-color);
   --container-dark-border: 1px solid var(--border-dark-color);
   --container-light-border: 0.5px solid var(--border-light-color);
 
-  --button-color: #333333;
-  --button-hover-border-color: var(--purple-3);
-  --button-active-border-color: var(--purple-4);
+  --button-color: var(--gray-1);
+  --button-hover-border-color: var(--green-4);
+  --button-active-border-color: var(--green-2);
 
   /* gray */
   --black: #000000;
   --gray-1: #262626;
-  --gray-2: #333333;
+  --gray-2: #323232;
   --gray-3: #444444;
   --gray-4: #555555;
   --gray-5: #666666;
@@ -31,14 +31,23 @@
   --green-5: #b7f7d7;
 
   /* purple */
-  --purple-1: #3e266d; /* grakn purple */
-  --purple-2: #534190;
-  --purple-3: #6254a6;
-  --purple-4: #8d89c1;
+  --purple-1: #5600E8; /* grakn purple */
+  --purple-2: #6300EE;
+  --purple-3: #803FF2;
+  --purple-4: #9A66F4;
+  --purple-5: #B894F6;
 
-  --error-container-color: #e75252;
 
-  --font-default: #C8C8C8;
+
+  --red-1: #C51162;
+  --red-2: #DB1368;
+  --red-3: #ED156B;
+  --red-4: #EE3E82;
+  --red-5: #F16299;
+
+  --error-container-color: var(--red-1);
+
+  --font-default: #d9d9d9;
   --font-faded: #777777;
 
   --container-padding: 5px;
@@ -51,16 +60,16 @@
 /* icon */
 
 .tab-icon {
-  background-color: var(--button-color);
+  /*background-color: var(--button-color);*/
   cursor: pointer;
   padding: 1px;
 }
 
 .tab-icon:hover {
-  background-color: var(--button-hover-border-color);
+  fill: var(--button-hover-border-color);
 }
 .tab-icon:active {
-  background-color: var(--button-active-border-color);
+  fill: var(--button-active-border-color);
 }
 
 
@@ -68,13 +77,22 @@
 
 .vue-button {
   background: var(--button-color) none !important;
-  border: 1px solid var(--border-dark-color) !important;
+  border: 1px solid var(--border-darkest-color) !important;
   -webkit-box-shadow: none !important;
   box-shadow: none !important;
   white-space: nowrap !important;
   border-radius: 0px !important;
-  height: 30px !important;
+  min-height: 20px;
+  height: 30px;
   margin: 1px !important;
+
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -khtml-user-select: none; /* Konqueror HTML */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
 }
 
 .vue-button:hover {
@@ -97,20 +115,39 @@
   border: 1px solid var(--border-dark-color) !important;
 }
 
+.attribute-btn {
+  width: 80px;
+  justify-content: flex-start
+}
+
 .toggle-attribute-btn {
-  border: 1px solid var(--button-active-border-color) !important;
-  -webkit-box-shadow: none !important;
-  box-shadow: none !important;
-  background: var(--button-color) none !important;
-  white-space: nowrap !important;
-  border-radius: 0px !important;
-  height: 30px !important;
-  margin: 1px !important;
+  border: 1px solid var(--button-hover-border-color) !important;
+  width: 80px;
+  justify-content: flex-start
 }
 
 .toggle-attribute-btn:focus {
   outline: none !important;
 }
+
+.run-btn *{
+  fill: var(--green-4) !important;
+}
+
+.bp3-spinner-head {
+  stroke: var(--green-4) !important;
+
+}
+
+.bp3-spinner-track {
+  stroke: var(--gray-4) !important;
+}
+
+.save-query-btn {
+  height: 22px;
+  padding: 0px;
+}
+
 
 /* input */
 
@@ -119,13 +156,14 @@
   color: var(--font-default);
   font-size: 11px;
   height: 22px;
-  border: 1px solid var(--border-dark-color);
+  border: 1px solid var(--border-darkest-color);
   /*margin: 5px;*/
   padding: 5px;
   caret-color: var(--green-4);
-  line-height: normal;
+  line-height: 22px;
   -webkit-box-shadow: none;
   box-shadow: none;
+  border-radius: 0px !important;
 }
 
 .vue-input .bp3-input::placeholder {
@@ -133,13 +171,13 @@ color: var(--font-faded);
 }
 
 .vue-input .bp3-input:hover {
-  border: 1px solid var(--purple-3);
+  /*border: 1px solid var(--green-4);*/
   -webkit-box-shadow: none;
   box-shadow: none;
 }
 
 .vue-input .bp3-input:focus {
-  border: 1px solid var(--purple-3);
+  /*border: 1px solid var(--green-5);*/
   -webkit-box-shadow: none;
   box-shadow: none;
 }
@@ -155,8 +193,9 @@ color: var(--font-faded);
   min-width: 90px;
   max-height: 300px;
   background-color: var(--gray-2);
-  overflow: auto;
+  overflow: scroll;
   border-radius: 0px;
+  padding-right: 10px;
 }
 
 .vue-menu-item {
@@ -164,16 +203,15 @@ color: var(--font-faded);
   border-top: var(--container-light-border);
   border-left: var(--container-light-border);
   border-right: var(--container-light-border);
+  background-color: var(--gray-2) !important;
 }
 
 .vue-menu-item:hover {
-  border: 1px solid var(--purple-3);
-  background-color: var(--gray-2) !important;
+  border: 1px solid var(--button-hover-border-color);
 }
 
 .vue-menu-item:active {
-  border: 1px solid var(--purple-4);
-  background-color: var(--gray-2) !important;
+  border: 1px solid var(--button-active-border-color);
 }
 
 
@@ -215,7 +253,11 @@ color: var(--font-faded);
   margin: 0px !important;
   padding: 0px !important;
   position: relative !important;
+  border: var(--container-darkest-border) !important;
+  border-radius: 1.75em;
 }
+
+
 
 .bp3-control-indicator{
   outline: none !important;
@@ -225,6 +267,13 @@ color: var(--font-faded);
 .bp3-control.bp3-switch input:checked ~ .bp3-control-indicator  {
   background: var(--green-4) !important;
 }
+
+.bp3-control.bp3-switch .bp3-control-indicator::before {
+  background-color: var(--gray-1);
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
 
 
 /* color picker */
@@ -246,13 +295,14 @@ color: var(--font-faded);
 
 /* right bar panel headers */
 .panel-header {
-  padding: var(--container-padding);
+  padding: 1px;
   width: 100%;
-  height: 20px;
-  background-color: var(--gray-3);
+  height: 25px;
+  background-color: var(--gray-1);
   align-items: center;
   display: flex;
   cursor: pointer;
+  border-bottom: var(--container-darkest-border);
 
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none; /* Safari */
@@ -268,10 +318,18 @@ color: var(--font-faded);
    width: 100%;
  }
 
-/* fav query list */
-  .fav-query-right *{
-    background-color: var(--gray-2);
+.tab-header {
+  padding: var(--container-padding);
+  text-align: center;
+  background-color: var(--gray-1);
+  border-bottom: var(--container-darkest-border);
 }
+
+/* fav query list */
+  .fav-query-center *{
+    background-color: var(--gray-1) !important;
+    /*padding-top: 5px !important;*/
+  }
 
 /*Reset CSS*/
 html, body, div, span, applet, object, iframe,
@@ -308,9 +366,9 @@ html {
 
 
 body *{
-  font-family: "TitilliumWeb-Light", sans-serif;
+  font-family: "Geogrotesque", sans-serif;
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 300;
   color: var(--font-default);
 }
 

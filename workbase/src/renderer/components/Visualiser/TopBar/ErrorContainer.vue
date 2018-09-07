@@ -27,7 +27,7 @@
         border: var(--container-darkest-border);
         width: 100%;
         max-height: 140px;
-        margin-top: 10px;
+        margin-top: 20px;
         overflow: auto;
         position: relative;
         white-space: pre-line;
@@ -39,7 +39,6 @@
         align-items: center;
         justify-content: center;
         margin-bottom: 10px;
-        font-weight: bold;
     }
 </style>
 

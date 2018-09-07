@@ -1,8 +1,9 @@
 <template>
 <div>
     <nav role="navigation" class="navbar-fixed noselect">
+
         <div class="nav-wrapper">
-            <span>Grakn Workbase</span>
+            <span>Grakn Workbase - Visualiser</span>
         </div>
     </nav>
 </div>
@@ -24,11 +25,11 @@
 
     /* Make navbar draggable area in app.*/
     -webkit-app-region:drag;
-    border-bottom: var(--container-dark-border);
+    border-bottom: var(--container-darkest-border);
 }
 
 .dark .navbar-fixed{
-    background-color:#282828;
+    background-color: var(--gray-1);
 }
 
 .light .navbar-fixed{

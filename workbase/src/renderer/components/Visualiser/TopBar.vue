@@ -2,7 +2,7 @@
     <div class="top-bar-container">
         <div class="left">
             <img src="static/img/logo-text.png" class="grakn-icon">
-            <h1>visualiser</h1>
+            <!--<p class="title">VISUALISER</p>-->
         </div>
 
         <div class="center">
@@ -18,7 +18,7 @@
 <style scoped>
 
     .top-bar-container {
-        background-color: var(--gray-1);
+        background-color: var(--gray-2);
         border-bottom: var(--container-darkest-border);
         width: 100%;
         height: 50px;
@@ -31,23 +31,42 @@
 
     .left {
         padding: var(--container-padding);
-        width: 180px;
+        width: 140px;
         height: 100%;
         display: flex;
         align-items: center;
         vertical-align: middle;
-        justify-content: space-between;
+        /*justify-content: space-between;*/
+        flex-direction: row;
+
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+    }
+
+    .title {
+        margin-left: 3px;
+        font-size: 16px !important;
+        font-weight: 400;
+        letter-spacing: 1px;
+        height: 25px;
+        line-height: 25px;
     }
 
     .grakn-icon {
         height: 25px;
-        margin-right: 5px;
+        margin: 5px;
+        /*border: var(--container-darkest-border);*/
     }
 
     .center {
         padding: var(--container-padding);
         height: 100%;
-        min-width: 700px;
+        min-width: 800px;
         display: flex;
         flex-direction: row;
         align-items: center;
@@ -57,7 +76,7 @@
 
     .right {
         padding: var(--container-padding);
-        width: 180px;
+        width: 140px;
         height: 100%;
         display: flex;
         justify-content: flex-end;

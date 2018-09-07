@@ -1,8 +1,8 @@
 <template>
     <div class="panel-container">
-        <div @click="toggleContent" class="panel-header" v-bind:style="{ opacity: (this.currentKeyspace) ? 1 : 0.5 }">
+        <div @click="toggleContent" class="panel-header">
             <vue-icon :icon="(showConceptDisplayContent && attributesLoaded) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
-            <h1>CONCEPT DISPLAY</h1>
+            <h1>Display Settings</h1>
         </div>
         <div class="content" v-show="showConceptDisplayContent && attributesLoaded">
             <div class="content-item">
@@ -15,7 +15,7 @@
                     <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
                     <ul class="attribute-list">
                         <li class="attribute" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
-                            <vue-button :text="prop" :className="(currentTypeSavedAttributes.includes(prop)) ? 'toggle-attribute-btn' : 'vue-button'"></vue-button>
+                            <vue-button :text="prop" :className="(currentTypeSavedAttributes.includes(prop)) ? 'vue-button toggle-attribute-btn' : 'vue-button attribute-btn'"></vue-button>
                         </li>
                     </ul>
                     <vue-button v-if="nodeAttributes.length" icon="refresh" className="vue-button" v-on:clicked="toggleAttributeToLabel"></vue-button>
@@ -23,7 +23,6 @@
             </div>
             <div class="color-picker">
                 <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
-                <!--<slider v-model="colour"></slider>-->
                 <div class="row">
                     <div>COLOR: {{colour.hex}}</div>
                     <vue-button class="reset-color-btn" icon="refresh" v-on:clicked="setTypeColour" className="vue-button"></vue-button>
@@ -34,7 +33,7 @@
 </template>
 
 <script>
-  import { Chrome, Slider } from 'vue-color';
+  import { Chrome } from 'vue-color';
   import * as React from 'react';
   import { Button } from '@blueprintjs/core';
 
@@ -44,7 +43,7 @@
 
   export default {
     name: 'ConceptDisplayPanel',
-    components: { Chrome, Slider },
+    components: { Chrome },
     props: ['localStore'],
     data() {
       return {
@@ -134,7 +133,7 @@
       renderButton() {
         this.typesBtn = React.createElement(Button, {
           text: this.currentType,
-          className: 'vue-button',
+          className: 'vue-button attribute-btn',
           key: this.currentType,
         });
       },
@@ -156,6 +155,8 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
+        border-bottom: var(--container-darkest-border);
+
     }
 
     .content-item {
@@ -176,6 +177,7 @@
         max-height: 150px;
         overflow: scroll;
         margin-bottom: 10px;
+        padding-right: 12px;
     }
 
     .label {
@@ -187,7 +189,7 @@
         display: flex;
         align-items: center;
         flex-direction: column;
-        border-top: var(--container-dark-border);
+        border-top: var(--container-light-border);
         justify-content: center;
     }
 

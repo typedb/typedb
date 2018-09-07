@@ -80,7 +80,7 @@ export default {
   created() {
     this.keyBtn = React.createElement(Button, {
       text: (this.currentKeyspace !== null) ? this.currentKeyspace : 'keyspace',
-      rightIcon: 'key',
+      rightIcon: 'database',
       intent: 'primary',
       className: 'vue-button',
     });
@@ -98,7 +98,7 @@ export default {
     currentKeyspace() {
       this.keyBtn = React.createElement(Button, {
         text: (this.currentKeyspace !== null) ? this.currentKeyspace : 'keyspace',
-        rightIcon: 'key',
+        rightIcon: 'database',
         intent: 'primary',
         className: 'vue-button',
       });

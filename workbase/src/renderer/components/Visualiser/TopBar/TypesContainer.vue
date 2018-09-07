@@ -30,6 +30,9 @@
     .tab-panel {
     }
 
+    .tabs {
+    }
+
     .tab-list {
         overflow: auto;
         height: 70px;
@@ -43,7 +46,7 @@
         padding: var(--container-padding);
         border: var(--container-darkest-border);
         width: 100%;
-        margin-top: 10px;
+        margin-top: 20px;
         height: 125px;
         overflow: auto;
         position: relative;

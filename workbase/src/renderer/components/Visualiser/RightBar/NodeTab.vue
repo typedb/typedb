@@ -1,8 +1,8 @@
 <template>
-    <div>
+    <div class="node-tab-content">
+        <div class="tab-header">CONCEPT INFO</div>
         <concept-info-panel :localStore="localStore"></concept-info-panel>
         <attributes-panel :localStore="localStore"></attributes-panel>
-        <concept-display-panel :localStore="localStore"></concept-display-panel>
     </div>
 </template>
 
@@ -20,5 +20,7 @@
 </script>
 
 <style scoped>
+
+
 
 </style>

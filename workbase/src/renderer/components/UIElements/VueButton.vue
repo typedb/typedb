@@ -30,6 +30,9 @@
       disabled() {
         this.renderButton();
       },
+      icon() {
+        this.renderButton();
+      },
     },
     methods: {
       renderButton() {

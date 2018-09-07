@@ -9,8 +9,11 @@
 
 .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
     z-index: 2;
-    /* border-bottom: 1px solid #00eca2; */
-    padding-bottom: 2px;
+    padding-top: 3px !important;
+    padding-left: 3px !important;
+
+    border: var(--container-darkest-border);
+
     background-color: #0f0f0f;
     width: 100%;
     color: #f8f8f2;
@@ -22,7 +25,7 @@
     word-spacing: normal;
     word-break: normal;
     word-wrap: normal;
-    line-height: 1.5;
+    line-height: 1.2;
     -moz-tab-size: 4;
     -o-tab-size: 4;
     tab-size: 4;
@@ -30,7 +33,7 @@
     -moz-hyphens: none;
     -ms-hyphens: none;
     hyphens: none;
-    border-right-style: none;
+    /*border-right-style: none;*/
     font-size: 50px !important;
 }
 
@@ -50,7 +53,7 @@
 
 .cm-s-dracula .CodeMirror-cursor {
     border-left: 7px solid var(--green-4);
-    opacity: 0.5;
+    margin-top: -2px !important;
 }
 
 .cm-s-dracula .CodeMirror-linenumber {
