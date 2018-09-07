@@ -8,37 +8,43 @@ from collections import Counter
 
 
 def inorder(l, reverse=False):
+    """
+    :param l:List -
+    :param reverse:bool - sort check descending if True, else ascending
+    :return: bool - return if the list is sorted in ascending order (descending if reverse=True)
+    """
     if not reverse:
         return all(a<=b for (a,b) in zip(l, l[1:]))
     else:
         return all(b<=a for (a,b) in zip(l, l[1:]))
 
-def string_to_html_id(s):
-    return s.replace(" ", '-').replace(':', '_').replace(";",'_').replace("\"", "_").replace("$", "-")
-
 class BenchmarkExecutionComponent(object):
+    """ Container for all the data for a specific execution of a Benchmark, and graph generation with Plotly/Dash """
 
     def __init__(self, app, es_utility, execution_name, unique_number):
         print("Creating BenchmarkExecutionComponent...")
 
-        self.app = app
         self.es_utility = es_utility
         self.execution_name = execution_name.strip()
+        # unique number is used for attaching to pre-defined callbacks and avoiding html `id` clashes
         self.unique_number = unique_number
 
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint
-        # note: this builds for all the queries right away since this isn't that expensive
+        # note: this builds for all the queries right away since this isn't that expensive at this point
         self.overview_data = None
         self.repetitions = None         
         self._build_overview_data()
-        # the indexes are pre-sorted for effiency
+        # overview_data's indexes are pre-sorted for effiency, use this throughout
         self.sorted_all_concept_numbers = self.overview_data.index.unique().tolist()
         self.sorted_all_queries = self.overview_data.columns.unique(0).tolist()
+        # double check sorting wasn't forgotten
         assert inorder(self.sorted_all_concept_numbers), "Concept numbers not sorted!"
         assert inorder(self.sorted_all_queries), "Queries not sorted!"
+        # pandas dataframe for storing the children of the toplevel queries, used for aggregation and drill down
         self.toplevel_query_breakdown = None
         self._allocate_toplevel_query_breakdown()
 
+        # look up predefined graph IDs to local objects
         self.spanlists_graphs_id_map = {}
 
         print("...finished creating BenchmarkExecutionComponent")
@@ -46,6 +52,13 @@ class BenchmarkExecutionComponent(object):
 
     @staticmethod
     def get_required_callback_definitions(unique_number, graph_callbacks=100):
+        """
+        !IMPORTANT!
+        Static method used to predefine a load of callbacks. This needs to be done since Dash can't
+        dynamically create INPUT html elements -- all callbacks must be defined before the server starts!
+        """
+
+        # the callbacks for the query selector dropdown & number of concepts to break down
         rendering_callbacks = {
             '_render_overview': (
                 dash.dependencies.Output("overview-{0}".format(unique_number), "children"),
@@ -62,6 +75,12 @@ class BenchmarkExecutionComponent(object):
             )
         }
 
+        print("***** Only predefining callbacks for 100 graphs for any benchmark execution! *****")
+        print("***** Increase this number if needed via --max-graphs (unknown performance impact) *****")
+
+        # predefine callbacks to reference clicks in the graphs
+        # NOTE: this requires we uses these same IDs when actually instantiating
+        # any graphs in BenchmarkExecutionComponents
         for i in range(graph_callbacks):
             # `i` corresponds the query number/set of graphs generated
             # MUST format graph IDS with this!
@@ -79,28 +98,41 @@ class BenchmarkExecutionComponent(object):
         return rendering_callbacks
 
     def route_callback(self, method_name, *args):
+        print("Routing callback for: {0}...".format(method_name))
         if method_name == '_render_overview':
             return self._render_overview(*args)
         elif method_name == '_render_query_breakdown':
             return self._render_query_breakdown(*args)
         elif method_name.startswith('breakdown-graph'):
-            print("GRAPH ARGS")
-            print(args)
             graph_id = method_name
 
             # need to check if already instantiated, callbacks can be out of order?
             # also this callback is sometimes triggered with (None, ) as args
+
+            if args[0] is None:
+                # so we get a clickData callback with (None, ) when the graph is created
+                # future callbacks only work if we raise an Exception here??
+                # Probably because we can't return the actual figure yet, and returning {} or {'data':{}, 'layout':{}}
+                # means the graph is empty in the DOM even if displayed properly?
+                raise Exception("lol")
             if args[0] is not None and graph_id in self.spanlists_graphs_id_map:
                 spanlists_graph = self.spanlists_graphs_id_map[graph_id]
 
                 clicked_points = args[0]['points']
 
-                # one click could hit multiple levels, find majority
+                # one click could hit multiple levels or curves, find majority
                 levels_clicked = [pt['y'] for pt in clicked_points]
-                counts = Counter(levels_clicked)
-                most_common_level = counts.most_common(1)[0][0]
-                print(most_common_level)
-                # TODO update spanlist_graph in response to the input
+                level_counts = Counter(levels_clicked)
+                most_common_level = level_counts.most_common(1)[0][0]
+
+                curves_clicked = [pt['curveNumber'] for pt in clicked_points]
+                curve_counts = Counter(curves_clicked)
+                most_common_curve_number = curve_counts.most_common(1)[0][0]
+                # convert overall curve number into an offset AT a level
+                level_span_number = spanlists_graph.curve_number_to_span_number_at_level(most_common_curve_number)
+
+                # update the spanlists graph!
+                spanlists_graph.expand_span_at_level_name(most_common_level, level_span_number)
                 return spanlists_graph.get_figure()
             else:
                 return {}
@@ -112,13 +144,12 @@ class BenchmarkExecutionComponent(object):
     def _allocate_toplevel_query_breakdown(self):
         print("Begin allocating toplevel_query_breakdown pandas DataFrame...")
         query_concepts_index, _ = pd.MultiIndex.from_product([self.sorted_all_queries, self.sorted_all_concept_numbers, ["duration", "span"]], names=['query', 'concepts', 'duration_spanobject']).sortlevel() # sorted index is faster
-        print("self.repetitions: {0}".format(self.repetitions))
-        self.toplevel_query_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(self.repetitions)) 
+        self.toplevel_query_breakdown = pd.DataFrame([], columns=query_concepts_index, index=pd.RangeIndex(self.repetitions))
         print("...finished allocating toplevel_query_breakdown dataframe")
 
 
     def full_render(self):
-        print("BenchmarkExecutionComponent.full_render")
+        print("BenchmarkExecutionComponent.full_render...")
 
         query_selector = dcc.Dropdown(
             id='query-selector-{0}'.format(self.unique_number),
@@ -161,7 +192,7 @@ class BenchmarkExecutionComponent(object):
     def _render_overview(self, value='all'):
         """ Renders the overview graph. Can be extended with a filter/dropdown of some sort (treated as a callback already) """
         
-        print("BenchmarkExecutionComponent._render_overview")
+        print("BenchmarkExecutionComponent._render_overview...")
 
         # 1. make a pandas dataframe with traceId/concepts vs query and duration as datapoint [DONE]
         # 2. Generate a bar graph based on this dataframe, possibly filtered [DONE]
@@ -196,9 +227,6 @@ class BenchmarkExecutionComponent(object):
         """ Render the query breakdowns """
         print("BenchmarkExecutionComponent._render_query_breakdown")
 
-        print("Rendering query breakdown")
-
-        # call we pass lists through the HTML callback?
         if value == 'maxconcepts':
             # find the largest concepts size
             concepts_to_plot = self.sorted_all_concept_numbers[-1]
@@ -372,26 +400,27 @@ class SpanListsListGraph(object):
            'data': self._spanlists_to_plot_definition(root_span_name, root_spanlists, style=self.style),
            'descendsfrom': 0 # used to avoid deleting stuff that is arleady computed
         }
-        self.level_name_to_level_number = {root_span_name: 0}
-        
+        self.level_names = [root_span_name]
+
         self._expand_single_spans()
 
     def _expand_single_spans(self):
         """ If the deepest spanlist[] only has 1 spanlist, automatically expand it """
         max_level, num_spans = self.get_max_level_and_num_spans()
         while num_spans == 1:
-            next_level_name = "Level {0}".format(max_level+1)
             max_level_spanlists = self.levels[max_level]['spanlists']
             # compute the child spanlists
-            children = max_level_spanlists[0].get_child_spanlists()
-            next_level_data = self._spanlists_to_plot_definition(next_level_name, children, style=self.style)
+            spanlist = max_level_spanlists[0]
+            children = spanlist.get_child_spanlists()
+            displayname = "Level {0}:<br>children of<br> {1}".format(max_level+1, spanlist.get_spans_name())
+            next_level_data = self._spanlists_to_plot_definition(displayname, children, style=self.style)
             self.levels[max_level+1] = {
                 'spanlists': children,
                 'data': next_level_data,
                 'descendsfrom': 0 # auto-expand is always child number 0
             }
-            self.level_name_to_level_number[next_level_name] = max_level + 1
-            
+            self.set_level_name(max_level+1, displayname)
+
             max_level, num_spans = self.get_max_level_and_num_spans()
 
 
@@ -416,36 +445,62 @@ class SpanListsListGraph(object):
         names = [(i, spanlist.get_spans_name()) for i, spanlist in enumerate(spanlists)]
         return names
 
+
+    def curve_number_to_span_number_at_level(self, curve_number):
+        # flatten all currently visible spans's span number
+        # `curve_number` is the index of the item that has been plotted
+        # in a flattened list of all the curves
+        span_numbers = []
+        for i in range(self.get_current_max_level()+1):
+            spanlists = self.levels[i]['spanlists']
+            print("Spanlists: {0}".format(spanlists))
+            span_numbers += list(range(len(spanlists)))
+        print(span_numbers)
+        print("Curve Number: {0}, Span Number (at some level): {1}".format(curve_number, span_numbers[curve_number]))
+        return span_numbers[curve_number]
+
+
     def expand_span_at_level_name(self, level_name, span_number):
-        self.expand_span_at_level(self.level_name_to_level_number[level_name], span_number)
+        level_number = self.level_names.index(level_name)
+        self.expand_span_at_level(level_number, span_number)
+
+    def set_level_name(self, index, name):
+        if index < len(self.level_names):
+            self.level_names[index] = name
+        elif index == len(self.level_names):
+            self.level_names.append(name)
+        else:
+            raise Exception("Unexpected behavior, setting level name more than 1 level head of existing")
 
     def expand_span_at_level(self, level_number, span_number):
 
-        # first clear out the data that is stored
         if level_number not in self.levels:
-            raise Exception("Cannot expand a level that isn't current computed")
+            raise Exception("Cannot expand a level that isn't currently computed")
 
         level = self.levels[level_number]
         if level_number+1 in self.levels:
             next_level = self.levels[level_number+1]
             if span_number == next_level['descendsfrom']:
-                return # nothing to update
+                return
         
         # delete all further levels down 
-        for i in range(level+1, self.get_current_max_level()):
+        for i in range(level_number+1, self.get_current_max_level()+1):
             del self.levels[i]
 
         # recompute level_number + 1 
         spanlist = level['spanlists'][span_number]
         children = spanlist.get_child_spanlists()
+        level_name = "Level {0}:<br> children of <br> {1}".format(level_number+1, spanlist.get_spans_name())
         self.levels[level_number + 1] = {
                 'spanlists': children,
-                'data': self._spanlists_to_plot_definition("Level {0}".format(level_number+1), children, style=self.style),
+                'data': self._spanlists_to_plot_definition(level_name, children, style=self.style),
                 'descendsfrom': span_number
             }
+        self.set_level_name(level_number+1, level_name)
 
         # expand further if there's only 1 span
         self._expand_single_spans()
+        return True
 
         # new figure is retrieved via get_figure()
 
@@ -462,25 +517,22 @@ class SpanListsListGraph(object):
                     'autorange': 'reversed',
                     'type': 'category'
                 },
+                margin=go.layout.Margin(
+                    l=150,
+                    r=50,
+                    b=50,
+                    t=50,
+                    pad=4
+                ),
                 **self.layout_options
             )
 
-        # figure = dcc.Graph(
-        #             id=id,
-        #             figure={
-        #                 'data': self.get_plot_data(),
-        #                 'layout': layout
-        #             })
         figure = {
             'data': self.get_plot_data(),
             'layout': layout
         }
 
         return figure
-
-    def figure_clicked(self, *values):
-        print(values)
-
 
     def _spanlists_to_plot_definition(self, category, spanlists, style='box', x_axis_divisor=1000.0):
         """ SpanList[] to definitions of box or bar plot """
