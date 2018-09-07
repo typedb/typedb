@@ -59,6 +59,3 @@ social_network
 # VIM swap files #
 *.swp
 *.swo
-
-# Maven auto-generated files #
-**/.factorypath
