@@ -1,0 +1,33 @@
+define
+  contract sub relationship,
+    relates provider,
+    relates customer;
+
+  call sub relationship,
+    relates caller,
+    relates callee,
+    has started-at,
+    has duration;
+
+  company sub entity,
+    plays provider,
+    has name;
+
+  person sub entity,
+    plays customer,
+    plays caller,
+    plays callee,
+    has first-name,
+    has last-name,
+    has phone-number,
+    has city,
+    has age;
+
+  name sub attribute datatype string;
+  started-at sub attribute datatype date;
+  duration sub attribute datatype long;
+  first-name sub attribute datatype string;
+  last-name sub attribute datatype string;
+  phone-number sub attribute datatype string;
+  city sub attribute datatype string;
+  age sub attribute datatype long;
