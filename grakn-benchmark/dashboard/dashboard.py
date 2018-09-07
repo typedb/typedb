@@ -63,8 +63,7 @@ layout = html.Div(children=[
                     className="row",
                     children=[
                         get_sidebar(sorted_executions),
-                        get_benchmark_column(active_benchmark),
-                        html.Div(id='testing-output', children=['TESTING'])
+                        get_benchmark_column(active_benchmark)
                     ]
                 )
             ]
@@ -82,6 +81,7 @@ app.layout = layout
 
 executions = {}
 
+
 def try_create_execution(execution_name):
     if execution_name not in executions:
         execution_number = sorted_executions.index(execution_name)
@@ -96,24 +96,27 @@ def execution_updated(execution_name):
     return executions[execution_name].full_render()
 
 
-# pre-compute the controls we will need to generate graphs, all callbacks must be declared befored server starts
+# pre-compute the controls we will need to generate graphs, all callbacks must be declared before server starts
 for i, execution_name in enumerate(sorted_executions):
     # create a app.callback for each possible required callback in BenchmarkExecutionComponent
-    callback_definitions = BenchmarkExecutionComponent.get_required_callback_definitions(i)
 
-    def route_execution_callback(method_name):
-        print("creating callback router for {0}".format(method_name))
+    def route_execution_callback(method_name, exec_name):
+        # NOTE pass exec_name through to retain a copy from the loop, else python closures refer to last loop iter
+        print("creating callback router for {1}.{0}.method_name".format(method_name, exec_name))
 
         def wrapped_callback(*args):
-            try_create_execution(execution_name)
-            execution = executions[execution_name]
+            # copy execution name using a lambda
+            print("Callback with args, method aname and execution name: {0}, {1}, {2}".format(args, method_name, exec_name))
+            try_create_execution(exec_name)
+            execution = executions[exec_name]
             return execution.route_callback(method_name, *args)
         return wrapped_callback
 
+    callback_definitions = BenchmarkExecutionComponent.get_required_callback_definitions(i)
+
     for callback_function_name in callback_definitions:
         callback_definition = callback_definitions[callback_function_name]
-        print("Assigning a callback with definitions {0}".format(callback_definition))
-        app.callback(callback_definition[0], callback_definition[1])(route_execution_callback(callback_function_name))
+        app.callback(callback_definition[0], callback_definition[1])(route_execution_callback(callback_function_name, execution_name))
 
 
 if __name__ == '__main__':

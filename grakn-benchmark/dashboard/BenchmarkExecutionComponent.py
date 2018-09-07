@@ -2,9 +2,9 @@ import dash
 import dash_html_components as html
 import dash_core_components as dcc
 import plotly.graph_objs as go
-import numpy as np
-import pandas as pd 
+import pandas as pd
 from SpanList import SpanList
+from collections import Counter
 
 
 def inorder(l, reverse=False):
@@ -39,6 +39,8 @@ class BenchmarkExecutionComponent(object):
         self.toplevel_query_breakdown = None
         self._allocate_toplevel_query_breakdown()
 
+        self.spanlists_graphs_id_map = {}
+
         print("...finished creating BenchmarkExecutionComponent")
 
 
@@ -60,10 +62,19 @@ class BenchmarkExecutionComponent(object):
             )
         }
 
-        # graph_calbacks = {}
-        # for i in range(graph_callbacks):
-        #     # `i` corresponds t
-        #     graph_callbacks
+        for i in range(graph_callbacks):
+            # `i` corresponds the query number/set of graphs generated
+            # MUST format graph IDS with this!
+            graph_one_id = 'breakdown-graph-{0}-{1}-{2}'.format(unique_number, i, 0)
+            graph_two_id = 'breakdown-graph-{0}-{1}-{2}'.format(unique_number, i, 1)
+            rendering_callbacks[graph_one_id] = (
+                dash.dependencies.Output(graph_one_id, 'figure'),
+                [dash.dependencies.Input(graph_one_id, 'clickData')]
+            )
+            rendering_callbacks[graph_two_id] = (
+                dash.dependencies.Output(graph_two_id, 'figure'),
+                [dash.dependencies.Input(graph_two_id, 'clickData')]
+            )
 
         return rendering_callbacks
 
@@ -72,6 +83,28 @@ class BenchmarkExecutionComponent(object):
             return self._render_overview(*args)
         elif method_name == '_render_query_breakdown':
             return self._render_query_breakdown(*args)
+        elif method_name.startswith('breakdown-graph'):
+            print("GRAPH ARGS")
+            print(args)
+            graph_id = method_name
+
+            # need to check if already instantiated, callbacks can be out of order?
+            # also this callback is sometimes triggered with (None, ) as args
+            if args[0] is not None and graph_id in self.spanlists_graphs_id_map:
+                spanlists_graph = self.spanlists_graphs_id_map[graph_id]
+
+                clicked_points = args[0]['points']
+
+                # one click could hit multiple levels, find majority
+                levels_clicked = [pt['y'] for pt in clicked_points]
+                counts = Counter(levels_clicked)
+                most_common_level = counts.most_common(1)[0][0]
+                print(most_common_level)
+                # TODO update spanlist_graph in response to the input
+                return spanlists_graph.get_figure()
+            else:
+                return {}
+
         else:
             print("Unknown method name in route_callback: {0}".format(method_name))
 
@@ -155,7 +188,8 @@ class BenchmarkExecutionComponent(object):
                     )
                 }
             )
-        return duration_graph 
+
+        return duration_graph
 
 
     def _render_query_breakdown(self, value='maxconcepts', queries='all'):
@@ -197,6 +231,8 @@ class BenchmarkExecutionComponent(object):
         # TODO reuse SpanLists
 
         for query in queries_to_plot:
+
+            query_number = self.sorted_all_queries.index(query)
             root_spanlists = self._get_spanlists(concepts_to_plot, query, split_repetitions_at=1)
 
             # create graphs for this query/concepts combination
@@ -215,11 +251,19 @@ class BenchmarkExecutionComponent(object):
                 else:
                     style = 'box'
                     layout_options = {}
-                graph =  SpanListsListGraph(graph_name=name,
+                spanlists_graph =  SpanListsListGraph(graph_name=name,
                                             root_spanlists=[spanlist],
                                             style=style,
                                             layout_options=layout_options)
-                query_breakdown_container.children.append(graph.get_figure("breakdown-{0}-{1}-{2}".format(self.unique_number, string_to_html_id(query), i), self.app))
+
+                graph_id = 'breakdown-graph-{0}-{1}-{2}'.format(self.unique_number, query_number, i)
+                self.spanlists_graphs_id_map[graph_id] = spanlists_graph
+                figure = spanlists_graph.get_figure()
+                graph = dcc.Graph(
+                    id=graph_id,
+                    figure=figure
+                )
+                query_breakdown_container.children.append(graph)
             # add these graphs to the Query Breakdowns div
             div.children.append(query_breakdown_container)
 
@@ -313,10 +357,8 @@ class BenchmarkExecutionComponent(object):
         print("...finished building overview data") 
 
 
-testing_inserted = False
-
 class SpanListsListGraph(object):
-    """ TODO convert this to pandas dataframe to avoid recomputing? """
+    """ TODO how to avoid recomputing child spanlists? """
 
     def __init__(self, graph_name, root_spanlists, style='box', layout_options={}):
         self.graph_name = graph_name
@@ -324,11 +366,13 @@ class SpanListsListGraph(object):
         self.layout_options = layout_options
 
         self.levels = {}
+        root_span_name = "Root Span"
         self.levels[0] = {
            'spanlists': root_spanlists,
-           'data': self._spanlists_to_plot_definition("Root Span", root_spanlists, style=self.style),
+           'data': self._spanlists_to_plot_definition(root_span_name, root_spanlists, style=self.style),
            'descendsfrom': 0 # used to avoid deleting stuff that is arleady computed
         }
+        self.level_name_to_level_number = {root_span_name: 0}
         
         self._expand_single_spans()
 
@@ -346,6 +390,7 @@ class SpanListsListGraph(object):
                 'data': next_level_data,
                 'descendsfrom': 0 # auto-expand is always child number 0
             }
+            self.level_name_to_level_number[next_level_name] = max_level + 1
             
             max_level, num_spans = self.get_max_level_and_num_spans()
 
@@ -371,9 +416,11 @@ class SpanListsListGraph(object):
         names = [(i, spanlist.get_spans_name()) for i, spanlist in enumerate(spanlists)]
         return names
 
-    def expand_span_at_level(self, level_number, spannumber, spanname):
-        # TODO this can be made more efficient with a look up from childname to spanlists if needed
-        
+    def expand_span_at_level_name(self, level_name, span_number):
+        self.expand_span_at_level(self.level_name_to_level_number[level_name], span_number)
+
+    def expand_span_at_level(self, level_number, span_number):
+
         # first clear out the data that is stored
         if level_number not in self.levels:
             raise Exception("Cannot expand a level that isn't current computed")
@@ -381,8 +428,7 @@ class SpanListsListGraph(object):
         level = self.levels[level_number]
         if level_number+1 in self.levels:
             next_level = self.levels[level_number+1]
-            if spannumber == next_level['descendsfrom']:
-                # TODO what to do here if matches computed value in terms of rendering
+            if span_number == next_level['descendsfrom']:
                 return # nothing to update
         
         # delete all further levels down 
@@ -390,27 +436,26 @@ class SpanListsListGraph(object):
             del self.levels[i]
 
         # recompute level_number + 1 
-        spanlist = level['spanlists'][spannumber]
+        spanlist = level['spanlists'][span_number]
         children = spanlist.get_child_spanlists()
         self.levels[level_number + 1] = {
                 'spanlists': children,
                 'data': self._spanlists_to_plot_definition("Level {0}".format(level_number+1), children, style=self.style),
-                'descendsfrom': spannumber
+                'descendsfrom': span_number
             }
 
         # expand further if there's only 1 span
         self._expand_single_spans()
 
-        # TODO, what to do here, return new get_plot_data? How to hook into callback system
+        # new figure is retrieved via get_figure()
 
 
-
-    def get_figure(self, id, app):
-        id = string_to_html_id(id)
+    def get_figure(self):
         layout = go.Layout(
+                title=self.graph_name,
                 boxmode='group',
                 xaxis={
-                    'title': self.graph_name,
+                    'title': 'milliseconds (ms)',
                     'zeroline': True
                 },
                 yaxis={
@@ -420,21 +465,16 @@ class SpanListsListGraph(object):
                 **self.layout_options
             )
 
-        figure = dcc.Graph(
-                    id=id,
-                    figure={
-                        'data': self.get_plot_data(),
-                        'layout': layout
-                    })
-
-        global testing_inserted
-        if not testing_inserted:
-            print("!!!!! Adding callback for html id: {0}".format(id))
-            self.figure_clicked = app.callback(
-                dash.dependencies.Output('testing-output', 'children'),
-                [dash.dependencies.Input(id, 'clickData')]
-            )(self.figure_clicked)
-            testing_inserted = True
+        # figure = dcc.Graph(
+        #             id=id,
+        #             figure={
+        #                 'data': self.get_plot_data(),
+        #                 'layout': layout
+        #             })
+        figure = {
+            'data': self.get_plot_data(),
+            'layout': layout
+        }
 
         return figure
 
@@ -442,13 +482,13 @@ class SpanListsListGraph(object):
         print(values)
 
 
-    def _spanlists_to_plot_definition(self, category, spanlists, style='box'):
+    def _spanlists_to_plot_definition(self, category, spanlists, style='box', x_axis_divisor=1000.0):
         """ SpanList[] to definitions of box or bar plot """
         data = []
         for spanlist in spanlists:
             x_data = spanlist.get_values_np()
             data.append({
-                "x" : x_data,
+                "x" : x_data/x_axis_divisor,
                 "y" : [category] * x_data.shape[0],
                 "name" : spanlist.get_spans_name(),
                 "boxmean": True,
