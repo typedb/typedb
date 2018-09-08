@@ -82,34 +82,34 @@ ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );
 We can define a schema that corresponds to the SQL tables as follows:
 
 ```graql-test-ignore
-insert
-pet sub entity
-  has name
-  has owner
-  has sex
-  has birth
-  has death
-  is-abstract;
+define
+  pet sub entity
+    has name
+    has owner
+    has sex
+    has birth
+    has death
+    is-abstract;
 
-cat sub pet;
-dog sub pet;
-snake sub pet;
-hamster sub pet;
-bird sub pet;
+  cat sub pet;
+  dog sub pet;
+  snake sub pet;
+  hamster sub pet;
+  bird sub pet;
 
-event sub entity,
-  has name,
-  has date,
-  has description;
+  event sub entity,
+    has name,
+    has event-date,
+    has description;
 
-name sub attribute datatype string;
-owner sub attribute datatype string;
-sex sub attribute datatype string;
-birth sub attribute datatype string;
-death sub attribute datatype string;
-count sub attribute datatype long;
-date sub attribute datatype date;
-description sub attribute datatype string;
+  name sub attribute datatype string;
+  owner sub attribute datatype string;
+  sex sub attribute datatype string;
+  birth sub attribute datatype string;
+  death sub attribute datatype string;
+  count sub attribute datatype long;
+  event-date sub attribute datatype date;
+  description sub attribute datatype string;
 ```
 
 The schema is not complete at this point, as we have not included any relationship between pets and their events. In SQL, a `foreign key` is a column that references another column, as seen in the SQL schema line `ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );`.
@@ -117,13 +117,13 @@ The schema is not complete at this point, as we have not included any relationsh
 For Grakn, we can use the following:
 
 ```graql-test-ignore
-insert
-occurs sub relationship
-  relates event-occurred
-  relates pet-in-event;
+define
+  occurs sub relationship
+    relates event-occurred
+    relates pet-in-event;
 
-pet plays pet-in-event;
-event plays event-occurred;
+  pet plays pet-in-event;
+  event plays event-occurred;
 ```
 
 To load the schema into Grakn, we create a single file that contains both sections shown above, named _schema.gql_. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the schema file to load into a knowledge graph. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
