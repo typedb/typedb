@@ -112,12 +112,19 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         Label has = Schema.ImplicitType.HAS.getLabel(type);
         Label key = Schema.ImplicitType.KEY.getLabel(type);
 
+        Label hasOwnerRole = Schema.ImplicitType.HAS_OWNER.getLabel(type);
+        Label keyOwnerRole = Schema.ImplicitType.KEY_OWNER.getLabel(type);
+        Label hasValueRole= Schema.ImplicitType.HAS_VALUE.getLabel(type);
+        Label keyValueRole = Schema.ImplicitType.KEY_VALUE.getLabel(type);
+
         Var edge1 = Graql.var();
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                rolePlayer(this, relationship().var(), edge1, start, null, null, ImmutableSet.of(has, key)),
-                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, null, ImmutableSet.of(has, key)),
+                //owner rolePlayer edge
+                rolePlayer(this, relationship().var(), edge1, start, null, ImmutableSet.of(hasOwnerRole, keyOwnerRole), ImmutableSet.of(has, key)),
+                //value rolePlayer edge
+                rolePlayer(this, relationship().var(), edge2, attribute().var(), null, ImmutableSet.of(hasValueRole, keyValueRole), ImmutableSet.of(has, key)),
                 neq(this, edge1, edge2)
         );
     }
