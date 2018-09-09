@@ -135,22 +135,18 @@
         <tinkerpop.version>3.3.3</tinkerpop.version>
         <junit.version>4.12</junit.version>
         <janus.version>0.3.0</janus.version>
-        <guava.version>19.0</guava.version>
         <antlr.version>4.5</antlr.version>
         <jline.version>2.12</jline.version>
         <spark-core.version>2.5.1</spark-core.version>
         <commons-collections.version>3.2.1</commons-collections.version>
-        <json.version>20160212</json.version>
         <rest-assured.version>2.7.0</rest-assured.version>
         <spark.version>1.6.1</spark.version>
-        <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.2.3</logback.version>
         <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
-        <csv.version>1.4</csv.version>
         <cassandra-unit.version>3.5.0.1</cassandra-unit.version>
         <cassandra-all.version>3.11.3</cassandra-all.version>
         <h2-database.version>1.4.192</h2-database.version>
@@ -161,11 +157,9 @@
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
         <metrics.version>3.2.3</metrics.version>
-        <bytebuddy.version>1.6.14</bytebuddy.version>
         <jmh-core.version>1.19</jmh-core.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
         <cassandra-driver-core.version>3.5.1</cassandra-driver-core.version>
-        <jackson.version>2.8.5</jackson.version>
         <prometheus.version>0.0.13</prometheus.version>
         <auto-value.version>1.4.1</auto-value.version>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
@@ -176,7 +170,6 @@
         <apache-http-core.version>4.4.6</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
-        <httpclient.version>4.5.1</httpclient.version>
         <jersey.version>1.19</jersey.version>
         <hystrix-core.version>1.5.12</hystrix-core.version>
         <failsafe.version>1.0.4</failsafe.version>
@@ -196,16 +189,16 @@
                 <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>javax.servlet</artifactId>
                         <groupId>org.eclipse.jetty.orbit</groupId>
+                        <artifactId>javax.servlet</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -298,12 +291,12 @@
                         <artifactId>javax.servlet-api</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>jackson-annotations</artifactId>
                         <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-annotations</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>jackson-core</artifactId>
                         <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -402,8 +395,8 @@
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
-                <artifactId>httpclient</artifactId>
                 <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
                 <version>${httpclient.version}</version>
             </dependency>
             <dependency>
@@ -706,8 +699,8 @@
                 <version>${metrics.version}</version>
                 <exclusions>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -717,16 +710,16 @@
                 <version>${metrics.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-databind</artifactId>
-                        <groupId>com.fasterxml.jackson.core</groupId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-core</artifactId>
-                        <groupId>com.fasterxml.jackson.core</groupId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
