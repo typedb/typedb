@@ -1,22 +1,44 @@
 import Vue from 'vue';
-import storage from '@/components/shared/PersistentStorage';
 import logger from '@/../Logger';
 import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
 import ManagementUtils from './DataManagementUtils';
 import NodeSettings from './DataManagementContent/NodeSettingsPanel/NodeSettings';
+import QuerySettings from './DataManagementContent/MenuBar/QuerySettings/QuerySettings';
 import Style from './Style';
+import VisualiserGraphBuilder from './VisualiserGraphBuilder';
 
-import { RUN_CURRENT_QUERY, TOGGLE_LABEL, TOGGLE_COLOUR } from '../shared/StoresActions';
+
+import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, TOGGLE_LABEL, TOGGLE_COLOUR } from '../shared/StoresActions';
 
 const actions = {
 
   async [RUN_CURRENT_QUERY]() {
-    if (/^compute path/.test(this.currentQuery)) return this.computeShortestPath(this.currentQuery);
     return this.runQuery(this.currentQuery);
+  },
+  async [EXPLAIN_CONCEPT]() {
+    this.explanationQuery = true;
+
+    const queries = this.getSelectedNode().explanation.answers().map((answer) => {
+      const queryPattern = answer.explanation().queryPattern();
+
+      let query = ManagementUtils.buildExplanationQuery(answer, queryPattern).query;
+      if (queryPattern.includes('has')) {
+        query += `${ManagementUtils.buildExplanationQuery(answer, queryPattern).attributeQuery} get;`;
+      } else {
+        query += `$r ${queryPattern.slice(1, -1).match(/\((.*?;)/)[0]} offset 0; limit 1; get $r;`;
+      }
+      return query;
+    });
+    for (const q of queries) { // eslint-disable-line no-restricted-syntax
+      const data = await this.runQuery(q);// eslint-disable-line no-await-in-loop
+      const updatedEdges = data.edges.map(edge => Object.assign(edge, Style.computeExplanationEdgeStyle()));
+      this.visFacade.container.visualiser.updateEdge(updatedEdges);
+    }
+    this.explanationQuery = false;
   },
   async [TOGGLE_LABEL](type) {
     const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type).map(x => this.getNode(x.id)));
-    const updatedNodes = await ManagementUtils.prepareNodes(nodes);
+    const updatedNodes = await VisualiserGraphBuilder.prepareNodes(nodes);
     this.visFacade.container.visualiser.updateNode(updatedNodes);
   },
   async [TOGGLE_COLOUR](type) {
@@ -31,23 +53,20 @@ const watch = {
     this.registerCanvasEventHandler('doubleClick', async (params) => {
       const nodeId = params.nodes[0];
       if (!nodeId) return;
-      this.loadingQuery = true;
-      const node = await this.getNode(nodeId);
-      const neighboursLimit = storage.get('neighbours_limit');
+
+      const neighboursLimit = QuerySettings.getNeighboursLimit();
       const visNode = this.visFacade.getNode(nodeId);
 
-      let data;
-      if (params.event.srcEvent.shiftKey) {
-        data = await ManagementUtils.loadAttributes(node, neighboursLimit, visNode.attrOffset);
+      let query;
+      if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
+        query = `match $x id "${nodeId}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get;`;
         this.visFacade.updateNode({ id: nodeId, attrOffset: visNode.attrOffset + neighboursLimit });
-      } else {
-        data = await ManagementUtils.loadNeighbours(node, neighboursLimit, visNode.offset);
+      } else { // double click => load neighbours
+        query = ManagementUtils.loadNeighbours(visNode, neighboursLimit);
         this.visFacade.updateNode({ id: nodeId, offset: visNode.offset + neighboursLimit });
       }
-
-      this.visFacade.addToCanvas(data);
-      this.updateCanvasData();
-      this.loadingQuery = false;
+      this.setCurrentQuery(query);
+      this.runQuery(query);
     });
   },
   currentKeyspace(newKs, oldKs) {
@@ -60,40 +79,37 @@ const watch = {
 const methods = {
   async runQuery(query) {
     try {
-      if (this.loadingQuery && !this.explanationQuery) return; // Don't run query if previous is still running or explanation query
+      if (this.loadingQuery && !this.explanationQuery) return null; // Don't run query if previous is still running or explanation query
       if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query) || /^insert/.test(query)) {
         throw new Error('The transaction is read only - insert and delete queries are not supported');
       }
       this.loadingQuery = true;
 
-      const concepts = await this.exectueQuery(query);
+      const result = (await (await this.graknTx.query(query)).collect());
 
-      const data = { nodes: await ManagementUtils.prepareNodes(concepts), edges: [] };
-
-      if (ManagementUtils.isRolePlayerAutoloadEnabled()) {
-        const relationships = data.nodes.filter(x => x.baseType === 'RELATIONSHIP');
-        const roleplayers = await ManagementUtils.relationshipsRolePlayers(relationships, true, storage.get('neighbours_limit'));
-
-        relationships.map((rel) => {
-          rel.offset += storage.get('neighbours_limit');
-          return rel;
-        });
-
-        data.nodes.push(...roleplayers.nodes);
-        data.edges.push(...roleplayers.edges);
+      if (!result.length) {
+        this.$notifyInfo('No results were found for your query!', 'bottom-right');
+        this.loadingQuery = false;
+        return null;
       }
 
+      let data;
+
+      if (this.isConceptMap(result)) {
+        data = await VisualiserGraphBuilder.buildFromConceptMap(result);
+      } else { // result is conceptList
+        // TBD - handle multiple paths
+        const path = result[0];
+        const pathNodes = await Promise.all(path.list().map(id => this.getNode(id)));
+        data = await VisualiserGraphBuilder.buildFromConceptList(path, pathNodes);
+      }
 
       this.visFacade.addToCanvas(data);
       this.visFacade.fitGraphToWindow();
-
-      if (this.explanationQuery) {
-        const updatedEdges = data.edges.map(edge => Object.assign(edge, Style.computeExplanationEdgeStyle()));
-        this.visFacade.container.visualiser.updateEdge(updatedEdges);
-      } else {
-        this.loadingQuery = false;
-      }
       this.updateCanvasData();
+      this.loadingQuery = false;
+
+      return data;
     } catch (e) {
       logger.error(e.stack);
       this.loadingQuery = false;
@@ -102,87 +118,27 @@ const methods = {
       throw e;
     }
   },
-  async exectueQuery(query) {
-    const result = (await (await this.graknTx.query(query)).collect());
-    const concepts = await ManagementUtils.prepareConcepts(result);
-
-    if (!concepts.length) {
-      this.$notifyInfo('No results were found for your query!', 'bottom-right');
-    }
-    return ManagementUtils.filterImplicitTypes(concepts);
-  },
-  getLabelBySelectedType() { return NodeSettings.getTypeLabels(this.getSelectedNode().type); },
 
   // getters
+  getLabelBySelectedType() {
+    return NodeSettings.getTypeLabels(this.getSelectedNode().type);
+  },
   getCurrentQuery() {
     return this.currentQuery;
   },
+  getVisStyle() {
+    return Style;
+  },
+  showSpinner() {
+    return this.loadingQuery || this.explanationQuery;
+  },
+  isConceptMap(result) {
+    return (result[0].map);
+  },
+
   // setters
   setCurrentQuery(query) {
     this.currentQuery = query;
-  },
-  showSpinner() { return this.loadingQuery; },
-  getVisStyle() { return Style; },
-  async explainConcept(node) {
-    this.explanationQuery = true;
-
-    const queries = node.explanation.answers().map((answer) => {
-      const queryPattern = answer.explanation().queryPattern();
-
-      let query = this.buildQuery(answer, queryPattern).query;
-      if (queryPattern.includes('has')) {
-        query += `${this.buildQuery(answer, queryPattern).attributeQuery} get;`;
-      } else {
-        query += `$r ${queryPattern.slice(1, -1).match(/\((.*?;)/)[0]} offset 0; limit 1; get $r;`;
-      }
-      return query;
-    });
-    for (const q of queries) { // eslint-disable-line no-restricted-syntax
-      await this.runQuery(q);// eslint-disable-line no-await-in-loop
-    }
-    this.loadingQuery = false;
-    this.explanationQuery = false;
-  },
-  buildQuery(answer, queryPattern) {
-    let query = 'match ';
-    let attributeQuery = null;
-    Array.from(answer.map().entries()).forEach(([graqlVar, concept]) => {
-      if (concept.isAttribute()) {
-        attributeQuery = `has ${queryPattern.match(/(?:has )(\w+)/)[1]} $${graqlVar};`;
-      } else if (concept.isEntity()) {
-        query += `$${graqlVar} id ${concept.id}; `;
-      }
-    });
-    return { query, attributeQuery };
-  },
-  async computeShortestPath(query) {
-    // TBD - handle multiple paths
-    this.loadingQuery = true;
-    const path = await (await this.graknTx.query(query)).next();
-
-    const nodes = await Promise.all(path.list().map(id => this.getNode(id)));
-
-    const data = { nodes: await ManagementUtils.prepareNodes(nodes), edges: [] };
-
-    const relationships = data.nodes.filter(x => x.baseType === 'RELATIONSHIP');
-
-    const roleplayers = await ManagementUtils.relationshipsRolePlayers(relationships);
-
-    roleplayers.nodes.filter(x => path.list().includes(x.id));
-    roleplayers.edges.filter(x => (path.list().includes(x.to) && path.list().includes(x.to)));
-
-    data.nodes.push(...roleplayers.nodes);
-    data.edges.push(...roleplayers.edges);
-
-
-    this.visFacade.addToCanvas(data);
-
-    const updatedEdges = data.edges.map(edge => Object.assign(edge, Style.computeShortestPathEdgeStyle()));
-    this.visFacade.container.visualiser.updateEdge(updatedEdges);
-
-    this.visFacade.fitGraphToWindow();
-    this.updateCanvasData();
-    this.loadingQuery = false;
   },
 };
 
