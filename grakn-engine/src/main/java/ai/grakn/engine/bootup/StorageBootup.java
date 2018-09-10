@@ -19,13 +19,20 @@
 package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.GraknConfig;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.commons.io.FileUtils;
 import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+import org.zeroturnaround.exec.listener.ProcessListener;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +42,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,10 +66,6 @@ public class StorageBootup {
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
-    private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
-    private static final Path WINDOWS_STORAGE_BIN = Paths.get("services", "cassandra", "cassandra.bat");
-    private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool");
-    private static final Path WINDOWS_NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool.bat");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
 
     private BootupProcessExecutor bootupProcessExecutor;
@@ -128,43 +133,60 @@ public class StorageBootup {
      *
      * @throws BootupException
      */
-    private void start() {
-        try {
-            exec(CassandraDaemon.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
-        String localStorageBin = isWindows() ? WINDOWS_STORAGE_BIN.toString() : STORAGE_BIN.toString();
-        List<String> storageCmd_EscapeWhitespace;
-        if (isWindows()) {
-            storageCmd_EscapeWhitespace = Arrays.asList(localStorageBin, "-p", "\"" + STORAGE_PIDFILE.toString() + "\"", "-l", "\"" + getStorageLogPathFromGraknProperties().toAbsolutePath().toString() + "\"");
-        } else {
-            storageCmd_EscapeWhitespace = Arrays.asList(SH, "-c", localStorageBin, "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString()).stream()
-                    .map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
-        }
-
-        // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
-        String localNodetoolBin = isWindows() ? WINDOWS_NODETOOL_BIN.toString() : NODETOOL_BIN.toString();
-        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(localNodetoolBin, "statusthrift");
+    private void start(){
 
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
+        Path graknHome = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
+        String cassandraConfig = graknHome.resolve("services").resolve("cassandra").resolve("cassandra.yaml").toString();
+        if(isWindows())cassandraConfig="file:\\\\\\"+cassandraConfig;
+        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        String classpath = graknHome.resolve("services").resolve("lib").toString()+File.separator+"*";
 
-        CompletableFuture<BootupProcessResult> startStorage = bootupProcessExecutor.executeAsync(storageCmd_EscapeWhitespace, graknHome.toFile());
+        Future<ProcessResult> result = null;
+        try {
+            result = new ProcessExecutor()
+                    .readOutput(true)
+                    .directory(graknHome.toFile())
+                    .redirectError(stderr)
+                    .addListener(new ProcessListener() {
+                        @Override
+                        public void afterStart(Process process, ProcessExecutor executor) {
+                            super.afterStart(process, executor);
+                            String pidString = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+                            try{
+                                PrintWriter writer = new PrintWriter(STORAGE_PIDFILE.toString(), "UTF-8");
+                                writer.println(pidString);
+                                writer.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    })
+                    .command("java", "-cp", classpath, "-Dcassandra.config=" + cassandraConfig, "-Dcassandra.jmx.local.port=7199", "-Dcassandra.logdir="+getStorageLogPathFromGraknProperties(), "-Dlogback.configurationFile="+logback, CassandraDaemon.class.getCanonicalName())
+                    .start().getFuture();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
-        while (LocalDateTime.now().isBefore(timeout) && !startStorage.isDone()) {
+        while (LocalDateTime.now().isBefore(timeout) && !result.isDone() && stderr.toString().isEmpty()) {
             System.out.print(".");
             System.out.flush();
 
-            BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
 
+            String output = null;
+            try {
+                output = new ProcessExecutor().command("java", "-cp", classpath, "-Dlogback.configurationFile="+logback.toString(), org.apache.cassandra.tools.NodeTool.class.getCanonicalName(), "statusthrift")
+                        .readOutput(true).execute()
+                        .outputUTF8();
+            } catch (TimeoutException | IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
 
-            if (isStorageRunning.stdout().trim().equals("running")) {
+            if (output.trim().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -178,7 +200,7 @@ public class StorageBootup {
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ".");
         try {
-            String errorMessage = "Process exited with code '" + startStorage.get().exitCode() + "': '" + startStorage.get().stderr() + "'";
+            String errorMessage = "Process exited with code '" + result.get().getExitValue() + "': '" + stderr.toString() + "'";
             System.err.println(errorMessage);
             throw new BootupException();
         } catch (InterruptedException | ExecutionException e) {

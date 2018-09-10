@@ -33,7 +33,6 @@ public class StorageBootupTest {
 
     public static void exec(Class klass) throws IOException,
             InterruptedException {
-        String classpath = "C:\\Users\\Grakn Labs\\Desktop\\grakn-core-1.4.0-SNAPSHOT\\services\\lib\\*";
         String className = klass.getCanonicalName();
 
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
@@ -43,7 +42,7 @@ public class StorageBootupTest {
             Path logDirectory = graknHome.resolve("logs");
             Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
 
-
+            String classpath = graknHome.resolve("services").resolve("lib").toString()+File.separator+"*";
             Future<ProcessResult> result = new ProcessExecutor()
                     .readOutput(true)
                     .directory(graknHome.toFile())
@@ -60,12 +59,6 @@ public class StorageBootupTest {
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-                        }
-
-                        @Override
-                        public void afterStop(Process process) {
-                            super.afterStop(process);
-                            STORAGE_PIDFILE.toFile().delete();
                         }
                     })
                     .command("java", "-cp", classpath, "-Dcassandra.config=" + cassandraConfig.toString(), "-Dcassandra.jmx.local.port=7199", "-Dcassandra.logdir="+logDirectory, "-Dlogback.configurationFile="+logback, className)
