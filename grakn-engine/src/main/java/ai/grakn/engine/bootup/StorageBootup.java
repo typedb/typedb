@@ -20,7 +20,9 @@ package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
+import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.commons.io.FileUtils;
+import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -127,6 +129,13 @@ public class StorageBootup {
      * @throws BootupException
      */
     private void start() {
+        try {
+            exec(CassandraDaemon.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
         String localStorageBin = isWindows() ? WINDOWS_STORAGE_BIN.toString() : STORAGE_BIN.toString();
         List<String> storageCmd_EscapeWhitespace;
@@ -176,6 +185,23 @@ public class StorageBootup {
             throw new BootupException(e);
         }
 
+    }
+
+    public static int exec(Class klass) throws IOException,
+            InterruptedException {
+        String javaHome = System.getProperty("java.home");
+        String javaBin = javaHome +
+                File.separator + "bin" +
+                File.separator + "java";
+        String classpath = System.getProperty("java.class.path");
+        String className = klass.getCanonicalName();
+
+        ProcessBuilder builder = new ProcessBuilder(
+                javaBin, "-cp", classpath, className);
+
+        Process process = builder.start();
+        process.waitFor();
+        return process.exitValue();
     }
 
     private Path getStorageLogPathFromGraknProperties() {
