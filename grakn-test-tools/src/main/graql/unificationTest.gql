@@ -6,35 +6,39 @@ define
 #
 #                             role
 #             /                 |                   \
-#         role1               role2                role3
+#         baseRole1               baseRole2                baseRole3
 #       /      \             /     \                |
 # subRole1   aSubRole1   subRole2  aSubRole1      subRole3
 #       |                    |                      |
 # subSubRole1            subSubRole2             subSubRole3
 #
 
-role1 sub role;
-subRole1 sub role1;
-anotherSubRole1 sub role1;
+baseRole1 sub role;
+subRole1 sub baseRole1;
+anotherSubRole1 sub baseRole1;
 subSubRole1 sub subRole1;
 
-role2 sub role;
-subRole2 sub role2;
-anotherSubRole2 sub role2;
+baseRole2 sub role;
+subRole2 sub baseRole2;
+anotherSubRole2 sub baseRole2;
 subSubRole2 sub subRole2;
 
-role3 sub role;
-subRole3 sub role3;
+baseRole3 sub role;
+subRole3 sub baseRole3;
 subSubRole3 sub subRole3;
 
 #Entities
 #simple vertical hierarchy
 
-baseRoleEntity sub entity
+baseEntity sub entity
     has resource
-    plays role1
-    plays role2
-    plays role3;
+    plays baseRole1
+    plays baseRole2
+    plays baseRole3
+    is-abstract;
+
+baseRoleEntity sub baseEntity;
+anotherBaseRoleEntity sub baseEntity;
 
 subRoleEntity sub baseRoleEntity
     plays subRole1
@@ -50,8 +54,8 @@ subSubRoleEntity sub subRoleEntity
 
 binary sub relationship
     has resource
-    relates role1
-    relates role2
+    relates baseRole1
+    relates baseRole2
     relates subRole1
     relates subRole2
     relates anotherSubRole1
@@ -61,9 +65,9 @@ binary sub relationship
     
 ternary sub relationship
     has resource
-    relates role1
-    relates role2
-    relates role3
+    relates baseRole1
+    relates baseRole2
+    relates baseRole3
     relates subRole1
     relates subRole2
     relates subRole3
@@ -80,6 +84,8 @@ resource sub attribute datatype string;
 insert
 
 #Instances
+
+$a isa anotherBaseRoleEntity;
 
 $b isa baseRoleEntity, has resource 'b';
 
@@ -98,8 +104,8 @@ $s isa subSubRoleEntity, has resource 's';
 (subSubRole1: $m, subRole2: $s) isa binary;
 (subSubRole1: $m, subSubRole2: $d) isa binary;
 
-(role1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
-(role1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
+(baseRole1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
+(baseRole1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
 
 (subRole1: $f, subRole2: $m, subSubRole3: $d) isa ternary;
 (subRole1: $f, subRole2: $f, subSubRole3: $d) isa ternary;

@@ -291,15 +291,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
+    @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
         return getMultiUnifier(parent, UnifierType.EXACT);
     }
 
-    /**
-     * @param parent query for which unifier to unify with should be found
-     * @param unifierType unifier type
-     * @return corresponding multiunifier
-     */
+    @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType){
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
@@ -348,13 +345,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return varTypeMap;
     }
 
+    public ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes) {
+        Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
+        return ImmutableMap.copyOf(
+                getVarTypeMap()
+                        .entrySet().stream()
+                        .filter(e -> inferTypes ||
+                                isas.stream()
+                                        .filter(isa -> isa.getVarName().equals(e.getKey()))
+                                        .filter(isa -> Objects.nonNull(isa.getSchemaConcept()))
+                                        .anyMatch(isa -> isa.getSchemaConcept().equals(e.getValue()))
+                        )
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+        );
+    }
+
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub) {
-        return ImmutableMap.copyOf(getVarTypeMap(
-                Stream.concat(
-                        getAtoms(IsaAtomBase.class),
-                        inferEntityTypes(sub)
-                )
+        return ImmutableMap.copyOf(
+                getVarTypeMap(
+                        Stream.concat(
+                                getAtoms(IsaAtomBase.class),
+                                inferEntityTypes(sub)
+                        )
                 )
         );
     }

@@ -20,6 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
@@ -110,6 +111,21 @@ public interface ReasonerQuery{
     boolean isTypeRoleCompatible(Var typedVar, Type parentType);
 
     /**
+     * @param parent query we want to unify this query with
+     * @return corresponding multiunifier
+     */
+    @CheckReturnValue
+    MultiUnifier getMultiUnifier(ReasonerQuery parent);
+
+    /**
+     * @param parent query we want to unify this query with
+     * @param unifierType unifier type
+     * @return corresponding multiunifier
+     */
+    @CheckReturnValue
+    MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType);
+
+    /**
      * resolves the query
      * @return stream of answers
      */
@@ -122,6 +138,9 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap();
+
+    @CheckReturnValue
+    ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes);
 
     /**
      * Returns a var-type of this query with possible additions coming from supplied partial answer.

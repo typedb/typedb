@@ -67,6 +67,19 @@ public class MultiUnifierImpl implements MultiUnifier{
     }
 
     @Override
+    public boolean equals(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        MultiUnifierImpl u2 = (MultiUnifierImpl) obj;
+        return this.multiUnifier.equals(u2.multiUnifier);
+    }
+
+    @Override
+    public int hashCode(){
+        return multiUnifier.hashCode();
+    }
+
+    @Override
     public String toString(){ return multiUnifier.toString(); }
 
     @Override

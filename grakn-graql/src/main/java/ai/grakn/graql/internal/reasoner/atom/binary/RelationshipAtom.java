@@ -290,15 +290,12 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 //check relation players equivalent
                 && this.getRolePlayers().size() == that.getRolePlayers().size()
                 && this.getRelationPlayers().size() == that.getRelationPlayers().size()
-                && this.getRoleLabels().equals(that.getRoleLabels())
-                //check role-type bindings
-                && this.getRoleTypeMap().equals(that.getRoleTypeMap());
+                && this.getRoleLabels().equals(that.getRoleLabels());
     }
 
     private int baseHashCode(){
         int baseHashCode = 1;
         baseHashCode = baseHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
-        baseHashCode = baseHashCode * 37 + this.getRoleTypeMap().hashCode();
         baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
         return baseHashCode;
     }
@@ -307,13 +304,15 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public boolean isAlphaEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
-        //check id predicate bindings
-        return this.predicateBindingsAlphaEquivalent(that);
+        //check role-type and id predicate bindings
+        return this.getRoleTypeMap().equals(that.getRoleTypeMap())
+                && this.predicateBindingsAlphaEquivalent(that);
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
         int equivalenceHashCode = baseHashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
         return equivalenceHashCode;
     }
@@ -345,12 +344,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (!isBaseEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
         // check bindings
-        return this.predicateBindingsStructurallyEquivalent(that);
+        return this.getRoleTypeMap(false).equals(that.getRoleTypeMap(false))
+                && this.predicateBindingsStructurallyEquivalent(that);
     }
 
     @Override
     public int structuralEquivalenceHashCode() {
         int equivalenceHashCode = baseHashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap(false).hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
         return equivalenceHashCode;
     }
@@ -496,12 +497,23 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Memoized
     public Multimap<Role, Type> getRoleTypeMap() {
+        return getRoleTypeMap(false);
+    }
+
+    public Multimap<Role, Type> getRoleTypeMap(boolean inferTypes) {
         ImmutableMultimap.Builder<Role, Type> builder = ImmutableMultimap.builder();
         Multimap<Role, Var> roleMap = getRoleVarMap();
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
+                .filter(e -> {
+                    return inferTypes
+                            || getParentQuery().getAtoms(TypeAtom.class)
+                            .filter(t -> t.getVarName().equals(e.getValue()))
+                            .filter(t -> Objects.nonNull(t.getSchemaConcept()))
+                            .anyMatch(t -> t.getSchemaConcept().equals(varTypeMap.get(e.getValue())));
+                })
                 .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).label()))
                 .forEach(e -> builder.put(e.getKey(), varTypeMap.get(e.getValue())));
         return builder.build();
@@ -857,8 +869,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
         Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
-        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
-        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(!matchType.equals(UnifierType.STRUCTURAL));
+        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(!matchType.equals(UnifierType.STRUCTURAL));
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
