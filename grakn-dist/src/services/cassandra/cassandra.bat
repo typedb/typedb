@@ -74,6 +74,5 @@ set CASSANDRA_PARAMS=%CASSANDRA_PARAMS% -Dcassandra.config="file:\\\%CASSANDRA_H
 set CASSANDRA_PARAMS=%CASSANDRA_PARAMS% -Dlogback.configurationFile="file:\\\%CASSANDRA_HOME%\cassandra\logback.xml"
 
 echo Starting Cassandra Server
-"%JAVA_HOME%\bin\java" %JAVA_OPTS% %CASSANDRA_PARAMS% -cp %CASSANDRA_CLASSPATH% "%CASSANDRA_MAIN%"
-
-ENDLOCAL
+start "cassandra" /b "%JAVA_HOME%\bin\java.exe" %JAVA_OPTS% %CASSANDRA_PARAMS% -cp %CASSANDRA_CLASSPATH% "%CASSANDRA_MAIN%"
+exit
