@@ -16,5 +16,5 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//:dependencies.bzl", "generated_maven_jars")
-generated_maven_jars()
+load("//dependencies:maven.bzl", "maven_dependencies")
+maven_dependencies()

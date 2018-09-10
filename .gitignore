@@ -1,6 +1,9 @@
 # Mac files #
 .DS_Store
 
+# Bazel files #
+bazel-*
+
 # IDE files #
 .idea/
 *.iml

@@ -921,12 +921,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.github.stefanbirkner</groupId>
-                <artifactId>system-rules</artifactId>
-                <version>${systen-rules.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.zeroturnaround</groupId>
                 <artifactId>zt-exec</artifactId>
                 <version>${zt-exec.version}</version>
@@ -936,11 +930,6 @@
                         <artifactId>commons-io</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>commons-configuration</groupId>
-                <artifactId>commons-configuration</artifactId>
-                <version>1.10</version>
             </dependency>
             <dependency>
                 <groupId>commons-lang</groupId>
@@ -1169,8 +1158,8 @@
                         <id>validate</id>
                         <phase>validate</phase>
                         <configuration>
-                            <configLocation>build/checkstyle/checkstyle.xml</configLocation>
-                            <suppressionsLocation>build/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                            <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+                            <suppressionsLocation>config/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                             <consoleOutput>true</consoleOutput>
                             <failsOnError>true</failsOnError>
                         </configuration>
@@ -1185,7 +1174,7 @@
                 <artifactId>findbugs-maven-plugin</artifactId>
                 <version>3.0.4</version>
                 <configuration>
-                    <excludeFilterFile>build/findbugs/findbugs-exclude.xml</excludeFilterFile>
+                    <excludeFilterFile>config/findbugs/findbugs-exclude.xml</excludeFilterFile>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
                 </configuration>
@@ -1222,7 +1211,7 @@
                         <exclude>**/ai/grakn/engine/controller/DashboardController.java</exclude>
                     </excludes>
                     <rulesets>
-                        <ruleset>build/pmd/pmd-rules.xml</ruleset>
+                        <ruleset>${user.dir}/config/pmd/pmd-rules.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>
