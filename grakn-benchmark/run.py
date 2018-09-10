@@ -117,8 +117,7 @@ def recursive_search(start, accept):
                 found.append(os.path.join(path, f))
     return found
 
-
-# at this point we can build the classpath
+# build the classpath with all the required jars
 classpath += recursive_search(os.path.join(grakn_home, 'services', 'lib'), accept=lambda f: f.endswith('.jar'))
 classpath += recursive_search(args.ignite_dir, accept=lambda f: f.endswith('.jar'))
 classpath.append(os.path.join(grakn_root, 'grakn-benchmark', 'conf'))

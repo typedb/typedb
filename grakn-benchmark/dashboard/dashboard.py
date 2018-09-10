@@ -51,7 +51,7 @@ if __name__ == '__main__':
         )
         return html.Div(
             children=[
-                html.H3("Benchmarks"),
+                html.H5("Benchmarks"),
                 existing_executions_radio
             ],
             className="col-xl-1"
@@ -126,7 +126,7 @@ if __name__ == '__main__':
             return wrapped_callback
     
         callback_definitions = BenchmarkExecutionComponent.get_required_callback_definitions(unique_number=i,
-                                                                                             max_graphs=max_graphs)
+                                                                                             graph_callbacks=max_graphs)
     
         for callback_function_name in callback_definitions:
             callback_definition = callback_definitions[callback_function_name]

@@ -25,7 +25,6 @@ import executor.QueryExecutor;
 import generator.DataGenerator;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -95,6 +94,8 @@ public class BenchmarkManager {
 
     public static void main(String[] args) throws IOException {
 
+        System.out.println(args);
+
         Option configFileOption = Option.builder("c")
                 .longOpt("config")
                 .hasArg(true)
@@ -147,7 +148,7 @@ public class BenchmarkManager {
         String configFileName = arguments.getOptionValue("config");
         ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
         BenchmarkConfigurationFile configFile = benchmarkConfigMapper.readValue(
-                new File(System.getProperty("user.dir") + configFileName),
+                new File(System.getProperty("user.dir") + "/" + configFileName),
                 BenchmarkConfigurationFile.class);
         BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFile);
 
@@ -167,7 +168,7 @@ public class BenchmarkManager {
         String executionName = arguments.getOptionValue("execution-name", "");
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         String dateString = dateFormat.format(new Date());
-        executionName = String.join(" ", Arrays.asList(dateString, benchmarkConfiguration.getName(), executionName));
+        executionName = String.join(" ", Arrays.asList(dateString, benchmarkConfiguration.getName(), executionName)).trim();
 
         String uri = "localhost:48555";
 

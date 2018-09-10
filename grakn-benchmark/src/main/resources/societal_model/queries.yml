@@ -9,3 +9,4 @@ queries:
   - 'match $x isa rating; aggregate count;'
   - 'match $x isa name, has rating $r; aggregate count;'
   - 'match $x isa name, has rating 5; aggregate count;'
+  - 'compute count;'

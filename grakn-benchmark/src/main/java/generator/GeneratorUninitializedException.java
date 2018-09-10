@@ -18,6 +18,9 @@
 
 package generator;
 
+/**
+ *
+ */
 public class GeneratorUninitializedException extends RuntimeException {
     public GeneratorUninitializedException(String msg) {
         super(msg);
