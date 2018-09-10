@@ -9,10 +9,10 @@
 
 .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
     z-index: 2;
-    padding-top: 3px !important;
+    padding-top: 1px !important;
     padding-left: 3px !important;
+    /*height: 30px;*/
 
-    border: var(--container-darkest-border);
 
     background-color: #0f0f0f;
     width: 100%;
@@ -25,7 +25,7 @@
     word-spacing: normal;
     word-break: normal;
     word-wrap: normal;
-    line-height: 1.2;
+    line-height: 1.36;
     -moz-tab-size: 4;
     -o-tab-size: 4;
     tab-size: 4;

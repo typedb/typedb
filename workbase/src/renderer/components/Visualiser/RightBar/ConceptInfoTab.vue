@@ -1,6 +1,6 @@
 <template>
     <div class="node-tab-content">
-        <div class="tab-header">CONCEPT INFO</div>
+        <div class="tab-header">Concept Info</div>
         <concept-info-panel :localStore="localStore"></concept-info-panel>
         <attributes-panel :localStore="localStore"></attributes-panel>
     </div>
@@ -8,9 +8,9 @@
 
 <script>
 
-  import ConceptInfoPanel from './ConceptInfoPanel';
-  import AttributesPanel from './AttributesPanel';
-  import ConceptDisplayPanel from './ConceptDisplayPanel';
+  import ConceptInfoPanel from './ConceptInfoTab/IdentityPanel';
+  import AttributesPanel from './ConceptInfoTab/AttributesPanel';
+  import ConceptDisplayPanel from './SettingsTab/DisplaySettingsPanel';
 
   export default {
     name: 'NodeTab',

@@ -14,11 +14,11 @@
 
   export default {
     name: 'VueInput',
-    props: ['text', 'intent', 'defaultValue', 'disabled', 'leftIcon', 'placeholder', 'rightElement', 'value'],
+    props: ['text', 'intent', 'defaultValue', 'disabled', 'leftIcon', 'placeholder', 'rightElement', 'value', 'className'],
     mounted() {
       this.$nextTick(() => {
         ReactDom.render(React.createElement(InputGroup, {
-          className: 'vue-input',
+          className: this.className,
           defaultValue: this.defaultValue,
           disabled: this.disabled,
           intent: this.intent,

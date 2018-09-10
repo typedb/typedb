@@ -5,17 +5,31 @@
             <h1>Display Settings</h1>
         </div>
         <div class="content" v-show="showConceptDisplayContent && attributesLoaded">
+
+
+
             <div class="content-item">
                 <h1 class="label">TYPE</h1>
-                <vue-popover :button="typesBtn" :items="types" v-on:emit-item="selectType"></vue-popover>
+                <!--<vue-popover :button="typesBtn" :items="types" v-on:emit-item="selectType"></vue-popover>-->
+                <div class="vue-button type-btn" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
+
             </div>
+            <div class="type-list" v-show="showTypeList">
+                <ul v-for="type in types" :key=type>
+                    <li class="type-item" @click="selectType(type)" v-bind:class="[(type === currentType) ? 'type-item-selected' : '']">{{type}}</li>
+                </ul>
+            </div>
+
+
+
             <div class="attributes-item">
                 <h1 class="label">ATTRIBUTES</h1>
                 <div class="column">
                     <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
                     <ul class="attribute-list">
-                        <li class="attribute" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
-                            <vue-button :text="prop" :className="(currentTypeSavedAttributes.includes(prop)) ? 'vue-button toggle-attribute-btn' : 'vue-button attribute-btn'"></vue-button>
+                        <li :class="(currentTypeSavedAttributes.includes(prop)) ? 'toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
+                            {{prop}}
+                            <!--<vue-button :text="prop" :className="(currentTypeSavedAttributes.includes(prop)) ? 'vue-button toggle-attribute-btn' : 'vue-button attribute-btn'"></vue-button>-->
                         </li>
                     </ul>
                     <vue-button v-if="nodeAttributes.length" icon="refresh" className="vue-button" v-on:clicked="toggleAttributeToLabel"></vue-button>
@@ -38,7 +52,7 @@
   import { Button } from '@blueprintjs/core';
 
   import { TOGGLE_COLOUR, TOGGLE_LABEL } from '@/components/shared/StoresActions';
-  import NodeSettings from './NodeSettings';
+  import NodeSettings from './DisplaySettings';
 
 
   export default {
@@ -82,18 +96,12 @@
     watch: {
       async showConceptDisplayContent(open) {
         if (open) {
+          this.loadMetaTypes();
           this.attributesLoaded = false;
           await this.loadAttributeTypes();
           this.loadColour();
           this.attributesLoaded = true;
         }
-      },
-      metaTypeInstances(metaTypes) {
-        if (metaTypes.entities.length || metaTypes.attributes.length || metaTypes.relationships.length) {
-          this.types.push(...metaTypes.entities, ...metaTypes.attributes, ...metaTypes.relationships);
-          this.currentType = this.types[0];
-          this.showConceptDisplayContent = true;
-        } else { this.showConceptDisplayContent = false; }
       },
       currentType() {
         this.renderButton();
@@ -115,6 +123,13 @@
         this.nodeAttributes.sort();
         this.currentTypeSavedAttributes = NodeSettings.getTypeLabels(this.currentType);
       },
+      loadMetaTypes() {
+        if (this.metaTypeInstances.entities.length || this.metaTypeInstances.attributes.length || this.metaTypeInstances.relationships.length) {
+          this.types.push(...this.metaTypeInstances.entities, ...this.metaTypeInstances.attributes, ...this.metaTypeInstances.relationships);
+          this.currentType = this.types[0];
+          this.showConceptDisplayContent = true;
+        } else { this.showConceptDisplayContent = false; }
+      },
       loadColour() {
         this.colour.hex = (NodeSettings.getTypeColours(this.currentType).length) ? NodeSettings.getTypeColours(this.currentType) : 'default';
       },
@@ -127,7 +142,11 @@
       toggleContent() {
         if (this.currentKeyspace) this.showConceptDisplayContent = !this.showConceptDisplayContent;
       },
+      toggleTypeList() {
+        this.showTypeList = !this.showTypeList;
+      },
       selectType(type) {
+        this.showTypeList = false;
         this.currentType = type;
       },
       renderButton() {
@@ -135,6 +154,7 @@
           text: this.currentType,
           className: 'vue-button attribute-btn',
           key: this.currentType,
+          rightIcon: 'caret-down',
         });
       },
       setTypeColour(col) {
@@ -149,6 +169,79 @@
 </script>
 
 <style scoped>
+
+    .attribute-btn {
+
+    }
+
+    .attribute-btn:hover {
+        background-color: var(--gray-3);
+    }
+
+    .toggle-attribute-btn {
+        background-color: var(--gray-2);
+    }
+
+    .type-btn {
+        min-height: 22px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: row;
+    }
+
+    .type-btn-text {
+        width: 80px;
+        padding-left: 3px;
+        display: block;
+        white-space: normal !important;
+        word-wrap: break-word;
+        line-height: 22px;
+    }
+
+    .type-btn-caret {
+        cursor: pointer;
+        align-items: center;
+        display: flex;
+        min-height: 22px;
+        margin-left: 0px !important;
+    }
+
+
+
+
+    .type-item {
+        align-items: center;
+        padding: 2px;
+        cursor: pointer;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+
+    .type-item:hover {
+        background-color: var(--gray-2);
+    }
+
+    .type-item-selected {
+        background-color: var(--gray-3);
+    }
+
+
+
+
+
+    .type-list {
+        border: var(--container-darkest-border);
+        background-color: var(--gray-1);
+        margin-left: 88px;
+        margin-top: -8px;
+        width: 98px;
+        max-height: 100px;
+        overflow: auto;
+    }
+
+
+
+
 
     .content {
         padding: var(--container-padding);
@@ -167,22 +260,26 @@
     }
 
     .attributes-item {
-        padding: var(--container-padding);
-        display: flex;
-        flex-direction: row;
-        margin-bottom: 10px;
+        align-items: center;
+        padding: 2px;
+        cursor: pointer;
+        white-space: normal;
+        word-wrap: break-word;
     }
 
     .attribute-list {
-        max-height: 150px;
-        overflow: scroll;
-        margin-bottom: 10px;
-        padding-right: 12px;
+        border: var(--container-darkest-border);
+        background-color: var(--gray-1);
+        margin-left: 88px;
+        margin-top: -8px;
+        width: 98px;
+        max-height: 100px;
+        overflow: auto;
     }
 
     .label {
         margin-right: 20px;
-        width: 65px;
+        width: 60px;
     }
 
     .color-picker {

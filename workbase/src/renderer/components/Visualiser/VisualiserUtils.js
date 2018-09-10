@@ -1,5 +1,5 @@
-import QuerySettings from './RightBar/QuerySettings';
-import NodeSettings from './RightBar/NodeSettings';
+import QuerySettings from './RightBar/SettingsTab/QuerySettings';
+import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
 
 function buildValue(array) {
   if (!array) return '';

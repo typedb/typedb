@@ -7,22 +7,24 @@
         <div class="content" v-show="showQuerySettings">
             <div class="content-item">
                 <h1 class="label">Query Limit</h1>
-                <div class="value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit"></vue-input></div>
+                <div class="value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
             <div class="content-item">
                 <h1 class="label">Neighbour Limit</h1>
-                <div class="value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit"></vue-input></div>
+                <div class="value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
             <div class="content-item">
                 <h1 class="label">Load Roleplayers</h1>
-                <div class="value"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers"></vue-switch></div>
+                <div class="value"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
             </div>
+            <div class="clear-pref-btn"><vue-button v-on:clicked="clearPreferences" text="Clear Preferences" className="vue-button"></vue-button></div>
         </div>
     </div>
 </template>
 
 <script>
 
+  import storage from '@/components/shared/PersistentStorage';
   import QueryUtils from './QuerySettings';
 
   export default {
@@ -57,6 +59,9 @@
         QueryUtils.setNeighboursLimit(newVal);
         if (newVal.length > 0) this.neighboursLimit = QueryUtils.getNeighboursLimit();
       },
+      clearPreferences() {
+        this.$notifyConfirmDelete('Confirm clearing of preferences', () => { storage.clear(); });
+      },
     },
   };
 </script>
@@ -65,29 +70,35 @@
 
     .content {
         padding: var(--container-padding);
+        border-bottom: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
         max-height: 120px;
     }
 
     .content-item {
-        padding: var(--container-padding);
         display: flex;
-        flex-direction: row;
+        /*flex-direction: row;*/
         align-items: center;
         position: relative;
-        height: 28px;
+        height: var(--line-height);
     }
 
     .label {
-        margin-right: 20px;
-        width: 134px;
+        width: 90px;
     }
 
     .value {
         width: 35px;
         justify-content: center;
         display: flex;
+        position: absolute;
+        right: 3px;
+    }
+
+    .clear-pref-btn{
+        display: flex;
+        justify-content: center;
     }
 
 </style>

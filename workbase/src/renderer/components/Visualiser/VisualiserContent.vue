@@ -7,6 +7,7 @@
                 <div class="center">
                     <context-menu :localStore="localStore"></context-menu>
                     <graph-canvas :localStore="localStore"></graph-canvas>
+                    <canvas-tool-tip :localStore="localStore"></canvas-tool-tip>
                     <!--<bottom-bar :localStore="localStore"></bottom-bar>-->
                 </div>
                 <right-bar :localStore="localStore"></right-bar>
@@ -54,12 +55,13 @@ import BottomBar from './BottomBar.vue';
 import VisualiserStore from './VisualiserStore';
 import GraphCanvas from '../shared/GraphCanvas/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
+import CanvasToolTip from '../DataManagement/DataManagementContent/CanvasToolTip';
 
 
 export default {
   name: 'VisualiserContent',
   components: {
-    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu,
+    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, CanvasToolTip,
   },
   data() {
     return {

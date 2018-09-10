@@ -76,7 +76,7 @@
 
 <script>
   import VueDraggableResizable from 'vue-draggable-resizable';
-  import NodeTab from './RightBar/NodeTab';
+  import NodeTab from './RightBar/ConceptInfoTab';
   import SettingsTab from './RightBar/SettingsTab';
 
   export default {

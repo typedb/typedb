@@ -33,6 +33,9 @@
       icon() {
         this.renderButton();
       },
+      text() {
+        this.renderButton();
+      },
     },
     methods: {
       renderButton() {

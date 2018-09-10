@@ -51,11 +51,20 @@
   --font-faded: #777777;
 
   --container-padding: 5px;
-  --btn-padding: 2px;
+  --btn-padding: 5px;
+  --element-margin: 3px;
+
+  --line-height: 28px;
 
 }
 
+::-webkit-scrollbar {
+  width: 1px;
+}
 
+::-webkit-scrollbar-thumb {
+  background: var(--green-4);
+}
 
 /* icon */
 
@@ -83,8 +92,7 @@
   white-space: nowrap !important;
   border-radius: 0px !important;
   min-height: 20px;
-  height: 30px;
-  margin: 1px !important;
+  margin: var(--element-margin) !important;
 
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
@@ -93,6 +101,10 @@
     -ms-user-select: none; /* Internet Explorer/Edge */
     user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
+}
+
+.vue-button * {
+  fill: var(--font-default);
 }
 
 .vue-button:hover {
@@ -115,20 +127,7 @@
   border: 1px solid var(--border-dark-color) !important;
 }
 
-.attribute-btn {
-  width: 80px;
-  justify-content: flex-start
-}
 
-.toggle-attribute-btn {
-  border: 1px solid var(--button-hover-border-color) !important;
-  width: 80px;
-  justify-content: flex-start
-}
-
-.toggle-attribute-btn:focus {
-  outline: none !important;
-}
 
 .run-btn *{
   fill: var(--green-4) !important;
@@ -143,10 +142,10 @@
   stroke: var(--gray-4) !important;
 }
 
-.save-query-btn {
-  height: 22px;
-  padding: 0px;
-}
+/*.save-query-btn {*/
+  /*height: 22px;*/
+  /*padding: 0px;*/
+/*}*/
 
 
 /* input */
@@ -155,9 +154,8 @@
   background-color: var(--button-color);
   color: var(--font-default);
   font-size: 11px;
-  height: 22px;
+  height: 30px;
   border: 1px solid var(--border-darkest-color);
-  /*margin: 5px;*/
   padding: 5px;
   caret-color: var(--green-4);
   line-height: 22px;
@@ -185,6 +183,11 @@ color: var(--font-faded);
 .vue-input:focus {
   -webkit-box-shadow: 0 0 0 1px var(--green-3), 0 0 0 3px var(--green-4), inset 0 1px 1px var(--green-5);
   box-shadow: 0 0 0 1px var(--green-3), 0 0 0 3px var(--green-4), inset 0 1px 1px var(--green-5);
+}
+
+.vue-input-small .bp3-input{
+  height: 22px;
+  margin: 2px;
 }
 
 /* menu */
@@ -297,7 +300,7 @@ color: var(--font-faded);
 .panel-header {
   padding: 1px;
   width: 100%;
-  height: 25px;
+  height: var(--line-height);
   background-color: var(--gray-1);
   align-items: center;
   display: flex;
@@ -320,16 +323,33 @@ color: var(--font-faded);
 
 .tab-header {
   padding: var(--container-padding);
-  text-align: center;
   background-color: var(--gray-1);
   border-bottom: var(--container-darkest-border);
+  height: var(--line-height);
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* fav query list */
   .fav-query-center *{
-    background-color: var(--gray-1) !important;
-    /*padding-top: 5px !important;*/
+    background-color: var(--gray-3) !important;
   }
+
+.fav-query-center .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
+  border: var(--container-darkest-border);
+}
+
+
+  .fav-query-center-editable *{
+    background-color: var(--gray-1) !important;
+  }
+
+.fav-query-center-editable .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
+  border: var(--container-darkest-border);
+}
+
 
 /*Reset CSS*/
 html, body, div, span, applet, object, iframe,
@@ -394,7 +414,8 @@ a {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-  user-select: none; }
+  user-select: none;
+}
 
 /*Z depth sizes*/
 .z-depth-0 {

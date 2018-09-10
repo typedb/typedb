@@ -1,6 +1,6 @@
 <template>
     <div class="types-container">
-        <div @click="$emit('close-types-panel')"><vue-icon class="close-container" icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>
+        <!--<div @click="$emit('close-types-panel')"><vue-icon class="close-container" icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>-->
 
         <div class="column">
             <vue-tabs class="tabs" :tabs="tabs" v-on:tab-selected="toggleTab"></vue-tabs>
@@ -18,6 +18,17 @@
 </template>
 
 <style scoped>
+
+    .editor-tab {
+        max-height: 123px;
+        width: 13px;
+        flex-direction: column;
+        display: flex;
+        position: relative;
+        float: right;
+        border-left: var(--container-light-border);
+        margin-left: var(--element-margin);
+    }
 
     .close-container{
         position: absolute;
@@ -46,7 +57,7 @@
         padding: var(--container-padding);
         border: var(--container-darkest-border);
         width: 100%;
-        margin-top: 20px;
+        margin-top: 10px;
         height: 125px;
         overflow: auto;
         position: relative;

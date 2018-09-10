@@ -27,7 +27,7 @@
         border: var(--container-darkest-border);
         width: 100%;
         max-height: 140px;
-        margin-top: 20px;
+        margin-top: 10px;
         overflow: auto;
         position: relative;
         white-space: pre-line;

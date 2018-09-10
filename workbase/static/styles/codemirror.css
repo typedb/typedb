@@ -180,7 +180,14 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   position: absolute;
   z-index: 6;
   display: none;
+  height: 0px !important;
 }
+
+.CodeMirror-vscrollbar, .CodeMirror-hscrollbar, .CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler:focus {
+  outline: none;
+}
+
+
 .CodeMirror-vscrollbar {
   right: 0; top: 0;
   overflow-x: hidden;

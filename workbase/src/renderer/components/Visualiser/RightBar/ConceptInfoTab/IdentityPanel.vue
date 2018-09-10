@@ -75,7 +75,6 @@
         max-height: 80px;
         justify-content: center;
         border-bottom: var(--container-darkest-border);
-
     }
 
     .content-item {

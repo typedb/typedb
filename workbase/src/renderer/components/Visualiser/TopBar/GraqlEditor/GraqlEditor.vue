@@ -2,13 +2,13 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button rightIcon="locate" className="vue-button" :disabled="(currentKeyspace) ? false : true" v-on:clicked="toggleTypesContainer"></vue-button>
-            <vue-button icon="star" className="vue-button" :disabled="(currentKeyspace) ? false : true" v-on:clicked="toggleFavQueriesList"></vue-button>
+            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
+            <vue-button icon="star" className="vue-button" v-on:clicked="toggleFavQueriesList"></vue-button>
         </div>
 
     <div class="center">
         <div class="center-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
-            <div class="column">
+            <div class="column" v-bind:style="[(editorLinesNumber === 1) ? {'margin-bottom': '10px'} : {'margin-bottom': '0px'}]">
                 <div class="row">
                     <textarea id="graqlEditor" ref="graqlEditor" rows="3"></textarea>
                     <div v-if="currentQuery.length" class="editor-tab">
@@ -26,7 +26,6 @@
                     v-on:close-add-query-panel="showAddFavQuery = false"
                     v-on:refresh-queries="refreshFavQueries">
             </add-fav-query>
-
             <error-container
                     v-if="showError"
                     :errorMsg="errorMsg"
@@ -49,8 +48,8 @@
     </div>
 
 <div class="right">
-    <vue-button v-on:clicked="runQuery"icon="play" ref="runQueryButton" :disabled="!currentQuery.length || loadSpinner" :loading="loadSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearEditor" icon="refresh" ref="clearButton" :disabled="!currentQuery.length" className="vue-button"></vue-button>
+    <vue-button v-on:clicked="runQuery"icon="play" ref="runQueryButton" :loading="loadSpinner" className="vue-button run-btn"></vue-button>
+    <vue-button v-on:clicked="clearEditor" icon="refresh" ref="clearButton" className="vue-button"></vue-button>
     <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
 </div>
 
@@ -77,7 +76,8 @@
         flex-direction: column;
         width: 100%;
         background-color: #0f0f0f;
-        border-bottom: 1px solid #00eca2;
+        border: var(--container-darkest-border);
+        border-bottom: 1px solid var(--green-4);
     }
 
     .add-fav-query {
@@ -91,12 +91,11 @@
     .editor-tab {
         align-items: center;
         width: 13px;
-        max-height: 57px;
         flex-direction: column;
         display: flex;
         position: relative;
         float: right;
-        padding-top: 1px;
+        border-left: var(--container-light-border)
     }
 
     .center-wrapper {
@@ -121,6 +120,8 @@
         position: relative;
         flex-direction: column;
         margin: 1px;
+        margin-right: var(--element-margin);
+        margin-left: var(--element-margin);
 
     }
 
@@ -134,6 +135,7 @@
         flex: 3;
         position: relative;
         align-items: center;
+
     }
 </style>
 
