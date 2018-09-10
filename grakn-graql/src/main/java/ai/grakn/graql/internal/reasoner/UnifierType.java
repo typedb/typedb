@@ -44,7 +44,8 @@ public enum UnifierType implements UnifierComparison {
     /**
      *
      * Exact unifier, requires type and id predicate bindings to match.
-     * Used in {@link ai.grakn.graql.internal.reasoner.cache.QueryCache} comparisons
+     * Used in {@link ai.grakn.graql.internal.reasoner.cache.QueryCache} comparisons.
+     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
      * .
      */
     EXACT {
@@ -61,6 +62,31 @@ public enum UnifierType implements UnifierComparison {
         @Override
         public boolean atomicCompatibility(Atomic parent, Atomic child) {
             return parent == null || parent.isCompatibleWith(child);
+        }
+
+    },
+
+    /**
+     *
+     * Similar to the exact one with addition to allowing id predicates to differ.
+     * Used in {@link ai.grakn.graql.internal.reasoner.cache.StructuralCache} comparisons.
+     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
+     *
+     */
+    STRUCTURAL {
+        @Override
+        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
+            return true;
+        }
+
+        @Override
+        public boolean typeCompatibility(Type parent, Type child) {
+            return ((child == null ) == (parent == null)) && !areDisjointTypes(parent, child);
+        }
+
+        @Override
+        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+            return (parent == null) == (child == null);
         }
 
     },
@@ -96,29 +122,5 @@ public enum UnifierType implements UnifierComparison {
             return childRes.values().stream()
                     .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
         }
-    },
-
-    /**
-     *
-     * Similar to rule one with addition to allowing id predicates to differ.
-     * Used in {@link ai.grakn.graql.internal.reasoner.cache.StructuralCache} comparisons.
-     *
-     */
-    STRUCTURAL {
-        @Override
-        public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
-            return true;
-        }
-
-        @Override
-        public boolean typeCompatibility(Type parent, Type child) {
-            return child == null || !areDisjointTypes(parent, child);
-        }
-
-        @Override
-        public boolean atomicCompatibility(Atomic parent, Atomic child) {
-            return (parent == null) == (child == null);
-        }
-
     }
 }
