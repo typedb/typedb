@@ -2,7 +2,7 @@
   <transition name="slide-fade" appear> 
     <div v-show="showNodePanel" id="node-panel" class="node-panel z-depth-3">
       <div class="panel-body">
-        <div class="dd-header">Node:<i @click="showNodePanel" class="fas fa-times"></i>
+        <div class="dd-header">Node:<i @click="showNodePanel = false" class="fas fa-times"></i>
         </div>
         <div class="node-features">
           <div class="dd-item" v-for="(value, key) in nodeProperties" :key="key">

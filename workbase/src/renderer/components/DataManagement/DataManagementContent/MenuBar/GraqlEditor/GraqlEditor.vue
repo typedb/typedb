@@ -154,7 +154,7 @@ export default {
   },
   methods: {
     runQuery() {
-      this.localStore.setCurrentQuery(ManagementUtils.limitQuery(this.currentQuery));
+      this.localStore.setCurrentQuery(ManagementUtils.limitQuery(this.currentQuery.trim()));
 
       this.history.addToHistory(this.currentQuery);
 

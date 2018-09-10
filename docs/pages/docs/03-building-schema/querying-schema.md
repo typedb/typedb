@@ -171,7 +171,7 @@ qb.match(var("x").plays("has-firstname-owner")).get();
 Allows you to refer to a specific types by its typename. For example:
 
 ```graql
-match $x isa $type; $type label 'person'; get;
+match $x isa $type; $type label 'person'; get $x;
 ```
 
 This is equivalent to the following:

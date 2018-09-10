@@ -9,14 +9,13 @@ folder: docs
 KB: genealogy-plus
 ---
 
-  The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](./match-clause#variable-patterns)
+The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](./match-clause#variable-patterns)
 describing data. To follow along, or experiment further, with the examples given below, please
-load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
+load the _basic-genealogy.gql_ file, which can be found in the _examples_ directory of the Grakn installation zip, or on
 [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 {% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in
 the knowledge graph." %}
-
 
 ## `match-insert`
 
@@ -50,7 +49,6 @@ qb.match(var("p").has("identifier", "Mary Guthrie"))
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-
 ## Properties
 
 ### isa
@@ -76,7 +74,6 @@ qb.insert(var().has("identifier", "Titus Groan").isa("person")).execute();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
-
 
 ### id
 
@@ -104,10 +101,10 @@ qb.insert(var().id(ConceptId.of("1376496")).isa("person")).execute();
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-
 ### val
 
 Set the value of the concept.
+
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell4" data-toggle="tab">Graql</a></li>
     <li><a href="#java4" data-toggle="tab">Java</a></li>
@@ -116,7 +113,8 @@ Set the value of the concept.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
 <pre class="language-graql"> <code>
-insert == "Ash" isa surname;
+insert $x == "Ash" isa surname;
+insert $x isa surname "Ash";
 </code>
 </pre>
 </div>
@@ -178,7 +176,7 @@ qb.insert(var().isa("person").has(Label.of("identifier"), var().val("Fuchsia Gro
 ### relationship
 
 Make the concept a relationship that relates the given role players, playing the given roles.
-*(With apologies to 'Gormenghast' fans, who will be aware that Titus and Fuchsia are siblings and thus cannot marry).*
+_(With apologies to 'Gormenghast' fans, who will be aware that Titus and Fuchsia are siblings and thus cannot marry)._
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell7" data-toggle="tab">Graql</a></li>
