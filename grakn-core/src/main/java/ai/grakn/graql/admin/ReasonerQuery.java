@@ -20,7 +20,6 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
@@ -139,6 +138,10 @@ public interface ReasonerQuery{
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap();
 
+    /**
+     * @param inferTypes whether types should be inferred from ids
+     * @return map of variable name - corresponding type pairs
+     */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes);
 
