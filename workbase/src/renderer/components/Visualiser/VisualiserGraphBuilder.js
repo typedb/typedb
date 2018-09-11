@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import Style from './Style';
-import NodeSettings from './DataManagementContent/NodeSettingsPanel/NodeSettings';
-import QuerySettings from './DataManagementContent/MenuBar/QuerySettings/QuerySettings';
+import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
+import QuerySettings from './RightBar/SettingsTab/QuerySettings';
 
 // Map graql variables and explanations to each concept
 async function attachExplanation(result) {

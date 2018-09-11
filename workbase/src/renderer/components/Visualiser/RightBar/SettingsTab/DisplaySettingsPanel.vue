@@ -8,40 +8,67 @@
 
 
 
-            <div class="content-item">
-                <h1 class="label">TYPE</h1>
-                <!--<vue-popover :button="typesBtn" :items="types" v-on:emit-item="selectType"></vue-popover>-->
-                <div class="vue-button type-btn" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
 
+            <div class="content-item">
+                <div class="vue-button type-btn" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
             </div>
-            <div class="type-list" v-show="showTypeList">
-                <ul v-for="type in types" :key=type>
-                    <li class="type-item" @click="selectType(type)" v-bind:class="[(type === currentType) ? 'type-item-selected' : '']">{{type}}</li>
+
+            <div class="list-item">
+                <div class="type-list" v-show="showTypeList">
+                    <ul v-for="type in types" :key=type>
+                        <li class="type-item" @click="selectType(type)" v-bind:class="[(type === currentType) ? 'type-item-selected' : '']">{{type}}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="content-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
+                <h1 class="sub-panel-header">
+                    Label
+                    <div class="vue-button reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                </h1>
+                <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
+                <ul v-else class="attribute-list">
+                    <li :class="(currentTypeSavedAttributes.includes(prop)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
+                        {{prop}}
+                    </li>
                 </ul>
             </div>
 
-
-
-            <div class="attributes-item">
-                <h1 class="label">ATTRIBUTES</h1>
-                <div class="column">
-                    <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
-                    <ul class="attribute-list">
-                        <li :class="(currentTypeSavedAttributes.includes(prop)) ? 'toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
-                            {{prop}}
-                            <!--<vue-button :text="prop" :className="(currentTypeSavedAttributes.includes(prop)) ? 'vue-button toggle-attribute-btn' : 'vue-button attribute-btn'"></vue-button>-->
-                        </li>
-                    </ul>
-                    <vue-button v-if="nodeAttributes.length" icon="refresh" className="vue-button" v-on:clicked="toggleAttributeToLabel"></vue-button>
-                </div>
-            </div>
-            <div class="color-picker">
-                <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
+            <div class="colour-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
+                <h1 class="sub-panel-header">Color</h1>
                 <div class="row">
-                    <div>COLOR: {{colour.hex}}</div>
-                    <vue-button class="reset-color-btn" icon="refresh" v-on:clicked="setTypeColour" className="vue-button"></vue-button>
+                    <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
+                    <div class="hex">{{colour.hex}}</div>
                 </div>
             </div>
+
+
+
+            <!--<div class="attributes-item">-->
+                <!--<h1 class="label">ATTRIBUTES</h1>-->
+                <!--<div class="column">-->
+                    <!--<p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>-->
+                    <!--<ul class="attribute-list">-->
+                        <!--<li :class="(currentTypeSavedAttributes.includes(prop)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>-->
+                            <!--{{prop}}-->
+                            <!--&lt;!&ndash;<vue-button :text="prop" :className="(currentTypeSavedAttributes.includes(prop)) ? 'vue-button toggle-attribute-btn' : 'vue-button attribute-btn'"></vue-button>&ndash;&gt;-->
+                        <!--</li>-->
+
+                    <!--</ul>-->
+                    <!--<div @click="toggleAttributeToLabel" v-if="nodeAttributes.length"class="vue-button reset-setting-btn"><vue-icon icon="refresh" className="vue-icon-small"></vue-icon></div>-->
+
+                    <!--&lt;!&ndash;<vue-button v-if="nodeAttributes.length" icon="refresh" className="vue-button" v-on:clicked="toggleAttributeToLabel"></vue-button>&ndash;&gt;-->
+                <!--</div>-->
+
+            <!--</div>-->
+
+            <!--<div class="color-picker">-->
+                <!--<chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>-->
+                <!--<div class="row">-->
+                    <!--<div>COLOR: {{colour.hex}}</div>-->
+                    <!--<vue-button class="reset-color-btn" icon="refresh" v-on:clicked="setTypeColour" className="vue-button"></vue-button>-->
+                <!--</div>-->
+            <!--</div>-->
         </div>
     </div>
 </template>
@@ -114,6 +141,10 @@
       colour(col) {
         this.setTypeColour(col.hex);
       },
+      showTypeList(val) {
+        if (val) this.$emit('hide-content');
+        else this.$emit('show-content');
+      },
     },
     methods: {
       async loadAttributeTypes() {
@@ -170,8 +201,24 @@
 
 <style scoped>
 
-    .attribute-btn {
+    .hex {
+        margin-left: 5px;
+    }
 
+    .sub-panel-header {
+        margin-bottom: var(--container-padding);
+        display: flex;
+        align-items: center;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .attribute-btn {
+        align-items: center;
+        padding: 2px;
+        cursor: pointer;
+        white-space: normal;
+        word-wrap: break-word;
     }
 
     .attribute-btn:hover {
@@ -179,7 +226,8 @@
     }
 
     .toggle-attribute-btn {
-        background-color: var(--gray-2);
+        /*background-color: var(--purple-4);*/
+        border: 1px solid var(--button-hover-border-color);
     }
 
     .type-btn {
@@ -187,10 +235,11 @@
         cursor: pointer;
         display: flex;
         flex-direction: row;
+        width: 100%;
     }
 
     .type-btn-text {
-        width: 80px;
+        width: 100%;
         padding-left: 3px;
         display: block;
         white-space: normal !important;
@@ -203,7 +252,7 @@
         align-items: center;
         display: flex;
         min-height: 22px;
-        margin-left: 0px !important;
+        margin: 0px !important;
     }
 
 
@@ -232,14 +281,24 @@
     .type-list {
         border: var(--container-darkest-border);
         background-color: var(--gray-1);
-        margin-left: 88px;
-        margin-top: -8px;
-        width: 98px;
+        /*width: 100%;*/
         max-height: 100px;
         overflow: auto;
+        position: absolute;
+        width: 192.14px;
+        margin-left: 5px;
+        margin-top: -9px;
+        z-index: 1;
+
     }
 
+    .type-list::-webkit-scrollbar {
+        width: 1px;
+    }
 
+    .type-list::-webkit-scrollbar-thumb {
+        background: var(--green-4);
+    }
 
 
 
@@ -254,27 +313,41 @@
 
     .content-item {
         padding: var(--container-padding);
+        border-bottom: var(--container-light-border);
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .colour-item {
+        padding: var(--container-padding);
+        display: flex;
+        flex-direction: column;
         align-items: center;
     }
 
     .attributes-item {
-        align-items: center;
-        padding: 2px;
-        cursor: pointer;
-        white-space: normal;
-        word-wrap: break-word;
+        /*padding: var(--container-padding);*/
+        /*display: flex;*/
+        /*flex-direction: row;*/
+        /*margin-bottom: 10px;*/
     }
 
     .attribute-list {
         border: var(--container-darkest-border);
         background-color: var(--gray-1);
-        margin-left: 88px;
-        margin-top: -8px;
-        width: 98px;
+        width: 100%;
         max-height: 100px;
         overflow: auto;
+    }
+
+    .attribute-list::-webkit-scrollbar {
+        width: 1px;
+    }
+
+    .attribute-list::-webkit-scrollbar-thumb {
+        background: var(--green-4);
     }
 
     .label {
@@ -286,7 +359,6 @@
         display: flex;
         align-items: center;
         flex-direction: column;
-        border-top: var(--container-light-border);
         justify-content: center;
     }
 
@@ -294,6 +366,7 @@
         display: flex;
         flex-direction: row;
         align-items: center;
+        width: 100%;
     }
     .column {
         display: flex;
@@ -302,5 +375,10 @@
 
     .reset-color-btn {
         margin-left: 10px;
+    }
+
+    .disable-content {
+        pointer-events: none;
+        opacity: 0.1;
     }
 </style>

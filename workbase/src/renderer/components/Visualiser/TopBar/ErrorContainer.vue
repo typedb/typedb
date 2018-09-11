@@ -1,37 +1,61 @@
 <template>
     <div class="error-container">
-        <div class="close-container">
-            <div @click="$emit('close-error')"><vue-icon icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>
-            <div @click="copyError"><vue-icon icon="duplicate" iconSize="15" className="tab-icon"></vue-icon></div>
+        <!--<div class="close-container">-->
+            <!--<div @click="$emit('close-error')"><vue-icon icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>-->
+        <!--</div>-->
+        <div class="column">
+            <div class="header">ERROR MESSAGE</div>
+            <div>{{errorMsg}}</div>
         </div>
-        <div class="header">ERROR MESSAGE</div>
-        <div>{{errorMsg}}</div>
+        <div class="editor-tab">
+            <div @click="$emit('close-types-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+            <div @click="copyError"><vue-icon icon="duplicate" iconSize="12" className="tab-icon"></vue-icon></div>
+        </div>
     </div>
 </template>
 
 <style scoped>
 
-    .close-container{
-        position: absolute;
-        right: 0px;
-        top:0px;
-        align-items: center;
+    .column {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        overflow-y: auto;
+        padding: var(--container-padding);
+
+    }
+
+    .column::-webkit-scrollbar {
+        width: 1px;
+    }
+
+    .column::-webkit-scrollbar-thumb {
+        background: var(--green-4);
+    }
+
+    .editor-tab {
+        max-height: 140px;
+        width: 13px;
         flex-direction: column;
         display: flex;
+        position: relative;
         float: right;
+        border-left: var(--container-light-border);
     }
 
     .error-container {
         background-color: var(--error-container-color);
-        padding: var(--container-padding);
         border: var(--container-darkest-border);
         width: 100%;
         max-height: 140px;
         margin-top: 10px;
-        overflow: auto;
         position: relative;
         white-space: pre-line;
         word-wrap: break-word;
+
+
+        display: flex;
+        flex-direction: row;
     }
 
     .header {

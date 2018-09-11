@@ -4,18 +4,26 @@
             <vue-icon :icon="(showConceptInfoContent) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
             <h1>Identity</h1>
         </div>
-        <div class="content" v-show="showConceptInfoContent">
-            <div class="content-item">
-                <h1 class="label">ID</h1>
-                <div class="value">{{conceptInfo.id}}</div>
+        <div v-show="showConceptInfoContent">
+            <div class="content" v-if="!currentKeyspace">
+                Please select a keyspace
             </div>
-            <div class="content-item">
-                <h1 class="label">TYPE</h1>
-                <div class="value">{{conceptInfo.type}}</div>
+            <div class="content" v-else-if="!(nodes && nodes.length === 1)">
+                Please select a node
             </div>
-            <div class="content-item">
-                <h1 class="label">BASE TYPE</h1>
-                <div class="value">{{conceptInfo.baseType}}</div>
+            <div class="content" v-else>
+                <div class="content-item">
+                    <h1 class="label">ID:</h1>
+                    <div class="value">{{conceptInfo.id}}</div>
+                </div>
+                <div class="content-item">
+                    <h1 class="label">TYPE:</h1>
+                    <div class="value">{{conceptInfo.type}}</div>
+                </div>
+                <div class="content-item">
+                    <h1 class="label">BASE TYPE:</h1>
+                    <div class="value">{{conceptInfo.baseType}}</div>
+                </div>
             </div>
         </div>
     </div>
@@ -27,7 +35,7 @@
     props: ['localStore'],
     data() {
       return {
-        showConceptInfoContent: false,
+        showConceptInfoContent: (this.nodes && this.nodes.length === 1),
       };
     },
     computed: {
@@ -50,6 +58,9 @@
           baseType: (node.explanation && node.explanation.answers().length) ? 'INFERRED_RELATION' : node.baseType,
         };
       },
+      currentKeyspace() {
+        return this.localStore.getCurrentKeyspace();
+      },
     },
     watch: {
       nodes(nodes) {
@@ -58,9 +69,7 @@
     },
     methods: {
       toggleContent() {
-        if (this.nodes && this.nodes.length === 1) {
-          this.showConceptInfoContent = !this.showConceptInfoContent;
-        }
+        this.showConceptInfoContent = !this.showConceptInfoContent;
       },
     },
   };

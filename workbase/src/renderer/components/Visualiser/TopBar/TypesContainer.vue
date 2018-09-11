@@ -1,7 +1,5 @@
 <template>
     <div class="types-container">
-        <!--<div @click="$emit('close-types-panel')"><vue-icon class="close-container" icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>-->
-
         <div class="column">
             <vue-tabs class="tabs" :tabs="tabs" v-on:tab-selected="toggleTab"></vue-tabs>
             <div class="row">
@@ -13,6 +11,9 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="editor-tab">
+            <div @click="$emit('close-types-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
         </div>
     </div>
 </template>
@@ -27,21 +28,6 @@
         position: relative;
         float: right;
         border-left: var(--container-light-border);
-        margin-left: var(--element-margin);
-    }
-
-    .close-container{
-        position: absolute;
-        right: 0px;
-        top:0px;
-        height: 15px;
-        z-index: 1;
-    }
-
-    .tab-panel {
-    }
-
-    .tabs {
     }
 
     .tab-list {
@@ -54,23 +40,32 @@
 
     .types-container{
         background-color: var(--gray-2);
-        padding: var(--container-padding);
         border: var(--container-darkest-border);
         width: 100%;
         margin-top: 10px;
-        height: 125px;
-        overflow: auto;
+        max-height: 125px;
         position: relative;
+        display: flex;
+        flex-direction: row;
     }
 
     .column {
         display: flex;
         flex-direction: column;
+        width: 100%;
+        overflow-y: auto;
+    }
+
+    .column::-webkit-scrollbar {
+        width: 1px;
+    }
+
+    .column::-webkit-scrollbar-thumb {
+        background: var(--green-4);
     }
 
     .row {
-        width: 100%;
-        margin-top: 10px;
+        margin: var(--element-margin);
     }
 </style>
 

@@ -7,7 +7,7 @@
     </div>
 </template>
 <script>
-  import { CANVAS_RESET, RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
+  import { CANVAS_RESET, RUN_CURRENT_QUERY, EXPLAIN_CONCEPT } from '@/components/shared/StoresActions';
 
   export default {
     name: 'ContextMenu',
@@ -67,7 +67,7 @@
         contextMenu.style.top = `${mouseEvent.pointer.DOM.y}px`;
       },
       explainNode() {
-        this.localStore.explainConcept(this.selectedNodes[0]);
+        this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
         this.showContextMenu = false;
       },
       clearGraph() {

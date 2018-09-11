@@ -58,14 +58,6 @@
 
 }
 
-::-webkit-scrollbar {
-  width: 1px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--green-4);
-}
-
 /* icon */
 
 .tab-icon {
@@ -79,6 +71,11 @@
 }
 .tab-icon:active {
   fill: var(--button-active-border-color);
+}
+
+.vue-icon-small {
+  height: 12px !important;
+  width: 12px !important;
 }
 
 
@@ -127,6 +124,14 @@
   border: 1px solid var(--border-dark-color) !important;
 }
 
+.reset-setting-btn {
+  height: 20px;
+  width: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
 
 
 .run-btn *{
@@ -141,11 +146,6 @@
 .bp3-spinner-track {
   stroke: var(--gray-4) !important;
 }
-
-/*.save-query-btn {*/
-  /*height: 22px;*/
-  /*padding: 0px;*/
-/*}*/
 
 
 /* input */
@@ -188,6 +188,14 @@ color: var(--font-faded);
 .vue-input-small .bp3-input{
   height: 22px;
   margin: 2px;
+}
+
+.limit-input {
+  width: 36px;
+}
+
+.limit-input .bp3-input {
+  padding-right: 0px !important;
 }
 
 /* menu */
@@ -283,15 +291,32 @@ color: var(--font-faded);
 
 .vc-chrome-body {
   background-color: var(--gray-2) !important;
+  padding: 0px !important;
 }
 
 .vc-chrome {
   box-shadow: none !important;
-  width: 175px !important;
+  width: 140px !important;
+  background: none !important;
 }
 
 .vc-chrome-saturation-wrap {
   display: none !important;
+}
+
+
+.vc-chrome-active-color {
+  border-radius: 0px !important;
+  border: var(--container-darkest-border);
+}
+
+.vc-chrome-hue-wrap .vc-hue {
+  border-radius: 0px !important;
+  border: var(--container-darkest-border);
+}
+
+.vc-hue-picker {
+  margin-top: 0px !important;
 }
 
  /* right panel */

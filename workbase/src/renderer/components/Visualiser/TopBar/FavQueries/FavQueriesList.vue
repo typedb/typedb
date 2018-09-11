@@ -50,7 +50,6 @@
         position: relative;
         float: right;
         border-left: var(--container-light-border);
-        margin-left: var(--element-margin);
     }
 
     .column {
@@ -60,6 +59,13 @@
         overflow-y: auto;
     }
 
+    .column::-webkit-scrollbar {
+        width: 1px;
+    }
+
+    .column::-webkit-scrollbar-thumb {
+        background: var(--green-4);
+    }
 
     .close-container{
         position: absolute;
@@ -134,6 +140,8 @@
         display: flex;
         flex-direction: row;
     }
+
+
 </style>
 
 <script>

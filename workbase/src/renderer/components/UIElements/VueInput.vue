@@ -14,9 +14,24 @@
 
   export default {
     name: 'VueInput',
-    props: ['text', 'intent', 'defaultValue', 'disabled', 'leftIcon', 'placeholder', 'rightElement', 'value', 'className'],
+    props: ['text', 'intent', 'defaultValue', 'disabled', 'leftIcon', 'placeholder', 'rightElement', 'className'],
+    data() {
+      return {
+        value: undefined,
+      };
+    },
     mounted() {
       this.$nextTick(() => {
+        this.renderInput();
+      });
+    },
+    watch: {
+      defaultValue() {
+        this.renderInput();
+      },
+    },
+    methods: {
+      renderInput() {
         ReactDom.render(React.createElement(InputGroup, {
           className: this.className,
           defaultValue: this.defaultValue,
@@ -29,7 +44,7 @@
           type: 'text',
           onChange: (val) => { this.$emit('input-changed', val.target.value); },
         }), this.$refs.vueInput);
-      });
+      },
     },
   };
 </script>

@@ -1,10 +1,10 @@
 <template>
     <div class="settings-tab-content">
         <div class="tab-header">Settings</div>
+
         <query-settings :localStore="localStore"></query-settings>
         <concept-display-panel :localStore="localStore"></concept-display-panel>
         <connection-settings :localStore="localStore"></connection-settings>
-
     </div>
 </template>
 
@@ -22,6 +22,5 @@
 </script>
 
 <style scoped>
-
 
 </style>

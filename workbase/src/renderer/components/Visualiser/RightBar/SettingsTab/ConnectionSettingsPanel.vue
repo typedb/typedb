@@ -62,9 +62,10 @@
     }
 
     .content-item {
+        padding: var(--container-padding);
         display: flex;
+        flex-direction: row;
         align-items: center;
-        position: relative;
         height: var(--line-height);
     }
 
@@ -77,7 +78,7 @@
         justify-content: center;
         display: flex;
         position: absolute;
-        right: 3px;
+        right: 10px;
     }
 
 </style>

@@ -4,16 +4,26 @@
             <vue-icon :icon="(showAttributesPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" ></vue-icon>
             <h1>Attributes</h1>
         </div>
-        <div class="content" v-show="showAttributesPanel">
-            <p v-if="!attributes.length">There are no attributes available for this type of node.</p>
-            <div v-for="(value, key) in attributes" :key="key">
-                <div class="content-item" v-if="value.href">
-                    <div class="label">{{value.type}}:</div>
-                    <a clas="value" :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank"> {{value.value}}</a>
-                </div>
-                <div class="content-item" v-else>
-                    <div class="label">{{value.type}}:</div>
-                    <div clas="value">{{value.value}}</div>
+        <div v-show="showAttributesPanel">
+            <div class="content" v-if="!currentKeyspace">
+                Please select a keyspace
+            </div>
+            <div class="content" v-else-if="!(nodes && nodes.length === 1)">
+                Please select a node
+            </div>
+            <div class="content" v-else-if="!attributes.length">
+                There are no attributes available for this type of node
+            </div>
+            <div class="content" v-else>
+                <div v-for="(value, key) in attributes" :key="key">
+                    <div class="content-item" v-if="value.href">
+                        <div class="label">{{value.type}}:</div>
+                        <a clas="value" :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank"> {{value.value}}</a>
+                    </div>
+                    <div class="content-item" v-else>
+                        <div class="label">{{value.type}}:</div>
+                        <div clas="value">{{value.value}}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -34,6 +44,9 @@
       nodes() {
         return this.localStore.getSelectedNodes();
       },
+      currentKeyspace() {
+        return this.localStore.getCurrentKeyspace();
+      },
     },
     watch: {
       async nodes(nodes) {
@@ -53,9 +66,7 @@
     },
     methods: {
       toggleContent() {
-        if (this.nodes && this.nodes.length === 1) {
-          this.showAttributesPanel = !this.showAttributesPanel;
-        }
+        this.showAttributesPanel = !this.showAttributesPanel;
       },
       validURL(str) {
         const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +

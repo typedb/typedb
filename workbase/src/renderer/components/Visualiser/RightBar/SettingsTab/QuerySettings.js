@@ -61,4 +61,5 @@ export default {
   getRolePlayersStatus,
   setNeighboursLimit,
   getNeighboursLimit,
+  DEFAULT_QUERY_LIMIT,
 };

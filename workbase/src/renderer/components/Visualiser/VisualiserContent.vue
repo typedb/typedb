@@ -55,7 +55,7 @@ import BottomBar from './BottomBar.vue';
 import VisualiserStore from './VisualiserStore';
 import GraphCanvas from '../shared/GraphCanvas/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
-import CanvasToolTip from '../DataManagement/DataManagementContent/CanvasToolTip';
+import CanvasToolTip from './CanvasToolTip';
 
 
 export default {

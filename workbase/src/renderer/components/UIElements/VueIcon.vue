@@ -24,6 +24,9 @@
       icon() {
         this.renderIcon();
       },
+      iconSize() {
+        this.renderIcon();
+      },
     },
     methods: {
       renderIcon() {

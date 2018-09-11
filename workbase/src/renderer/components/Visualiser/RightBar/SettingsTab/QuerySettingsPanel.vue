@@ -15,16 +15,14 @@
             </div>
             <div class="content-item">
                 <h1 class="label">Load Roleplayers</h1>
-                <div class="value"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
+                <div class="value load-roleplayers"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
             </div>
-            <div class="clear-pref-btn"><vue-button v-on:clicked="clearPreferences" text="Clear Preferences" className="vue-button"></vue-button></div>
         </div>
     </div>
 </template>
 
 <script>
 
-  import storage from '@/components/shared/PersistentStorage';
   import QueryUtils from './QuerySettings';
 
   export default {
@@ -59,9 +57,6 @@
         QueryUtils.setNeighboursLimit(newVal);
         if (newVal.length > 0) this.neighboursLimit = QueryUtils.getNeighboursLimit();
       },
-      clearPreferences() {
-        this.$notifyConfirmDelete('Confirm clearing of preferences', () => { storage.clear(); });
-      },
     },
   };
 </script>
@@ -77,10 +72,10 @@
     }
 
     .content-item {
+        padding: var(--container-padding);
         display: flex;
-        /*flex-direction: row;*/
+        flex-direction: row;
         align-items: center;
-        position: relative;
         height: var(--line-height);
     }
 
@@ -89,16 +84,15 @@
     }
 
     .value {
-        width: 35px;
+        width: 55px;
         justify-content: center;
         display: flex;
         position: absolute;
-        right: 3px;
+        right: 10px;
     }
 
-    .clear-pref-btn{
-        display: flex;
-        justify-content: center;
+    .load-roleplayers {
+        margin-right: -2px;
     }
 
 </style>

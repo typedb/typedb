@@ -14,7 +14,9 @@
                     <div v-if="currentQuery.length" class="editor-tab">
                         <div @click="clearEditor"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
                         <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="11" className="tab-icon"></vue-icon></div>
-                        <div v-if="editorLinesNumber > 1"><vue-icon icon="double-chevron-up" iconSize="13" className="tab-icon"></vue-icon></div>
+                        <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="13" className="tab-icon"></vue-icon></div>
+                        <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="13" className="tab-icon"></vue-icon></div>
+
                     </div>
                 </div>
             </div>
@@ -140,6 +142,7 @@
 </style>
 
 <script>
+    import $ from 'jquery';
     import Spinner from '@/components/UIElements/Spinner.vue';
     import { RUN_CURRENT_QUERY } from '@/components/shared/StoresActions';
     import ImageDataURI from 'image-data-uri';
@@ -150,6 +153,7 @@
     import TypesContainer from '../TypesContainer';
     import ErrorContainer from '../ErrorContainer';
     import AddFavQuery from '../FavQueries/AddFavQuery';
+
 
     export default {
       name: 'GraqlEditor',
@@ -171,6 +175,8 @@
           favQueries: [],
           showError: false,
           errorMsg: '',
+          initialEditorHeight: undefined,
+          editorMinimized: false,
         };
       },
       computed: {
@@ -213,6 +219,8 @@
             'Shift-Down': this.history.redo,
           });
 
+          this.initialEditorHeight = $('.CodeMirror').height();
+
           this.codeMirror.on('change', (codeMirrorObj) => {
             this.localStore.setCurrentQuery(codeMirrorObj.getValue());
             this.editorLinesNumber = codeMirrorObj.lineCount();
@@ -238,6 +246,7 @@
         },
         clearEditor() {
           this.codeMirror.setValue('');
+          this.maximizeEditor();
         },
         typeSelected(type) {
           this.codeMirror.setValue(`match $x isa ${type}; get;`);
@@ -276,6 +285,22 @@
           const filePath = '/Users/syedirtazaraza/Desktop/grakn/workbase/screenshots/screenshot';
 
           ImageDataURI.outputFile(dataURL, filePath);
+        },
+        minimizeEditor() {
+          $('.CodeMirror').animate({
+            height: this.initialEditorHeight,
+          }, 300);
+          this.editorMinimized = true;
+        },
+        maximizeEditor() {
+          $('.CodeMirror').animate({
+            height: $('.CodeMirror-sizer').outerHeight(),
+          }, 300, () => {
+            $('.CodeMirror').css({
+              height: 'auto',
+            });
+          });
+          this.editorMinimized = false;
         },
       },
     };
