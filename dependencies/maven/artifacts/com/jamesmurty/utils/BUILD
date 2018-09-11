@@ -1,7 +1,7 @@
 java_library(
-    name = "java_xmlbuilder",
+    name = "java-xmlbuilder",
     exports = [
-        "//external:jar/com/jamesmurty/utils/java_xmlbuilder"
+        "//external:jar/com/jamesmurty/utils/java-xmlbuilder"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/net/iharder:base64"

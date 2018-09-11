@@ -1,7 +1,7 @@
 java_library(
-    name = "jackson_annotations",
+    name = "jackson-annotations",
     exports = [
-        "//external:jar/com/fasterxml/jackson/core/jackson_annotations"
+        "//external:jar/com/fasterxml/jackson/core/jackson-annotations"
     ],
     visibility = [
         "//visibility:public"
@@ -11,9 +11,9 @@ java_library(
 
 
 java_library(
-    name = "jackson_core",
+    name = "jackson-core",
     exports = [
-        "//external:jar/com/fasterxml/jackson/core/jackson_core"
+        "//external:jar/com/fasterxml/jackson/core/jackson-core"
     ],
     visibility = [
         "//visibility:public"
@@ -23,13 +23,13 @@ java_library(
 
 
 java_library(
-    name = "jackson_databind",
+    name = "jackson-databind",
     exports = [
-        "//external:jar/com/fasterxml/jackson/core/jackson_databind"
+        "//external:jar/com/fasterxml/jackson/core/jackson-databind"
     ],
     runtime_deps = [
-        ":jackson_annotations",
-        ":jackson_core"
+        ":jackson-annotations",
+        ":jackson-core"
     ],
     visibility = [
         "//visibility:public"

@@ -1,11 +1,11 @@
 java_library(
-    name = "logback_classic",
+    name = "logback-classic",
     exports = [
-        "//external:jar/ch/qos/logback/logback_classic"
+        "//external:jar/ch/qos/logback/logback-classic"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/slf4j:slf4j_api",
-        ":logback_core"
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        ":logback-core"
     ],
     visibility = [
         "//visibility:public"
@@ -15,9 +15,9 @@ java_library(
 
 
 java_library(
-    name = "logback_core",
+    name = "logback-core",
     exports = [
-        "//external:jar/ch/qos/logback/logback_core"
+        "//external:jar/ch/qos/logback/logback-core"
     ],
     visibility = [
         "//visibility:public"

@@ -1,7 +1,7 @@
 java_library(
-    name = "jackson_core_asl",
+    name = "jackson-core-asl",
     exports = [
-        "//external:jar/org/codehaus/jackson/jackson_core_asl"
+        "//external:jar/org/codehaus/jackson/jackson-core-asl"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -11,12 +11,12 @@ java_library(
 
 
 java_library(
-    name = "jackson_jaxrs",
+    name = "jackson-jaxrs",
     exports = [
-        "//external:jar/org/codehaus/jackson/jackson_jaxrs"
+        "//external:jar/org/codehaus/jackson/jackson-jaxrs"
     ],
     runtime_deps = [
-        ":jackson_core_asl"
+        ":jackson-core-asl"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -26,12 +26,12 @@ java_library(
 
 
 java_library(
-    name = "jackson_mapper_asl",
+    name = "jackson-mapper-asl",
     exports = [
-        "//external:jar/org/codehaus/jackson/jackson_mapper_asl"
+        "//external:jar/org/codehaus/jackson/jackson-mapper-asl"
     ],
     runtime_deps = [
-        ":jackson_core_asl"
+        ":jackson-core-asl"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -41,12 +41,12 @@ java_library(
 
 
 java_library(
-    name = "jackson_xc",
+    name = "jackson-xc",
     exports = [
-        "//external:jar/org/codehaus/jackson/jackson_xc"
+        "//external:jar/org/codehaus/jackson/jackson-xc"
     ],
     runtime_deps = [
-        ":jackson_core_asl"
+        ":jackson-core-asl"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

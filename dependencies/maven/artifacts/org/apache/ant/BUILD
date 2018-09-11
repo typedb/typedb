@@ -4,7 +4,7 @@ java_library(
         "//external:jar/org/apache/ant/ant"
     ],
     runtime_deps = [
-        ":ant_launcher"
+        ":ant-launcher"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -14,9 +14,9 @@ java_library(
 
 
 java_library(
-    name = "ant_launcher",
+    name = "ant-launcher",
     exports = [
-        "//external:jar/org/apache/ant/ant_launcher"
+        "//external:jar/org/apache/ant/ant-launcher"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

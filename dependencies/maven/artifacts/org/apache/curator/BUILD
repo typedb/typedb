@@ -1,7 +1,7 @@
 java_library(
-    name = "curator_client",
+    name = "curator-client",
     exports = [
-        "//external:jar/org/apache/curator/curator_client"
+        "//external:jar/org/apache/curator/curator-client"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -15,14 +15,14 @@ java_library(
 
 
 java_library(
-    name = "curator_framework",
+    name = "curator-framework",
     exports = [
-        "//external:jar/org/apache/curator/curator_framework"
+        "//external:jar/org/apache/curator/curator-framework"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper",
-        ":curator_client"
+        ":curator-client"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -32,14 +32,14 @@ java_library(
 
 
 java_library(
-    name = "curator_recipes",
+    name = "curator-recipes",
     exports = [
-        "//external:jar/org/apache/curator/curator_recipes"
+        "//external:jar/org/apache/curator/curator-recipes"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper",
-        ":curator_framework"
+        ":curator-framework"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

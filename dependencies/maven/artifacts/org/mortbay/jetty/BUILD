@@ -1,7 +1,7 @@
 java_library(
-    name = "jetty_util",
+    name = "jetty-util",
     exports = [
-        "//external:jar/org/mortbay/jetty/jetty_util"
+        "//external:jar/org/mortbay/jetty/jetty-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

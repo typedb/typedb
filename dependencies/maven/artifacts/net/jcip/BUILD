@@ -1,7 +1,7 @@
 java_library(
-    name = "jcip_annotations",
+    name = "jcip-annotations",
     exports = [
-        "//external:jar/net/jcip/jcip_annotations"
+        "//external:jar/net/jcip/jcip-annotations"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,7 +1,7 @@
 java_library(
-    name = "concurrentlinkedhashmap_lru",
+    name = "concurrentlinkedhashmap-lru",
     exports = [
-        "//external:jar/com/googlecode/concurrentlinkedhashmap/concurrentlinkedhashmap_lru"
+        "//external:jar/com/googlecode/concurrentlinkedhashmap/concurrentlinkedhashmap-lru"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

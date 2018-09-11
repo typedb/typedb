@@ -1,7 +1,7 @@
 java_library(
-    name = "reflectasm_jar_shaded",
+    name = "reflectasm-jar-shaded",
     exports = [
-        "//external:jar/com/esotericsoftware/reflectasm/reflectasm_jar_shaded"
+        "//external:jar/com/esotericsoftware/reflectasm/reflectasm-jar-shaded"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

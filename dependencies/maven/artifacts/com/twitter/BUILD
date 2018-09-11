@@ -1,12 +1,12 @@
 java_library(
-    name = "chill_2_10",
+    name = "chill-2-10",
     exports = [
-        "//external:jar/com/twitter/chill_2_10"
+        "//external:jar/com/twitter/chill-2-10"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/esotericsoftware/kryo:kryo",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        ":chill_java"
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        ":chill-java"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -16,12 +16,12 @@ java_library(
 
 
 java_library(
-    name = "chill_java",
+    name = "chill-java",
     exports = [
-        "//external:jar/com/twitter/chill_java"
+        "//external:jar/com/twitter/chill-java"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/esotericsoftware:kryo_shaded"
+        "//dependencies/maven/artifacts/com/esotericsoftware:kryo-shaded"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

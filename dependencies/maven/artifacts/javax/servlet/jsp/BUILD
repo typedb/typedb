@@ -1,7 +1,7 @@
 java_library(
-    name = "jsp_api",
+    name = "jsp-api",
     exports = [
-        "//external:jar/javax/servlet/jsp/jsp_api"
+        "//external:jar/javax/servlet/jsp/jsp-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

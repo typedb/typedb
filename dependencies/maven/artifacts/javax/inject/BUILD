@@ -1,7 +1,7 @@
 java_library(
-    name = "javax_inject",
+    name = "javax-inject",
     exports = [
-        "//external:jar/javax/inject/javax_inject"
+        "//external:jar/javax/inject/javax-inject"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

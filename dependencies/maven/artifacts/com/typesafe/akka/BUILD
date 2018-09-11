@@ -1,11 +1,11 @@
 java_library(
-    name = "akka_actor_2_10",
+    name = "akka-actor-2-10",
     exports = [
-        "//external:jar/com/typesafe/akka/akka_actor_2_10"
+        "//external:jar/com/typesafe/akka/akka-actor-2-10"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/typesafe:config",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library"
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -15,16 +15,16 @@ java_library(
 
 
 java_library(
-    name = "akka_remote_2_10",
+    name = "akka-remote-2-10",
     exports = [
-        "//external:jar/com/typesafe/akka/akka_remote_2_10"
+        "//external:jar/com/typesafe/akka/akka-remote-2-10"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf_java",
+        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
         "//dependencies/maven/artifacts/io/netty:netty",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        "//dependencies/maven/artifacts/org/uncommons/maths:uncommons_maths",
-        ":akka_actor_2_10"
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        "//dependencies/maven/artifacts/org/uncommons/maths:uncommons-maths",
+        ":akka-actor-2-10"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -34,13 +34,13 @@ java_library(
 
 
 java_library(
-    name = "akka_slf4j_2_10",
+    name = "akka-slf4j-2-10",
     exports = [
-        "//external:jar/com/typesafe/akka/akka_slf4j_2_10"
+        "//external:jar/com/typesafe/akka/akka-slf4j-2-10"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        ":akka_actor_2_10"
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        ":akka-actor-2-10"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

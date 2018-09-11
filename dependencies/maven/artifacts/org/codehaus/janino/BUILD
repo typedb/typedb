@@ -1,7 +1,7 @@
 java_library(
-    name = "commons_compiler",
+    name = "commons-compiler",
     exports = [
-        "//external:jar/org/codehaus/janino/commons_compiler"
+        "//external:jar/org/codehaus/janino/commons-compiler"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -16,7 +16,7 @@ java_library(
         "//external:jar/org/codehaus/janino/janino"
     ],
     runtime_deps = [
-        ":commons_compiler"
+        ":commons-compiler"
     ],
     visibility = [
         "//visibility:public"

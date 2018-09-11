@@ -1,7 +1,7 @@
 java_library(
-    name = "metrics_core",
+    name = "metrics-core",
     exports = [
-        "//external:jar/io/dropwizard/metrics/metrics_core"
+        "//external:jar/io/dropwizard/metrics/metrics-core"
     ],
     visibility = [
         "//visibility:public"
@@ -11,12 +11,12 @@ java_library(
 
 
 java_library(
-    name = "metrics_graphite",
+    name = "metrics-graphite",
     exports = [
-        "//external:jar/io/dropwizard/metrics/metrics_graphite"
+        "//external:jar/io/dropwizard/metrics/metrics-graphite"
     ],
     runtime_deps = [
-        ":metrics_core"
+        ":metrics-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -26,9 +26,9 @@ java_library(
 
 
 java_library(
-    name = "metrics_healthchecks",
+    name = "metrics-healthchecks",
     exports = [
-        "//external:jar/io/dropwizard/metrics/metrics_healthchecks"
+        "//external:jar/io/dropwizard/metrics/metrics-healthchecks"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -38,13 +38,13 @@ java_library(
 
 
 java_library(
-    name = "metrics_json",
+    name = "metrics-json",
     exports = [
-        "//external:jar/io/dropwizard/metrics/metrics_json"
+        "//external:jar/io/dropwizard/metrics/metrics-json"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_databind",
-        ":metrics_core"
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
+        ":metrics-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -54,13 +54,13 @@ java_library(
 
 
 java_library(
-    name = "metrics_jvm",
+    name = "metrics-jvm",
     exports = [
-        "//external:jar/io/dropwizard/metrics/metrics_jvm"
+        "//external:jar/io/dropwizard/metrics/metrics-jvm"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/slf4j:slf4j_api",
-        ":metrics_core"
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        ":metrics-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -70,16 +70,16 @@ java_library(
 
 
 java_library(
-    name = "metrics_servlets",
+    name = "metrics-servlets",
     exports = [
-        "//external:jar/io/dropwizard/metrics/metrics_servlets"
+        "//external:jar/io/dropwizard/metrics/metrics-servlets"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/papertrail:profiler",
-        ":metrics_core",
-        ":metrics_healthchecks",
-        ":metrics_json",
-        ":metrics_jvm"
+        ":metrics-core",
+        ":metrics-healthchecks",
+        ":metrics-json",
+        ":metrics-jvm"
     ],
     visibility = [
         "//visibility:public"

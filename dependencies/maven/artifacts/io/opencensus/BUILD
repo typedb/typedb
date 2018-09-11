@@ -1,10 +1,10 @@
 java_library(
-    name = "opencensus_api",
+    name = "opencensus-api",
     exports = [
-        "//external:jar/io/opencensus/opencensus_api"
+        "//external:jar/io/opencensus/opencensus-api"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/google/errorprone:error_prone_annotations",
+        "//dependencies/maven/artifacts/com/google/errorprone:error-prone-annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     visibility = [
@@ -15,13 +15,13 @@ java_library(
 
 
 java_library(
-    name = "opencensus_contrib_grpc_metrics",
+    name = "opencensus-contrib-grpc-metrics",
     exports = [
-        "//external:jar/io/opencensus/opencensus_contrib_grpc_metrics"
+        "//external:jar/io/opencensus/opencensus-contrib-grpc-metrics"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/google/errorprone:error_prone_annotations",
-        ":opencensus_api"
+        "//dependencies/maven/artifacts/com/google/errorprone:error-prone-annotations",
+        ":opencensus-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

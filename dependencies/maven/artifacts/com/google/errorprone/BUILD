@@ -1,7 +1,7 @@
 java_library(
-    name = "error_prone_annotations",
+    name = "error-prone-annotations",
     exports = [
-        "//external:jar/com/google/errorprone/error_prone_annotations"
+        "//external:jar/com/google/errorprone/error-prone-annotations"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

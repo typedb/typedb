@@ -1,7 +1,7 @@
 java_library(
-    name = "compress_lzf",
+    name = "compress-lzf",
     exports = [
-        "//external:jar/com/ning/compress_lzf"
+        "//external:jar/com/ning/compress-lzf"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

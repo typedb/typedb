@@ -1,12 +1,12 @@
 java_library(
-    name = "ohc_core",
+    name = "ohc-core",
     exports = [
-        "//external:jar/org/caffinitas/ohc/ohc_core"
+        "//external:jar/org/caffinitas/ohc/ohc-core"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/net/java/dev/jna:jna",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j_api"
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -16,12 +16,12 @@ java_library(
 
 
 java_library(
-    name = "ohc_core_j8",
+    name = "ohc-core-j8",
     exports = [
-        "//external:jar/org/caffinitas/ohc/ohc_core_j8"
+        "//external:jar/org/caffinitas/ohc/ohc-core-j8"
     ],
     runtime_deps = [
-        ":ohc_core"
+        ":ohc-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

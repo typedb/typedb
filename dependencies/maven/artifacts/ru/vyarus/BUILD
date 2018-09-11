@@ -1,7 +1,7 @@
 java_library(
-    name = "generics_resolver",
+    name = "generics-resolver",
     exports = [
-        "//external:jar/ru/vyarus/generics_resolver"
+        "//external:jar/ru/vyarus/generics-resolver"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

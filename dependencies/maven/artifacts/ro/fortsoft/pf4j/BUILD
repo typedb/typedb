@@ -4,8 +4,8 @@ java_library(
         "//external:jar/ro/fortsoft/pf4j/pf4j"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/github/zafarkhaja:java_semver",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j_api"
+        "//dependencies/maven/artifacts/com/github/zafarkhaja:java-semver",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     visibility = [
         "//visibility:public"

@@ -4,7 +4,7 @@ java_library(
         "//external:jar/dom4j/dom4j"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/xml_apis:xml_apis"
+        "//dependencies/maven/artifacts/xml-apis:xml-apis"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -16,8 +16,8 @@ java_library(
         "//external:jar/org/apache/httpcomponents/httpclient"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/commons_codec:commons_codec",
-        "//dependencies/maven/artifacts/commons_logging:commons_logging",
+        "//dependencies/maven/artifacts/commons-codec:commons-codec",
+        "//dependencies/maven/artifacts/commons-logging:commons-logging",
         ":httpcore"
     ],
     visibility = [
@@ -40,9 +40,9 @@ java_library(
 
 
 java_library(
-    name = "httpcore_nio",
+    name = "httpcore-nio",
     exports = [
-        "//external:jar/org/apache/httpcomponents/httpcore_nio"
+        "//external:jar/org/apache/httpcomponents/httpcore-nio"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

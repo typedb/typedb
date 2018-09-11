@@ -1,7 +1,7 @@
 java_library(
-    name = "snappy_java",
+    name = "snappy-java",
     exports = [
-        "//external:jar/org/xerial/snappy/snappy_java"
+        "//external:jar/org/xerial/snappy/snappy-java"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

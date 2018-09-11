@@ -1,7 +1,7 @@
 java_library(
-    name = "byte_buddy",
+    name = "byte-buddy",
     exports = [
-        "//external:jar/net/bytebuddy/byte_buddy"
+        "//external:jar/net/bytebuddy/byte-buddy"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -11,9 +11,9 @@ java_library(
 
 
 java_library(
-    name = "byte_buddy_agent",
+    name = "byte-buddy-agent",
     exports = [
-        "//external:jar/net/bytebuddy/byte_buddy_agent"
+        "//external:jar/net/bytebuddy/byte-buddy-agent"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

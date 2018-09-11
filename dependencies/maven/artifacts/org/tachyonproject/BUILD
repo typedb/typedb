@@ -1,16 +1,16 @@
 java_library(
-    name = "tachyon_client",
+    name = "tachyon-client",
     exports = [
-        "//external:jar/org/tachyonproject/tachyon_client"
+        "//external:jar/org/tachyonproject/tachyon-client"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons_io:commons_io",
-        "//dependencies/maven/artifacts/commons_lang:commons_lang",
-        "//dependencies/maven/artifacts/org/apache/commons:commons_lang3",
-        ":tachyon_underfs_hdfs",
-        ":tachyon_underfs_local",
-        ":tachyon_underfs_s3"
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
+        ":tachyon-underfs-hdfs",
+        ":tachyon-underfs-local",
+        ":tachyon-underfs-s3"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -20,13 +20,13 @@ java_library(
 
 
 java_library(
-    name = "tachyon_underfs_hdfs",
+    name = "tachyon-underfs-hdfs",
     exports = [
-        "//external:jar/org/tachyonproject/tachyon_underfs_hdfs"
+        "//external:jar/org/tachyonproject/tachyon-underfs-hdfs"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/apache/commons:commons_lang3"
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -36,9 +36,9 @@ java_library(
 
 
 java_library(
-    name = "tachyon_underfs_local",
+    name = "tachyon-underfs-local",
     exports = [
-        "//external:jar/org/tachyonproject/tachyon_underfs_local"
+        "//external:jar/org/tachyonproject/tachyon-underfs-local"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava"
@@ -51,9 +51,9 @@ java_library(
 
 
 java_library(
-    name = "tachyon_underfs_s3",
+    name = "tachyon-underfs-s3",
     exports = [
-        "//external:jar/org/tachyonproject/tachyon_underfs_s3"
+        "//external:jar/org/tachyonproject/tachyon-underfs-s3"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava"

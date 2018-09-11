@@ -1,12 +1,12 @@
 java_library(
-    name = "jersey_guice",
+    name = "jersey-guice",
     exports = [
-        "//external:jar/com/sun/jersey/contribs/jersey_guice"
+        "//external:jar/com/sun/jersey/contribs/jersey-guice"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/inject:guice",
-        "//dependencies/maven/artifacts/com/sun/jersey:jersey_server",
-        "//dependencies/maven/artifacts/javax/inject:javax_inject"
+        "//dependencies/maven/artifacts/com/sun/jersey:jersey-server",
+        "//dependencies/maven/artifacts/javax/inject:javax-inject"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -11,9 +11,9 @@ java_library(
 
 
 java_library(
-    name = "simpleclient_common",
+    name = "simpleclient-common",
     exports = [
-        "//external:jar/io/prometheus/simpleclient_common"
+        "//external:jar/io/prometheus/simpleclient-common"
     ],
     runtime_deps = [
         ":simpleclient"
@@ -26,12 +26,12 @@ java_library(
 
 
 java_library(
-    name = "simpleclient_dropwizard",
+    name = "simpleclient-dropwizard",
     exports = [
-        "//external:jar/io/prometheus/simpleclient_dropwizard"
+        "//external:jar/io/prometheus/simpleclient-dropwizard"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics_core",
+        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
         ":simpleclient"
     ],
     visibility = [
@@ -42,13 +42,13 @@ java_library(
 
 
 java_library(
-    name = "simpleclient_servlet",
+    name = "simpleclient-servlet",
     exports = [
-        "//external:jar/io/prometheus/simpleclient_servlet"
+        "//external:jar/io/prometheus/simpleclient-servlet"
     ],
     runtime_deps = [
         ":simpleclient",
-        ":simpleclient_common"
+        ":simpleclient-common"
     ],
     visibility = [
         "//visibility:public"

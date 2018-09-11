@@ -4,7 +4,7 @@ java_library(
         "//external:jar/org/antlr/ST4"
     ],
     runtime_deps = [
-        ":antlr_runtime"
+        ":antlr-runtime"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -20,7 +20,7 @@ java_library(
     ],
     runtime_deps = [
         ":ST4",
-        ":antlr_runtime"
+        ":antlr-runtime"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -30,27 +30,27 @@ java_library(
 
 
 java_library(
-    name = "antlr4_runtime",
+    name = "antlr-runtime",
     exports = [
-        "//external:jar/org/antlr/antlr4_runtime"
+        "//external:jar/org/antlr/antlr-runtime"
+    ],
+    visibility = [
+        "//dependencies/maven/artifacts:__subpackages__"
+    ]
+)
+
+
+
+java_library(
+    name = "antlr4-runtime",
+    exports = [
+        "//external:jar/org/antlr/antlr4-runtime"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/abego/treelayout:org_abego_treelayout_core"
+        "//dependencies/maven/artifacts/org/abego/treelayout:org-abego-treelayout-core"
     ],
     visibility = [
         "//visibility:public"
-    ]
-)
-
-
-
-java_library(
-    name = "antlr_runtime",
-    exports = [
-        "//external:jar/org/antlr/antlr_runtime"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 

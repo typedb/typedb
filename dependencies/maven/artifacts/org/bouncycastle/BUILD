@@ -1,7 +1,7 @@
 java_library(
-    name = "bcprov_jdk15on",
+    name = "bcprov-jdk15on",
     exports = [
-        "//external:jar/org/bouncycastle/bcprov_jdk15on"
+        "//external:jar/org/bouncycastle/bcprov-jdk15on"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

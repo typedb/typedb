@@ -1,7 +1,7 @@
 java_library(
-    name = "javax_servlet",
+    name = "javax-servlet",
     exports = [
-        "//external:jar/org/eclipse/jetty/orbit/javax_servlet"
+        "//external:jar/org/eclipse/jetty/orbit/javax-servlet"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

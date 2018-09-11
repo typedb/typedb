@@ -1,7 +1,7 @@
 java_library(
-    name = "javax_json",
+    name = "javax-json",
     exports = [
-        "//external:jar/org/glassfish/javax_json"
+        "//external:jar/org/glassfish/javax-json"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

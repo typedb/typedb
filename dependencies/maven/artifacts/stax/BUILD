@@ -1,7 +1,7 @@
 java_library(
-    name = "stax_api",
+    name = "stax-api",
     exports = [
-        "//external:jar/stax/stax_api"
+        "//external:jar/stax/stax-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,7 +1,7 @@
 java_library(
-    name = "auto_value",
+    name = "auto-value",
     exports = [
-        "//external:jar/com/google/auto/value/auto_value"
+        "//external:jar/com/google/auto/value/auto-value"
     ],
     visibility = [
         "//visibility:public"

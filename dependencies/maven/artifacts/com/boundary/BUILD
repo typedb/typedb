@@ -1,7 +1,7 @@
 java_library(
-    name = "high_scale_lib",
+    name = "high-scale-lib",
     exports = [
-        "//external:jar/com/boundary/high_scale_lib"
+        "//external:jar/com/boundary/high-scale-lib"
     ],
     visibility = [
         "//visibility:public"

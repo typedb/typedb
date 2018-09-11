@@ -1,7 +1,7 @@
 java_library(
-    name = "hamcrest_all",
+    name = "hamcrest-all",
     exports = [
-        "//external:jar/org/hamcrest/hamcrest_all"
+        "//external:jar/org/hamcrest/hamcrest-all"
     ],
     visibility = [
         "//visibility:public"
@@ -11,9 +11,9 @@ java_library(
 
 
 java_library(
-    name = "hamcrest_core",
+    name = "hamcrest-core",
     exports = [
-        "//external:jar/org/hamcrest/hamcrest_core"
+        "//external:jar/org/hamcrest/hamcrest-core"
     ],
     visibility = [
         "//visibility:public"
@@ -23,12 +23,12 @@ java_library(
 
 
 java_library(
-    name = "hamcrest_library",
+    name = "hamcrest-library",
     exports = [
-        "//external:jar/org/hamcrest/hamcrest_library"
+        "//external:jar/org/hamcrest/hamcrest-library"
     ],
     runtime_deps = [
-        ":hamcrest_core"
+        ":hamcrest-core"
     ],
     visibility = [
         "//visibility:public"

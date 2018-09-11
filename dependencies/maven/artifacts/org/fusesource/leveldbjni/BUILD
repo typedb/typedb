@@ -1,7 +1,7 @@
 java_library(
-    name = "leveldbjni_all",
+    name = "leveldbjni-all",
     exports = [
-        "//external:jar/org/fusesource/leveldbjni/leveldbjni_all"
+        "//external:jar/org/fusesource/leveldbjni/leveldbjni-all"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

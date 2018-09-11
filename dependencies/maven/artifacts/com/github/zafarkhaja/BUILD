@@ -1,7 +1,7 @@
 java_library(
-    name = "java_semver",
+    name = "java-semver",
     exports = [
-        "//external:jar/com/github/zafarkhaja/java_semver"
+        "//external:jar/com/github/zafarkhaja/java-semver"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,7 +1,7 @@
 java_library(
-    name = "jts_core",
+    name = "jts-core",
     exports = [
-        "//external:jar/org/locationtech/jts/jts_core"
+        "//external:jar/org/locationtech/jts/jts-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

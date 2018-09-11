@@ -1,7 +1,7 @@
 java_library(
-    name = "websocket_api",
+    name = "websocket-api",
     exports = [
-        "//external:jar/org/eclipse/jetty/websocket/websocket_api"
+        "//external:jar/org/eclipse/jetty/websocket/websocket-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -11,14 +11,14 @@ java_library(
 
 
 java_library(
-    name = "websocket_client",
+    name = "websocket-client",
     exports = [
-        "//external:jar/org/eclipse/jetty/websocket/websocket_client"
+        "//external:jar/org/eclipse/jetty/websocket/websocket-client"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_io",
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_util",
-        ":websocket_common"
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-io",
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-util",
+        ":websocket-common"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -28,14 +28,14 @@ java_library(
 
 
 java_library(
-    name = "websocket_common",
+    name = "websocket-common",
     exports = [
-        "//external:jar/org/eclipse/jetty/websocket/websocket_common"
+        "//external:jar/org/eclipse/jetty/websocket/websocket-common"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_io",
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_util",
-        ":websocket_api"
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-io",
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-util",
+        ":websocket-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -45,16 +45,16 @@ java_library(
 
 
 java_library(
-    name = "websocket_server",
+    name = "websocket-server",
     exports = [
-        "//external:jar/org/eclipse/jetty/websocket/websocket_server"
+        "//external:jar/org/eclipse/jetty/websocket/websocket-server"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_http",
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_servlet",
-        ":websocket_client",
-        ":websocket_common",
-        ":websocket_servlet"
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-http",
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-servlet",
+        ":websocket-client",
+        ":websocket-common",
+        ":websocket-servlet"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -64,13 +64,13 @@ java_library(
 
 
 java_library(
-    name = "websocket_servlet",
+    name = "websocket-servlet",
     exports = [
-        "//external:jar/org/eclipse/jetty/websocket/websocket_servlet"
+        "//external:jar/org/eclipse/jetty/websocket/websocket-servlet"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/javax/servlet:javax_servlet_api",
-        ":websocket_api"
+        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
+        ":websocket-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

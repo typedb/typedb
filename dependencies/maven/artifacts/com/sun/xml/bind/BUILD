@@ -1,10 +1,10 @@
 java_library(
-    name = "jaxb_impl",
+    name = "jaxb-impl",
     exports = [
-        "//external:jar/com/sun/xml/bind/jaxb_impl"
+        "//external:jar/com/sun/xml/bind/jaxb-impl"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/javax/xml/bind:jaxb_api"
+        "//dependencies/maven/artifacts/javax/xml/bind:jaxb-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

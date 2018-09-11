@@ -6,7 +6,7 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/org/apache/httpcomponents:httpclient",
         "//dependencies/maven/artifacts/org/apache/httpcomponents:httpcore",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j_api"
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

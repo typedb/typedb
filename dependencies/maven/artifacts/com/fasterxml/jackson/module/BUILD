@@ -1,10 +1,10 @@
 java_library(
-    name = "jackson_module_paranamer",
+    name = "jackson-module-paranamer",
     exports = [
-        "//external:jar/com/fasterxml/jackson/module/jackson_module_paranamer"
+        "//external:jar/com/fasterxml/jackson/module/jackson-module-paranamer"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_databind",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
         "//dependencies/maven/artifacts/com/thoughtworks/paranamer:paranamer"
     ],
     visibility = [
@@ -15,17 +15,17 @@ java_library(
 
 
 java_library(
-    name = "jackson_module_scala_2_10",
+    name = "jackson-module-scala-2-10",
     exports = [
-        "//external:jar/com/fasterxml/jackson/module/jackson_module_scala_2_10"
+        "//external:jar/com/fasterxml/jackson/module/jackson-module-scala-2-10"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_annotations",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_core",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_databind",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_reflect",
-        ":jackson_module_paranamer"
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        "//dependencies/maven/artifacts/org/scala-lang:scala-reflect",
+        ":jackson-module-paranamer"
     ],
     visibility = [
         "//visibility:public"
@@ -35,16 +35,16 @@ java_library(
 
 
 java_library(
-    name = "jackson_module_scala_2_11",
+    name = "jackson-module-scala-2-11",
     exports = [
-        "//external:jar/com/fasterxml/jackson/module/jackson_module_scala_2_11"
+        "//external:jar/com/fasterxml/jackson/module/jackson-module-scala-2-11"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_annotations",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_core",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_databind",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_reflect",
-        ":jackson_module_paranamer"
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
+        "//dependencies/maven/artifacts/org/scala-lang:scala-reflect",
+        ":jackson-module-paranamer"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

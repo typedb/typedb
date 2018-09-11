@@ -1,7 +1,7 @@
 java_library(
-    name = "api_asn1_api",
+    name = "api-asn1-api",
     exports = [
-        "//external:jar/org/apache/directory/api/api_asn1_api"
+        "//external:jar/org/apache/directory/api/api-asn1-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -11,9 +11,9 @@ java_library(
 
 
 java_library(
-    name = "api_util",
+    name = "api-util",
     exports = [
-        "//external:jar/org/apache/directory/api/api_util"
+        "//external:jar/org/apache/directory/api/api-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

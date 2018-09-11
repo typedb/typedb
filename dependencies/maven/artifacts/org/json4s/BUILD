@@ -1,10 +1,10 @@
 java_library(
-    name = "json4s_ast_2_10",
+    name = "json4s-ast-2-10",
     exports = [
-        "//external:jar/org/json4s/json4s_ast_2_10"
+        "//external:jar/org/json4s/json4s-ast-2-10"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library"
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -14,15 +14,15 @@ java_library(
 
 
 java_library(
-    name = "json4s_core_2_10",
+    name = "json4s-core-2-10",
     exports = [
-        "//external:jar/org/json4s/json4s_core_2_10"
+        "//external:jar/org/json4s/json4s-core-2-10"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/thoughtworks/paranamer:paranamer",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        "//dependencies/maven/artifacts/org/scala_lang:scalap",
-        ":json4s_ast_2_10"
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        "//dependencies/maven/artifacts/org/scala-lang:scalap",
+        ":json4s-ast-2-10"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -32,14 +32,14 @@ java_library(
 
 
 java_library(
-    name = "json4s_jackson_2_10",
+    name = "json4s-jackson-2-10",
     exports = [
-        "//external:jar/org/json4s/json4s_jackson_2_10"
+        "//external:jar/org/json4s/json4s-jackson-2-10"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson_databind",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        ":json4s_core_2_10"
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        ":json4s-core-2-10"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

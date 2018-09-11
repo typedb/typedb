@@ -1,7 +1,7 @@
 java_library(
-    name = "jboss_logging",
+    name = "jboss-logging",
     exports = [
-        "//external:jar/org/jboss/logging/jboss_logging"
+        "//external:jar/org/jboss/logging/jboss-logging"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

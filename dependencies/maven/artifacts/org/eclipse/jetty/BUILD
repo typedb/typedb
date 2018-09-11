@@ -1,10 +1,10 @@
 java_library(
-    name = "jetty_http",
+    name = "jetty-http",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_http"
+        "//external:jar/org/eclipse/jetty/jetty-http"
     ],
     runtime_deps = [
-        ":jetty_util"
+        ":jetty-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -14,12 +14,12 @@ java_library(
 
 
 java_library(
-    name = "jetty_io",
+    name = "jetty-io",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_io"
+        "//external:jar/org/eclipse/jetty/jetty-io"
     ],
     runtime_deps = [
-        ":jetty_util"
+        ":jetty-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -29,12 +29,12 @@ java_library(
 
 
 java_library(
-    name = "jetty_security",
+    name = "jetty-security",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_security"
+        "//external:jar/org/eclipse/jetty/jetty-security"
     ],
     runtime_deps = [
-        ":jetty_server"
+        ":jetty-server"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -44,14 +44,14 @@ java_library(
 
 
 java_library(
-    name = "jetty_server",
+    name = "jetty-server",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_server"
+        "//external:jar/org/eclipse/jetty/jetty-server"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/javax/servlet:javax_servlet_api",
-        ":jetty_http",
-        ":jetty_io"
+        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
+        ":jetty-http",
+        ":jetty-io"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -61,12 +61,12 @@ java_library(
 
 
 java_library(
-    name = "jetty_servlet",
+    name = "jetty-servlet",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_servlet"
+        "//external:jar/org/eclipse/jetty/jetty-servlet"
     ],
     runtime_deps = [
-        ":jetty_security"
+        ":jetty-security"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -76,9 +76,9 @@ java_library(
 
 
 java_library(
-    name = "jetty_util",
+    name = "jetty-util",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_util"
+        "//external:jar/org/eclipse/jetty/jetty-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -88,13 +88,13 @@ java_library(
 
 
 java_library(
-    name = "jetty_webapp",
+    name = "jetty-webapp",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_webapp"
+        "//external:jar/org/eclipse/jetty/jetty-webapp"
     ],
     runtime_deps = [
-        ":jetty_servlet",
-        ":jetty_xml"
+        ":jetty-servlet",
+        ":jetty-xml"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -104,12 +104,12 @@ java_library(
 
 
 java_library(
-    name = "jetty_xml",
+    name = "jetty-xml",
     exports = [
-        "//external:jar/org/eclipse/jetty/jetty_xml"
+        "//external:jar/org/eclipse/jetty/jetty-xml"
     ],
     runtime_deps = [
-        ":jetty_util"
+        ":jetty-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

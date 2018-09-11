@@ -11,14 +11,14 @@ java_library(
 
 
 java_library(
-    name = "groovy_console",
+    name = "groovy-console",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_console"
+        "//external:jar/org/codehaus/groovy/groovy-console"
     ],
     runtime_deps = [
         ":groovy",
-        ":groovy_swing",
-        ":groovy_templates"
+        ":groovy-swing",
+        ":groovy-templates"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -28,14 +28,14 @@ java_library(
 
 
 java_library(
-    name = "groovy_groovysh_jar_indy",
+    name = "groovy-groovysh-jar-indy",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_groovysh_jar_indy"
+        "//external:jar/org/codehaus/groovy/groovy-groovysh-jar-indy"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/jline:jline",
         ":groovy",
-        ":groovy_console"
+        ":groovy-console"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -45,9 +45,9 @@ java_library(
 
 
 java_library(
-    name = "groovy_jar_indy",
+    name = "groovy-jar-indy",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_jar_indy"
+        "//external:jar/org/codehaus/groovy/groovy-jar-indy"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -57,9 +57,9 @@ java_library(
 
 
 java_library(
-    name = "groovy_json",
+    name = "groovy-json",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_json"
+        "//external:jar/org/codehaus/groovy/groovy-json"
     ],
     runtime_deps = [
         ":groovy"
@@ -72,9 +72,9 @@ java_library(
 
 
 java_library(
-    name = "groovy_json_jar_indy",
+    name = "groovy-json-jar-indy",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_json_jar_indy"
+        "//external:jar/org/codehaus/groovy/groovy-json-jar-indy"
     ],
     runtime_deps = [
         ":groovy"
@@ -87,9 +87,9 @@ java_library(
 
 
 java_library(
-    name = "groovy_jsr223_jar_indy",
+    name = "groovy-jsr223-jar-indy",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_jsr223_jar_indy"
+        "//external:jar/org/codehaus/groovy/groovy-jsr223-jar-indy"
     ],
     runtime_deps = [
         ":groovy"
@@ -102,9 +102,9 @@ java_library(
 
 
 java_library(
-    name = "groovy_swing",
+    name = "groovy-swing",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_swing"
+        "//external:jar/org/codehaus/groovy/groovy-swing"
     ],
     runtime_deps = [
         ":groovy"
@@ -117,13 +117,13 @@ java_library(
 
 
 java_library(
-    name = "groovy_templates",
+    name = "groovy-templates",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_templates"
+        "//external:jar/org/codehaus/groovy/groovy-templates"
     ],
     runtime_deps = [
         ":groovy",
-        ":groovy_xml"
+        ":groovy-xml"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -133,9 +133,9 @@ java_library(
 
 
 java_library(
-    name = "groovy_xml",
+    name = "groovy-xml",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy_xml"
+        "//external:jar/org/codehaus/groovy/groovy-xml"
     ],
     runtime_deps = [
         ":groovy"

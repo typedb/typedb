@@ -1,7 +1,7 @@
 java_library(
-    name = "xbean_asm5_shaded",
+    name = "xbean-asm5-shaded",
     exports = [
-        "//external:jar/org/apache/xbean/xbean_asm5_shaded"
+        "//external:jar/org/apache/xbean/xbean-asm5-shaded"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

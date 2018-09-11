@@ -1,7 +1,7 @@
 java_library(
-    name = "appengine_api_1_0_sdk",
+    name = "appengine-api-1-0-sdk",
     exports = [
-        "//external:jar/com/google/appengine/appengine_api_1_0_sdk"
+        "//external:jar/com/google/appengine/appengine-api-1-0-sdk"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

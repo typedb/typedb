@@ -1,19 +1,19 @@
 java_library(
-    name = "gremlin_core",
+    name = "gremlin-core",
     exports = [
-        "//external:jar/org/apache/tinkerpop/gremlin_core"
+        "//external:jar/org/apache/tinkerpop/gremlin-core"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/carrotsearch:hppc",
-        "//dependencies/maven/artifacts/com/jcabi:jcabi_manifests",
+        "//dependencies/maven/artifacts/com/jcabi:jcabi-manifests",
         "//dependencies/maven/artifacts/com/squareup:javapoet",
-        "//dependencies/maven/artifacts/commons_collections:commons_collections",
-        "//dependencies/maven/artifacts/commons_configuration:commons_configuration",
+        "//dependencies/maven/artifacts/commons-collections:commons-collections",
+        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
         "//dependencies/maven/artifacts/net/objecthunter:exp4j",
         "//dependencies/maven/artifacts/org/javatuples:javatuples",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j_api",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/yaml:snakeyaml",
-        ":gremlin_shaded"
+        ":gremlin-shaded"
     ],
     visibility = [
         "//visibility:public"
@@ -23,20 +23,20 @@ java_library(
 
 
 java_library(
-    name = "gremlin_groovy",
+    name = "gremlin-groovy",
     exports = [
-        "//external:jar/org/apache/tinkerpop/gremlin_groovy"
+        "//external:jar/org/apache/tinkerpop/gremlin-groovy"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/github/ben_manes/caffeine:caffeine",
-        "//dependencies/maven/artifacts/org/apache/commons:commons_lang3",
+        "//dependencies/maven/artifacts/com/github/ben-manes/caffeine:caffeine",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/apache/ivy:ivy",
-        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy_groovysh_jar_indy",
-        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy_jar_indy",
-        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy_json_jar_indy",
-        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy_jsr223_jar_indy",
+        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy-groovysh-jar-indy",
+        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy-jar-indy",
+        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy-json-jar-indy",
+        "//dependencies/maven/artifacts/org/codehaus/groovy:groovy-jsr223-jar-indy",
         "//dependencies/maven/artifacts/org/mindrot:jbcrypt",
-        ":gremlin_core"
+        ":gremlin-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -46,9 +46,9 @@ java_library(
 
 
 java_library(
-    name = "gremlin_shaded",
+    name = "gremlin-shaded",
     exports = [
-        "//external:jar/org/apache/tinkerpop/gremlin_shaded"
+        "//external:jar/org/apache/tinkerpop/gremlin-shaded"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -58,19 +58,19 @@ java_library(
 
 
 java_library(
-    name = "hadoop_gremlin",
+    name = "hadoop-gremlin",
     exports = [
-        "//external:jar/org/apache/tinkerpop/hadoop_gremlin"
+        "//external:jar/org/apache/tinkerpop/hadoop-gremlin"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons_codec:commons_codec",
-        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop_client",
-        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson_core_asl",
-        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson_mapper_asl",
-        "//dependencies/maven/artifacts/org/xerial/snappy:snappy_java",
-        ":gremlin_core",
-        ":gremlin_groovy"
+        "//dependencies/maven/artifacts/commons-codec:commons-codec",
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-client",
+        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
+        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",
+        "//dependencies/maven/artifacts/org/xerial/snappy:snappy-java",
+        ":gremlin-core",
+        ":gremlin-groovy"
     ],
     visibility = [
         "//visibility:public"
@@ -80,19 +80,19 @@ java_library(
 
 
 java_library(
-    name = "spark_gremlin",
+    name = "spark-gremlin",
     exports = [
-        "//external:jar/org/apache/tinkerpop/spark_gremlin"
+        "//external:jar/org/apache/tinkerpop/spark-gremlin"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/thoughtworks/paranamer:paranamer",
-        "//dependencies/maven/artifacts/commons_lang:commons_lang",
-        "//dependencies/maven/artifacts/org/apache/spark:spark_core_2_10",
-        "//dependencies/maven/artifacts/org/scala_lang:scala_library",
-        "//dependencies/maven/artifacts/org/xerial/snappy:snappy_java",
-        ":gremlin_core",
-        ":gremlin_groovy",
-        ":hadoop_gremlin"
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/org/apache/spark:spark-core-2-10",
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library",
+        "//dependencies/maven/artifacts/org/xerial/snappy:snappy-java",
+        ":gremlin-core",
+        ":gremlin-groovy",
+        ":hadoop-gremlin"
     ],
     visibility = [
         "//visibility:public"
@@ -102,13 +102,13 @@ java_library(
 
 
 java_library(
-    name = "tinkergraph_gremlin",
+    name = "tinkergraph-gremlin",
     exports = [
-        "//external:jar/org/apache/tinkerpop/tinkergraph_gremlin"
+        "//external:jar/org/apache/tinkerpop/tinkergraph-gremlin"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/apache/commons:commons_lang3",
-        ":gremlin_core"
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
+        ":gremlin-core"
     ],
     visibility = [
         "//visibility:public"

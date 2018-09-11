@@ -1,7 +1,7 @@
 java_library(
-    name = "guava_retrying",
+    name = "guava-retrying",
     exports = [
-        "//external:jar/com/github/rholder/guava_retrying"
+        "//external:jar/com/github/rholder/guava-retrying"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
@@ -15,9 +15,9 @@ java_library(
 
 
 java_library(
-    name = "snowball_stemmer",
+    name = "snowball-stemmer",
     exports = [
-        "//external:jar/com/github/rholder/snowball_stemmer"
+        "//external:jar/com/github/rholder/snowball-stemmer"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

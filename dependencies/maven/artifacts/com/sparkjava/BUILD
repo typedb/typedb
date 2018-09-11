@@ -1,13 +1,13 @@
 java_library(
-    name = "spark_core",
+    name = "spark-core",
     exports = [
-        "//external:jar/com/sparkjava/spark_core"
+        "//external:jar/com/sparkjava/spark-core"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/eclipse/jetty/websocket:websocket_server",
-        "//dependencies/maven/artifacts/org/eclipse/jetty/websocket:websocket_servlet",
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_server",
-        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty_webapp"
+        "//dependencies/maven/artifacts/org/eclipse/jetty/websocket:websocket-server",
+        "//dependencies/maven/artifacts/org/eclipse/jetty/websocket:websocket-servlet",
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-server",
+        "//dependencies/maven/artifacts/org/eclipse/jetty:jetty-webapp"
     ],
     visibility = [
         "//visibility:public"

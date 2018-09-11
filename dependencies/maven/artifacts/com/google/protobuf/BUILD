@@ -1,7 +1,7 @@
 java_library(
-    name = "protobuf_java",
+    name = "protobuf-java",
     exports = [
-        "//external:jar/com/google/protobuf/protobuf_java"
+        "//external:jar/com/google/protobuf/protobuf-java"
     ],
     visibility = [
         "//visibility:public"
@@ -11,14 +11,14 @@ java_library(
 
 
 java_library(
-    name = "protobuf_java_util",
+    name = "protobuf-java-util",
     exports = [
-        "//external:jar/com/google/protobuf/protobuf_java_util"
+        "//external:jar/com/google/protobuf/protobuf-java-util"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/code/gson:gson",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        ":protobuf_java"
+        ":protobuf-java"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,10 +1,10 @@
 java_library(
-    name = "sesame_model",
+    name = "sesame-model",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_model"
+        "//external:jar/org/openrdf/sesame/sesame-model"
     ],
     runtime_deps = [
-        ":sesame_util"
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -14,13 +14,13 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_api",
+    name = "sesame-rio-api",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_api"
+        "//external:jar/org/openrdf/sesame/sesame-rio-api"
     ],
     runtime_deps = [
-        ":sesame_model",
-        ":sesame_util"
+        ":sesame-model",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -30,14 +30,14 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_datatypes",
+    name = "sesame-rio-datatypes",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_datatypes"
+        "//external:jar/org/openrdf/sesame/sesame-rio-datatypes"
     ],
     runtime_deps = [
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_util"
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -47,14 +47,14 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_languages",
+    name = "sesame-rio-languages",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_languages"
+        "//external:jar/org/openrdf/sesame/sesame-rio-languages"
     ],
     runtime_deps = [
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_util"
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -64,16 +64,16 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_n3",
+    name = "sesame-rio-n3",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_n3"
+        "//external:jar/org/openrdf/sesame/sesame-rio-n3"
     ],
     runtime_deps = [
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_rio_datatypes",
-        ":sesame_rio_languages",
-        ":sesame_rio_turtle"
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-rio-datatypes",
+        ":sesame-rio-languages",
+        ":sesame-rio-turtle"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -83,16 +83,16 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_ntriples",
+    name = "sesame-rio-ntriples",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_ntriples"
+        "//external:jar/org/openrdf/sesame/sesame-rio-ntriples"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/commons_io:commons_io",
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_rio_datatypes",
-        ":sesame_rio_languages"
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-rio-datatypes",
+        ":sesame-rio-languages"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -102,17 +102,17 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_rdfxml",
+    name = "sesame-rio-rdfxml",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_rdfxml"
+        "//external:jar/org/openrdf/sesame/sesame-rio-rdfxml"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/commons_io:commons_io",
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_rio_datatypes",
-        ":sesame_rio_languages",
-        ":sesame_util"
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-rio-datatypes",
+        ":sesame-rio-languages",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -122,17 +122,17 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_trig",
+    name = "sesame-rio-trig",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_trig"
+        "//external:jar/org/openrdf/sesame/sesame-rio-trig"
     ],
     runtime_deps = [
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_rio_datatypes",
-        ":sesame_rio_languages",
-        ":sesame_rio_turtle",
-        ":sesame_util"
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-rio-datatypes",
+        ":sesame-rio-languages",
+        ":sesame-rio-turtle",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -142,17 +142,17 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_trix",
+    name = "sesame-rio-trix",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_trix"
+        "//external:jar/org/openrdf/sesame/sesame-rio-trix"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/commons_io:commons_io",
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_rio_datatypes",
-        ":sesame_rio_languages",
-        ":sesame_util"
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-rio-datatypes",
+        ":sesame-rio-languages",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -162,17 +162,17 @@ java_library(
 
 
 java_library(
-    name = "sesame_rio_turtle",
+    name = "sesame-rio-turtle",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_rio_turtle"
+        "//external:jar/org/openrdf/sesame/sesame-rio-turtle"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/commons_io:commons_io",
-        ":sesame_model",
-        ":sesame_rio_api",
-        ":sesame_rio_datatypes",
-        ":sesame_rio_languages",
-        ":sesame_util"
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        ":sesame-model",
+        ":sesame-rio-api",
+        ":sesame-rio-datatypes",
+        ":sesame-rio-languages",
+        ":sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -182,9 +182,9 @@ java_library(
 
 
 java_library(
-    name = "sesame_util",
+    name = "sesame-util",
     exports = [
-        "//external:jar/org/openrdf/sesame/sesame_util"
+        "//external:jar/org/openrdf/sesame/sesame-util"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,11 +1,11 @@
 java_library(
-    name = "jmh_core",
+    name = "jmh-core",
     exports = [
-        "//external:jar/org/openjdk/jmh/jmh_core"
+        "//external:jar/org/openjdk/jmh/jmh-core"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/net/sf/jopt_simple:jopt_simple",
-        "//dependencies/maven/artifacts/org/apache/commons:commons_math3"
+        "//dependencies/maven/artifacts/net/sf/jopt-simple:jopt-simple",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-math3"
     ],
     visibility = [
         "//visibility:public"
@@ -15,12 +15,12 @@ java_library(
 
 
 java_library(
-    name = "jmh_generator_annprocess",
+    name = "jmh-generator-annprocess",
     exports = [
-        "//external:jar/org/openjdk/jmh/jmh_generator_annprocess"
+        "//external:jar/org/openjdk/jmh/jmh-generator-annprocess"
     ],
     runtime_deps = [
-        ":jmh_core"
+        ":jmh-core"
     ],
     visibility = [
         "//visibility:public"

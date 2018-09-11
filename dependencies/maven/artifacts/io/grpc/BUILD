@@ -1,7 +1,7 @@
 java_library(
-    name = "grpc_context",
+    name = "grpc-context",
     exports = [
-        "//external:jar/io/grpc/grpc_context"
+        "//external:jar/io/grpc/grpc-context"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -11,18 +11,18 @@ java_library(
 
 
 java_library(
-    name = "grpc_core",
+    name = "grpc-core",
     exports = [
-        "//external:jar/io/grpc/grpc_core"
+        "//external:jar/io/grpc/grpc-core"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/errorprone:error_prone_annotations",
+        "//dependencies/maven/artifacts/com/google/errorprone:error-prone-annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/instrumentation:instrumentation_api",
-        "//dependencies/maven/artifacts/io/opencensus:opencensus_api",
-        "//dependencies/maven/artifacts/io/opencensus:opencensus_contrib_grpc_metrics",
-        ":grpc_context"
+        "//dependencies/maven/artifacts/com/google/instrumentation:instrumentation-api",
+        "//dependencies/maven/artifacts/io/opencensus:opencensus-api",
+        "//dependencies/maven/artifacts/io/opencensus:opencensus-contrib-grpc-metrics",
+        ":grpc-context"
     ],
     visibility = [
         "//visibility:public"
@@ -32,14 +32,14 @@ java_library(
 
 
 java_library(
-    name = "grpc_netty",
+    name = "grpc-netty",
     exports = [
-        "//external:jar/io/grpc/grpc_netty"
+        "//external:jar/io/grpc/grpc-netty"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/io/netty:netty_codec_http2",
-        "//dependencies/maven/artifacts/io/netty:netty_handler_proxy",
-        ":grpc_core"
+        "//dependencies/maven/artifacts/io/netty:netty-codec-http2",
+        "//dependencies/maven/artifacts/io/netty:netty-handler-proxy",
+        ":grpc-core"
     ],
     visibility = [
         "//visibility:public"
@@ -49,17 +49,17 @@ java_library(
 
 
 java_library(
-    name = "grpc_protobuf",
+    name = "grpc-protobuf",
     exports = [
-        "//external:jar/io/grpc/grpc_protobuf"
+        "//external:jar/io/grpc/grpc-protobuf"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/google/api/grpc:proto_google_common_protos",
+        "//dependencies/maven/artifacts/com/google/api/grpc:proto-google-common-protos",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf_java",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf_java_util",
-        ":grpc_core",
-        ":grpc_protobuf_lite"
+        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java-util",
+        ":grpc-core",
+        ":grpc-protobuf-lite"
     ],
     visibility = [
         "//visibility:public"
@@ -69,13 +69,13 @@ java_library(
 
 
 java_library(
-    name = "grpc_protobuf_lite",
+    name = "grpc-protobuf-lite",
     exports = [
-        "//external:jar/io/grpc/grpc_protobuf_lite"
+        "//external:jar/io/grpc/grpc-protobuf-lite"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        ":grpc_core"
+        ":grpc-core"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -85,12 +85,12 @@ java_library(
 
 
 java_library(
-    name = "grpc_stub",
+    name = "grpc-stub",
     exports = [
-        "//external:jar/io/grpc/grpc_stub"
+        "//external:jar/io/grpc/grpc-stub"
     ],
     runtime_deps = [
-        ":grpc_core"
+        ":grpc-core"
     ],
     visibility = [
         "//visibility:public"
@@ -100,15 +100,15 @@ java_library(
 
 
 java_library(
-    name = "grpc_testing",
+    name = "grpc-testing",
     exports = [
-        "//external:jar/io/grpc/grpc_testing"
+        "//external:jar/io/grpc/grpc-testing"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/junit:junit",
-        "//dependencies/maven/artifacts/org/mockito:mockito_core",
-        ":grpc_core",
-        ":grpc_stub"
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        ":grpc-core",
+        ":grpc-stub"
     ],
     visibility = [
         "//visibility:public"

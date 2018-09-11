@@ -1,11 +1,11 @@
 java_library(
-    name = "mockito_core",
+    name = "mockito-core",
     exports = [
-        "//external:jar/org/mockito/mockito_core"
+        "//external:jar/org/mockito/mockito-core"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/net/bytebuddy:byte_buddy",
-        "//dependencies/maven/artifacts/net/bytebuddy:byte_buddy_agent",
+        "//dependencies/maven/artifacts/net/bytebuddy:byte-buddy",
+        "//dependencies/maven/artifacts/net/bytebuddy:byte-buddy-agent",
         "//dependencies/maven/artifacts/org/objenesis:objenesis"
     ],
     visibility = [

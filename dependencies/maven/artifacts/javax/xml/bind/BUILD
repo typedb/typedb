@@ -1,11 +1,11 @@
 java_library(
-    name = "jaxb_api",
+    name = "jaxb-api",
     exports = [
-        "//external:jar/javax/xml/bind/jaxb_api"
+        "//external:jar/javax/xml/bind/jaxb-api"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/javax/activation:activation",
-        "//dependencies/maven/artifacts/javax/xml/stream:stax_api"
+        "//dependencies/maven/artifacts/javax/xml/stream:stax-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

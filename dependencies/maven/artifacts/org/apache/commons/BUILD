@@ -1,7 +1,7 @@
 java_library(
-    name = "commons_compress",
+    name = "commons-compress",
     exports = [
-        "//external:jar/org/apache/commons/commons_compress"
+        "//external:jar/org/apache/commons/commons-compress"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/org/tukaani:xz"
@@ -14,9 +14,9 @@ java_library(
 
 
 java_library(
-    name = "commons_lang3",
+    name = "commons-lang3",
     exports = [
-        "//external:jar/org/apache/commons/commons_lang3"
+        "//external:jar/org/apache/commons/commons-lang3"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -26,9 +26,9 @@ java_library(
 
 
 java_library(
-    name = "commons_math3",
+    name = "commons-math3",
     exports = [
-        "//external:jar/org/apache/commons/commons_math3"
+        "//external:jar/org/apache/commons/commons-math3"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -38,9 +38,9 @@ java_library(
 
 
 java_library(
-    name = "commons_text",
+    name = "commons-text",
     exports = [
-        "//external:jar/org/apache/commons/commons_text"
+        "//external:jar/org/apache/commons/commons-text"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -4,7 +4,7 @@ java_library(
         "//external:jar/junit/junit"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest_core"
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-core"
     ],
     visibility = [
         "//visibility:public"

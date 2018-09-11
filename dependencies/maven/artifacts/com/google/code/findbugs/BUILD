@@ -4,7 +4,7 @@ java_library(
         "//external:jar/com/google/code/findbugs/annotations"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/net/jcip:jcip_annotations",
+        "//dependencies/maven/artifacts/net/jcip:jcip-annotations",
         ":jsr305"
     ],
     visibility = [

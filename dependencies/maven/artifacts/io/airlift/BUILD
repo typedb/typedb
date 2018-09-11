@@ -4,7 +4,7 @@ java_library(
         "//external:jar/io/airlift/airline"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/javax/inject:javax_inject"
+        "//dependencies/maven/artifacts/javax/inject:javax-inject"
     ],
     visibility = [
         "//visibility:public"

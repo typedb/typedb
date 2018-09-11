@@ -11,12 +11,12 @@ java_library(
 
 
 java_library(
-    name = "asm_analysis",
+    name = "asm-analysis",
     exports = [
-        "//external:jar/org/ow2/asm/asm_analysis"
+        "//external:jar/org/ow2/asm/asm-analysis"
     ],
     runtime_deps = [
-        ":asm_tree"
+        ":asm-tree"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -26,12 +26,12 @@ java_library(
 
 
 java_library(
-    name = "asm_commons",
+    name = "asm-commons",
     exports = [
-        "//external:jar/org/ow2/asm/asm_commons"
+        "//external:jar/org/ow2/asm/asm-commons"
     ],
     runtime_deps = [
-        ":asm_tree"
+        ":asm-tree"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -41,9 +41,9 @@ java_library(
 
 
 java_library(
-    name = "asm_tree",
+    name = "asm-tree",
     exports = [
-        "//external:jar/org/ow2/asm/asm_tree"
+        "//external:jar/org/ow2/asm/asm-tree"
     ],
     runtime_deps = [
         ":asm"
@@ -56,12 +56,12 @@ java_library(
 
 
 java_library(
-    name = "asm_util",
+    name = "asm-util",
     exports = [
-        "//external:jar/org/ow2/asm/asm_util"
+        "//external:jar/org/ow2/asm/asm-util"
     ],
     runtime_deps = [
-        ":asm_tree"
+        ":asm-tree"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

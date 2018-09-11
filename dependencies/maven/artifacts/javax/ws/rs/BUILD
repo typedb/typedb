@@ -1,7 +1,7 @@
 java_library(
-    name = "jsr311_api",
+    name = "jsr311-api",
     exports = [
-        "//external:jar/javax/ws/rs/jsr311_api"
+        "//external:jar/javax/ws/rs/jsr311-api"
     ],
     visibility = [
         "//visibility:public"

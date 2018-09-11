@@ -1,7 +1,7 @@
 java_library(
-    name = "org_apache_servicemix_bundles_commons_csv",
+    name = "org-apache-servicemix-bundles-commons-csv",
     exports = [
-        "//external:jar/org/apache/servicemix/bundles/org_apache_servicemix_bundles_commons_csv"
+        "//external:jar/org/apache/servicemix/bundles/org-apache-servicemix-bundles-commons-csv"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

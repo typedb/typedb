@@ -1,7 +1,7 @@
 java_library(
-    name = "apacheds_i18n",
+    name = "apacheds-i18n",
     exports = [
-        "//external:jar/org/apache/directory/server/apacheds_i18n"
+        "//external:jar/org/apache/directory/server/apacheds-i18n"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -11,14 +11,14 @@ java_library(
 
 
 java_library(
-    name = "apacheds_kerberos_codec",
+    name = "apacheds-kerberos-codec",
     exports = [
-        "//external:jar/org/apache/directory/server/apacheds_kerberos_codec"
+        "//external:jar/org/apache/directory/server/apacheds-kerberos-codec"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/org/apache/directory/api:api_asn1_api",
-        "//dependencies/maven/artifacts/org/apache/directory/api:api_util",
-        ":apacheds_i18n"
+        "//dependencies/maven/artifacts/org/apache/directory/api:api-asn1-api",
+        "//dependencies/maven/artifacts/org/apache/directory/api:api-util",
+        ":apacheds-i18n"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

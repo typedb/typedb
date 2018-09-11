@@ -1,7 +1,7 @@
 java_library(
-    name = "uncommons_maths",
+    name = "uncommons-maths",
     exports = [
-        "//external:jar/org/uncommons/maths/uncommons_maths"
+        "//external:jar/org/uncommons/maths/uncommons-maths"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

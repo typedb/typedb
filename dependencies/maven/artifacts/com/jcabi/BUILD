@@ -1,10 +1,10 @@
 java_library(
-    name = "jcabi_aspects",
+    name = "jcabi-aspects",
     exports = [
-        "//external:jar/com/jcabi/jcabi_aspects"
+        "//external:jar/com/jcabi/jcabi-aspects"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/javax/validation:validation_api",
+        "//dependencies/maven/artifacts/javax/validation:validation-api",
         "//dependencies/maven/artifacts/org/aspectj:aspectjrt"
     ],
     visibility = [
@@ -15,12 +15,12 @@ java_library(
 
 
 java_library(
-    name = "jcabi_log",
+    name = "jcabi-log",
     exports = [
-        "//external:jar/com/jcabi/jcabi_log"
+        "//external:jar/com/jcabi/jcabi-log"
     ],
     runtime_deps = [
-        ":jcabi_aspects"
+        ":jcabi-aspects"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -30,12 +30,12 @@ java_library(
 
 
 java_library(
-    name = "jcabi_manifests",
+    name = "jcabi-manifests",
     exports = [
-        "//external:jar/com/jcabi/jcabi_manifests"
+        "//external:jar/com/jcabi/jcabi-manifests"
     ],
     runtime_deps = [
-        ":jcabi_log"
+        ":jcabi-log"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,7 +1,7 @@
 java_library(
-    name = "kryo_shaded",
+    name = "kryo-shaded",
     exports = [
-        "//external:jar/com/esotericsoftware/kryo_shaded"
+        "//external:jar/com/esotericsoftware/kryo-shaded"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/org/objenesis:objenesis",

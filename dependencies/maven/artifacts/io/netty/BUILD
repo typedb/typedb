@@ -11,9 +11,9 @@ java_library(
 
 
 java_library(
-    name = "netty_all",
+    name = "netty-all",
     exports = [
-        "//external:jar/io/netty/netty_all"
+        "//external:jar/io/netty/netty-all"
     ],
     visibility = [
         "//visibility:public"
@@ -23,12 +23,12 @@ java_library(
 
 
 java_library(
-    name = "netty_buffer",
+    name = "netty-buffer",
     exports = [
-        "//external:jar/io/netty/netty_buffer"
+        "//external:jar/io/netty/netty-buffer"
     ],
     runtime_deps = [
-        ":netty_common"
+        ":netty-common"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -38,12 +38,12 @@ java_library(
 
 
 java_library(
-    name = "netty_codec",
+    name = "netty-codec",
     exports = [
-        "//external:jar/io/netty/netty_codec"
+        "//external:jar/io/netty/netty-codec"
     ],
     runtime_deps = [
-        ":netty_transport"
+        ":netty-transport"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -53,12 +53,12 @@ java_library(
 
 
 java_library(
-    name = "netty_codec_http",
+    name = "netty-codec-http",
     exports = [
-        "//external:jar/io/netty/netty_codec_http"
+        "//external:jar/io/netty/netty-codec-http"
     ],
     runtime_deps = [
-        ":netty_codec"
+        ":netty-codec"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -68,13 +68,13 @@ java_library(
 
 
 java_library(
-    name = "netty_codec_http2",
+    name = "netty-codec-http2",
     exports = [
-        "//external:jar/io/netty/netty_codec_http2"
+        "//external:jar/io/netty/netty-codec-http2"
     ],
     runtime_deps = [
-        ":netty_codec_http",
-        ":netty_handler"
+        ":netty-codec-http",
+        ":netty-handler"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -84,12 +84,12 @@ java_library(
 
 
 java_library(
-    name = "netty_codec_socks",
+    name = "netty-codec-socks",
     exports = [
-        "//external:jar/io/netty/netty_codec_socks"
+        "//external:jar/io/netty/netty-codec-socks"
     ],
     runtime_deps = [
-        ":netty_codec"
+        ":netty-codec"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -99,9 +99,9 @@ java_library(
 
 
 java_library(
-    name = "netty_common",
+    name = "netty-common",
     exports = [
-        "//external:jar/io/netty/netty_common"
+        "//external:jar/io/netty/netty-common"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -111,14 +111,14 @@ java_library(
 
 
 java_library(
-    name = "netty_handler",
+    name = "netty-handler",
     exports = [
-        "//external:jar/io/netty/netty_handler"
+        "//external:jar/io/netty/netty-handler"
     ],
     runtime_deps = [
-        ":netty_buffer",
-        ":netty_codec",
-        ":netty_transport"
+        ":netty-buffer",
+        ":netty-codec",
+        ":netty-transport"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -128,14 +128,14 @@ java_library(
 
 
 java_library(
-    name = "netty_handler_proxy",
+    name = "netty-handler-proxy",
     exports = [
-        "//external:jar/io/netty/netty_handler_proxy"
+        "//external:jar/io/netty/netty-handler-proxy"
     ],
     runtime_deps = [
-        ":netty_codec_http",
-        ":netty_codec_socks",
-        ":netty_transport"
+        ":netty-codec-http",
+        ":netty-codec-socks",
+        ":netty-transport"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -145,12 +145,12 @@ java_library(
 
 
 java_library(
-    name = "netty_resolver",
+    name = "netty-resolver",
     exports = [
-        "//external:jar/io/netty/netty_resolver"
+        "//external:jar/io/netty/netty-resolver"
     ],
     runtime_deps = [
-        ":netty_common"
+        ":netty-common"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -160,9 +160,9 @@ java_library(
 
 
 java_library(
-    name = "netty_tcnative_boringssl_static",
+    name = "netty-tcnative-boringssl-static",
     exports = [
-        "//external:jar/io/netty/netty_tcnative_boringssl_static"
+        "//external:jar/io/netty/netty-tcnative-boringssl-static"
     ],
     visibility = [
         "//visibility:public"
@@ -172,13 +172,13 @@ java_library(
 
 
 java_library(
-    name = "netty_transport",
+    name = "netty-transport",
     exports = [
-        "//external:jar/io/netty/netty_transport"
+        "//external:jar/io/netty/netty-transport"
     ],
     runtime_deps = [
-        ":netty_buffer",
-        ":netty_resolver"
+        ":netty-buffer",
+        ":netty-resolver"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
