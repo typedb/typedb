@@ -42,7 +42,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
@@ -1031,50 +1030,33 @@ public class AtomicQueryTest {
         String query6 = "{$e isa baseRoleEntity ; $e != $f; $f id 'X';}";
         String query7 = "{$e isa entity ; $e id 'X';}";
 
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query2b, query2c, query3s2, query4s1, query5, query6, query7);
 
-        completeEquivalence(query, query2, false, graph);
-        completeEquivalence(query, query2b, false, graph);
-        completeEquivalence(query, query2c, false, graph);
-        completeEquivalence(query, query3s2, false, graph);
-        completeEquivalence(query, query4s1, false, true, true, graph);
-        completeEquivalence(query, query5, false, graph);
-        completeEquivalence(query, query6, false, graph);
-        completeEquivalence(query, query7, false, graph);
+        queryEquivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        atomicEquivalence(query, queries, Lists.newArrayList(query4s1), ReasonerQueryEquivalence.AlphaEquivalence.atomicEquivalence(), graph);
+        equivalence(query, queries, Lists.newArrayList(query4s1), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query2, query2b, true, graph);
-        completeEquivalence(query2, query2c, true, graph);
-        completeEquivalence(query2, query3s2, false, true, graph);
-        completeEquivalence(query2, query4s1, false, graph);
-        completeEquivalence(query2, query5, false, graph);
-        completeEquivalence(query2, query6, false, graph);
-        completeEquivalence(query2, query7, false, graph);
+        equivalence(query2, queries, Lists.newArrayList(query2b, query2c), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2, queries, Lists.newArrayList(query2b, query2c, query3s2), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query2b, query2c, true, graph);
-        completeEquivalence(query2b, query3s2, false, true, graph);
-        completeEquivalence(query2b, query4s1, false, graph);
-        completeEquivalence(query2b, query5, false, graph);
-        completeEquivalence(query2b, query6, false, graph);
-        completeEquivalence(query2b, query7, false, graph);
+        equivalence(query2b, queries, Lists.newArrayList(query2, query2c), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2b, queries, Lists.newArrayList(query2, query2c, query3s2), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query2c, query3s2, false, true, graph);
-        completeEquivalence(query2c, query4s1, false, graph);
-        completeEquivalence(query2c, query5, false, graph);
-        completeEquivalence(query2c, query6, false, graph);
-        completeEquivalence(query2c, query7, false, graph);
+        equivalence(query2c, queries, Lists.newArrayList(query2, query2b), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2c, queries, Lists.newArrayList(query2, query2b, query3s2), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query3s2, query4s1, false, graph);
-        completeEquivalence(query3s2, query5, false, graph);
-        completeEquivalence(query3s2, query6, false, graph);
-        completeEquivalence(query3s2, query7, false, graph);
+        equivalence(query3s2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query3s2, queries, Lists.newArrayList(query2, query2b, query2c), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query4s1, query5, false,  graph);
-        completeEquivalence(query4s1, query6, false, graph);
-        completeEquivalence(query4s1, query7, false, graph);
+        queryEquivalence(query4s1, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        atomicEquivalence(query4s1, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.AlphaEquivalence.atomicEquivalence(), graph);
+        equivalence(query4s1, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query5, query6, false, graph);
-        completeEquivalence(query5, query7, false, graph);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query6, query7, false, graph);
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
     }
 
     @Test
@@ -1085,12 +1067,16 @@ public class AtomicQueryTest {
         String query3 = "{$y has resource $r;}";
         String query4 = "{$y has resource 'value2';}";
 
-        completeEquivalence(query, query2, true, graph);
-        completeEquivalence(query, query3, false, graph);
-        completeEquivalence(query, query4, false, graph);
-        completeEquivalence(query2, query3, false, graph);
-        completeEquivalence(query2, query4, false, graph);
-        completeEquivalence(query3, query4, false, graph);
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4);
+
+        equivalence(query, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query2, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2, queries, Lists.newArrayList(query), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
     }
 
     @Test
@@ -1109,45 +1095,34 @@ public class AtomicQueryTest {
         String query8 = "{$y has resource $x;$y != $y2;}";
         String query9 = "{$y has resource $x;$y != $y2; $y2 id 'Y';}";
 
-        completeEquivalence(query, query2, false, graph);
-        completeEquivalence(query, query3, false, graph);
-        completeEquivalence(query, query4, false, graph);
-        completeEquivalence(query, query4b, false, graph);
-        completeEquivalence(query, query5, false, graph);
-        completeEquivalence(query, query6, false, graph);
-        completeEquivalence(query, query7, false, graph);
-        completeEquivalence(query, query8, false, graph);
-        completeEquivalence(query, query9, false, graph);
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query4b, query5, query6, query7, query8, query9);
 
-        completeEquivalence(query2, query3, false, false, true, graph);
-        completeEquivalence(query2, query4, false, graph);
-        completeEquivalence(query2, query4b, false, graph);
-        completeEquivalence(query2, query5, false, graph);
-        completeEquivalence(query2, query6, false, graph);
-        completeEquivalence(query2, query7, false, graph);
-        completeEquivalence(query2, query8, false, graph);
-        completeEquivalence(query2, query9, false, graph);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query3, query4, false, graph);
-        completeEquivalence(query3, query4b, false, graph);
-        completeEquivalence(query3, query5, false, graph);
-        completeEquivalence(query3, query6, false, graph);
-        completeEquivalence(query3, query7, false, graph);
-        completeEquivalence(query3, query8, false, graph);
-        completeEquivalence(query3, query9, false, graph);
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2, queries, Collections.singletonList(query3), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query4, query4b, true, graph);
-        completeEquivalence(query4, query5, false, false, true, graph);
-        completeEquivalence(query4, query6, false, graph);
-        completeEquivalence(query4, query7, false, graph);
-        completeEquivalence(query4, query8, false, graph);
-        completeEquivalence(query4, query9, false, graph);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query3, queries, Collections.singletonList(query2), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query4b, query5, false, false, true, graph);
-        completeEquivalence(query4b, query6, false, graph);
-        completeEquivalence(query4b, query7, false, graph);
-        completeEquivalence(query4b, query8, false, graph);
-        completeEquivalence(query4b, query9, false, graph);
+        equivalence(query4, queries, Lists.newArrayList(query4b), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query4, queries, Lists.newArrayList(query4b, query5), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query4b, queries, Lists.newArrayList(query4), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query4b, queries, Lists.newArrayList(query4, query5), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query5, queries, Lists.newArrayList(query4, query4b), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query8, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query8, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
     }
 
     @Test //tests alpha-equivalence of queries with resources with multi predicate
@@ -1163,44 +1138,33 @@ public class AtomicQueryTest {
         String query4 = "{$x isa baseRoleEntity;$x has resource $y;$y >27;$y <23;}";
         String query5 = "{$x isa baseRoleEntity, has resource $z1;$z1 >23; $z2 <27;}";
 
-        completeEquivalence(query, query2, false, graph);
-        completeEquivalence(query, query2b, false, graph);
-        completeEquivalence(query, query2c, false, graph);
-        completeEquivalence(query, query2d, false, graph);
-        completeEquivalence(query, query3, false, graph);
-        completeEquivalence(query, query3b, false, graph);
-        completeEquivalence(query, query4, false, graph);
-        completeEquivalence(query, query5, false, graph);
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query2b, query2c, query2d, query3, query3b, query4, query5);
 
-        completeEquivalence(query2, query2b, true, graph);
-        completeEquivalence(query2, query2c, true, graph);
-        completeEquivalence(query2, query2d, true, graph);
-        completeEquivalence(query2, query3, false, graph);
-        completeEquivalence(query2, query3b, false, graph);
-        completeEquivalence(query2, query4, false, graph);
-        completeEquivalence(query2, query5, false, graph);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query2b, query2c, true, graph);
-        completeEquivalence(query2b, query2d, true, graph);
-        completeEquivalence(query2b, query3, false, graph);
-        completeEquivalence(query2b, query3b, false, graph);
-        completeEquivalence(query2b, query4, false, graph);
-        completeEquivalence(query2b, query5, false, graph);
+        equivalence(query2, queries, Lists.newArrayList(query2b, query2c, query2d), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2, queries, Lists.newArrayList(query2b, query2c, query2d), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query2c, query2d, true, graph);
-        completeEquivalence(query2c, query3, false, graph);
-        completeEquivalence(query2c, query3b, false, graph);
-        completeEquivalence(query2c, query4, false, graph);
-        completeEquivalence(query2c, query5, false, graph);
+        equivalence(query2b, queries, Lists.newArrayList(query2, query2c, query2d), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2b, queries, Lists.newArrayList(query2, query2c, query2d), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query3, query3b, true, graph);
-        completeEquivalence(query3, query4, false, graph);
-        completeEquivalence(query3, query5, false, true, true, graph);
+        equivalence(query2c, queries, Lists.newArrayList(query2, query2b, query2d), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2c, queries, Lists.newArrayList(query2, query2b, query2d), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query3b, query4, false, graph);
-        completeEquivalence(query3b, query5, false, true, true, graph);
+        equivalence(query2d, queries, Lists.newArrayList(query2, query2c, query2b), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2d, queries, Lists.newArrayList(query2, query2c, query2b), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        completeEquivalence(query4, query5, false, graph);
+        queryEquivalence(query3, queries, Lists.newArrayList(query3b), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        atomicEquivalence(query3, queries, Lists.newArrayList(query3b, query5), ReasonerQueryEquivalence.AlphaEquivalence.atomicEquivalence(), graph);
+        queryEquivalence(query3, queries, Lists.newArrayList(query3b, query5), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        queryEquivalence(query3b, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        atomicEquivalence(query3b, queries, Lists.newArrayList(query3, query5), ReasonerQueryEquivalence.AlphaEquivalence.atomicEquivalence(), graph);
+        queryEquivalence(query3b, queries, Lists.newArrayList(query3, query5), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        queryEquivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        queryEquivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
     }
 
     @Test //tests alpha-equivalence of resource atoms with different predicates
@@ -1253,7 +1217,10 @@ public class AtomicQueryTest {
         queries.forEach(qA -> {
             queries.stream()
                     .filter(qB -> !qA.equals(qB))
-                    .forEach(qB -> completeEquivalence(qA, qB, false, false, graph));
+                    .forEach(qB -> {
+                        equivalence(qA, qB, false, ReasonerQueryEquivalence.AlphaEquivalence, graph);
+                        equivalence(qA, qB, false, ReasonerQueryEquivalence.StructuralEquivalence, graph);
+                    });
         });
     }
 
@@ -1428,33 +1395,6 @@ public class AtomicQueryTest {
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         return instances.iterator().next();
-    }
-
-    private void completeEquivalence(String a, String b, boolean expectation, EmbeddedGraknTx<?> graph){
-        completeEquivalence(a, b, expectation, expectation, expectation, graph);
-    }
-
-    private void completeEquivalence(String a, String b, boolean expectation, boolean structuralExpectation, EmbeddedGraknTx<?> graph){
-        completeEquivalence(a, b, expectation, expectation, structuralExpectation, graph);
-    }
-
-    private void completeEquivalence(String patternA, String patternB, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation, EmbeddedGraknTx<?> graph){
-        ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA), graph);
-        ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB), graph);
-        completeEquivalence(a, b, queryExpectation, atomExpectation, structuralExpectation);
-    }
-
-    private void completeEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation, boolean structuralExpectation){
-        queryEquivalence(a, b, queryExpectation, ReasonerQueryEquivalence.AlphaEquivalence);
-        queryEquivalence(a, b, structuralExpectation, ReasonerQueryEquivalence.StructuralEquivalence);
-        atomicEquivalence(a.getAtom(), b.getAtom(), atomExpectation, AtomicEquivalence.AlphaEquivalence);
-    }
-
-    private void completeEquivalence(String target, List<String> queries, List<String> equivalentQueries, EmbeddedGraknTx graph){
-        queries.forEach(q -> {
-            equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), ReasonerQueryEquivalence.AlphaEquivalence, graph);
-            equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), ReasonerQueryEquivalence.StructuralEquivalence, graph);
-        });
     }
 
     private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, EmbeddedGraknTx graph){
