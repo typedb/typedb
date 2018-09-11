@@ -16,5 +16,5 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//dependencies:maven.bzl", "maven_dependencies")
+load("//dependencies/maven:artifacts.bzl", "maven_dependencies")
 maven_dependencies()

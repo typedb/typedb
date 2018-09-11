@@ -1,0 +1,418 @@
+options:
+  languages: ["java"]
+  resolverType: coursier
+  resolvers:
+  - id: mavencentral
+    type: default
+    url: https://repo.maven.apache.org/maven2/
+  strictVisibility: true
+  transitivity: runtime_deps
+  versionConflictPolicy: highest
+  thirdPartyDirectory: dependencies/maven/artifacts
+
+
+dependencies:
+  ch.qos.logback:
+    logback-classic:
+      version: "1.2.3"
+      lang: java
+    logback-core:
+      version: "1.2.3"
+      lang: java
+
+  com.boundary:
+    high-scale-lib:
+      version: "1.0.6"
+      lang: java
+
+  com.codahale.metrics:
+    metrics-core:
+      version: "3.0.1"
+      lang: java
+
+  com.datastax.cassandra:
+    cassandra-driver-core:
+      version: "3.5.1"
+      lang: java
+      exclude:
+      - "io.dropwizard.metrics:metrics-core"
+      - "io.netty:netty-handler"
+
+  com.fasterxml.jackson.core:
+    jackson-annotations:
+      version: "2.9.2"
+      lang: java
+    jackson-core:
+      version: "2.9.2"
+      lang: java
+    jackson-databind:
+      version: "2.9.2"
+      lang: java
+
+  com.fasterxml.jackson.dataformat:
+    jackson-dataformat-yaml:
+      version: "2.9.2"
+      lang: java
+
+  com.fasterxml.jackson.module:
+    jackson-module-scala_2.10:
+      version: "2.9.2"
+      lang: java
+
+  com.github.rholder:
+    guava-retrying:
+      version: "2.0.0"
+      lang: java
+
+  com.google.auto.value:
+    auto-value:
+      version: "1.4.1"
+      lang: java
+
+  com.google.cloud.bigtable:
+    bigtable-hbase-1.0:
+      version: "0.9.5.1"
+      lang: java
+      exclude:
+      - "org.apache.hadoop:hadoop-common"
+      - "org.apache.httpcomponents:httpclient"
+
+  com.google.code.findbugs:
+    annotations:
+      version: "3.0.1"
+      lang: java
+    jsr305:
+      version: "2.0.2"
+      lang: java
+
+  com.google.guava:
+    guava:
+      version: "19.0"
+      lang: java
+
+  com.google.protobuf:
+    protobuf-java:
+      version: "3.4.0"
+      lang: java
+
+  com.jayway.restassured:
+    rest-assured:
+      version: "2.7.0"
+      lang: java
+
+  com.netflix.astyanax:
+    astyanax-cassandra:
+      version: "3.10.1"
+      lang: java
+    astyanax-core:
+      version: "3.10.1"
+      lang: java
+    astyanax-recipes:
+      version: "3.10.1"
+      lang: java
+    astyanax-thrift:
+      version: "3.10.1"
+      lang: java
+
+  com.netflix.hystrix:
+    hystrix-core:
+      version: "1.5.12"
+      lang: java
+
+  com.pholser:
+    junit-quickcheck-generators:
+      version: "0.7"
+      lang: java
+
+  com.sparkjava:
+    spark-core:
+      exclude:
+      - "org.slf4j:slf4j-api"
+      version: "2.5.1"
+      lang: java
+
+  com.sun.jersey:
+    jersey-client:
+      version: "1.19"
+      lang: java
+
+  commons-cli:
+    commons-cli:
+      version: "1.3"
+      lang: java
+
+  commons-collections:
+    commons-collections:
+      version: "3.2.1"
+      lang: java
+
+  commons-lang:
+    commons-lang:
+      version: "2.6"
+      lang: java
+
+  io.airlift:
+    airline:
+      version: "0.6"
+      lang: java
+      exclude:
+      - "com.google.guava:guava"
+
+  io.dropwizard.metrics:
+    metrics-core:
+      version: "3.2.3"
+      lang: java
+      exclude:
+      - "org.slf4j:slf4j-api"
+    metrics-servlets:
+      version: "3.2.3"
+      lang: java
+      exclude:
+      - "com.fasterxml.jackson.core:jackson-databind"
+      - "com.fasterxml.jackson.core:jackson-core"
+      - "org.slf4j:slf4j-api"
+
+  io.grpc:
+    grpc-core:
+      version: "1.8.0"
+      lang: java
+    grpc-netty:
+      version: "1.8.0"
+      lang: java
+    grpc-protobuf:
+      version: "1.8.0"
+      lang: java
+    grpc-stub:
+      version: "1.8.0"
+      lang: java
+    grpc-testing:
+      version: "1.8.0"
+      lang: java
+
+  io.netty:
+    netty-all:
+      version: "4.1.28.Final"
+      lang: java
+    netty-tcnative-boringssl-static:
+      version: "2.0.14.Final"
+      lang: java
+
+  io.prometheus:
+    simpleclient_dropwizard:
+      version: "0.0.13"
+      lang: java
+    simpleclient_servlet:
+      version: "0.0.13"
+      lang: java
+
+  io.reactivex:
+    rxjava:
+      version: "1.3.2"
+      lang: java
+
+  javax.ws.rs:
+    jsr311-api:
+      version: "1.1.1"
+      lang: java
+
+  jline:
+    jline:
+      version: "2.12"
+      lang: java
+
+  junit:
+    junit:
+      version: "4.12"
+      lang: java
+
+  net.jodah:
+    failsafe:
+      version: "1.0.4"
+      lang: java
+
+  net.lingala.zip4j:
+    zip4j:
+      version: "1.3.2"
+      lang: java
+
+  org.antlr:
+    antlr4-runtime:
+      version: "4.5"
+      lang: java
+
+  org.apache.cassandra:
+    cassandra-all:
+      version: "3.11.3"
+      lang: java
+      exclude:
+      - "it.unimi.dsi:fastutil"
+      - "ch.qos.logback:logback-core"
+      - "ch.qos.logback:logback-classic"
+
+  org.apache.httpcomponents:
+    httpclient:
+      version: "4.5.3"
+      lang: java
+    httpcore:
+      version: "4.4.6"
+      lang: java
+
+  org.apache.spark:
+    spark-core_2.10:
+      version: "1.6.1"
+      lang: java
+      exclude:
+      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+      - "javax.servlet:javax.servlet-api"
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:jcl-over-slf4j"
+      - "log4j:log4j"
+      - "io.dropwizard.metrics:metrics-core"
+
+  org.apache.tinkerpop:
+    gremlin-core:
+      version: "3.3.3"
+      lang: java
+      exclude:
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:jcl-over-slf4j"
+    hadoop-gremlin:
+      version: "3.2.5"
+      lang: java
+      exclude:
+      - "javax.servlet:javax.servlet-api"
+      - "com.fasterxml.jackson.core:jackson-core"
+      - "com.fasterxml.jackson.core:jackson-databind"
+      - "org.apache.spark:spark-core_2.10"
+      - "javax.servlet:javax.servlet-api"
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:jcl-over-slf4j"
+      - "org.slf4j:slf4j-nop"
+      - "log4j:log4j"
+      - "com.sun.jersey:jersey-client"
+      - "org.mortbay.jetty:jetty-util"
+      - "commons-logging:commons-logging"
+    spark-gremlin:
+      version: "3.2.5"
+      lang: java
+      exclude:
+      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+      - "javax.servlet:javax.servlet-api"
+      - "com.fasterxml.jackson.core:jackson-annotations"
+      - "com.fasterxml.jackson.core:jackson-core"
+      - "com.fasterxml.jackson.core:jackson-databind"
+      - "io.dropwizard.metrics:metrics-core"
+    tinkergraph-gremlin:
+      version: "3.3.3"
+      lang: java
+      exclude:
+      - "org.slf4j:slf4j-log4j12"
+
+  org.cassandraunit:
+    cassandra-unit:
+      version: "3.5.0.1"
+      lang: java
+      exclude:
+      - "org.slf4j:slf4j-api"
+
+  org.codehaus.janino:
+    janino:
+      version: "2.7.8"
+      lang: java
+
+  org.hamcrest:
+    hamcrest-all:
+      version: "1.3"
+      lang: java
+    hamcrest-core:
+      version: "1.3"
+      lang: java
+    hamcrest-library:
+      version: "1.3"
+      lang: java
+
+  org.janusgraph:
+    janusgraph-cassandra:
+      version: "0.3.0"
+      lang: java
+      exclude:
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:slf4j-api"
+      - "javax.servlet:javax.servlet-api"
+      - "org.mortbay.jetty:servlet-api"
+      - "org.mortbay.jetty:servlet-api-2.5"
+      - "com.boundary:high-scale-lib"
+      - "ch.qos.logback:logback-classic"
+      - "com.codahale.metrics:metrics-core"
+      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
+    janusgraph-core:
+      version: "0.3.0"
+      lang: java
+      exclude:
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:slf4j-api"
+      - "javax.servlet:javax.servlet-api"
+      - "org.mortbay.jetty:servlet-api"
+      - "org.mortbay.jetty:servlet-api-2.5"
+      - "com.boundary:high-scale-lib"
+      - "ch.qos.logback:logback-classic"
+      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
+    janusgraph-hadoop:
+      version: "0.3.0"
+      lang: java
+      exclude:
+      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:slf4j-api"
+      - "log4j:log4j"
+      - "com.codahale.metrics:metrics-core"
+
+  org.mockito:
+    mockito-core:
+      version: "2.6.4"
+      lang: java
+
+  org.openjdk.jmh:
+    jmh-core:
+      version: "1.19"
+      lang: java
+    jmh-generator-annprocess:
+      version: "1.19"
+      lang: java
+
+  org.rocksdb:
+    rocksdbjni:
+      version: "5.14.2"
+      lang: java
+
+  org.sharegov:
+    mjson:
+      version: "1.4.0"
+      lang: java
+
+  org.slf4j:
+    jcl-over-slf4j:
+      version: "1.7.20"
+      lang: java
+    log4j-over-slf4j:
+      version: "1.7.20"
+      lang: java
+    slf4j-api:
+      version: "1.7.20"
+      lang: java
+    slf4j-simple:
+      version: "1.7.20"
+      lang: java
+
+  org.zeroturnaround:
+    zt-exec:
+      version: "1.10"
+      lang: java
+      exclude:
+      - "commons-io:commons-io"
+
+  ro.fortsoft.pf4j:
+    pf4j:
+      version: "1.3.0"
+      lang: java
