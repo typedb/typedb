@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
  */
 public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery> {
 
+    abstract public AtomicEquivalence atomicEquivalence();
+
     private static <B extends Atomic, S extends B> boolean equivalence(ReasonerQuery q1, ReasonerQuery q2, Class<S> atomType, Equivalence<B> equiv) {
         //NB: this check is too simple for general queries - variable binding patterns are not recognised
         Set<S> atoms = q1.getAtoms(atomType).collect(Collectors.toSet());
@@ -55,42 +57,51 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         return AtomicEquivalence.equivalenceHash(q.getAtoms(atomType), equiv);
     }
 
-    public final static Equivalence<ReasonerQuery> Equality = new ReasonerQueryEquivalence(){
+    public final static ReasonerQueryEquivalence Equality = new ReasonerQueryEquivalence(){
+
+        @Override
+        public AtomicEquivalence atomicEquivalence() { return AtomicEquivalence.Equality; }
 
         @Override
         protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
-            return equivalence(q1, q2, Atomic.class, AtomicEquivalence.Equality);
+            return equivalence(q1, q2, Atomic.class, atomicEquivalence());
         }
 
         @Override
         protected int doHash(ReasonerQuery q) {
-            return equivalenceHash(q, Atomic.class, AtomicEquivalence.Equality);
+            return equivalenceHash(q, Atomic.class, atomicEquivalence());
         }
     };
 
-    public final static Equivalence<ReasonerQuery> AlphaEquivalence = new ReasonerQueryEquivalence(){
+    public final static ReasonerQueryEquivalence AlphaEquivalence = new ReasonerQueryEquivalence(){
+
+        @Override
+        public AtomicEquivalence atomicEquivalence() { return AtomicEquivalence.AlphaEquivalence; }
 
         @Override
         protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
-            return equivalence(q1, q2, Atomic.class, AtomicEquivalence.AlphaEquivalence);
+            return equivalence(q1, q2, Atomic.class, atomicEquivalence());
         }
 
         @Override
         protected int doHash(ReasonerQuery q) {
-            return equivalenceHash(q, Atomic.class, AtomicEquivalence.AlphaEquivalence);
+            return equivalenceHash(q, Atomic.class, atomicEquivalence());
         }
     };
 
-    public final static Equivalence<ReasonerQuery> StructuralEquivalence = new ReasonerQueryEquivalence(){
+    public final static ReasonerQueryEquivalence StructuralEquivalence = new ReasonerQueryEquivalence(){
+
+        @Override
+        public AtomicEquivalence atomicEquivalence() { return AtomicEquivalence.StructuralEquivalence; }
 
         @Override
         protected boolean doEquivalent(ReasonerQuery q1, ReasonerQuery q2) {
-            return equivalence(q1, q2, Atom.class, AtomicEquivalence.StructuralEquivalence);
+            return equivalence(q1, q2, Atom.class, atomicEquivalence());
         }
 
         @Override
         protected int doHash(ReasonerQuery q) {
-            return equivalenceHash(q, Atom.class, AtomicEquivalence.StructuralEquivalence);
+            return equivalenceHash(q, Atom.class, atomicEquivalence());
         }
     };
 }

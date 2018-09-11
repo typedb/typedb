@@ -79,7 +79,9 @@ ternary sub relationship
 
 #Resources
 
-resource sub attribute datatype string;
+resource sub attribute datatype string
+    plays baseRole1
+    plays baseRole2;
 
 insert
 

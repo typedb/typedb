@@ -67,7 +67,7 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
         return equivalenceHash(atoms.stream(), equiv);
     }
 
-    public final static Equivalence<Atomic> Equality = new AtomicEquivalence(){
+    public final static AtomicEquivalence Equality = new AtomicEquivalence(){
 
         @Override
         protected boolean doEquivalent(Atomic a, Atomic b) {
@@ -80,7 +80,7 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
         }
     };
 
-    public final static Equivalence<Atomic> AlphaEquivalence = new AtomicEquivalence(){
+    public final static AtomicEquivalence AlphaEquivalence = new AtomicEquivalence(){
 
         @Override
         protected boolean doEquivalent(Atomic a, Atomic b) {
@@ -93,7 +93,7 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
         }
     };
 
-    public final static Equivalence<Atomic> StructuralEquivalence = new AtomicEquivalence(){
+    public final static AtomicEquivalence StructuralEquivalence = new AtomicEquivalence(){
 
         @Override
         protected boolean doEquivalent(Atomic a, Atomic b) {
