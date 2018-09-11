@@ -38,8 +38,6 @@ import java.util.Optional;
  */
 public class Grakn {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
-
     /**
      *
      * Invocation from class '{@link GraknBootup}'
@@ -48,7 +46,7 @@ public class Grakn {
      */
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
-                LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e));
+                System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage())));
 
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
@@ -62,7 +60,7 @@ public class Grakn {
             Server server = ServerFactory.createServer();
             server.start();
         } catch (RuntimeException | IOException e) {
-            LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
+            System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()));
         }
     }
 }

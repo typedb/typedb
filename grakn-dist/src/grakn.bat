@@ -28,5 +28,4 @@ REM =============================================
 
 SET GRAKN_CONFIG="conf\grakn.properties"
 set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\server;%GRAKN_HOME%\services\lib\*"
-java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" -Dgrakn.pidfile=/tmp/grakn.pid ai.grakn.engine.bootup.GraknBootup %*
-pause
+java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" ai.grakn.engine.bootup.GraknBootup %*

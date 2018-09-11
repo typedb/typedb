@@ -20,15 +20,10 @@ package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.engine.GraknConfig;
-import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.commons.io.FileUtils;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.listener.ProcessListener;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -125,8 +120,7 @@ public class StorageBootup {
      *
      * @throws BootupException
      */
-    void start() {
-
+    private void start() {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
@@ -140,7 +134,7 @@ public class StorageBootup {
 
             if (cassandraStatus().equals("running")) {
                 System.out.println("SUCCESS");
-//                result.cancel(true);
+                result.cancel(true);
                 return;
             }
 
@@ -169,7 +163,7 @@ public class StorageBootup {
     private List<String> cassandraCommand() {
         String cassandraConfig = graknHome.resolve("services").resolve("cassandra").resolve("cassandra.yaml").toString();
         if (isWindows()) cassandraConfig = "file:\\\\\\" + cassandraConfig; //because Windows
-        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
+        String logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml").toString();
         String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
         return Arrays.asList(
                 "java", "-cp", classpath,
@@ -193,8 +187,9 @@ public class StorageBootup {
         );
     }
 
-    private Path getStorageLogPathFromGraknProperties() {
-        return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+    private String getStorageLogPathFromGraknProperties() {
+        Path logPath = Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+        return logPath.isAbsolute() ? logPath.toString() : graknHome.resolve(logPath).toString();
     }
 
     private boolean isWindows() {

@@ -35,12 +35,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,7 +57,7 @@ import static ai.grakn.engine.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 public class EngineBootup {
     private static final String DISPLAY_NAME = "Engine";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
-    private static final Path ENGINE_PIDFILE = Paths.get(File.separator,"tmp","grakn-engine.pid");
+    private static final Path ENGINE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-engine.pid");
     private static final String JAVA_OPTS = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
 
     protected final Path graknHome;
@@ -81,7 +82,7 @@ public class EngineBootup {
 
     public void startIfNotRunning() {
         boolean isEngineRunning = bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
-        if(isEngineRunning) {
+        if (isEngineRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
             start();
@@ -97,7 +98,7 @@ public class EngineBootup {
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '"+ bootupProcessExecutor.getPidFromFile(ENGINE_PIDFILE).orElse("")+"' (from "+ ENGINE_PIDFILE +"), '"+ bootupProcessExecutor.getPidFromPsOf(getEngineMainClass().getName()) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME + " pid = '" + bootupProcessExecutor.getPidFromFile(ENGINE_PIDFILE).orElse("") + "' (from " + ENGINE_PIDFILE + "), '" + bootupProcessExecutor.getPidFromPsOf(getEngineMainClass().getName()) + "' (from ps -ef)");
     }
 
     public void clean() {
@@ -112,7 +113,7 @@ public class EngineBootup {
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean "+DISPLAY_NAME);
+            System.out.println("Unable to clean " + DISPLAY_NAME);
         }
     }
 
@@ -121,31 +122,21 @@ public class EngineBootup {
     }
 
     private void start() {
-        //  /bin/sh -c 'java <java-opts> -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
-        //    -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <engine-main-class>'
-        List<String> startEngineCmd_EscapeWhitespace = Arrays.asList("/bin/sh", "-c", "java " + JAVA_OPTS +
-                " -cp " + getEngineJavaClassPath().replace(" ", "\\ ") +
-                " -Dgrakn.dir=" + graknHome.toString().replace(" ", "\\ ") +
-                " -Dgrakn.conf="+ graknPropertiesPath.toString().replace(" ", "\\ ") +
-                " -Dgrakn.pidfile=" + ENGINE_PIDFILE.toString().replace(" ", "\\ ") +
-                " " + getEngineMainClass().getName());
-
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        CompletableFuture<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(startEngineCmd_EscapeWhitespace, graknHome.toFile());
+        Future<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(engineCommand(), graknHome.toFile());
 
-        LocalDateTime init = LocalDateTime.now();
-        LocalDateTime timeout = init.plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
+        LocalDateTime timeout = LocalDateTime.now().plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
 
-        while(LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isDone()) {
+        while (LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isDone()) {
             System.out.print(".");
             System.out.flush();
 
             String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
             int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
 
-            if(bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host,port, REST.WebPath.STATUS)) {
+            if (bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host, port, REST.WebPath.STATUS)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -160,12 +151,27 @@ public class EngineBootup {
         try {
             String errorMessage = "Process exited with code '" + startEngineAsync.get().exitCode() + "': '" + startEngineAsync.get().stderr() + "'";
             System.err.println(errorMessage);
-            throw new BootupException();
-        }
-        catch (InterruptedException | ExecutionException e) {
+            throw new BootupException(errorMessage);
+        } catch (InterruptedException | ExecutionException e) {
             throw new BootupException(e);
         }
 
+    }
+
+    private List<String> engineCommand() {
+        //   java -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
+        //    -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <java-opts> <engine-main-class>'
+        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
+        ArrayList<String> engineCommand = new ArrayList<>();
+        engineCommand.add("java");
+        engineCommand.add("-cp");
+        engineCommand.add(classpath);
+        engineCommand.add("-Dgrakn.dir=" + graknHome);
+        engineCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
+        engineCommand.add("-Dgrakn.pidfile=" + ENGINE_PIDFILE);
+        if (JAVA_OPTS.length() > 0) { engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));} //split JAVA OPTS by space and add them to the command
+        engineCommand.add(getEngineMainClass().getName());
+        return engineCommand;
     }
 
     private boolean isEngineReady(String host, int port, String path) {
@@ -188,19 +194,20 @@ public class EngineBootup {
      * - conf/
      * - services/grakn/server/
      * Any slf4J-log4j12 Jars are excluded.
+     *
      * @return a classpath to be supplied to Java, ie., java -cp <classpath>
      */
     private String getEngineJavaClassPath() {
         FilenameFilter filterForJarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
         File servicesLibDir = Paths.get("services", "lib").toFile();
         File[] jarFiles = servicesLibDir.listFiles(filterForJarFiles);
-        if(jarFiles == null) {
+        if (jarFiles == null) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_START_ENGINE_JAR_NOT_FOUND.getMessage());
         }
         Stream<File> jars = Stream.of(jarFiles);
         File conf = Paths.get("./conf").toFile(); // $GRAKN_HOME/conf
         File graknLogback = Paths.get("services", "grakn", "server").toFile(); // $GRAKN_HOME/services/grakn/server lib
-        String classPath = ":"+Stream.concat(jars, Stream.of(conf, graknLogback))
+        String classPath = ":" + Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(f -> f.toPath().toString())
                 .sorted() // we need to sort otherwise it doesn't load logback configuration properly
