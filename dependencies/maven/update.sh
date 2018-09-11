@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # GRAKN.AI - THE KNOWLEDGE GRAPH
 # Copyright (C) 2018 Grakn Labs Ltd
@@ -16,10 +17,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-workspace(name = "grakn_core")
+# Script for updating Maven dependencies after the dependency list in //dependencies/maven/artifacts.yaml.
 
-load("//dependencies/tools:tools.bzl", "build_tools")
-build_tools()
+[[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+GRAKN_CORE_HOME=$(cd "$(dirname "${path}")" && pwd -P)/../../
+pushd "$GRAKN_CORE_HOME" > /dev/null
 
-load("//dependencies/maven:artifacts.bzl", "maven_dependencies")
-maven_dependencies()
+bazel run //dependencies/tools:bazel-deps -- generate -r $GRAKN_CORE_HOME -s dependencies/maven/artifacts.bzl -d dependencies/maven/artifacts.yaml
+
+# Fix formatting for BUILD files
+#bazel run //tools/formatter -- --path $(pwd)/third_party --build &>/dev/null
+
+popd > /dev/null

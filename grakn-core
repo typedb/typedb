@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # GRAKN.AI - THE KNOWLEDGE GRAPH
 # Copyright (C) 2018 Grakn Labs Ltd

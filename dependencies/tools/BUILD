@@ -16,10 +16,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-workspace(name = "grakn_core")
 
-load("//dependencies/tools:tools.bzl", "build_tools")
-build_tools()
+java_import(
+    name = "bazel-deps-jar",
+    jars = ["@bazel_deps//file"],
+)
 
-load("//dependencies/maven:artifacts.bzl", "maven_dependencies")
-maven_dependencies()
+java_binary(
+    name = "bazel-deps",
+    main_class = "com.github.johnynek.bazel_deps.ParseProject",
+    visibility = ["//visibility:public"],
+    runtime_deps = [":bazel-deps-jar"],
+)
