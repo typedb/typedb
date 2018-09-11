@@ -19,16 +19,12 @@
 package ai.grakn.engine.bootup;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.GraknConfig;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.commons.io.FileUtils;
-import org.janusgraph.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.listener.ProcessListener;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,14 +36,10 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.bootup.BootupProcessExecutor.SH;
 import static ai.grakn.engine.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
@@ -133,61 +125,22 @@ public class StorageBootup {
      *
      * @throws BootupException
      */
-    private void start(){
+    void start() {
 
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
-        Path graknHome = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
-        String cassandraConfig = graknHome.resolve("services").resolve("cassandra").resolve("cassandra.yaml").toString();
-        if(isWindows())cassandraConfig="file:\\\\\\"+cassandraConfig;
-        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        String classpath = graknHome.resolve("services").resolve("lib").toString()+File.separator+"*";
 
-        Future<ProcessResult> result = null;
-        try {
-            result = new ProcessExecutor()
-                    .readOutput(true)
-                    .directory(graknHome.toFile())
-                    .redirectError(stderr)
-                    .addListener(new ProcessListener() {
-                        @Override
-                        public void afterStart(Process process, ProcessExecutor executor) {
-                            super.afterStart(process, executor);
-                            String pidString = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
-                            try{
-                                PrintWriter writer = new PrintWriter(STORAGE_PIDFILE.toString(), "UTF-8");
-                                writer.println(pidString);
-                                writer.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    })
-                    .command("java", "-cp", classpath, "-Dcassandra.config=" + cassandraConfig, "-Dcassandra.jmx.local.port=7199", "-Dcassandra.logdir="+getStorageLogPathFromGraknProperties(), "-Dlogback.configurationFile="+logback, CassandraDaemon.class.getCanonicalName())
-                    .start().getFuture();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Future<BootupProcessResult> result = bootupProcessExecutor.executeAsync(cassandraCommand(), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
-        while (LocalDateTime.now().isBefore(timeout) && !result.isDone() && stderr.toString().isEmpty()) {
+        while (LocalDateTime.now().isBefore(timeout) && !result.isDone()) {
             System.out.print(".");
             System.out.flush();
 
-
-            String output = null;
-            try {
-                output = new ProcessExecutor().command("java", "-cp", classpath, "-Dlogback.configurationFile="+logback.toString(), org.apache.cassandra.tools.NodeTool.class.getCanonicalName(), "statusthrift")
-                        .readOutput(true).execute()
-                        .outputUTF8();
-            } catch (TimeoutException | IOException | InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            if (output.trim().equals("running")) {
+            if (cassandraStatus().equals("running")) {
                 System.out.println("SUCCESS");
+//                result.cancel(true);
                 return;
             }
 
@@ -197,33 +150,47 @@ public class StorageBootup {
                 Thread.currentThread().interrupt();
             }
         }
+
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ".");
         try {
-            String errorMessage = "Process exited with code '" + result.get().getExitValue() + "': '" + stderr.toString() + "'";
+            String errorMessage = "Process exited with code '" + result.get().exitCode() + "': '" + result.get().stderr() + "'";
             System.err.println(errorMessage);
-            throw new BootupException();
+            throw new BootupException(errorMessage);
         } catch (InterruptedException | ExecutionException e) {
             throw new BootupException(e);
         }
-
     }
 
-    public static int exec(Class klass) throws IOException,
-            InterruptedException {
-        String javaHome = System.getProperty("java.home");
-        String javaBin = javaHome +
-                File.separator + "bin" +
-                File.separator + "java";
-        String classpath = System.getProperty("java.class.path");
-        String className = klass.getCanonicalName();
+    private String cassandraStatus() {
+        return bootupProcessExecutor.executeAndWait(nodetoolCommand(), graknHome.toFile()).stdout().trim();
+    }
 
-        ProcessBuilder builder = new ProcessBuilder(
-                javaBin, "-cp", classpath, className);
+    private List<String> cassandraCommand() {
+        String cassandraConfig = graknHome.resolve("services").resolve("cassandra").resolve("cassandra.yaml").toString();
+        if (isWindows()) cassandraConfig = "file:\\\\\\" + cassandraConfig; //because Windows
+        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
+        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
+        return Arrays.asList(
+                "java", "-cp", classpath,
+                "-Dcassandra.config=" + cassandraConfig,
+                "-Dcassandra.jmx.local.port=7199",
+                "-Dcassandra.logdir=" + getStorageLogPathFromGraknProperties(),
+                "-Dlogback.configurationFile=" + logback,
+                "-Dcassandra-pidfile=" + STORAGE_PIDFILE.toString(),
+                GraknCassandra.class.getCanonicalName()
+        );
+    }
 
-        Process process = builder.start();
-        process.waitFor();
-        return process.exitValue();
+    private List<String> nodetoolCommand() {
+        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
+        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
+        return Arrays.asList(
+                "java", "-cp", classpath,
+                "-Dlogback.configurationFile=" + logback.toString(),
+                org.apache.cassandra.tools.NodeTool.class.getCanonicalName(),
+                "statusthrift"
+        );
     }
 
     private Path getStorageLogPathFromGraknProperties() {
