@@ -32,8 +32,6 @@ import java.lang.management.ManagementFactory;
 
 public class GraknCassandra {
 
-    private final static Logger LOG =  LoggerFactory.getLogger(GraknBootup.class);
-
     public static void main(String[] args) {
         try {
             CassandraDaemon instance = new CassandraDaemon();
@@ -54,7 +52,7 @@ public class GraknCassandra {
             writer.print(pidString);
             writer.close();
         } catch (IOException e) {
-            LOG.error("Error persisting storage PID:", e);
+            System.err.println("Error persisting storage PID:" + e.getMessage());
         }
     }
 }
