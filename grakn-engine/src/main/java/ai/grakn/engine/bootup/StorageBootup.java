@@ -124,7 +124,7 @@ public class StorageBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<BootupProcessResult> result = bootupProcessExecutor.executeAsync(cassandraCommand(), graknHome.toFile());
+        Future<BootupProcessResult> result = bootupProcessExecutor.executeAsync(storageCommand(), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
@@ -132,7 +132,7 @@ public class StorageBootup {
             System.out.print(".");
             System.out.flush();
 
-            if (cassandraStatus().equals("running")) {
+            if (storageStatus().equals("running")) {
                 System.out.println("SUCCESS");
                 result.cancel(true);
                 return;
@@ -156,18 +156,16 @@ public class StorageBootup {
         }
     }
 
-    private String cassandraStatus() {
+    private String storageStatus() {
         return bootupProcessExecutor.executeAndWait(nodetoolCommand(), graknHome.toFile()).stdout().trim();
     }
 
-    private List<String> cassandraCommand() {
-        String cassandraConfig = graknHome.resolve("services").resolve("cassandra").resolve("cassandra.yaml").toString();
-        if (isWindows()) cassandraConfig = "file:\\\\\\" + cassandraConfig; //because Windows
+    private List<String> storageCommand() {
         String logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml").toString();
         String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
         return Arrays.asList(
                 "java", "-cp", classpath,
-                "-Dcassandra.config=" + cassandraConfig,
+                "-Dcassandra.config=" + getCassandraConfigPath(),
                 "-Dcassandra.jmx.local.port=7199",
                 "-Dcassandra.logdir=" + getStorageLogPathFromGraknProperties(),
                 "-Dlogback.configurationFile=" + logback,
@@ -187,12 +185,14 @@ public class StorageBootup {
         );
     }
 
+    private String getCassandraConfigPath() {
+        return "file:" + File.separator + File.separator + File.separator +
+                graknHome.resolve("services").resolve("cassandra").resolve("cassandra.yaml").toString();
+    }
+
     private String getStorageLogPathFromGraknProperties() {
         Path logPath = Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
         return logPath.isAbsolute() ? logPath.toString() : graknHome.resolve(logPath).toString();
     }
 
-    private boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("win");
-    }
 }
