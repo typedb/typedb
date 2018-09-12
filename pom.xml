@@ -923,12 +923,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.github.stefanbirkner</groupId>
-                <artifactId>system-rules</artifactId>
-                <version>${systen-rules.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.zeroturnaround</groupId>
                 <artifactId>zt-exec</artifactId>
                 <version>${zt-exec.version}</version>
@@ -938,11 +932,6 @@
                         <artifactId>commons-io</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>commons-configuration</groupId>
-                <artifactId>commons-configuration</artifactId>
-                <version>1.10</version>
             </dependency>
             <dependency>
                 <groupId>commons-lang</groupId>
@@ -1249,7 +1238,7 @@
                         <exclude>**/ai/grakn/engine/controller/DashboardController.java</exclude>
                     </excludes>
                     <rulesets>
-                        <ruleset>build/pmd/pmd-rules.xml</ruleset>
+                        <ruleset>${user.dir}/build/pmd/pmd-rules.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>

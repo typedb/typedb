@@ -89,11 +89,6 @@
             <artifactId>rest-assured</artifactId>
         </dependency>
 
-       <dependency>
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-rules</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
