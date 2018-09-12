@@ -177,7 +177,7 @@ public class StorageBootup {
         storageCommand.add("-Dcassandra.jmx.local.port=7199");
         // stop the jvm on OutOfMemoryError as it can result in some data corruption
         storageCommand.add("-XX:+CrashOnOutOfMemoryError");
-        if (JAVA_OPTS != null) {
+        if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {
             storageCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
         storageCommand.add(GraknCassandra.class.getCanonicalName());

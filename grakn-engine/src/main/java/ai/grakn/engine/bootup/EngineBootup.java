@@ -162,15 +162,15 @@ public class EngineBootup {
         engineCommand.add("-Dgrakn.dir=" + graknHome);
         engineCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         engineCommand.add("-Dgrakn.pidfile=" + ENGINE_PIDFILE);
-        if (JAVA_OPTS != null) {
+        if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
             engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
-        } //split JAVA OPTS by space and add them to the command
+        }
         engineCommand.add(getEngineMainClass().getName());
         return engineCommand;
     }
 
-    private String getEngineClassPath(){
-        return  graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
+    private String getEngineClassPath() {
+        return graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
                 + File.pathSeparator + graknHome.resolve("services").resolve("grakn").resolve("server")
                 + File.pathSeparator + graknHome.resolve("conf");
     }
