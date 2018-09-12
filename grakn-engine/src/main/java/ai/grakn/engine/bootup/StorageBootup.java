@@ -21,6 +21,7 @@ package ai.grakn.engine.bootup;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.GraknConfig;
+import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -165,12 +166,10 @@ public class StorageBootup {
 
     private List<String> storageCommand() {
         Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
-        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
-                + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
         ArrayList<String> storageCommand = new ArrayList<>();
         storageCommand.add("java");
         storageCommand.add("-cp");
-        storageCommand.add(classpath);
+        storageCommand.add(getStorageClassPath());
         storageCommand.add("-Dlogback.configurationFile=" + logback);
         storageCommand.add("-Dcassandra.logdir=" + getStorageLogPathFromGraknProperties());
         storageCommand.add("-Dcassandra-pidfile=" + STORAGE_PIDFILE.toString());
@@ -178,9 +177,16 @@ public class StorageBootup {
         storageCommand.add("-Dcassandra.jmx.local.port=7199");
         // stop the jvm on OutOfMemoryError as it can result in some data corruption
         storageCommand.add("-XX:+CrashOnOutOfMemoryError");
-        if (JAVA_OPTS != null) { storageCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));}
+        if (JAVA_OPTS != null) {
+            storageCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
+        }
         storageCommand.add(GraknCassandra.class.getCanonicalName());
         return storageCommand;
+    }
+
+    private String getStorageClassPath() {
+        return graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
+                + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
     }
 
 
@@ -190,7 +196,7 @@ public class StorageBootup {
         return Arrays.asList(
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,
-                org.apache.cassandra.tools.NodeTool.class.getCanonicalName(),
+                NodeTool.class.getCanonicalName(),
                 "statusthrift"
         );
     }

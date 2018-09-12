@@ -21,13 +21,11 @@ package ai.grakn.engine.bootup;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.GraknConfig;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.SimpleURI;
 
 import javax.ws.rs.core.UriBuilder;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -41,7 +39,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
@@ -158,19 +155,24 @@ public class EngineBootup {
     }
 
     private List<String> engineCommand() {
-        //   java -cp <classpath> -Dgrakn.dir=<path-to-grakn-home>
-        //    -Dgrakn.conf=<path-to-grakn-properties -Dgrakn.pidFile=<path-to-engine-pidfile> <java-opts> <engine-main-class>'
-        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
         ArrayList<String> engineCommand = new ArrayList<>();
         engineCommand.add("java");
         engineCommand.add("-cp");
-        engineCommand.add(classpath);
+        engineCommand.add(getEngineClassPath());
         engineCommand.add("-Dgrakn.dir=" + graknHome);
         engineCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         engineCommand.add("-Dgrakn.pidfile=" + ENGINE_PIDFILE);
-        if (JAVA_OPTS != null) { engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));} //split JAVA OPTS by space and add them to the command
+        if (JAVA_OPTS != null) {
+            engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
+        } //split JAVA OPTS by space and add them to the command
         engineCommand.add(getEngineMainClass().getName());
         return engineCommand;
+    }
+
+    private String getEngineClassPath(){
+        return  graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
+                + File.pathSeparator + graknHome.resolve("services").resolve("grakn").resolve("server")
+                + File.pathSeparator + graknHome.resolve("conf");
     }
 
     private boolean isEngineReady(String host, int port, String path) {
@@ -185,32 +187,5 @@ public class EngineBootup {
         } catch (IOException e) {
             return false;
         }
-    }
-
-    /**
-     * Build the classpath from the following folders:
-     * - services/lib/*.jar
-     * - conf/
-     * - services/grakn/server/
-     * Any slf4J-log4j12 Jars are excluded.
-     *
-     * @return a classpath to be supplied to Java, ie., java -cp <classpath>
-     */
-    private String getEngineJavaClassPath() {
-        FilenameFilter filterForJarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
-        File servicesLibDir = Paths.get("services", "lib").toFile();
-        File[] jarFiles = servicesLibDir.listFiles(filterForJarFiles);
-        if (jarFiles == null) {
-            throw new RuntimeException(ErrorMessage.UNABLE_TO_START_ENGINE_JAR_NOT_FOUND.getMessage());
-        }
-        Stream<File> jars = Stream.of(jarFiles);
-        File conf = Paths.get("./conf").toFile(); // $GRAKN_HOME/conf
-        File graknLogback = Paths.get("services", "grakn", "server").toFile(); // $GRAKN_HOME/services/grakn/server lib
-        String classPath = ":" + Stream.concat(jars, Stream.of(conf, graknLogback))
-                .filter(f -> !f.getName().contains("slf4j-log4j12"))
-                .map(f -> f.toPath().toString())
-                .sorted() // we need to sort otherwise it doesn't load logback configuration properly
-                .collect(Collectors.joining(":"));
-        return classPath;
     }
 }
