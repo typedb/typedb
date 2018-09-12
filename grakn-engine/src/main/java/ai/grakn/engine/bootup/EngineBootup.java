@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -58,7 +57,7 @@ public class EngineBootup {
     private static final String DISPLAY_NAME = "Engine";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
     private static final Path ENGINE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-engine.pid");
-    private static final String JAVA_OPTS = Optional.ofNullable(GraknSystemProperty.ENGINE_JAVAOPTS.value()).orElse("");
+    private static final String JAVA_OPTS = GraknSystemProperty.ENGINE_JAVAOPTS.value();
 
     protected final Path graknHome;
     protected final Path graknPropertiesPath;
@@ -169,7 +168,7 @@ public class EngineBootup {
         engineCommand.add("-Dgrakn.dir=" + graknHome);
         engineCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         engineCommand.add("-Dgrakn.pidfile=" + ENGINE_PIDFILE);
-        if (JAVA_OPTS.length() > 0) { engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));} //split JAVA OPTS by space and add them to the command
+        if (JAVA_OPTS != null) { engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));} //split JAVA OPTS by space and add them to the command
         engineCommand.add(getEngineMainClass().getName());
         return engineCommand;
     }

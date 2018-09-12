@@ -16,16 +16,19 @@ REM
 REM You should have received a copy of the GNU Affero General Public License
 REM along with this program.  If not, see <https://www.gnu.org/licenses/>.
 REM 
-REM Grakn global variables
-SET JAVA_BIN=java
+
 SET "GRAKN_HOME=%cd%"
-
-
-REM =============================================
-REM main routine
-REM =============================================
 
 
 SET GRAKN_CONFIG="conf\grakn.properties"
 set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\server;%GRAKN_HOME%\services\lib\*"
+
+where java >NUL 2>NUL
+if %ERRORLEVEL% GEQ 1 (
+    echo Java is not installed on this machine.
+    echo Grakn needs Java 1.8 in order to run. See the following setup guide: http://dev.grakn.ai/docs/get-started/setup-guide
+    pause
+    exit 1
+)
+
 java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" ai.grakn.engine.bootup.GraknBootup %*

@@ -26,14 +26,8 @@ GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 # common helper functions
 # ================================================
 update_classpath_global_var() {
-  # Define CLASSPATH, exclude slf4j as we use logback
-  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
-      if [[ $jar != *slf4j-log4j12* ]] ; then
-          CLASSPATH="$CLASSPATH":"$jar"
-      fi
-  done
-
   # Add path containing grakn.properties and logback.xml
+  CLASSPATH="${GRAKN_HOME}"/services/lib/*"
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn/server
 }
