@@ -23,3 +23,6 @@ build_tools()
 
 load("//dependencies/maven:artifacts.bzl", "maven_dependencies")
 maven_dependencies()
+
+load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
+antlr_dependencies()
