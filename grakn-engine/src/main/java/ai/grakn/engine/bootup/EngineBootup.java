@@ -162,6 +162,8 @@ public class EngineBootup {
         engineCommand.add("-Dgrakn.dir=" + graknHome);
         engineCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         engineCommand.add("-Dgrakn.pidfile=" + ENGINE_PIDFILE);
+        // This is because https://wiki.apache.org/hadoop/WindowsProblems
+        engineCommand.add("-Dhadoop.home.dir="+graknHome.resolve("services").resolve("hadoop"));
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
             engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
