@@ -71,22 +71,22 @@ Expressions can be used as the conditions in `if`/`elseif` statements or as the 
 
 Boolean expressions operate over `true` and `false`.
 
-|  Expression | Usage |
-|-------------|---|
-| `and`       |  `if (<this> and <that>) do { ... }` |
-| `or`        |  `if (<this> or <that>) do { ... }` |
-| `not`       |  `if (not <this>) do { ... }` |
+| Expression | Usage                               |
+| ---------- | ----------------------------------- |
+| `and`      | `if (<this> and <that>) do { ... }` |
+| `or`       | `if (<this> or <that>) do { ... }`  |
+| `not`      | `if (not <this>) do { ... }`        |
 
 #### Comparisons
 
-|  Expression | Usage | Notes
-|-------------|---| --- |
-| `=`         |  `if (<this> = <that>) do { ... }` |
-| `!=`        |  `if (<this> != <that>) do { ... }` |
-| `>`         |  `if (<this> > <that>) do { ... }` | operates on numbers
-| `>=`        |  `if (<this> >= <that>) do { ... }` | operates on numbers
-| `<`         |  `if (<this> < <that>) do { ... }` | operates on numbers
-| `<=`        |  `if (<this> <= <that>) do { ... }` | operates on numbers
+| Expression | Usage                              | Notes               |
+| ---------- | ---------------------------------- | ------------------- |
+| `=`        | `if (<this> = <that>) do { ... }`  |
+| `!=`       | `if (<this> != <that>) do { ... }` |
+| `>`        | `if (<this> > <that>) do { ... }`  | operates on numbers |
+| `>=`       | `if (<this> >= <that>) do { ... }` | operates on numbers |
+| `<`        | `if (<this> < <that>) do { ... }`  | operates on numbers |
+| `<=`       | `if (<this> <= <that>) do { ... }` | operates on numbers |
 
 ### Conditionals
 
@@ -170,11 +170,13 @@ $x isa person has name <name>;
 Graql templates allow you to access an element at a specific index in a given list. This is denoted by the square brackets surrounding the desired index `[0]`.
 
 **Accessing the first element** of an array.
+
 ```graql-template
 insert $x has name <names[0]>;
 ```
 
 **Two dimentional arrays** where data is stored in arrays of arrays.
+
 ```graql-template
 // to get the first dish in the first course of the meal
 insert $x isa first-course has dish <course[0][1]>;
@@ -184,7 +186,7 @@ insert $x isa first-course has dish <course[0][1]>;
 
 Macros are denoted by an `@` symbol prefixing the name of the macro function.
 
-**`noescp`**  is short for "no escape". This function will not add quotes or escape the characters inside the value when doing replacement. Exactly one argument accepted. Returns a string.
+**`noescp`** is short for "no escape". This function will not add quotes or escape the characters inside the value when doing replacement. Exactly one argument accepted. Returns a string.
 
 ```graql-template
 insert $x isa @noescp(<species>)-species;
@@ -214,7 +216,7 @@ match $x isa thing has val @double(<value>);
 match $x isa thing has val @boolean(<value>);
 ```
 
-**`equals`** returns a boolean with a value specified by the gievn string. The boolean represents a `true` value if the string argumetn is not null and is equal, ignoring case, to the string "true". Can be used in conditional statements. Requires at least two arguments.
+**`equals`** returns a boolean with a value specified by the gievn string. The boolean represents a `true` value if the string argument is not null and is equal, ignoring case, to the string "true". Can be used in conditional statements. Requires at least two arguments.
 
 ```graql-template
 insert $x isa thing val @equals(<this>, <that>, <other>)
@@ -273,7 +275,7 @@ The described macros are built-in to Graql templating language. Grakn provides a
 
 ### Scopes
 
-During iteration Graql variables will be automatically suffixed with an index.  
+During iteration Graql variables will be automatically suffixed with an index.
 
 For example, the following loop:
 
@@ -323,30 +325,29 @@ insert $p1 has birth-date 1811-03-06 isa person has surname "Newman" has gender 
 
 The following is a list of the reserved keywords in the Graql templating language.
 
-* `,`
-* `;`
-* `(`
-* `)`
-* `[`
-* `]`
-* `:`
-* `for`
-* `if`
-* `elseif`
-* `else`
-* `do`
-* `in`
-* `true`
-* `false`
-* `and`
-* `or`
-* `not`
-* `null`
-* `=`
-* `!=`
-* `>`
-* `>=`
-* `@`
-* `<`
-* `<=`
-*`"`
+- `,`
+- `;`
+- `(`
+- `)`
+- `[`
+- `]`
+- `:`
+- `for`
+- `if`
+- `elseif`
+- `else`
+- `do`
+- `in`
+- `true`
+- `false`
+- `and`
+- `or`
+- `not`
+- `null`
+- `=`
+- `!=`
+- `>`
+- `>=`
+- `@`
+- `<`
+- `<=` \*`"`

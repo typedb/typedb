@@ -21,7 +21,6 @@ compute mean of age, in person;
 
 The [Statistics Queries](./compute-statistics) documentation covers the usage of statistics in more detail.
 
-
 ## Available Statistics Methods
 
 The following methods are available to perform simple statistics computations,
@@ -29,22 +28,22 @@ and we aim to add to these as demand dictates. Please get
 in touch on our [discussion](https://discuss.grakn.ai/) page to request any features that are of particular interest
 to you. A summary of the statistics algorithms is given in the table below.
 
-| Algorithm | Description                                   |
-| ----------- | --------------------------------------------- |
-| [`count`](#count)     | Count the number of instances.                        |
-| [`max`](#maximum)    | Compute the maximum value of an attribute. |
-| [`min`](#minimum)    | Compute the minimum value of an attribute. |
-| [`mean`](#mean)    | Compute the mean value of an attribute.                           |
-| [`median`](#median)    | Compute the median value of an attribute.                           |
-| [`std`](#standard-deviation)    | Compute the standard deviation of an attribute. |
-| [`sum`](#sum)    | Compute the sum of an attribute. |
+| Algorithm                    | Description                                     |
+| ---------------------------- | ----------------------------------------------- |
+| [`count`](#count)            | Count the number of instances.                  |
+| [`max`](#maximum)            | Compute the maximum value of an attribute.      |
+| [`min`](#minimum)            | Compute the minimum value of an attribute.      |
+| [`mean`](#mean)              | Compute the mean value of an attribute.         |
+| [`median`](#median)          | Compute the median value of an attribute.       |
+| [`std`](#standard-deviation) | Compute the standard deviation of an attribute. |
+| [`sum`](#sum)                | Compute the sum of an attribute.                |
 
 For further information see the individual sections below.
 
 ### Count
 
 The default behaviour of count is to return a single value that gives the number of instances present in the graph. It
-is possible to also count subsets of the instances in the graph using the [subgraph](#subgraph) syntax, as described above.
+is possible to also count subsets of the instances in the graph using the [subgraph](#subgraph) syntax, as described below.
 
 ```graql-skip-test
 compute count in person;
@@ -99,7 +98,6 @@ compute max of age, in person;
 
 Computes the standard deviation of a given attribute, similar to [mean](#mean).
 
-
 ```graql-skip-test
 compute std of age, in person;
 ```
@@ -118,7 +116,7 @@ compute sum of age, in person;
 
 [Aggregate queries](../querying-data/aggregate-queries) are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent compute queries described above.
 
-For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
+For example, you can use an aggregate query to filter results by attribute. The following aggregate query, allows you to match the number of people of a particular name:
 
 ```graql-skip-test
 match $x has name 'Bob'; aggregate count;

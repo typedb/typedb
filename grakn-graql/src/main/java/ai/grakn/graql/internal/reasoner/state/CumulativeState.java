@@ -63,7 +63,7 @@ public class CumulativeState extends QueryStateBase{
 
     @Override
     public String toString(){
-        return getClass() + "\n" +
+        return super.toString() +  "\n" +
                 getSubstitution() + "\n" +
                 query + "\n" +
                 subQueries.stream().map(ReasonerQueryImpl::toString).collect(Collectors.joining("\n")) + "\n";
