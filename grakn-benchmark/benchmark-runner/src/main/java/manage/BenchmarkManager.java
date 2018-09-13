@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -41,6 +42,19 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
+import org.apache.http.message.BasicHeader;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -53,6 +67,8 @@ public class BenchmarkManager {
     private BenchmarkConfiguration configuration;
 
     private static final String GRAKN_URI = "localhost:48555";
+
+    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkManager.class);
 
     public BenchmarkManager(BenchmarkConfiguration configuration, DataGenerator dataGenerator, QueryExecutor queryExecutor) {
         this.dataGenerator = dataGenerator;
@@ -96,9 +112,65 @@ public class BenchmarkManager {
         }
     }
 
+
+    public static boolean indexTemplateExists(RestClient esClient, String indexTemplateName) throws IOException {
+
+        try {
+            Request templateExistsRequest = new Request(
+                    "GET",
+                    "/_template/" + indexTemplateName
+            );
+            Response response = esClient.performRequest(templateExistsRequest);
+            LOG.info("Index template `" + indexTemplateName + "` already exists");
+            return true;
+        } catch (ResponseException err) {
+            // 404 => template does not exist yet
+            LOG.error("Index template `" + indexTemplateName + "` does not exist", err);
+            return false;
+        }
+    }
+
+    public static void putIndexTemplateFile(RestClient esClient, File indexTemplateFile, String indexTemplateName) throws IOException {
+        Request putTemplateRequest = new Request(
+                "PUT",
+                "/_template/" + indexTemplateName
+        );
+        HttpEntity entity = new FileEntity(indexTemplateFile, ContentType.APPLICATION_JSON);
+        putTemplateRequest.setEntity(entity);
+        Response response = esClient.performRequest(putTemplateRequest);
+
+        LOG.info("Created index template `" + indexTemplateName + "`");
+    }
+
     public static void main(String[] args) throws IOException {
 
-        System.out.println(args);
+
+        // TODO arguments for ElasticSearch server URI as an arugment
+        String esServerHost = "localhost";
+        int esServerPort = 9200;
+        String esServerProtocol = "http";
+        RestClientBuilder esRestClientBuilder= RestClient.builder(new HttpHost(esServerHost, esServerPort, esServerProtocol));
+        esRestClientBuilder.setDefaultHeaders(new Header[]{new BasicHeader("header", "value")});
+        RestClient restClient = esRestClientBuilder.build();
+
+
+        String indexTemplateName = "grakn-benchmark-index-template";
+        if (!indexTemplateExists(restClient, indexTemplateName)) {
+            // TODO `conf` as a constant path for use all over the place
+            Path confPath = Paths.get("/", "Users", "joshua", "Documents", "grakn", "grakn-benchmark", "benchmark-runner", "conf");
+            Path indexTemplatePath = confPath.resolve(indexTemplateName + ".json");
+            File indexTemplateFile = indexTemplatePath.toFile();
+            putIndexTemplateFile(restClient, indexTemplateFile, indexTemplateName);
+        }
+        restClient.close();
+
+
+
+
+
+
+
+
 
         Option configFileOption = Option.builder("c")
                 .longOpt("config")

@@ -9,38 +9,6 @@ class ZipkinESStorage(object):
         self.es = elasticsearch.Elasticsearch()
         self.indices = indices
 
-        benchmark_template_name = "grakn-benchmarking-template"
-
-        if recreate_template or not self.check_template_exists(benchmark_template_name):
-            with open("dashboard/benchmarking-index-template.json") as f:
-                template = json.load(f)
-            order = 1
-            self.put_template(benchmark_template_name, template, order=order, override_existing=recreate_template)
-            print("Added `{0}` template to elasticsearch with order {1}".format(benchmark_template_name, order))
-        else:
-            print("Template `{0}` exists in elasticsearch, not adding".format(benchmark_template_name))
-
-
-    # TODO move these templates into java
-
-    def check_template_exists(self, benchmark_template_name):
-        # check exists
-        try:
-            self.es.indices.get_template(benchmark_template_name)
-            return True
-        except Exception as e:
-            print(e)
-            return False
-
-    def put_template(self, benchmark_template_name, template, order, override_existing=False):
-        self.es.indices.put_template(
-                name=benchmark_template_name, 
-                body=template,
-                order=order,
-                create=not override_existing
-            )
-
-
     def get_all_execution_names(self, field="tags.executionName", include_filter_regexp="", size=10000, doc_type='span'):
         body = {
             "size": 0,
