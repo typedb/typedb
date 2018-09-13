@@ -22,8 +22,6 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.util.ErrorMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,13 +31,12 @@ import java.util.Optional;
 /**
  * The main class of the 'grakn' command. This class is not a class responsible
  * for booting up the real command, but rather the command itself.
- *
+ * <p>
  * Please keep the class name "Grakn" as it is what will be displayed to the user.
  */
 public class Grakn {
 
     /**
-     *
      * Invocation from class '{@link GraknBootup}'
      *
      * @param args
