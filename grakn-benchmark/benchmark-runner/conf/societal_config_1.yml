@@ -1,6 +1,6 @@
 name: "societal model"
-schema: "/grakn-benchmark/src/main/resources/societal_model/societal_model.gql"
-queries: "/grakn-benchmark/src/main/resources/societal_model/queries.yml"
+schema: "societal_model/societal_model.gql"
+queries: "societal_model/queries.yml"
 concepts:
   - 100
   - 250

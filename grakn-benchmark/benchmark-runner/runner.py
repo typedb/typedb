@@ -39,18 +39,14 @@ parser.add_argument('--ignite-dir', dest='ignite_dir', required=True, help="The 
 
 args = parser.parse_args()
 
-# --- sanity checking section ---
+# --- argument sanity checks ---
 
-# argument sanity checks
 if (args.no_load_schema or args.no_data_generation) and args.keyspace is None:
     print("Require --keyspace if disabling data generation or not loading a schema")
     sys.exit()
 
+# --- end argument sanity checks ---
 
-# folder structures sanity checks
-
-
-# --- end sanity checks ---
 
 unpack_tar = args.unpack_tar
 build_benchmark = args.build_benchmark
@@ -67,20 +63,26 @@ if args.build_grakn:
 
 if build_benchmark_and_deps:
     print("... Building Benchmarking and its dependencies")
-    benchmark_and_deps_result = subprocess.run(['mvn', 'package', '-DskipTests', '--projects', 'grakn-benchmark', '-am'], cwd=grakn_root)
+    benchmark_and_deps_result = subprocess.run(['mvn', 'package', '-DskipTests', '--projects', 'grakn-benchmark/benchmark-runner', '-am'], cwd=grakn_root)
     benchmark_and_deps_result.check_returncode()
 
 if build_benchmark:
     print("...Building Benchmarking (only)")
-    benchmark_result = subprocess.run(['mvn', 'package', '-DskipTests', '--projects', 'grakn-benchmark'], cwd=grakn_root)
+    benchmark_result = subprocess.run(['mvn', 'package', '-DskipTests', '--projects', 'grakn-benchmark/benchmark-runner'], cwd=grakn_root)
     benchmark_result.check_returncode()
 
-# TODO check at start if grakn-benchmark/runner/target DNE, otherwise raise exception that bencharmking needs to be built first
-benchmark_jars = list(filter(lambda f: f.endswith("SNAPSHOT.jar"), os.listdir(os.path.join(grakn_root, *["grakn-benchmark", "runner", "target"]))))
+# --- folder structures sanity checks ---
+target_folder = os.path.join(grakn_root, *["grakn-benchmark", "benchmark-runner", "target"])
+if not os.path.isdir(target_folder):
+    raise Exception("Missing target folder {0}, please build benchmarking first".format(target_folder))
+
+# --- end folder structure sanity checks ---
+
+benchmark_jars = list(filter(lambda f: f.endswith("SNAPSHOT.jar"), os.listdir(target_folder)))
 assert len(benchmark_jars) == 1, "More than 1 benchmark jar found (*SNAPSHOT.jar)"
 benchmark_jar = benchmark_jars[0]
 print("Benchmarking jar: {0}".format(benchmark_jar))
-classpath = [os.path.join(grakn_root, *["grakn-benchmark", "runner",  "target", benchmark_jar])] 
+classpath = [os.path.join(target_folder, benchmark_jar)] 
 
 
 # set default grakn_home_parent or use provided one

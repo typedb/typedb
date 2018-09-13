@@ -25,6 +25,8 @@ import com.google.common.io.Files;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -38,16 +40,20 @@ public class BenchmarkConfiguration {
     private boolean noSchemaLoad = true;
     private boolean noDataGeneration = true;
     private BenchmarkConfigurationFile benchmarkConfigFile;
+    private Path configFilePath;
 
-    public BenchmarkConfiguration(BenchmarkConfigurationFile config) throws IOException {
+    public BenchmarkConfiguration(Path configFilePath, BenchmarkConfigurationFile config) throws IOException {
+        this.configFilePath = configFilePath;
         this.benchmarkConfigFile = config;
 
         // read the queries file string and use them to load further YAML
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        queries = mapper.readValue(new File(config.getQueriesYamlFile()), QueriesConfigurationFile.class);
+        Path queryFilePath = this.configFilePath.getParent().resolve(config.getRelativeQueriesYamlFile());
+        queries = mapper.readValue(queryFilePath.toFile(), QueriesConfigurationFile.class);
 
         try {
-            schemaGraql = Files.readLines(new File(config.getSchemaFile()), StandardCharsets.UTF_8);
+            Path schemaFilePath = this.configFilePath.getParent().resolve(config.getRelativeSchemaFile());
+            schemaGraql = Files.readLines(schemaFilePath.toFile(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

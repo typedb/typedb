@@ -26,6 +26,8 @@ import generator.DataGenerator;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -49,6 +51,8 @@ public class BenchmarkManager {
     private QueryExecutor queryExecutor;
     private int numQueryRepetitions;
     private BenchmarkConfiguration configuration;
+
+    private static final String GRAKN_URI = "localhost:48555";
 
     public BenchmarkManager(BenchmarkConfiguration configuration, DataGenerator dataGenerator, QueryExecutor queryExecutor) {
         this.dataGenerator = dataGenerator;
@@ -146,11 +150,13 @@ public class BenchmarkManager {
         }
 
         String configFileName = arguments.getOptionValue("config");
+        Path configFilePath = Paths.get(configFileName);
+
         ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
         BenchmarkConfigurationFile configFile = benchmarkConfigMapper.readValue(
-                new File(System.getProperty("user.dir") + "/" + configFileName),
+                configFilePath.toFile(),
                 BenchmarkConfigurationFile.class);
-        BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFile);
+        BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFilePath, configFile);
 
 
         // use given keyspace string if exists, otherwise use yaml file `name` tag
@@ -170,15 +176,14 @@ public class BenchmarkManager {
         String dateString = dateFormat.format(new Date());
         executionName = String.join(" ", Arrays.asList(dateString, benchmarkConfiguration.getName(), executionName)).trim();
 
-        String uri = "localhost:48555";
 
         // no data generation means NEITHER schema load NOR data generate
         DataGenerator dataGenerator = benchmarkConfiguration.noDataGeneration() ?
                 null :
-                new DataGenerator(keyspace, uri, benchmarkConfiguration.getSchema());
+                new DataGenerator(keyspace, GRAKN_URI, benchmarkConfiguration.getSchema());
 
         QueryExecutor queryExecutor = new QueryExecutor(keyspace,
-                                            uri,
+                                            GRAKN_URI,
                                             executionName,
                                             benchmarkConfiguration.getQueries());
         BenchmarkManager manager = new BenchmarkManager(benchmarkConfiguration, dataGenerator, queryExecutor);

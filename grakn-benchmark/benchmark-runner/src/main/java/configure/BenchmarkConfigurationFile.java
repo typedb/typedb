@@ -42,15 +42,15 @@ public class BenchmarkConfigurationFile {
     public void setSchema(String schemaFile) {
         this.schema = schemaFile;
     }
-    public String getSchemaFile() {
-        return System.getProperty("user.dir") + this.schema;
+    public String getRelativeSchemaFile() {
+        return this.schema;
     }
 
     public void setQueries(String queriesYaml) {
         this.queries = queriesYaml;
     }
-    public String getQueriesYamlFile() {
-        return System.getProperty("user.dir") + this.queries;
+    public String getRelativeQueriesYamlFile() {
+        return this.queries;
     }
 
     public void setConcepts(List<Integer> concepts) {
