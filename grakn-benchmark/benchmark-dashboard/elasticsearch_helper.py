@@ -2,9 +2,11 @@ import elasticsearch
 import elasticsearch.helpers as helpers
 import json
 
+# TODO rename ZipkinESStorage
 class ElasticsearchUtility(object):
 
     def __init__(self, indices="benchmarking:*", recreate_template=False):
+        """ Create a connection to ES _and_ check that the required templates are in it """
         self.es = elasticsearch.Elasticsearch()
         self.indices = indices
 
@@ -69,7 +71,7 @@ class ElasticsearchUtility(object):
         return execution_names_set
 
 
-    def get_spans_with_experiment_name(self, experiment_name, field="tags.executionName", doc_type='span'):
+    def get_spans_with_execution_name(self, experiment_name, field="tags.executionName", doc_type='span'):
         query = {
             "query": {
                 "term": {
@@ -84,7 +86,6 @@ class ElasticsearchUtility(object):
                 query=query)
 
         return [doc['_source'] for doc in result_iter]
-
 
 
     def get_spans_with_parent(self, parent_id, doc_type='span', sorting=None):
@@ -109,9 +110,11 @@ class ElasticsearchUtility(object):
 
         return [doc['_source'] for doc in spans_iter]
 
+
     def get_number_of_children(self, parent_id, doc_type='span'):
         children = self.get_spans_with_parent(parent_id)
         return len(children)
+
 
     def get_named_span_with_parents(self, name, parent_ids, doc_type='span'):
         """ Retrieve spans with any of the given parent_ids """
