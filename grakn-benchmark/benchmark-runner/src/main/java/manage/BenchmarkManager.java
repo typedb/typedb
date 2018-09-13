@@ -149,7 +149,7 @@ public class BenchmarkManager {
         String esServerHost = "localhost";
         int esServerPort = 9200;
         String esServerProtocol = "http";
-        RestClientBuilder esRestClientBuilder= RestClient.builder(new HttpHost(esServerHost, esServerPort, esServerProtocol));
+        RestClientBuilder esRestClientBuilder = RestClient.builder(new HttpHost(esServerHost, esServerPort, esServerProtocol));
         esRestClientBuilder.setDefaultHeaders(new Header[]{new BasicHeader("header", "value")});
         RestClient restClient = esRestClientBuilder.build();
 

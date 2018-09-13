@@ -18,10 +18,10 @@ def inorder(l, reverse=False):
     else:
         return all(b<=a for (a,b) in zip(l, l[1:]))
 
-class BenchmarkExecutionComponent(object):
+class ExecutionVisualiser(object):
     """ Container for all the data for a specific execution of a Benchmark, and graph generation with Plotly/Dash """
 
-    def __init__(self, app, zipkinESStorage, execution_name, unique_number):
+    def __init__(self, zipkinESStorage, execution_name, unique_number):
         print("Creating BenchmarkExecutionComponent...")
 
         self.zipkinESStorage = zipkinESStorage
@@ -51,7 +51,7 @@ class BenchmarkExecutionComponent(object):
 
 
     @staticmethod
-    def get_required_callback_definitions(unique_number, graph_callbacks=100):
+    def get_predeclared_callbacks(unique_number, graph_callbacks=100):
         """
         !IMPORTANT!
         Static method used to predefine a load of callbacks. This needs to be done since Dash can't
@@ -97,7 +97,7 @@ class BenchmarkExecutionComponent(object):
 
         return rendering_callbacks
 
-    def route_callback(self, method_name, *args):
+    def route_predeclared_callback(self, method_name, *args):
         print("Routing callback for: {0}...".format(method_name))
         if method_name == '_render_overview':
             return self._render_overview(*args)
@@ -132,11 +132,11 @@ class BenchmarkExecutionComponent(object):
                 level_span_number = spanlists_graph.curve_number_to_span_number_at_level(most_common_curve_number)
 
                 # update the spanlists graph!
+                print("Expanding graph at: {0}, {1}".format(most_common_level, level_span_number))
                 spanlists_graph.expand_span_at_level_name(most_common_level, level_span_number)
                 return spanlists_graph.get_figure()
             else:
                 return {}
-
         else:
             print("Unknown method name in route_callback: {0}".format(method_name))
 
@@ -404,6 +404,7 @@ class SpanListsListGraph(object):
 
         self._expand_single_spans()
 
+
     def _expand_single_spans(self):
         """ If the deepest spanlist[] only has 1 spanlist, automatically expand it """
         max_level, num_spans = self.get_max_level_and_num_spans()
@@ -472,6 +473,7 @@ class SpanListsListGraph(object):
         else:
             raise Exception("Unexpected behavior, setting level name more than 1 level head of existing")
 
+
     def expand_span_at_level(self, level_number, span_number):
 
         if level_number not in self.levels:
@@ -486,6 +488,7 @@ class SpanListsListGraph(object):
         # delete all further levels down 
         for i in range(level_number+1, self.get_current_max_level()+1):
             del self.levels[i]
+            del self.level_names[i]
 
         # recompute level_number + 1 
         spanlist = level['spanlists'][span_number]

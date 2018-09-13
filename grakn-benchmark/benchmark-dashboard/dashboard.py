@@ -4,9 +4,8 @@ import dash_core_components as dcc
 import datetime
 import argparse
 
-from BenchmarkExecutionComponent import BenchmarkExecutionComponent
+from ExecutionVisualiser import ExecutionVisualiser
 from ZipkinESStorage import ZipkinESStorage
-
 
 
 parser = argparse.ArgumentParser(description="Run Grakn Benchmarking dashboard to visualize data generated \
@@ -26,9 +25,9 @@ def get_sorted_executions(es):
     return [x[1] for x in pairs]
 
 
-# --- layout ---- 
+# --- layout ---
 
-def get_executions_sidebar_layout(sorted_executions):
+def get_execution_selector(sorted_executions):
     """ Generate HTML for the list of benchmark executions as a column """
     executions_radio = dcc.RadioItems(
         id="existing-executions-radio",
@@ -55,7 +54,7 @@ def get_dashboard_layout(sorted_executions, benchmark_width=11):
         )
     
     # sidebar with set width and radio buttons with executions
-    sidebar = get_executions_sidebar_layout(sorted_executions)
+    sidebar = get_execution_selector(sorted_executions)
 
     layout = html.Div(children=[
             html.H1("Grakn Benchmarking Dashboard"),
@@ -75,18 +74,20 @@ def get_dashboard_layout(sorted_executions, benchmark_width=11):
 
     return layout
 
+def attach_dashboard_layout(app, sorted_executions):
+    app.layout = get_dashboard_layout(sorted_executions)
+
 # ---- interactivity functionality ----
 
 def try_create_execution(execution_components, sorted_executions, execution_name):
     """ Create an BenchmarkExecutionComponent if it doesn't already exist in the given dictionary """
     if execution_name not in execution_components:
         execution_number = sorted_executions.index(execution_name)
-        execution_components [execution_name] = BenchmarkExecutionComponent(app, zipkinESStorage, execution_name, execution_number)
+        execution_components [execution_name] = ExecutionVisualiser(zipkinESStorage, execution_name, execution_number)
 
-# -- dynamic callbacks --
+# - dynamic callbacks -
 
-
-def attach_dynamic_callbacks(app, sexecution_component, sorted_executions):
+def attach_dynamic_callbacks(app, execution_components, sorted_executions, max_graphs):
     """ pre-compute the controls we will need to generate graphs, all callbacks must be declared before server starts """
 
     for i, execution_name in enumerate(sorted_executions):
@@ -101,54 +102,76 @@ def attach_dynamic_callbacks(app, sexecution_component, sorted_executions):
                 print("Callback with args, method aname and execution name: {0}, {1}, {2}".format(args, method_name, exec_name))
                 try_create_execution(execution_components, sorted_executions, exec_name)
                 execution = execution_components[exec_name]
-                return execution.route_callback(method_name, *args)
+                return execution.route_predeclared_callback(method_name, *args)
             return wrapped_callback
     
-        callback_definitions = BenchmarkExecutionComponent.get_required_callback_definitions(unique_number=i,
-                                                                                             graph_callbacks=max_graphs)
+        callback_definitions = ExecutionVisualiser.get_predeclared_callbacks(unique_number=i,
+                                                                             graph_callbacks=max_graphs)
     
         for callback_function_name in callback_definitions:
             callback_definition = callback_definitions[callback_function_name]
             app.callback(callback_definition[0], callback_definition[1])(route_execution_callback(callback_function_name, execution_name))
 
+# - end dynamic callbacks -
 
+# - begin static callbacks -
 
-
-if __name__ == '__main__':
-    args = parser.parse_args()
-    max_graphs = args.max_graphs
-    
-    app = dash.Dash()
-
-    # supress callback exceptions for nonexistant labels
-    # since we're dynamically adding callbacks that don't have inputs/outputs yet
-    app.config.supress_callback_exceptions = True
-
-    # initialize ES utility
-    zipkinESStorage = ZipkinESStorage()
-    
-    print("Retrieving existing benchmarks...")
-    sorted_executions = get_sorted_executions(zipkinESStorage)
-    
-    # bootstrap CSS
-    app.css.append_css({
-        'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
-    })
-    app.layout = get_dashboard_layout(sorted_executions)
-    
-    
-    execution_components = {}
-   
-    # ---- static calbacks, always required ----
+def attach_static_callbacks(app, execution_components):
+    # ---- static callbacks, always required ----
     @app.callback(
         dash.dependencies.Output('active-benchmark', 'children'),
         [dash.dependencies.Input('existing-executions-radio', 'value')])
     def execution_updated(execution_name):
         try_create_execution(execution_components, sorted_executions, execution_name)
         return execution_components[execution_name].full_render()
-    
-  
-    # --- dynamic callbacks ---
-    attach_dynamic_callbacks(app, execution_components, sorted_executions)
 
+
+# - end static callbacks
+
+# ---- end interactive functionality ----
+
+# ---- Configure Dashboard ----
+
+def configure_dashboard_options(app): 
+    # supress callback exceptions for nonexistant labels
+    # since we're dynamically adding callbacks that don't have inputs/outputs yet
+    app.config.supress_callback_exceptions = True
+    # bootstrap CSS
+    app.css.append_css({
+        'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
+    })
+
+# ---- end configure Dashboard ----
+
+
+def create_grakn_benchmark_dashboard(sorted_executions):
+    """ Create the Dash app, attach layout and callbacks """
+
+    app = dash.Dash()
+
+    # existing_execution_components are a cache for already created execution visualizations
+    existing_execution_components = {}
+    configure_dashboard_options(app)
+    attach_dashboard_layout(app, sorted_executions)
+    attach_static_callbacks(app, existing_execution_components)
+    attach_dynamic_callbacks(app, existing_execution_components, sorted_executions, max_graphs)
+
+    return app
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    max_graphs = args.max_graphs
+    
+    # initialize ElasticSearch communicator 
+    zipkinESStorage = ZipkinESStorage()
+    
+    # retrieve existing executions
+    print("Retrieving existing executions...")
+    sorted_executions = get_sorted_executions(zipkinESStorage)
+
+    # create the Dash grakn benchmarking dashboard
+    app = create_grakn_benchmark_dashboard(sorted_executions)
+
+    # run the app
     app.run_server(debug=True)

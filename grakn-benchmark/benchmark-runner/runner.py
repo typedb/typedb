@@ -7,7 +7,7 @@ import sys
 
 cwd = os.getcwd()
 cwd_list = cwd.split('/')
-grakn_root = "/" + os.path.join(*cwd_list[:-1])
+grakn_root = "/" + os.path.join(*cwd_list[:-2])
 print(grakn_root)
 
 parser = argparse.ArgumentParser(description="Prepare and run benchmarking of Grakn")
