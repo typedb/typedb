@@ -92,9 +92,9 @@
         <main.basedir>${project.basedir}</main.basedir>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
         <grpc.version>1.8.0</grpc.version>
-        <netty-all.version>4.1.29.Final</netty-all.version>
+        <netty-all.version>4.1.16.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
-        <netty.version>3.10.6.Final</netty.version>
+        <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
@@ -672,7 +672,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <version>${netty.version}</version>
+                <version>${netty-ssl.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sparkjava</groupId>
