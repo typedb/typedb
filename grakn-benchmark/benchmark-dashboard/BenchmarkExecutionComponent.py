@@ -21,10 +21,10 @@ def inorder(l, reverse=False):
 class BenchmarkExecutionComponent(object):
     """ Container for all the data for a specific execution of a Benchmark, and graph generation with Plotly/Dash """
 
-    def __init__(self, app, es_utility, execution_name, unique_number):
+    def __init__(self, app, zipkinESStorage, execution_name, unique_number):
         print("Creating BenchmarkExecutionComponent...")
 
-        self.es_utility = es_utility
+        self.zipkinESStorage = zipkinESStorage
         self.execution_name = execution_name.strip()
         # unique number is used for attaching to pre-defined callbacks and avoiding html `id` clashes
         self.unique_number = unique_number
@@ -307,9 +307,9 @@ class BenchmarkExecutionComponent(object):
         second_split = self.toplevel_query_breakdown.loc[split_repetitions_at:, (query, concepts)]
 
         if first_split.size != 0:
-            spanlists.append(SpanList(self.es_utility, first_split, name="Repetitions [0:{0})".format(split_repetitions_at)))
+            spanlists.append(SpanList(self.zipkinESStorage, first_split, name="Repetitions [0:{0})".format(split_repetitions_at)))
         if second_split.size != 0:
-            spanlists.append(SpanList(self.es_utility, second_split, name="Repetitions [{0}:{1})".format(split_repetitions_at, self.repetitions)))
+            spanlists.append(SpanList(self.zipkinESStorage, second_split, name="Repetitions [{0}:{1})".format(split_repetitions_at, self.repetitions)))
 
         return spanlists
 
@@ -330,7 +330,7 @@ class BenchmarkExecutionComponent(object):
                 # retrieve spanId that is the parent from the duration data
                 batch_span_id = self.overview_data.loc[num_concepts, (query, "batchSpanId")]
                 # retrieve all spans with this as parent
-                query_spans = self.es_utility.get_spans_with_parent(batch_span_id)
+                query_spans = self.zipkinESStorage.get_spans_with_parent(batch_span_id)
                 for query_span in query_spans:
                     # have to manually parse repetition into int since they're not sorted because ES isn't parsing longs correctly
                     repetition = int(query_span['tags']['repetition'])
@@ -362,7 +362,7 @@ class BenchmarkExecutionComponent(object):
 
     def _build_overview_data(self):
         print("Building overview data...")
-        spans_for_execution = self.es_utility.get_spans_with_experiment_name(self.execution_name)
+        spans_for_execution = self.zipkinESStorage.get_spans_with_execution_name(self.execution_name)
         query_concepts_map = {} # collect data into a map
         for span in spans_for_execution:
             query = span['tags']['query']

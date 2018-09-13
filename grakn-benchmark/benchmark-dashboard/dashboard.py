@@ -5,7 +5,7 @@ import datetime
 import argparse
 
 from BenchmarkExecutionComponent import BenchmarkExecutionComponent
-import elasticsearch_helper as es_helper
+from ZipkinESStorage import ZipkinESStorage
 
 
 
@@ -48,7 +48,7 @@ def get_dashboard_layout(sorted_executions, benchmark_width=11):
     
     # placeholder for benchmark graphs with a specified width
     active_benchmark = html.Div(
-            classname="col-xl-{0}".format(benchmark_width), 
+            className="col-xl-{0}".format(benchmark_width), 
             children=[
                 html.Div(id='active-benchmark')
             ]
@@ -81,13 +81,14 @@ def try_create_execution(execution_components, sorted_executions, execution_name
     """ Create an BenchmarkExecutionComponent if it doesn't already exist in the given dictionary """
     if execution_name not in execution_components:
         execution_number = sorted_executions.index(execution_name)
-        execution_components [execution_name] = BenchmarkExecutionComponent(app, es_utility, execution_name, execution_number)
+        execution_components [execution_name] = BenchmarkExecutionComponent(app, zipkinESStorage, execution_name, execution_number)
 
 # -- dynamic callbacks --
 
 
 def attach_dynamic_callbacks(app, sexecution_component, sorted_executions):
     """ pre-compute the controls we will need to generate graphs, all callbacks must be declared before server starts """
+
     for i, execution_name in enumerate(sorted_executions):
         # create a app.callback for each possible required callback in BenchmarkExecutionComponent
     
@@ -110,6 +111,9 @@ def attach_dynamic_callbacks(app, sexecution_component, sorted_executions):
             callback_definition = callback_definitions[callback_function_name]
             app.callback(callback_definition[0], callback_definition[1])(route_execution_callback(callback_function_name, execution_name))
 
+
+
+
 if __name__ == '__main__':
     args = parser.parse_args()
     max_graphs = args.max_graphs
@@ -121,10 +125,10 @@ if __name__ == '__main__':
     app.config.supress_callback_exceptions = True
 
     # initialize ES utility
-    es_utility = es_helper.ElasticsearchUtility()
+    zipkinESStorage = ZipkinESStorage()
     
     print("Retrieving existing benchmarks...")
-    sorted_executions = get_sorted_executions(es_utility)
+    sorted_executions = get_sorted_executions(zipkinESStorage)
     
     # bootstrap CSS
     app.css.append_css({

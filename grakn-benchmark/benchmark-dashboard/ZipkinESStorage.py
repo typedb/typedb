@@ -2,8 +2,7 @@ import elasticsearch
 import elasticsearch.helpers as helpers
 import json
 
-# TODO rename ZipkinESStorage
-class ElasticsearchUtility(object):
+class ZipkinESStorage(object):
 
     def __init__(self, indices="benchmarking:*", recreate_template=False):
         """ Create a connection to ES _and_ check that the required templates are in it """
@@ -21,6 +20,8 @@ class ElasticsearchUtility(object):
         else:
             print("Template `{0}` exists in elasticsearch, not adding".format(benchmark_template_name))
 
+
+    # TODO move these templates into java
 
     def check_template_exists(self, benchmark_template_name):
         # check exists
@@ -40,7 +41,7 @@ class ElasticsearchUtility(object):
             )
 
 
-    def aggregate_match(self, indices, field, include_filter_regexp="", size=10000, doc_type='span'):
+    def get_all_execution_names(self, field="tags.executionName", include_filter_regexp="", size=10000, doc_type='span'):
         body = {
             "size": 0,
             "aggs" : {
@@ -52,21 +53,16 @@ class ElasticsearchUtility(object):
                 }
             }
         }
-
         filter_regexp = include_filter_regexp.strip()
         if filter_regexp != "":
             body["aggs"]["aggregated"]["terms"]["include"] = filter_regexp
 
         aggregate = self.es.search( 
-                index=indices,
+                index=self.indices,
                 doc_type=doc_type,
                 body=body)
 
-        return aggregate['aggregations']['aggregated']['buckets']
-
-    
-    def get_all_execution_names(self, field="tags.executionName", include_filter_regexp=""):
-        aggregated_names_buckets = self.aggregate_match(self.indices, field, include_filter_regexp, size=10000)
+        aggregated_names_buckets = aggregate['aggregations']['aggregated']['buckets']
         execution_names_set = set([x['key'] for x in aggregated_names_buckets])
         return execution_names_set
 
