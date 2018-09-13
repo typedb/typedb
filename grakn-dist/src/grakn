@@ -27,7 +27,7 @@ GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 # ================================================
 update_classpath_global_var() {
   # Add path containing grakn.properties and logback.xml
-  CLASSPATH="${GRAKN_HOME}"/services/lib/*"
+  CLASSPATH="${GRAKN_HOME}/services/lib/*"
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn/server
 }
