@@ -19,6 +19,8 @@
 package ai.grakn.engine.bootup;
 
 import org.apache.cassandra.service.CassandraDaemon;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,6 +31,7 @@ import java.lang.management.ManagementFactory;
  */
 
 public class GraknCassandra {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknCassandra.class);
 
     public static void main(String[] args) {
         try {
@@ -36,9 +39,8 @@ public class GraknCassandra {
             instance.activate();
             persistPID();
         }catch (Exception e){
-            System.err.println("Exception while starting Cassandra:");
+            LOG.error("Cassandra Exception:", e);
             System.err.println(e.getMessage());
-            System.err.println("Check log file for more details.");
         }
     }
 
@@ -50,7 +52,7 @@ public class GraknCassandra {
             writer.print(pidString);
             writer.close();
         } catch (IOException e) {
-            System.err.println("Error persisting storage PID:" + e.getMessage());
+            LOG.error("Error persisting storage PID:" + e.getMessage());
         }
     }
 }

@@ -22,6 +22,8 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.util.ErrorMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,19 +33,22 @@ import java.util.Optional;
 /**
  * The main class of the 'grakn' command. This class is not a class responsible
  * for booting up the real command, but rather the command itself.
- * <p>
+ *
  * Please keep the class name "Grakn" as it is what will be displayed to the user.
  */
 public class Grakn {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
+
     /**
+     *
      * Invocation from class '{@link GraknBootup}'
      *
      * @param args
      */
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
-                System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage())));
+                LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e));
 
         try {
             String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
@@ -57,6 +62,7 @@ public class Grakn {
             Server server = ServerFactory.createServer();
             server.start();
         } catch (RuntimeException | IOException e) {
+            LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
             System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()));
         }
     }
