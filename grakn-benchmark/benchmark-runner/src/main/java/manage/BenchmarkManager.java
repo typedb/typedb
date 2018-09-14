@@ -157,7 +157,7 @@ public class BenchmarkManager {
         String indexTemplateName = "grakn-benchmark-index-template";
         if (!indexTemplateExists(restClient, indexTemplateName)) {
             // TODO `conf` as a constant path for use all over the place
-            Path confPath = Paths.get("/", "Users", "joshua", "Documents", "grakn", "grakn-benchmark", "benchmark-runner", "conf");
+            Path confPath = Paths.get("/", "Users", "lolski", "grakn.ai", "grakn", "grakn-benchmark", "benchmark-runner", "conf");
             Path indexTemplatePath = confPath.resolve(indexTemplateName + ".json");
             File indexTemplateFile = indexTemplatePath.toFile();
             putIndexTemplateFile(restClient, indexTemplateFile, indexTemplateName);
