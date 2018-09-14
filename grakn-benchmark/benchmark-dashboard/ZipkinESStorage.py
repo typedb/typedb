@@ -4,7 +4,7 @@ import json
 
 class ZipkinESStorage(object):
 
-    def __init__(self, indices="benchmarking:*", recreate_template=False):
+    def __init__(self, indices="benchmarking:*"):
         """ Create a connection to ES _and_ check that the required templates are in it """
         self.es = elasticsearch.Elasticsearch()
         self.indices = indices
