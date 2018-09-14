@@ -21,6 +21,7 @@
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
     <id>bin</id>
     <formats>
+        <format>tar.gz</format>
         <format>zip</format>
     </formats>
 
