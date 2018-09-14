@@ -89,7 +89,6 @@
         <prometheus.version>0.0.13</prometheus.version>
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
-        <spark-gremlin.version>3.2.5</spark-gremlin.version>
         <grpc.version>1.15.0</grpc.version>
         <netty-all.version>4.1.27.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
@@ -320,7 +319,7 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>spark-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
@@ -351,7 +350,7 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>hadoop-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
@@ -364,10 +363,6 @@
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-core_2.10</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
@@ -554,7 +549,7 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.spark</groupId>
-                <artifactId>spark-core_2.10</artifactId>
+                <artifactId>spark-core_2.11</artifactId>
                 <version>${spark.version}</version>
                 <exclusions>
                     <exclusion>
