@@ -41,7 +41,7 @@ class ExecutionVisualiser(object):
         pass
 
     @staticmethod
-    def get_predeclared_callbacks(execution_number, graph_callbacks=100):
+    def get_predeclared_callbacks(execution_number, max_interactive_graphs_per_execution=100):
         """
         !IMPORTANT!
         Static method used to predefine a load of callbacks. This needs to be done since Dash can't
@@ -71,7 +71,7 @@ class ExecutionVisualiser(object):
         # predefine callbacks to reference clicks in the graphs
         # NOTE: this requires we uses these same IDs when actually instantiating
         # any graphs in BenchmarkExecutionComponents
-        for i in range(graph_callbacks):
+        for i in range(max_interactive_graphs_per_execution):
             # `i` corresponds the query number/set of graphs generated
             # MUST format graph IDS with this!
             graph_one_id = 'breakdown-graph-{0}-{1}-{2}'.format(execution_number, i, 0)
