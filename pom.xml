@@ -62,7 +62,7 @@
         <commons-csv.version>1.3</commons-csv.version>
         <json.version>20160212</json.version>
         <rest-assured.version>2.7.0</rest-assured.version>
-        <spark.version>1.6.1</spark.version>
+        <spark.version>2.2.0</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
@@ -579,6 +579,10 @@
                     <exclusion>
                         <groupId>io.dropwizard.metrics</groupId>
                         <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.scala-lang.modules</groupId>
+                        <artifactId>scala-xml_2.11</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
