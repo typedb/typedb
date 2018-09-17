@@ -341,8 +341,6 @@
       takeScreenshot() {
         const canvas = document.getElementsByTagName('canvas')[0];
 
-        canvas.style.backgroundColor = '#1a1a1a';
-
         // save canvas image as data url (png format by default)
         const dataURL = canvas.toDataURL();
 
