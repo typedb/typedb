@@ -25,10 +25,13 @@ class ZipkinESStorage(object):
         if filter_regexp != "":
             body["aggs"]["aggregated"]["terms"]["include"] = filter_regexp
 
-        aggregate = self.es.search( 
+        aggregate = self.es.search(
                 index=self.indices,
                 doc_type=doc_type,
                 body=body)
+
+        if aggregate['hits']['total'] == 0:
+            return set([])
 
         aggregated_names_buckets = aggregate['aggregations']['aggregated']['buckets']
         execution_names_set = set([x['key'] for x in aggregated_names_buckets])

@@ -37,9 +37,6 @@ class SpanListsListGraph(object):
             }
             self.set_level_name(max_level+1, displayname)
 
-            max_level, num_spans = self.get_max_level_and_num_spans()
-
-
     def get_plot_data(self):
         data = []
         for level in self.levels:

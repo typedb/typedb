@@ -24,7 +24,6 @@ class Dashboard(object):
         self._dash.css.append_css({
             'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
         })
-        print("hi")
 
     def run(self, debug=True):
         self._dash.run_server(debug=debug)
@@ -35,6 +34,9 @@ class Dashboard(object):
             dash.dependencies.Output('active-benchmark', 'children'),
             [dash.dependencies.Input('execution-selector-radio', 'value')])
         def execution_updated(execution_name):
+            if len(self._execution_names) == 0:
+                return html.Div(children=["Please execute benchmarking to generate data for dashboard!"])
+
             self._upsert_execution(execution_name)
             return self._executions[execution_name].get_layout()
 
@@ -65,7 +67,7 @@ class Dashboard(object):
 
     def _upsert_execution(self, execution_name):
         """ Create an execution if it doesn't already exist in the previously loaded executions cache"""
-        if execution_name not in self._executions:
+        if len(self._execution_names) > 0 and execution_name not in self._executions:
             execution_number = self._execution_names.index(execution_name)
             self._executions[execution_name] = ExecutionVisualiser(self._zipkinESStorage,
                                                                    execution_name,
