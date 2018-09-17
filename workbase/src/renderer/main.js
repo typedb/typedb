@@ -11,7 +11,7 @@ import VueNavbar from './components/UIElements/VueNavbar.vue';
 import VueTabs from './components/UIElements/VueTabs.vue';
 import VueTab from './components/UIElements/VueTab.vue';
 import VueIcon from './components/UIElements/VueIcon.vue';
-import VueTooltip from './components/UIElements/VueTooltip.vue';
+import VueTooltip from './components/UIElements/VueToolTip.vue';
 
 
 // Modules
