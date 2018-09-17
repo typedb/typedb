@@ -55,7 +55,7 @@ function createWindow() {
     icon: `${__static}/img/icon.png`,
     titleBarStyle: 'hidden',
     darkTheme: true,
-    minWidth: 800,
+    minWidth: 995,
     minHeight: 600,
     // Set webSecurity to false in development mode to avoid AJAX calls blocked due to CORS (due to WebapckDevServer).
     webPreferences: { webSecurity: isProd },
