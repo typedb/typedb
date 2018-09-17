@@ -22,16 +22,16 @@
     },
     mounted() {
       this.$nextTick(() => {
-        this.renderInput();
+        this.renderQueryNameInput();
       });
     },
     watch: {
       defaultValue() {
-        this.renderInput();
+        this.renderQueryNameInput();
       },
     },
     methods: {
-      renderInput() {
+      renderQueryNameInput() {
         ReactDom.render(React.createElement(InputGroup, {
           className: this.className,
           defaultValue: this.defaultValue,

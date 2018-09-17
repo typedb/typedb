@@ -1,7 +1,6 @@
 <template>
 <div>
     <nav role="navigation" class="navbar-fixed noselect">
-
         <div class="nav-wrapper">
             <span>Grakn Workbase - Visualiser</span>
         </div>

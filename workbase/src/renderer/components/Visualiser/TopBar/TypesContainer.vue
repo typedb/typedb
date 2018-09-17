@@ -1,21 +1,21 @@
 <template>
-    <div class="types-container">
-        <div class="column">
-            <vue-tabs class="tabs" :tabs="tabs" v-on:tab-selected="toggleTab"></vue-tabs>
-            <div class="row">
-                <div class="tab-panel" v-for="k in Object.keys(metaTypeInstances)" :key="k">
-                    <div class="tab-list" v-show="currentTab===k">
-                        <div v-for="i in metaTypeInstances[k]" :key="i">
-                            <vue-button v-on:clicked="typeSelected(i)" :text="i" className="vue-button"></vue-button>
+        <div class="types-container z-depth-3">
+            <div class="column">
+                <vue-tabs class="tabs" :tabs="tabs" v-on:tab-selected="toggleTab"></vue-tabs>
+                <div class="row">
+                    <div class="tab-panel" v-for="k in Object.keys(metaTypeInstances)" :key="k">
+                        <div class="tab-list" v-show="currentTab===k">
+                            <div v-for="i in metaTypeInstances[k]" :key="i">
+                                <vue-button v-on:clicked="typeSelected(i)" :text="i" className="vue-button"></vue-button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <div class="editor-tab">
+                <div @click="$emit('close-types-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+            </div>
         </div>
-        <div class="editor-tab">
-            <div @click="$emit('close-types-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
-        </div>
-    </div>
 </template>
 
 <style scoped>

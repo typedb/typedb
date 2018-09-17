@@ -18,11 +18,11 @@
                 <div v-for="(value, key) in attributes" :key="key">
                     <div class="content-item" v-if="value.href">
                         <div class="label">{{value.type}}:</div>
-                        <a clas="value" :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank"> {{value.value}}</a>
+                        <a class="value" :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.value}}</a>
                     </div>
                     <div class="content-item" v-else>
                         <div class="label">{{value.type}}:</div>
-                        <div clas="value">{{value.value}}</div>
+                        <div class="value">{{value.value}}</div>
                     </div>
                 </div>
             </div>
@@ -36,7 +36,7 @@
     props: ['localStore'],
     data() {
       return {
-        showAttributesPanel: false,
+        showAttributesPanel: undefined,
         attributes: [],
       };
     },
@@ -95,7 +95,16 @@
         border-bottom: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
-        max-height: 280px;
+        max-height: 691px;
+        overflow: auto;
+    }
+
+    .content::-webkit-scrollbar {
+        width: 2px;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+        background: var(--green-4);
     }
 
     .content-item {
@@ -107,6 +116,10 @@
     .label {
         margin-right: 20px;
         width: 65px;
+    }
+
+    .value {
+        width: 110px;
     }
 
 </style>

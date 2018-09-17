@@ -3,14 +3,13 @@
         <div class="visualiser-wrapper">
             <top-bar :localStore="localStore"></top-bar>
             <div class="lower">
-                <!--<left-bar></left-bar>-->
                 <div class="center">
                     <context-menu :localStore="localStore"></context-menu>
                     <graph-canvas :localStore="localStore"></graph-canvas>
                     <canvas-tool-tip :localStore="localStore"></canvas-tool-tip>
                     <!--<bottom-bar :localStore="localStore"></bottom-bar>-->
+                    <right-bar :localStore="localStore"></right-bar>
                 </div>
-                <right-bar :localStore="localStore"></right-bar>
             </div>
         </div>
     </transition>
@@ -18,34 +17,34 @@
 
 <style scoped>
 
-.visualiser-wrapper {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    background-color: #1B1B1B;
-}
 
-.lower {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    position: relative;
-}
+    .visualiser-wrapper {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        background-color: #1B1B1B;
+    }
 
-.center {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    width: 100%;
-    position: relative;
-}
+    .lower {
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+        position: relative;
+    }
+
+    .center {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        width: 100%;
+        position: relative;
+    }
 
 </style>
 
 <script>
-import { isDataManagement } from '@/routes.js';
 
 import TopBar from './TopBar.vue';
 import LeftBar from './LeftBar.vue';
@@ -81,14 +80,10 @@ export default {
       }
     },
   },
-  mounted() {
-    if (!this.keyspaceSelected) {
-      this.notifyNoKeyspace = setTimeout(() => {
-        if (isDataManagement(this.$route) && this.$store.getters.isGraknRunning) {
-          this.$notifyInfo('Please select a keyspace to start exploring data!');
-        }
-      }, 10000);
-    }
+  methods: {
+    toggleRightBar() {
+      this.showRightBar = !this.showRightBar;
+    },
   },
 };
 </script>

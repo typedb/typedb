@@ -2,15 +2,14 @@
     <div class="top-bar-container">
         <div class="left">
             <img src="static/img/logo-text.png" class="grakn-icon">
-            <!--<p class="title">VISUALISER</p>-->
         </div>
 
         <div class="center">
-            <graql-editor :localStore="localStore"></graql-editor>
+            <graql-editor :localStore="localStore" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
         </div>
 
         <div class="right">
-            <keyspaces-handler :localStore="localStore"></keyspaces-handler>
+            <keyspaces-handler :localStore="localStore" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
         </div>
     </div>
 </template>
@@ -36,7 +35,6 @@
         display: flex;
         align-items: center;
         vertical-align: middle;
-        /*justify-content: space-between;*/
         flex-direction: row;
 
         -webkit-touch-callout: none; /* iOS Safari */
@@ -48,19 +46,9 @@
                                   supported by Chrome and Opera */
     }
 
-    .title {
-        margin-left: 3px;
-        font-size: 16px !important;
-        font-weight: 400;
-        letter-spacing: 1px;
-        height: 25px;
-        line-height: 25px;
-    }
-
     .grakn-icon {
         height: 25px;
         margin: 5px;
-        /*border: var(--container-darkest-border);*/
     }
 
     .center {
@@ -91,5 +79,10 @@
     export default {
       props: ['localStore'],
       components: { KeyspacesHandler, GraqlEditor },
+      data() {
+        return {
+          showKeyspaceToolTip: false,
+        };
+      },
     };
 </script>

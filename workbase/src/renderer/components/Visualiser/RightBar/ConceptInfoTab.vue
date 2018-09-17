@@ -1,26 +1,27 @@
 <template>
     <div class="node-tab-content">
         <div class="tab-header">Concept Info</div>
-        <concept-info-panel :localStore="localStore"></concept-info-panel>
+        <identity-panel :localStore="localStore"></identity-panel>
         <attributes-panel :localStore="localStore"></attributes-panel>
     </div>
 </template>
 
 <script>
 
-  import ConceptInfoPanel from './ConceptInfoTab/IdentityPanel';
+  import IdentityPanel from './ConceptInfoTab/IdentityPanel';
   import AttributesPanel from './ConceptInfoTab/AttributesPanel';
-  import ConceptDisplayPanel from './SettingsTab/DisplaySettingsPanel';
 
   export default {
-    name: 'NodeTab',
+    name: 'ConceptInfoTab',
     props: ['localStore'],
-    components: { ConceptInfoPanel, AttributesPanel, ConceptDisplayPanel },
+    components: { IdentityPanel, AttributesPanel },
   };
 </script>
 
 <style scoped>
 
-
+    .node-tab-content {
+        width: 213.14px;
+    }
 
 </style>

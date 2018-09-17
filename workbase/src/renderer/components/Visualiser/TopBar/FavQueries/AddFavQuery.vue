@@ -1,8 +1,7 @@
 <template>
-    <div class="add-fav-query">
-        <!--<div @click="$emit('close-add-query-panel')"><vue-icon class="close-container" icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>-->
+    <div class="add-fav-query z-depth-3">
         <div class="panel-body">
-            <vue-input class="query-name-input" placeholder="Query name" v-on:input-changed="updateCurrentQueryName" className="vue-input"></vue-input>
+            <vue-tooltip content="please write a query name" :isOpen="showAddFavQueryToolTip" :usePortal="false" :child="queryNameInput" v-on:close-tooltip="$emit('toggle-fav-query-tooltip', false)"></vue-tooltip>
             <vue-button v-on:clicked="addFavQuery" icon="floppy-disk" className="vue-button save-query-btn"></vue-button>
         </div>
         <div class="editor-tab">
@@ -12,30 +11,53 @@
 </template>
 
 <script>
+  import { InputGroup } from '@blueprintjs/core';
+
+  import React from 'react';
 
   import FavQueriesSettings from './FavQueriesSettings';
 
   export default {
     name: 'AddFavQuery',
-    props: ['currentQuery', 'currentKeyspace'],
+    props: ['currentQuery', 'currentKeyspace', 'showAddFavQueryToolTip'],
     data() {
       return {
         currentQueryName: '',
+        queryNameInput: null,
       };
+    },
+    created() {
+      this.renderQueryNameInput();
     },
     methods: {
       updateCurrentQueryName(val) {
         this.currentQueryName = val;
       },
-      addFavQuery() {
-        this.$emit('close-add-query-panel');
-        FavQueriesSettings.addFavQuery(
-          this.currentQueryName,
-          this.currentQuery,
-          this.currentKeyspace,
-        );
-        this.$emit('refresh-queries');
-        this.currentQueryName = '';
+      addFavQuery(event) {
+        event.stopPropagation();
+
+        if (this.currentQueryName === '') {
+          this.$emit('toggle-fav-query-tooltip', true);
+        } else {
+          this.$emit('close-add-query-panel');
+
+          FavQueriesSettings.addFavQuery(
+            this.currentQueryName,
+            this.currentQuery,
+            this.currentKeyspace,
+          );
+          this.$emit('refresh-queries');
+          this.currentQueryName = '';
+          this.$notifyInfo('New query saved!', 'bottom-right');
+        }
+      },
+      renderQueryNameInput() {
+        this.queryNameInput = React.createElement(InputGroup, {
+          className: 'vue-input query-name-input',
+          placeholder: 'Query name',
+          type: 'text',
+          onChange: (val) => { this.updateCurrentQueryName(val.target.value); },
+        });
       },
     },
   };
@@ -43,12 +65,6 @@
 
 <style scoped>
 
-    .close-container{
-        position: absolute;
-        right: 0px;
-        top:0px;
-        z-index: 1;
-    }
 
     .add-fav-query {
         background-color: var(--gray-2);

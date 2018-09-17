@@ -1,10 +1,9 @@
-import DataManagementUtils from '@/components/DataManagement/DataManagementUtils';
-import mockConcepts from '../../../helpers/MockConcepts.js';
+import DataManagementUtils from '@/components/Visualiser/VisualiserUtils.js';
 
 
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
-jest.mock('@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings', () => ({
+jest.mock('@/components/Visualiser/RightBar/SettingsTab/DisplaySettings.js', () => ({
   getTypeLabels() { return []; },
 }));
 

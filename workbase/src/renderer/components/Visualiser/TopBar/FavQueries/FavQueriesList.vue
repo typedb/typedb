@@ -1,49 +1,40 @@
 <template>
-    <div class="fav-query-list">
-        <!--<div @click="$emit('close-fav-queries-panel')"><vue-icon class="close-container" icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>-->
-        <div class="column">
-            <div class="panel-body" v-if="favQueries.length">
-            <div class="fav-query-item" v-for="(query,index) in favQueries" :key="index">
-                <div class="fav-query-left">
-                    <span class="query-name">{{query.name}}</span>
-                </div>
-                <div :class="(isEditable === index) ? 'fav-query-center fav-query-center-editable' : 'fav-query-center'">
-                    <input ref="favQuery" :value="query.value">
-                </div>
-                <div class="fav-query-right">
-                    <div class="fav-query-btns">
-                        <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button"></vue-button>
-                        <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button"></vue-button>
-                        <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button"></vue-button>
-                        <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+        <div class="fav-query-list z-depth-3">
+            <div class="column">
+                <div class="panel-body" v-if="favQueries.length">
+                    <div class="fav-query-item" v-for="(query,index) in favQueries" :key="index">
+                        <div class="fav-query-left">
+                            <span class="query-name">{{query.name}}</span>
+                        </div>
+                        <div :class="(isEditable === index) ? 'fav-query-center fav-query-center-editable' : 'fav-query-center'">
+                            <input ref="favQuery" :value="index">
+                        </div>
+                        <div class="fav-query-right">
+                            <div class="fav-query-btns">
+                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+            </div>
+            <div class="editor-tab">
+                <div @click="$emit('close-fav-queries-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
             </div>
         </div>
-            <div class="panel-body" v-else>
-                <div class="dd-item">
-                    <div class="no-saved">
-                        No saved queries
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="editor-tab">
-            <div @click="$emit('close-fav-queries-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
-        </div>
-    </div>
 </template>
 
 <style scoped>
 
     .panel-body {
-        padding-top: 10px;
-        padding-left: 10px;
-        padding-bottom: 10px;
+        padding: 10px;
     }
 
     .editor-tab {
-        max-height: 123px;
+        max-height: 300px;
         width: 13px;
         flex-direction: column;
         display: flex;
@@ -60,18 +51,11 @@
     }
 
     .column::-webkit-scrollbar {
-        width: 1px;
+        width: 2px;
     }
 
     .column::-webkit-scrollbar-thumb {
         background: var(--green-4);
-    }
-
-    .close-container{
-        position: absolute;
-        right: 0px;
-        top:0px;
-        z-index: 1;
     }
 
     .fav-query-left{
@@ -79,9 +63,9 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-
     }
 
+    /*dynamic*/
     .fav-query-center{
         display: flex;
         flex-direction: column;
@@ -135,7 +119,7 @@
         border: var(--container-darkest-border);
         width: 100%;
         margin-top: 10px;
-        max-height: 103px;
+        max-height: 300px;
         position: relative;
         display: flex;
         flex-direction: row;
@@ -177,12 +161,14 @@
       removeFavQuery(index, queryName) {
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
         this.favQueries.splice(index, 1);
+        this.$notifyInfo(`Query ${queryName} has been deleted from favourite queries.`, 'bottom-right');
       },
       renderQueries() {
         const savedQueries = this.$refs.favQuery;
-        savedQueries.forEach((q) => {
-          if (q.style.display !== 'none') {
-            const cm = GraqlCodeMirror.getCodeMirror(q);
+        savedQueries.forEach((queryInput) => {
+          if (queryInput.style.display !== 'none') {
+            const cm = GraqlCodeMirror.getCodeMirror(queryInput);
+            cm.setValue(this.favQueries[parseInt(queryInput.value, 10)].value);
             cm.setOption('readOnly', 'nocursor');
             this.codeMirror.push(cm);
           }

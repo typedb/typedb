@@ -1,20 +1,25 @@
 <template>
     <div class="canvas-tool-tip" v-if="currentKeyspace">
-      <div id="nodes"> nodes: {{nodes}}</div>
-      <div id="edges"> edges: {{edges}}</div>
+        <div class="canvas-data">
+            <div id="nodes"> nodes: {{nodes}}</div>
+            <div id="edges"> edges: {{edges}}</div>
+        </div>
     </div>
 </template>
 
 <style scoped>
 
+    .canvas-data {
+
+    }
+
 .canvas-tool-tip {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
+    border-top: var(--container-darkest-border);
+    justify-content: flex-end;
   background-color: #282828;
-  padding: 5px 5px;
+  padding: var(--container-padding);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   z-index: 1;
 }
 </style>

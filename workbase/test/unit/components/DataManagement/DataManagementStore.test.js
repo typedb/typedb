@@ -1,14 +1,14 @@
-import DataManagementStore from '@/components/DataManagement/DataManagementStore';
+import DataManagementStore from '@/components/Visualiser/VisualiserStore.js';
 import { CURRENT_KEYSPACE_CHANGED, INITIALISE_VISUALISER, CANVAS_RESET } from '@/components/shared/StoresActions';
 
 jest.mock('@/../Logger', () => ({ error: () => {} }));
-jest.mock('@/components/DataManagement/DataManagementUtils', () => ({
+jest.mock('@/components/Visualiser/VisualiserUtils.js', () => ({
   limitQuery: () => {},
   isRolePlayerAutoloadEnabled: () => false,
   prepareNodes: () => ([]),
 }));
-jest.mock('@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings', () => {});
-jest.mock('@/components/visualiser/Facade', () => ({
+jest.mock('@/components/Visualiser/RightBar/SettingsTab/DisplaySettings.js', () => {});
+jest.mock('@/components/CanvasVisualiser/Facade', () => ({
   initVisualiser: () => ({ registerEventHandler: () => { } }),
 }));
 

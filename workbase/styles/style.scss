@@ -7,10 +7,10 @@ body, *{
   font-weight: 400;
   color: white;
 }
- 
+
 body {
     background: #1E1E1E;
-   
+
     -ms-overflow-style: none; // IE 10+
     overflow: -moz-scrollbars-none; // Firefox
 
@@ -76,7 +76,7 @@ a {
 
 /* --------------- INPUTS ------------------------- */
 
-/* Make input and textarea respect max-width */
+/* Make queryNameInput and textarea respect max-width */
 input,textarea {
      width:100%;
      display:block }
@@ -113,7 +113,7 @@ input,textarea {
   display: flex;
   flex: 4;
 }
- 
+
 .flex-5{
   display: flex;
   flex: 5;

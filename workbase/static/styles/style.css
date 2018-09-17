@@ -61,9 +61,12 @@
 /* icon */
 
 .tab-icon {
-  /*background-color: var(--button-color);*/
   cursor: pointer;
   padding: 1px;
+}
+
+.tab-icon:focus {
+  outline: none !important;
 }
 
 .tab-icon:hover {
@@ -78,6 +81,13 @@
   width: 12px !important;
 }
 
+.dummy-graql-icon {
+  display: none;
+}
+
+.dummy-star-icon {
+  display: none;
+}
 
 /* buttons */
 
@@ -88,7 +98,7 @@
   box-shadow: none !important;
   white-space: nowrap !important;
   border-radius: 0px !important;
-  min-height: 20px;
+  min-height: 30px;
   margin: var(--element-margin) !important;
 
     -webkit-touch-callout: none; /* iOS Safari */
@@ -126,11 +136,15 @@
 
 .reset-setting-btn {
   height: 20px;
+  min-height: 20px !important;
   width: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
+  margin: 0px !important;
+  position: absolute;
+  right: 10px;
 }
 
 
@@ -148,7 +162,9 @@
 }
 
 
-/* input */
+/* queryNameInput */
+
+
 
 .vue-input .bp3-input {
   background-color: var(--button-color);
@@ -198,6 +214,12 @@ color: var(--font-faded);
   padding-right: 0px !important;
 }
 
+.query-name-input {
+  width: 565px !important;
+  margin-right: var(--element-margin) !important;
+}
+
+
 /* menu */
 
 .vue-menu {
@@ -206,23 +228,21 @@ color: var(--font-faded);
   background-color: var(--gray-2);
   overflow: scroll;
   border-radius: 0px;
-  padding-right: 10px;
 }
 
 .vue-menu-item {
-  border-bottom: var(--container-dark-border);
-  border-top: var(--container-light-border);
-  border-left: var(--container-light-border);
-  border-right: var(--container-light-border);
   background-color: var(--gray-2) !important;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  z-index: 1 !important;
 }
 
 .vue-menu-item:hover {
-  border: 1px solid var(--button-hover-border-color);
+  background-color: var(--purple-4) !important;
 }
 
 .vue-menu-item:active {
-  border: 1px solid var(--button-active-border-color);
 }
 
 
@@ -232,12 +252,56 @@ color: var(--font-faded);
   fill: var(--gray-2) !important;
 }
 
-.bp3-popover-content {
-  background: none !important;
+.bp3-popover-arrow-border {
+  fill-opacity: 1 !important;
 }
 
+.bp3-popover-content {
+  background: var(--gray-2) !important;
+}
+
+.bp3-popover {
+  border-radius: 0px !important;
+  border: var(--container-darkest-border) !important;
+  box-shadow: none !important;
+}
+
+.bp3-popover {
+}
+
+.bp3-popover-arrow {
+  /*left: 133px !important;*/
+}
+
+/*tooltip*/
+
+.bp3-tooltip {
+  border: 1px solid var(--purple-1) !important;
+  box-shadow: none !important;
+}
+
+.editor-tooltip {
+  position: absolute;
+  transform-origin: right 17px 0px !important;
+}
+
+.bp3-tooltip .bp3-popover-arrow .bp3-popover-arrow-border {
+  fill: var(--purple-1) !important;
+  fill-opacity: 1 !important;
+}
+
+.bp3-tooltip .bp3-popover-arrow .bp3-popover-arrow-fill {
+  fill: var(--purple-3) !important;
+  fill-opacity: 1 !important;
+}
+
+.bp3-tooltip .bp3-popover-content {
+  background-color: var(--purple-3) !important;
+  border-radius: 0px !important;
+}
 
 /* tabs */
+
 .bp3-tab-list {
   justify-content: space-around;
   border-bottom: var(--container-dark-border);
@@ -260,6 +324,7 @@ color: var(--font-faded);
 }
 
 /* vue switch */
+
 .vue-switch {
   margin: 0px !important;
   padding: 0px !important;
@@ -267,8 +332,6 @@ color: var(--font-faded);
   border: var(--container-darkest-border) !important;
   border-radius: 1.75em;
 }
-
-
 
 .bp3-control-indicator{
   outline: none !important;
@@ -284,8 +347,6 @@ color: var(--font-faded);
   -webkit-box-shadow: none;
   box-shadow: none;
 }
-
-
 
 /* color picker */
 
@@ -304,10 +365,12 @@ color: var(--font-faded);
   display: none !important;
 }
 
-
 .vc-chrome-active-color {
   border-radius: 0px !important;
   border: var(--container-darkest-border);
+  width: 20px !important;
+  height: 20px !important;
+  z-index: 0 !important;
 }
 
 .vc-chrome-hue-wrap .vc-hue {
@@ -317,6 +380,13 @@ color: var(--font-faded);
 
 .vc-hue-picker {
   margin-top: 0px !important;
+}
+.vc-hue-pointer{
+  z-index: 0 !important;
+}
+
+.vc-chrome__disable-alpha .vc-chrome-hue-wrap {
+  margin-top: 6px !important;
 }
 
  /* right panel */
@@ -331,6 +401,8 @@ color: var(--font-faded);
   display: flex;
   cursor: pointer;
   border-bottom: var(--container-darkest-border);
+
+  z-index: 2;
 
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none; /* Safari */
@@ -358,6 +430,7 @@ color: var(--font-faded);
 }
 
 /* fav query list */
+
   .fav-query-center *{
     background-color: var(--gray-3) !important;
   }
@@ -373,6 +446,19 @@ color: var(--font-faded);
 
 .fav-query-center-editable .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
   border: var(--container-darkest-border);
+}
+
+/*toast*/
+
+.toasted.primary.info {
+  background-color: var(--purple-3) !important;
+  color: var(--font-default) !important;
+  border: var(--purple-1) !important;
+  border-radius: 0px !important;
+}
+
+.toasted.primary .action {
+  color: var(--font-default) !important;
 }
 
 
@@ -465,19 +551,10 @@ a {
   box-shadow: 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12), 0 8px 10px -5px rgba(0, 0, 0, 0.3); }
 
 /* --------------- INPUTS ------------------------- */
-/* Make input and textarea respect max-width */
+/* Make queryNameInput and textarea respect max-width */
 input, textarea {
   display: block; }
 
-.grakn-input {
-  background-color: var(--medium-color);
-  color: white;
-  outline: none;
-  border: none;
-  font-size: 95%;
-  padding: 4px;
-  width: 100%;
-}
 
 /* --- Flexes --- */
 .flex-1 {
@@ -505,22 +582,14 @@ input, textarea {
   flex: 6; }
 
 .align-center {
-  align-items: center; }
-
-.justify-center {
-  justify-content: center; }
-
-.notify-error {
-  background-color: #e75252 !important;
-  padding: 10px !important;
-  white-space: pre-wrap !important;
-  word-wrap: break-word !important;
+  align-items: center;
 }
 
-
+.justify-center {
+  justify-content: center;
+}
 
 /* Transitions */
-
 
 .fade-enter-active {
   transition: all .8s ease;
@@ -531,13 +600,27 @@ input, textarea {
 }
 
 .slide-down-fade-enter-active {
-  transition: all .6s ease;
+  transition: all .3s ease;
 }
 .slide-down-fade-leave-active {
   transition: all .3s cubic-bezier(1.0, 0.5, 0.8, 1.0);
 }
+
 .slide-down-fade-enter,
 .slide-down-fade-leave-active {
   transform: translateY(-10px);
   opacity: 0;
 }
+
+.slide-left-enter-active {
+  transition: all .4s ease;
+}
+.slide-left-leave-active {
+  transition: all .4s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+.slide-left-enter,
+.slide-left-leave-active {
+  transform: translateX(300px);
+  /*opacity: 0;*/
+}
+

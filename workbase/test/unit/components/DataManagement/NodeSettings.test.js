@@ -1,4 +1,4 @@
-import NodeSettings from '@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings';
+import DisplaySettings from '@/components/Visualiser/RightBar/SettingsTab/DisplaySettings.js';
 import PersistentStorage from '@/components/shared/PersistentStorage';
 
 jest.mock('@/components/shared/PersistentStorage', () => ({
@@ -19,7 +19,7 @@ describe('Labels', () => {
   // Check if entity 'person' has attribute 'name' in its label
   test('getTypeLabels', () => {
     const mockType = 'person';
-    const labels = NodeSettings.getTypeLabels(mockType);
+    const labels = DisplaySettings.getTypeLabels(mockType);
     expect(labels).toEqual(['name']);
   });
 
@@ -29,7 +29,7 @@ describe('Labels', () => {
 
     const mockAttribute = 'age';
     const mockType = 'person';
-    NodeSettings.toggleLabelByType({ type: mockType, attribute: mockAttribute });
+    DisplaySettings.toggleLabelByType({ type: mockType, attribute: mockAttribute });
     expect(PersistentStorage.set).toBeCalledWith('keyspaces-preferences', expectedMapString);
   });
 
@@ -39,7 +39,7 @@ describe('Labels', () => {
 
     const mockAttribute = 'name';
     const mockType = 'person';
-    NodeSettings.toggleLabelByType({ type: mockType, attribute: mockAttribute });
+    DisplaySettings.toggleLabelByType({ type: mockType, attribute: mockAttribute });
     expect(PersistentStorage.set).toBeCalledWith('keyspaces-preferences', expectedMapString);
   });
 });
@@ -48,7 +48,7 @@ describe('Colours', () => {
   // Check if the node of entity 'person' has color '#b3a41e'
   test('getTypeColours', () => {
     const mockType = 'person';
-    const labels = NodeSettings.getTypeColours(mockType);
+    const labels = DisplaySettings.getTypeColours(mockType);
     expect(labels).toEqual('#b3a41e');
   });
 
@@ -58,7 +58,7 @@ describe('Colours', () => {
 
     const mockColour = '#279d5d';
     const mockType = 'person';
-    NodeSettings.toggleColourByType({ type: mockType, colourString: mockColour });
+    DisplaySettings.toggleColourByType({ type: mockType, colourString: mockColour });
     expect(PersistentStorage.set).toBeCalledWith('keyspaces-preferences', expectedMapString);
   });
 
@@ -67,7 +67,7 @@ describe('Colours', () => {
     const expectedMapString = '{"test-keyspace":{"label":{"person":["name"]},"colour":{},"position":{}}}';
 
     const mockType = 'person';
-    NodeSettings.toggleColourByType({ type: mockType });
+    DisplaySettings.toggleColourByType({ type: mockType });
     expect(PersistentStorage.set).toBeCalledWith('keyspaces-preferences', expectedMapString);
   });
 });

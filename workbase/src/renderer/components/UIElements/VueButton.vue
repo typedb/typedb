@@ -51,7 +51,7 @@
           rightIcon: this.rightIcon,
           small: this.small,
           className: this.className,
-          onClick: () => { this.$emit('clicked'); },
+          onClick: (e) => { this.$emit('clicked', e); },
         }), this.$refs.vueButton);
       },
     },

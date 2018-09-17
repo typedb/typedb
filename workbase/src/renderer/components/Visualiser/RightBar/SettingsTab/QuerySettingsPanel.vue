@@ -4,19 +4,25 @@
             <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
             <h1>Query Settings</h1>
         </div>
-        <div class="content" v-show="showQuerySettings">
-            <div class="content-item">
-                <h1 class="label">Query Limit</h1>
-                <div class="value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
+        <div v-show="showQuerySettings">
+        <div class="panel-content" v-if="!currentKeyspace">
+            Please select a keyspace
+        </div>
+
+        <div class="panel-content" v-else>
+            <div class="panel-content-item">
+                <h1 class="panel-label">Query Limit:</h1>
+                <div class="panel-value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
-            <div class="content-item">
-                <h1 class="label">Neighbour Limit</h1>
-                <div class="value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
+            <div class="panel-content-item">
+                <h1 class="panel-label">Neighbour Limit:</h1>
+                <div class="panel-value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
-            <div class="content-item">
-                <h1 class="label">Load Roleplayers</h1>
-                <div class="value load-roleplayers"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
+            <div class="panel-content-item">
+                <h1 class="panel-label">Load Roleplayers:</h1>
+                <div class="panel-value"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
             </div>
+        </div>
         </div>
     </div>
 </template>
@@ -32,14 +38,20 @@
     data() {
       return {
         showQuerySettings: false,
-        queryLimit: QueryUtils.getQueryLimit(),
-        neighboursLimit: QueryUtils.getNeighboursLimit(),
-        loadRolePlayers: QueryUtils.getRolePlayersStatus(),
       };
     },
     computed: {
       currentKeyspace() {
         return this.localStore.getCurrentKeyspace();
+      },
+      queryLimit() {
+        return QueryUtils.getQueryLimit();
+      },
+      neighboursLimit() {
+        return QueryUtils.getNeighboursLimit();
+      },
+      loadRolePlayers() {
+        return QueryUtils.getRolePlayersStatus();
       },
     },
     methods: {
@@ -51,11 +63,9 @@
       },
       updateQueryLimit(newVal) {
         QueryUtils.setQueryLimit(newVal);
-        if (newVal.length > 0) this.queryLimit = QueryUtils.getQueryLimit();
       },
       updateNeighboursLimit(newVal) {
         QueryUtils.setNeighboursLimit(newVal);
-        if (newVal.length > 0) this.neighboursLimit = QueryUtils.getNeighboursLimit();
       },
     },
   };
@@ -63,15 +73,15 @@
 
 <style scoped>
 
-    .content {
+    .panel-content {
         padding: var(--container-padding);
         border-bottom: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
-        max-height: 120px;
+        z-index: 10;
     }
 
-    .content-item {
+    .panel-content-item {
         padding: var(--container-padding);
         display: flex;
         flex-direction: row;
@@ -79,20 +89,14 @@
         height: var(--line-height);
     }
 
-    .label {
+    .panel-label {
         width: 90px;
     }
 
-    .value {
-        width: 55px;
+    .panel-value {
+        width: 100px;
         justify-content: center;
         display: flex;
-        position: absolute;
-        right: 10px;
-    }
-
-    .load-roleplayers {
-        margin-right: -2px;
     }
 
 </style>

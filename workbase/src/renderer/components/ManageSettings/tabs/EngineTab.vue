@@ -1,7 +1,7 @@
 <template>
   <div class="list">
     <div class="line">
-      <div class="label">Host</div> 
+      <div class="label">Host</div>
       <div><input class="grakn-input text-right" v-model="engineHost"></div>
     </div>
     <div class="line">
@@ -37,7 +37,7 @@
 
 <script>
   import Settings from '../../EngineSettings';
-  
+
   export default {
     name: 'EngineTab',
     data() {
@@ -46,10 +46,10 @@
         engineGrpcPort: undefined,
       };
     },
-  
+
     created() {
     },
-  
+
     mounted() {
       this.$nextTick(() => {
         this.engineHost = Settings.getEngineHost();

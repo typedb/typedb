@@ -4,14 +4,20 @@
             <vue-icon :icon="(showConnectionSettings) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
             <h1>Connection Settings</h1>
         </div>
-        <div class="content" v-show="showConnectionSettings">
-            <div class="content-item">
-                <h1 class="label">Host</h1>
-                <div class="value"><vue-input :defaultValue="engineHost" v-on:input-changed="updateEngineHost" className="vue-input vue-input-small"></vue-input></div>
+        <div v-show="showConnectionSettings">
+            <div class="panel-content" v-if="!currentKeyspace">
+                Please select a keyspace
             </div>
-            <div class="content-item">
-                <h1 class="label">Port</h1>
-                <div class="value"><vue-input :defaultValue="engineGrpcPort" v-on:input-changed="updateEngineGrpcPort" className="vue-input vue-input-small"></vue-input></div>
+
+            <div class="panel-content" v-else>
+                <div class="panel-content-item">
+                    <h1 class="panel-label">Host:</h1>
+                    <div class="panel-value"><vue-input :defaultValue="engineHost" v-on:input-changed="updateEngineHost" className="vue-input vue-input-small"></vue-input></div>
+                </div>
+                <div class="panel-content-item">
+                    <h1 class="panel-label">Port:</h1>
+                    <div class="panel-value"><vue-input :defaultValue="engineGrpcPort" v-on:input-changed="updateEngineGrpcPort" className="vue-input vue-input-small"></vue-input></div>
+                </div>
             </div>
         </div>
     </div>
@@ -37,6 +43,11 @@
         this.engineGrpcPort = Settings.getEngineGrpcPort();
       });
     },
+    computed: {
+      currentKeyspace() {
+        return this.localStore.getCurrentKeyspace();
+      },
+    },
     methods: {
       toggleContent() {
         this.showConnectionSettings = !this.showConnectionSettings;
@@ -53,15 +64,14 @@
 
 <style scoped>
 
-    .content {
+    .panel-content {
         padding: var(--container-padding);
         border-bottom: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
-        max-height: 120px;
     }
 
-    .content-item {
+    .panel-content-item {
         padding: var(--container-padding);
         display: flex;
         flex-direction: row;
@@ -69,16 +79,14 @@
         height: var(--line-height);
     }
 
-    .label {
+    .panel-label {
         width: 90px;
     }
 
-    .value {
+    .panel-value {
         width: 100px;
         justify-content: center;
         display: flex;
-        position: absolute;
-        right: 10px;
     }
 
 </style>

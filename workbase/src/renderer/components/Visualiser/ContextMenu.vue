@@ -3,11 +3,10 @@
         <li @click="(enableDelete) ? deleteNode() : false" class="context-action" :class="{'disabled':!enableDelete}">{{deleteNodeText}}</li>
         <li @click="(enableExplain) ? explainNode() : false" class="context-action" :class="{'disabled':!enableExplain}">Explain</li>
         <li @click="(enableShortestPath) ? computeShortestPath() : false" class="context-action" :class="{'disabled':!enableShortestPath}">Shortest Path</li>
-        <li @click="clearGraph" class="context-action" id="clear-graph">Clear Graph</li>
     </div>
 </template>
 <script>
-  import { CANVAS_RESET, RUN_CURRENT_QUERY, EXPLAIN_CONCEPT } from '@/components/shared/StoresActions';
+  import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT } from '@/components/shared/StoresActions';
 
   export default {
     name: 'ContextMenu',
@@ -70,10 +69,6 @@
         this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
         this.showContextMenu = false;
       },
-      clearGraph() {
-        this.$notifyConfirmDelete('Confirm clearing of Graph', () => { this.localStore.dispatch(CANVAS_RESET); });
-        this.showContextMenu = false;
-      },
       async verifyEnableExplain() {
         if (this.selectedNodes) {
           const schemaConcept = await this.localStore.graknTx.getConcept(this.selectedNodes[0].id);
@@ -108,11 +103,11 @@
 <style>
     #context-menu{
         position: absolute;
-        border-radius: 4px;
         background-color: #282828;
         padding: 8px 0px;
         z-index: 10;
         min-width: 100px;
+        border: var(--container-darkest-border);
     }
 
     .context-action.disabled{

@@ -1,15 +1,12 @@
 <template>
-    <div class="error-container">
-        <!--<div class="close-container">-->
-            <!--<div @click="$emit('close-error')"><vue-icon icon="cross" iconSize="15" className="tab-icon"></vue-icon></div>-->
-        <!--</div>-->
+    <div class="error-container z-depth-3">
         <div class="column">
-            <div class="header">ERROR MESSAGE</div>
+            <div class="header">ERROR</div>
             <div>{{errorMsg}}</div>
         </div>
         <div class="editor-tab">
-            <div @click="$emit('close-types-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
-            <div @click="copyError"><vue-icon icon="duplicate" iconSize="12" className="tab-icon"></vue-icon></div>
+            <div @click="$emit('close-error')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+            <div @click="copyError"><vue-icon icon="clipboard" iconSize="12" className="tab-icon"></vue-icon></div>
         </div>
     </div>
 </template>
@@ -22,7 +19,6 @@
         width: 100%;
         overflow-y: auto;
         padding: var(--container-padding);
-
     }
 
     .column::-webkit-scrollbar {
@@ -40,7 +36,7 @@
         display: flex;
         position: relative;
         float: right;
-        border-left: var(--container-light-border);
+        border-left: 1px solid var(--red-4);
     }
 
     .error-container {
@@ -52,8 +48,6 @@
         position: relative;
         white-space: pre-line;
         word-wrap: break-word;
-
-
         display: flex;
         flex-direction: row;
     }
@@ -73,7 +67,7 @@
     props: ['errorMsg'],
     methods: {
       copyError() {
-        // Create a dummy input to copy the string array inside it
+        // Create a dummy queryNameInput to copy the string array inside it
         const dummyInput = document.createElement('input');
 
         // Add it to the document
@@ -93,6 +87,8 @@
 
         // Remove it as its not needed anymore
         document.body.removeChild(dummyInput);
+
+        this.$notifyInfo('Error message copied', 'bottom-right');
       },
     },
   };

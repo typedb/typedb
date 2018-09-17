@@ -34,7 +34,6 @@
 }
 
 .first-level {
-  /* font-weight: bold; */
   margin-top: 25px;
   font-size: 80%;
   opacity: 0.6;
@@ -54,7 +53,6 @@ li {
   z-index: 10;
   min-height: 22px;
   height: 100%;
-  /* border-right: 1px solid #404040; */
 }
 
 .dark .navbar-fixed {
