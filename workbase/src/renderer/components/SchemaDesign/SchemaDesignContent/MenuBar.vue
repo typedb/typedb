@@ -9,7 +9,7 @@
             </div>
             <div class="right">
                 <div class="line">
-                    <!-- <queryNameInput class="grakn-queryNameInput search" placeholder="search for nodes"> -->
+                    <!-- <input class="grakn-input search" placeholder="search for nodes"> -->
                 </div>
                 <keyspaces-handler :localStore="localStore" :toolTipShown="toolTipShown" v-on:toggle-tool-tip="toggleToolTip">></keyspaces-handler>
             </div>

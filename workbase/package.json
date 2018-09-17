@@ -87,7 +87,6 @@
     "vue-color": "^2.6.0",
     "vue-draggable-resizable": "^1.7.1",
     "vue-electron": "^1.0.6",
-    "vue-multipane": "^0.9.5",
     "vue-router": "^2.5.3",
     "vue-toasted": "^1.1.19",
     "vuex": "^2.3.1",

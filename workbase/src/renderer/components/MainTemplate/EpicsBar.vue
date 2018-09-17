@@ -15,11 +15,11 @@
                 <li class="first-level">PERFORMANCE</li>
                     <li class="sub-menu"><a>Dashboard</a></li>
                     <li class="sub-menu"><a>Reports</a></li> -->
-                <li class="first-level">MANAGE</li>
+                <!--<li class="first-level">MANAGE</li>-->
                     <!-- <li class="sub-menu">Users</li> -->
-                    <router-link tag="li" to="/manage/keyspaces" class="sub-menu" id="manage-keyspaces"><a>keyspaces</a></router-link>
+                    <!--<router-link tag="li" to="/manage/keyspaces" class="sub-menu" id="manage-keyspaces"><a>keyspaces</a></router-link>-->
                     <!-- <li class="sub-menu">Server</li> -->
-                    <router-link tag="li" to="/manage/settings" class="sub-menu" id="settings"><a>settings</a></router-link>
+                    <!--<router-link tag="li" to="/manage/settings" class="sub-menu" id="settings"><a>settings</a></router-link>-->
                 <li class="first-level" v-if="isUserLogged">USER</li>
                     <li class="sub-menu" @click="logout" v-if="isUserLogged"><a>Logout</a></li>
             </ul>
