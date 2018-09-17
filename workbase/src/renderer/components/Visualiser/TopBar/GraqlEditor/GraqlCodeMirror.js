@@ -33,8 +33,10 @@ function GraqlEditorHistory(graqlCodeMirror) {
   let graqlEditorHistory = [''];
 
   this.addToHistory = function addToHistory(query) {
-    historyIndex += 1;
-    graqlEditorHistory.push(query);
+    if (graqlEditorHistory[graqlEditorHistory.length - 1] !== query) {
+      historyIndex += 1;
+      graqlEditorHistory.push(query);
+    }
   };
 
   this.undo = function undo() {
