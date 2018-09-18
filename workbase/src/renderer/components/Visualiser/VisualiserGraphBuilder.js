@@ -87,34 +87,22 @@ async function prepareSchemaConcept(schemaConcept) {
 async function prepareEntity(entity) {
   entity.type = await (await entity.type()).label();
   entity.label = await buildLabel(entity);
-
   entity.attributes = await computeAttributes(entity);
-
-  if (await entity.isInferred()) {
-    entity.isInferred = true;
-  }
+  entity.isInferred = await entity.isInferred();
 }
 
 async function prepareRelationship(rel) {
   rel.type = await (await rel.type()).label();
-
   rel.attributes = await computeAttributes(rel);
-
-  if (await rel.isInferred()) {
-    rel.isInferred = true;
-  }
+  rel.isInferred = await rel.isInferred();
 }
 
 async function prepareAttribute(attribute) {
   attribute.type = await (await attribute.type()).label();
   attribute.value = await attribute.value();
   attribute.label = await buildLabel(attribute);
-
   attribute.attributes = await computeAttributes(attribute);
-
-  if (await attribute.isInferred()) {
-    attribute.isInferred = true;
-  }
+  attribute.isInferred = await attribute.isInferred();
 }
 
 /**
@@ -232,8 +220,6 @@ async function constructEdges(result) {
 
 async function buildFromConceptMap(result) {
   const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
-
-  // const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
   const edges = await constructEdges(result);
 
   // Check if auto-load role players is selected

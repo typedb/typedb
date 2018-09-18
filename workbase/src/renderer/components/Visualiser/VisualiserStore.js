@@ -43,7 +43,6 @@ const actions = {
       const updatedEdges = data.edges.map(edge => Object.assign(edge, Style.computeExplanationEdgeStyle()));
       this.visFacade.container.visualiser.updateEdge(updatedEdges);
     }
-
     this.explanationQuery = false;
     await this.closeGraknTx();
   },
@@ -87,8 +86,8 @@ const actions = {
         .concat()
         .sort());
 
-    await this.closeGraknTx();
     this.metaTypeInstances = metaTypeInstances;
+    await this.closeGraknTx();
   },
 };
 

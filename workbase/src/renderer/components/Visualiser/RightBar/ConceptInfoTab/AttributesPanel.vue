@@ -56,15 +56,6 @@
         if (!nodes[0].baseType.includes('TYPE')) {
           const attributes = nodes[0].attributes;
 
-          // await this.localStore.openGraknTx();
-          //
-          // const node = await this.localStore.getNode(nodes[0].id);
-          //
-          // const attributes = (node.isSchemaConcept()) ? [] : await Promise.all((await (await node.attributes()).collect()).map(async x => ({
-          //   type: await (await x.type()).label(),
-          //   value: await x.value(),
-          // })));
-
           this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
 
           this.showAttributesPanel = true;
