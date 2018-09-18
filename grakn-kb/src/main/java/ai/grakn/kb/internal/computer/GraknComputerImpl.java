@@ -89,7 +89,7 @@ public class GraknComputerImpl implements GraknComputer {
             applyFilters(types, includesRolePlayerEdges);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            throw asRuntimeException(e.getCause());
         }
     }
 
@@ -103,6 +103,15 @@ public class GraknComputerImpl implements GraknComputer {
     public void killJobs() {
         if (graphComputer != null && graphComputerClass.equals(GraknSparkComputer.class)) {
             ((GraknSparkComputer) graphComputer).cancelJobs();
+        }
+    }
+
+    private RuntimeException asRuntimeException(Throwable throwable) {
+        Throwable cause = throwable.getCause();
+        if (cause instanceof RuntimeException) {
+            return (RuntimeException) cause;
+        } else {
+            return new RuntimeException(cause);
         }
     }
 
