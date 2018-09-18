@@ -174,7 +174,6 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
             //////////////////////////////////////////////////
             /////// PROCESS SHIM AND SYSTEM PROPERTIES ///////
             //////////////////////////////////////////////////
-            ConfigurationUtils.copy(this.hadoopGraph.configuration(), this.sparkConfiguration);
             final String shimService = KryoSerializer.class.getCanonicalName().equals(this.sparkConfiguration.getString(Constants.SPARK_SERIALIZER, null)) ?
                     UnshadedKryoShimService.class.getCanonicalName() :
                     HadoopPoolShimService.class.getCanonicalName();
