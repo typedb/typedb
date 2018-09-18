@@ -4,7 +4,7 @@ import datetime
 
 from ZipkinESStorage import ZipkinESStorage
 from ExecutionSelector import ExecutionSelector
-from ExecutionVisualiser import ExecutionVisualiser
+from ExecutionVisualiser.ExecutionVisualiser import ExecutionVisualiser
 
 
 class Dashboard(object):
