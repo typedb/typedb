@@ -39,7 +39,9 @@ async function computeAttributes(node) {
       value: await attr.value(),
     })));
   }
-  return null;
+  return Promise.all((await (await node.attributes()).collect()).map(async attr => ({
+    type: await attr.label(),
+  })));
 }
 
 async function labelFromStorage(node, attributeTypes) {
@@ -82,6 +84,7 @@ async function buildLabel(node) {
 
 async function prepareSchemaConcept(schemaConcept) {
   schemaConcept.label = await schemaConcept.label();
+  schemaConcept.attributes = await computeAttributes(schemaConcept);
 }
 
 async function prepareEntity(entity) {

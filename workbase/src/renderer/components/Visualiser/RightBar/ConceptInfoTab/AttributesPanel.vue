@@ -53,13 +53,11 @@
         // If no node selected: close panel and return
         if (!nodes || nodes.length > 1) { this.showAttributesPanel = false; return; }
 
-        if (!nodes[0].baseType.includes('TYPE')) {
-          const attributes = nodes[0].attributes;
+        const attributes = nodes[0].attributes;
 
-          this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
+        this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
 
-          this.showAttributesPanel = true;
-        }
+        this.showAttributesPanel = true;
       },
     },
     methods: {
