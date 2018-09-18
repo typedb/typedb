@@ -8,7 +8,7 @@
             <div class="content" v-if="!currentKeyspace">
                 Please select a keyspace
             </div>
-            <div class="content" v-else-if="!(nodes && nodes.length === 1)">
+            <div class="content" v-else-if="!(selectedNodes && selectedNodes.length === 1)">
                 Please select a node
             </div>
             <div class="content" v-else-if="!attributes.length">
@@ -41,7 +41,7 @@
       };
     },
     computed: {
-      nodes() {
+      selectedNodes() {
         return this.localStore.getSelectedNodes();
       },
       currentKeyspace() {
@@ -49,19 +49,26 @@
       },
     },
     watch: {
-      async nodes(nodes) {
+      selectedNodes(nodes) {
         // If no node selected: close panel and return
         if (!nodes || nodes.length > 1) { this.showAttributesPanel = false; return; }
 
-        const node = await this.localStore.getNode(nodes[0].id);
+        if (!nodes[0].baseType.includes('TYPE')) {
+          const attributes = nodes[0].attributes;
 
-        const attributes = (node.isSchemaConcept()) ? [] : await Promise.all((await (await node.attributes()).collect()).map(async x => ({
-          type: await (await x.type()).label(),
-          value: await x.value(),
-        })));
-        this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
+          // await this.localStore.openGraknTx();
+          //
+          // const node = await this.localStore.getNode(nodes[0].id);
+          //
+          // const attributes = (node.isSchemaConcept()) ? [] : await Promise.all((await (await node.attributes()).collect()).map(async x => ({
+          //   type: await (await x.type()).label(),
+          //   value: await x.value(),
+          // })));
 
-        this.showAttributesPanel = true;
+          this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
+
+          this.showAttributesPanel = true;
+        }
       },
     },
     methods: {

@@ -1,3 +1,4 @@
+import Grakn from 'grakn';
 import Vue from 'vue';
 import logger from '@/../Logger';
 import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
@@ -8,7 +9,13 @@ import Style from './Style';
 import VisualiserGraphBuilder from '../Visualiser/VisualiserGraphBuilder';
 
 
-import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, TOGGLE_LABEL, TOGGLE_COLOUR } from '../shared/StoresActions';
+import {
+  RUN_CURRENT_QUERY,
+  EXPLAIN_CONCEPT,
+  TOGGLE_LABEL,
+  TOGGLE_COLOUR,
+  LOAD_METATYPE_INSTANCES,
+} from '../shared/StoresActions';
 
 const actions = {
 
@@ -16,6 +23,8 @@ const actions = {
     return this.runQuery(this.currentQuery);
   },
   async [EXPLAIN_CONCEPT]() {
+    await this.openGraknTx();
+
     this.explanationQuery = true;
 
     const queries = this.getSelectedNode().explanation.answers().map((answer) => {
@@ -34,17 +43,52 @@ const actions = {
       const updatedEdges = data.edges.map(edge => Object.assign(edge, Style.computeExplanationEdgeStyle()));
       this.visFacade.container.visualiser.updateEdge(updatedEdges);
     }
+
     this.explanationQuery = false;
+    await this.closeGraknTx();
   },
   async [TOGGLE_LABEL](type) {
+    await this.openGraknTx();
     const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type).map(x => this.getNode(x.id)));
     const updatedNodes = await VisualiserGraphBuilder.prepareNodes(nodes);
     this.visFacade.container.visualiser.updateNode(updatedNodes);
+    await this.closeGraknTx();
   },
   async [TOGGLE_COLOUR](type) {
     const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type));
     const updatedNodes = nodes.map(node => Object.assign(node, Style.computeNodeStyle(node)));
     this.visFacade.container.visualiser.updateNode(updatedNodes);
+  },
+  async [LOAD_METATYPE_INSTANCES]() {
+    await this.openGraknTx();
+
+    // Fetch types
+    const entities = await (await this.graknTx.query('match $x sub entity; get;')).collectConcepts();
+    const rels = await (await this.graknTx.query('match $x sub relationship; get;')).collectConcepts();
+    const attributes = await (await this.graknTx.query('match $x sub attribute; get;')).collectConcepts();
+    const roles = await (await this.graknTx.query('match $x sub role; get;')).collectConcepts();
+
+    // Get types labels
+    const metaTypeInstances = {};
+    metaTypeInstances.entities = await Promise.all(entities.map(type => type.label()))
+      .then(labels => labels.filter(l => l !== 'entity')
+        .concat()
+        .sort());
+    metaTypeInstances.relationships = await Promise.all(rels.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
+      .then(labels => labels.filter(l => l && l !== 'relationship')
+        .concat()
+        .sort());
+    metaTypeInstances.attributes = await Promise.all(attributes.map(type => type.label()))
+      .then(labels => labels.filter(l => l !== 'attribute')
+        .concat()
+        .sort());
+    metaTypeInstances.roles = await Promise.all(roles.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
+      .then(labels => labels.filter(l => l && l !== 'role')
+        .concat()
+        .sort());
+
+    await this.closeGraknTx();
+    this.metaTypeInstances = metaTypeInstances;
   },
 };
 
@@ -85,6 +129,8 @@ const methods = {
       }
       this.loadingQuery = true;
 
+      await this.openGraknTx();
+
       const result = (await (await this.graknTx.query(query)).collect());
 
       if (!result.length) {
@@ -109,17 +155,29 @@ const methods = {
       this.updateCanvasData();
       this.loadingQuery = false;
 
+      await this.closeGraknTx();
+
       return data;
     } catch (e) {
       logger.error(e.stack);
       this.loadingQuery = false;
-      // Every time an excepion occurs, the current graknTx will be closed by the server, so open a new one
-      if (this.graknSession) { this.openGraknTx(); }
       throw e;
     }
   },
+  async openGraknTx() {
+    this.graknTx = await this.graknSession.transaction(Grakn.txType.WRITE);
+  },
+  async closeGraknTx() {
+    await this.graknTx.close();
+  },
 
   // getters
+  getMetaTypeInstances() {
+    return this.metaTypeInstances;
+  },
+  async getNode(nodeId) {
+    return this.graknTx.getConcept(nodeId);
+  },
   getLabelBySelectedType() {
     return NodeSettings.getTypeLabels(this.getSelectedNode().type);
   },
@@ -146,6 +204,8 @@ const state = {
   currentQuery: '',
   loadingQuery: false,
   explanationQuery: false,
+  graknTx: undefined,
+  metaTypeInstances: {},
 };
 export default { create: () => new Vue({
   name: 'DataManagementStore',

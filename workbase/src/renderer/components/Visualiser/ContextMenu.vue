@@ -65,14 +65,13 @@
         contextMenu.style.left = `${mouseEvent.pointer.DOM.x}px`;
         contextMenu.style.top = `${mouseEvent.pointer.DOM.y}px`;
       },
-      explainNode() {
-        this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
+      async explainNode() {
+        await this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
         this.showContextMenu = false;
       },
       async verifyEnableExplain() {
         if (this.selectedNodes) {
-          const schemaConcept = await this.localStore.graknTx.getConcept(this.selectedNodes[0].id);
-          if (!schemaConcept.isType() && await schemaConcept.isInferred()) {
+          if (this.selectedNodes[0].isInferred) {
             return true;
           }
         }

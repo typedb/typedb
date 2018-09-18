@@ -32,6 +32,16 @@ function buildValue(array) {
   return array.join(', ');
 }
 
+async function computeAttributes(node) {
+  if (!node.isType()) {
+    return Promise.all((await (await node.attributes()).collect()).map(async attr => ({
+      type: await (await attr.type()).label(),
+      value: await attr.value(),
+    })));
+  }
+  return null;
+}
+
 async function labelFromStorage(node, attributeTypes) {
   const map = {};
   // Populate map with map[attributeType] = array of values (can be undefined)
@@ -77,16 +87,34 @@ async function prepareSchemaConcept(schemaConcept) {
 async function prepareEntity(entity) {
   entity.type = await (await entity.type()).label();
   entity.label = await buildLabel(entity);
+
+  entity.attributes = await computeAttributes(entity);
+
+  if (await entity.isInferred()) {
+    entity.isInferred = true;
+  }
 }
 
 async function prepareRelationship(rel) {
   rel.type = await (await rel.type()).label();
+
+  rel.attributes = await computeAttributes(rel);
+
+  if (await rel.isInferred()) {
+    rel.isInferred = true;
+  }
 }
 
 async function prepareAttribute(attribute) {
   attribute.type = await (await attribute.type()).label();
   attribute.value = await attribute.value();
   attribute.label = await buildLabel(attribute);
+
+  attribute.attributes = await computeAttributes(attribute);
+
+  if (await attribute.isInferred()) {
+    attribute.isInferred = true;
+  }
 }
 
 /**
@@ -117,11 +145,11 @@ async function prepareNodes(concepts) {
       default:
         break;
     }
-
     concept.offset = 0;
     concept.attrOffset = 0;
     nodes.push(concept);
   }));
+
   return nodes;
 }
 
@@ -204,6 +232,8 @@ async function constructEdges(result) {
 
 async function buildFromConceptMap(result) {
   const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
+
+  // const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
   const edges = await constructEdges(result);
 
   // Check if auto-load role players is selected
