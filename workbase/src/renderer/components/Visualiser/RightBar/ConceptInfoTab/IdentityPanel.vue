@@ -16,7 +16,7 @@
                     <h1 class="label">ID:</h1>
                     <div class="value">{{conceptInfo.id}}</div>
                 </div>
-                <div class="content-item">
+                <div class="content-item" v-if="conceptInfo.type">
                     <h1 class="label">TYPE:</h1>
                     <div class="value">{{conceptInfo.type}}</div>
                 </div>
@@ -55,7 +55,7 @@
         return {
           id: node.id,
           type: node.type,
-          baseType: (node.explanation && node.explanation.answers().length) ? 'INFERRED_RELATION' : node.baseType,
+          baseType: (node.isInferred) ? `INFERRED_${node.baseType}` : node.baseType,
         };
       },
       currentKeyspace() {
@@ -95,6 +95,10 @@
     .label {
         margin-right: 20px;
         width: 65px;
+    }
+
+    .value {
+        width: 110px;
     }
 
 </style>

@@ -5,14 +5,8 @@
             <h1>Attributes</h1>
         </div>
         <div v-show="showAttributesPanel">
-            <div class="content" v-if="!currentKeyspace">
-                Please select a keyspace
-            </div>
-            <div class="content" v-else-if="!(nodes && nodes.length === 1)">
-                Please select a node
-            </div>
-            <div class="content" v-else-if="!attributes.length">
-                There are no attributes available for this type of node
+            <div class="content" v-if="msg">
+                {{msg}}
             </div>
             <div class="content" v-else>
                 <div v-for="(value, key) in attributes" :key="key">
@@ -37,28 +31,31 @@
     data() {
       return {
         showAttributesPanel: undefined,
-        attributes: [],
+        attributes: null,
       };
     },
     computed: {
-      nodes() {
+      selectedNodes() {
         return this.localStore.getSelectedNodes();
       },
       currentKeyspace() {
         return this.localStore.getCurrentKeyspace();
       },
+      msg() {
+        if (!this.currentKeyspace) return 'Please select a keyspace';
+        else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';
+        else if (!this.attributes) return 'Attributes are being loaded';
+        else if (!this.attributes.length) return 'There are no attributes available for this type of node';
+        return null;
+      },
     },
     watch: {
-      async nodes(nodes) {
+      selectedNodes(nodes) {
         // If no node selected: close panel and return
         if (!nodes || nodes.length > 1) { this.showAttributesPanel = false; return; }
 
-        const node = await this.localStore.getNode(nodes[0].id);
+        const attributes = nodes[0].attributes;
 
-        const attributes = (node.isSchemaConcept()) ? [] : await Promise.all((await (await node.attributes()).collect()).map(async x => ({
-          type: await (await x.type()).label(),
-          value: await x.value(),
-        })));
         this.attributes = Object.values(attributes).sort((a, b) => ((a.type > b.type) ? 1 : -1)).map(a => Object.assign(a, { href: this.validURL(a.value) }));
 
         this.showAttributesPanel = true;

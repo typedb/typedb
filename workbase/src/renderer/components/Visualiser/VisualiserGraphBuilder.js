@@ -72,21 +72,25 @@ async function buildLabel(node) {
 
 async function prepareSchemaConcept(schemaConcept) {
   schemaConcept.label = await schemaConcept.label();
+  // schemaConcept.attributes = await computeAttributes(schemaConcept);
 }
 
 async function prepareEntity(entity) {
   entity.type = await (await entity.type()).label();
   entity.label = await buildLabel(entity);
+  entity.isInferred = await entity.isInferred();
 }
 
 async function prepareRelationship(rel) {
   rel.type = await (await rel.type()).label();
+  rel.isInferred = await rel.isInferred();
 }
 
 async function prepareAttribute(attribute) {
   attribute.type = await (await attribute.type()).label();
   attribute.value = await attribute.value();
   attribute.label = await buildLabel(attribute);
+  attribute.isInferred = await attribute.isInferred();
 }
 
 /**
@@ -117,11 +121,11 @@ async function prepareNodes(concepts) {
       default:
         break;
     }
-
     concept.offset = 0;
     concept.attrOffset = 0;
     nodes.push(concept);
   }));
+
   return nodes;
 }
 

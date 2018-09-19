@@ -126,11 +126,15 @@
     },
     methods: {
       async loadAttributeTypes() {
-        const type = await this.localStore.graknTx.getSchemaConcept(this.currentType);
+        const graknTx = await this.localStore.openGraknTx();
+
+        const type = await graknTx.getSchemaConcept(this.currentType);
 
         this.nodeAttributes = await Promise.all((await (await type.attributes()).collect()).map(type => type.label()));
         this.nodeAttributes.sort();
         this.currentTypeSavedAttributes = NodeSettings.getTypeLabels(this.currentType);
+
+        graknTx.close();
         this.attributesLoaded = true;
       },
       loadMetaTypes() {
