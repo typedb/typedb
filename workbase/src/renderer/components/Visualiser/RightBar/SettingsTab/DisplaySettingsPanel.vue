@@ -134,7 +134,7 @@
         this.nodeAttributes.sort();
         this.currentTypeSavedAttributes = NodeSettings.getTypeLabels(this.currentType);
 
-        await graknTx.close();
+        graknTx.close();
         this.attributesLoaded = true;
       },
       loadMetaTypes() {

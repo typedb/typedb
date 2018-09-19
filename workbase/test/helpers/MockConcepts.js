@@ -44,6 +44,7 @@ function getMockEntity1() {
     relationships: () => Promise.resolve({ next: () => Promise.resolve(getMockRelationship()) }), // eslint-disable-line no-use-before-define
     attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
     isType: () => Promise.resolve(false),
+    isInferred: () => Promise.resolve(false),
   };
 }
 
@@ -64,6 +65,7 @@ function getMockAttribute() {
     owners: () => Promise.resolve({ next: () => Promise.resolve(getMockEntity1()) }),
     attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
     isType: () => Promise.resolve(false),
+    isInferred: () => Promise.resolve(false),
   };
 }
 
@@ -81,6 +83,7 @@ function getMockRelationship() {
     rolePlayersMap: () => Promise.resolve(mockRolePlayers),
     attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
     isType: () => Promise.resolve(false),
+    isInferred: () => Promise.resolve(false),
   };
 }
 

@@ -44,14 +44,14 @@ const actions = {
       this.visFacade.container.visualiser.updateEdge(updatedEdges);
     }
     this.explanationQuery = false;
-    await graknTx.close();
+    graknTx.close();
   },
   async [TOGGLE_LABEL](type) {
     const graknTx = await this.openGraknTx();
     const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type).map(x => this.getNode(x.id, graknTx)));
     const updatedNodes = await VisualiserGraphBuilder.prepareNodes(nodes);
     this.visFacade.container.visualiser.updateNode(updatedNodes);
-    await graknTx.close();
+    graknTx.close();
   },
   async [TOGGLE_COLOUR](type) {
     const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type));
@@ -87,7 +87,7 @@ const actions = {
         .sort());
 
     this.metaTypeInstances = metaTypeInstances;
-    await graknTx.close();
+    graknTx.close();
   },
 };
 
@@ -159,7 +159,7 @@ const methods = {
 
       this.loadingQuery = false;
 
-      await graknTx.close();
+      graknTx.close();
 
       return data;
     } catch (e) {
