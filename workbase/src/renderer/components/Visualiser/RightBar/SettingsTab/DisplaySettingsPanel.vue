@@ -130,8 +130,8 @@
         this.attributesLoaded = true;
       },
       loadMetaTypes() {
-        if (this.metaTypeInstances.entities || this.metaTypeInstances.attributes || this.metaTypeInstances.relationships) {
-          this.types = this.metaTypeInstances.entities.concat(this.metaTypeInstances.attributes, this.metaTypeInstances.relationships);
+        if (this.metaTypeInstances.entities || this.metaTypeInstances.attributes) {
+          this.types = this.metaTypeInstances.entities.concat(this.metaTypeInstances.attributes);
 
           this.currentType = this.types[0];
           this.showConceptDisplayContent = true;
