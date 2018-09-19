@@ -6,6 +6,12 @@ from collections import Counter
 from ExecutionVisualiser.SpansDataCollection import SpansDataCollection
 
 class SpansData(object):
+    """
+    Container for holding a column/series of duration, span dictionary object
+    Row index is a RangeIndex of repetitions
+    Column Index is a mixed 'duration', 'span' type with label "duration_spanobject"
+
+    """
     def __init__(self, name, dataframe, zipkin_ES_storage):
         self._assigned_name = name
         self._dataframe = dataframe
@@ -29,17 +35,24 @@ class SpansData(object):
         an_id = self._span_ids[0]
         return self._zipkin_ES_storage.get_number_of_children(parent_id=an_id)
 
-    @abc.abstractmethod
     def _get_span_ids(self):
-        pass
+        """ Override abstract, access internal dataframe indices and return all span IDS """
+        # spans = self._dataframe.xs('span', level='duration_spanobject', axis=1) # get the raw _source dictionaries
+        spans = self._dataframe['span']
+        spans = spans.values.ravel()
+        span_ids = [span['id'] for span in spans]
+        return span_ids
 
-    @abc.abstractmethod
     def _compute_common_data(self):
-        pass
+        """ Override abstract, access internal dataframe => spans, compute set of common attributes of spans """
+        # spans = self._dataframe.xs('span', level='duration_spanobject', axis=1) # get the raw _source dictionaries
+        spans = self._dataframe['span']
+        spans = spans.values.ravel()
+        return SpansData._compute_common_span_data(spans)
 
-    @abc.abstractmethod
     def get_values_np(self):
-        pass
+        """ Override abstract, access internal dataframe => durations as flat numpy array """
+        return self._dataframe['duration'].values.ravel()
 
     @staticmethod
     def _compute_common_span_data(spans):
@@ -96,7 +109,7 @@ class SpansData(object):
                 print("Fixed by ignoring by voting")
                 print("TODO fix elasticsearch properly...")
 
-            child_spans_data = ChildSpansData(
+            child_spans_data = SpansData(
                 name="child",
                 dataframe=matching_rows,
                 zipkin_ES_storage=self._zipkin_ES_storage
@@ -105,57 +118,3 @@ class SpansData(object):
 
         return child_spans_data_collection
 
-
-class PartitionedRootSpansData(SpansData):
-    """ Specialise SpansData object for root level SpanData, that have their own indices """
-
-    def __init__(self, name, partitioned_dataframe, zipkin_ES_storage):
-        super().__init__(name, partitioned_dataframe, zipkin_ES_storage)
-
-
-    def _get_span_ids(self):
-        """ Override abstract, access internal dataframe indices and return all span IDS """
-        # spans = self._dataframe.xs('span', level='duration_spanobject', axis=1) # get the raw _source dictionaries
-        spans = self._dataframe['span']
-        spans = spans.values.ravel()
-        span_ids = [span['id'] for span in spans]
-        return span_ids
-
-    def _compute_common_data(self):
-        """ Override abstract, access internal dataframe => spans, compute set of common attributes of spans """
-        # spans = self._dataframe.xs('span', level='duration_spanobject', axis=1) # get the raw _source dictionaries
-        spans = self._dataframe['span']
-        spans = spans.values.ravel()
-        return SpansData._compute_common_span_data(spans)
-
-    def get_values_np(self):
-        """ Override abstract, access internal dataframe => durations as flat numpy array """
-        return self._dataframe['duration'].values.ravel()
-        # return self._dataframe.xs('duration', level='duration_spanobject', axis=1).values.ravel()
-
-
-
-
-class ChildSpansData(SpansData):
-    """ Specialise SpansData object for child spans, which have simpler indices """
-
-    def __init__(self, name, dataframe, zipkin_ES_storage):
-        super().__init__(name, dataframe, zipkin_ES_storage)
-
-    def _get_span_ids(self):
-        """ Override abstract, access internal dataframe indices and return all span IDS """
-        spans = self._dataframe["span"]
-        spans = spans.values.ravel()
-        span_ids = [span['id'] for span in spans]
-        return span_ids
-
-    def _compute_common_data(self):
-        """ Override abstract, access internal dataframe => spans, compute set of common attributes of spans """
-        spans = self._dataframe["span"]
-        spans = spans.values.ravel()
-        return SpansData._compute_common_span_data(spans)
-
-
-    def get_values_np(self):
-        """ Override abstract, access internal dataframe => spans, compute set of common attributes of spans """
-        return self._dataframe['duration'].values.ravel()

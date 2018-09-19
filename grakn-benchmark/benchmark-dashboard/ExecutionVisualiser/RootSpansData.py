@@ -1,8 +1,8 @@
 import pandas as pd
 
-from ExecutionVisualiser.SpansData import PartitionedRootSpansData 
+from ExecutionVisualiser.SpansData import SpansData
 
-class FullRootSpansData(object):
+class RootSpansData(object):
 
     def __init__(self, zipkin_ES_storage, overview_data_ref, sorted_queries, sorted_concept_counts, repetitions):
         print("Begin creating RootSpansData")
@@ -42,18 +42,18 @@ class FullRootSpansData(object):
         Splits UP TO the next index
         """
 
-        root_spans_data_partitions = []
+        spans_data_partitions = []
         start_index = 0
         end_index = self._root_spans_dataframe.shape[0] # number of rows total
         partition_indices += [end_index] # edit a copy in place going to the end of the rows
         for index in partition_indices:
             partition = self._root_spans_dataframe.loc[start_index:index-1, (query, concept_count)]
-            root_spans_data_partitions.append(
-                PartitionedRootSpansData(
+            spans_data_partitions.append(
+                SpansData(
                     name="Partition: row {0} to {1}".format(start_index, index),
-                    partitioned_dataframe=partition,
+                    dataframe=partition,
                     zipkin_ES_storage=self._zipkin_ES_storage
                 )
             )
             start_index = index
-        return root_spans_data_partitions
+        return spans_data_partitions

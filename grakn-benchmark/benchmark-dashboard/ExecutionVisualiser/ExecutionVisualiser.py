@@ -1,19 +1,13 @@
 import dash
 import dash_html_components as html
-import dash_core_components as dcc
 import pandas as pd
-import plotly.graph_objs as go
-import numpy as np
-
 from collections import Counter
 
 from ExecutionVisualiser.ConceptCountSelector import ConceptCountSelector
 from ExecutionVisualiser.QuerySelector import QuerySelector
 from ExecutionVisualiser.OverviewGraph import OverviewGraph
-from ExecutionVisualiser.RootSpansData import FullRootSpansData
+from ExecutionVisualiser.RootSpansData import RootSpansData
 from ExecutionVisualiser.BreakdownGraph import BreakdownGraph
-from ExecutionVisualiser.SpansDataCollection import SpansDataCollection
-from ExecutionVisualiser.SpansData import SpansData, PartitionedRootSpansData, ChildSpansData
 
 class ExecutionVisualiser(object):
     """ The component that visualises all the data for a single execution of the benchmarking system """
@@ -33,7 +27,7 @@ class ExecutionVisualiser(object):
         self._overview_graph = OverviewGraph(self._execution_number, self._overview_dataframe)
 
         # initially empty container for storing the toplevel queries' data, used for aggregation and drill down
-        self._root_spans_data = FullRootSpansData(
+        self._root_spans_data = RootSpansData(
             zipkin_ES_storage=self._zipkin_ES_storage,
             overview_data_ref=self._overview_dataframe,
             sorted_queries=self._sorted_queries,
@@ -209,7 +203,9 @@ class ExecutionVisualiser(object):
 
     # --- end data functions ---
 
-    def get_overview_graph(self, *args):
+    def get_overview_graph(self, query_selector_value):
+        filtered_overview_dataframe = self._overview_dataframe[query_selector_value]
+        self._overview_graph = OverviewGraph(self._execution_number, filtered_overview_dataframe)
         return self._overview_graph.get_layout()
 
 
