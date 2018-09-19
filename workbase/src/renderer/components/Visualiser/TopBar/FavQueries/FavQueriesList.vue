@@ -160,13 +160,14 @@
       },
       removeFavQuery(index, queryName) {
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
-        this.favQueries.splice(index, 1);
+        this.$emit('refresh-queries');
+        this.codeMirror[index].toTextArea(); // Remove codemirror instance
         this.$notifyInfo(`Query ${queryName} has been deleted from favourite queries.`, 'bottom-right');
       },
       renderQueries() {
         const savedQueries = this.$refs.favQuery;
         savedQueries.forEach((queryInput) => {
-          if (queryInput.style.display !== 'none') {
+          if (queryInput.style.display !== 'none') { // Do not re-render inputs which already have been converted to code mirrors
             const cm = GraqlCodeMirror.getCodeMirror(queryInput);
             cm.setValue(this.favQueries[parseInt(queryInput.value, 10)].value);
             cm.setOption('readOnly', 'nocursor');
