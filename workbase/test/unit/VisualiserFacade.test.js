@@ -1,7 +1,7 @@
 
-import Facade from '@/components/visualiser/Facade';
+import Facade from '@/components/CanvasVisualiser/Facade';
 
-jest.mock('@/components/visualiser/Visualiser', () => ({
+jest.mock('@/components/CanvasVisualiser/Visualiser', () => ({
   createVisualiser: () => ({
     render: jest.fn(),
     edgesConnectedToNode: jest.fn(),

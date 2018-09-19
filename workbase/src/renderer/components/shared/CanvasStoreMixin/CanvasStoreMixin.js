@@ -2,7 +2,7 @@
 
 import Grakn from 'grakn';
 import GlobalStore from '@/store';
-import VisFacade from '@/components/visualiser/Facade';
+import VisFacade from '@/components/CanvasVisualiser/Facade';
 
 // Import actions
 import { LOAD_METATYPE_INSTANCES, INITIALISE_VISUALISER, CURRENT_KEYSPACE_CHANGED, CANVAS_RESET } from '../StoresActions';
@@ -81,17 +81,20 @@ const methods = {
   // Executes actions on other modules that are not getters or setters.
   dispatch(event, payload) { return this.actions[event].call(this, payload); },
 
-  // getters
+  // Getters
   getCurrentKeyspace() { return this.currentKeyspace; },
   getSelectedNode() { return (this.selectedNodes) ? this.selectedNodes[0] : null; },
   getSelectedNodes() { return this.selectedNodes; },
   isActive() { return this.currentKeyspace !== null; },
   getMetaTypeInstances() { return this.metaTypeInstances; },
+  getNode(nodeId) { return this.graknTx.getConcept(nodeId); },
+
+  // Setters
   setSelectedNodes(nodeIds) { this.selectedNodes = (nodeIds) ? this.visFacade.getNode(nodeIds) : null; },
   setSelectedNode(nodeId) { this.selectedNodes = (nodeId) ? [this.visFacade.getNode(nodeId)] : null; },
-  getNode(nodeId) { return this.graknTx.getConcept(nodeId); },
   registerCanvasEventHandler(event, fn) { this.visFacade.registerEventHandler(event, fn); },
-  // Methods invoked from within the store
+
+  // Invoked from within the store
   openGraknTx() {
     return this.graknSession.transaction(Grakn.txType.WRITE)
       .then((tx) => {
@@ -99,6 +102,7 @@ const methods = {
         this.dispatch(LOAD_METATYPE_INSTANCES);
       });
   },
+
   updateCanvasData() { if (this.visFacade) this.canvasData = { nodes: this.visFacade.getAllNodes().length, edges: this.visFacade.getAllEdges().length }; },
 };
 

@@ -13,17 +13,18 @@ to determine information about the knowledge graph in parallel.
 Called within the Graql shell or dashboard, the general syntax is:
 
 ```graql-skip-test
-compute [goal] [subgraph]; (using [strategy] where [modifiers];)
+compute goal [in subgraph], (using [strategy] where [modifiers];)
 ```
 
 * `goal` can be any of the available [statistics](#available-statistics-methods)
+
 or [graph queries](#available-graph-queries).
-* `subgraph` is a comma separated list of types to be visited by the Pregel algorithm.
+* `subgraph` (optional) is a comma separated list of types to be visited by the Pregel algorithm.
 
 Additionally, for graph queries
 
-* `strategy` is actual algorithm used
-* `modifiers` are different depending on the specific query and algorithm.
+* `strategy` (optional) is actual algorithm used
+* `modifiers` (optional) are different depending on the specific query and algorithm.
 
 The simplest query `count` can be executed using the following:
 

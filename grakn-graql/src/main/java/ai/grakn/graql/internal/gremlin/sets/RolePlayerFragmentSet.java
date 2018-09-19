@@ -129,6 +129,13 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         return false;
     };
 
+    /**
+     * For traversals associated with implicit relations (either via the has keyword or directly using the implicit relation):
+     *
+     * - expands the roles and relation types to include relevant hierarchies
+     * - as we have transaction information here, we additionally filter the non-relevant variant between key- and has- attribute options.
+     *
+     */
     static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, tx) -> {
         Iterable<RolePlayerFragmentSet> rolePlayers =
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
@@ -137,7 +144,8 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
             @Nullable RolePlayerFragmentSet newRolePlayer = null;
 
             @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationshipTypeLabels();
-            if(relLabels == null) continue;
+            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels();
+            if(relLabels == null || roleLabels == null) continue;
 
             Set<RelationshipType> relTypes = relLabels.stream()
                     .map(tx::<SchemaConcept>getSchemaConcept)
@@ -145,8 +153,15 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
                     .filter(Concept::isRelationshipType)
                     .map(Concept::asRelationshipType)
                     .collect(toSet());
-            if (relTypes.stream().allMatch(SchemaConcept::isImplicit) && rolePlayer.roleLabels() == null) {
-                newRolePlayer = rolePlayer.substituteRelationshipTypeLabels(relTypes);
+
+            Set<Role> roles = roleLabels.stream()
+                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .filter(Objects::nonNull)
+                    .filter(Concept::isRole)
+                    .map(Concept::asRole)
+                    .collect(toSet());
+            if (Stream.concat(relTypes.stream(), roles.stream()).allMatch(SchemaConcept::isImplicit)) {
+                newRolePlayer = rolePlayer.substituteLabels(roles, relTypes);
             }
 
             if (newRolePlayer != null && !newRolePlayer.equals(rolePlayer)) {
@@ -211,17 +226,23 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         return false;
     };
 
-    private RolePlayerFragmentSet substituteRelationshipTypeLabels(Set<RelationshipType> relTypes){
+    private RolePlayerFragmentSet substituteLabels(Set<Role> roles, Set<RelationshipType> relTypes){
         ImmutableSet<Label> newRoleTypeLabels = relTypes != null?
                 relTypes.stream().flatMap(RelationshipType::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
                 null;
+        ImmutableSet<Label> newRoleLabels = roles != null?
+                roles.stream().flatMap(Role::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
+                null;
 
         return new AutoValue_RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null, roleLabels(), newRoleTypeLabels
+                varProperty(), relation(), edge(), rolePlayer(), null,
+                newRoleLabels!= null? newRoleLabels : roleLabels(),
+                newRoleTypeLabels != null? newRoleTypeLabels : relationshipTypeLabels()
         );
     }
 
     /**
+     * NB: doesn't allow overwrites
      * Apply an optimisation where we check the {@link Role} property instead of navigating to the {@link Role} directly.
      * @param roles the role-player must link to any of these (or their sub-types)
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting role-types
@@ -239,14 +260,13 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
     }
 
     /**
+     * NB: doesn't allow overwrites
      * Apply an optimisation where we check the {@link RelationshipType} property.
      * @param relTypeLabels the role-player fragment must link to any of these (not including sub-types)
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting relation-type labels
      */
     private RolePlayerFragmentSet addRelationshipTypeLabels(ImmutableSet<Label> relTypeLabels) {
         Preconditions.checkState(relationshipTypeLabels() == null);
-
-
 
         return new AutoValue_RolePlayerFragmentSet(
                 varProperty(),

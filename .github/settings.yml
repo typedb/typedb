@@ -1,0 +1,17 @@
+labels:
+  - name: feature
+    color: 41DFFF
+  - name: bug
+    color: FF937E
+  - name: refactor
+    color: FFFF00
+  - name: in progress
+    color: 84FF94
+  - name: solved
+    color: 7057FF
+  - name: duplicate
+    color: CFD3D7
+  - name: don't merge
+    color: 000000
+  - name: don't squash
+    color: 000000

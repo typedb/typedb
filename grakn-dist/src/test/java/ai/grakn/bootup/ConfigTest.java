@@ -34,22 +34,9 @@ public class ConfigTest {
     private static final String REL_DIR = "src/test/java/ai/grakn/bootup/";
     private static final String STORAGE_INPUT_CONFIG = "storage.yaml";
     private static final String STORAGE_OUTPUT_CONFIG = "cassandra.new.yaml";
-    private static final String QUEUE_INPUT_CONFIG = "queue.conf";
-    private static final String QUEUE_OUTPUT_CONFIG = "redis.new.conf";
 
     private static final Path STORAGE_INPUT_PATH = Paths.get(GraknConfig.PROJECT_PATH.toString(), REL_DIR, STORAGE_INPUT_CONFIG);
     private static final Path STORAGE_OUTPUT_PATH = Paths.get(GraknConfig.PROJECT_PATH.toString(), REL_DIR, STORAGE_OUTPUT_CONFIG);
-    private static final Path QUEUE_INPUT_PATH = Paths.get(GraknConfig.PROJECT_PATH.toString(), REL_DIR, QUEUE_INPUT_CONFIG);
-    private static final Path QUEUE_OUTPUT_PATH = Paths.get(GraknConfig.PROJECT_PATH.toString(), REL_DIR, QUEUE_OUTPUT_CONFIG);
-
-    @Test
-    public void testQueueConfigParsing() {
-        QueueConfig conf = QueueConfig.from(QUEUE_INPUT_PATH);
-
-        ConfigProcessor.saveConfigStringToFile(conf.toConfigString(), QUEUE_OUTPUT_PATH);
-        QueueConfig newConf = QueueConfig.from(QUEUE_OUTPUT_PATH);
-        assertEquals(conf.params(), newConf.params());
-    }
 
 
     @Ignore //too much formatting details

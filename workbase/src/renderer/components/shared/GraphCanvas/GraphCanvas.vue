@@ -9,8 +9,18 @@
     height: 100%;
     width: 100%;
     position: absolute;
+
+
   }
-  
+  .graph-panel-body * {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+  }
+
+
   #graph-div {
     height: 100%;
   }

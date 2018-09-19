@@ -56,16 +56,7 @@ public class ConfigProcessor {
         saveConfigStringToFile(updatedStorageConfigString, Configs.storageConfigPath());
     }
 
-    public static void updateQueueConfig(){
-        GraknConfig graknConfig = Configs.graknConfig();
-        String updatedQueueConfigString = Configs.queueConfig()
-                .updateFromConfig(graknConfig)
-                .toConfigString();
-        saveConfigStringToFile(updatedQueueConfigString, Configs.queueConfigPath());
-    }
-
     public static void updateProcessConfigs() {
         updateStorageConfig();
-        updateQueueConfig();
     }
 }

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
@@ -168,14 +169,48 @@ public class ReasoningTest {
     public static final SampleKBContext test30 = SampleKBContext.load("testSet30.gql");
 
     @ClassRule
-    public static final SampleKBContext resourceOwnership = SampleKBContext.load("resourceOwnershipTest.gql");
+    public static final SampleKBContext resourceOwnership = SampleKBContext.load("resourceOwnership.gql");
 
     @ClassRule
     public static final SampleKBContext resourceHierarchy = SampleKBContext.load("resourceHierarchy.gql");
 
+    @ClassRule
+    public static final SampleKBContext resourceDirectionality = SampleKBContext.load("resourceDirectionality.gql");
+
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
+
+    @Test
+    public void attributeOwnerResultsAreConsistentBetweenDifferentAccessPoints(){
+        EmbeddedGraknTx<?> tx = resourceDirectionality.tx();
+        QueryBuilder qb = tx.graql().infer(false);
+
+        List<ConceptMap> answers = qb.<GetQuery>parse("match $x isa specific-indicator;get;").execute();
+
+        Concept indicator = answers.iterator().next().get("x");
+
+        GetQuery attributeQuery = qb.parse("match $x has attribute $r; $x id " + indicator.id().getValue() + ";get;");
+        GetQuery attributeRelationQuery = qb.parse("match (@has-attribute-owner: $x, $r) isa @has-attribute; $x id " + indicator.id().getValue() + ";get;");
+
+        Set<Attribute<Object>> attributes = attributeQuery.stream().map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+        Set<Attribute<Object>> attributesFromImplicitRelation = attributeRelationQuery.stream().map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+        Set<Attribute<?>> attributesFromAPI = indicator.asThing().attributes().collect(Collectors.toSet());
+
+        assertThat(attributes, empty());
+        assertEquals(attributes, attributesFromAPI);
+        assertEquals(attributes, attributesFromImplicitRelation);
+
+        qb.parse("match $rmn isa model-name 'someName', has specific-indicator 'someIndicator' via $a; insert $a has indicator-name 'someIndicatorName';").execute();
+
+        Set<Attribute<Object>> newAttributes = attributeQuery.stream().map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+        Set<Attribute<Object>> newAttributesFromImplicitRelation = attributeRelationQuery.stream().map(ans -> ans.get("r")).map(Concept::asAttribute).collect(toSet());
+        Set<Attribute<?>> newAttributesFromAPI = indicator.asThing().attributes().collect(Collectors.toSet());
+
+        assertThat(newAttributes, empty());
+        assertEquals(newAttributes, newAttributesFromAPI);
+        assertEquals(newAttributes, newAttributesFromImplicitRelation);
+    }
 
     @Test
     public void resourceHierarchiesAreRespected() {

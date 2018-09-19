@@ -7,7 +7,7 @@ Vue.use(Toasted);
 
 const SUCCESS_DURATION = 4000;
 const ERROR_DURATION = 15000;
-const INFO_DURATION = 10000;
+const INFO_DURATION = 5000;
 
 function registerNotifications() {
   Vue.prototype.$notifySuccess = function successFn(message) {
