@@ -27,6 +27,8 @@ public class BootupException extends RuntimeException {
         super();
     }
 
+    public BootupException(String message) { super(message);}
+
     public BootupException(Throwable cause) {
         super(cause);
     }

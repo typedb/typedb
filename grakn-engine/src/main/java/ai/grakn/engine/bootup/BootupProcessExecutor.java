@@ -51,19 +51,21 @@ public class BootupProcessExecutor {
     public BootupProcessResult executeAndWait(List<String> command, File workingDirectory) {
         try {
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-            ProcessResult result = new ProcessExecutor().readOutput(true).redirectError(stderr).directory(workingDirectory).command(command).execute();
+            ProcessResult result = new ProcessExecutor()
+                    .readOutput(true)
+                    .redirectError(stderr)
+                    .directory(workingDirectory).command(command).execute();
             return BootupProcessResult.create(result.outputUTF8(), stderr.toString(StandardCharsets.UTF_8.name()), result.getExitValue());
-        }
-        catch (IOException | InterruptedException | TimeoutException e) {
+        } catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
         }
     }
 
     public Optional<String> getPidFromFile(Path fileName) {
-        String pid=null;
+        String pid = null;
         if (fileName.toFile().exists()) {
             try {
-                pid = new String(Files.readAllBytes(fileName),StandardCharsets.UTF_8).trim();
+                pid = new String(Files.readAllBytes(fileName), StandardCharsets.UTF_8).trim();
             } catch (IOException e) {
                 // DO NOTHING
             }
@@ -76,61 +78,63 @@ public class BootupProcessExecutor {
                 Arrays.asList(SH, "-c", "ps -ef | grep " + processName + " | grep -v grep | awk '{print $2}' "), null).stdout();
     }
 
-    public int retrievePid(Path pidFile) {
-        if(!pidFile.toFile().exists()) {
-            return -1;
+    public String retrievePid(Path pidFile) {
+        if (!pidFile.toFile().exists()) {
+            return null;
         }
         try {
             String pid = new String(Files.readAllBytes(pidFile), StandardCharsets.UTF_8);
-            pid = pid.trim();
-            return Integer.parseInt(pid);
+            return pid.trim();
         } catch (NumberFormatException | IOException e) {
-            return -1;
+            return null;
         }
     }
 
-    public void waitUntilStopped(Path pidFile, int pid) {
-        BootupProcessResult bootupProcessResult;
-        do {
+    public void waitUntilStopped(Path pidFile) {
+        while (isProcessRunning(pidFile)) {
             System.out.print(".");
             System.out.flush();
-
-            bootupProcessResult = kill(pid,"0"); // kill -0 <pid> does not kill the process. it simply checks if the process is still running.
-
             try {
                 Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
                 // DO NOTHING
             }
-        } while (bootupProcessResult.success());
+        }
         System.out.println("SUCCESS");
         FileUtils.deleteQuietly(pidFile.toFile());
     }
 
     public boolean isProcessRunning(Path pidFile) {
-        boolean isRunning = false;
         String processPid;
         if (pidFile.toFile().exists()) {
             try {
-                processPid = new String(Files.readAllBytes(pidFile),StandardCharsets.UTF_8);
-                if(processPid.trim().isEmpty()) {
+                processPid = new String(Files.readAllBytes(pidFile), StandardCharsets.UTF_8);
+                if (processPid.trim().isEmpty()) {
                     return false;
                 }
                 BootupProcessResult command =
-                        executeAndWait(Arrays.asList(SH, "-c", "ps -p "+processPid.trim()+" | grep -v CMD | wc -l"), null);
-                return Integer.parseInt(command.stdout().trim())>0;
+                        executeAndWait(checkPIDRunningCommand(processPid), null);
+                return command.exitCode() == 0;
             } catch (NumberFormatException | IOException e) {
                 return false;
             }
         }
-        return isRunning;
+        return false;
+    }
+
+    private List<String> checkPIDRunningCommand(String pid) {
+        if (isWindows()) {
+            return Arrays.asList("cmd", "/c", "tasklist /fi \"PID eq " + pid.trim() + "\" | findstr \"" + pid.trim() + "\"");
+        } else {
+            return Arrays.asList(SH, "-c", "ps -p " + pid.trim());
+        }
     }
 
     public void stopProcessIfRunning(Path pidFile, String programName) {
-        System.out.print("Stopping "+programName+"...");
+        System.out.print("Stopping " + programName + "...");
         System.out.flush();
         boolean programIsRunning = isProcessRunning(pidFile);
-        if(!programIsRunning) {
+        if (!programIsRunning) {
             System.out.println("NOT RUNNING");
         } else {
             stopProcess(pidFile);
@@ -140,24 +144,30 @@ public class BootupProcessExecutor {
 
     public void processStatus(Path storagePid, String name) {
         if (isProcessRunning(storagePid)) {
-            System.out.println(name+": RUNNING");
+            System.out.println(name + ": RUNNING");
         } else {
-            System.out.println(name+": NOT RUNNING");
+            System.out.println(name + ": NOT RUNNING");
         }
     }
 
     private void stopProcess(Path pidFile) {
-        int pid = retrievePid(pidFile);
-        if (pid < 0 ) return;
+        String pid = retrievePid(pidFile);
+        if (pid == null) return;
         kill(pid);
-        waitUntilStopped(pidFile, pid);
+        waitUntilStopped(pidFile);
     }
 
-    private void kill(int pid) {
-        executeAndWait(Arrays.asList(SH, "-c", "kill " + pid), null);
+    private List<String> killProcessCommand(String pid){
+        if (isWindows()) {
+            return Arrays.asList("cmd", "/c", "taskkill /F /PID "+ pid.trim());
+        } else {
+            return Arrays.asList(SH, "-c", "kill " + pid.trim());
+        }
     }
 
-    private BootupProcessResult kill(int pid, String signal) {
-        return executeAndWait(Arrays.asList(SH, "-c", "kill -" + signal + " " + pid), null);
+    private void kill(String pid) { executeAndWait(killProcessCommand(pid), null); }
+
+    private boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 }

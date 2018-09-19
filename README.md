@@ -46,15 +46,15 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## System Requirements
 
-- Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
-- Yarn (in order to build Dashboard)
+
+- If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
 
 You can build Grakn using Maven:
 ```
 $ mvn package -DskipTests
 ```
-
+NOTE: you need to have [Yarn](https://yarnpkg.com) installed in order to compile Grakn from source.
 ## Licensing
 
 This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KGMS - get in touch with our team at enterprise@grakn.ai.
