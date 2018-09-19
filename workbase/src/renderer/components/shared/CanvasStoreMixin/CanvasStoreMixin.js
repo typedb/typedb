@@ -1,14 +1,18 @@
 
 
-import Grakn from 'grakn';
 import GlobalStore from '@/store';
 import VisFacade from '@/components/CanvasVisualiser/Facade';
 
 // Import actions
-import { LOAD_METATYPE_INSTANCES, INITIALISE_VISUALISER, CURRENT_KEYSPACE_CHANGED, CANVAS_RESET } from '../StoresActions';
+import {
+  INITIALISE_VISUALISER,
+  CURRENT_KEYSPACE_CHANGED,
+  CANVAS_RESET,
+  LOAD_METATYPE_INSTANCES,
+} from '../StoresActions';
 
 const actions = {
-  [CURRENT_KEYSPACE_CHANGED](keyspace) {
+  async [CURRENT_KEYSPACE_CHANGED](keyspace) {
     if (keyspace !== this.currentKeyspace) {
       this.visFacade.resetCanvas();
       this.updateCanvasData();
@@ -17,25 +21,9 @@ const actions = {
       if (keyspace) { // keyspace will be null if user deletes current keyspace from Keyspaces page
         this.graknSession = GlobalStore.state.grakn.session(this.currentKeyspace);
         this.openGraknTx();
+        this.dispatch(LOAD_METATYPE_INSTANCES);
       }
     }
-  },
-  async [LOAD_METATYPE_INSTANCES]() {
-    // Fetch types
-    const entities = await (await this.graknTx.query('match $x sub entity; get;')).collectConcepts();
-    const rels = await (await this.graknTx.query('match $x sub relationship; get;')).collectConcepts();
-    const attributes = await (await this.graknTx.query('match $x sub attribute; get;')).collectConcepts();
-    const roles = await (await this.graknTx.query('match $x sub role; get;')).collectConcepts();
-
-    // Get types labels
-    const metaTypeInstances = {};
-    metaTypeInstances.entities = await Promise.all(entities.map(type => type.label())).then(labels => labels.filter(l => l !== 'entity').concat().sort());
-    metaTypeInstances.relationships = await Promise.all(rels.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
-      .then(labels => labels.filter(l => l && l !== 'relationship').concat().sort());
-    metaTypeInstances.attributes = await Promise.all(attributes.map(type => type.label())).then(labels => labels.filter(l => l !== 'attribute').concat().sort());
-    metaTypeInstances.roles = await Promise.all(roles.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
-      .then(labels => labels.filter(l => l && l !== 'role').concat().sort());
-    this.metaTypeInstances = metaTypeInstances;
   },
   [INITIALISE_VISUALISER](container) {
     // We freeze visualiser facade so that Vue does not attach watchers to its properties
@@ -82,26 +70,16 @@ const methods = {
   dispatch(event, payload) { return this.actions[event].call(this, payload); },
 
   // Getters
+  getNode(nodeId, graknTx) { return graknTx.getConcept(nodeId); },
   getCurrentKeyspace() { return this.currentKeyspace; },
   getSelectedNode() { return (this.selectedNodes) ? this.selectedNodes[0] : null; },
   getSelectedNodes() { return this.selectedNodes; },
   isActive() { return this.currentKeyspace !== null; },
-  getMetaTypeInstances() { return this.metaTypeInstances; },
-  getNode(nodeId) { return this.graknTx.getConcept(nodeId); },
 
   // Setters
   setSelectedNodes(nodeIds) { this.selectedNodes = (nodeIds) ? this.visFacade.getNode(nodeIds) : null; },
   setSelectedNode(nodeId) { this.selectedNodes = (nodeId) ? [this.visFacade.getNode(nodeId)] : null; },
   registerCanvasEventHandler(event, fn) { this.visFacade.registerEventHandler(event, fn); },
-
-  // Invoked from within the store
-  openGraknTx() {
-    return this.graknSession.transaction(Grakn.txType.WRITE)
-      .then((tx) => {
-        this.graknTx = tx;
-        this.dispatch(LOAD_METATYPE_INSTANCES);
-      });
-  },
 
   updateCanvasData() { if (this.visFacade) this.canvasData = { nodes: this.visFacade.getAllNodes().length, edges: this.visFacade.getAllEdges().length }; },
 };
@@ -109,11 +87,9 @@ const methods = {
 const state = {
   visFacade: undefined,
   currentKeyspace: null,
-  metaTypeInstances: {},
   selectedNodes: null,
   isInit: false,
   actions,
-  graknTx: undefined,
   canvasData: { nodes: 0, edges: 0 },
 };
 
