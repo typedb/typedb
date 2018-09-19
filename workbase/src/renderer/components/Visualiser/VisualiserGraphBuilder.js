@@ -32,18 +32,6 @@ function buildValue(array) {
   return array.join(', ');
 }
 
-async function computeAttributes(node) {
-  if (!node.isType()) {
-    return Promise.all((await (await node.attributes()).collect()).map(async attr => ({
-      type: await (await attr.type()).label(),
-      value: await attr.value(),
-    })));
-  }
-  return Promise.all((await (await node.attributes()).collect()).map(async attr => ({
-    type: await attr.label(),
-  })));
-}
-
 async function labelFromStorage(node, attributeTypes) {
   const map = {};
   // Populate map with map[attributeType] = array of values (can be undefined)
@@ -84,19 +72,17 @@ async function buildLabel(node) {
 
 async function prepareSchemaConcept(schemaConcept) {
   schemaConcept.label = await schemaConcept.label();
-  schemaConcept.attributes = await computeAttributes(schemaConcept);
+  // schemaConcept.attributes = await computeAttributes(schemaConcept);
 }
 
 async function prepareEntity(entity) {
   entity.type = await (await entity.type()).label();
   entity.label = await buildLabel(entity);
-  entity.attributes = await computeAttributes(entity);
   entity.isInferred = await entity.isInferred();
 }
 
 async function prepareRelationship(rel) {
   rel.type = await (await rel.type()).label();
-  rel.attributes = await computeAttributes(rel);
   rel.isInferred = await rel.isInferred();
 }
 
@@ -104,7 +90,6 @@ async function prepareAttribute(attribute) {
   attribute.type = await (await attribute.type()).label();
   attribute.value = await attribute.value();
   attribute.label = await buildLabel(attribute);
-  attribute.attributes = await computeAttributes(attribute);
   attribute.isInferred = await attribute.isInferred();
 }
 

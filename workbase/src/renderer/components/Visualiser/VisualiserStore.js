@@ -2,8 +2,8 @@ import Grakn from 'grakn';
 import Vue from 'vue';
 import logger from '@/../Logger';
 import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
-import ManagementUtils from './VisualiserUtils';
-import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
+import VisualiserUtils from './VisualiserUtils';
+import DisplaySettings from './RightBar/SettingsTab/DisplaySettings';
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
 import Style from './Style';
 import VisualiserGraphBuilder from '../Visualiser/VisualiserGraphBuilder';
@@ -23,16 +23,16 @@ const actions = {
     return this.runQuery(this.currentQuery);
   },
   async [EXPLAIN_CONCEPT]() {
-    await this.openGraknTx();
+    const graknTx = await this.openGraknTx();
 
     this.explanationQuery = true;
 
     const queries = this.getSelectedNode().explanation.answers().map((answer) => {
       const queryPattern = answer.explanation().queryPattern();
 
-      let query = ManagementUtils.buildExplanationQuery(answer, queryPattern).query;
+      let query = VisualiserUtils.buildExplanationQuery(answer, queryPattern).query;
       if (queryPattern.includes('has')) {
-        query += `${ManagementUtils.buildExplanationQuery(answer, queryPattern).attributeQuery} get;`;
+        query += `${VisualiserUtils.buildExplanationQuery(answer, queryPattern).attributeQuery} get;`;
       } else {
         query += `$r ${queryPattern.slice(1, -1).match(/\((.*?;)/)[0]} offset 0; limit 1; get $r;`;
       }
@@ -44,14 +44,14 @@ const actions = {
       this.visFacade.container.visualiser.updateEdge(updatedEdges);
     }
     this.explanationQuery = false;
-    await this.closeGraknTx();
+    await graknTx.close();
   },
   async [TOGGLE_LABEL](type) {
-    await this.openGraknTx();
-    const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type).map(x => this.getNode(x.id)));
+    const graknTx = await this.openGraknTx();
+    const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type).map(x => this.getNode(x.id, graknTx)));
     const updatedNodes = await VisualiserGraphBuilder.prepareNodes(nodes);
     this.visFacade.container.visualiser.updateNode(updatedNodes);
-    await this.closeGraknTx();
+    await graknTx.close();
   },
   async [TOGGLE_COLOUR](type) {
     const nodes = await Promise.all(this.visFacade.getAllNodes().filter(x => x.type === type));
@@ -59,13 +59,13 @@ const actions = {
     this.visFacade.container.visualiser.updateNode(updatedNodes);
   },
   async [LOAD_METATYPE_INSTANCES]() {
-    await this.openGraknTx();
+    const graknTx = await this.openGraknTx();
 
     // Fetch types
-    const entities = await (await this.graknTx.query('match $x sub entity; get;')).collectConcepts();
-    const rels = await (await this.graknTx.query('match $x sub relationship; get;')).collectConcepts();
-    const attributes = await (await this.graknTx.query('match $x sub attribute; get;')).collectConcepts();
-    const roles = await (await this.graknTx.query('match $x sub role; get;')).collectConcepts();
+    const entities = await (await graknTx.query('match $x sub entity; get;')).collectConcepts();
+    const rels = await (await graknTx.query('match $x sub relationship; get;')).collectConcepts();
+    const attributes = await (await graknTx.query('match $x sub attribute; get;')).collectConcepts();
+    const roles = await (await graknTx.query('match $x sub role; get;')).collectConcepts();
 
     // Get types labels
     const metaTypeInstances = {};
@@ -87,7 +87,7 @@ const actions = {
         .sort());
 
     this.metaTypeInstances = metaTypeInstances;
-    await this.closeGraknTx();
+    await graknTx.close();
   },
 };
 
@@ -105,7 +105,7 @@ const watch = {
         query = `match $x id "${nodeId}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get;`;
         this.visFacade.updateNode({ id: nodeId, attrOffset: visNode.attrOffset + neighboursLimit });
       } else { // double click => load neighbours
-        query = ManagementUtils.loadNeighbours(visNode, neighboursLimit);
+        query = VisualiserUtils.loadNeighbours(visNode, neighboursLimit);
         this.visFacade.updateNode({ id: nodeId, offset: visNode.offset + neighboursLimit });
       }
       this.setCurrentQuery(query);
@@ -128,9 +128,9 @@ const methods = {
       }
       this.loadingQuery = true;
 
-      await this.openGraknTx();
+      const graknTx = await this.openGraknTx();
 
-      const result = (await (await this.graknTx.query(query)).collect());
+      const result = (await (await graknTx.query(query)).collect());
 
       if (!result.length) {
         this.$notifyInfo('No results were found for your query!', 'bottom-right');
@@ -145,16 +145,21 @@ const methods = {
       } else { // result is conceptList
         // TBD - handle multiple paths
         const path = result[0];
-        const pathNodes = await Promise.all(path.list().map(id => this.getNode(id)));
+        const pathNodes = await Promise.all(path.list().map(id => this.getNode(id, graknTx)));
         data = await VisualiserGraphBuilder.buildFromConceptList(path, pathNodes);
       }
 
       this.visFacade.addToCanvas(data);
       this.visFacade.fitGraphToWindow();
       this.updateCanvasData();
+
+      data.nodes = await VisualiserUtils.computeAttributes(data.nodes);
+
+      this.visFacade.updateNode(data.nodes);
+
       this.loadingQuery = false;
 
-      await this.closeGraknTx();
+      await graknTx.close();
 
       return data;
     } catch (e) {
@@ -164,21 +169,15 @@ const methods = {
     }
   },
   async openGraknTx() {
-    this.graknTx = await this.graknSession.transaction(Grakn.txType.WRITE);
-  },
-  async closeGraknTx() {
-    await this.graknTx.close();
+    return this.graknSession.transaction(Grakn.txType.WRITE);
   },
 
   // getters
   getMetaTypeInstances() {
     return this.metaTypeInstances;
   },
-  async getNode(nodeId) {
-    return this.graknTx.getConcept(nodeId);
-  },
   getLabelBySelectedType() {
-    return NodeSettings.getTypeLabels(this.getSelectedNode().type);
+    return DisplaySettings.getTypeLabels(this.getSelectedNode().type);
   },
   getCurrentQuery() {
     return this.currentQuery;
@@ -203,7 +202,6 @@ const state = {
   currentQuery: '',
   loadingQuery: false,
   explanationQuery: false,
-  graknTx: undefined,
   metaTypeInstances: {},
 };
 export default { create: () => new Vue({

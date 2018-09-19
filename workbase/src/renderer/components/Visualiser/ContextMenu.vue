@@ -65,8 +65,8 @@
         contextMenu.style.left = `${mouseEvent.pointer.DOM.x}px`;
         contextMenu.style.top = `${mouseEvent.pointer.DOM.y}px`;
       },
-      async explainNode() {
-        await this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
+      explainNode() {
+        this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
         this.showContextMenu = false;
       },
       async verifyEnableExplain() {

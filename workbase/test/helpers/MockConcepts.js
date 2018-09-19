@@ -5,7 +5,8 @@ function getMockEntityType() {
     label: () => Promise.resolve('person'),
     instances: () => Promise.resolve({ next: () => Promise.resolve(getMockEntity1()) }), // eslint-disable-line no-use-before-define
     isImplicit: () => Promise.resolve(false),
-    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()) }), // eslint-disable-line no-use-before-define
+    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttributeType()), collect: () => Promise.resolve([getMockAttributeType()]) }), // eslint-disable-line no-use-before-define
+    isType: () => Promise.resolve(true),
   };
 }
 
@@ -41,7 +42,8 @@ function getMockEntity1() {
     id: '3333',
     type: () => Promise.resolve(getMockEntityType()),
     relationships: () => Promise.resolve({ next: () => Promise.resolve(getMockRelationship()) }), // eslint-disable-line no-use-before-define
-    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()) }), // eslint-disable-line no-use-before-define
+    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
+    isType: () => Promise.resolve(false),
   };
 }
 
@@ -60,7 +62,8 @@ function getMockAttribute() {
     type: () => Promise.resolve(getMockAttributeType()),
     value: () => Promise.resolve('John'),
     owners: () => Promise.resolve({ next: () => Promise.resolve(getMockEntity1()) }),
-    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()) }), // eslint-disable-line no-use-before-define
+    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
+    isType: () => Promise.resolve(false),
   };
 }
 
@@ -76,7 +79,8 @@ function getMockRelationship() {
     id: '6666',
     type: () => Promise.resolve(getMockRelationshipType()),
     rolePlayersMap: () => Promise.resolve(mockRolePlayers),
-    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()) }), // eslint-disable-line no-use-before-define
+    attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
+    isType: () => Promise.resolve(false),
   };
 }
 

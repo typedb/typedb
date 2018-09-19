@@ -49,9 +49,26 @@ function buildExplanationQuery(answer, queryPattern) {
   return { query, attributeQuery };
 }
 
+async function computeAttributes(nodes) {
+  return Promise.all(nodes.map(async (node) => {
+    if (!node.isType()) {
+      node.attributes = await Promise.all((await (await node.attributes()).collect()).map(async attr => ({
+        type: await (await attr.type()).label(),
+        value: await attr.value(),
+      })));
+      return node;
+    }
+    node.attributes = await Promise.all((await (await node.attributes()).collect()).map(async attr => ({
+      type: await attr.label(),
+    })));
+    return node;
+  }));
+}
+
 
 export default {
   loadNeighbours,
   limitQuery,
   buildExplanationQuery,
+  computeAttributes,
 };

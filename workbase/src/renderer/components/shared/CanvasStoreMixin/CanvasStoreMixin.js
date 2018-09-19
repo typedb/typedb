@@ -21,7 +21,7 @@ const actions = {
       if (keyspace) { // keyspace will be null if user deletes current keyspace from Keyspaces page
         this.graknSession = GlobalStore.state.grakn.session(this.currentKeyspace);
         this.openGraknTx();
-        await this.dispatch(LOAD_METATYPE_INSTANCES);
+        this.dispatch(LOAD_METATYPE_INSTANCES);
       }
     }
   },
@@ -70,6 +70,7 @@ const methods = {
   dispatch(event, payload) { return this.actions[event].call(this, payload); },
 
   // Getters
+  getNode(nodeId, graknTx) { return graknTx.getConcept(nodeId); },
   getCurrentKeyspace() { return this.currentKeyspace; },
   getSelectedNode() { return (this.selectedNodes) ? this.selectedNodes[0] : null; },
   getSelectedNodes() { return this.selectedNodes; },

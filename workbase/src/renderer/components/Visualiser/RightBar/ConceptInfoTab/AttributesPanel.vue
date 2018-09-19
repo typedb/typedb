@@ -5,14 +5,8 @@
             <h1>Attributes</h1>
         </div>
         <div v-show="showAttributesPanel">
-            <div class="content" v-if="!currentKeyspace">
-                Please select a keyspace
-            </div>
-            <div class="content" v-else-if="!(selectedNodes && selectedNodes.length === 1)">
-                Please select a node
-            </div>
-            <div class="content" v-else-if="!attributes.length">
-                There are no attributes available for this type of node
+            <div class="content" v-if="msg">
+                {{msg}}
             </div>
             <div class="content" v-else>
                 <div v-for="(value, key) in attributes" :key="key">
@@ -37,7 +31,7 @@
     data() {
       return {
         showAttributesPanel: undefined,
-        attributes: [],
+        attributes: null,
       };
     },
     computed: {
@@ -46,6 +40,13 @@
       },
       currentKeyspace() {
         return this.localStore.getCurrentKeyspace();
+      },
+      msg() {
+        if (!this.currentKeyspace) return 'Please select a keyspace';
+        else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';
+        else if (!this.attributes) return 'Attributes are being loaded';
+        else if (!this.attributes.length) return 'There are no attributes available for this type of node';
+        return null;
       },
     },
     watch: {
