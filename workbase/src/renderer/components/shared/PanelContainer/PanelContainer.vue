@@ -17,15 +17,15 @@
     cursor: default;
 }
 
-h1{
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    cursor: pointer;
-    justify-content: flex-start;
-    padding: 5px 0px;
-    background-color: #2E2D2D;
-}
+/*h1{*/
+    /*display: flex;*/
+    /*flex-direction: row;*/
+    /*align-items: center;*/
+    /*cursor: pointer;*/
+    /*justify-content: flex-start;*/
+    /*padding: 5px 0px;*/
+    /*background-color: #2E2D2D;*/
+/*}*/
 
 .container-wrapper{
     background-color: #282828;
