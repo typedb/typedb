@@ -1,17 +1,17 @@
 {
-  "license": "AGPL-3.0-only",
+  "license": "AGPL-3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/graknlabs/grakn.git"
   },
   "name": "grakn-workbase",
   "version": "1.4.0",
-  "description": "Grakn's IDE to perform knowledge engineering at scale, and control everything in your knowledge graph from development to production.",
+  "description": "IDE to perform knowledge engineering at scale and control everything in your Grakn knowledge graph, from development to production.",
   "author": "Grakn Labs",
   "homepage": "https://grakn.ai",
   "main": "./dist/electron/main.js",
   "scripts": {
-    "build": "node .electron-vue/build.js && cross-env CSC_LINK=${CSC_LINK} CSC_KEY_PASSWORD=${CSC_PASSWORD} electron-builder --publish never",
+    "build": "node .electron-vue/build.js && electron-builder --publish never",
     "build:dir": "node .electron-vue/build.js && electron-builder --dir",
     "build:clean": "cross-env BUILD_TARGET=clean node .electron-vue/build.js",
     "dev": "node .electron-vue/dev-runner.js",
@@ -23,7 +23,7 @@
     "e2e": "npm run pack && ./node_modules/jest/bin/jest.js ./test/e2e --runInBand"
   },
   "build": {
-    "productName": "grakn-workbase",
+    "productName": "Grakn Workbase",
     "appId": "ai.grakn.workbase",
     "directories": {
       "output": "build"
@@ -48,8 +48,9 @@
     },
     "mac": {
       "icon": "build/icons/icon.icns",
-      "artifactName": "${productName}-${version}-mac.${ext}",
-      "target": "zip"
+      "artifactName": "grakn-workbase-${version}-mac.${ext}",
+      "target": "zip",
+      "type": "distribution"
     },
     "win": {
       "icon": "build/icons/icon.ico"
@@ -57,7 +58,7 @@
     "linux": {
       "icon": "build/icons",
       "category": "Development",
-      "artifactName": "${productName}-${version}-linux.${ext}",
+      "artifactName": "grakn-workbase-${version}-linux.${ext}",
       "target": "tar.gz"
     }
   },
