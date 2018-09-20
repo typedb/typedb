@@ -102,9 +102,11 @@ const watch = {
 
       let query;
       if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
+        if (!visNode.attrOffset) visNode.attrOffset = 0;
         query = `match $x id "${nodeId}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get;`;
         this.visFacade.updateNode({ id: nodeId, attrOffset: visNode.attrOffset + neighboursLimit });
       } else { // double click => load neighbours
+        if (!visNode.offset) visNode.offset = 0;
         query = VisualiserUtils.loadNeighbours(visNode, neighboursLimit);
         this.visFacade.updateNode({ id: nodeId, offset: visNode.offset + neighboursLimit });
       }

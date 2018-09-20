@@ -121,8 +121,6 @@ async function prepareNodes(concepts) {
       default:
         break;
     }
-    concept.offset = 0;
-    concept.attrOffset = 0;
     nodes.push(concept);
   }));
 
@@ -156,8 +154,7 @@ async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
         default:
           throw new Error(`Unrecognised baseType of thing: ${thing.baseType}`);
       }
-      thing.offset = 1;
-      thing.attrOffset = 0;
+      if (thing.offset) thing.offset += 1; else thing.offset = 1;
 
       nodes.push(thing);
       edges.push({ from: relationship.id, to: thing.id, label: roleLabel });
