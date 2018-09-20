@@ -1,6 +1,5 @@
 import elasticsearch
 import elasticsearch.helpers as helpers
-import json
 
 class ZipkinESStorage(object):
 
@@ -21,6 +20,7 @@ class ZipkinESStorage(object):
                 }
             }
         }
+
         filter_regexp = include_filter_regexp.strip()
         if filter_regexp != "":
             body["aggs"]["aggregated"]["terms"]["include"] = filter_regexp
@@ -55,7 +55,7 @@ class ZipkinESStorage(object):
         return [doc['_source'] for doc in result_iter]
 
 
-    def get_spans_with_parent(self, parent_id, doc_type='span', sorting=None):
+    def get_spans_with_parent(self, parent_id, doc_type='span', sorting=[]):
         query = {
             "query": {
                 "term": {
@@ -66,8 +66,8 @@ class ZipkinESStorage(object):
             ]
         }
 
-        if sorting is not None:
-            query['sort'].append(sorting)
+        if len(sorting) > 0:
+            query['sort'] += sorting
 
         spans_iter = helpers.scan(self.es,
                 index = self.indices,
@@ -81,26 +81,6 @@ class ZipkinESStorage(object):
     def get_number_of_children(self, parent_id, doc_type='span'):
         children = self.get_spans_with_parent(parent_id)
         return len(children)
-
-
-    def get_named_span_with_parents(self, name, parent_ids, doc_type='span'):
-        """ Retrieve spans with any of the given parent_ids """
-        should_terms = [{"term": { "parentId": id}} for id in parent_ids]
-
-        query = {
-            "query": {
-                "bool": {
-                    "should": should_terms
-                    }
-                }
-            }
-
-        spans_iter = helpers.scan(self.es,
-                index=self.indices,
-                doc_type=doc_type,
-                query=query)
-
-        return [doc['_source'] for doc in spans_iter]
 
 
     def get_child_names(self, parent_id, doc_type='span', max_children=10000):

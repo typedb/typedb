@@ -13,8 +13,9 @@ https://www.elastic.co/guide/en/elasticsearch/reference/6.3/zip-targz.html
 
 In the elasticsearch installation directory, do:
 ```
-./bin/elasticsearch
+./bin/elasticsearch -E path.logs=[GRAKN_PATH]/grakn-benchmark/data/logs/elasticsearch/ -E path.data=[GRAKN_PATH]/grakn-benchmark/data/data/elasticsearch/
 ```
+Here, `[GRAKN_PATH]` is the path to your `grakn` directory.
 
 ## Zipkin
 https://github.com/openzipkin/zipkin/blob/master/zipkin-server/README.md
@@ -46,6 +47,7 @@ To get up and running, you need pipenv and python >=3.6.0
 3. in the `dashboard/` directory, run `python dashboard.py`
 4. Navigate to `http:localhost:8050` to see the dashboard
 
+The box plots are individually clickable to drill down, bar charts (default if only 1 repetition is being displayed) cycle through drill downs on each click.
 
 ## Executing Benchmarks and Generating Data
 
@@ -73,6 +75,29 @@ Rebuild Benchmarking and its dependencies and execute
 `run.py --build-benchmark--alldeps --config grakn-benchmark/src/main/resources/societal_config_1.yml`
 
 
+
+### Adding new spans to measure code segments
+
+* On the server (or in the Java client), we can obtain the current Tracer with:
+```
+Tracer tracer = Tracing.currentTracer(); 
+```
+
+Then add a child span
+```
+Span s = tracer.currentSpan();
+ScopedSpan childSpan; // A ScopedSpan places the Span into the thread local storage for access in this same way elsewhere
+if (s != null) {
+    childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
+} else {
+    LOG.warn("Creating child span without a parent, missing a context (are we on the same thread as the consumer from the gRPC queue?)");
+    childSpan = tracer.startScopedSpan("planForConjunction");
+}
+
+... existing code ...
+
+childSpan.finish(); // will automatically use the Tracer's configuration to report to Zipkin and restores previous ScopedSpan (TODO double check restore works properly)
+```
 
 
 

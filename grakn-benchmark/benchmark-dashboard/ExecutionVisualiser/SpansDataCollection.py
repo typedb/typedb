@@ -30,3 +30,6 @@ class SpansDataCollection(object):
     def get_size(self):
         """ Get the number of children / number of SpansData in this collection """
         return len(self._spans_data_list)
+
+    def get_contained(self, number):
+        return self._spans_data_list[number]

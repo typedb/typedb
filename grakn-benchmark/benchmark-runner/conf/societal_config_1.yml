@@ -5,7 +5,7 @@ concepts:
   - 100
   - 250
   - 500
-repeatsPerQuery: 2
+repeatsPerQuery: 5
 # TODO
 # concurrency:
 #   clients: 1

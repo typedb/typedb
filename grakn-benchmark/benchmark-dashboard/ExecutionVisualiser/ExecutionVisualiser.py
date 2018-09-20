@@ -9,6 +9,7 @@ from ExecutionVisualiser.OverviewGraph import OverviewGraph
 from ExecutionVisualiser.RootSpansData import RootSpansData
 from ExecutionVisualiser.BreakdownGraph import BreakdownGraph
 
+
 class ExecutionVisualiser(object):
     """ The component that visualises all the data for a single execution of the benchmarking system """
 
@@ -107,11 +108,11 @@ class ExecutionVisualiser(object):
         elif method_name == 'get_breakdown_graphs':
             return self.get_breakdown_graphs(*args)
         elif method_name.startswith('breakdown-graph'):
-            return self._route_on_graph_click_callback(method_name, *args)
+            return self._route_graph_click_callback(method_name, *args)
         else:
             print("Unknown method name in route_callback: {0}".format(method_name))
 
-    def _route_on_graph_click_callback(self, method_name, *args):
+    def _route_graph_click_callback(self, method_name, *args):
         graph_id = method_name
 
         # need to check if already instantiated, callbacks can be out of order?
@@ -127,21 +128,11 @@ class ExecutionVisualiser(object):
             breakdown_graph = self._html_id_to_breakdown_graph[graph_id]
 
             clicked_points = args[0]['points']
-
-            # one click could hit multiple levels or curves, find majority
-            levels_clicked = [pt['y'] for pt in clicked_points]
-            level_counts = Counter(levels_clicked)
-            most_common_level = level_counts.most_common(1)[0][0]
-
             curves_clicked = [pt['curveNumber'] for pt in clicked_points]
             curve_counts = Counter(curves_clicked)
             most_common_curve_number = curve_counts.most_common(1)[0][0]
-            # convert overall curve number into an offset AT a level
-            (_, level_span_number) = breakdown_graph.curve_number_to_level_and_child_tuple(most_common_curve_number)
 
-            # update the spanlists graph!
-            print("Expanding graph at: {0}, {1}".format(most_common_level, level_span_number))
-            breakdown_graph.expand_level_name(most_common_level, level_span_number)
+            breakdown_graph.on_click(most_common_curve_number)
             return breakdown_graph.get_figure()
         else:
             return {}
@@ -225,22 +216,26 @@ class ExecutionVisualiser(object):
         # TODO reuse BreakdownGraph, especially if same data
 
         for query in queries:
-            query_number = self._sorted_queries.index(query)
 
-            # partition the root spans table into sub tables
-            partitioned_root_spans_data_list = self._root_spans_data.partition_for_query_and_concept_count(query, concept_count, partition_indices=[1])
             query_breakdown_container = html.Div(
                 children=[
                     html.Hr(),
                     html.H5(query)
                 ]
             )
-            for (i, root_spans_data) in enumerate(partitioned_root_spans_data_list):
+
+            query_number = self._sorted_queries.index(query)
+
+            # partition the root spans table into sub tables
+            partition_names, partitioned_root_spans_data_collection_list = \
+                self._root_spans_data.partition_for_query_and_concept_count(query, concept_count, partition_indices=[1])
+
+            for (i, root_spans_data_collection) in enumerate(partitioned_root_spans_data_collection_list):
                 graph_id = 'breakdown-graph-{0}-{1}-{2}'.format(self._execution_number, query_number, i)
                 breakdown_graph = BreakdownGraph(
-                    graph_name=root_spans_data.get_assigned_name(),
+                    graph_name=partition_names[i],
                     graph_id=graph_id,
-                    partitioned_root_spans_data=root_spans_data
+                    partitioned_root_spans_data_collection=root_spans_data_collection
                 )
                 self._html_id_to_breakdown_graph[graph_id] = breakdown_graph
                 query_breakdown_container.children.append(breakdown_graph.get_layout())

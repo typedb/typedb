@@ -10,20 +10,26 @@ from ExecutionVisualiser.ExecutionVisualiser import ExecutionVisualiser
 class Dashboard(object):
     def __init__(self, max_interactive_graphs_per_execution=100):
         self._zipkinESStorage = ZipkinESStorage()
-        self._execution_names = self._get_sorted_execution_names_from_zipkin()
         # cache of previously selected executions so they don't have to be recomputed
         # also used for predeclared callback lookups
         self._executions = {}
 
-        self._execution_selector = ExecutionSelector(self._execution_names)
         self._dash = dash.Dash()
         self._dash.config.suppress_callback_exceptions = True
-        self._create_static_callbacks()
-        self._create_dynamic_callbacks(max_interactive_graphs_per_execution)
-        self._dash.layout = self._make_layout()
+
         self._dash.css.append_css({
             'external_url': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css'
         })
+
+        self._setup_execution_selector()
+        self._create_static_callbacks()
+        self._create_dynamic_callbacks(max_interactive_graphs_per_execution)
+        # NOTE: set to function to re-render layout on page reload, rather than once at the first page load!
+        self._dash.layout = self._get_layout
+
+    def _setup_execution_selector(self):
+        self._execution_names = self._get_sorted_execution_names_from_zipkin()
+        self._execution_selector = ExecutionSelector(self._execution_names)
 
     def run(self, debug=True):
         self._dash.run_server(debug=debug)
@@ -73,8 +79,10 @@ class Dashboard(object):
                                                                    execution_name,
                                                                    execution_number)
 
-    def _make_layout(self, benchmark_width=11):
+    def _get_layout(self, benchmark_width=11):
         print("Generating layout...")
+
+        self._setup_execution_selector()
 
         # placeholder for benchmark graphs with a specified width
         active_benchmark = html.Div(

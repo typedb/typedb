@@ -19,10 +19,12 @@
 package manage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import configure.BenchmarkConfiguration;
-import configure.BenchmarkConfigurationFile;
+import executionconfig.BenchmarkConfiguration;
+import executionconfig.BenchmarkConfigurationFile;
 import executor.QueryExecutor;
 import generator.DataGenerator;
+import org.apache.http.entity.StringEntity;
+import sharedconfig.Configs;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,8 +67,6 @@ public class BenchmarkManager {
     private QueryExecutor queryExecutor;
     private int numQueryRepetitions;
     private BenchmarkConfiguration configuration;
-
-    private static final String GRAKN_URI = "localhost:48555";
 
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkManager.class);
 
@@ -114,7 +114,6 @@ public class BenchmarkManager {
 
 
     public static boolean indexTemplateExists(RestClient esClient, String indexTemplateName) throws IOException {
-
         try {
             Request templateExistsRequest = new Request(
                     "GET",
@@ -130,22 +129,18 @@ public class BenchmarkManager {
         }
     }
 
-    public static void putIndexTemplateFile(RestClient esClient, File indexTemplateFile, String indexTemplateName) throws IOException {
+    public static void putIndexTemplate(RestClient esClient, String indexTemplateName, String indexTemplate) throws IOException {
         Request putTemplateRequest = new Request(
                 "PUT",
                 "/_template/" + indexTemplateName
         );
-        HttpEntity entity = new FileEntity(indexTemplateFile, ContentType.APPLICATION_JSON);
+        HttpEntity entity = new StringEntity(indexTemplate, ContentType.APPLICATION_JSON);
         putTemplateRequest.setEntity(entity);
-        Response response = esClient.performRequest(putTemplateRequest);
-
+        esClient.performRequest(putTemplateRequest);
         LOG.info("Created index template `" + indexTemplateName + "`");
     }
 
-    public static void main(String[] args) throws IOException {
-
-
-        // TODO arguments for ElasticSearch server URI as an arugment
+    public static void initElasticSearch() throws IOException {
         String esServerHost = "localhost";
         int esServerPort = 9200;
         String esServerProtocol = "http";
@@ -153,30 +148,31 @@ public class BenchmarkManager {
         esRestClientBuilder.setDefaultHeaders(new Header[]{new BasicHeader("header", "value")});
         RestClient restClient = esRestClientBuilder.build();
 
-
-        String indexTemplateName = "grakn-benchmark-index-template";
+        String indexTemplateName = Configs.ElasticSearchConfig.INDEX_TEMPLATE_NAME;
         if (!indexTemplateExists(restClient, indexTemplateName)) {
-            // TODO `conf` as a constant path for use all over the place
-            Path confPath = Paths.get("/", "Users", "lolski", "grakn.ai", "grakn", "grakn-benchmark", "benchmark-runner", "conf");
-            Path indexTemplatePath = confPath.resolve(indexTemplateName + ".json");
-            File indexTemplateFile = indexTemplatePath.toFile();
-            putIndexTemplateFile(restClient, indexTemplateFile, indexTemplateName);
+            String indexTemplate = Configs.ElasticSearchConfig.INDEX_TEMPLATE;
+            putIndexTemplate(restClient, indexTemplateName, indexTemplate);
         }
         restClient.close();
+    }
 
+    public static void main(String[] args) throws IOException {
 
-
-
-
-
-
-
+        initElasticSearch();
 
         Option configFileOption = Option.builder("c")
                 .longOpt("config")
                 .hasArg(true)
                 .desc("Benchmarking YAML file (required)")
                 .required(true)
+                .type(String.class)
+                .build();
+
+        Option graknAddressOption = Option.builder("g")
+                .longOpt("uri")
+                .hasArg(true)
+                .desc("Address of the grakn cluster (default: localhost:48555)")
+                .required(false)
                 .type(String.class)
                 .build();
 
@@ -208,6 +204,7 @@ public class BenchmarkManager {
                 .build();
         Options options = new Options();
         options.addOption(configFileOption);
+        options.addOption(graknAddressOption);
         options.addOption(keyspaceOption);
         options.addOption(noDataGenerationOption);
         options.addOption(noSchemaLoadOption);
@@ -224,12 +221,18 @@ public class BenchmarkManager {
         String configFileName = arguments.getOptionValue("config");
         Path configFilePath = Paths.get(configFileName);
 
+        // parse config yaml file into object
         ObjectMapper benchmarkConfigMapper = new ObjectMapper(new YAMLFactory());
         BenchmarkConfigurationFile configFile = benchmarkConfigMapper.readValue(
                 configFilePath.toFile(),
                 BenchmarkConfigurationFile.class);
         BenchmarkConfiguration benchmarkConfiguration = new BenchmarkConfiguration(configFilePath, configFile);
 
+        // override the URI of grakn, if one has been set
+        if (arguments.hasOption("uri")) {
+            String grakn_uri = arguments.getOptionValue("uri");
+            Configs.GRAKN_URI = grakn_uri;
+        }
 
         // use given keyspace string if exists, otherwise use yaml file `name` tag
         String keyspace = arguments.getOptionValue("keyspace", benchmarkConfiguration.getDefaultKeyspace());
@@ -249,13 +252,14 @@ public class BenchmarkManager {
         executionName = String.join(" ", Arrays.asList(dateString, benchmarkConfiguration.getName(), executionName)).trim();
 
 
+
         // no data generation means NEITHER schema load NOR data generate
         DataGenerator dataGenerator = benchmarkConfiguration.noDataGeneration() ?
                 null :
-                new DataGenerator(keyspace, GRAKN_URI, benchmarkConfiguration.getSchema());
+                new DataGenerator(keyspace, Configs.GRAKN_URI, benchmarkConfiguration.getSchema());
 
         QueryExecutor queryExecutor = new QueryExecutor(keyspace,
-                                            GRAKN_URI,
+                                            Configs.GRAKN_URI,
                                             executionName,
                                             benchmarkConfiguration.getQueries());
         BenchmarkManager manager = new BenchmarkManager(benchmarkConfiguration, dataGenerator, queryExecutor);

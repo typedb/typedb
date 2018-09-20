@@ -1,6 +1,7 @@
 import pandas as pd
 
 from ExecutionVisualiser.SpansData import SpansData
+from ExecutionVisualiser.SpansDataCollection import SpansDataCollection
 
 class RootSpansData(object):
 
@@ -28,13 +29,11 @@ class RootSpansData(object):
                 # retrieve spanId that is the parent from the duration data
                 batch_span_id = self._overview_data_ref.loc[concept_count, (query, "batchSpanId")]
                 # retrieve all spans with this as parent
-                query_spans = self._zipkin_ES_storage.get_spans_with_parent(batch_span_id)
+                query_spans = self._zipkin_ES_storage.get_spans_with_parent(batch_span_id, sorting={"tags.repetition": "asc"})
                 for query_span in query_spans:
                     # have to manually parse repetition into int since they're not sorted because ES isn't parsing longs correctly
                     repetition = int(query_span['tags']['repetition'])
                     self._root_spans_dataframe.loc[repetition, (query, concept_count)] = [query_span['duration'], query_span]
-
-
 
     def partition_for_query_and_concept_count(self, query, concept_count, partition_indices=[1]):
         """
@@ -42,18 +41,22 @@ class RootSpansData(object):
         Splits UP TO the next index
         """
 
-        spans_data_partitions = []
+        partition_names = []
+        partitions = []
         start_index = 0
         end_index = self._root_spans_dataframe.shape[0] # number of rows total
         partition_indices += [end_index] # edit a copy in place going to the end of the rows
         for index in partition_indices:
             partition = self._root_spans_dataframe.loc[start_index:index-1, (query, concept_count)]
-            spans_data_partitions.append(
+            root_spans_data_collection = SpansDataCollection(label="Root")
+            root_spans_data_collection.add_spans_data(
                 SpansData(
-                    name="Partition: row {0} to {1}".format(start_index, index),
+                    name="0".format(start_index, index),
                     dataframe=partition,
                     zipkin_ES_storage=self._zipkin_ES_storage
                 )
             )
+            partitions.append(root_spans_data_collection)
+            partition_names.append("Rows {0} - {1}".format(start_index, index))
             start_index = index
-        return spans_data_partitions
+        return partition_names, partitions
