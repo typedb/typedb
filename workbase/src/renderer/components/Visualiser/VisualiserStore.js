@@ -108,7 +108,6 @@ const watch = {
         query = VisualiserUtils.loadNeighbours(visNode, neighboursLimit);
         this.visFacade.updateNode({ id: nodeId, offset: (visNode.offset + neighboursLimit) });
       }
-      debugger;
       this.runQuery(query);
     });
   },
