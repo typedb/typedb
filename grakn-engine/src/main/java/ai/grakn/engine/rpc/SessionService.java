@@ -39,6 +39,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
+import brave.ScopedSpan;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
@@ -144,6 +145,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                             .newChild(receivedTraceContext)
                             .name("Server receive queue")
                             .start();
+                    queueSpan.tag("childNumber", "0");
 
                     submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
                 } else {
@@ -168,7 +170,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             queueSpan.finish(); // queue time has finished!
             // hop the span context across thread boundaries
             Tracer tracer = Tracing.currentTracer();
-            tracer.startScopedSpanWithParent("Server handle request", context);
+            ScopedSpan s = tracer.startScopedSpanWithParent("Server handle request", context);
+            s.tag("childNumber", "1");
             handleRequest(request);
         }
 

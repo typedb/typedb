@@ -70,6 +70,7 @@ public class GrpcClientInterceptor implements ClientInterceptor {
 
 
             Span currentClientSpan = tracer.nextSpan(); //initialize to pass compilation, then abandon it
+            int childMsgNumber = 0;
 
 
             @Override
@@ -119,6 +120,9 @@ public class GrpcClientInterceptor implements ClientInterceptor {
                     if (LOG.isDebugEnabled()) {
                         currentClientSpan.tag("sendMessage", message.toString());
                     }
+
+                    currentClientSpan.tag("childNumber", Integer.toString(childMsgNumber));
+                    childMsgNumber++;
 
                     // --- re-pack the message with the child's data ---
                     SessionProto.Transaction.Req.Builder builder = txReq.toBuilder();
