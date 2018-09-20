@@ -5,7 +5,7 @@ import logger from '@/../Logger';
 Vue.use(Toasted);
 
 const SUCCESS_DURATION = 4000;
-const INFO_DURATION = 50000;
+const INFO_DURATION = 5000;
 
 function registerNotifications() {
   Vue.prototype.$notifySuccess = function successFn(message) {

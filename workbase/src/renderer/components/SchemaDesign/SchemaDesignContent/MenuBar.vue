@@ -94,7 +94,7 @@
 </style>
 
 <script>
-import KeyspacesHandler from '../../shared/KeyspacesHandler/KeyspacesHandler.vue';
+import KeyspacesHandler from '../../shared/KeyspacesHandler.vue';
 
 export default {
   name: 'MenuBar',

@@ -1,5 +1,5 @@
 
-import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
+import DisplaySettings from './RightBar/SettingsTab/DisplaySettings';
 
 
 const DEFAULT_NODE_SHAPE = 'box';
@@ -61,7 +61,7 @@ function colourFromStorage(colour) {
 }
 
 function nodeColour(node) {
-  const colour = NodeSettings.getTypeColours(node.type);
+  const colour = DisplaySettings.getTypeColours(node.type);
   if (colour.length) return colourFromStorage(colour);
 
 
@@ -103,6 +103,8 @@ function nodeColour(node) {
         dimmedCol = DEFAULT_NODE_DIMMED;
       }
   }
+
+  DisplaySettings.toggleColourByType({ type: node.type, colourString: backgroundCol });
 
   return {
     background: backgroundCol,

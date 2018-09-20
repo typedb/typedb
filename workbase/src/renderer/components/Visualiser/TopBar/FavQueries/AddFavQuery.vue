@@ -34,7 +34,7 @@
         this.currentQueryName = val;
       },
       addFavQuery(event) {
-        event.stopPropagation();
+        if (event.stopPropagation) event.stopPropagation();
 
         const favQueryNames = this.favQueries.map(x => x.name);
 

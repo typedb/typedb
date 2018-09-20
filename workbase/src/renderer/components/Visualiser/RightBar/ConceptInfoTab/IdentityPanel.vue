@@ -1,7 +1,7 @@
 <template>
     <div class="panel-container">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showConceptInfoContent) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
+            <vue-icon :icon="(showConceptInfoContent) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Identity</h1>
         </div>
         <div v-show="showConceptInfoContent">

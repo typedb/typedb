@@ -16,14 +16,14 @@
                     <textarea id="graqlEditor" ref="graqlEditor" rows="3"></textarea>
 
                     <div v-if="showEditorTab" class="editor-tab">
-                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
 
 
                         <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
 
-                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="11" className="tab-icon"></vue-icon></div>
-                        <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="13" className="tab-icon"></vue-icon></div>
-                        <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="13" className="tab-icon"></vue-icon></div>
+                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon"></vue-icon></div>
+                        <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="12" className="tab-icon"></vue-icon></div>
+                        <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="12" className="tab-icon"></vue-icon></div>
 
                     </div>
                 </div>
@@ -229,7 +229,7 @@
     },
     watch: {
       currentQuery(query) {
-        if (query.length) this.showEditorTab = true; this.showStarToolTip = false; this.showEditorToolTip = false;
+        if (query.length) { this.showEditorTab = true; this.showStarToolTip = false; this.showEditorToolTip = false; } else this.showEditorTab = false;
 
 
         // We need this check because codeMirror reset the cursor position when calling getValue
@@ -258,8 +258,6 @@
         this.codeMirror.setOption('extraKeys', {
           Enter: this.runQuery,
           'Shift-Enter': 'newlineAndIndent',
-          'Shift-Backspace': this.clearGraph,
-          'Shift-Ctrl-Backspace': this.clearGraphAndPage,
           'Shift-Up': this.history.undo,
           'Shift-Down': this.history.redo,
         });
@@ -276,7 +274,7 @@
       runQuery(event) {
         if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
         else if (!this.currentQuery.length) {
-          event.stopPropagation(); // to prevent event propogation to graql editor tooltip
+          if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to graql editor tooltip
           this.showEditorToolTip = true;
         } else {
           this.showFavQueriesList = false;
@@ -313,7 +311,7 @@
         if (!this.currentKeyspace) {
           this.$emit('keyspace-not-selected');
         } else if (!this.favQueries.length) {
-          event.stopPropagation(); // to prevent event propogation to fav query tooltip
+          if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to fav query tooltip
           this.showEditorTab = true;
           this.showStarToolTip = true;
         } else {

@@ -5,7 +5,7 @@
 
         <ul id="keyspaces-list" class="keyspaces-list arrow_box z-depth-1" v-if="showKeyspaceList">
             <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
-            <li :id="ks" v-bind:class="(ks === currentKeyspace)? 'ks-key active' : 'ks-key'" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
+            <li :id="ks" v-bind:class="(ks === currentKeyspace)? 'ks-key active noselect' : 'ks-key noselect'" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
         </ul>
 </div>
 </template>
@@ -66,14 +66,11 @@
         cursor: pointer;
         padding: 5px;
         min-height: 22px;
-        border: 1px solid var(--gray-1);
 
     }
 
     .ks-key:hover {
-        /*background-color: var(--purple-4);*/
-        border: 1px solid var(--green-4);
-        /*color: var(--green-4);*/
+        background-color: var(--purple-4);
     }
 
 </style>
@@ -84,7 +81,7 @@ import * as React from 'react';
 import { Button } from '@blueprintjs/core';
 
 
-import { CURRENT_KEYSPACE_CHANGED } from '../StoresActions';
+import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
 
 export default {
   name: 'KeyspacesList',

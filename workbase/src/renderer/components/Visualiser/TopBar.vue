@@ -73,7 +73,7 @@
 </style>
 
 <script>
-    import KeyspacesHandler from '../shared/KeyspacesHandler/KeyspacesHandler.vue';
+    import KeyspacesHandler from '../shared/KeyspacesHandler.vue';
     import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
 
     export default {

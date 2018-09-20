@@ -1,7 +1,7 @@
 <template>
     <div class="panel-container noselect">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
+            <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Query Settings</h1>
         </div>
         <div v-show="showQuerySettings">

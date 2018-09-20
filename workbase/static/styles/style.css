@@ -60,9 +60,28 @@
 
 /* icon */
 
+.bp3-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vue-icon {
+  fill: var(--font-default);
+}
+
+span.bp3-icon::before {
+  display: none;
+}
+
+.right-bar-tab-icon {
+  fill: var(--font-default);
+}
+
 .tab-icon {
   cursor: pointer;
   padding: 1px;
+  fill: var(--font-default);
 }
 
 .tab-icon:focus {
