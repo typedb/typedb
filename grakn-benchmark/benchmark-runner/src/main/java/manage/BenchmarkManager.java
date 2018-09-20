@@ -48,7 +48,6 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.FileEntity;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -57,6 +56,9 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 
 
 /**
@@ -156,8 +158,13 @@ public class BenchmarkManager {
         restClient.close();
     }
 
+    public static void initIgniteServer() throws IgniteException {
+        Ignition.start();
+    }
+
     public static void main(String[] args) throws IOException {
 
+        initIgniteServer();
         initElasticSearch();
 
         Option configFileOption = Option.builder("c")

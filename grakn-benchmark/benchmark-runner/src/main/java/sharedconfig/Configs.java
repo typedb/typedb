@@ -21,6 +21,9 @@ package sharedconfig;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ *
+ */
 public class Configs {
 
     public static String GRAKN_URI = "localhost:48555";
@@ -29,6 +32,9 @@ public class Configs {
     public static final Path CONF_PATH = GRAKN_PATH.resolve(Paths.get("grakn-benchmark", "benchmark-runner", "conf"));
 
 
+    /**
+     *
+     */
     public class ElasticSearchConfig {
 
         public static final String INDEX_TEMPLATE_NAME = "grakn-benchmark-index-template";

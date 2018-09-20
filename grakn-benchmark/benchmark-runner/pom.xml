@@ -27,6 +27,8 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.6.2</version>
         </dependency>
+
+        <!-- Ignite -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
@@ -42,6 +44,7 @@
             <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
         </dependency>
+
 
         <!-- mockito -->
         <dependency>
