@@ -1,5 +1,5 @@
 <template>
-    <div class="error-container z-depth-3">
+    <div class="error-container z-depth-3 noselect">
         <div class="column">
             <div class="header">ERROR</div>
             <div>{{errorMsg}}</div>
@@ -88,7 +88,7 @@
         // Remove it as its not needed anymore
         document.body.removeChild(dummyInput);
 
-        this.$notifyInfo('Error message copied', 'bottom-right');
+        this.$notifyInfo('Error message copied.');
       },
     },
   };

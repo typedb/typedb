@@ -1,7 +1,7 @@
 import Grakn from 'grakn';
 import Vue from 'vue';
 import logger from '@/../Logger';
-import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
+import CanvasStoreMixin from '../shared/CanvasStoreMixin';
 import VisualiserUtils from './VisualiserUtils';
 import DisplaySettings from './RightBar/SettingsTab/DisplaySettings';
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
@@ -108,9 +108,8 @@ const watch = {
       } else { // double click => load neighbours
         if (!visNode.offset) visNode.offset = 0;
         query = VisualiserUtils.loadNeighbours(visNode, neighboursLimit);
-        this.visFacade.updateNode({ id: nodeId, offset: visNode.offset + neighboursLimit });
+        this.visFacade.updateNode({ id: nodeId, offset: (visNode.offset + neighboursLimit) });
       }
-      this.setCurrentQuery(query);
       this.runQuery(query);
     });
   },
@@ -135,7 +134,7 @@ const methods = {
       const result = (await (await graknTx.query(query)).collect());
 
       if (!result.length) {
-        this.$notifyInfo('No results were found for your query!', 'bottom-right');
+        this.$notifyInfo('No results were found for your query!');
         this.loadingQuery = false;
         return null;
       }

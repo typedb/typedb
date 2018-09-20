@@ -1,22 +1,22 @@
 <template>
-  <transition name="slide-fade" appear> 
-    <div class="design-wrapper">  
-        <menu-bar 
-            :localStore="localStore" 
+  <transition name="slide-fade" appear>
+    <div class="design-wrapper">
+        <menu-bar
+            :localStore="localStore"
             @toggle-new-type-panel="toggleNewTypePanel"
             @toggle-attributes-panel="toggleAttributesPanel"
             @toggle-roles-panel="toggleRolesPanel"
         ></menu-bar>
         <div class="design-content">
                 <new-type-panel :localStore="localStore" :showPanel="showNewTypePanel"></new-type-panel>
-                <manage-schema-concepts 
-                    :instances="localStore.metaTypeInstances['roles']" 
+                <manage-schema-concepts
+                    :instances="localStore.metaTypeInstances['roles']"
                     :showPanel="showRolesPanel"
                     concept="role"
                     @delete-schema-concept="deleteSchemaConcept"
                 ></manage-schema-concepts>
-                <manage-schema-concepts 
-                    :instances="localStore.metaTypeInstances['attributes']" 
+                <manage-schema-concepts
+                    :instances="localStore.metaTypeInstances['attributes']"
                     :showPanel="showAttributesPanel"
                     concept="attribute"
                     @delete-schema-concept="deleteSchemaConcept"
@@ -72,7 +72,7 @@ import MenuBar from './MenuBar.vue';
 import NewTypePanel from '../NewTypePanel/NewTypePanel.vue';
 import ManageSchemaConcepts from '../ManageSchemaConcepts';
 import ContextMenu from './ContextMenu.vue';
-import GraphCanvas from '../../shared/GraphCanvas/GraphCanvas.vue';
+import GraphCanvas from '../../shared/GraphCanvas.vue';
 
 import localStore from '../SchemaDesignStore';
 import { DELETE_SCHEMA_CONCEPT } from '../../shared/StoresActions';

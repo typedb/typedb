@@ -1,5 +1,5 @@
 <template>
-    <div class="canvas-tool-tip" v-if="currentKeyspace">
+    <div class="canvas-tool-tip noselect" v-if="currentKeyspace">
         <div class="canvas-data">
             <div id="nodes"> nodes: {{nodes}}</div>
             <div id="edges"> edges: {{edges}}</div>

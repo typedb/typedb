@@ -27,7 +27,7 @@
 </style>
 
 <script>
-import { INITIALISE_VISUALISER } from '../../shared/StoresActions';
+import { INITIALISE_VISUALISER } from './StoresActions';
 
 export default {
   name: 'WorkbaseCanvas',

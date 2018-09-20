@@ -25,7 +25,7 @@ function buildApplicationMenu() {
   const menuTemplate = [{
     label: 'Application',
     submenu: [
-      { label: 'About Application', selector: 'orderFrontStandardAboutPanel:' },
+      { label: 'About Grakn Workbase', selector: 'orderFrontStandardAboutPanel:' },
       { type: 'separator' },
       { label: 'Quit', accelerator: 'Command+Q', click() { app.quit(); } },
     ] }, {
@@ -56,7 +56,7 @@ function createWindow() {
     titleBarStyle: 'hidden',
     darkTheme: true,
     minWidth: 995,
-    minHeight: 600,
+    minHeight: 610,
     // Set webSecurity to false in development mode to avoid AJAX calls blocked due to CORS (due to WebapckDevServer).
     webPreferences: { webSecurity: isProd },
   });

@@ -5,7 +5,7 @@
 
         <ul id="keyspaces-list" class="keyspaces-list arrow_box z-depth-1" v-if="showKeyspaceList">
             <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
-            <li :id="ks" v-bind:class="(ks === currentKeyspace)? 'ks-key active' : 'ks-key'" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
+            <li :id="ks" v-bind:class="(ks === currentKeyspace)? 'ks-key active noselect' : 'ks-key noselect'" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
         </ul>
 </div>
 </template>
@@ -43,6 +43,7 @@
 
 
 
+
 .keyspaces-list {
     position: absolute;
     top: 100%;
@@ -52,6 +53,8 @@
     background-color: #282828;
     z-index: 1;
     min-width: 100px;
+    max-width:  130px;
+    word-break: break-word;
     background-color: var(--gray-1);
     border: var(--container-darkest-border);
 }
@@ -62,7 +65,8 @@
         position: relative;
         cursor: pointer;
         padding: 5px;
-        height: 22px;
+        min-height: 22px;
+
     }
 
     .ks-key:hover {
@@ -77,7 +81,7 @@ import * as React from 'react';
 import { Button } from '@blueprintjs/core';
 
 
-import { CURRENT_KEYSPACE_CHANGED } from '../StoresActions';
+import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
 
 export default {
   name: 'KeyspacesList',
@@ -88,6 +92,9 @@ export default {
       keyBtn: null,
       showKeyspaceList: false,
       keyspaceBtn: null,
+      clickEvent: () => {
+        this.showKeyspaceList = false;
+      },
     };
   },
   computed: {
@@ -107,13 +114,20 @@ export default {
     },
     isGraknRunning(val) {
       if (!val) {
-        this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in Grakn URI are correct', 'bottom-right');
+        this.$notifyError('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
       }
     },
     currentKeyspace() {
       this.renderButton();
     },
     showKeyspaceTooltip() {
+      this.renderButton();
+    },
+    showKeyspaceList(show) {
+      // Close keyspaces list when user clicks anywhere else
+      if (show) window.addEventListener('click', this.clickEvent);
+      else window.removeEventListener('click', this.clickEvent);
+
       this.renderButton();
     },
   },
@@ -124,11 +138,22 @@ export default {
       this.showKeyspaceList = false;
     },
     renderButton() {
+      let text;
+      if (this.currentKeyspace !== null) {
+        if (this.currentKeyspace.length > 15) { // truncate long keyspace names
+          text = `${this.currentKeyspace.substring(0, 15)}...`;
+        } else {
+          text = this.currentKeyspace;
+        }
+      } else {
+        text = 'keyspace';
+      }
+
       this.keyspaceBtn = React.createElement(Button, {
-        text: (this.currentKeyspace !== null) ? this.currentKeyspace : 'keyspace',
+        text,
         rightIcon: 'database',
         intent: 'primary',
-        className: 'vue-button',
+        className: (this.showKeyspaceList) ? 'vue-button keyspace-btn' : 'vue-button',
       });
     },
     toggleKeyspaceList() {
