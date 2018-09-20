@@ -86,17 +86,15 @@ Tracer tracer = Tracing.currentTracer();
 Then add a child span
 ```
 Span s = tracer.currentSpan();
-ScopedSpan childSpan; // A ScopedSpan places the Span into the thread local storage for access in this same way elsewhere
+ScopedSpan childSpan = null; // A ScopedSpan places the Span into the thread local storage for access in this same way elsewhere
 if (s != null) {
     childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
-} else {
-    LOG.warn("Creating child span without a parent, missing a context (are we on the same thread as the consumer from the gRPC queue?)");
-    childSpan = tracer.startScopedSpan("planForConjunction");
-}
-
+} 
 ... existing code ...
 
-childSpan.finish(); // will automatically use the Tracer's configuration to report to Zipkin and restores previous ScopedSpan (TODO double check restore works properly)
+if (childSpan != null) {
+    childSpan.finish(); // will automatically use the Tracer's configuration to report to Zipkin and restores previous ScopedSpan (TODO double check restore works properly)
+}
 ```
 
 

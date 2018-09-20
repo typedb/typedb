@@ -82,6 +82,7 @@ class BreakdownGraph(object):
                 current_child = self.levels[level_number + 1]
                 currently_expanded_spans_data = current_child.descends_from
             except IndexError:
+                # if there is not level_number + 1
                 currently_expanded_spans_data = 0
             # get the parent SpansDataCollection
             parent_spans_data_collection = self.levels[level_number]
