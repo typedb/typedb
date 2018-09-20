@@ -52,7 +52,7 @@ import RightBar from './RightBar.vue';
 import BottomBar from './BottomBar.vue';
 
 import VisualiserStore from './VisualiserStore';
-import GraphCanvas from '../shared/GraphCanvas/GraphCanvas.vue';
+import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
 import CanvasToolTip from './CanvasToolTip';
 

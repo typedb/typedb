@@ -9,7 +9,7 @@ import {
   CURRENT_KEYSPACE_CHANGED,
   CANVAS_RESET,
   LOAD_METATYPE_INSTANCES,
-} from '../StoresActions';
+} from './StoresActions';
 
 const actions = {
   async [CURRENT_KEYSPACE_CHANGED](keyspace) {

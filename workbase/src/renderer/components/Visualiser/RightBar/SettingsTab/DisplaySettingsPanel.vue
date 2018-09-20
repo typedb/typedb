@@ -1,7 +1,7 @@
 <template>
-    <div class="panel-container">
+    <div class="panel-container noselect">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showConceptDisplayContent && attributesLoaded) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
+            <vue-icon :icon="(showConceptDisplayContent && attributesLoaded) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Display Settings</h1>
         </div>
         <div v-show="showConceptDisplayContent">
@@ -55,7 +55,7 @@
   import { Chrome } from 'vue-color';
 
   import { TOGGLE_COLOUR, TOGGLE_LABEL } from '@/components/shared/StoresActions';
-  import NodeSettings from './DisplaySettings';
+  import DisplaySettings from './DisplaySettings';
 
 
   export default {
@@ -94,7 +94,7 @@
     },
     watch: {
       showConceptDisplayContent(open) {
-        if (open) {
+        if (open && this.currentKeyspace) {
           this.attributesLoaded = false;
           this.loadMetaTypes();
           this.loadAttributeTypes();
@@ -124,7 +124,7 @@
 
         this.nodeAttributes = await Promise.all((await (await type.attributes()).collect()).map(type => type.label()));
         this.nodeAttributes.sort();
-        this.currentTypeSavedAttributes = NodeSettings.getTypeLabels(this.currentType);
+        this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
 
         graknTx.close();
         this.attributesLoaded = true;
@@ -138,13 +138,13 @@
         } else { this.showConceptDisplayContent = false; }
       },
       loadColour() {
-        this.colour.hex = (NodeSettings.getTypeColours(this.currentType).length) ? NodeSettings.getTypeColours(this.currentType) : 'default';
+        this.colour.hex = (DisplaySettings.getTypeColours(this.currentType).length) ? DisplaySettings.getTypeColours(this.currentType) : '#563891';
       },
       toggleAttributeToLabel(attribute) {
         // Persist changes into localstorage for current type
-        NodeSettings.toggleLabelByType({ type: this.currentType, attribute });
+        DisplaySettings.toggleLabelByType({ type: this.currentType, attribute });
         this.localStore.dispatch(TOGGLE_LABEL, this.currentType);
-        this.currentTypeSavedAttributes = NodeSettings.getTypeLabels(this.currentType);
+        this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
       },
       toggleContent() {
         this.showConceptDisplayContent = !this.showConceptDisplayContent;
@@ -157,9 +157,9 @@
         this.currentType = type;
       },
       setTypeColour(col) {
-        if (NodeSettings.getTypeColours(this.currentType) !== col) {
+        if (DisplaySettings.getTypeColours(this.currentType) !== col) {
           if (!col) this.colour.hex = 'default';
-          NodeSettings.toggleColourByType({ type: this.currentType, colourString: col });
+          DisplaySettings.toggleColourByType({ type: this.currentType, colourString: col });
           this.localStore.dispatch(TOGGLE_COLOUR, this.currentType);
         }
       },

@@ -56,7 +56,7 @@ function createWindow() {
     titleBarStyle: 'hidden',
     darkTheme: true,
     minWidth: 995,
-    minHeight: 600,
+    minHeight: 610,
     // Set webSecurity to false in development mode to avoid AJAX calls blocked due to CORS (due to WebapckDevServer).
     webPreferences: { webSecurity: isProd },
   });

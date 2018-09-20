@@ -1,6 +1,6 @@
 <template>
     <div class="settings-tab-content">
-        <div class="tab-header">Settings</div>
+        <div class="tab-header noselect">Settings</div>
         <query-settings-panel :localStore="localStore"></query-settings-panel>
         <concept-display-panel :localStore="localStore"></concept-display-panel>
         <connection-settings-panel :localStore="localStore"></connection-settings-panel>
