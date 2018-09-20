@@ -16,7 +16,7 @@
     width: 100%;
     color: #f8f8f2;
     text-shadow: 0 1px rgba(0, 0, 0, 0.3);
-    font-family: 'Lekton' !important;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
     text-align: left;
     white-space: pre;
     word-spacing: normal;
