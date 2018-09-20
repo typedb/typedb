@@ -25,7 +25,7 @@ function buildApplicationMenu() {
   const menuTemplate = [{
     label: 'Application',
     submenu: [
-      { label: 'About Application', selector: 'orderFrontStandardAboutPanel:' },
+      { label: 'About Grakn Workbase', selector: 'orderFrontStandardAboutPanel:' },
       { type: 'separator' },
       { label: 'Quit', accelerator: 'Command+Q', click() { app.quit(); } },
     ] }, {
