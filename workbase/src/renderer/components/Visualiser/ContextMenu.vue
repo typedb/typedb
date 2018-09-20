@@ -71,8 +71,7 @@
       },
       async verifyEnableExplain() {
         if (this.selectedNodes) {
-          const schemaConcept = await this.localStore.graknTx.getConcept(this.selectedNodes[0].id);
-          if (!schemaConcept.isType() && await schemaConcept.isInferred()) {
+          if (this.selectedNodes[0].isInferred) {
             return true;
           }
         }

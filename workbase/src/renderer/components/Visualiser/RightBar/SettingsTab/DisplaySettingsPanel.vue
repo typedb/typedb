@@ -53,8 +53,6 @@
 
 <script>
   import { Chrome } from 'vue-color';
-  import * as React from 'react';
-  import { Button } from '@blueprintjs/core';
 
   import { TOGGLE_COLOUR, TOGGLE_LABEL } from '@/components/shared/StoresActions';
   import NodeSettings from './DisplaySettings';
@@ -70,7 +68,6 @@
         showTypeList: false,
         types: [],
         currentType: null,
-        typesBtn: null,
         nodeAttributes: [],
         currentTypeSavedAttributes: [],
         attributesLoaded: false,
@@ -78,9 +75,6 @@
           hex: '#563891',
         },
       };
-    },
-    created() {
-      this.renderButton();
     },
     computed: {
       metaTypeInstances() {
@@ -99,23 +93,21 @@
       },
     },
     watch: {
-      async showConceptDisplayContent(open) {
+      showConceptDisplayContent(open) {
         if (open) {
+          this.attributesLoaded = false;
           this.loadMetaTypes();
-          await this.loadAttributeTypes();
+          this.loadAttributeTypes();
           this.loadColour();
         }
       },
       currentType() {
-        this.renderButton();
+        this.attributesLoaded = false;
         this.loadAttributeTypes();
         this.loadColour();
       },
-      async currentKeyspace() {
-        this.loadMetaTypes();
-        this.renderButton();
-        await this.loadAttributeTypes();
-        this.loadColour();
+      currentKeyspace() {
+        this.showConceptDisplayContent = false;
       },
       node(node) {
         if (node) this.currentType = node.type;
@@ -126,16 +118,21 @@
     },
     methods: {
       async loadAttributeTypes() {
-        const type = await this.localStore.graknTx.getSchemaConcept(this.currentType);
+        const graknTx = await this.localStore.openGraknTx();
+
+        const type = await graknTx.getSchemaConcept(this.currentType);
 
         this.nodeAttributes = await Promise.all((await (await type.attributes()).collect()).map(type => type.label()));
         this.nodeAttributes.sort();
         this.currentTypeSavedAttributes = NodeSettings.getTypeLabels(this.currentType);
+
+        graknTx.close();
         this.attributesLoaded = true;
       },
       loadMetaTypes() {
-        if (this.metaTypeInstances.entities || this.metaTypeInstances.attributes || this.metaTypeInstances.relationships) {
-          this.types = this.metaTypeInstances.entities.concat(this.metaTypeInstances.attributes, this.metaTypeInstances.relationships);
+        if (this.metaTypeInstances.entities || this.metaTypeInstances.attributes) {
+          this.types = this.metaTypeInstances.entities.concat(this.metaTypeInstances.attributes);
+
           this.currentType = this.types[0];
           this.showConceptDisplayContent = true;
         } else { this.showConceptDisplayContent = false; }
@@ -158,14 +155,6 @@
       selectType(type) {
         this.showTypeList = false;
         this.currentType = type;
-      },
-      renderButton() {
-        this.typesBtn = React.createElement(Button, {
-          text: this.currentType,
-          className: 'vue-button attribute-btn',
-          key: this.currentType,
-          rightIcon: 'caret-down',
-        });
       },
       setTypeColour(col) {
         if (NodeSettings.getTypeColours(this.currentType) !== col) {
