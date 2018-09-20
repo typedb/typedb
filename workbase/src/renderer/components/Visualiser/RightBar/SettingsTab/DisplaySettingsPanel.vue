@@ -1,5 +1,5 @@
 <template>
-    <div class="panel-container">
+    <div class="panel-container noselect">
         <div @click="toggleContent" class="panel-header">
             <vue-icon :icon="(showConceptDisplayContent && attributesLoaded) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
             <h1>Display Settings</h1>
@@ -94,7 +94,7 @@
     },
     watch: {
       showConceptDisplayContent(open) {
-        if (open) {
+        if (open && this.currentKeyspace) {
           this.attributesLoaded = false;
           this.loadMetaTypes();
           this.loadAttributeTypes();

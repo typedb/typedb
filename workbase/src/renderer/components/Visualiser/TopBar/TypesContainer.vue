@@ -1,5 +1,5 @@
 <template>
-        <div class="types-container z-depth-3">
+        <div class="types-container z-depth-3 noselect">
             <div class="column">
                 <vue-tabs class="tabs" :tabs="tabs" v-on:tab-selected="toggleTab"></vue-tabs>
                 <div class="row">
@@ -21,7 +21,7 @@
 <style scoped>
 
     .editor-tab {
-        max-height: 123px;
+        max-height: 125px;
         width: 13px;
         flex-direction: column;
         display: flex;
@@ -32,7 +32,7 @@
 
     .tab-list {
         overflow: auto;
-        height: 70px;
+        height: 72px;
         display: flex;
         flex-wrap: wrap;
         flex-direction: row;

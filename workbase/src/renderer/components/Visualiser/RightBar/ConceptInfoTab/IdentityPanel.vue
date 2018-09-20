@@ -5,10 +5,10 @@
             <h1>Identity</h1>
         </div>
         <div v-show="showConceptInfoContent">
-            <div class="content" v-if="!currentKeyspace">
+            <div class="content noselect" v-if="!currentKeyspace">
                 Please select a keyspace
             </div>
-            <div class="content" v-else-if="!(nodes && nodes.length === 1)">
+            <div class="content noselect" v-else-if="!(nodes && nodes.length === 1)">
                 Please select a node
             </div>
             <div class="content" v-else>

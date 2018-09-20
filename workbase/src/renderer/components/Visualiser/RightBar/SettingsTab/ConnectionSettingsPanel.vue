@@ -1,5 +1,5 @@
 <template>
-    <div class="panel-container">
+    <div class="panel-container noselect">
         <div @click="toggleContent" class="panel-header">
             <vue-icon :icon="(showConnectionSettings) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
             <h1>Connection Settings</h1>

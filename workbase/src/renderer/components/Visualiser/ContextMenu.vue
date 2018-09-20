@@ -66,7 +66,7 @@
         contextMenu.style.top = `${mouseEvent.pointer.DOM.y}px`;
       },
       explainNode() {
-        this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'explain concept'); });
+        this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
         this.showContextMenu = false;
       },
       async verifyEnableExplain() {

@@ -5,7 +5,7 @@
             <h1>Attributes</h1>
         </div>
         <div v-show="showAttributesPanel">
-            <div class="content" v-if="msg">
+            <div class="content noselect" v-if="msg">
                 {{msg}}
             </div>
             <div class="content" v-else>

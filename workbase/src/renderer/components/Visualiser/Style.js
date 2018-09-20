@@ -196,6 +196,19 @@ function computeShortestPathEdgeStyle() {
       hover: 'rgba(166, 226, 46, 1)',
     },
     dashes: true,
+    font: {
+      color: '#00eca2',
+      background: '#1B1B1B',
+      strokeWidth: 0,
+    },
+    hoverWidth: 2,
+    selectionWidth: 2,
+    arrowStrikethrough: false,
+    arrows: { to: { enabled: false } },
+    smooth: {
+      enabled: false,
+      forceDirection: 'none',
+    },
   };
 }
 

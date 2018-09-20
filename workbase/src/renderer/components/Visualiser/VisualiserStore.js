@@ -108,7 +108,6 @@ const watch = {
         query = VisualiserUtils.loadNeighbours(visNode, neighboursLimit);
         this.visFacade.updateNode({ id: nodeId, offset: visNode.offset + neighboursLimit });
       }
-      this.setCurrentQuery(query);
       this.runQuery(query);
     });
   },
@@ -133,7 +132,7 @@ const methods = {
       const result = (await (await graknTx.query(query)).collect());
 
       if (!result.length) {
-        this.$notifyInfo('No results were found for your query!', 'bottom-right');
+        this.$notifyInfo('No results were found for your query!');
         this.loadingQuery = false;
         return null;
       }

@@ -19,7 +19,7 @@
 
   export default {
     name: 'AddFavQuery',
-    props: ['currentQuery', 'currentKeyspace', 'showAddFavQueryToolTip'],
+    props: ['currentQuery', 'currentKeyspace', 'showAddFavQueryToolTip', 'favQueries'],
     data() {
       return {
         currentQueryName: '',
@@ -36,8 +36,14 @@
       addFavQuery(event) {
         event.stopPropagation();
 
-        if (this.currentQueryName === '') {
+        const favQueryNames = this.favQueries.map(x => x.name);
+
+        if (favQueryNames.includes(this.currentQueryName)) {
+          this.$notifyInfo('Query name already saved. Please choose a different name.');
+        } else if (this.currentQueryName === '') {
           this.$emit('toggle-fav-query-tooltip', true);
+        } else if (!this.currentQuery.length) {
+          this.$notifyInfo('Please type in a query.');
         } else {
           this.$emit('close-add-query-panel');
 
@@ -48,7 +54,7 @@
           );
           this.$emit('refresh-queries');
           this.currentQueryName = '';
-          this.$notifyInfo('New query saved!', 'bottom-right');
+          this.$notifyInfo('New query saved!');
         }
       },
       renderQueryNameInput() {

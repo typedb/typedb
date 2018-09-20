@@ -33,6 +33,7 @@
                     v-if="showAddFavQuery"
                     :currentQuery="currentQuery"
                     :currentKeyspace="currentKeyspace"
+                    :favQueries="favQueries"
                     :showAddFavQueryToolTip="showAddFavQueryToolTip"
                     v-on:close-add-query-panel="toggleAddFavQuery"
                     v-on:toggle-fav-query-tooltip="toggleFavQueryTooltip"

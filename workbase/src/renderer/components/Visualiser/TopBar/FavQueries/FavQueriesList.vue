@@ -162,7 +162,7 @@
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
         this.$emit('refresh-queries');
         this.codeMirror[index].toTextArea(); // Remove codemirror instance
-        this.$notifyInfo(`Query ${queryName} has been deleted from favourite queries.`, 'bottom-right');
+        this.$notifyInfo(`Query ${queryName} has been deleted from saved queries.`);
       },
       renderQueries() {
         const savedQueries = this.$refs.favQuery;
@@ -189,6 +189,7 @@
         this.$emit('refresh-queries');
         this.isEditable = null;
         this.codeMirror[index].setOption('readOnly', 'nocursor');
+        this.$notifyInfo(`Saved query ${queryName} has been updated.`);
       },
     },
   };
