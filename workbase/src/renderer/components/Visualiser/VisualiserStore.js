@@ -188,6 +188,9 @@ const methods = {
     }
   },
   async loadNeighbours(visNode, neighboursLimit) {
+    const saveloadRolePlayersState = QuerySettings.getRolePlayersStatus();
+
+    QuerySettings.setRolePlayersStatus(true);
     const query = VisualiserUtils.getNeighboursQuery(visNode, neighboursLimit);
     this.loadingQuery = true;
     this.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + neighboursLimit) });
@@ -245,6 +248,7 @@ const methods = {
     }
     this.visFacade.addToCanvas({ nodes: data.nodes, edges });
     this.updateCanvasData();
+    QuerySettings.setRolePlayersStatus(saveloadRolePlayersState);
   },
 
   // getters
