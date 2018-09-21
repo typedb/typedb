@@ -37,7 +37,7 @@
     props: ['localStore'],
     data() {
       return {
-        showQuerySettings: false,
+        showQuerySettings: true,
       };
     },
     computed: {

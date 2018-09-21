@@ -107,7 +107,7 @@
         this.loadColour();
       },
       currentKeyspace() {
-        this.showConceptDisplayContent = false;
+        this.showConceptDisplayContent = true;
       },
       node(node) {
         if (node) this.currentType = node.type;
@@ -118,6 +118,7 @@
     },
     methods: {
       async loadAttributeTypes() {
+        if (!this.currentType) return;
         const graknTx = await this.localStore.openGraknTx();
 
         const type = await graknTx.getSchemaConcept(this.currentType);
