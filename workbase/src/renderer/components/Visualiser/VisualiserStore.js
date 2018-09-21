@@ -100,17 +100,11 @@ const watch = {
       const neighboursLimit = QuerySettings.getNeighboursLimit();
       const visNode = this.visFacade.getNode(nodeId);
 
-      let query;
       if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
-        if (!visNode.attrOffset) visNode.attrOffset = 0;
-        query = `match $x id "${nodeId}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get;`;
-        this.visFacade.updateNode({ id: nodeId, attrOffset: visNode.attrOffset + neighboursLimit });
+        this.loadAttributes(visNode, neighboursLimit);
       } else { // double click => load neighbours
-        if (!visNode.offset) visNode.offset = 0;
-        query = VisualiserUtils.loadNeighbours(visNode, neighboursLimit);
-        this.visFacade.updateNode({ id: nodeId, offset: (visNode.offset + neighboursLimit) });
+        this.loadNeighbours(visNode, neighboursLimit);
       }
-      this.runQuery(query);
     });
   },
   currentKeyspace(newKs, oldKs) {
@@ -169,11 +163,55 @@ const methods = {
       throw e;
     }
   },
-  async openGraknTx() {
-    return this.graknSession.transaction(Grakn.txType.WRITE);
+  async loadAttributes(visNode, neighboursLimit) {
+    const query = `match $x id "${visNode.id}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get $y;`;
+    this.visFacade.updateNode({ id: visNode.id, attrOffset: visNode.attrOffset + neighboursLimit });
+
+    const data = await this.runQuery(query);
+
+    if (data) { // when attributes are fount, construct edges and add to graph
+      const edges = data.nodes.map(attr => ({ from: visNode.id, to: attr.id, label: 'has' }));
+
+      this.visFacade.addToCanvas({ nodes: data.nodes, edges });
+      this.updateCanvasData();
+    }
+  },
+  async loadNeighbours(visNode, neighboursLimit) {
+    const query = VisualiserUtils.getNeighboursQuery(visNode, neighboursLimit);
+    this.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + neighboursLimit) });
+    const data = await this.runQuery(query);
+
+    if (data) { // when neighbours are found construct edges and add to graph
+      let edges = [];
+
+      if (visNode.baseType === 'ATTRIBUTE') {
+        edges = data.nodes.map(owner => ({ from: owner.id, to: visNode.id, label: 'has' }));
+      } else if (visNode.baseType === 'RELATIONSHIP') {
+        const roleplayersIds = data.nodes.map(x => x.id);
+        const graknTx = await this.openGraknTx();
+        const relationshipConcept = await this.getNode(visNode.id, graknTx);
+        const roleplayers = Array.from((await relationshipConcept.rolePlayersMap()).entries());
+
+
+        await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
+          const roleLabel = await role.label();
+          Array.from(setOfThings.values()).forEach((thing) => {
+            if (roleplayersIds.includes(thing.id)) {
+              edges.push({ from: visNode.id, to: thing.id, label: roleLabel });
+            }
+          });
+        }));
+        graknTx.close();
+      }
+      this.visFacade.addToCanvas({ nodes: data.nodes, edges });
+      this.updateCanvasData();
+    }
   },
 
   // getters
+  async openGraknTx() {
+    return this.graknSession.transaction(Grakn.txType.WRITE);
+  },
   getMetaTypeInstances() {
     return this.metaTypeInstances;
   },

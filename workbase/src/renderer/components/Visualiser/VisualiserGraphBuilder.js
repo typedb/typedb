@@ -121,6 +121,8 @@ async function prepareNodes(concepts) {
       default:
         break;
     }
+    concept.offset = 0;
+    concept.attrOffset = 0;
     nodes.push(concept);
   }));
 
@@ -154,7 +156,8 @@ async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
         default:
           throw new Error(`Unrecognised baseType of thing: ${thing.baseType}`);
       }
-      if (thing.offset) thing.offset += 1; else thing.offset = 1;
+      thing.offset = 0;
+      thing.attrOffset = 0;
 
       nodes.push(thing);
       edges.push({ from: relationship.id, to: thing.id, label: roleLabel });
@@ -211,11 +214,6 @@ async function buildFromConceptMap(result) {
   if (QuerySettings.getRolePlayersStatus()) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
     const roleplayers = await relationshipsRolePlayers(relationships, true, QuerySettings.getNeighboursLimit());
-
-    relationships.map((rel) => {
-      rel.offset += QuerySettings.getNeighboursLimit();
-      return rel;
-    });
 
     nodes.push(...roleplayers.nodes);
     edges.push(...roleplayers.edges);
