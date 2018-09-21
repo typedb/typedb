@@ -156,7 +156,7 @@ async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
         default:
           throw new Error(`Unrecognised baseType of thing: ${thing.baseType}`);
       }
-      thing.offset = 1;
+      thing.offset = 0;
       thing.attrOffset = 0;
 
       nodes.push(thing);
@@ -214,11 +214,6 @@ async function buildFromConceptMap(result) {
   if (QuerySettings.getRolePlayersStatus()) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
     const roleplayers = await relationshipsRolePlayers(relationships, true, QuerySettings.getNeighboursLimit());
-
-    relationships.map((rel) => {
-      rel.offset += QuerySettings.getNeighboursLimit();
-      return rel;
-    });
 
     nodes.push(...roleplayers.nodes);
     edges.push(...roleplayers.edges);
