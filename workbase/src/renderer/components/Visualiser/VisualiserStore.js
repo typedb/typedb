@@ -195,7 +195,7 @@ const methods = {
     const graknTx = await this.openGraknTx();
     const result = (await (await graknTx.query(query)).collect());
     if (!result.length) {
-      this.$notifyInfo('No results were found for your query!');
+      // this.$notifyInfo('No results were found for your query!');
       return;
     }
 
@@ -214,6 +214,11 @@ const methods = {
     this.visFacade.addToCanvas(data);
     this.visFacade.fitGraphToWindow();
     this.updateCanvasData();
+
+    const nodesWithAttribtues = await VisualiserUtils.computeAttributes(data.nodes);
+
+    this.visFacade.updateNode(nodesWithAttribtues);
+
     this.loadingQuery = false;
 
     // when neighbours are found construct edges and add to graph
