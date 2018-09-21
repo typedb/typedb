@@ -247,9 +247,36 @@ async function buildFromConceptList(path, pathNodes) {
   return data;
 }
 
+async function filterMaps(result) { // Filter out ConceptMaps that contains implicit relationships (used by loadNeighbours method)
+  const r = [];
+
+  await Promise.all(result.map(async (x) => {
+    const concepts = Array.from(x.map().values());
+
+    let containsImplicit = false;
+
+    for (const y of concepts) {
+      if (y.isThing() && !containsImplicit) {
+      // eslint-disable-next-line no-await-in-loop
+        containsImplicit = (await (await y.type()).isImplicit());
+      } else if (!containsImplicit) {
+      // eslint-disable-next-line no-await-in-loop
+        containsImplicit = (await y.isImplicit());
+      }
+    }
+    if (!containsImplicit) {
+      r.push(x);
+    }
+  }));
+  result.filter(l => l);
+
+  return r;
+}
+
 export default {
   buildFromConceptMap,
   buildFromConceptList,
   prepareNodes,
   relationshipsRolePlayers,
+  filterMaps,
 };

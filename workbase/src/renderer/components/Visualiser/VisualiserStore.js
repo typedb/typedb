@@ -173,6 +173,7 @@ const methods = {
       throw e;
     }
   },
+
   async loadAttributes(visNode, neighboursLimit) {
     const query = `match $x id "${visNode.id}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get $y;`;
     this.visFacade.updateNode({ id: visNode.id, attrOffset: visNode.attrOffset + neighboursLimit });
@@ -188,34 +189,57 @@ const methods = {
   },
   async loadNeighbours(visNode, neighboursLimit) {
     const query = VisualiserUtils.getNeighboursQuery(visNode, neighboursLimit);
+    this.loadingQuery = true;
     this.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + neighboursLimit) });
-    const data = await this.runQuery(query);
 
-    if (data) { // when neighbours are found construct edges and add to graph
-      let edges = [];
-
-      if (visNode.baseType === 'ATTRIBUTE') {
-        edges = data.nodes.map(owner => ({ from: owner.id, to: visNode.id, label: 'has' }));
-      } else if (visNode.baseType === 'RELATIONSHIP') {
-        const roleplayersIds = data.nodes.map(x => x.id);
-        const graknTx = await this.openGraknTx();
-        const relationshipConcept = await this.getNode(visNode.id, graknTx);
-        const roleplayers = Array.from((await relationshipConcept.rolePlayersMap()).entries());
-
-
-        await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
-          const roleLabel = await role.label();
-          Array.from(setOfThings.values()).forEach((thing) => {
-            if (roleplayersIds.includes(thing.id)) {
-              edges.push({ from: visNode.id, to: thing.id, label: roleLabel });
-            }
-          });
-        }));
-        graknTx.close();
-      }
-      this.visFacade.addToCanvas({ nodes: data.nodes, edges });
-      this.updateCanvasData();
+    const graknTx = await this.openGraknTx();
+    const result = (await (await graknTx.query(query)).collect());
+    if (!result.length) {
+      this.$notifyInfo('No results were found for your query!');
+      return;
     }
+
+    const filteredResult = await VisualiserGraphBuilder.filterMaps(result);
+
+    if (result.length !== filteredResult.length) {
+      const offsetDiff = result.length - filteredResult.length;
+      visNode.offset += QuerySettings.getNeighboursLimit();
+      this.loadNeighbours(visNode, offsetDiff);
+      if (!filteredResult.length) return;
+    }
+
+
+    const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult);
+
+    this.visFacade.addToCanvas(data);
+    this.visFacade.fitGraphToWindow();
+    this.updateCanvasData();
+    this.loadingQuery = false;
+
+    // when neighbours are found construct edges and add to graph
+    let edges = [];
+
+    if (visNode.baseType === 'ATTRIBUTE') {
+      // Build edges to owners with label `has`
+      edges = data.nodes.map(owner => ({ from: owner.id, to: visNode.id, label: 'has' }));
+    } else if (visNode.baseType === 'RELATIONSHIP') {
+      const roleplayersIds = data.nodes.map(x => x.id);
+      const graknTx = await this.openGraknTx();
+      const relationshipConcept = await this.getNode(visNode.id, graknTx);
+      const roleplayers = Array.from((await relationshipConcept.rolePlayersMap()).entries());
+
+      await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
+        const roleLabel = await role.label();
+        Array.from(setOfThings.values()).forEach((thing) => {
+          if (roleplayersIds.includes(thing.id)) {
+            edges.push({ from: visNode.id, to: thing.id, label: roleLabel });
+          }
+        });
+      }));
+      graknTx.close();
+    }
+    this.visFacade.addToCanvas({ nodes: data.nodes, edges });
+    this.updateCanvasData();
   },
 
   // getters
