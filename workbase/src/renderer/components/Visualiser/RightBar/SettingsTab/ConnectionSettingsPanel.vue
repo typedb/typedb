@@ -5,11 +5,7 @@
             <h1>Connection Settings</h1>
         </div>
         <div v-show="showConnectionSettings">
-            <div class="panel-content" v-if="!currentKeyspace">
-                Please select a keyspace
-            </div>
-
-            <div class="panel-content" v-else>
+            <div class="panel-content">
                 <div class="panel-content-item">
                     <h1 class="panel-label">Host:</h1>
                     <div class="panel-value"><vue-input :defaultValue="engineHost" v-on:input-changed="updateEngineHost" className="vue-input vue-input-small"></vue-input></div>
@@ -32,7 +28,7 @@
     props: ['localStore'],
     data() {
       return {
-        showConnectionSettings: false,
+        showConnectionSettings: true,
         engineHost: Settings.getEngineHost(),
         engineGrpcPort: Settings.getEngineGrpcPort(),
       };
@@ -42,11 +38,6 @@
         this.engineHost = Settings.getEngineHost();
         this.engineGrpcPort = Settings.getEngineGrpcPort();
       });
-    },
-    computed: {
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
     },
     methods: {
       toggleContent() {

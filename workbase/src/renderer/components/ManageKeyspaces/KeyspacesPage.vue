@@ -121,7 +121,6 @@ import { mapGetters } from 'vuex';
 import ImportCard from './ImportCard.vue';
 import CreateKeyspaceCard from './CreateKeyspaceCard.vue';
 import PanelContainer from '../shared/PanelContainer.vue';
-// import Exporter from './Exporter/Exporter';
 const { dialog } = require('electron').remote;
 
 export default {
@@ -144,14 +143,6 @@ export default {
       },
       (targetPath) => { if (!targetPath) return; this.exportToFile(name, targetPath); });
     },
-    // exportToFile(name, targetPath) {
-    //   try {
-    //     // Exporter.exportKeyspace(name, targetPath);
-    //     this.$notifySuccess(`Keyspace [${name}] successfully exported.`);
-    //   } catch (err) {
-    //     this.$notifyError(err);
-    //   }
-    // },
   },
 };
 </script>
