@@ -23,6 +23,10 @@ const actions = {
     return this.runQuery(this.currentQuery);
   },
   async [EXPLAIN_CONCEPT]() {
+    const saveloadRolePlayersState = QuerySettings.getRolePlayersStatus();
+
+    QuerySettings.setRolePlayersStatus(true);
+
     const graknTx = await this.openGraknTx();
 
     this.explanationQuery = true;
@@ -39,12 +43,13 @@ const actions = {
       return query;
     });
     for (const q of queries) { // eslint-disable-line no-restricted-syntax
-      const data = await this.runQuery(q);// eslint-disable-line no-await-in-loop
+      const data = await this.runQuery(q, false);// eslint-disable-line no-await-in-loop
       const updatedEdges = data.edges.map(edge => Object.assign(edge, Style.computeExplanationEdgeStyle()));
       this.visFacade.container.visualiser.updateEdge(updatedEdges);
     }
     this.explanationQuery = false;
     graknTx.close();
+    QuerySettings.setRolePlayersStatus(saveloadRolePlayersState);
   },
   async [TOGGLE_LABEL](type) {
     const graknTx = await this.openGraknTx();
@@ -115,12 +120,17 @@ const watch = {
 };
 
 const methods = {
-  async runQuery(query) {
+  async runQuery(query, limitRoleplayers) {
     try {
       if (this.loadingQuery && !this.explanationQuery) return null; // Don't run query if previous is still running or explanation query
-      if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query) || /^insert/.test(query)) {
-        throw new Error('The transaction is read only - insert and delete queries are not supported');
+      query = query.trim();
+      if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query)
+        || /^insert/.test(query)
+        || /^(.*;)\s*(aggregate\b.*;)$/.test(query) || /^(.*;)\s*(aggregate\b.*;)$/.test(query)
+        || (/^compute/.test(query) && !query.startsWith('compute path'))) {
+        throw new Error('Only get and compute path queries are supported for now.');
       }
+
       this.loadingQuery = true;
 
       const graknTx = await this.openGraknTx();
@@ -136,7 +146,7 @@ const methods = {
       let data;
 
       if (this.isConceptMap(result)) {
-        data = await VisualiserGraphBuilder.buildFromConceptMap(result);
+        data = await VisualiserGraphBuilder.buildFromConceptMap(result, limitRoleplayers);
       } else { // result is conceptList
         // TBD - handle multiple paths
         const path = result[0];

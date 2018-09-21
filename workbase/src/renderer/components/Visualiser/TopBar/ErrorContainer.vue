@@ -1,7 +1,7 @@
 <template>
-    <div class="error-container z-depth-3 noselect">
+    <div class="error-container z-depth-3">
         <div class="column">
-            <div class="header">ERROR</div>
+            <div class="header noselect">ERROR</div>
             <div>{{errorMsg}}</div>
         </div>
         <div class="editor-tab">

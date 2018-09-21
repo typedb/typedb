@@ -45,7 +45,7 @@
         if (!this.currentKeyspace) return 'Please select a keyspace';
         else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';
         else if (!this.attributes) return 'Attributes are being loaded';
-        else if (!this.attributes.length) return 'There are no attributes available for this type of node';
+        else if (!this.attributes.length) return 'There are no attributes available';
         return null;
       },
     },

@@ -38,7 +38,7 @@
 
             <div v-bind:class="(showTypeList) ? 'colour-item disable-content' : 'colour-item'">
                 <h1 class="sub-panel-header">
-                    <div class="sub-title">Color</div>
+                    <div class="sub-title">Colour</div>
                     <div class="vue-button reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
                 </h1>
                 <div class="row">
