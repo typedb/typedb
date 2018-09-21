@@ -79,6 +79,7 @@
 
 import * as React from 'react';
 import { Button } from '@blueprintjs/core';
+import storage from '@/components/shared/PersistentStorage';
 
 
 import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
@@ -134,6 +135,8 @@ export default {
   methods: {
     setKeyspace(name) {
       this.$emit('keyspace-selected');
+      storage.set('current_keyspace_data', name);
+
       this.localStore.dispatch(CURRENT_KEYSPACE_CHANGED, name);
       this.showKeyspaceList = false;
     },

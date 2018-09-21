@@ -52,6 +52,8 @@ function getTypeLabels(type) {
 
 function toggleLabelByType({ type, attribute }) {
   const keyspace = storage.get('current_keyspace_data');
+
+  debugger;
   const map = getMap(keyspace);
 
   // Create map for current type if it does not exist
