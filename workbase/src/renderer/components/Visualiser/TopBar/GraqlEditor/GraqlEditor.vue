@@ -2,8 +2,8 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
             <vue-button icon="star" className="vue-button" v-on:clicked="toggleFavQueriesList"></vue-button>
+            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
         </div>
 
     <div class="center">
@@ -288,7 +288,8 @@
 
           this.localStore.dispatch(RUN_CURRENT_QUERY)
             .catch((err) => {
-              this.errorMsg = err.details;
+              if (!err.details) this.errorMsg = err.message;
+              else this.errorMsg = err.details;
               this.showError = true;
             });
           this.showError = false;
