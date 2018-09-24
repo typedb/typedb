@@ -18,6 +18,8 @@ import {
   LOAD_METATYPE_INSTANCES,
 } from '../shared/StoresActions';
 
+const LETTER_G_KEYCODE = 71;
+
 const actions = {
 
   async [RUN_CURRENT_QUERY]() {
@@ -114,7 +116,6 @@ const watch = {
     });
 
     // Event listener to clear graph (cmd + g)
-    const LETTER_G_KEYCODE = 71;
     window.addEventListener('keydown', (e) => {
       // metaKey -> cmd
       if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
