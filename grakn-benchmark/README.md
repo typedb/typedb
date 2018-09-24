@@ -2,12 +2,6 @@
 
 To get started, Grakn, Ignite, Elasticsearch and Zipkin need to be running.
 
-## Apache Ignite
-In the Apache Ignite installation directory, do:
-```
-bin/ignite.sh
-```
-
 ## Elasticsearch
 https://www.elastic.co/guide/en/elasticsearch/reference/6.3/zip-targz.html
 

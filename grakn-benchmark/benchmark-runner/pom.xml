@@ -12,8 +12,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring.version>2.5.6</spring.version>
-        <ignite.version>2.5.0</ignite.version>
+        <ignite.version>2.6.0</ignite.version>
+        <h2.version>1.4.196</h2.version>
     </properties>
 
     <artifactId>benchmark-runner</artifactId>
@@ -44,12 +44,25 @@
             <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
         </dependency>
+        <dependency>
+          <groupId>com.h2database</groupId>
+          <artifactId>h2</artifactId>
+          <version>${h2.version}</version>
+        </dependency>
 
 
         <!-- mockito -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+        </dependency>
+
+        <!-- zipkin server -->
+        <!-- https://mvnrepository.com/artifact/io.zipkin.java/zipkin -->
+        <dependency>
+            <groupId>io.zipkin.java</groupId>
+            <artifactId>zipkin</artifactId>
+            <version>2.10.1</version>
         </dependency>
 
         <!-- Brave -->
@@ -62,10 +75,6 @@
             <artifactId>brave-spring-beans</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.zipkin.reporter2</groupId>
-            <artifactId>zipkin-reporter-spring-beans</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-sender-urlconnection</artifactId>
