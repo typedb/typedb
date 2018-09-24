@@ -213,25 +213,15 @@
         dummyGraqlIcon: null,
         dummyStarIcon: null,
         showEditorToolTip: false,
-        keyMap: { 91: false, 71: false },
       };
     },
     created() {
       this.renderIcons();
 
       window.addEventListener('keydown', (e) => {
-        if (e.keyCode in this.keyMap) {
-          this.keyMap[e.keyCode] = true;
-          if (this.keyMap[91] && this.keyMap[71]) {
-            this.clearGraph();
-          }
-        }
-      });
-      window.addEventListener('keyup', (e) => {
-        if (e.keyCode in this.keyMap) {
-          this.keyMap[91] = false;
-          this.keyMap[71] = false;
-        }
+        const gKey = 71;
+        // meta key -> cmd
+        if ((e.keyCode === gKey) && e.metaKey) { this.clearGraph(); }
       });
     },
     computed: {
