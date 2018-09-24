@@ -19,7 +19,8 @@
 
 import unittest
 import grakn
-from grakn.exception.ClientError import ClientError
+import datetime
+from grakn.exception.GraknError import GraknError
 
 
 # run-once per testing
@@ -39,7 +40,7 @@ class test_Base(unittest.TestCase):
         try:
             # define parentship roles to test agains
             tx.query("define parent sub role; child sub role; mother sub role; son sub role; person sub entity, has age, has gender, plays parent, plays child, plays mother, plays son; age sub attribute datatype long; gender sub attribute datatype string; parentship sub relationship, relates parent, relates child, relates mother, relates son;")
-        except ClientError as ce: 
+        except GraknError as ce: 
             print(ce)
 
         answers = list(tx.query("match $x isa person, has age 20; get;"))
@@ -83,7 +84,7 @@ class test_Concept(test_Base):
         none_car = self.tx.get_concept(car.id)
         self.assertIsNone(none_car)
 
-        with self.assertRaises(ClientError):
+        with self.assertRaises(GraknError):
             car.delete()
 
     
@@ -562,10 +563,33 @@ class test_Attribute(test_Base):
         double = double_attr_type.create(43.1)
         self.assertEqual(double.value(), 43.1)
 
-    def test_date_value(self):
-        # TODO
-        print(" ------ TODO ------ ")
-        pass
+    def test_get_date_value(self):
+        date_type = self.tx.put_attribute_type("birthdate", grakn.DataType.DATE)
+        person_type = self.tx.get_schema_concept("person")
+        person_type.has(date_type)
+        concepts = self.tx.query("insert $x isa person, has birthdate 2018-08-06;").collect_concepts()
+        person = concepts[0]
+        attrs_iter = person.attributes()
+        for attr_concept in attrs_iter:
+            # pick out the birthdate
+            if attr_concept.type().label() == "birthdate":
+                date = attr_concept.value()
+                self.assertIsInstance(date, datetime.datetime)
+                self.assertEqual(date.year, 2018)
+                self.assertEqual(date.month, 8)
+                self.assertEqual(date.day, 6)
+                return
+
+
+    def test_set_date_value(self):
+        date_type = self.tx.put_attribute_type("birthdate", grakn.DataType.DATE)
+        test_date = datetime.datetime(year=2018, month=6, day=6)
+        date_attr_inst = date_type.create(test_date)
+        value = date_attr_inst.value() # retrieve from server
+        self.assertIsInstance(value, datetime.datetime)
+        self.assertEqual(value.timestamp(), test_date.timestamp())
+
+        
 
     def test_owners(self):
         """ Test retrieving entities that have an attribute """

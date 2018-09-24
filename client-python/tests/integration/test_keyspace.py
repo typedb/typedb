@@ -31,14 +31,14 @@ class test_Keyspace(unittest.TestCase):
        tx = session.transaction(grakn.TxType.WRITE)
        tx.close()
 
-       keyspaces = client.keyspace.retrieve()
+       keyspaces = client.keyspaces().retrieve()
        self.assertGreater(len(keyspaces), 0)
        self.assertTrue('keyspacetest' in keyspaces)
 
-       client.keyspace.delete('keyspacetest')
-       post_delete_keyspaces = client.keyspace.retrieve()
+       client.keyspaces().delete('keyspacetest')
+       post_delete_keyspaces = client.keyspaces().retrieve()
        self.assertFalse('keyspacetest' in post_delete_keyspaces)
 
        session.close()
-       #client.keyspace.delete("keyspacetest")
+       #client.keyspaces().delete("keyspacetest")
 

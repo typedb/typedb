@@ -26,11 +26,9 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +37,6 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
 public class OntologicalQueryTest {
 
@@ -51,11 +48,6 @@ public class OntologicalQueryTest {
 
     @Rule
     public final SampleKBContext matchingTypesContext = SampleKBContext.load("matchingTypesTest.gql");
-
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     @Test
     public void instancePairsRelatedToSameTypeOfEntity(){
@@ -209,7 +201,7 @@ public class OntologicalQueryTest {
     public void allInstancesOfTypesThatPlayGivenRole(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match $x isa $type; $type plays role1; get;";
+        String queryString = "match $x isa $type; $type plays someRole; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").execute();
@@ -223,7 +215,7 @@ public class OntologicalQueryTest {
     public void allInstancesOfRelationsThatRelateGivenRole(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match $x isa $type; $type relates role1; get;";
+        String queryString = "match $x isa $type; $type relates someRole; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
@@ -252,7 +244,7 @@ public class OntologicalQueryTest {
     public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles(){
         GraknTx tx = testContext.tx();
         QueryBuilder qb = tx.graql().infer(true);
-        String queryString = "match (role1: $x, role2: $y) isa reifiable-relation;$x isa $type; get;";
+        String queryString = "match (someRole: $x, subRole: $y) isa reifiable-relation;$x isa $type; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}

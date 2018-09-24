@@ -34,10 +34,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
         <div class="dd-header" v-show="Object.keys(nodeAttributes).length">Attributes:</div>
         <div class="dd-item" v-for="(value,key) in nodeAttributes">
             <div class="dd-handle noselect">
-                <span v-if="value.value" class="list-key">{{value.type}}:</span>
-                <span v-else class="list-key">{{value.type}}</span>
-                <!-- <a v-if="value.externalRef" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.type}}</a> -->
-                <span v-if="value.value">{{value.value}}</span>
+                <span class="list-key">{{value.type}}:</span>
+                <a v-if="value.href" :href="value.value" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.value}}</a>
+                <span v-else-if="value.value">{{value.value}}</span>
                 <span v-else>{{value.dataType.split('.').pop()}}</span>
             </div>
         </div>
@@ -178,19 +177,13 @@ export default {
    * It sorts them alphabetically and then check if a attribute value is a URL
    */
     prepareAttributes(attributes) {
-      return attributes.sort((a,b)=>((a.type>b.type)?1:-1));
-          //TODO: MOVE THIS TO PARSER
-          // (sortedObject, k) => {
-          //     // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
-          //   const currentAttributeWithHref = Object.assign(attributes[k], { href: this.validURL(attributes[k].label) });
-          //   return Object.assign(sortedObject, { [k]: currentAttributeWithHref });
-          // }, {});
+      const sortedAttrs = attributes.sort((a,b)=>((a.type>b.type)?1:-1));
+      return sortedAttrs.map(a => Object.assign(a, { href: this.validURL(a.value)}));
     },
     validURL(str) {
       const pattern = new RegExp(URL_REGEX, 'i');
       return pattern.test(str);
     },
-
   },
 };
 </script>

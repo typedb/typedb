@@ -67,7 +67,7 @@ function setAttributeValueObject(valueObject, dataType, value) {
     case ProtoDataType.LONG: valueObject.setLong(value); break;
     case ProtoDataType.FLOAT: valueObject.setFloat(value); break;
     case ProtoDataType.DOUBLE: valueObject.setDouble(value); break;
-    case ProtoDataType.DATE: valueObject.setDate(value); break;
+    case ProtoDataType.DATE: valueObject.setDate(value.getTime()); break; // Send epoch time in milliseconds to server
     default: throw new Error('DataType of attribute not recognised.');
   }
 };

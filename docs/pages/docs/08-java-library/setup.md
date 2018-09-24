@@ -9,7 +9,7 @@ folder: docs
 ---
 
 ## Declaring The Dependency In Maven
-All applications which use **Grakn 1.3.0** will require the `client-java` dependency to be declared on the `pom.xml` of your application.
+All applications will require the `client-java` dependency to be declared on the `pom.xml` of your application.
 
 ```xml
 <repositories>
@@ -32,39 +32,11 @@ All applications which use **Grakn 1.3.0** will require the `client-java` depend
 </dependencies>
 ```
 
-Alternatively, applications which are still using **Grakn 1.2.0** will instead require the `grakn-client` dependency.
-```xml
-<repositories>
-  <repository>
-    <id>snapshots</id>
-    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots/</url>
-  </repository>
-  <repository>
-    <id>releases</id>
-    <url>https://oss.sonatype.org/content/repositories/releases</url>
-  </repository>
-</repositories>
-
-<properties>
-    <grakn.version>1.2.0</grakn.version>
-</properties>
-
-<dependencies>
-  <dependency>
-    <groupId>ai.grakn</groupId>
-    <artifactId>grakn-client</artifactId>
-    <version>${grakn.version}</version>
-  </dependency>
-</dependencies>
-```
-
-Please be noted that most of the materials in the documentation will use the syntax of Grakn 1.3.0.
-
 ## Opening A Session And Transaction
 
-{% include note.html content="Before proceeding, make sure that the Grakn knowledge graph has already been started. Otherwise, refer to the [Setup guide](./docs/get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
+{% include note.html content="Before proceeding, make sure that the Grakn knowledge graph has already been started. Otherwise, refer to the [Setup guide](../get-started/setup-guide#install-graknai) on how to install and start Grakn properly." %}
 
-A **session** object is responsible for maintaining a connection to a specific keyspace in the knowledge graph. Opening a session is performed by invoking the `Grakn.session` method.
+A **session** object is responsible for maintaining a connection to a specific keyspace in the knowledge graph. Opening a session is performed by invoking the `session()` method on the grakn client.
 Once the session is open, you can proceed by creating a **transaction** in order to manipulate the data in the keyspace.
 
 The following snippet shows how to open a Grakn session and transaction:
@@ -79,7 +51,8 @@ public class App {
   public static void main(String[] args) {
     SimpleURI localGrakn = new SimpleURI("localhost", 48555);
     Keyspace keyspace = Keyspace.of("grakn");
-    try (Grakn.Session session = Grakn.session(localGrakn, keyspace)) {
+    Grakn grakn = new Grakn(localGrakn);
+    try (Grakn.Session session = grakn.session(keyspace)) {
       try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
         // ...
         transaction.commit();

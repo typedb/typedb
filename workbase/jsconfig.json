@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@": ["src/renderer/"]
+    },
+    "module": "commonjs"
+  },
+  "exclude": ["node_modules", "dist", "build", "builds"]
+}

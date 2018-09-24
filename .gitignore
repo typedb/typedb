@@ -56,7 +56,6 @@ parameters_bi.log
 parameters_interactive.log
 social_network
 
-# client-python files # 
-\.DS_Store
-**/__pycache__
-*_pb2*.py
+# VIM swap files #
+*.swp
+*.swo

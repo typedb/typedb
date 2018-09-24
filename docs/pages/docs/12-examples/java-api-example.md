@@ -14,11 +14,24 @@ This example shows how to use Java in a basic example that can be extended as a 
 All Grakn applications have the following Maven dependency:
 
 ```xml
- <dependency>
-   <groupId>ai.grakn</groupId>
-   <artifactId>client-java</artifactId>
-   <version>${project.version}</version>
-</dependency>
+<repositories>
+  <repository>
+    <id>releases</id>
+    <url>https://oss.sonatype.org/content/repositories/releases</url>
+  </repository>
+</repositories>
+
+<properties>
+    <grakn.version>1.3.0</grakn.version>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>ai.grakn</groupId>
+    <artifactId>client-java</artifactId>
+    <version>${grakn.version}</version>
+  </dependency>
+</dependencies>
 ```
 
 ### Grakn Engine
@@ -31,9 +44,9 @@ cd [your Grakn install directory]
 ```
 
 
-## Java API: GraknTx
+## Java API: Grakn.Transaction
 
-The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge graph programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge graph.
+The Java API, `Grakn.Transaction`, is a low-level API that encapsulates the [Grakn knowledge model](../knowledge-model/model). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge graph programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge graph.
 
 ### Building the Schema
 
@@ -42,8 +55,9 @@ We will look at the same schema as is covered in the [Basic Schema documentation
 First we need a [knowledge graph](../java-library/setup#initialising-a-transaction-on-the-knowledge-base):
 
 ```java-test-ignore
-GraknSession session = new Grakn("localhost:48555").session(keyspace);
-GraknTx tx = session.transaction(GraknTxType.WRITE)
+Grakn grakn = new Grakn(new SimpleURI("localhost:48555"));
+Grakn.Session session = grakn.session(keyspace);
+Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)
 ```
 
 
@@ -156,7 +170,7 @@ for (Thing p: tx.getEntityType("person").instances()) {
 
 ## Querying the Knowledge Graph Using QueryBuilder
 
-It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
+It is also possible to interact with the knowledge graph using a separate Java API that forms Graql queries. This is via `Grakn.Transaction.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java-test-ignore
 for (ConceptMap a: tx.graql().match(var("x").isa("person")).get().execute()) {
@@ -166,7 +180,7 @@ for (ConceptMap a: tx.graql().match(var("x").isa("person")).get().execute()) {
 
 Which leads us to the common question...
 
-## When to use GraknTx and when to use QueryBuilder?
+## When to use Grakn.Transaction and when to use QueryBuilder?
 
 **Java API**
 If you are primarily interested in mutating the knowledge graph, as well as doing simple concept lookups the Java API will be sufficient, e.g. for

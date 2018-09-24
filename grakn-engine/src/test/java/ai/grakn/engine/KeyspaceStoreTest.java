@@ -25,13 +25,13 @@ import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.rpc.SessionService;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.SessionContext;
 import ai.grakn.util.SimpleURI;
@@ -86,7 +86,7 @@ public class KeyspaceStoreTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private final static PostProcessor mockedPostProcessor = mock(PostProcessor.class);
+    private final static AttributeDeduplicatorDaemon MOCKED_ATTRIBUTE_DEDUPLICATOR = mock(AttributeDeduplicatorDaemon.class);
 
 
     @BeforeClass
@@ -96,7 +96,7 @@ public class KeyspaceStoreTest {
         graknFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
         OpenRequest requestOpener = new ServerOpenRequest(graknFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedPostProcessor))
+                .addService(new SessionService(requestOpener, MOCKED_ATTRIBUTE_DEDUPLICATOR))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

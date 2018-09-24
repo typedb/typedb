@@ -279,16 +279,13 @@ public class InferenceRule {
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
             List<Atom> bodyRewrites = new ArrayList<>();
+            //NB: only rewriting atoms from the same type hierarchy
             body.getAtoms(Atom.class)
-                    .map(at -> {
-                        if (at.isRelation()
-                                && !at.isUserDefined()
-                                && Objects.equals(at.getSchemaConcept(), head.getAtom().getSchemaConcept())) {
-                            return at.rewriteToUserDefined(parentAtom);
-                        } else {
-                            return at;
-                        }
-                    }).forEach(bodyRewrites::add);
+                    .map(at ->
+                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept()) ?
+                                    at : at.rewriteToUserDefined(parentAtom)
+                    )
+                    .forEach(bodyRewrites::add);
 
             ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
             return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);

@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -243,11 +244,11 @@ public class GraqlShellIT {
         assertShellMatches(
                 "define entity2 sub entity;",
                 anything(),
-                "match $x isa entity2; aggregate count;",
+                "match $x isa entity2; aggregate count $x;",
                 containsString("0"),
                 "insert $x isa entity2;",
                 anything(),
-                "match $x isa entity2; aggregate count;",
+                "match $x isa entity2; aggregate count $x;",
                 containsString("1")
         );
     }
@@ -266,6 +267,23 @@ public class GraqlShellIT {
         assertShellMatches(
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
                 is(Integer.toString(NUM_METATYPES))
+        );
+    }
+
+    @Test
+    public void testAggregateGroupQuery() throws Exception {
+        assertShellMatches(
+                "define name sub attribute, datatype string;",
+                anything(),
+                "define person sub entity, has name;",
+                anything(),
+                "insert $x isa person, has name \"Alice\";",
+                anything(),
+                "insert $x isa person, has name \"Bob\";",
+                anything(),
+                "match $x isa person, has name $y; aggregate group $x;",
+                anyOf(containsString("Alice"),containsString("Bob")),
+                anyOf(containsString("Alice"),containsString("Bob"))
         );
     }
 

@@ -60,18 +60,15 @@ public class DistributionContext extends CompositeTestRule {
 
     public static final Logger LOG = LoggerFactory.getLogger(DistributionContext.class);
 
-    private static final String ZIP_FILENAME = "grakn-dist-" + GraknVersion.VERSION + ".zip";
+    private static final String ZIP_FILENAME = "grakn-core-" + GraknVersion.VERSION + ".zip";
     private static final Path GRAKN_BASE_DIRECTORY = Paths.get(GraknSystemProperty.PROJECT_RELATIVE_DIR.value());
     private static final Path TARGET_DIRECTORY = Paths.get(GRAKN_BASE_DIRECTORY.toString(), "grakn-dist", "target");
     private static final Path ZIP_FULLPATH = Paths.get(TARGET_DIRECTORY.toString(), ZIP_FILENAME);
-    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-dist-" + GraknVersion.VERSION);
+    private static final Path EXTRACTED_DISTRIBUTION_DIRECTORY = Paths.get(TARGET_DIRECTORY.toString(), "grakn-core-" + GraknVersion.VERSION);
 
     private Process engineProcess;
     private int port = 4567;
-    private boolean inheritIO = true;
-    private int redisPort = 6379;
     private final SessionContext session = SessionContext.create();
-    private final InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
 
     // prevent initialization with the default constructor
     private DistributionContext() {
@@ -81,25 +78,20 @@ public class DistributionContext extends CompositeTestRule {
         return new DistributionContext();
     }
 
-    public DistributionContext inheritIO(boolean inheritIO) {
-        this.inheritIO = inheritIO;
-        return this;
-    }
-
     public SimpleURI uri(){
         return new SimpleURI("localhost", port);
     }
 
     @Override
     protected List<TestRule> testRules() {
-        return ImmutableList.of(session, redis);
+        return ImmutableList.of(session);
     }
 
     @Override
     public void before() throws Throwable {
         assertPackageBuilt();
         unzipDistribution();
-        engineProcess = newEngineProcess(port, redisPort);
+        engineProcess = newEngineProcess(port);
         waitForEngine();
         RestAssured.baseURI = uri().toURI().toString();
     }
@@ -135,14 +127,13 @@ public class DistributionContext extends CompositeTestRule {
         zipped.extractAll(TARGET_DIRECTORY.toAbsolutePath().toString());
     }
 
-    private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {
+    private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
         GraknConfig config = GraknConfig.create();
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, port);
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, ImmutableList.of(new SimpleURI("localhost", redisPort).toString()));
         // To speed up tests of failure cases
         config.setConfigProperty(GraknConfigKey.TASKS_RETRY_DELAY, 60);
-
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, "/tmp/");
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");
         propertiesFile.deleteOnExit();
@@ -158,7 +149,7 @@ public class DistributionContext extends CompositeTestRule {
 
         // Start process
         ProcessBuilder processBuilder = new ProcessBuilder(commands);
-        if (inheritIO) processBuilder.inheritIO();
+        processBuilder.inheritIO();
         return processBuilder.start();
     }
 

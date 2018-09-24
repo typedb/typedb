@@ -240,8 +240,10 @@ public class MatchTest {
         Match query = qb.infer(false).match(var().rel(x, var().has("name", "Michael Corleone")));
 
         assertThat(query, variable(x, containsInAnyOrder(
-                role("role"), role("character-being-played"),
-                role("@has-name-owner")
+                role("role"),
+                role("character-being-played"),
+                role("@has-name-owner"),
+                role("@has-attribute-owner")
         )));
     }
 

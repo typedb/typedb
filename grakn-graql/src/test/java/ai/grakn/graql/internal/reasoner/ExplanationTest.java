@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.test.kbs.GeoKB;
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -49,7 +48,6 @@ import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
 public class ExplanationTest {
 
@@ -78,7 +76,6 @@ public class ExplanationTest {
 
     @BeforeClass
     public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
         GraknTx tx = geoKB.tx();
         iqb = tx.graql().infer(true);
         polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");

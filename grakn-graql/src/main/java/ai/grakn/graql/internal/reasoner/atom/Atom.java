@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
@@ -71,8 +72,13 @@ public abstract class Atom extends AtomicBase {
     protected Set<InferenceRule> applicableRules = null;
 
     public RelationshipAtom toRelationshipAtom(){
-        throw GraqlQueryException.illegalAtomConversion(this);
+        throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
     }
+    public IsaAtom toIsaAtom(){
+        throw GraqlQueryException.illegalAtomConversion(this, IsaAtom.class);
+    }
+
+    public abstract boolean isUnifiableWith(Atom atom);
 
     @Override
     public boolean isAtom(){ return true;}
@@ -339,23 +345,19 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
 
-    public abstract Atom rewriteWithTypeVariable();
-
     /**
      * rewrites the atom to user-defined type variable
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    protected Atom rewriteWithTypeVariable(Atom parentAtom){
-        if (this.getPredicateVariable().isUserDefinedName() || !parentAtom.getPredicateVariable().isUserDefinedName()) return this;
-        return rewriteWithTypeVariable();
+    public Atom rewriteWithTypeVariable(Atom parentAtom){
+        if (parentAtom.getPredicateVariable().isUserDefinedName()
+                && !this.getPredicateVariable().isUserDefinedName()
+                && this.getClass() == parentAtom.getClass() ){
+            return rewriteWithTypeVariable();
+        }
+        return this;
     }
-
-    /**
-     * rewrites the atom to one with user defined relation variable
-     * @return rewritten atom
-     */
-    public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
      * rewrites the atom to one with suitably user-defined names depending on provided parent
@@ -363,6 +365,15 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public abstract Atom rewriteToUserDefined(Atom parentAtom);
+
+
+    public abstract Atom rewriteWithTypeVariable();
+
+    /**
+     * rewrites the atom to one with user defined relation variable
+     * @return rewritten atom
+     */
+    public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
      * @param parentAtom atom to be unified with

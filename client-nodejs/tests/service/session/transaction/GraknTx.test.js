@@ -114,7 +114,7 @@ describe("Transaction methods", () => {
     expect(answer.list().includes(parentshipMap.rel)).toBeTruthy();
     localTx.close();
     localSession.close();
-    env.graknClient.keyspace.delete('shortestpathks');
+    env.graknClient.keyspaces().delete('shortestpathks');
   });
 
   test("cluster connected components - Answer of conceptSet", async ()=>{
@@ -130,7 +130,7 @@ describe("Transaction methods", () => {
     expect(answer.set().has(parentshipMap.rel)).toBeTruthy();
     localTx.close();
     localSession.close();
-    env.graknClient.keyspace.delete('clusterkeyspace');
+    env.graknClient.keyspaces().delete('clusterkeyspace');
   });
 
   test("compute centrality - Answer of conceptSetMeasure", async ()=>{
@@ -145,7 +145,7 @@ describe("Transaction methods", () => {
     expect(answer.set().has(parentshipMap.parent)).toBeTruthy();
     localTx.close();
     localSession.close();
-    env.graknClient.keyspace.delete('computecentralityks');
+    env.graknClient.keyspaces().delete('computecentralityks');
   });
 
   test("compute aggregate group - Answer of answerGroup", async ()=>{
@@ -162,7 +162,7 @@ describe("Transaction methods", () => {
 
     localTx.close();
     localSession.close();
-    env.graknClient.keyspace.delete('groupks');
+    env.graknClient.keyspaces().delete('groupks');
   });
 
 

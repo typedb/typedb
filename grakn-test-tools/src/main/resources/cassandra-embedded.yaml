@@ -113,10 +113,12 @@ partitioner: org.apache.cassandra.dht.Murmur3Partitioner
 # will spread data evenly across them, subject to the granularity of
 # the configured compaction strategy.
 data_file_directories:
-    - db/cassandra/data
+    - target/db/cassandra/data
 
 # commit log
-commitlog_directory: db/cassandra/commitlog
+commitlog_directory: target/db/cassandra/commitlog
+hints_directory: target/db/cassandra/data/hints
+cdc_raw_directory: target/db/cassandra/data/cdc_raw
 
 # policy for data disk failures:
 # stop: shut down gossip and Thrift, leaving the node effectively dead, but
@@ -130,7 +132,7 @@ disk_failure_policy: stop
 # policy for commit disk failures:
 # stop: shut down gossip and Thrift, leaving the node effectively dead, but
 #       can still be inspected via JMX.
-# stop_commit: shutdown the commit log, letting writes collect but 
+# stop_commit: shutdown the commit log, letting writes collect but
 #              continuing to service reads, as in pre-2.0.5 Cassandra
 # ignore: ignore fatal errors and let the batches fail
 commit_failure_policy: stop
@@ -189,7 +191,7 @@ row_cache_save_period: 0
 # well as caches.  Experiments show that JEMAlloc saves some memory
 # than the native GCC allocator (i.e., JEMalloc is more
 # fragmentation-resistant).
-# 
+#
 # Supported values are: NativeAllocator, JEMallocAllocator
 #
 # If you intend to use JEMallocAllocator you have to install JEMalloc as library and
@@ -199,7 +201,7 @@ row_cache_save_period: 0
 # memory_allocator: NativeAllocator
 
 # saved caches
-saved_caches_directory: db/cassandra/saved_caches
+saved_caches_directory: target/db/cassandra/saved_caches
 
 # commitlog_sync may be either "periodic" or "batch." 
 # When in batch mode, Cassandra won't ack writes until the commit log

@@ -48,11 +48,17 @@ public abstract class TypeAtom extends Binary{
     public boolean isType(){ return true;}
 
     @Override
-    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        return this.getSchemaConcept() == null ||
+    public boolean isUnifiableWith(Atom atom) {
+        return atom.getSchemaConcept() == null ||
                 //ensure not ontological atom query
-                (this instanceof IsaAtomBase)
-                && this.getSchemaConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getSchemaConcept()));
+                (atom instanceof IsaAtomBase)
+                        && atom.getSchemaConcept().subs().anyMatch(sub -> sub.equals(this.getSchemaConcept()));
+    }
+
+    @Override
+    public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
+        if (!(ruleAtom instanceof IsaAtom)) return this.isRuleApplicableViaAtom(ruleAtom.toIsaAtom());
+        return ruleAtom.isUnifiableWith(this);
     }
 
     @Override

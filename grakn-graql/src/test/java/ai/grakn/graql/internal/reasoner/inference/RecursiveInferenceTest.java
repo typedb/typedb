@@ -37,15 +37,12 @@ import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
 import java.util.List;
 
-import ai.grakn.util.GraknTestUtil;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 public class RecursiveInferenceTest {
 
@@ -79,11 +76,6 @@ public class RecursiveInferenceTest {
 
     @ClassRule
     public static final SampleKBContext reachabilitySymmetricContext = SampleKBContext.load("reachability-test-symmetric.gql");
-
-    @Before
-    public void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test

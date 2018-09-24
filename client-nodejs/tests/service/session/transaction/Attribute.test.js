@@ -45,21 +45,27 @@ describe("Attribute methods", () => {
         expect(await doubleAttribute.value()).toBe(11.58);
     });
 
-    // TODO rewrite test when fixed on the server 
-    // test.only("getValue Date", async () => {
-    //     const dateType = await tx.putAttributeType("birth-date", env.dataType().DATE);
-    //     const personType = await tx.putEntityType('person');
-    //     await personType.attribute(dateType);
+    test("get value Date", async () => {
+        const dateType = await tx.putAttributeType("birth-date", env.dataType().DATE);
+        const personType = await tx.putEntityType('person');
+        await personType.has(dateType);
+        const iterator = await tx.query("insert $x isa person, has birth-date 2018-08-06;");
+        const concepts = (await iterator.collectConcepts());
+        const person = concepts[0];
+        const attrs = await person.attributes();
+        const date = await attrs.next();
+        const value = await date.value();
+        expect(value instanceof Date).toBeTruthy();
+    });
 
-    //     const iterator = await tx.query("insert $x isa person, has birth-date 2018-08-06;");
-    //     const concepts = (await iterator.collectConcept());
-    //     const person = concepts[0];
-    //     const attrs = await person.attributes();
-    //     const date = attrs[0];
-    //     // const setter = (new Date('2018-08-06')).getTime() / 1000;
-    //     const value = await date.getValue();
-    //     const dateNew = await dateType.putAttribute(value);
-    // });
+    test("set value Date", async () => {
+        const dateType = await tx.putAttributeType("birth-date", env.dataType().DATE);
+        const testDate = new Date('2018-08-06');
+        const date = await dateType.create(testDate);
+        const value = await date.value();
+        expect(value instanceof Date).toBeTruthy();
+        expect(testDate.getTime()).toEqual(value.getTime());
+    });
 
     test("owners", async () => {
         const personType = await tx.putEntityType('person');

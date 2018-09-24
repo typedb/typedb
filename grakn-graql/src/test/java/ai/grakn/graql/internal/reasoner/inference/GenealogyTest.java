@@ -53,14 +53,13 @@ public class GenealogyTest {
     private final int noOfChildren = 38;
 
     //2 relations per wife-husband pair - (spouse: $x, spouse :$y) and (spouse: $y, spouse: $x)
-    //wife and husband roles do not sub spouse, spouse
     private final int noOfMarriageRelations = 2 * noOfMarriages;
 
     @ClassRule
     public static final SampleKBContext genealogyKB = GenealogyKB.context();
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
+    public static void setUpClass(){
         iqb = genealogyKB.tx().graql().infer(true);
     }
 
@@ -198,7 +197,7 @@ public class GenealogyTest {
         assertEquals(wifeHusbandPairs.size(), noOfMarriages);
         assertEquals(marriageInstances.size(), noOfMarriageRelations);
         //for each marriage relation we can swap the roles hence the factor of 2
-        assertEquals(marriageInstancesWithRPs.size(), 2* noOfMarriageRelations);
+        assertEquals(marriageInstancesWithRPs.size(), 2 * noOfMarriageRelations);
         assertEquals(marriageInstancesWithRPsandRoles.size(), 2 * noOfMarriageRelations);
     }
 

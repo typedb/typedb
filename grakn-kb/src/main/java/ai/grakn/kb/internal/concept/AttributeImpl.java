@@ -64,7 +64,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
-        vertexElement.propertyUnique(Schema.VertexProperty.INDEX, index);
+        vertexElement.property(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
         vertexElement.tx().txCache().addNewAttribute(index, attribute.id());
@@ -85,7 +85,10 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
                     throw new ClassCastException();
                 }
                 return ((Number) value).longValue();
-            } else {
+            } else if (dataType.equals(AttributeType.DataType.DATE) && (value instanceof Long)){
+                return value;
+            }
+            else {
                 return dataType.getPersistenceValue(value);
             }
         } catch (ClassCastException e) {
@@ -103,12 +106,12 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @return The list of all Instances which posses this resource
+     * @return The list of all Instances which possess this resource
      */
     @Override
     public Stream<Thing> owners() {
         //Get Owner via implicit structure
-        Stream<Thing> implicitOwners = getShortcutNeighbours();
+        Stream<Thing> implicitOwners = getShortcutNeighbours(false);
         //Get owners via edges
         Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
 

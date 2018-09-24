@@ -29,7 +29,7 @@ beforeAll(() => {
 
 afterAll(async () => {
     await session.close();
-    graknClient.keyspace.delete("testcommit");
+    graknClient.keyspaces().delete("testcommit");
     env.tearDown();
 });
 
@@ -72,6 +72,20 @@ describe('Integration test', () => {
         expect(answer.map().size).toBe(1);
         expect(answer.explanation().answers()).toHaveLength(3);
         expect(answer.explanation().queryPattern()).toBe("{$x isa cousins;}");
+        await tx.close()
+        await localSession.close();
+    });
+
+    test("explanation with join explanation", async () => {
+        const localSession = graknClient.session("gene");
+        const tx = await localSession.transaction(env.txType().WRITE);
+        const iterator = await tx.query(`match ($x, $y) isa marriage; ($y, $z) isa marriage;
+                                            $x != $z; get;`);
+        const answers = await iterator.collect();
+        expect(answers).toHaveLength(4);
+        answers.forEach(a=>{
+            expect(a.explanation).toBeDefined()
+        });
         await tx.close()
         await localSession.close();
     });

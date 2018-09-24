@@ -74,19 +74,19 @@ define
 
 R1
 when {
-    (parent: $p, child: $c) isa Parent;
+    (parent: $p, child: $c) isa parentship;
 },
 then {
-    (ancestor: $p, descendant: $c) isa Ancestor;
+    (ancestor: $p, descendant: $c) isa ancestorship;
 };
 
 R2
 when {
-    (parent: $p, child: $c) isa Parent;
-    (ancestor: $c, descendant: $d) isa Ancestor;
+    (parent: $p, child: $c) isa parentship;
+    (ancestor: $c, descendant: $d) isa ancestorship;
 },
 then {
-    (ancestor: $p, descendant: $d) isa Ancestor;
+    (ancestor: $p, descendant: $d) isa ancestorship;
 };
 ```
 

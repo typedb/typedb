@@ -22,44 +22,36 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeTrue;
 
 public class QueryValidityTest {
 
     @ClassRule
     public static final SampleKBContext testContext = SampleKBContext.load("ruleApplicabilityTest.gql");
 
-    @BeforeClass
-    public static void onStartup() throws Exception {
-        assumeTrue(GraknTestUtil.usingTinker());
-    }
-
     @Test
     public void whenQueryingForInexistentConceptId_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
-        String queryString = "match $x id 'V123'; $y id 'V456'; ($x, $y); get;";
+        String queryString = "match $x id 'V1337'; $y id 'V456'; ($x, $y); get;";
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
     }
 
     @Test
     public void whenQueryingForInexistentEntityTypeId_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
-        String queryString = "match $x isa $type; $type id 'V123'; get;";
+        String queryString = "match $x isa $type; $type id 'V1337'; get;";
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
     }
 
     @Test
     public void whenQueryingForInexistentRelationTypeId_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
-        String queryString = "match ($x, $y) isa $type; $type id 'V123'; get;";
-        String queryString2 = "match $r ($x, $y) isa $type; $r id 'V123'; get;";
+        String queryString = "match ($x, $y) isa $type; $type id 'V1337'; get;";
+        String queryString2 = "match $r ($x, $y) isa $type; $r id 'V1337'; get;";
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
         assertThat(qb.<GetQuery>parse(queryString2).execute(), empty());
     }
@@ -67,9 +59,9 @@ public class QueryValidityTest {
     @Test
     public void whenQueryingForInexistentResourceId_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
-        String queryString = "match $x has name $y; $x id 'V123'; get;";
-        String queryString2 = "match $x has name $y; $y id 'V123'; get;";
-        String queryString3 = "match $x has name $y via $r; $r id 'V123'; get;";
+        String queryString = "match $x has name $y; $x id 'V1337'; get;";
+        String queryString2 = "match $x has name $y; $y id 'V1337'; get;";
+        String queryString3 = "match $x has name $y via $r; $r id 'V1337'; get;";
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
         assertThat(qb.<GetQuery>parse(queryString2).execute(), empty());
         assertThat(qb.<GetQuery>parse(queryString3).execute(), empty());
@@ -134,7 +126,7 @@ public class QueryValidityTest {
     @Test
     public void whenQueryingForRelationWithIllegalRoles_emptyResultReturned(){
         QueryBuilder qb = testContext.tx().graql().infer(true);
-        String queryString = "match (role3: $x) isa binary; get;";
+        String queryString = "match (anotherRole: $x) isa binary; get;";
         assertThat(qb.<GetQuery>parse(queryString).execute(), empty());
     }
 

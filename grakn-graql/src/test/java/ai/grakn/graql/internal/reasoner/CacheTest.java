@@ -42,7 +42,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.cache.TxRuleCache;
 import ai.grakn.test.rule.SampleKBContext;
-import ai.grakn.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -59,7 +58,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class CacheTest {
 
@@ -74,10 +72,9 @@ public class CacheTest {
 
     @Before
     public void onStartup(){
-        assumeTrue(GraknTestUtil.usingTinker());
         EmbeddedGraknTx<?> graph = testContext.tx();
-        String recordPatternString = "{(role1: $x, role2: $y) isa reifiable-relation;}";
-        String retrievePatternString = "{(role1: $p1, role2: $p2) isa reifiable-relation;}";
+        String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
+        String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
         Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, graph);
         Conjunction<VarPatternAdmin> retrievePattern = conjunction(retrievePatternString, graph);
         recordQuery = ReasonerQueries.atomic(recordPattern, graph);
@@ -287,7 +284,7 @@ public class CacheTest {
         EmbeddedGraknTx<?> tx = testContext.tx();
 
         Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -303,7 +300,7 @@ public class CacheTest {
         EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE);
 
         Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
