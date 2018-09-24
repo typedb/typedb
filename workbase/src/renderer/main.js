@@ -4,7 +4,14 @@ import VueRouter from 'vue-router';
 import store from './store';
 
 // UI Elements
-import LoadingButton from './components/UIElements/LoadingButton.vue';
+import VueButton from './components/UIElements/VueButton.vue';
+import VueInput from './components/UIElements/VueInput.vue';
+import VueSwitch from './components/UIElements/VueSwitch.vue';
+import VueNavbar from './components/UIElements/VueNavbar.vue';
+import VueTabs from './components/UIElements/VueTabs.vue';
+import VueTab from './components/UIElements/VueTab.vue';
+import VueIcon from './components/UIElements/VueIcon.vue';
+import VueTooltip from './components/UIElements/VueToolTip.vue';
 
 
 // Modules
@@ -26,7 +33,15 @@ Vue.use(VueRouter);
 CustomPlugins.registerNotifications();
 
 // Register UIElements globally
-Vue.component('loading-button', LoadingButton);
+Vue.component('vue-button', VueButton);
+Vue.component('vue-input', VueInput);
+Vue.component('vue-switch', VueSwitch);
+Vue.component('vue-navbar', VueNavbar);
+Vue.component('vue-tabs', VueTabs);
+Vue.component('vue-tab', VueTab);
+Vue.component('vue-icon', VueIcon);
+Vue.component('vue-tooltip', VueTooltip);
+
 
 // Define a Vue Router and map all the routes to components - as defined in the routes.js file.
 const router = new VueRouter({

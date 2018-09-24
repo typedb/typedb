@@ -2,12 +2,10 @@ import Vue from 'vue';
 import Toasted from 'vue-toasted';
 import logger from '@/../Logger';
 
-
 Vue.use(Toasted);
 
 const SUCCESS_DURATION = 4000;
-const ERROR_DURATION = 15000;
-const INFO_DURATION = 10000;
+const INFO_DURATION = 5000;
 
 function registerNotifications() {
   Vue.prototype.$notifySuccess = function successFn(message) {
@@ -24,9 +22,7 @@ function registerNotifications() {
     });
   };
 
-  Vue.prototype.$notifyInfo = function infoFn(message, position) {
-    this.$toasted.clear();
-    if (!position) position = 'top-center';
+  Vue.prototype.$notifyInfo = function infoFn(message) {
     this.$toasted.show(message, {
       action: {
         text: 'CLOSE',
@@ -35,7 +31,7 @@ function registerNotifications() {
         },
       },
       duration: INFO_DURATION,
-      position,
+      position: 'bottom-right',
       type: 'info',
     });
   };
@@ -64,7 +60,6 @@ function registerNotifications() {
   };
 
   Vue.prototype.$notifyError = function errorFn(e, operation) {
-    this.$toasted.clear();
     let errorMessage;
     if (e instanceof Object) {
       if ('message' in e) errorMessage = e.message;
@@ -95,8 +90,7 @@ function registerNotifications() {
           toastObject.goAway(0);
         },
       },
-      duration: ERROR_DURATION,
-      position: 'top-center',
+      position: 'bottom-right',
       type: 'error',
       className: 'notify-error',
     });

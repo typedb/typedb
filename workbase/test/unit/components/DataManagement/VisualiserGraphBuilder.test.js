@@ -1,9 +1,9 @@
-import VisualiserGraphBuilder from '@/components/DataManagement/VisualiserGraphBuilder';
-import mockConcepts from '../../../helpers/MockConcepts.js';
+import VisualiserGraphBuilder from '@/components/Visualiser/VisualiserGraphBuilder.js';
+import mockConcepts from '../../../helpers/MockConcepts';
 
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
-jest.mock('@/components/DataManagement/DataManagementContent/NodeSettingsPanel/NodeSettings', () => ({
+jest.mock('@/components/Visualiser/RightBar/SettingsTab/DisplaySettings.js', () => ({
   getTypeLabels() { return []; },
 }));
 
@@ -95,11 +95,11 @@ describe('relationshipsRolePlayers', () => {
 //   });
 // });
 
-describe('filter implicit types', () => {
-  test('implicit relationship', async () => {
-    let concepts = [mockConcepts.getMockImplicitRelationship()];
-    expect(concepts).toHaveLength(1);
-    concepts = await VisualiserGraphBuilder.filterImplicitTypes(concepts);
-    expect(concepts).toHaveLength(0);
-  });
-});
+// describe('filter implicit types', () => {
+//   test('implicit relationship', async () => {
+//     let concepts = [mockConcepts.getMockImplicitRelationship()];
+//     expect(concepts).toHaveLength(1);
+//     concepts = await VisualiserGraphBuilder.filterImplicitTypes(concepts);
+//     expect(concepts).toHaveLength(0);
+//   });
+// });

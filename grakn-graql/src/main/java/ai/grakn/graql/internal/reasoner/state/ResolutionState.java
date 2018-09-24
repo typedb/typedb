@@ -39,6 +39,9 @@ public abstract class ResolutionState {
         this.parentState = parent;
     }
 
+    @Override
+    public String toString(){ return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());}
+
     /**
      * @return new sub goal generated from this state
      */

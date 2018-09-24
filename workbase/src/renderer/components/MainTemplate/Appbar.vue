@@ -2,7 +2,7 @@
 <div>
     <nav role="navigation" class="navbar-fixed noselect">
         <div class="nav-wrapper">
-            <span>GRAKN Workbase</span>
+            <span>Grakn Workbase - Visualiser</span>
         </div>
     </nav>
 </div>
@@ -12,8 +12,9 @@
 
 .nav-wrapper {
     display: flex;
-    padding-top: 5px;
+    padding-top: 7px;
     justify-content: center;
+    align-items: center;
 }
 
 .navbar-fixed {
@@ -23,11 +24,11 @@
 
     /* Make navbar draggable area in app.*/
     -webkit-app-region:drag;
-    border-bottom: 1px solid #232323;
+    border-bottom: var(--container-darkest-border);
 }
 
 .dark .navbar-fixed{
-    background-color:#282828;
+    background-color: var(--gray-1);
 }
 
 .light .navbar-fixed{
@@ -39,19 +40,5 @@
 <script>
 
 export default {
-
-  data() {
-    return {
-
-    };
-  },
-  created() {},
-  mounted() {
-    this.$nextTick(() => {
-    });
-  },
-  methods: {
-
-  },
 };
 </script>

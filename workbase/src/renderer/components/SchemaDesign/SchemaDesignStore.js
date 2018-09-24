@@ -1,7 +1,7 @@
 import storage from '@/components/shared/PersistentStorage';
 import Vue from 'vue';
 import SchemaHandler from './SchemaHandler';
-import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
+import CanvasStoreMixin from '../shared/CanvasStoreMixin';
 import Style from './Style';
 
 import { DEFINE_ENTITY_TYPE, DEFINE_ATTRIBUTE_TYPE, DEFINE_RELATIONSHIP_TYPE,
