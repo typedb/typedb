@@ -6,6 +6,7 @@ import _ from 'underscore';
 import Settings from './Settings';
 import * as eventsHandlers from './Events';
 
+
 function render(container) {
   this._nodes = new vis.DataSet([]);
   this._edges = new vis.DataSet([]);
@@ -19,7 +20,15 @@ function render(container) {
 
   this._network.on('dragEnd', params => this.onDragEnd(params));
   this._network.on('dragStart', params => this.onDragStart(params));
-  this._network.on('hoverNode', params => this.onHoverNode(params));
+
+  this._network.on('hoverNode', (params) => {
+    // Set delay between hovering on a node and the dimming of all other nodes
+    const timer = setTimeout(() => { this.onHoverNode(params); }, 1000);
+    const nodeId = params.node;
+    this._network.on('blurNode', (params) => { if (nodeId === params.node) window.clearTimeout(timer); },
+    );
+  });
+
   this._network.on('blurNode', params => this.onBlurNode(params));
   this._network.on('selectNode', params => this.onSelectNode(params));
   this._network.on('deselectNode', params => this.onDeselectNode(params));
