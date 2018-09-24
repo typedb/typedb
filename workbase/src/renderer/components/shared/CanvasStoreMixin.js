@@ -81,7 +81,14 @@ const methods = {
   setSelectedNode(nodeId) { this.selectedNodes = (nodeId) ? [this.visFacade.getNode(nodeId)] : null; },
   registerCanvasEventHandler(event, fn) { this.visFacade.registerEventHandler(event, fn); },
 
-  updateCanvasData() { if (this.visFacade) this.canvasData = { nodes: this.visFacade.getAllNodes().length, edges: this.visFacade.getAllEdges().length }; },
+  updateCanvasData() {
+    if (this.visFacade) {
+      this.canvasData = {
+        entities: this.visFacade.getAllNodes().filter(x => x.baseType === 'ENTITY').length,
+        attributes: this.visFacade.getAllNodes().filter(x => x.baseType === 'ATTRIBUTE').length,
+        relationships: this.visFacade.getAllNodes().filter(x => x.baseType === 'RELATIONSHIP').length };
+    }
+  },
 };
 
 const state = {
@@ -90,7 +97,7 @@ const state = {
   selectedNodes: null,
   isInit: false,
   actions,
-  canvasData: { nodes: 0, edges: 0 },
+  canvasData: { entities: 0, attributes: 0, relationships: 0 },
 };
 
 export default {
