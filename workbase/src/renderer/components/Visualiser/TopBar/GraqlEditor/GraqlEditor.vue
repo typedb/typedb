@@ -217,12 +217,6 @@
     },
     created() {
       this.renderIcons();
-
-      window.addEventListener('keydown', (e) => {
-        const gKey = 71;
-        // meta key -> cmd
-        if ((e.keyCode === gKey) && e.metaKey) { this.clearGraph(); }
-      });
     },
     computed: {
       currentQuery() {
