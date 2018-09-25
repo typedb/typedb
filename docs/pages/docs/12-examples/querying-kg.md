@@ -55,14 +55,13 @@ Get me the customers of company “Telecom” who called the target person with 
 
 #### In Graql:
 
-```graql
+```graq-test-ignore
 match
   $customer isa person has phone-number $phone-number;
   $company isa company has name "Telecom";
   (customer: $customer, provider: $company) isa contract;
   $target isa person has phone-number "+86 921 547 9004";
-  (caller: $customer, callee: $target) isa call has started-at
-  $started-at;
+  (caller: $customer, callee: $target) isa call has started-at $started-at;
   $min-date == 2018-09-14T17:18:49; $started-at > $min-date;
 get $phone-number;
 ```
@@ -120,13 +119,13 @@ Get me the phone number of people who have received a call from a customer aged 
 
 #### In Graql:
 
-```graql
+```graq-test-ignore
 match
   $suspect isa person has city "London", has age > 50;
   $company isa company has name "Telecom";
   (customer: $suspect, provider: $company) isa contract;
   $pattern-callee isa person has age < 20;
-  (caller: $suspect, callee: $pattern-callee) isa call has started at $pattern-call-date;
+  (caller: $suspect, callee: $pattern-callee) isa call has started-at $pattern-call-date;
   $target isa person has phone-number $phone-number, has is-customer false;
   (caller: $suspect, callee: $target) isa call has started-at $target-call-date;
   $target-call-date > $pattern-call-date;
@@ -182,7 +181,7 @@ Get me the phone number of people who have received calls from both customer wit
 
 #### In Graql:
 
-```graql
+```graq-test-ignore
 match
   $common-contact isa person has phone-number $phone-number;
   $customer-a isa person has phone-number "+7 171 898 0853";
@@ -238,7 +237,7 @@ Get me the phone phone number of all customers who have called each other as wel
 
 #### In Graql:
 
-```graql
+```graq-test-ignore
 match
   $target isa person has phone-number "+48 894 777 5173";
   $company isa company has name "Telecom";
@@ -302,13 +301,12 @@ Get me the average call duration among customers who have a contract with compan
 
 #### In Graql:
 
-```graql
+```graq-test-ignore
 match
   $customer isa person has age < 20;
   $company isa company has name "Telecom";
   (customer: $customer, provider: $company) isa contract;
-  (caller: $customer, callee: $anyone) isa call has duration
-  $duration;
+  (caller: $customer, callee: $anyone) isa call has duration $duration;
 aggregate mean $duration;
 ```
 
@@ -328,13 +326,12 @@ Get me the average call duration among customers who have a contract with compan
 
 #### In Graql:
 
-```graql
+```graq-test-ignore
 match
   $customer isa person has age > 40;
   $company isa company has name "Telecom";
   (customer: $customer, provider: $company) isa contract;
-  (caller: $customer, callee: $anyone) isa call has duration
-  $duration;
+  (caller: $customer, callee: $anyone) isa call has duration $duration;
 aggregate mean $duration;
 ```
 

@@ -79,7 +79,7 @@ In our case, a **call** relates to **caller** played by a **person** and to **ca
 
 Likewise for a **contract**. It relates to **provider **played by a **company** and to **customer** played by a **person**.
 
-```graql
+```graq-test-ignore
 define
 
   contract sub relationship,
@@ -101,7 +101,7 @@ define
 
 To define the attributes, we use the has keyword.
 
-```graql
+```graq-test-ignore
 define
 
   contract sub relationship,
@@ -140,8 +140,8 @@ define
     relates customer;
 
   call sub relationship,
-    relates provider,
-    relates customer,
+    relates caller,
+    relates callee,
     has started-at,
     has duration;
 
@@ -167,7 +167,7 @@ person sub entity,
   last-name sub attribute datatype string;
   phone-number sub attribute datatype string;
   city sub attribute datatype string;
-  age sub attribute datatype long
+  age sub attribute datatype long;
   is-customer sub attribute datatype boolean;
 ```
 
@@ -207,7 +207,7 @@ match $x sub thing; get;
 
 The result should be as follows:
 
-```graql
+```graq-test-ignore
 {$x label thing;}
 {$x label entity;}
 {$x label relationship;}
