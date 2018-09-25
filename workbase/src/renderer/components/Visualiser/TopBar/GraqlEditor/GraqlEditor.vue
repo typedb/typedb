@@ -268,6 +268,10 @@
           this.localStore.setCurrentQuery(codeMirrorObj.getValue());
           this.editorLinesNumber = codeMirrorObj.lineCount();
         });
+
+        this.codeMirror.on('focus', () => {
+          this.maximizeEditor();
+        });
       });
     },
     methods: {
