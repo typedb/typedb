@@ -130,7 +130,7 @@
         graknTx.close();
         this.attributesLoaded = true;
       },
-      async loadMetaTypes() {
+      loadMetaTypes() {
         if (this.metaTypeInstances.entities || this.metaTypeInstances.attributes) {
           this.types = this.metaTypeInstances.entities.concat(this.metaTypeInstances.attributes);
           this.currentType = this.types[0];
