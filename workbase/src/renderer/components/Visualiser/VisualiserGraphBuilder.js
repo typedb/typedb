@@ -132,7 +132,6 @@ async function prepareNodes(concepts) {
 async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
   const nodes = [];
   const edges = [];
-
   let roleplayers = await relationship.rolePlayersMap();
   roleplayers = Array.from(roleplayers.entries());
   if (limitRolePlayers) {
@@ -214,12 +213,7 @@ async function buildFromConceptMap(result, limitRoleplayers) {
   if (QuerySettings.getRolePlayersStatus()) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
 
-    let roleplayers;
-    if (limitRoleplayers) {
-      roleplayers = await relationshipsRolePlayers(relationships, limitRoleplayers, QuerySettings.getNeighboursLimit());
-    } else {
-      roleplayers = await relationshipsRolePlayers(relationships, true, QuerySettings.getNeighboursLimit());
-    }
+    const roleplayers = await relationshipsRolePlayers(relationships, limitRoleplayers, QuerySettings.getNeighboursLimit());
 
 
     nodes.push(...roleplayers.nodes);

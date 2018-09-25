@@ -208,6 +208,7 @@ const methods = {
     const result = (await (await graknTx.query(query)).collect());
     if (!result.length) {
       // this.$notifyInfo('No results were found for your query!');
+      this.loadingQuery = false;
       return;
     }
 
@@ -221,7 +222,7 @@ const methods = {
     }
 
 
-    const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult);
+    const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult, false);
 
     this.visFacade.addToCanvas(data);
     this.visFacade.fitGraphToWindow();
