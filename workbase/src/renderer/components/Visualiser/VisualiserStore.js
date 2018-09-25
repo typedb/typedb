@@ -13,9 +13,12 @@ import {
   RUN_CURRENT_QUERY,
   EXPLAIN_CONCEPT,
   TOGGLE_LABEL,
+  CANVAS_RESET,
   TOGGLE_COLOUR,
   LOAD_METATYPE_INSTANCES,
 } from '../shared/StoresActions';
+
+const LETTER_G_KEYCODE = 71;
 
 const actions = {
 
@@ -111,6 +114,12 @@ const watch = {
         this.loadNeighbours(visNode, neighboursLimit);
       }
     });
+
+    // Event listener to clear graph (cmd + g)
+    window.addEventListener('keydown', (e) => {
+      // metaKey -> cmd
+      if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
+    });
   },
   currentKeyspace(newKs, oldKs) {
     if (newKs && newKs !== oldKs) {
@@ -199,6 +208,7 @@ const methods = {
     const result = (await (await graknTx.query(query)).collect());
     if (!result.length) {
       // this.$notifyInfo('No results were found for your query!');
+      this.loadingQuery = false;
       return;
     }
 
@@ -212,7 +222,7 @@ const methods = {
     }
 
 
-    const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult);
+    const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult, false);
 
     this.visFacade.addToCanvas(data);
     this.visFacade.fitGraphToWindow();
