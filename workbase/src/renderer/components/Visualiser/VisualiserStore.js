@@ -13,9 +13,12 @@ import {
   RUN_CURRENT_QUERY,
   EXPLAIN_CONCEPT,
   TOGGLE_LABEL,
+  CANVAS_RESET,
   TOGGLE_COLOUR,
   LOAD_METATYPE_INSTANCES,
 } from '../shared/StoresActions';
+
+const LETTER_G_KEYCODE = 71;
 
 const actions = {
 
@@ -110,6 +113,12 @@ const watch = {
       } else { // double click => load neighbours
         this.loadNeighbours(visNode, neighboursLimit);
       }
+    });
+
+    // Event listener to clear graph (cmd + g)
+    window.addEventListener('keydown', (e) => {
+      // metaKey -> cmd
+      if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
     });
   },
   currentKeyspace(newKs, oldKs) {
