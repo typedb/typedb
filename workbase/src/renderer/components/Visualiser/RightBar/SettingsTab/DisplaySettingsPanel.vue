@@ -9,44 +9,44 @@
                 Please select a keyspace
             </div>
 
-        <div class="panel-content" v-else v-show="attributesLoaded">
+            <div class="panel-content" v-else v-show="attributesLoaded">
 
-            <div class="panel-content-item">
-                <div v-bind:class="(showTypeList) ? 'vue-button type-btn type-list-shown' : 'vue-button type-btn'" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
-            </div>
+                <div class="panel-content-item">
+                    <div v-bind:class="(showTypeList) ? 'vue-button type-btn type-list-shown' : 'vue-button type-btn'" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
+                </div>
 
-            <div class="panel-list-item">
-                <div class="type-list" v-show="showTypeList">
-                    <ul v-for="type in types" :key=type>
-                        <li class="type-item" @click="selectType(type)" v-bind:class="[(type === currentType) ? 'type-item-selected' : '']">{{type}}</li>
+                <div class="panel-list-item">
+                    <div class="type-list" v-show="showTypeList">
+                        <ul v-for="type in types" :key=type>
+                            <li class="type-item" @click="selectType(type)" v-bind:class="[(type === currentType) ? 'type-item-selected' : '']">{{type}}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="panel-content-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
+                    <h1 class="sub-panel-header">
+                        <div class="sub-title">Label</div>
+                        <div class="vue-button reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                    </h1>
+                    <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
+                    <ul v-else class="attribute-list">
+                        <li :class="(currentTypeSavedAttributes.includes(prop)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
+                            {{prop}}
+                        </li>
                     </ul>
                 </div>
-            </div>
 
-            <div class="panel-content-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
-                <h1 class="sub-panel-header">
-                    <div class="sub-title">Label</div>
-                    <div class="vue-button reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
-                </h1>
-                <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
-                <ul v-else class="attribute-list">
-                    <li :class="(currentTypeSavedAttributes.includes(prop)) ? 'attribute-btn toggle-attribute-btn' : 'attribute-btn'" @click="toggleAttributeToLabel(prop)" v-for="prop in nodeAttributes" :key=prop>
-                        {{prop}}
-                    </li>
-                </ul>
-            </div>
-
-            <div v-bind:class="(showTypeList) ? 'colour-item disable-content' : 'colour-item'">
-                <h1 class="sub-panel-header">
-                    <div class="sub-title">Colour</div>
-                    <div class="vue-button reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
-                </h1>
-                <div class="row">
-                    <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
-                    <div>{{colour.hex}}</div>
+                <div v-bind:class="(showTypeList) ? 'colour-item disable-content' : 'colour-item'">
+                    <h1 class="sub-panel-header">
+                        <div class="sub-title">Colour</div>
+                        <div class="vue-button reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                    </h1>
+                    <div class="row">
+                        <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
+                        <div>{{colour.hex}}</div>
+                    </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
 </template>
@@ -64,7 +64,7 @@
     props: ['localStore'],
     data() {
       return {
-        showConceptDisplayContent: false,
+        showConceptDisplayContent: true,
         showTypeList: false,
         types: [],
         currentType: null,
@@ -95,19 +95,19 @@
     watch: {
       showConceptDisplayContent(open) {
         if (open && this.currentKeyspace) {
-          this.attributesLoaded = false;
           this.loadMetaTypes();
           this.loadAttributeTypes();
           this.loadColour();
         }
       },
       currentType() {
-        this.attributesLoaded = false;
         this.loadAttributeTypes();
         this.loadColour();
       },
-      currentKeyspace() {
-        this.showConceptDisplayContent = true;
+      metaTypeInstances() {
+        this.loadMetaTypes();
+        this.loadAttributeTypes();
+        this.loadColour();
       },
       node(node) {
         if (node) this.currentType = node.type;
@@ -133,10 +133,9 @@
       loadMetaTypes() {
         if (this.metaTypeInstances.entities || this.metaTypeInstances.attributes) {
           this.types = this.metaTypeInstances.entities.concat(this.metaTypeInstances.attributes);
-
           this.currentType = this.types[0];
           this.showConceptDisplayContent = true;
-        } else { this.showConceptDisplayContent = false; }
+        }
       },
       loadColour() {
         this.colour.hex = (DisplaySettings.getTypeColours(this.currentType).length) ? DisplaySettings.getTypeColours(this.currentType) : '#563891';
