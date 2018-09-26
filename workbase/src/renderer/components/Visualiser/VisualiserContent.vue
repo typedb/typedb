@@ -6,7 +6,7 @@
                 <div class="center">
                     <context-menu></context-menu>
                     <graph-canvas></graph-canvas>
-                    <footer></footer>
+                    <visualiser-footer></visualiser-footer>
                     <!--<bottom-bar></bottom-bar>-->
                     <right-bar></right-bar>
                 </div>
@@ -53,13 +53,13 @@ import BottomBar from './BottomBar.vue';
 
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
-import Footer from './Footer';
+import VisualiserFooter from './Footer';
 
 
 export default {
   name: 'VisualiserContent',
   components: {
-    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, Footer,
+    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, VisualiserFooter,
   },
   methods: {
     toggleRightBar() {

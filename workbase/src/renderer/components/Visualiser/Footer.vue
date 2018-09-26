@@ -7,9 +7,7 @@
         </div>
     </div>
 </template>
-
 <style scoped>
-
     .footer {
         border-top: var(--container-darkest-border);
         background-color: #282828;
@@ -29,21 +27,14 @@
         display: flex;
         margin-left: 5px;
     }
-
 </style>
 
 <script>
 import { mapGetters } from 'vuex';
 export default {
   name: 'Footer',
-  create() {
-    debugger;
-  },
-  mounted() {
-    debugger;
-  },
   computed: {
-    ...mapGetters('currentKeyspace', 'canvasData'),
+    ...mapGetters(['currentKeyspace', 'canvasData']),
   },
 };
 </script>
