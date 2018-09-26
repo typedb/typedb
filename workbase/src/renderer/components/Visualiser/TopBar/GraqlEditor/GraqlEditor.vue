@@ -270,7 +270,7 @@
         });
 
         this.codeMirror.on('focus', () => {
-          this.maximizeEditor();
+          if (this.editorMinimized) this.maximizeEditor();
         });
       });
     },
