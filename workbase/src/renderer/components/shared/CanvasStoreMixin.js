@@ -11,7 +11,7 @@ import {
   LOAD_METATYPE_INSTANCES,
 } from './StoresActions';
 
-const eventCache = {};
+const eventCache = [];
 
 const actions = {
   async [CURRENT_KEYSPACE_CHANGED](keyspace) {
@@ -33,11 +33,6 @@ const actions = {
     // Now that the visualiser is initialised it's possible to register events on the network
     this.registerCanvasEventHandlers();
     this.registerVueCanvasEventHandlers();
-    // Register caches events
-
-    Object.keys(eventCache).forEach((x) => {
-      this.registerCanvasEventHandler(x, eventCache[x]);
-    });
   },
   [CANVAS_RESET]() {
     this.visFacade.resetCanvas();
@@ -72,6 +67,11 @@ const methods = {
     this.registerCanvasEventHandler('click', (params) => {
       if (!params.nodes.length) { this.setSelectedNodes(null); }
     });
+
+    // Register caches events
+    eventCache.forEach((x) => {
+      this.registerCanvasEventHandler(x.event, x.fn);
+    });
   },
 
   // Getters
@@ -86,7 +86,7 @@ const methods = {
   setSelectedNode(nodeId) { this.selectedNodes = (nodeId) ? [this.visFacade.getNode(nodeId)] : null; },
   registerCanvasEventHandler(event, fn) {
     if (this.visFacade) { this.visFacade.registerEventHandler(event, fn); } else {
-      eventCache[event] = fn;
+      eventCache.push({ event, fn });
     }
   },
 
