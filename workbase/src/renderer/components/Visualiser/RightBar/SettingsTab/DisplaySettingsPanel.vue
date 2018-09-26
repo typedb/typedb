@@ -76,6 +76,11 @@
         },
       };
     },
+    created() {
+      this.loadMetaTypes();
+      this.loadAttributeTypes();
+      this.loadColour();
+    },
     computed: {
       ...mapGetters(['metaTypeInstances', 'selectedNode', 'currentKeyspace']),
       node() {

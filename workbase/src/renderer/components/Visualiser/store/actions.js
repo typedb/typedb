@@ -226,7 +226,22 @@ export default {
     commit('metaTypeInstances', metaTypeInstances);
     graknTx.close();
   },
+<<<<<<< HEAD:workbase/src/renderer/components/Visualiser/store/actions.js
   async runQuery({ state, dispatch, commit }, { query, shouldLimitRoleplayers }) {
+=======
+};
+
+const watch = {
+  currentKeyspace(newKs, oldKs) {
+    if (newKs && newKs !== oldKs) {
+      this.currentQuery = '';
+    }
+  },
+};
+
+const methods = {
+  async runQuery(query, limitRoleplayers) {
+>>>>>>> 035bf5b16277ebcd7a1f6af66034893777fe2a15:workbase/src/renderer/components/Visualiser/VisualiserStore.js
     try {
       query = query.trim();
       if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query)
@@ -277,7 +292,157 @@ export default {
       throw e;
     }
   },
+<<<<<<< HEAD:workbase/src/renderer/components/Visualiser/store/actions.js
   openGraknTx({ state }) {
     return state.graknSession.transaction(Grakn.txType.WRITE);
   },
 };
+=======
+
+  async loadAttributes(visNode, neighboursLimit) {
+    const query = `match $x id "${visNode.id}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get $y;`;
+    this.visFacade.updateNode({ id: visNode.id, attrOffset: visNode.attrOffset + neighboursLimit });
+
+    const data = await this.runQuery(query);
+
+    if (data) { // when attributes are fount, construct edges and add to graph
+      const edges = data.nodes.map(attr => ({ from: visNode.id, to: attr.id, label: 'has' }));
+
+      this.visFacade.addToCanvas({ nodes: data.nodes, edges });
+      this.updateCanvasData();
+    }
+  },
+  async loadNeighbours(visNode, neighboursLimit) {
+    const saveloadRolePlayersState = QuerySettings.getRolePlayersStatus();
+
+    QuerySettings.setRolePlayersStatus(true);
+    const query = VisualiserUtils.getNeighboursQuery(visNode, neighboursLimit);
+    this.loadingQuery = true;
+    this.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + neighboursLimit) });
+
+    const graknTx = await this.openGraknTx();
+
+    const result = (await (await graknTx.query(query)).collect());
+
+    if (!result.length) {
+      // this.$notifyInfo('No results were found for your query!');
+      this.loadingQuery = false;
+      return;
+    }
+
+    const filteredResult = await VisualiserGraphBuilder.filterMaps(result);
+
+    if (result.length !== filteredResult.length) {
+      const offsetDiff = result.length - filteredResult.length;
+      visNode.offset += QuerySettings.getNeighboursLimit();
+      this.loadNeighbours(visNode, offsetDiff);
+      if (!filteredResult.length) return;
+    }
+
+
+    const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult, false);
+
+    this.visFacade.addToCanvas(data);
+    this.visFacade.fitGraphToWindow();
+    this.updateCanvasData();
+
+    const nodesWithAttribtues = await VisualiserUtils.computeAttributes(data.nodes);
+
+    this.visFacade.updateNode(nodesWithAttribtues);
+
+    this.loadingQuery = false;
+
+    // when neighbours are found construct edges and add to graph
+    let edges = [];
+
+    if (visNode.baseType === 'ATTRIBUTE') {
+      // Build edges to owners with label `has`
+      edges = data.nodes.map(owner => ({ from: owner.id, to: visNode.id, label: 'has' }));
+    } else if (visNode.baseType === 'RELATIONSHIP') {
+      const roleplayersIds = data.nodes.map(x => x.id);
+      const graknTx = await this.openGraknTx();
+      const relationshipConcept = await this.getNode(visNode.id, graknTx);
+      const roleplayers = Array.from((await relationshipConcept.rolePlayersMap()).entries());
+
+      await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
+        const roleLabel = await role.label();
+        Array.from(setOfThings.values()).forEach((thing) => {
+          if (roleplayersIds.includes(thing.id)) {
+            edges.push({ from: visNode.id, to: thing.id, label: roleLabel });
+          }
+        });
+      }));
+      graknTx.close();
+    }
+    this.visFacade.addToCanvas({ nodes: data.nodes, edges });
+    this.updateCanvasData();
+    QuerySettings.setRolePlayersStatus(saveloadRolePlayersState);
+  },
+
+  // getters
+  async openGraknTx() {
+    return this.graknSession.transaction(Grakn.txType.WRITE);
+  },
+  getMetaTypeInstances() {
+    return this.metaTypeInstances;
+  },
+  getLabelBySelectedType() {
+    return DisplaySettings.getTypeLabels(this.getSelectedNode().type);
+  },
+  getCurrentQuery() {
+    return this.currentQuery;
+  },
+  getVisStyle() {
+    return Style;
+  },
+  showSpinner() {
+    return this.loadingQuery || this.explanationQuery;
+  },
+  isConceptMap(result) {
+    return (result[0].map);
+  },
+
+  // setters
+  setCurrentQuery(query) {
+    this.currentQuery = query;
+  },
+  registerVueCanvasEventHandlers() {
+    this.registerCanvasEventHandler('doubleClick', (params) => {
+      const nodeId = params.nodes[0];
+      if (!nodeId) return;
+
+      const neighboursLimit = QuerySettings.getNeighboursLimit();
+      const visNode = this.visFacade.getNode(nodeId);
+
+      if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
+        this.loadAttributes(visNode, neighboursLimit);
+      } else { // double click => load neighbours
+        this.loadNeighbours(visNode, neighboursLimit);
+      }
+    });
+
+    // Event listener to clear graph (cmd + g)
+    window.addEventListener('keydown', (e) => {
+      // metaKey -> cmd
+      if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
+    });
+  },
+};
+
+const state = {
+  currentQuery: '',
+  loadingQuery: false,
+  explanationQuery: false,
+  metaTypeInstances: {},
+};
+
+export default { create: () => new Vue({
+  name: 'DataManagementStore',
+  mixins: [CanvasStoreMixin.create()],
+  data() { return Object.assign(state, { actions }); },
+  methods,
+  watch,
+}),
+};
+
+>>>>>>> 035bf5b16277ebcd7a1f6af66034893777fe2a15:workbase/src/renderer/components/Visualiser/VisualiserStore.js

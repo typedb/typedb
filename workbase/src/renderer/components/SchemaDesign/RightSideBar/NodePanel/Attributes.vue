@@ -92,6 +92,9 @@ export default {
       attrTypes: [],
     };
   },
+  created() {
+    this.localStore.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
+  },
   computed: {
     selectedNode() { return this.$store.getters.selectedNode; },
     editingMode() {
@@ -106,9 +109,6 @@ export default {
       this.attrTypes = await Promise.all(types.map(async t => ({ label: await t.getLabel(), dataType: await t.getDataType() })));
       this.attrTypes.sort((a, b) => ((a.label > b.label) ? 1 : -1));
     },
-    // readyToRegisterEvents() {
-    //   this.$store.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
-    // },
   },
   methods: {
     deleteAttribute(attributeName) {

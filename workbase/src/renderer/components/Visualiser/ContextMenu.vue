@@ -19,31 +19,32 @@
         deleteNodeText: 'Delete Node',
       };
     },
+    created() {
+      this.localStore.registerCanvasEventHandler('oncontext', (params) => {
+        // Do not show context menu when keyspace is not selected or canvasData is empty
+        if (!this.currentKeyspace || (!this.localStore.canvasData.entities && !this.localStore.canvasData.attributes && !this.localStore.canvasData.relationships)) return;
+
+        // check which menu items to enable
+        this.enableDelete = this.verifyEnableDelete();
+        this.enableExplain = this.verifyEnableExplain();
+        this.enableShortestPath = this.verifyEnableShortestPath();
+
+        this.repositionMenu(params);
+        this.showContextMenu = true;
+      });
+      this.localStore.registerCanvasEventHandler('click', () => { this.showContextMenu = false; });
+      this.localStore.registerCanvasEventHandler('selectNode', () => { this.showContextMenu = false; });
+      this.localStore.registerCanvasEventHandler('deselectNode', () => { this.showContextMenu = false; });
+      this.localStore.registerCanvasEventHandler('dragStart', () => { this.showContextMenu = false; });
+      this.localStore.registerCanvasEventHandler('zoom', () => { this.showContextMenu = false; });
+    },
     computed: {
       selectedNodes() {
-        return this.$store.getters.selectedNodes;
+        return this.localStore.getSelectedNodes();
       },
-    },
-    watch: {
-      // readyToRegisterEvents() {
-      //   this.localStore.registerCanvasEventHandler('oncontext', async (params) => {
-      //     // Do not show context menu when keyspace is not selected or canvasData is empty
-      //     if (!this.currentKeyspace || (!this.localStore.canvasData.nodes && !this.localStore.canvasData.edges)) return;
-
-      //     // check which menu items to enable
-      //     this.enableDelete = this.verifyEnableDelete();
-      //     this.enableExplain = await this.verifyEnableExplain();
-      //     this.enableShortestPath = this.verifyEnableShortestPath();
-
-      //     this.repositionMenu(params);
-      //     this.showContextMenu = true;
-      //   });
-      //   this.localStore.registerCanvasEventHandler('click', () => { this.showContextMenu = false; });
-      //   this.localStore.registerCanvasEventHandler('selectNode', () => { this.showContextMenu = false; });
-      //   this.localStore.registerCanvasEventHandler('deselectNode', () => { this.showContextMenu = false; });
-      //   this.localStore.registerCanvasEventHandler('dragStart', () => { this.showContextMenu = false; });
-      //   this.localStore.registerCanvasEventHandler('zoom', () => { this.showContextMenu = false; });
-      // },
+      currentKeyspace() {
+        return this.localStore.currentKeyspace;
+      },
     },
     methods: {
       deleteNode() {
@@ -62,13 +63,8 @@
         this.localStore.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
         this.showContextMenu = false;
       },
-      async verifyEnableExplain() {
-        if (this.selectedNodes) {
-          if (this.selectedNodes[0].isInferred) {
-            return true;
-          }
-        }
-        return false;
+      verifyEnableExplain() {
+        return (this.selectedNodes && this.selectedNodes[0].isInferred);
       },
       verifyEnableDelete() {
         if (!this.selectedNodes) {

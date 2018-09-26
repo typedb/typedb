@@ -1,7 +1,7 @@
 <template>
 <div class="wrapper">
   <edit-bar
-    :localStore="localStore" 
+    :localStore="localStore"
     :typesAlreadySelected="playsTypes"
     :relatesToolTip="false"
     type="plays"
@@ -78,21 +78,18 @@ export default {
       playsTypes: [],
     };
   },
+  created() {
+    this.localStore.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
+  },
   computed: {
     selectedNode() {
       return this.localStore.getSelectedNode();
-    },
-    readyToRegisterEvents() {
-      return this.localStore.isInit;
     },
     editingMode() {
       return this.localStore.getEditingMode();
     },
   },
   watch: {
-    readyToRegisterEvents() {
-      this.localStore.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
-    },
     async selectedNode(selectedNode) {
       if (!selectedNode) { this.playsTypes = []; return; }
       const node = await this.localStore.getNode(selectedNode.id);
