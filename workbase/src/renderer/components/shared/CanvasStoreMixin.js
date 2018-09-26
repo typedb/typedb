@@ -11,6 +11,8 @@ import {
   LOAD_METATYPE_INSTANCES,
 } from './StoresActions';
 
+const eventCache = {};
+
 const actions = {
   async [CURRENT_KEYSPACE_CHANGED](keyspace) {
     if (keyspace !== this.currentKeyspace) {
@@ -29,7 +31,13 @@ const actions = {
     // We freeze visualiser facade so that Vue does not attach watchers to its properties
     this.visFacade = Object.freeze(VisFacade.initVisualiser(container, this.getVisStyle()));
     // Now that the visualiser is initialised it's possible to register events on the network
-    this.isInit = true;
+    this.registerCanvasEventHandlers();
+    this.registerVueCanvasEventHandlers();
+    // Register caches events
+
+    Object.keys(eventCache).forEach((x) => {
+      this.registerCanvasEventHandler(x, eventCache[x]);
+    });
   },
   [CANVAS_RESET]() {
     this.visFacade.resetCanvas();
@@ -38,8 +46,10 @@ const actions = {
   },
 };
 
-const watch = {
-  isInit() {
+const methods = {
+  // Executes actions on other modules that are not getters or setters.
+  dispatch(event, payload) { return this.actions[event].call(this, payload); },
+  registerCanvasEventHandlers() {
     this.registerCanvasEventHandler('selectNode', (params) => {
       this.setSelectedNodes(params.nodes);
     });
@@ -63,11 +73,6 @@ const watch = {
       if (!params.nodes.length) { this.setSelectedNodes(null); }
     });
   },
-};
-
-const methods = {
-  // Executes actions on other modules that are not getters or setters.
-  dispatch(event, payload) { return this.actions[event].call(this, payload); },
 
   // Getters
   getNode(nodeId, graknTx) { return graknTx.getConcept(nodeId); },
@@ -79,7 +84,11 @@ const methods = {
   // Setters
   setSelectedNodes(nodeIds) { this.selectedNodes = (nodeIds) ? this.visFacade.getNode(nodeIds) : null; },
   setSelectedNode(nodeId) { this.selectedNodes = (nodeId) ? [this.visFacade.getNode(nodeId)] : null; },
-  registerCanvasEventHandler(event, fn) { this.visFacade.registerEventHandler(event, fn); },
+  registerCanvasEventHandler(event, fn) {
+    if (this.visFacade) { debugger; this.visFacade.registerEventHandler(event, fn); } else {
+      eventCache[event] = fn;
+    }
+  },
 
   updateCanvasData() {
     if (this.visFacade) {
@@ -95,7 +104,6 @@ const state = {
   visFacade: undefined,
   currentKeyspace: null,
   selectedNodes: null,
-  isInit: false,
   actions,
   canvasData: { entities: 0, attributes: 0, relationships: 0 },
 };
@@ -105,7 +113,6 @@ export default {
     name: 'CanvasStore',
     data() { return state; },
     methods,
-    watch,
   }),
 };
 

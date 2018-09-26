@@ -1,7 +1,7 @@
 <template>
 <div class="wrapper">
-  <edit-bar 
-  :localStore="localStore" 
+  <edit-bar
+  :localStore="localStore"
   type="attribute"
   :typesAlreadySelected="attrTypes"
   :relatesToolTip="false"
@@ -94,10 +94,10 @@ export default {
       attrTypes: [],
     };
   },
+  created() {
+    this.localStore.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
+  },
   computed: {
-    readyToRegisterEvents() {
-      return this.localStore.isInit;
-    },
     selectedNode() { return this.localStore.getSelectedNode(); },
     editingMode() {
       return this.localStore.getEditingMode();
@@ -110,9 +110,6 @@ export default {
       const types = await node.attributes();
       this.attrTypes = await Promise.all(types.map(async t => ({ label: await t.getLabel(), dataType: await t.getDataType() })));
       this.attrTypes.sort((a, b) => ((a.label > b.label) ? 1 : -1));
-    },
-    readyToRegisterEvents() {
-      this.localStore.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
     },
   },
   methods: {
