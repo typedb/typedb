@@ -1,7 +1,6 @@
 import storage from '@/components/shared/PersistentStorage';
 import Vue from 'vue';
 import SchemaHandler from './SchemaHandler';
-import CanvasStoreMixin from '../shared/CanvasStoreMixin';
 import Style from './Style';
 
 import { DEFINE_ENTITY_TYPE, DEFINE_ATTRIBUTE_TYPE, DEFINE_RELATIONSHIP_TYPE,
@@ -258,9 +257,6 @@ const methods = {
       this.refreshSelectedNode();
     }).catch((e) => { this.openGraknTx(); throw e; });
   },
-  showSpinner() {
-    return this.loadingSchema;
-  },
   getEditingMode() {
     return this.editingMode;
   },
@@ -276,7 +272,6 @@ const state = {
 };
 
 export default new Vue({
-  mixins: [CanvasStoreMixin.create()],
   data() { return Object.assign(state, { actions }); },
   methods,
   watch,

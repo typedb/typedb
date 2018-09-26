@@ -27,7 +27,6 @@
 <script>
   export default {
     name: 'AttributesPanel',
-    props: ['localStore'],
     data() {
       return {
         showAttributesPanel: undefined,
@@ -36,10 +35,10 @@
     },
     computed: {
       selectedNodes() {
-        return this.localStore.getSelectedNodes();
+        return this.$store.getters.selectedNodes;
       },
       currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
+        return this.$store.getters.currentKeyspace;
       },
       msg() {
         if (!this.currentKeyspace) return 'Please select a keyspace';

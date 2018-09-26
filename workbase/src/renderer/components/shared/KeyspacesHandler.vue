@@ -4,8 +4,8 @@
     <div @click="toggleKeyspaceList"><vue-tooltip class="keyspace-tooltip" content="Please select a keyspace" :isOpen="showKeyspaceTooltip" :child="keyspaceBtn"></vue-tooltip></div>
 
         <ul id="keyspaces-list" class="keyspaces-list arrow_box z-depth-1" v-if="showKeyspaceList">
-            <div style="text-align:center;" v-if="keyspaces && !keyspaces.length">no existing keyspace</div>
-            <li :id="ks" v-bind:class="(ks === currentKeyspace)? 'ks-key active noselect' : 'ks-key noselect'" v-for="ks in keyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
+            <div style="text-align:center;" v-if="allKeyspaces && !allKeyspaces.length">no existing keyspace</div>
+            <li :id="ks" v-bind:class="(ks === currentKeyspace)? 'ks-key active noselect' : 'ks-key noselect'" v-for="ks in allKeyspaces" :key="ks" @click="setKeyspace(ks)">{{ks}}</li>
         </ul>
 </div>
 </template>
@@ -80,13 +80,13 @@
 import * as React from 'react';
 import { Button } from '@blueprintjs/core';
 import storage from '@/components/shared/PersistentStorage';
-
+import { mapGetters } from 'vuex';
 
 import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
 
 export default {
   name: 'KeyspacesList',
-  props: ['localStore', 'showKeyspaceTooltip'],
+  props: ['showKeyspaceTooltip'],
   data() {
     return {
       keyspaceItems: [],
@@ -99,19 +99,15 @@ export default {
     };
   },
   computed: {
-    keyspaces() {
-      return this.$store.getters.allKeyspaces;
-    },
-    currentKeyspace() { return this.localStore.getCurrentKeyspace(); },
-    isGraknRunning() { return this.$store.getters.isGraknRunning; },
+    ...mapGetters(['allKeyspaces', 'currentKeyspace', 'isGraknRunning']),
   },
   created() {
     this.renderButton();
   },
   watch: {
-    keyspaces(val) {
+    allKeyspaces(val) {
       // If user deletes current keyspace from Keyspaces page, set new current keyspace to null
-      if (!val.includes(this.currentKeyspace)) { this.localStore.dispatch(CURRENT_KEYSPACE_CHANGED, null); }
+      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, null); }
     },
     isGraknRunning(val) {
       if (!val) {
@@ -137,7 +133,7 @@ export default {
       this.$emit('keyspace-selected');
       storage.set('current_keyspace_data', name);
 
-      this.localStore.dispatch(CURRENT_KEYSPACE_CHANGED, name);
+      this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, name);
       this.showKeyspaceList = false;
     },
     renderButton() {

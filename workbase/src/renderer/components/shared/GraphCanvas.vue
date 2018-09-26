@@ -31,7 +31,6 @@ import { INITIALISE_VISUALISER } from './StoresActions';
 
 export default {
   name: 'WorkbaseCanvas',
-  props: ['localStore'],
   data() {
     return {
       init: false,
@@ -41,7 +40,7 @@ export default {
     this.$nextTick(() => {
       if (this.init) return;
       const graphDiv = this.$refs.graph;
-      this.localStore.dispatch(INITIALISE_VISUALISER, graphDiv);
+      this.$store.dispatch(INITIALISE_VISUALISER, graphDiv);
       this.$emit('init');
       this.init = true;
     });

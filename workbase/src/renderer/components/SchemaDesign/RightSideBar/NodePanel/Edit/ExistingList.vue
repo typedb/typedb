@@ -44,7 +44,7 @@ export default {
   },
   computed: {
     instances() {
-      const meta = this.localStore.getMetaTypeInstances();
+      const meta = this.$store.getters.metaTypeInstances;
       const metaTypeTypes = [(this.type === 'attribute') ? 'attributes' : 'roles'];
 
       return (Object.keys(meta).length > 0) ? meta[metaTypeTypes] : [];

@@ -1,14 +1,14 @@
 <template>
     <transition name="fade" appear>
         <div class="visualiser-wrapper">
-            <top-bar :localStore="localStore"></top-bar>
+            <top-bar></top-bar>
             <div class="lower">
                 <div class="center">
-                    <context-menu :localStore="localStore"></context-menu>
-                    <graph-canvas :localStore="localStore"></graph-canvas>
-                    <footer :localStore="localStore"></footer>
-                    <!--<bottom-bar :localStore="localStore"></bottom-bar>-->
-                    <right-bar :localStore="localStore"></right-bar>
+                    <context-menu></context-menu>
+                    <graph-canvas></graph-canvas>
+                    <footer></footer>
+                    <!--<bottom-bar></bottom-bar>-->
+                    <right-bar></right-bar>
                 </div>
             </div>
         </div>
@@ -51,7 +51,6 @@ import LeftBar from './LeftBar.vue';
 import RightBar from './RightBar.vue';
 import BottomBar from './BottomBar.vue';
 
-import VisualiserStore from './VisualiserStore';
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
 import Footer from './Footer';
@@ -61,24 +60,6 @@ export default {
   name: 'VisualiserContent',
   components: {
     TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, Footer,
-  },
-  data() {
-    return {
-      localStore: VisualiserStore.create(),
-      showNodeSettingsPanel: false,
-    };
-  },
-  computed: {
-    keyspaceSelected() {
-      return this.localStore.getCurrentKeyspace();
-    },
-  },
-  watch: {
-    keyspaceSelected() {
-      if (this.keyspaceSelected) {
-        clearInterval(this.notifyNoKeyspace);
-      }
-    },
   },
   methods: {
     toggleRightBar() {

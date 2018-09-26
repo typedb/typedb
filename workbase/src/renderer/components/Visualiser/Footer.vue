@@ -1,9 +1,9 @@
 <template>
     <div class="footer noselect" v-if="currentKeyspace">
         <div class="canvas-data">
-            <div class="data-item"> entities: {{entities}}</div>
-            <div class="data-item"> attributes: {{attributes}}</div>
-            <div class="data-item"> relationships: {{relationships}}</div>
+            <div class="data-item"> entities: {{canvasData.entities}}</div>
+            <div class="data-item"> attributes: {{canvasData.attributes}}</div>
+            <div class="data-item"> relationships: {{canvasData.relationships}}</div>
         </div>
     </div>
 </template>
@@ -33,31 +33,17 @@
 </style>
 
 <script>
-
+import { mapGetters } from 'vuex';
 export default {
   name: 'Footer',
-  props: ['localStore'],
-  data() {
-    return {
-      entities: 0,
-      attributes: 0,
-      relationships: 0,
-    };
+  create() {
+    debugger;
+  },
+  mounted() {
+    debugger;
   },
   computed: {
-    currentKeyspace() {
-      return this.localStore.getCurrentKeyspace();
-    },
-    getData() {
-      return this.localStore.canvasData;
-    },
-  },
-  watch: {
-    getData(canvasData) {
-      this.entities = canvasData.entities;
-      this.attributes = canvasData.attributes;
-      this.relationships = canvasData.relationships;
-    },
+    ...mapGetters('currentKeyspace', 'canvasData'),
   },
 };
 </script>
