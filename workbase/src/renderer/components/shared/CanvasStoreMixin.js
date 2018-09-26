@@ -85,7 +85,7 @@ const methods = {
   setSelectedNodes(nodeIds) { this.selectedNodes = (nodeIds) ? this.visFacade.getNode(nodeIds) : null; },
   setSelectedNode(nodeId) { this.selectedNodes = (nodeId) ? [this.visFacade.getNode(nodeId)] : null; },
   registerCanvasEventHandler(event, fn) {
-    if (this.visFacade) { debugger; this.visFacade.registerEventHandler(event, fn); } else {
+    if (this.visFacade) { this.visFacade.registerEventHandler(event, fn); } else {
       eventCache[event] = fn;
     }
   },
