@@ -265,7 +265,7 @@ const methods = {
     this.currentQuery = query;
   },
   registerVueCanvasEventHandlers() {
-    this.registerCanvasEventHandler('doubleClick', async (params) => {
+    this.registerCanvasEventHandler('doubleClick', (params) => {
       const nodeId = params.nodes[0];
       if (!nodeId) return;
 
@@ -279,8 +279,9 @@ const methods = {
         const saveLoadRolePlayersState = QuerySettings.getRolePlayersStatus();
         QuerySettings.setRolePlayersStatus(true);
 
-        await this.loadNeighbours(visNode, neighboursLimit);
-        QuerySettings.setRolePlayersStatus(saveLoadRolePlayersState);
+        this.loadNeighbours(visNode, neighboursLimit).then(() => {
+          QuerySettings.setRolePlayersStatus(saveLoadRolePlayersState);
+        });
       }
     });
 
