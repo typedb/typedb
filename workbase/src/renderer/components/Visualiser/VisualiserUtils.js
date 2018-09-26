@@ -5,6 +5,7 @@ function getNeighboursQuery(node, neighboursLimit) {
     case 'ENTITY_TYPE':
     case 'ATTRIBUTE_TYPE':
     case 'RELATIONSHIP_TYPE':
+      return `match $x id "${node.id}"; $y isa $x; offset ${node.offset}; limit ${neighboursLimit}; get $y;`;
     case 'ENTITY':
       return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $r, $y;`;
     case 'ATTRIBUTE':
@@ -35,8 +36,10 @@ function limitQuery(query) {
   return limitedQuery;
 }
 
-
 function buildExplanationQuery(answer, queryPattern) {
+  console.log(answer);
+  console.log(`queryPattern = ${queryPattern}`);
+
   let query = 'match ';
   let attributeQuery = null;
   Array.from(answer.map().entries()).forEach(([graqlVar, concept]) => {
@@ -46,6 +49,10 @@ function buildExplanationQuery(answer, queryPattern) {
       query += `$${graqlVar} id ${concept.id}; `;
     }
   });
+  console.log(`query = ${query}`);
+
+  console.log(`attributeQuery = ${attributeQuery}`);
+
   return { query, attributeQuery };
 }
 
@@ -56,15 +63,14 @@ async function computeAttributes(nodes) {
         type: await (await attr.type()).label(),
         value: await attr.value(),
       })));
-      return node;
+    } else {
+      node.attributes = await Promise.all((await (await node.attributes()).collect()).map(async attr => ({
+        type: await attr.label(),
+      })));
     }
-    node.attributes = await Promise.all((await (await node.attributes()).collect()).map(async attr => ({
-      type: await attr.label(),
-    })));
     return node;
   }));
 }
-
 
 export default {
   getNeighboursQuery,

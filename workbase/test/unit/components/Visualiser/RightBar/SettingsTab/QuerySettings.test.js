@@ -34,7 +34,6 @@ describe('LimitQuerySettings', () => {
 
 describe('RelationshipSettings', () => {
   const DEFAULT_ROLE_PLAYERS = true;
-  const DEFAULT_NEIGHBOURS_LIMIT = 20;
 
   test('setRolePlayersStatus', () => {
     QuerySettings.setRolePlayersStatus(true);
@@ -52,6 +51,10 @@ describe('RelationshipSettings', () => {
     const rolePlayerStatus = QuerySettings.getRolePlayersStatus();
     expect(rolePlayerStatus).toBe(false);
   });
+});
+
+describe('NeighbourSettings', () => {
+  const DEFAULT_NEIGHBOURS_LIMIT = 20;
 
   test('setNeighboursLimit', () => {
     QuerySettings.setNeighboursLimit(2);
