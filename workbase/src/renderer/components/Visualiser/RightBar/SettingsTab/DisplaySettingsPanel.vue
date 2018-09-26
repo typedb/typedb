@@ -76,6 +76,11 @@
         },
       };
     },
+    created() {
+      this.loadMetaTypes();
+      this.loadAttributeTypes();
+      this.loadColour();
+    },
     computed: {
       metaTypeInstances() {
         return this.localStore.getMetaTypeInstances();
