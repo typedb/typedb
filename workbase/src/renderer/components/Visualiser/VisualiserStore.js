@@ -100,27 +100,6 @@ const actions = {
 };
 
 const watch = {
-  isInit() {
-    this.registerCanvasEventHandler('doubleClick', async (params) => {
-      const nodeId = params.nodes[0];
-      if (!nodeId) return;
-
-      const neighboursLimit = QuerySettings.getNeighboursLimit();
-      const visNode = this.visFacade.getNode(nodeId);
-
-      if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
-        this.loadAttributes(visNode, neighboursLimit);
-      } else { // double click => load neighbours
-        this.loadNeighbours(visNode, neighboursLimit);
-      }
-    });
-
-    // Event listener to clear graph (cmd + g)
-    window.addEventListener('keydown', (e) => {
-      // metaKey -> cmd
-      if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
-    });
-  },
   currentKeyspace(newKs, oldKs) {
     if (newKs && newKs !== oldKs) {
       this.currentQuery = '';
@@ -205,7 +184,9 @@ const methods = {
     this.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + neighboursLimit) });
 
     const graknTx = await this.openGraknTx();
+
     const result = (await (await graknTx.query(query)).collect());
+
     if (!result.length) {
       // this.$notifyInfo('No results were found for your query!');
       this.loadingQuery = false;
@@ -288,6 +269,27 @@ const methods = {
   setCurrentQuery(query) {
     this.currentQuery = query;
   },
+  registerVueCanvasEventHandlers() {
+    this.registerCanvasEventHandler('doubleClick', (params) => {
+      const nodeId = params.nodes[0];
+      if (!nodeId) return;
+
+      const neighboursLimit = QuerySettings.getNeighboursLimit();
+      const visNode = this.visFacade.getNode(nodeId);
+
+      if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
+        this.loadAttributes(visNode, neighboursLimit);
+      } else { // double click => load neighbours
+        this.loadNeighbours(visNode, neighboursLimit);
+      }
+    });
+
+    // Event listener to clear graph (cmd + g)
+    window.addEventListener('keydown', (e) => {
+      // metaKey -> cmd
+      if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
+    });
+  },
 };
 
 const state = {
@@ -296,6 +298,7 @@ const state = {
   explanationQuery: false,
   metaTypeInstances: {},
 };
+
 export default { create: () => new Vue({
   name: 'DataManagementStore',
   mixins: [CanvasStoreMixin.create()],
