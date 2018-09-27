@@ -65,10 +65,53 @@ async function computeAttributes(nodes) {
   }));
 }
 
+async function loadMetaTypeInstances(graknTx) {
+// Fetch types
+  const entities = await (await graknTx.query('match $x sub entity; get;')).collectConcepts();
+  const rels = await (await graknTx.query('match $x sub relationship; get;')).collectConcepts();
+  const attributes = await (await graknTx.query('match $x sub attribute; get;')).collectConcepts();
+  const roles = await (await graknTx.query('match $x sub role; get;')).collectConcepts();
+
+  // Get types labels
+  const metaTypeInstances = {};
+  metaTypeInstances.entities = await Promise.all(entities.map(type => type.label()))
+    .then(labels => labels.filter(l => l !== 'entity')
+      .concat()
+      .sort());
+  metaTypeInstances.relationships = await Promise.all(rels.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
+    .then(labels => labels.filter(l => l && l !== 'relationship')
+      .concat()
+      .sort());
+  metaTypeInstances.attributes = await Promise.all(attributes.map(type => type.label()))
+    .then(labels => labels.filter(l => l !== 'attribute')
+      .concat()
+      .sort());
+  metaTypeInstances.roles = await Promise.all(roles.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
+    .then(labels => labels.filter(l => l && l !== 'role')
+      .concat()
+      .sort());
+  return metaTypeInstances;
+}
+
+async function runQuery() {
+
+}
+
+function validateQuery(query) {
+  if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query)
+        || /^insert/.test(query)
+        || /^(.*;)\s*(aggregate\b.*;)$/.test(query) || /^(.*;)\s*(aggregate\b.*;)$/.test(query)
+        || (/^compute/.test(query) && !query.startsWith('compute path'))) {
+    throw new Error('Only get and compute path queries are supported for now.');
+  }
+}
 
 export default {
   getNeighboursQuery,
   limitQuery,
   buildExplanationQuery,
   computeAttributes,
+  loadMetaTypeInstances,
+  validateQuery,
+  runQuery,
 };
