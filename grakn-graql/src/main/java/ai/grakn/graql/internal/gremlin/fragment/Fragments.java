@@ -71,11 +71,19 @@ public class Fragments {
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InSubFragment(varProperty, start, end);
+        return new AutoValue_InSubRepeatedFragment(varProperty, start, end);
     }
 
     public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_OutSubFragment(varProperty, start, end);
+        return new AutoValue_OutSubRepeatedFragment(varProperty, start, end);
+    }
+
+    public static Fragment inSubLimited(VarProperty varProperty, Var start, Var end, int limit) {
+        return new AutoValue_InSubLimitedFragment(varProperty, start, end, limit);
+    }
+
+    public static Fragment outSubLimited(VarProperty varProperty, Var start, Var end, int limit) {
+        return new AutoValue_OutSubLimitedFragment(varProperty, start, end, limit);
     }
 
     public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
@@ -146,7 +154,8 @@ public class Fragments {
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
         return union(traversal, ImmutableSet.of(
-                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
+                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name()))
+                ,
                 __.repeat(__.out(SUB.getLabel())).emit()
         )).unfold();
     }
@@ -156,6 +165,23 @@ public class Fragments {
         return union(traversal, ImmutableSet.of(
                 __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
                 __.repeat(__.in(SUB.getLabel())).emit()
+        )).unfold();
+    }
+
+    static <T> GraphTraversal<T, Vertex> outSubsLimited(GraphTraversal<T, Vertex> traversal, int subSteps) {
+        // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
+        return union(traversal, ImmutableSet.of(
+                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name()))
+                ,
+                __.repeat(__.out(SUB.getLabel())).times(subSteps).emit()
+        )).unfold();
+    }
+
+    static <T> GraphTraversal<T, Vertex> inSubsLimited(GraphTraversal<T, Vertex> traversal, int subSteps) {
+        // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
+        return union(traversal, ImmutableSet.of(
+                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
+                __.repeat(__.in(SUB.getLabel())).times(subSteps).emit()
         )).unfold();
     }
 

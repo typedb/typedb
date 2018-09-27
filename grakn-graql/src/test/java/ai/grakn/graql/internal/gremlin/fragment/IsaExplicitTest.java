@@ -188,7 +188,7 @@ public class IsaExplicitTest {
         assertEquals(3, plan.size());
         assertThat(plan, contains(
                 instanceOf(LabelFragment.class),
-                instanceOf(InSubFragment.class),
+                instanceOf(InSubRepeatedFragment.class),
                 instanceOf(InIsaFragment.class)
         ));
 
@@ -232,7 +232,7 @@ public class IsaExplicitTest {
                 instanceOf(OutRolePlayerFragment.class), // go to the other role player
                 instanceOf(NeqFragment.class), // check two players are different
                 instanceOf(OutIsaFragment.class), // check the role player's type
-                instanceOf(OutSubFragment.class) // check the subtypes
+                instanceOf(OutSubRepeatedFragment.class) // check the subtypes
         ));
     }
 

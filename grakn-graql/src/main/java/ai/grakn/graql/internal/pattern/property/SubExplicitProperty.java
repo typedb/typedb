@@ -18,5 +18,123 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-public class SubExplicitProperty {
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.executor.ConceptBuilder;
+import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+
+/**
+ * Represents the {@code sub!} property on a {@link ai.grakn.concept.Type}.
+ *
+ * This property can be queried or inserted.
+ *
+ * This property relates a {@link ai.grakn.concept.Type} and another {@link ai.grakn.concept.Type}. It indicates
+ * that every instance of the left type is also an instance of the right type.
+ * When matching, subtyping is ignored:
+ * if
+ * `man sub person`,
+ * `person sub entity`,
+ * then
+ * `$x sub! entity` only returns `person` but not `man`
+ *
+ * @author Joshua Send
+ */
+@AutoValue
+public abstract class SubExplicitProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+
+    public static final String NAME = "sub!";
+
+    public static SubExplicitProperty of(VarPatternAdmin superType) {
+        return new AutoValue_SubExplicitProperty(superType);
+    }
+
+    public abstract VarPatternAdmin superType();
+
+    @Override
+    public String getName() {
+        return NAME;
+    }
+
+    @Override
+    public String getProperty() {
+        return superType().getPrintableName();
+    }
+
+
+    @Override
+    public Collection<EquivalentFragmentSet> match(Var start) {
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var(), true));
+    }
+
+    @Override
+    public Stream<VarPatternAdmin> getTypes() {
+        return Stream.of(superType());
+    }
+
+    @Override
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(superType());
+    }
+
+    @Override
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
+
+            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
+
+            if (builder.isPresent()) {
+                builder.get().sub(superConcept);
+            } else {
+                ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
+            }
+        };
+
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(superType().var()).produces(var).build());
+    }
+
+    @Override
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept concept = executor.get(var).asSchemaConcept();
+
+            SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
+            SchemaConcept actualSuperConcept = concept.sup();
+
+            if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
+                concept.delete();
+            }
+        };
+
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, superType().var()).build());
+    }
+
+    @Override
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        Var varName = var.var().asUserDefined();
+        VarPatternAdmin typeVar = this.superType();
+        Var typeVariable = typeVar.var().asUserDefined();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+        ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
+        return SubAtom.create(varName, typeVariable, predicateId, parent);
+    }
 }

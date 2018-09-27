@@ -19,10 +19,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -30,30 +26,34 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
 /**
- * Abstract parent Fragment following in sub edges
+ * Fragment following in sub edges
  *
  * @author Felix Chapman
  * @author Joshua Send
  */
 
-public abstract class InSubFragment extends Fragment {
+@AutoValue
+public abstract class InSubRepeatedFragment extends InSubFragment {
 
     @Override
     public abstract Var end();
 
     @Override
-    public double internalFragmentCost() {
-        return COST_SUBTYPES_PER_TYPE;
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
+        return Fragments.inSubs(Fragments.isVertex(traversal));
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(NodeId.NodeType.SUB, nodes, edges);
+    public String name() {
+        return "<-[sub]-";
+    }
+
+    @Override
+    public Fragment getInverse() {
+        return Fragments.outSub(varProperty(), end(), start());
     }
 }
 

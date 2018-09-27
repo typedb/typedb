@@ -34,36 +34,20 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Fragment following out sub edges
+ * Abstract Fragment for following out sub edges
  *
  * @author Felix Chapman
+ * @author Joshua Send
  */
 
-@AutoValue
 public abstract class OutSubFragment extends Fragment {
 
     @Override
     public abstract Var end();
 
     @Override
-    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
-        return Fragments.outSubs(Fragments.isVertex(traversal));
-    }
-
-    @Override
-    public String name() {
-        return "-[sub]->";
-    }
-
-    @Override
     public double internalFragmentCost() {
         return COST_SAME_AS_PREVIOUS;
-    }
-
-    @Override
-    public Fragment getInverse() {
-        return Fragments.inSub(varProperty(), end(), start());
     }
 
     @Override
