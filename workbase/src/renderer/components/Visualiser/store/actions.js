@@ -170,16 +170,10 @@ export default {
     state.visFacade.container.visualiser.updateNode(updatedNodes);
   },
 
+  // TODO check why we have second paramenter - it looks like it's never set to true
   async runQuery({ state, dispatch, commit }, { query, shouldLimitRoleplayers }) {
     try {
-      query = query.trim();
-      if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query)
-        || /^insert/.test(query)
-        || /^(.*;)\s*(aggregate\b.*;)$/.test(query) || /^(.*;)\s*(aggregate\b.*;)$/.test(query)
-        || (/^compute/.test(query) && !query.startsWith('compute path'))) {
-        throw new Error('Only get and compute path queries are supported for now.');
-      }
-
+      VisualiserUtils.validateQuery(query);
       commit('loadingQuery', true);
 
       const graknTx = await dispatch('openGraknTx');

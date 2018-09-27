@@ -93,15 +93,12 @@ async function loadMetaTypeInstances(graknTx) {
   return metaTypeInstances;
 }
 
-async function runQuery() {
-
-}
-
 function validateQuery(query) {
-  if (/^(.*;)\s*(delete\b.*;)$/.test(query) || /^(.*;)\s*(delete\b.*;)$/.test(query)
-        || /^insert/.test(query)
-        || /^(.*;)\s*(aggregate\b.*;)$/.test(query) || /^(.*;)\s*(aggregate\b.*;)$/.test(query)
-        || (/^compute/.test(query) && !query.startsWith('compute path'))) {
+  const trimmed = query.trim();
+  if (/^(.*;)\s*(delete\b.*;)$/.test(trimmed) || /^(.*;)\s*(delete\b.*;)$/.test(trimmed)
+        || /^insert/.test(trimmed)
+        || /^(.*;)\s*(aggregate\b.*;)$/.test(trimmed) || /^(.*;)\s*(aggregate\b.*;)$/.test(trimmed)
+        || (/^compute/.test(trimmed) && !trimmed.startsWith('compute path'))) {
     throw new Error('Only get and compute path queries are supported for now.');
   }
 }
@@ -113,5 +110,4 @@ export default {
   computeAttributes,
   loadMetaTypeInstances,
   validateQuery,
-  runQuery,
 };
