@@ -1,5 +1,5 @@
 import VisualiserUtils from '@/components/Visualiser/VisualiserUtils.js';
-import mockConcepts from '../../../helpers/MockConcepts';
+import MockConcepts from '../../../helpers/MockConcepts';
 
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
@@ -50,36 +50,49 @@ describe('limit Query', () => {
 
 describe('Get Neighbours Query', () => {
   test('Type', () => {
-    const neighboursQuery = VisualiserUtils.getNeighboursQuery(mockConcepts.getMockEntityType(), 1);
+    const neighboursQuery = VisualiserUtils.getNeighboursQuery(MockConcepts.getMockEntityType(), 1);
     expect(neighboursQuery).toBe('match $x id "0000"; $y isa $x; offset 0; limit 1; get $y;');
   });
   test('Entity', () => {
-    const neighboursQuery = VisualiserUtils.getNeighboursQuery(mockConcepts.getMockEntity1(), 1);
+    const neighboursQuery = VisualiserUtils.getNeighboursQuery(MockConcepts.getMockEntity1(), 1);
     expect(neighboursQuery).toBe('match $x id "3333"; $r ($x, $y); offset 0; limit 1; get $r, $y;');
   });
   test('Attribute', () => {
-    const neighboursQuery = VisualiserUtils.getNeighboursQuery(mockConcepts.getMockAttribute(), 1);
+    const neighboursQuery = VisualiserUtils.getNeighboursQuery(MockConcepts.getMockAttribute(), 1);
     expect(neighboursQuery).toBe('match $x has attribute $y; $y id "5555"; offset 0; limit 1; get $x;');
   });
   test('Relationship', () => {
-    const neighboursQuery = VisualiserUtils.getNeighboursQuery(mockConcepts.getMockRelationship(), 1);
+    const neighboursQuery = VisualiserUtils.getNeighboursQuery(MockConcepts.getMockRelationship(), 1);
     expect(neighboursQuery).toBe('match $r id "6666"; $r ($x, $y); offset 0; limit 1; get $x;');
   });
 });
 
 describe('Compute Attributes', () => {
   test('attach attributes to type', async () => {
-    const nodes = await VisualiserUtils.computeAttributes([mockConcepts.getMockEntityType()]);
+    const nodes = await VisualiserUtils.computeAttributes([MockConcepts.getMockEntityType()]);
     expect(nodes[0].attributes[0].type).toBe('name');
   });
   test('attach attributes to thing', async () => {
-    const nodes = await VisualiserUtils.computeAttributes([mockConcepts.getMockEntity1()]);
+    const nodes = await VisualiserUtils.computeAttributes([MockConcepts.getMockEntity1()]);
     expect(nodes[0].attributes[0].type).toBe('name');
     expect(nodes[0].attributes[0].value).toBe('John');
   });
 });
 
 describe('Build Explanation Query', () => {
-  test('attach attributes to type', async () => {
+  test('from two entities', async () => {
+    const explanationQuery = VisualiserUtils.buildExplanationQuery(MockConcepts.getMockAnswer1(), MockConcepts.getMockQueryPattern1);
+    expect(explanationQuery.query).toBe('match $p id 3333; $c1 id 4444; ');
+    expect(explanationQuery.attributeQuery).toBe(null);
+  });
+  test('from entity and attribute', async () => {
+    const explanationQuery = VisualiserUtils.buildExplanationQuery(MockConcepts.getMockAnswer2(), MockConcepts.getMockQueryPattern2);
+    expect(explanationQuery.query).toBe('match $c id 3333; ');
+    expect(explanationQuery.attributeQuery).toBe('has gender $1234;');
+  });
+  test('from entity and relationship', async () => {
+    const explanationQuery = VisualiserUtils.buildExplanationQuery(MockConcepts.getMockAnswer3(), MockConcepts.getMockQueryPattern3);
+    expect(explanationQuery.query).toBe('match $p id 3333; $c id 4444; ');
+    expect(explanationQuery.attributeQuery).toBe(null);
   });
 });

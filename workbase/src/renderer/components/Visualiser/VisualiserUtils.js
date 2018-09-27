@@ -37,9 +37,6 @@ function limitQuery(query) {
 }
 
 function buildExplanationQuery(answer, queryPattern) {
-  console.log(answer);
-  console.log(`queryPattern = ${queryPattern}`);
-
   let query = 'match ';
   let attributeQuery = null;
   Array.from(answer.map().entries()).forEach(([graqlVar, concept]) => {
@@ -49,10 +46,6 @@ function buildExplanationQuery(answer, queryPattern) {
       query += `$${graqlVar} id ${concept.id}; `;
     }
   });
-  console.log(`query = ${query}`);
-
-  console.log(`attributeQuery = ${attributeQuery}`);
-
   return { query, attributeQuery };
 }
 
