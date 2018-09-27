@@ -3,7 +3,7 @@ import {
   EXPLAIN_CONCEPT,
   TOGGLE_LABEL,
   TOGGLE_COLOUR,
-  LOAD_METATYPE_INSTANCES,
+  UPDATE_METATYPE_INSTANCES,
   INITIALISE_VISUALISER,
   CURRENT_KEYSPACE_CHANGED,
   CANVAS_RESET,
@@ -34,6 +34,29 @@ export default {
     commit('selectedNodes', null);
     commit('updateCanvasData');
   },
+  [CURRENT_KEYSPACE_CHANGED]({ state, dispatch, commit, rootState }, keyspace) {
+    if (keyspace !== state.currentKeyspace) {
+      dispatch(CANVAS_RESET);
+      commit('currentQuery', '');
+      commit('currentKeyspace', keyspace);
+      commit('graknSession', rootState.grakn.session(keyspace));
+      dispatch(UPDATE_METATYPE_INSTANCES);
+    }
+  },
+  [RUN_CURRENT_QUERY]({ state, dispatch }) {
+    return dispatch('runQuery', { query: state.currentQuery });
+  },
+  async [UPDATE_METATYPE_INSTANCES]({ dispatch, commit }) {
+    const graknTx = await dispatch('openGraknTx');
+    const metaTypeInstances = await VisualiserUtils.loadMetaTypeInstances(graknTx);
+    graknTx.close();
+    commit('metaTypeInstances', metaTypeInstances);
+  },
+  openGraknTx({ state }) {
+    return state.graknSession.transaction(Grakn.txType.WRITE);
+  },
+  //--------------------
+
   async loadAttributes({ state, commit, dispatch }, { visNode, neighboursLimit }) {
     const query = `match $x id "${visNode.id}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get $y;`;
     state.visFacade.updateNode({ id: visNode.id, attrOffset: visNode.attrOffset + neighboursLimit });
@@ -110,23 +133,6 @@ export default {
     commit('updateCanvasData');
     QuerySettings.setRolePlayersStatus(saveloadRolePlayersState);
   },
-  async [CURRENT_KEYSPACE_CHANGED]({ state, dispatch, commit, rootState }, keyspace) {
-    if (keyspace !== state.currentKeyspace) {
-      state.visFacade.resetCanvas();
-      commit('updateCanvasData');
-      commit('selectedNodes', null);
-      commit('currentQuery', '');
-      commit('currentKeyspace', keyspace);
-      if (keyspace) { // keyspace will be null if user deletes current keyspace from Keyspaces page
-        const graknSession = rootState.grakn.session(state.currentKeyspace);
-        commit('graknSession', graknSession);
-        dispatch(LOAD_METATYPE_INSTANCES);
-      }
-    }
-  },
-  [RUN_CURRENT_QUERY]({ state, dispatch }) {
-    return dispatch('runQuery', { query: state.currentQuery });
-  },
   async [EXPLAIN_CONCEPT]({ state, dispatch, getters }) {
     const saveloadRolePlayersState = QuerySettings.getRolePlayersStatus();
     QuerySettings.setRolePlayersStatus(true);
@@ -163,37 +169,7 @@ export default {
     const updatedNodes = nodes.map(node => Object.assign(node, state.visStyle.computeNodeStyle(node)));
     state.visFacade.container.visualiser.updateNode(updatedNodes);
   },
-  async [LOAD_METATYPE_INSTANCES]({ dispatch, commit }) {
-    const graknTx = await dispatch('openGraknTx');
 
-    // Fetch types
-    const entities = await (await graknTx.query('match $x sub entity; get;')).collectConcepts();
-    const rels = await (await graknTx.query('match $x sub relationship; get;')).collectConcepts();
-    const attributes = await (await graknTx.query('match $x sub attribute; get;')).collectConcepts();
-    const roles = await (await graknTx.query('match $x sub role; get;')).collectConcepts();
-
-    // Get types labels
-    const metaTypeInstances = {};
-    metaTypeInstances.entities = await Promise.all(entities.map(type => type.label()))
-      .then(labels => labels.filter(l => l !== 'entity')
-        .concat()
-        .sort());
-    metaTypeInstances.relationships = await Promise.all(rels.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
-      .then(labels => labels.filter(l => l && l !== 'relationship')
-        .concat()
-        .sort());
-    metaTypeInstances.attributes = await Promise.all(attributes.map(type => type.label()))
-      .then(labels => labels.filter(l => l !== 'attribute')
-        .concat()
-        .sort());
-    metaTypeInstances.roles = await Promise.all(roles.map(async type => ((!await type.isImplicit()) ? type.label() : null)))
-      .then(labels => labels.filter(l => l && l !== 'role')
-        .concat()
-        .sort());
-
-    commit('metaTypeInstances', metaTypeInstances);
-    graknTx.close();
-  },
   async runQuery({ state, dispatch, commit }, { query, shouldLimitRoleplayers }) {
     try {
       query = query.trim();
@@ -244,8 +220,5 @@ export default {
       commit('loadingQuery', false);
       throw e;
     }
-  },
-  openGraknTx({ state }) {
-    return state.graknSession.transaction(Grakn.txType.WRITE);
   },
 };

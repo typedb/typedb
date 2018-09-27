@@ -19,7 +19,7 @@ export const TOGGLE_COLOUR = 'toggle-colour';
 
 
 // Common actions shared by the two canvas stores (SchemaDesign && DataManagement)
-export const LOAD_METATYPE_INSTANCES = 'load-metatype-instances';
+export const UPDATE_METATYPE_INSTANCES = 'update-metatype-instances';
 export const INITIALISE_VISUALISER = 'initialise-visualiser';
 export const CANVAS_RESET = 'canvas-reset';
 export const CURRENT_KEYSPACE_CHANGED = 'current-keyspace-changed';
