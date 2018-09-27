@@ -93,6 +93,9 @@ function registerEventHandler(event, fn) {
 
 function fitGraphToWindow() { this.container.visualiser.getNetwork().fit({ animation: { easingFunction: 'easeInOutQuad', duration: 500 } }); }
 
+function getNetwork() {
+  return this.container.visualiser.getNetwork();
+}
 const state = {
   container: undefined,
 };
@@ -109,6 +112,7 @@ const prototype = {
   getNode,
   getAllEdges,
   updateNode,
+  getNetwork,
 };
 
 export default {

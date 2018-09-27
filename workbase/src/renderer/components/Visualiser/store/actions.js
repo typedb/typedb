@@ -15,51 +15,24 @@ import VisFacade from '@/components/CanvasVisualiser/Facade';
 import VisualiserUtils from '../VisualiserUtils';
 import QuerySettings from '../RightBar/SettingsTab/QuerySettings';
 import VisualiserGraphBuilder from '../VisualiserGraphBuilder';
+import VisualiserCanvasEventsHandler from '../VisualiserCanvasEventsHandler';
 const LETTER_G_KEYCODE = 71;
 
+const addResetGraphListener = dispatch => window.addEventListener('keydown', (e) => {
+  // Reset canvas when metaKey(CtrlOrCmd) + G are pressed
+  if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { dispatch(CANVAS_RESET); }
+});
 
 export default {
   [INITIALISE_VISUALISER]({ state, commit, dispatch }, container) {
-    // Event listener to clear graph (CtrlOrCmd + g)
-    window.addEventListener('keydown', (e) => {
-      // metaKey -> CtrlOrCmd
-      if ((e.keyCode === LETTER_G_KEYCODE) && e.metaKey) { this.dispatch(CANVAS_RESET); }
-    });
-    // We freeze visualiser facade so that Vue does not attach watchers to its properties
-    commit('setVisFacade', Object.freeze(VisFacade.initVisualiser(container, state.visStyle)));
-    state.visFacade.registerEventHandler('selectNode', (params) => { commit('selectedNodes', params.nodes); });
-    state.visFacade.registerEventHandler('oncontext', (params) => {
-      const nodeId = state.visFacade.container.visualiser.getNetwork().getNodeAt(params.pointer.DOM);
-      if (nodeId) {
-        if (!(params.nodes.length > 1)) {
-          state.visFacade.container.visualiser.getNetwork().unselectAll();
-          commit('selectedNodes', [nodeId]);
-          state.visFacade.container.visualiser.getNetwork().selectNodes([nodeId]);
-        }
-      } else if (!(params.nodes.length > 1)) {
-        commit('selectedNodes', null);
-        state.visFacade.container.visualiser.getNetwork().unselectAll();
-      }
-    });
-    state.visFacade.registerEventHandler('dragStart', (params) => {
-      if (!params.nodes.length > 1) { commit('selectedNodes', [params.nodes[0]]); }
-    });
-    state.visFacade.registerEventHandler('click', (params) => {
-      if (!params.nodes.length) { commit('selectedNodes', null); }
-    });
-    state.visFacade.registerEventHandler('doubleClick', async (params) => {
-      const nodeId = params.nodes[0];
-      if (!nodeId) return;
-
-      const neighboursLimit = QuerySettings.getNeighboursLimit();
-      const visNode = state.visFacade.getNode(nodeId);
-
-      if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
-        dispatch('loadAttributes', { visNode, neighboursLimit });
-      } else { // double click => load neighbours
-        dispatch('loadNeighbours', { visNode, neighboursLimit });
-      }
-    });
+    addResetGraphListener(dispatch);
+    commit('setVisFacade', VisFacade.initVisualiser(container, state.visStyle));
+    VisualiserCanvasEventsHandler.registerHandlers({ state, commit, dispatch });
+  },
+  [CANVAS_RESET]({ state, commit }) {
+    state.visFacade.resetCanvas();
+    commit('selectedNodes', null);
+    commit('updateCanvasData');
   },
   async loadAttributes({ state, commit, dispatch }, { visNode, neighboursLimit }) {
     const query = `match $x id "${visNode.id}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get $y;`;
@@ -136,11 +109,6 @@ export default {
     state.visFacade.addToCanvas({ nodes: data.nodes, edges });
     commit('updateCanvasData');
     QuerySettings.setRolePlayersStatus(saveloadRolePlayersState);
-  },
-  [CANVAS_RESET]({ state, commit }) {
-    state.visFacade.resetCanvas();
-    commit('selectedNodes', null);
-    commit('updateCanvasData');
   },
   async [CURRENT_KEYSPACE_CHANGED]({ state, dispatch, commit, rootState }, keyspace) {
     if (keyspace !== state.currentKeyspace) {
