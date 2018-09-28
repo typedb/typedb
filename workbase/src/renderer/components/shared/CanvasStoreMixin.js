@@ -67,6 +67,9 @@ const methods = {
     this.registerCanvasEventHandler('click', (params) => {
       if (!params.nodes.length) { this.setSelectedNodes(null); }
     });
+    this.registerCanvasEventHandler('hold', (params) => {
+      if (params.nodes.length) { this.setSelectedNodes(null); this.visFacade.container.visualiser.getNetwork().unselectAll(); }
+    });
 
     // Register caches events
     eventCache.forEach((x) => {
