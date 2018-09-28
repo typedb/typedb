@@ -218,7 +218,9 @@ const methods = {
     // when neighbours are found construct edges and add to graph
     let edges = [];
 
-    if (visNode.baseType === 'ATTRIBUTE') {
+    if (visNode.baseType.includes('TYPE')) {
+      edges = data.nodes.map(instance => ({ from: instance.id, to: visNode.id, label: 'isa' }));
+    } else if (visNode.baseType === 'ATTRIBUTE') {
       // Build edges to owners with label `has`
       edges = data.nodes.map(owner => ({ from: owner.id, to: visNode.id, label: 'has' }));
     } else if (visNode.baseType === 'RELATIONSHIP') {
