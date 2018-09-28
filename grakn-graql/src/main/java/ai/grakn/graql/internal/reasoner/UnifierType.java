@@ -55,7 +55,7 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean typeCompatibility(Type parent, Type child) {
+        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
             return !areDisjointTypes(parent, child);
         }
 
@@ -80,7 +80,7 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean typeCompatibility(Type parent, Type child) {
+        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
             return ((child == null ) == (parent == null)) && !areDisjointTypes(parent, child);
         }
 
@@ -104,7 +104,7 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean typeCompatibility(Type parent, Type child) {
+        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
             return child == null || !areDisjointTypes(parent, child);
         }
 

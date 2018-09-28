@@ -30,6 +30,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -282,11 +283,13 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom) {
+    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
         if (!(parentAtom instanceof ResourceAtom)){
             return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
         }
-        Unifier unifier = super.getUnifier(parentAtom);
+        Unifier unifier = super.getUnifier(parentAtom, unifierType);
+        if (unifier == null) return null;
+
         ResourceAtom parent = (ResourceAtom) parentAtom;
 
         //unify relation vars

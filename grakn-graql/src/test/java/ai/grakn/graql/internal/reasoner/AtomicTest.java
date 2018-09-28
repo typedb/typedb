@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -1238,8 +1239,8 @@ public class AtomicTest {
         List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
         List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute();
 
-        Unifier unifier = childAtom.getUnifier(parentAtom);
-        Unifier unifier2 = childAtom.getUnifier(parentAtom2);
+        Unifier unifier = childAtom.getUnifier(parentAtom, UnifierType.EXACT);
+        Unifier unifier2 = childAtom.getUnifier(parentAtom2, UnifierType.EXACT);
 
         assertCollectionsEqual(
                 parentAnswers,
@@ -1278,9 +1279,9 @@ public class AtomicTest {
         Atom resourceAtom2 = resourceQuery2.getAtom();
         Atom resourceAtom3 = resourceQuery3.getAtom();
 
-        Unifier unifier = resourceAtom.getUnifier(typeAtom);
-        Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
-        Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
+        Unifier unifier = resourceAtom.getUnifier(typeAtom, UnifierType.EXACT);
+        Unifier unifier2 = resourceAtom2.getUnifier(typeAtom, UnifierType.EXACT);
+        Unifier unifier3 = resourceAtom3.getUnifier(typeAtom, UnifierType.EXACT);
 
         ConceptMap typeAnswer = typeQuery.getQuery().execute().iterator().next();
         ConceptMap resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
@@ -1449,7 +1450,7 @@ public class AtomicTest {
         List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
-            Unifier unifier2 = parentAtom.getUnifier(childAtom);
+            Unifier unifier2 = parentAtom.getUnifier(childAtom, UnifierType.EXACT);
             assertEquals(unifier.inverse(), unifier2);
             assertEquals(unifier, unifier2.inverse());
         }

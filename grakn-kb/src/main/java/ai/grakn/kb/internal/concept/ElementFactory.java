@@ -68,7 +68,7 @@ public final class ElementFactory {
         this.tx = tx;
     }
 
-    private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
+    private <X extends Concept, E extends AbstractElement> X   getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
         if(!tx.txCache().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(element);
             tx.txCache().cacheConcept(newConcept);

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 
@@ -33,11 +34,11 @@ import ai.grakn.graql.Var;
 public interface UnifierComparison {
 
     /**
-     * @param parent {@link Type} of parent expression
-     * @param child {@link Type} of child expression
+     * @param parent {@link SchemaConcept} of parent expression
+     * @param child {@link SchemaConcept} of child expression
      * @return true if {@link Type}s are compatible
      */
-    boolean typeCompatibility(Type parent, Type child);
+    boolean typeCompatibility(SchemaConcept parent, SchemaConcept child);
 
     /**
      * @param parent {@link Atomic} of parent expression

@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery> {
 
     abstract public AtomicEquivalence atomicEquivalence();
+    public String name(){ return atomicEquivalence().name();}
 
     private static <B extends Atomic, S extends B> boolean equivalence(ReasonerQuery q1, ReasonerQuery q2, Class<S> atomType, Equivalence<B> equiv) {
         //NB: this check is too simple for general queries - variable binding patterns are not recognised

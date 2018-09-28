@@ -26,6 +26,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
@@ -35,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -168,16 +170,25 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom) {
+    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
         if (!(parentAtom instanceof Binary)) {
             throw GraqlQueryException.unificationAtomIncompatibility();
         }
+        if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept()) ) return null;
 
         Multimap<Var, Var> varMappings = HashMultimap.create();
         Var childVarName = this.getVarName();
         Var parentVarName = parentAtom.getVarName();
         Var childPredicateVarName = this.getPredicateVariable();
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
+
+        //check for incompatibilities
+        if( !unifierType.atomicCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
+                || !unifierType.atomicCompatibility(parentAtom.getIdPredicate(parentPredicateVarName), this.getIdPredicate(childPredicateVarName))
+                || !unifierType.atomicCompatibility(parentAtom.getPredicate(parentVarName, ValuePredicate.class), this.getPredicate(childVarName, ValuePredicate.class))
+                || !unifierType.atomicCompatibility(parentAtom.getPredicate(parentPredicateVarName, ValuePredicate.class), this.getPredicate(childPredicateVarName, ValuePredicate.class))){
+                     return null;
+        }
 
         if (parentVarName.isUserDefinedName()
                 && childVarName.isUserDefinedName()) {

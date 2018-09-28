@@ -918,7 +918,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                     ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
                                                     return matchType.atomicCompatibility(parentVP, childVP);
                                                 })
-                                                //check linked resources
+                                                //check linked resources  
                                                 .filter(crp -> {
                                                     Var parentVar = prp.getRolePlayer().var();
                                                     Var childVar = crp.getRolePlayer().var();
@@ -959,13 +959,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public Unifier getUnifier(Atom pAtom){
-        return getMultiUnifier(pAtom, UnifierType.EXACT).getUnifier();
+    public Unifier getUnifier(Atom pAtom, UnifierComparison unifierType){
+        return getMultiUnifier(pAtom, unifierType).getUnifier();
     }
 
     @Override
     public MultiUnifier getMultiUnifier(Atom pAtom, UnifierComparison unifierType) {
-        Unifier baseUnifier = super.getUnifier(pAtom);
+        Unifier baseUnifier = super.getUnifier(pAtom, unifierType);
         Set<Unifier> unifiers = new HashSet<>();
         if (pAtom.isRelation()) {
             RelationshipAtom parentAtom = pAtom.toRelationshipAtom();

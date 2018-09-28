@@ -141,7 +141,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Set<TypeAtom> parentTypes = parent.getAtom().getTypeConstraints().collect(Collectors.toSet());
 
         Set<Unifier> unifiers = multiUnifier.unifiers().stream()
-                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier))
+                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier, unifierType))
                 .collect(Collectors.toSet());
         return new MultiUnifierImpl(unifiers);
     }

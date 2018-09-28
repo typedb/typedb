@@ -6,7 +6,7 @@ define
 #
 #                             role
 #             /                 |                   \
-#         baseRole1               baseRole2                baseRole3
+#         baseRole1         baseRole2                baseRole3
 #       /      \             /     \                |
 # subRole1   aSubRole1   subRole2  aSubRole1      subRole3
 #       |                    |                      |
@@ -83,6 +83,10 @@ resource sub attribute datatype string
     plays baseRole1
     plays baseRole2;
 
+resource-long sub attribute datatype long
+    plays baseRole1
+    plays baseRole2;
+
 insert
 
 #Instances
@@ -117,4 +121,7 @@ $s isa subSubRoleEntity, has resource 's';
 
 (subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
 (subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
+
+$dummy isa resource-long == 0;
+$dummy2 isa resource-long == 1;
 

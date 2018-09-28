@@ -42,6 +42,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
@@ -57,6 +58,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -811,7 +813,47 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_STRUCTURAL_differentResourceVariants(){
-        //TODO
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+
+        Iterator<Attribute<Object>> resources = graph.getAttributeType("resource").instances().collect(toSet()).iterator();
+        Attribute<Object> resource = resources.next();
+        Attribute<Object> anotherResource = resources.next();
+
+        ArrayList<String> qs = Lists.newArrayList(
+                "{$x isa resource;}",
+                "{$xb isa resource-long;}",
+
+                //2-3
+                "{$x1a isa resource; $x1a id '" + resource.id().getValue() + "';}",
+                "{$x1b isa resource; $x1b id '" + anotherResource.id().getValue() + "';}",
+
+                //4-5
+                "{$x2a isa resource; $x2a == 'someValue';}",
+                "{$x2b isa resource; $x2b == 'someOtherValue';}",
+
+                //6-7
+                "{$x3a isa resource-long; $x3a == '0';}",
+                "{$x3b isa resource-long; $x3b == '1';}",
+
+                //7-8
+                "{$x4a isa resource-long; $x4a > '0';}",
+                "{$x4b isa resource-long; $x4b < '1';}",
+                "{$x4c isa resource-long; $x4c >= '0';}",
+                "{$x4d isa resource-long; $x4d <= '1';}"
+        );
+
+        structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(2), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(3), qs, new ArrayList<>(), graph);
+
+        structuralUnification(qs.get(4), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(5), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(6), qs, new ArrayList<>(), graph);
+
+        structuralUnification(qs.get(7), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(8), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(9), qs, new ArrayList<>(), graph);
     }
 
     @Test
@@ -1359,6 +1401,48 @@ public class AtomicQueryTest {
     }
 
     @Test
+    public void testEquivalence_ResourcesAsRoleplayers(){
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        String query = "{(baseRole1: $x, baseRole2: $y);$x == 'V666';}";
+        String query2 = "{(baseRole1: $x, baseRole2: $y);$x == 'V667';}";
+
+        String query3 = "{(baseRole1: $x, baseRole2: $y);$y == 'V666';}";
+        String query4 = "{(baseRole1: $x, baseRole2: $y);$y == 'V667';}";
+
+        String query5 = "{(baseRole1: $x, baseRole2: $y);$x !== $y;}";
+        String query6 = "{(baseRole1: $x, baseRole2: $y);$x !== $x2;}";
+        String query7 = "{(baseRole1: $x, baseRole2: $y);$x !== $x2;$x2 id 'V667';}";
+
+        String query8 = "{(baseRole1: $x, baseRole2: $y);$x == 'V666';$y == 'V667';}";
+        String query9 = "{(baseRole1: $x, baseRole2: $y);$y == 'V666';$x == 'V667';}";
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6, query7, query9, query9);
+
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query2, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query3, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+
+        equivalence(query8, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        equivalence(query8, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+    }
+
+    @Test
     public void testEquivalence_RelationsWithVariableAndSubstitution(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
         String query = "{$r (baseRole1: $x);$x id 'V666';}";
@@ -1418,32 +1502,32 @@ public class AtomicQueryTest {
         queryEquivalence(a, b, queryExpectation, equiv);
     }
 
-    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
+    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
         singleQueryEquivalence(a, a, true, equiv);
         singleQueryEquivalence(b, b, true, equiv);
         singleQueryEquivalence(a, b, queryExpectation, equiv);
         singleQueryEquivalence(b, a, queryExpectation, equiv);
     }
 
-    private void atomicEquivalence(String target, List<String> queries, List<String> equivalentQueries, Equivalence<Atomic> equiv, EmbeddedGraknTx graph){
+    private void atomicEquivalence(String target, List<String> queries, List<String> equivalentQueries, AtomicEquivalence equiv, EmbeddedGraknTx graph){
         queries.forEach(q -> atomicEquivalence(target, q, equivalentQueries.contains(q) || q.equals(target), equiv, graph));
     }
 
-    private void atomicEquivalence(String patternA, String patternB, boolean expectation, Equivalence<Atomic> equiv, EmbeddedGraknTx graph){
+    private void atomicEquivalence(String patternA, String patternB, boolean expectation, AtomicEquivalence equiv, EmbeddedGraknTx graph){
         ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA), graph);
         ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB), graph);
         atomicEquivalence(a.getAtom(), b.getAtom(), expectation, equiv);
     }
 
-    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation, Equivalence<Atomic> equiv){
+    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equiv){
         singleAtomicEquivalence(a, a, true, equiv);
         singleAtomicEquivalence(b, b, true, equiv);
         singleAtomicEquivalence(a, b, expectation, equiv);
         singleAtomicEquivalence(b, a, expectation, equiv);
     }
 
-    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, Equivalence<ReasonerQuery> equiv){
-        assertEquals("Query: " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
+    private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
+        assertEquals(equiv.name() + " - Query: " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
@@ -1451,8 +1535,8 @@ public class AtomicQueryTest {
         }
     }
 
-    private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation, Equivalence<Atomic> equivalence){
-        assertEquals("Atom: " + a.toString() + " =? " + b.toString(), expectation,  equivalence.equivalent(a, b));
+    private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equivalence){
+        assertEquals(equivalence.name() + " - Atom: " + a.toString() + " =? " + b.toString(), expectation,  equivalence.equivalent(a, b));
 
         //check hash additionally if need to be equal
         if (expectation) {
