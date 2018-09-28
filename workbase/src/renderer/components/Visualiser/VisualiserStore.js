@@ -176,9 +176,6 @@ const methods = {
     }
   },
   async loadNeighbours(visNode, neighboursLimit) {
-    const saveloadRolePlayersState = QuerySettings.getRolePlayersStatus();
-
-    QuerySettings.setRolePlayersStatus(true);
     const query = VisualiserUtils.getNeighboursQuery(visNode, neighboursLimit);
     this.loadingQuery = true;
     this.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + neighboursLimit) });
@@ -198,10 +195,9 @@ const methods = {
     if (result.length !== filteredResult.length) {
       const offsetDiff = result.length - filteredResult.length;
       visNode.offset += QuerySettings.getNeighboursLimit();
-      this.loadNeighbours(visNode, offsetDiff);
+      await this.loadNeighbours(visNode, offsetDiff);
       if (!filteredResult.length) return;
     }
-
 
     const data = await VisualiserGraphBuilder.buildFromConceptMap(filteredResult, false);
 
@@ -241,7 +237,6 @@ const methods = {
     }
     this.visFacade.addToCanvas({ nodes: data.nodes, edges });
     this.updateCanvasData();
-    QuerySettings.setRolePlayersStatus(saveloadRolePlayersState);
   },
 
   // getters
@@ -282,7 +277,13 @@ const methods = {
       if (params.event.srcEvent.shiftKey) { // shift + double click => load attributes
         this.loadAttributes(visNode, neighboursLimit);
       } else { // double click => load neighbours
-        this.loadNeighbours(visNode, neighboursLimit);
+        // save state of RoleplayersStatus, force it to true and reset it after loading neighbours
+        const saveLoadRolePlayersState = QuerySettings.getRolePlayersStatus();
+        QuerySettings.setRolePlayersStatus(true);
+
+        this.loadNeighbours(visNode, neighboursLimit).then(() => {
+          QuerySettings.setRolePlayersStatus(saveLoadRolePlayersState);
+        });
       }
     });
 
