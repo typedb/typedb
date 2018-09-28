@@ -17,7 +17,7 @@ In this tutorial, our aim is to write a schema and load it into our knowledge gr
 
 First off, let’s look at the dataset we are going to be working with in this series. Simply put, we’re going to have:
 
-**people** who **call **each other. Those who make calls, have a **contract** with **company** “Telecom”.
+**people** who **call** each other. Those who make calls, have a **contract** with **company** “Telecom”.
 
 People, calls, contracts and companies. That’s what we are dealing with. But what do we want to get out of this data?
 
@@ -33,11 +33,11 @@ The below insights will give us a better perspective of what else needs to be in
 
 This is all we need for determining how our schema should be defined. Let's break it down.
 
-A **company **has a **name**, and can be the **provider** of a **contract **to a **person**, who then becomes a **customer**.
+A **company** has a **name**, and can be the **provider** of a **contract** to a **person**, who then becomes a **customer**.
 
-A **person **has a **first and last name**, an **age**, a **city** they live in, and a **phone number**. A person who doesn’t have a registered contract (not a customer) has only a **phone number.**
+A **person** has a **first and last name**, an **age**, a **city** they live in, and a **phone number**. A person who doesn’t have a registered contract (not a customer) has only a **phone number**.
 
-A **call, **made from a **person\*\***(caller)** to another **person\***\*(callee), **has a **duration **as well as the **date and time** it’s been made.
+A **call**, made from a **person (caller)** to another **person (callee)**, has a **duration** as well as the **date and time** it’s been made.
 
 ## The Schema
 
@@ -51,19 +51,19 @@ By looking at this visualised schema, we can identify the Grakn concepts.
 
 {% include tip.html content="Everything that describes your domain in a Grakn knowledge graph is a **[concept](http://dev.grakn.ai/academy/schema-elements.html#concepts)**. This includes the elements of the schema (namely types and roles, which we call schema concepts) and the actual data (which we simply call things; you can think of them as instances of types if you are the programmer kind of person)" %}
 
-**call** is of type **relationship **that has two role players:
+**call** is of type **relationship** that has two role players:
 
-- **_person _**_who plays the role of a _**_caller_**, and
-- (another) **_person _**_who plays the role of a _**_callee._**
+- **person** who plays the role of a **caller**, and
+- (another) **person** who plays the role of a **callee**.
 
-**contract** is also of type r**elationship **that has two role players:
+**contract** is also of type **relationship** that has two role players:
 
-- **_company _**_who plays the role of a _**_provider_**, and
-- **_person _**_who plays the role of a _**customer**.
+- **company** who plays the role of a **provider**, and
+- **person** who plays the role of a **customer**.
 
 **company** and **person** are of type **entity**.
 
-**_first-name_**, **_last-name_**, **_phone-number_**, **_city_**, **_age_**, **_started-at_** and **_duration_** are of type **attribute**.
+**first-name**, **last-name**, **phone-number**, **city**, **age**, **started-at** and **duration** are of type **attribute**.
 
 That’s all well and good, but how do we get our knowledge graph to reflect this model?
 
@@ -75,9 +75,9 @@ You can define the elements of a Grakn schema in any order you wish. I personall
 
 Any **relationship** relates to at least one **role** that is played by at least 2 **concepts**.
 
-In our case, a **call** relates to **caller** played by a **person** and to **callee **played by another **person**.
+In our case, a **call** relates to **caller** played by a **person** and to **callee** played by another **person**.
 
-Likewise for a **contract**. It relates to **provider **played by a **company** and to **customer** played by a **person**.
+Likewise for a **contract**. It relates to **provider** played by a **company** and to **customer** played by a **person**.
 
 ```graq-test-ignore
 define
