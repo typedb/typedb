@@ -153,7 +153,7 @@ span.bp3-icon::before {
   border: 1px solid var(--border-dark-color) !important;
 }
 
-.reset-setting-btn {
+.right-bar-btn {
   height: 20px;
   min-height: 20px !important;
   width: 20px;

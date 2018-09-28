@@ -26,7 +26,7 @@
                 <div class="panel-content-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
                     <h1 class="sub-panel-header">
                         <div class="sub-title">Label</div>
-                        <div class="vue-button reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                        <div class="vue-button right-bar-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
                     </h1>
                     <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
                     <ul v-else class="attribute-list">
@@ -39,7 +39,7 @@
                 <div v-bind:class="(showTypeList) ? 'colour-item disable-content' : 'colour-item'">
                     <h1 class="sub-panel-header">
                         <div class="sub-title">Colour</div>
-                        <div class="vue-button reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                        <div class="vue-button right-bar-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
                     </h1>
                     <div class="row">
                         <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
