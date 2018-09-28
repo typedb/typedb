@@ -192,23 +192,6 @@ const watch = {
     this.schemaHandler = new SchemaHandler(tx);
     // }
   },
-  isInit() {
-    this.registerCanvasEventHandler('dragEnd', (params) => {
-      if (!params.nodes.length) return;
-      let positionMap = storage.get('schema-node-positions');
-
-      if (positionMap) {
-        positionMap = JSON.parse(positionMap);
-      } else {
-        positionMap = {};
-        storage.set('schema-node-positions', {});
-      }
-      params.nodes.forEach((nodeId) => {
-        positionMap[nodeId] = params.pointer.canvas;
-      });
-      storage.set('schema-node-positions', JSON.stringify(positionMap));
-    });
-  },
 };
 
 
@@ -266,6 +249,23 @@ const methods = {
   },
   setEditingMode(mode) {
     this.editingMode = mode;
+  },
+  registerVueCanvasEventHandlers() {
+    this.registerCanvasEventHandler('dragEnd', (params) => {
+      if (!params.nodes.length) return;
+      let positionMap = storage.get('schema-node-positions');
+
+      if (positionMap) {
+        positionMap = JSON.parse(positionMap);
+      } else {
+        positionMap = {};
+        storage.set('schema-node-positions', {});
+      }
+      params.nodes.forEach((nodeId) => {
+        positionMap[nodeId] = params.pointer.canvas;
+      });
+      storage.set('schema-node-positions', JSON.stringify(positionMap));
+    });
   },
 };
 

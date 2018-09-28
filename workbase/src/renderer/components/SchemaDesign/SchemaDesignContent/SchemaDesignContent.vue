@@ -90,10 +90,8 @@ export default {
       showRolesPanel: false,
     };
   },
-  watch: {
-    'localStore.isInit': function register() {
-      this.localStore.registerCanvasEventHandler('click', this.closePanels);
-    },
+  created() {
+    this.localStore.registerCanvasEventHandler('click', this.closePanels);
   },
   methods: {
     deleteSchemaConcept(label) { this.localStore.dispatch(DELETE_SCHEMA_CONCEPT, label); },
