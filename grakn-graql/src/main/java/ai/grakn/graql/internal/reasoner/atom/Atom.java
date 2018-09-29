@@ -360,6 +360,7 @@ public abstract class Atom extends AtomicBase {
      * @return multiunifier
      */
     public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){
+        //NB only for relations we can have non-unique unifiers
         Unifier unifier = this.getUnifier(parentAtom, unifierType);
         return unifier != null? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
     }

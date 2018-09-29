@@ -36,7 +36,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -50,7 +49,6 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.util.Schema;
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Iterables;
@@ -812,7 +810,7 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testUnification_STRUCTURAL_differentResourceVariants(){
+    public void testUnification_STRUCTURAL_differentTypeVariants(){
         EmbeddedGraknTx<?> graph = unificationTestSet.tx();
 
         Iterator<Attribute<Object>> resources = graph.getAttributeType("resource").instances().collect(toSet()).iterator();
@@ -844,8 +842,8 @@ public class AtomicQueryTest {
 
         structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(2), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(3), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
+        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
 
         structuralUnification(qs.get(4), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(5), qs, new ArrayList<>(), graph);
@@ -857,8 +855,70 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testUnification_STRUCTURAL_differentTypeVariants(){
-        //TODO
+    public void testUnification_STRUCTURAL_differentResourceVariants(){
+        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+
+        Iterator<Attribute<Object>> resources = graph.getAttributeType("resource").instances().collect(toSet()).iterator();
+        Iterator<Entity> entities = graph.getEntityType("baseRoleEntity").instances().collect(toSet()).iterator();
+        Attribute<Object> resource = resources.next();
+        Attribute<Object> anotherResource = resources.next();
+        Entity entity = entities.next();
+        Entity anotherEntity = entities.next();
+
+        ArrayList<String> qs = Lists.newArrayList(
+                "{$x has resource $r;}",
+                "{$xb has resource-long $rb;}",
+
+                //2-3
+                "{$x1a has resource $r1a; $x1a id '" + entity.id().getValue() + "';}",
+                "{$x1b has resource $r1b; $x1b id '" + anotherEntity.id().getValue() + "';}",
+
+                //4-5
+                "{$x2a has resource $r2a; $r2a id '" + resource.id().getValue() + "';}",
+                "{$x2b has resource $r2b; $r2b id '" + anotherResource.id().getValue() + "';}",
+
+                //6-9
+                "{$x3a has resource 'someValue';}",
+                "{$x3b has resource 'someOtherValue';}",
+                "{$x3c has resource $x3c; $x3c == 'someValue';}",
+                "{$x3d has resource $x3d; $x3d == 'someOtherValue';}",
+
+                //10-13
+                "{$x4a has resource-long '0';}",
+                "{$x4b has resource-long '1';}",
+                "{$x4c has resource-long $x4c; $x4c == '0';}",
+                "{$x4d has resource-long $x4d; $x4d == '1';}",
+
+                //14-17
+                "{$x5a has resource-long $x5a; $x5a > '0';}",
+                "{$x5b has resource-long $x5b; $x5b < '1';}",
+                "{$x5c has resource-long $x5c; $x5c >= '0';}",
+                "{$x5d has resource-long $x5d; $x5d <= '1';}"
+        );
+
+        structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
+        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
+
+        structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(5)), graph);
+        structuralUnification(qs.get(5), qs, Collections.singletonList(qs.get(4)), graph);
+
+        structuralUnification(qs.get(6), qs, Collections.singletonList(qs.get(8)), graph);
+        structuralUnification(qs.get(7), qs, Collections.singletonList(qs.get(9)), graph);
+        structuralUnification(qs.get(8), qs, Collections.singletonList(qs.get(6)), graph);
+        structuralUnification(qs.get(9), qs, Collections.singletonList(qs.get(7)), graph);
+
+        structuralUnification(qs.get(10), qs, Collections.singletonList(qs.get(12)), graph);
+        structuralUnification(qs.get(11), qs, Collections.singletonList(qs.get(13)), graph);
+        structuralUnification(qs.get(12), qs, Collections.singletonList(qs.get(10)), graph);
+        structuralUnification(qs.get(13), qs, Collections.singletonList(qs.get(11)), graph);
+
+        structuralUnification(qs.get(14), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(15), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(16), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(17), qs, new ArrayList<>(), graph);
+
     }
 
     private <T> List<T> subList(List<T> list, Collection<Integer> elements){
@@ -1411,11 +1471,13 @@ public class AtomicQueryTest {
 
         String query5 = "{(baseRole1: $x, baseRole2: $y);$x !== $y;}";
         String query6 = "{(baseRole1: $x, baseRole2: $y);$x !== $x2;}";
-        String query7 = "{(baseRole1: $x, baseRole2: $y);$x !== $x2;$x2 id 'V667';}";
+
+        //TODO
+        //String query7 = "{(baseRole1: $x, baseRole2: $y);$x !== $x2;$x2 == 'V667';}";
 
         String query8 = "{(baseRole1: $x, baseRole2: $y);$x == 'V666';$y == 'V667';}";
         String query9 = "{(baseRole1: $x, baseRole2: $y);$y == 'V666';$x == 'V667';}";
-        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6, query7, query9, query9);
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6,  query9, query9);
 
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
@@ -1435,8 +1497,8 @@ public class AtomicQueryTest {
         equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
         equivalence(query6, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
-        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
-        equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
+        //equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
+        //equivalence(query7, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);
 
         equivalence(query8, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, graph);
         equivalence(query8, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, graph);

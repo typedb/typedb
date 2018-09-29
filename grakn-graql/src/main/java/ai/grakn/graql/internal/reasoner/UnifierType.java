@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,6 +50,8 @@ public enum UnifierType implements UnifierComparison {
      * .
      */
     EXACT {
+        private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.AlphaEquivalence;
+
         @Override
         public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return true;
@@ -60,10 +63,16 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean atomicCompatibility(Atomic parent, Atomic child) {
-            return parent == null || parent.isCompatibleWith(child);
+        public boolean idCompatibility(Atomic parent, Atomic child) {
+            return (parent == null && child == null)
+                    || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
         }
 
+        @Override
+        public boolean valueCompatibility(Atomic parent, Atomic child) {
+            return (parent == null && child == null)
+                    || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
+        }
     },
 
     /**
@@ -74,6 +83,9 @@ public enum UnifierType implements UnifierComparison {
      *
      */
     STRUCTURAL {
+
+        private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
+
         @Override
         public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return true;
@@ -85,16 +97,33 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+        public boolean idCompatibility(Atomic parent, Atomic child) {
             return (parent == null) == (child == null);
         }
 
+        @Override
+        public boolean valueCompatibility(Atomic parent, Atomic child) {
+            return (parent == null && child == null)
+                    || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
+        }
     },
 
     /**
      *
      * Rule unifier, found between queries and rule heads, allows rule heads to be more specific than matched queries.
      * Used in rule matching.
+     *
+     * If two queries are alpha-equivalent they are rule-unifiable.
+     * Rule unification relaxes restrictions of exact unification in that it merely
+     * requires an existence of a semantic overlap between the parent and child queries, i. e.
+     * the answer set of the child and the parent queries need to have a non-zero intersection.
+     *
+     * For predicates it corresponds to changing the alpha-equivalence requirement to compatibility.
+     *
+     * As a result, two queries may be rule-unifiable and not alpha-equivalent, e.q.
+     *
+     * P: $x has age >= 10
+     * Q: $x has age 10
      *
      */
     RULE {
@@ -109,7 +138,12 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean atomicCompatibility(Atomic parent, Atomic child) {
+        public boolean idCompatibility(Atomic parent, Atomic child) {
+            return child == null || parent == null || parent.isCompatibleWith(child);
+        }
+
+        @Override
+        public boolean valueCompatibility(Atomic parent, Atomic child) {
             return child == null || parent == null || parent.isCompatibleWith(child);
         }
 

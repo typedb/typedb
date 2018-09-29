@@ -28,7 +28,7 @@ import ai.grakn.graql.Var;
  * Interface for defining unifier comparisons.
  * </p>
  *
- *@author Kasper Piskorski
+ * @author Kasper Piskorski
  *
  */
 public interface UnifierComparison {
@@ -43,9 +43,16 @@ public interface UnifierComparison {
     /**
      * @param parent {@link Atomic} of parent expression
      * @param child {@link Atomic} of child expression
-     * @return true if {@link Atomic}s compatible
+     * @return true if id predicates are compatible
      */
-    boolean atomicCompatibility(Atomic parent, Atomic child);
+    boolean idCompatibility(Atomic parent, Atomic child);
+
+    /**
+     * @param parent {@link Atomic} of parent expression
+     * @param child {@link Atomic} of child expression
+     * @return true if value predicates are compatible
+     */
+    boolean valueCompatibility(Atomic parent, Atomic child);
 
     /**
      * @param query to be checked
