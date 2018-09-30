@@ -18,11 +18,28 @@
 
 workspace(name = "grakn_core")
 
-load("//dependencies/tools:tools.bzl", "build_tools")
-build_tools()
+# Load additional build tools, such bazel-deps and unused-deps
+load("//dependencies/tools:dependencies.bzl", "tools_dependencies")
+tools_dependencies()
 
-load("//dependencies/maven:artifacts.bzl", "maven_dependencies")
+# Load runtime dependencies from maven
+load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
 maven_dependencies()
 
+# Load additional compiler tools, such as ANTLR and Protobuf
+load(
+    "//dependencies/compilers:dependencies.bzl",
+    "antlr_dependencies",
+    "protobuf_dependencies"
+)
+antlr_dependencies()
+protobuf_dependencies()
+
+# Load dependencies for ANTLR rules
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
+
+# Load versions rule from skylib, for Protobuf, and check that bazel >= 0.5.4
+load("@bazel_skylib//:lib.bzl", "versions")
+versions.check(minimum_bazel_version = "0.5.4")
+

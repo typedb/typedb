@@ -17,13 +17,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-# Script for updating Maven dependencies after the dependency list in //dependencies/maven/artifacts.yaml.
+# Script for updating Maven dependencies after the dependency list in //dependencies/maven/dependencies.yaml.
 
 [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
 GRAKN_CORE_HOME=$(cd "$(dirname "${path}")" && pwd -P)/../../
 pushd "$GRAKN_CORE_HOME" > /dev/null
 
-bazel run //dependencies/tools:bazel-deps -- generate -r $GRAKN_CORE_HOME -s dependencies/maven/artifacts.bzl -d dependencies/maven/artifacts.yaml
+bazel run //dependencies/tools:bazel-deps -- generate -r $GRAKN_CORE_HOME -s dependencies/maven/dependencies.bzl -d dependencies/maven/dependencies.yaml
 
 # Fix formatting for BUILD files
 #bazel run //tools/formatter -- --path $(pwd)/third_party --build &>/dev/null
