@@ -21,6 +21,7 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import java.util.Set;
 
 /**
  *
@@ -62,11 +63,22 @@ public interface UnifierComparison {
      */
     boolean typePlayability(ReasonerQuery query, Var var, Type type);
 
+
     /**
      *
-     * @param parent {@link Atomic} of parent expression
-     * @param child {@link Atomic} of child expression
-     * @return true if child has attributes compatible with parent's
+     * @param parent multipredicate of parent attribute
+     * @param child multipredicate of child attribute
+     * @return true if multipredicates of attributes are compatible
      */
-    default boolean attributeCompatibility(Atomic parent, Atomic child, Var parentVar, Var childVar){ return true;}
+    boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child);
+
+    /**
+     *
+     * @param parent {@link Atomic} query
+     * @param child {@link Atomic} query
+     * @param parentVar variable of interest in the parent query
+     * @param childVar variable of interest in the child query
+     * @return true if attributes attached to child var are compatible with attributes attached to parent var
+     */
+    default boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar){ return true;}
 }

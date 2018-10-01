@@ -28,8 +28,10 @@ import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
  *
@@ -73,6 +75,11 @@ public enum UnifierType implements UnifierComparison {
             return (parent == null && child == null)
                     || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
         }
+
+        @Override
+        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
+            return isEquivalentCollection(parent, child, this::valueCompatibility);
+        }
     },
 
     /**
@@ -105,6 +112,11 @@ public enum UnifierType implements UnifierComparison {
         public boolean valueCompatibility(Atomic parent, Atomic child) {
             return (parent == null && child == null)
                     || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
+        }
+
+        @Override
+        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
+            return isEquivalentCollection(parent, child, this::valueCompatibility);
         }
     },
 
@@ -148,11 +160,16 @@ public enum UnifierType implements UnifierComparison {
         }
 
         @Override
-        public boolean attributeCompatibility(Atomic parent, Atomic child, Var parentVar, Var childVar){
+        public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
+            return parent.isEmpty() || child.stream().allMatch(cp -> parent.stream().anyMatch(pp -> valueCompatibility(pp, cp)));
+        }
+
+        @Override
+        public boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar){
             Map<SchemaConcept, ResourceAtom> parentRes = new HashMap<>();
-            parent.getParentQuery().getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
+            parent.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(parentVar)).forEach(r -> parentRes.put(r.getSchemaConcept(), r));
             Map<SchemaConcept, ResourceAtom> childRes = new HashMap<>();
-            child.getParentQuery().getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
+            child.getAtoms(ResourceAtom.class).filter(at -> at.getVarName().equals(childVar)).forEach(r -> childRes.put(r.getSchemaConcept(), r));
             return childRes.values().stream()
                     .allMatch(r -> !parentRes.containsKey(r.getSchemaConcept()) || r.isUnifiableWith(parentRes.get(r.getSchemaConcept())));
         }

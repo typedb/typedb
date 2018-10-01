@@ -932,7 +932,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 .filter(crp -> {
                                                     Var parentVar = prp.getRolePlayer().var();
                                                     Var childVar = crp.getRolePlayer().var();
-                                                    return matchType.attributeCompatibility(parentAtom, this, parentVar, childVar);
+                                                    return matchType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
                                                 })
                                                 .forEach(compatibleRelationPlayers::add)
                                 );

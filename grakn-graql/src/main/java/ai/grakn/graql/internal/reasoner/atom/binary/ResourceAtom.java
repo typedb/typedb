@@ -303,7 +303,7 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom parent = (ResourceAtom) parentAtom;
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
 
-        if (unifier == null || !isEquivalentCollection(parent.getMultiPredicate(), this.getMultiPredicate(), unifierType::valueCompatibility) ){
+        if (unifier == null || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
             return UnifierImpl.nonExistent();
         }
 
