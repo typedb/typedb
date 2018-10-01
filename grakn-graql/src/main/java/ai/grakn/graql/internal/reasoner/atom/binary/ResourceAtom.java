@@ -123,8 +123,18 @@ public abstract class ResourceAtom extends Binary{
         );
     }
 
+    /**
+     * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
+     * - $x isa ???;
+     * - $r isa resource;
+     * We pick the latter as the type information is available.
+     *
+     * @return corresponding isa atom
+     */
     @Override
-    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), getParentQuery()); }
+    public IsaAtom toIsaAtom(){
+        return IsaAtom.create(getPredicateVariable(), Graql.var(), getTypeId(), false, getParentQuery());
+    }
 
     @Override
     public String toString(){

@@ -26,6 +26,8 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
@@ -83,7 +85,7 @@ public class AtomicQueryTest {
     public static final SampleKBContext materialisationTestSet = SampleKBContext.load("materialisationTest.gql");
 
     @ClassRule
-    public static final SampleKBContext unificationTestSet = SampleKBContext.load("unificationTest.gql");
+    public static final SampleKBContext genericSchema = SampleKBContext.load("genericSchema.gql");
 
     @ClassRule
     public static final SampleKBContext unificationWithTypesSet = SampleKBContext.load("unificationWithTypesTest.gql");
@@ -97,7 +99,7 @@ public class AtomicQueryTest {
 
     @Test (expected = GraqlQueryException.class)
     public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String patternString = "{$x isa someType;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), graph);
     }
@@ -679,7 +681,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_EXACT_ResourcesWithTypes(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentQuery = "{$x has resource $r; $x isa baseRoleEntity;}";
 
         String childQuery = "{$r has resource $x; $r isa subRoleEntity;}";
@@ -693,7 +695,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_EXACT_BinaryRelationWithRoleAndTypeHierarchy_MetaTypeParent(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa entity; $y isa entity;}";
 
         String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v); $u isa baseRoleEntity; $v isa baseRoleEntity;}";
@@ -713,7 +715,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_EXACT_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String baseParentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa baseRoleEntity; $y isa baseRoleEntity;}";
         String parentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa subSubRoleEntity; $y isa subSubRoleEntity;}";
 
@@ -735,7 +737,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_EXACT_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent_middleTypes(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa subRoleEntity; $y isa subRoleEntity;}";
 
         String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v); $u isa subRoleEntity; $v isa subSubRoleEntity;}";
@@ -751,7 +753,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_STRUCTURAL_differentRelationVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
 
         Entity baseEntity = graph.getEntityType("baseRoleEntity").instances().findFirst().orElse(null);
         Entity anotherBaseEntity = graph.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
@@ -760,58 +762,100 @@ public class AtomicQueryTest {
         ArrayList<String> qs = Lists.newArrayList(
                 "{(baseRole1: $x, baseRole2: $y);}",
 
-                //(x[], y), 1-3
+                //(x[], y), 1-4
                 "{(baseRole1: $x1_1, baseRole2: $x2_1); $x1_1 isa baseRoleEntity;}",
                 "{(baseRole1: $x1_1b, baseRole2: $x2_1b); $x1_1b id '" + baseEntity.id().getValue() + "';}",
-                "{(baseRole1: $x1_1c, baseRole2: $x2_1c); $x1_1c id '" + subEntity.id().getValue() + "';}",
+                "{(baseRole1: $x1_1c, baseRole2: $x2_1c); $x1_1c id '" + anotherBaseEntity.id().getValue() + "';}",
+                "{(baseRole1: $x1_1d, baseRole2: $x2_1d); $x1_1d id '" + subEntity.id().getValue() + "';}",
 
-                //(x, y[]), 4-6
-                "{(baseRole1: $x1_1, baseRole2: $x2_1); $x2_1 isa baseRoleEntity;}",
-                "{(baseRole1: $x1_1b, baseRole2: $x2_1b); $x2_1b id '" + baseEntity.id().getValue() + "';}",
-                "{(baseRole1: $x1_1c, baseRole2: $x2_1c); $x2_1c id '" + subEntity.id().getValue() + "';}",
+                //(x, y[]), 5-8
+                "{(baseRole1: $x1_2, baseRole2: $x2_2); $x2_2 isa baseRoleEntity;}",
+                "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x2_2b id '" + baseEntity.id().getValue() + "';}",
+                "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x2_2c id '" + anotherBaseEntity.id().getValue() + "';}",
+                "{(baseRole1: $x1_2d, baseRole2: $x2_2d); $x2_2d id '" + subEntity.id().getValue() + "';}",
 
-                //(x[], y), 7-9
-                "{(baseRole1: $x1_2, baseRole2: $x2_2); $x1_2 isa anotherBaseRoleEntity;}",
-                "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_2b id '" + anotherBaseEntity.id().getValue() + "';}",
-                "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x1_2c id '" + subEntity.id().getValue() + "';}",
-
-                //(x, y[]), 10-12
-                "{(baseRole1: $x1_2, baseRole2: $x2_2); $x2_2 isa anotherBaseRoleEntity;}",
-                "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x2_2b id '" + anotherBaseEntity.id().getValue() + "';}",
-                "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x2_2c id '" + subEntity.id().getValue() + "';}",
-
-                //(x[], y[]), 13-15
+                //(x[], y[]), 9-11
                 "{(baseRole1: $x1_3, baseRole2: $x2_3); $x1_3 isa baseRoleEntity; $x2_3 isa anotherBaseRoleEntity;}",
                 "{(baseRole1: $x1_3b, baseRole2: $x2_3b); $x1_3b id '" + baseEntity.id().getValue() + "'; $x2_3b id '" + anotherBaseEntity.id().getValue() + "';}",
-                "{(baseRole1: $x1_3c, baseRole2: $x2_3c); $x1_3c id '" + baseEntity.id().getValue() + "'; $x2_3c id '" + anotherBaseEntity.id().getValue() + "';}"
+                "{(baseRole1: $x1_3c, baseRole2: $x2_3c); $x1_3c id '" + subEntity.id().getValue() + "'; $x2_3c id '" + anotherBaseEntity.id().getValue() + "';}"
         );
 
         structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
 
         structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 8, 9)), graph);
-        structuralUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 8, 9)), graph);
+        structuralUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 4)), graph);
+        structuralUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 4)), graph);
+        structuralUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(2, 3)), graph);
 
-        structuralUnification(qs.get(4), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(6, 11, 12)), graph);
-        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(5, 11, 12)), graph);
+        structuralUnification(qs.get(5), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
+        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
+        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
 
-        structuralUnification(qs.get(7), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(9, 2, 3)), graph);
-        structuralUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(8, 2, 3)), graph);
+        structuralUnification(qs.get(9), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), graph);
+        structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), graph);
+    }
 
-        structuralUnification(qs.get(10), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(12, 5, 6)), graph);
-        structuralUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(11, 5, 6)), graph);
+    @Test
+    public void testUnification_STRUCTURAL_differentRelationVariantsWithRelationVariable(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
 
-        structuralUnification(qs.get(13), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(14), qs, Collections.singletonList(qs.get(15)), graph);
-        structuralUnification(qs.get(15), qs, Collections.singletonList(qs.get(14)), graph);
+        Entity baseEntity = graph.getEntityType("baseRoleEntity").instances().findFirst().orElse(null);
+        Entity anotherBaseEntity = graph.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
+        Entity subEntity = graph.getEntityType("subRoleEntity").instances().findFirst().orElse(null);
+        Iterator<Relationship> relations = graph.getRelationshipType("baseRelation").subs().flatMap(RelationshipType::instances).iterator();
+        Relationship relation = relations.next();
+        Relationship anotherRelation = relations.next();
+
+        ArrayList<String> qs = Lists.newArrayList(
+                "{$r (baseRole1: $x, baseRole2: $y);}",
+
+                //(x[], y), 1-4
+                "{$r1 (baseRole1: $x1_1, baseRole2: $x2_1); $x1_1 isa baseRoleEntity;}",
+                "{$r1b (baseRole1: $x1_1b, baseRole2: $x2_1b); $x1_1b id '" + baseEntity.id().getValue() + "';}",
+                "{$r1c (baseRole1: $x1_1c, baseRole2: $x2_1c); $x1_1c id '" + anotherBaseEntity.id().getValue() + "';}",
+                "{$r1e (baseRole1: $x1_1d, baseRole2: $x2_1d); $x1_1d id '" + subEntity.id().getValue() + "';}",
+
+                //(x, y[]), 5-8
+                "{$r2 (baseRole1: $x1_2, baseRole2: $x2_2); $x2_2 isa baseRoleEntity;}",
+                "{$r2b (baseRole1: $x1_2b, baseRole2: $x2_2b); $x2_2b id '" + baseEntity.id().getValue() + "';}",
+                "{$r2c (baseRole1: $x1_2c, baseRole2: $x2_2c); $x2_2c id '" + anotherBaseEntity.id().getValue() + "';}",
+                "{$r2d (baseRole1: $x1_2d, baseRole2: $x2_2d); $x2_2d id '" + subEntity.id().getValue() + "';}",
+
+                //(x[], y[]), 9-11
+                "{$r5 (baseRole1: $x1_5, baseRole2: $x2_5); $x1_5 isa baseRoleEntity; $x2_5 isa anotherBaseRoleEntity;}",
+                "{$r5b (baseRole1: $x1_5b, baseRole2: $x2_5b); $x1_5b id '" + baseEntity.id().getValue() + "'; $x2_5b id '" + anotherBaseEntity.id().getValue() + "';}",
+                "{$r5c (baseRole1: $x1_5c, baseRole2: $x2_5c); $x1_5c id '" + baseEntity.id().getValue() + "'; $x2_5c id '" + anotherBaseEntity.id().getValue() + "';}",
+
+                //11-15
+                "{$r6 (baseRole1: $x1_6, baseRole2: $x2_6); $r6 id '" + relation.id().getValue() + "';}",
+                "{$r6b (baseRole1: $x1_6b, baseRole2: $x2_6b); $r6b id '" + anotherRelation.id().getValue() + "';}",
+                "{$r6c (baseRole1: $x1_6c, baseRole2: $x2_6c); $x1_6c isa anotherBaseRoleEntity; $r6c id '" + relation.id().getValue() + "';}",
+                "{$r6d (baseRole1: $x1_6d, baseRole2: $x2_6d); $x2_6d id '" + baseEntity.id().getValue() + "';$r6d id '" + relation.id().getValue() + "';}",
+                "{$r6e (baseRole1: $x1_6e, baseRole2: $x2_6e); $x1_6e id '" + baseEntity.id().getValue() + "'; $x2_6e id '" + anotherBaseEntity.id().getValue() + "';$r6e id '" + relation.id().getValue() + "';}"
+        );
+
+        structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
+
+        structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 4)), graph);
+        structuralUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 4)), graph);
+        structuralUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(2, 3)), graph);
+
+        structuralUnification(qs.get(5), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
+        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
+        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
+
+        structuralUnification(qs.get(9), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), graph);
+        structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), graph);
     }
 
     @Test
     public void testUnification_STRUCTURAL_differentTypeVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
 
         Iterator<Attribute<Object>> resources = graph.getAttributeType("resource").instances().collect(toSet()).iterator();
         Attribute<Object> resource = resources.next();
@@ -856,7 +900,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification_STRUCTURAL_differentResourceVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
 
         Iterator<Attribute<Object>> resources = graph.getAttributeType("resource").instances().collect(toSet()).iterator();
         Iterator<Entity> entities = graph.getEntityType("baseRoleEntity").instances().collect(toSet()).iterator();
@@ -1028,27 +1072,27 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_DifferentIsaVariants(){
-        testEquivalence_DifferentTypeVariants(unificationTestSet.tx(), "isa", "baseRoleEntity", "subRoleEntity");
+        testEquivalence_DifferentTypeVariants(genericSchema.tx(), "isa", "baseRoleEntity", "subRoleEntity");
     }
 
     @Test
     public void testEquivalence_DifferentSubVariants(){
-        testEquivalence_DifferentTypeVariants(unificationTestSet.tx(), "sub", "baseRoleEntity", "baseRole1");
+        testEquivalence_DifferentTypeVariants(genericSchema.tx(), "sub", "baseRoleEntity", "baseRole1");
     }
 
     @Test
     public void testEquivalence_DifferentPlaysVariants(){
-        testEquivalence_DifferentTypeVariants(unificationTestSet.tx(), "plays", "baseRole1", "baseRole2");
+        testEquivalence_DifferentTypeVariants(genericSchema.tx(), "plays", "baseRole1", "baseRole2");
     }
 
     @Test
     public void testEquivalence_DifferentRelatesVariants(){
-        testEquivalence_DifferentTypeVariants(unificationTestSet.tx(), "relates", "baseRole1", "baseRole2");
+        testEquivalence_DifferentTypeVariants(genericSchema.tx(), "relates", "baseRole1", "baseRole2");
     }
 
     @Test
     public void testEquivalence_DifferentHasVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$x has resource;}";
         String query2 = "{$y has resource;}";
         String query3 = "{$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + ";}";
@@ -1092,7 +1136,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_TypesWithSameLabel(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String isaQuery = "{$x isa baseRoleEntity;}";
         String subQuery = "{$x sub baseRoleEntity;}";
 
@@ -1121,7 +1165,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_TypesWithSubstitution(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$y isa baseRoleEntity;}";
         String query2 = "{$x isa baseRoleEntity; $x id 'X';}";
         String query2b = "{$r isa baseRoleEntity; $r id 'X';}";
@@ -1163,7 +1207,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_DifferentResourceVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$x has resource 'value';}";
         String query2 = "{$y has resource $r;$r 'value';}";
         String query3 = "{$y has resource $r;}";
@@ -1183,7 +1227,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_ResourcesWithSubstitution(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$x has resource $y;}";
         String query2 = "{$y has resource $z; $y id 'X';}";
         String query3 = "{$z has resource $u; $z id 'Y';}";
@@ -1229,7 +1273,7 @@ public class AtomicQueryTest {
 
     @Test //tests alpha-equivalence of queries with resources with multi predicate
     public void testEquivalence_MultiPredicateResources(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$z has resource $u;$a >23; $a <27;}";
         String query2 = "{$x isa baseRoleEntity;$x has resource $a;$a >23; $a <27;}";
         String query2b = "{$a isa baseRoleEntity;$a has resource $p;$p <27;$p >23;}";
@@ -1271,7 +1315,7 @@ public class AtomicQueryTest {
 
     @Test //tests alpha-equivalence of resource atoms with different predicates
     public void testEquivalence_resourcesWithDifferentPredicates() {
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$x has resource $r;$r > 1099;}";
         String query2 = "{$x has resource $r;$r < 1099;}";
         String query3 = "{$x has resource $r;$r == 1099;}";
@@ -1298,7 +1342,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_DifferentRelationInequivalentVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
 
         HashSet<String> queries = Sets.newHashSet(
                 "{$x isa binary;}",
@@ -1328,7 +1372,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_RelationWithRepeatingVariables(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{(baseRole1: $x, baseRole2: $y);}";
         String query2 = "{(baseRole1: $x, baseRole2: $x);}";
 
@@ -1338,7 +1382,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_RelationsWithTypedRolePlayers(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{(role: $x, role: $y);$x isa baseRoleEntity;}";
         String query2 = "{(role: $x, role: $y);$y isa baseRoleEntity;}";
         String query3 = "{(role: $x, role: $y);$x isa subRoleEntity;}";
@@ -1374,7 +1418,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_RelationsWithSubstitution(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{(role: $x, role: $y);$x id 'V666';}";
         String queryb = "{(role: $x, role: $y);$y id 'V666';}";
 
@@ -1421,7 +1465,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_RelationsWithSubstitution_differentRolesMapped(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{(baseRole1: $x, baseRole2: $y);$x id 'V666';}";
         String query2 = "{(baseRole1: $x, baseRole2: $y);$x id 'V667';}";
         String query3 = "{(baseRole1: $x, baseRole2: $y);$y id 'V666';}";
@@ -1462,7 +1506,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_ResourcesAsRoleplayers(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{(baseRole1: $x, baseRole2: $y);$x == 'V666';}";
         String query2 = "{(baseRole1: $x, baseRole2: $y);$x == 'V667';}";
 
@@ -1506,7 +1550,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testEquivalence_RelationsWithVariableAndSubstitution(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String query = "{$r (baseRole1: $x);$x id 'V666';}";
         String query2 = "{$a (baseRole1: $x);$x id 'V667';}";
         String query3 = "{$b (baseRole2: $y);$y id 'V666';}";

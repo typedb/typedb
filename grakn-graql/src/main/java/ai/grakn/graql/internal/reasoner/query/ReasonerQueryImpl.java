@@ -315,7 +315,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.getValue()))
                 .filter(p -> p.getValue().isEntity())
-                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
+                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), false,this));
     }
 
     private Map<Var, Type> getVarTypeMap(Stream<IsaAtomBase> isas){

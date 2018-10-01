@@ -189,7 +189,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override
-    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), getParentQuery()); }
+    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery()); }
 
     @Override
     public Set<Atom> rewriteToAtoms(){
@@ -301,7 +301,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
+        if (!isBaseEquivalent(obj) || !super.isAlphaEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
         //check role-type and id predicate bindings
         return this.getRoleTypeMap().equals(that.getRoleTypeMap())
@@ -343,7 +343,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
+        if (!isBaseEquivalent(obj) || !super.isStructurallyEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
         // check bindings
         return this.getRoleTypeMap(false).equals(that.getRoleTypeMap(false))
@@ -562,9 +562,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
-        Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
         //NB: do not cache possible types
-        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
+        return create(this.getPattern(), this.getPredicateVariable(), type.id(), this.getParentQuery());
     }
 
     /**

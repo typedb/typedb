@@ -52,8 +52,11 @@ subSubRoleEntity sub subRoleEntity
     plays subSubRole2
     plays subSubRole3;
 
-binary sub relationship
-    has resource
+baseRelation sub relationship
+    is-abstract
+    has resource;
+
+binary sub baseRelation
     relates baseRole1
     relates baseRole2
     relates subRole1
@@ -63,8 +66,7 @@ binary sub relationship
     relates subSubRole1
     relates subSubRole2;
     
-ternary sub relationship
-    has resource
+ternary sub baseRelation
     relates baseRole1
     relates baseRole2
     relates baseRole3
