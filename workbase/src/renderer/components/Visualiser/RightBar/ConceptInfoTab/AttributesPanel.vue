@@ -92,7 +92,7 @@
         border-bottom: var(--container-darkest-border);
         display: flex;
         flex-direction: column;
-        max-height: 691px;
+        max-height: 300px;
         overflow: auto;
     }
 

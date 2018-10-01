@@ -4,47 +4,61 @@
             <vue-icon :icon="(showRelationshipsPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Relationships</h1>
         </div>
-        <div class="content" v-show="showRelationshipsPanel">
 
-            <div class="content-item">
-                <div class="label">
-                    Plays
-                </div>
-                <div class="value">
-                    <div v-bind:class="(showRolesList) ? 'vue-button role-btn role-list-shown' : 'vue-button role-btn'" @click="toggleRoleList"><div class="role-btn-text" >{{currentRole}}</div><vue-icon class="role-btn-caret" icon="caret-down"></vue-icon></div>
-                </div>
+        <div v-show="showRelationshipsPanel">
+
+            <div class="content noselect" v-if="!currentKeyspace">
+                Please select a keyspace
+            </div>
+            <div class="content noselect" v-else-if="(!selectedNodes || selectedNodes.length > 1)">
+                Please select a node
             </div>
 
-            <div class="panel-list-item">
-                <div class="role-list" v-show="showRolesList">
-                    <ul v-for="role in Object.keys(relationships)" :key=role>
-                        <li class="role-item" @click="selectRole(role)" v-bind:class="[(role === currentRole) ? 'role-item-selected' : '']">{{role}}</li>
-                    </ul>
-                </div>
-            </div>
+            <div class="content" v-else>
 
-            <div class="content-item" v-for="rel in relationships[currentRole]" :key=rel>
-                <div class="column">
-                    <div class="row">
-                        <div class="label">
-                            In
-                        </div>
-                        <div class="value">
-                            {{rel}}
-                        </div>
-                        <div class="vue-button right-bar-btn" @click="loadRolePlayers(rel)"><vue-icon icon="more" iconSize="12"></vue-icon></div>
+                <div class="content-item">
+                    <div class="label">
+                        Plays
                     </div>
-                    <div class="row" v-show="showRolePLayers" v-for="rp in roleplayers[rel]" :key=rp>
-                        <div class="label">
-                            {{(rp) ? rp.role : ''}}
-                        </div>
-                        <div class="value">
-                            {{(rp) ? rp.player : ''}}
-                        </div>
+                    <div class="value">
+                        <div v-bind:class="(showRolesList) ? 'vue-button role-btn role-list-shown' : 'vue-button role-btn'" @click="toggleRoleList"><div class="role-btn-text" >{{currentRole}}</div><vue-icon class="role-btn-caret" icon="caret-down"></vue-icon></div>
                     </div>
                 </div>
+
+                <div class="panel-list-item">
+                    <div class="role-list" v-show="showRolesList">
+                        <ul v-for="role in Object.keys(relationships)" :key=role>
+                            <li class="role-item" @click="selectRole(role)" v-bind:class="[(role === currentRole) ? 'role-item-selected' : '']">{{role}}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="content-item" v-for="rel in relationships[currentRole]" :key=rel>
+                    <div class="column">
+                        <div class="row">
+                            <div class="label">
+                                In
+                            </div>
+                            <div class="value">
+                                {{rel}}
+                            </div>
+                            <div class="vue-button right-bar-btn" @click="loadRolePlayers(rel)"><vue-icon icon="more" iconSize="12"></vue-icon></div>
+                        </div>
+
+                        <div class="roleplayers-list" v-show="showRolePLayers" v-for="(rp, index) in roleplayers[rel]" :key=index>
+                            <div class="label">
+                                {{rp.role}}
+                            </div>
+                            <div class="value">
+                                {{rp.player}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
         </div>
+
     </div>
 </template>
 
@@ -60,6 +74,7 @@
         relationships: {},
         showRolePLayers: false,
         roleplayers: {},
+        roleplayersLoading: false,
       };
     },
     computed: {
@@ -80,13 +95,11 @@
         this.showRelationshipsPanel = true;
       },
       currentRole() {
+        this.roleplayers = {};
         this.showRolePLayers = false;
       },
       currentKeyspace() {
-        this.currentRole = '';
-        this.relationships = {};
-        this.roleplayers = {};
-        this.showRolePLayers = false;
+        this.showRelationshipsPanel = false;
       },
     },
     methods: {
@@ -101,14 +114,16 @@
         this.currentRole = role;
       },
       async loadRolesAndRelationships() {
+        // Initialize relationships map
+        this.relationships = {};
+
         const graknTx = await this.localStore.openGraknTx();
 
         const node = await this.localStore.getNode(this.selectedNodes[0].id, graknTx);
 
         const roles = await (await node.roles()).collect();
 
-
-        // construct object of roles mapping to their relationships
+        // Map roles to their respective relationships
         await Promise.all(roles.map(async (x) => {
           const roleLabel = await x.label();
           if (!(roleLabel in this.relationships)) {
@@ -121,6 +136,9 @@
         graknTx.close();
       },
       async loadRolePlayers(rel) {
+        this.roleplayersLoading = true;
+
+        // If roleplayers have not already been retrieved
         if (!this.roleplayers[rel]) {
           const graknTx = await this.localStore.openGraknTx();
 
@@ -128,12 +146,16 @@
 
           const roles = await (await node.roles()).collect();
 
+          // Get role concept of selected current role
           const role = await (Promise.all(roles.map(async x => ((await x.label() === this.currentRole) ? x : null)))).then(roles => roles.filter(r => r));
 
+          // Get relationship concepts of current role
           let relationships = await (await node.relationships(...role[0])).collect();
 
+          // Filter relationships
           relationships = await (Promise.all(relationships.map(async x => ((await (await x.type()).label() === rel) ? x : null)))).then(rels => rels.filter(r => r));
 
+          // For every relationship, map relationships to their respective roleplayer and the role it plays
           await Promise.all(relationships.map(async (x) => {
             let roleplayers = await x.rolePlayersMap();
             roleplayers = Array.from(roleplayers.entries());
@@ -144,7 +166,7 @@
                 .map(async (thing) => {
                   const thingLabel = await (await thing.type()).label();
                   if (roleLabel !== this.currentRole) {
-                    if (!this.roleplayers[rel]) this.roleplayers[rel] = [];
+                    if (!this.roleplayers[rel]) this.roleplayers[rel] = []; // Initialize array only for the first roleplayer
                     this.roleplayers[rel].push({ role: roleLabel, player: `${thingLabel}: ${thing.id}` });
                   }
                 }));
@@ -153,6 +175,7 @@
           graknTx.close();
         }
         this.showRolePLayers = true;
+        this.roleplayersLoading = false;
       },
     },
   };
@@ -170,13 +193,21 @@
         display: flex;
         flex-direction: row;
         align-items: center;
+        padding: 3px;
+    }
+
+    .roleplayers-list {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 3px;
     }
 
     .content {
         padding: var(--container-padding);
         display: flex;
         flex-direction: column;
-        max-height: 80px;
+        max-height: 300px;
         justify-content: center;
         border-bottom: var(--container-darkest-border);
     }
