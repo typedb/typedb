@@ -90,7 +90,7 @@
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <grpc.version>1.15.0</grpc.version>
-        <netty-all.version>4.1.27.Final</netty-all.version>
+        <netty-all.version>4.1.29.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
