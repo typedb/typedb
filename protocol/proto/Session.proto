@@ -6,8 +6,8 @@ option java_outer_classname = "SessionProto";
 // Import statements can be simplified by removing "client-protocol/proto/"
 // once we can delcare import_prefix in //client-protocol:client-protocol. I.e.,
 // once this PR has been merged: https://github.com/bazelbuild/bazel/pull/5536
-import "protocol/proto/Concept.proto";
-import "protocol/proto/Answer.proto";
+import "Concept.proto";
+import "Answer.proto";
 
 package session;
 
