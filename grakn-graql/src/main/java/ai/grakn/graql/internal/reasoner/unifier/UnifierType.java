@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package ai.grakn.graql.internal.reasoner.unifier;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -42,7 +42,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentC
  * @author Kasper Piskorski
  *
  */
-public enum UnifierType implements UnifierComparison {
+public enum UnifierType implements UnifierComparison, UnifierEquivalenceLink {
 
     /**
      *
@@ -52,7 +52,11 @@ public enum UnifierType implements UnifierComparison {
      * .
      */
     EXACT {
-        private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.AlphaEquivalence;
+
+        @Override
+        public ReasonerQueryEquivalence equivalence(){
+            return ReasonerQueryEquivalence.AlphaEquivalence;
+        }
 
         @Override
         public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
@@ -67,13 +71,13 @@ public enum UnifierType implements UnifierComparison {
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
             return (parent == null && child == null)
-                    || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
+                    || (parent != null && equivalence().atomicEquivalence().equivalent(parent, child));
         }
 
         @Override
         public boolean valueCompatibility(Atomic parent, Atomic child) {
             return (parent == null && child == null)
-                    || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
+                    || (parent != null && equivalence().atomicEquivalence().equivalent(parent, child));
         }
 
         @Override
@@ -91,7 +95,10 @@ public enum UnifierType implements UnifierComparison {
      */
     STRUCTURAL {
 
-        private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
+        @Override
+        public ReasonerQueryEquivalence equivalence(){
+            return ReasonerQueryEquivalence.StructuralEquivalence;
+        }
 
         @Override
         public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
@@ -111,7 +118,7 @@ public enum UnifierType implements UnifierComparison {
         @Override
         public boolean valueCompatibility(Atomic parent, Atomic child) {
             return (parent == null && child == null)
-                    || (parent != null && equivalence.atomicEquivalence().equivalent(parent, child));
+                    || (parent != null && equivalence().atomicEquivalence().equivalent(parent, child));
         }
 
         @Override
@@ -139,6 +146,9 @@ public enum UnifierType implements UnifierComparison {
      *
      */
     RULE {
+        @Override
+        public ReasonerQueryEquivalence equivalence() { return null; }
+
         @Override
         public boolean typePlayability(ReasonerQuery query, Var var, Type type) {
             return query.isTypeRoleCompatible(var, type);
