@@ -35,4 +35,5 @@ proto_library(
     srcs = ["Session.proto"],
 #    proto_source_root = "protocol/proto",
     deps = [":concept-proto", ":answer-proto"],
+    visibility = ["//protocol:__subpackages__"]
 )

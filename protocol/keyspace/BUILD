@@ -21,4 +21,5 @@ proto_library(
     name = "keyspace-proto",
     srcs = ["Keyspace.proto"],
 #    proto_source_root = "protocol/proto",
+    visibility = ["//protocol:__subpackages__"]
 )

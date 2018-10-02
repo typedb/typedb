@@ -21,8 +21,8 @@ load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
 java_grpc_compile(
     name = "client-java-proto",
     deps = [
-        "//protocol/proto:session-proto",
-        "//protocol/proto:keyspace-proto",
+        "//protocol/session:session-proto",
+        "//protocol/keyspace:keyspace-proto",
     ],
     visibility = [
         "//server:__subpackages__",
@@ -34,8 +34,8 @@ load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
 python_grpc_compile(
     name = "client-python-proto",
     deps = [
-        "//protocol/proto:session-proto",
-        "//protocol/proto:keyspace-proto",
+        "//protocol/session:session-proto",
+        "//protocol/keyspace:keyspace-proto",
     ],
     visibility = ["//client-python:__subpackages__"]
 )
@@ -44,8 +44,8 @@ load("@org_pubref_rules_proto//node:compile.bzl", "node_grpc_compile")
 node_grpc_compile(
     name = "client-node-proto",
     deps = [
-        "//protocol/proto:session-proto",
-        "//protocol/proto:keyspace-proto",
+        "//protocol/session:session-proto",
+        "//protocol/keyspace:keyspace-proto",
     ],
     visibility = ["//client-node:__subpackages__"]
 )
