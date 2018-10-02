@@ -35,7 +35,7 @@
     props: ['localStore'],
     data() {
       return {
-        showConceptInfoContent: (this.nodes && this.nodes.length === 1),
+        showConceptInfoContent: true,
       };
     },
     computed: {
