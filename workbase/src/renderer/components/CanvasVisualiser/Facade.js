@@ -68,8 +68,8 @@ function getNode(nodeId) {
   return this.container.visualiser.getNode(nodeId);
 }
 
-function updateNode(nodeId) {
-  return this.container.visualiser.updateNode(nodeId);
+function updateNode(node) {
+  return this.container.visualiser.updateNode(node);
 }
 
 function getAllNodes() {

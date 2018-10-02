@@ -166,7 +166,7 @@ import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActio
 import ImageDataURI from 'image-data-uri';
 import GraqlCodeMirror from './GraqlCodeMirror';
 import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
-import ManagementUtils from '../../VisualiserUtils';
+import { limitQuery } from '../../VisualiserUtils';
 import FavQueriesList from '../FavQueries/FavQueriesList';
 import TypesContainer from '../TypesContainer';
 import ErrorContainer from '../ErrorContainer';
@@ -265,9 +265,7 @@ export default {
         this.showFavQueriesList = false;
         this.showTypesContainer = false;
 
-        this.$store.commit('currentQuery',
-          ManagementUtils.limitQuery(this.currentQuery),
-        );
+        this.$store.commit('currentQuery', limitQuery(this.currentQuery));
 
         this.history.addToHistory(this.currentQuery);
 

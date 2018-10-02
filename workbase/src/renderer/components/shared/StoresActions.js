@@ -14,8 +14,8 @@ export const ADD_TYPE = 'add-type';
 // Data Management store actions
 export const RUN_CURRENT_QUERY = 'run-current-query';
 export const EXPLAIN_CONCEPT = 'explain-concept';
-export const TOGGLE_LABEL = 'toggle-label';
-export const TOGGLE_COLOUR = 'toggle-colour';
+export const UPDATE_NODES_LABEL = 'update-nodes-label';
+export const UPDATE_NODES_COLOUR = 'update-nodes-colour';
 
 
 // Common actions shared by the two canvas stores (SchemaDesign && DataManagement)

@@ -55,7 +55,7 @@
   import { Chrome } from 'vue-color';
   import { mapGetters } from 'vuex';
 
-  import { TOGGLE_COLOUR, TOGGLE_LABEL } from '@/components/shared/StoresActions';
+  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
 
 
@@ -142,7 +142,7 @@
       toggleAttributeToLabel(attribute) {
         // Persist changes into localstorage for current type
         DisplaySettings.toggleLabelByType({ type: this.currentType, attribute });
-        this.$store.dispatch(TOGGLE_LABEL, this.currentType);
+        this.$store.dispatch(UPDATE_NODES_LABEL, this.currentType);
         this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
       },
       toggleContent() {
@@ -159,7 +159,7 @@
         if (DisplaySettings.getTypeColours(this.currentType) !== col) {
           if (!col) this.colour.hex = 'default';
           DisplaySettings.toggleColourByType({ type: this.currentType, colourString: col });
-          this.$store.dispatch(TOGGLE_COLOUR, this.currentType);
+          this.$store.dispatch(UPDATE_NODES_COLOUR, this.currentType);
         }
       },
     },
