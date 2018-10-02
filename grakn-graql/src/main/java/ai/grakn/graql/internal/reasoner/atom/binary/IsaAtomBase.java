@@ -18,14 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -34,7 +28,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * //TODO
+ * Base class for isa atoms.
  * </p>
  *
  * @author Kasper Piskorski
@@ -42,19 +36,11 @@ import java.util.stream.Collectors;
  */
 public abstract class IsaAtomBase extends TypeAtom{
 
-    Pair<VarPattern, IdPredicate> getTypedPair(SchemaConcept type){
-        ConceptId typeId = type.id();
-        Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
-
-        IdPredicate newPredicate = IdPredicate.create(typeVariable.id(typeId).admin(), getParentQuery());
-        return new Pair<>(getPattern(), newPredicate);
-    }
-
     @Override
     public Set<TypeAtom> unify(Unifier u){
         Collection<Var> vars = u.get(getVarName());
         return vars.isEmpty()?
                 Collections.singleton(this) :
-                vars.stream().map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
+                vars.stream().map(v -> IsaAtom.create(v, getPredicateVariable(), getTypeId(), this.isDirect(), this.getParentQuery())).collect(Collectors.toSet());
     }
 }
