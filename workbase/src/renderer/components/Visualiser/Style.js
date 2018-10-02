@@ -176,6 +176,7 @@ function computeNodeStyle(node) {
       x: 2,
       y: 2,
     },
+    widthConstraint: { maximum: 600 },
   };
 }
 

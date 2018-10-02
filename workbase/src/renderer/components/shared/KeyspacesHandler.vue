@@ -1,7 +1,7 @@
 <template>
 <div class="keyspaces-wrapper">
 
-    <div @click="toggleKeyspaceList"><vue-tooltip class="keyspace-tooltip" content="Please select a keyspace" :isOpen="showKeyspaceTooltip" :child="keyspaceBtn"></vue-tooltip></div>
+    <div class="keyspaces" @click="toggleKeyspaceList"><vue-tooltip class="keyspace-tooltip" content="Please select a keyspace" :isOpen="showKeyspaceTooltip" :child="keyspaceBtn"></vue-tooltip></div>
 
         <ul id="keyspaces-list" class="keyspaces-list arrow_box z-depth-1" v-if="showKeyspaceList">
             <div style="text-align:center;" v-if="allKeyspaces && !allKeyspaces.length">no existing keyspace</div>

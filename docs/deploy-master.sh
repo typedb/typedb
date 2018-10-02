@@ -29,11 +29,11 @@ git add --force -- _jekyll _site
 git commit -m "Updating dev.grakn.ai"
 
 echo
-echo "Pushing website to git@heroku.com:dev-grakn.git"
+echo "Pushing website to git@heroku.com:grakn-web-dev.git"
 echo "..."
 # we will just push the git tree for just the docs repo, by doing `git subtree split --prefix docs ...` from the root directory
 cd ../
-git push git@heroku.com:dev-grakn.git `git subtree split --prefix docs graknlabs-docs-temp-branch`:master --force
+git push git@heroku.com:grakn-web-dev.git `git subtree split --prefix docs graknlabs-docs-temp-branch`:master --force
 
 echo
 echo "Removing up temporary branch graknlabs-docs-temp-branch"

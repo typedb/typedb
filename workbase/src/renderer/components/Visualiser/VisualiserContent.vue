@@ -53,7 +53,7 @@ import BottomBar from './BottomBar.vue';
 
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
-import VisualiserFooter from './Footer';
+import VisualiserFooter from './VisualiserFooter';
 
 
 export default {

@@ -2,8 +2,8 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button icon="star" className="vue-button" v-on:clicked="toggleFavQueriesList"></vue-button>
-            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
+            <vue-button icon="star" className="vue-button fav-queries-container-btn" v-on:clicked="toggleFavQueriesList"></vue-button>
+            <vue-button rightIcon="locate" className="vue-button types-container-btn" v-on:clicked="toggleTypesContainer"></vue-button>
         </div>
     <div class="center">
         <div class="center-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
@@ -14,7 +14,8 @@
                     <div v-if="showEditorTab" class="editor-tab">
                         <div @click="clearEditor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
                         <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
-                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon"></vue-icon></div>
+
+                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon add-fav-query-btn"></vue-icon></div>
                         <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="12" className="tab-icon"></vue-icon></div>
                         <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="12" className="tab-icon"></vue-icon></div>
                     </div>
@@ -51,7 +52,7 @@
 
 <div class="right">
     <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="showSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button"></vue-button>
+    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button clear-graph-btn"></vue-button>
     <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
 </div>
 
@@ -163,7 +164,7 @@ import React from 'react';
 import $ from 'jquery';
 import Spinner from '@/components/UIElements/Spinner.vue';
 import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActions';
-import ImageDataURI from 'image-data-uri';
+// import ImageDataURI from 'image-data-uri';
 import GraqlCodeMirror from './GraqlCodeMirror';
 import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
 import { limitQuery } from '../../VisualiserUtils';
@@ -249,9 +250,8 @@ export default {
         this.$store.commit('currentQuery', codeMirrorObj.getValue());
         this.editorLinesNumber = codeMirrorObj.lineCount();
       });
-
       this.codeMirror.on('focus', () => {
-        this.maximizeEditor();
+        if (this.editorMinimized) this.maximizeEditor();
       });
     });
   },
@@ -321,16 +321,6 @@ export default {
         value: object[key].replace('\n', ''),
       }));
     },
-    takeScreenshot() {
-      const canvas = document.getElementsByTagName('canvas')[0];
-
-      // save canvas image as data url (png format by default)
-      const dataURL = canvas.toDataURL();
-
-      const filePath = '/Users/syedirtazaraza/Desktop/grakn/workbase/screenshots/screenshot';
-
-      ImageDataURI.outputFile(dataURL, filePath);
-    },
     minimizeEditor() {
       $('.CodeMirror').animate({
         height: this.initialEditorHeight,
@@ -347,6 +337,19 @@ export default {
       });
       this.editorMinimized = false;
     },
+    // takeScreenshot() {
+    //   const canvas = document.getElementsByTagName('canvas')[0];
+
+    //   // save canvas image as data url (png format by default)
+    //   const dataURL = canvas.toDataURL();
+
+    //   const filePath = '/screenshots';
+
+    //   this.codeMirror.on('focus', () => {
+    //     if (this.editorMinimized) this.maximizeEditor();
+    //   });
+    //   this.editorMinimized = false;
+    // },
     toggleFavQueryTooltip(val) {
       this.showAddFavQueryToolTip = val;
     },

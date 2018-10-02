@@ -8,6 +8,7 @@ export function getNeighboursQuery(node, neighboursLimit) {
     case 'ENTITY_TYPE':
     case 'ATTRIBUTE_TYPE':
     case 'RELATIONSHIP_TYPE':
+      return `match $x id "${node.id}"; $y isa $x; offset ${node.offset}; limit ${neighboursLimit}; get $y;`;
     case 'ENTITY':
       return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $r, $y;`;
     case 'ATTRIBUTE':
