@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 proto_library(
     name = "concept-proto",
     srcs = ["Concept.proto"],
