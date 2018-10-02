@@ -11,10 +11,10 @@
                         </div>
                         <div class="fav-query-right">
                             <div class="fav-query-btns">
-                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button save-edited-fav-query"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button run-fav-query-btn"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button edit-fav-query-btn"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button delete-fav-query-btn"></vue-button>
                             </div>
                         </div>
                     </div>
@@ -162,7 +162,7 @@
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
         this.$emit('refresh-queries');
         this.codeMirror[index].toTextArea(); // Remove codemirror instance
-        this.$notifyInfo(`Query ${queryName} has been deleted from favourite queries.`, 'bottom-right');
+        this.$notifyInfo(`Query ${queryName} has been deleted from saved queries.`);
       },
       renderQueries() {
         const savedQueries = this.$refs.favQuery;
@@ -189,6 +189,7 @@
         this.$emit('refresh-queries');
         this.isEditable = null;
         this.codeMirror[index].setOption('readOnly', 'nocursor');
+        this.$notifyInfo(`Saved query ${queryName} has been updated.`);
       },
     },
   };

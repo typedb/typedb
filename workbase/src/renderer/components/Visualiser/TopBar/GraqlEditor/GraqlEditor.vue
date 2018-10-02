@@ -2,8 +2,8 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
-            <vue-button icon="star" className="vue-button" v-on:clicked="toggleFavQueriesList"></vue-button>
+            <vue-button icon="star" className="vue-button fav-queries-container-btn" v-on:clicked="toggleFavQueriesList"></vue-button>
+            <vue-button rightIcon="locate" className="vue-button types-container-btn" v-on:clicked="toggleTypesContainer"></vue-button>
         </div>
 
     <div class="center">
@@ -16,14 +16,14 @@
                     <textarea id="graqlEditor" ref="graqlEditor" rows="3"></textarea>
 
                     <div v-if="showEditorTab" class="editor-tab">
-                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
 
 
                         <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
 
-                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="11" className="tab-icon"></vue-icon></div>
-                        <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="13" className="tab-icon"></vue-icon></div>
-                        <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="13" className="tab-icon"></vue-icon></div>
+                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon add-fav-query-btn"></vue-icon></div>
+                        <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="12" className="tab-icon"></vue-icon></div>
+                        <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="12" className="tab-icon"></vue-icon></div>
 
                     </div>
                 </div>
@@ -33,6 +33,7 @@
                     v-if="showAddFavQuery"
                     :currentQuery="currentQuery"
                     :currentKeyspace="currentKeyspace"
+                    :favQueries="favQueries"
                     :showAddFavQueryToolTip="showAddFavQueryToolTip"
                     v-on:close-add-query-panel="toggleAddFavQuery"
                     v-on:toggle-fav-query-tooltip="toggleFavQueryTooltip"
@@ -61,7 +62,7 @@
 
 <div class="right">
     <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="loadSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button"></vue-button>
+    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button clear-graph-btn"></vue-button>
     <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
 </div>
 
@@ -228,7 +229,7 @@
     },
     watch: {
       currentQuery(query) {
-        if (query.length) this.showEditorTab = true; this.showStarToolTip = false; this.showEditorToolTip = false;
+        if (query.length) { this.showEditorTab = true; this.showStarToolTip = false; this.showEditorToolTip = false; } else this.showEditorTab = false;
 
 
         // We need this check because codeMirror reset the cursor position when calling getValue
@@ -257,8 +258,6 @@
         this.codeMirror.setOption('extraKeys', {
           Enter: this.runQuery,
           'Shift-Enter': 'newlineAndIndent',
-          'Shift-Backspace': this.clearGraph,
-          'Shift-Ctrl-Backspace': this.clearGraphAndPage,
           'Shift-Up': this.history.undo,
           'Shift-Down': this.history.redo,
         });
@@ -269,13 +268,17 @@
           this.localStore.setCurrentQuery(codeMirrorObj.getValue());
           this.editorLinesNumber = codeMirrorObj.lineCount();
         });
+
+        this.codeMirror.on('focus', () => {
+          if (this.editorMinimized) this.maximizeEditor();
+        });
       });
     },
     methods: {
       runQuery(event) {
         if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
         else if (!this.currentQuery.length) {
-          event.stopPropagation(); // to prevent event propogation to graql editor tooltip
+          if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to graql editor tooltip
           this.showEditorToolTip = true;
         } else {
           this.showFavQueriesList = false;
@@ -289,7 +292,8 @@
 
           this.localStore.dispatch(RUN_CURRENT_QUERY)
             .catch((err) => {
-              this.errorMsg = err.details;
+              if (!err.details) this.errorMsg = err.message;
+              else this.errorMsg = err.details;
               this.showError = true;
             });
           this.showError = false;
@@ -312,7 +316,7 @@
         if (!this.currentKeyspace) {
           this.$emit('keyspace-not-selected');
         } else if (!this.favQueries.length) {
-          event.stopPropagation(); // to prevent event propogation to fav query tooltip
+          if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to fav query tooltip
           this.showEditorTab = true;
           this.showStarToolTip = true;
         } else {

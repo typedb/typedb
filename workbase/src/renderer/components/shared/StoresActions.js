@@ -18,7 +18,7 @@ export const TOGGLE_LABEL = 'toggle-label';
 export const TOGGLE_COLOUR = 'toggle-colour';
 
 
-// Common actions shared by the two canvas stores (SchemaDesign && DataManagement)
+// Common actions shared by the two canvas stores (SchemaDesign && Visualiser)
 export const LOAD_METATYPE_INSTANCES = 'load-metatype-instances';
 export const INITIALISE_VISUALISER = 'initialise-visualiser';
 export const CANVAS_RESET = 'canvas-reset';

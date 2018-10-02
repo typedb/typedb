@@ -45,7 +45,7 @@
   --red-4: #EE3E82;
   --red-5: #F16299;
 
-  --error-container-color: var(--red-1);
+  --error-container-color: var(--red-3);
 
   --font-default: #d9d9d9;
   --font-faded: #777777;
@@ -60,9 +60,28 @@
 
 /* icon */
 
+.bp3-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vue-icon {
+  fill: var(--font-default);
+}
+
+span.bp3-icon::before {
+  display: none;
+}
+
+.right-bar-tab-icon {
+  fill: var(--font-default);
+}
+
 .tab-icon {
   cursor: pointer;
   padding: 1px;
+  fill: var(--font-default);
 }
 
 .tab-icon:focus {
@@ -159,6 +178,10 @@
 
 .bp3-spinner-track {
   stroke: var(--gray-4) !important;
+}
+
+.keyspace-btn {
+  border: 1px solid var(--button-hover-border-color) !important;
 }
 
 
@@ -452,14 +475,37 @@ color: var(--font-faded);
 
 .toasted.primary.info {
   background-color: var(--purple-3) !important;
-  color: var(--font-default) !important;
-  border: var(--purple-1) !important;
+  border: 1px solid var(--purple-1) !important;
+}
+
+.toasted.primary.error {
+  background-color: var(--red-1) !important;
+  border: var(--red-2) !important;
+}
+
+.toasted.primary {
   border-radius: 0px !important;
+  padding: var(--container-padding) !important;
+  color: var(--font-default) !important;
+  width: 450px !important;
+  left: 35px !important;
+  box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.3) !important;
 }
 
 .toasted.primary .action {
   color: var(--font-default) !important;
+  margin: var(--element-margin) !important;
+  border-radius: 0px !important;
+  height: 31px;
 }
+
+.toasted.primary .action:hover {
+  text-decoration: none !important;
+  color: var(--green-4) !important;
+}
+
+
+
 
 
 /*Reset CSS*/

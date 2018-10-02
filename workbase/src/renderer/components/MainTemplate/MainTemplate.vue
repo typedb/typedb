@@ -1,7 +1,7 @@
 <template>
   <transition name="slide-fade" appear>
         <div class="wrapper">
-            <app-bar></app-bar>
+            <app-bar v-if="showAppBar"></app-bar>
             <div class="main-wrapper">
                 <div class="content">
                     <keep-alive>
@@ -51,5 +51,10 @@ import EpicsBar from './EpicsBar.vue';
 export default {
   name: 'MainTemplate',
   components: { AppBar, EpicsBar },
+  computed: {
+    showAppBar() {
+      return (process.platform === 'darwin');
+    },
+  },
 };
 </script>

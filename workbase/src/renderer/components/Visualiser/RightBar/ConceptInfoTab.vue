@@ -1,6 +1,6 @@
 <template>
     <div class="node-tab-content">
-        <div class="tab-header">Concept Info</div>
+        <div class="tab-header noselect">Concept Info</div>
         <identity-panel :localStore="localStore"></identity-panel>
         <attributes-panel :localStore="localStore"></attributes-panel>
     </div>

@@ -1,11 +1,11 @@
 <template>
     <div class="panel-container">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showAttributesPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" ></vue-icon>
+            <vue-icon :icon="(showAttributesPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Attributes</h1>
         </div>
         <div v-show="showAttributesPanel">
-            <div class="content" v-if="msg">
+            <div class="content noselect" v-if="msg">
                 {{msg}}
             </div>
             <div class="content" v-else>
@@ -45,7 +45,7 @@
         if (!this.currentKeyspace) return 'Please select a keyspace';
         else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';
         else if (!this.attributes) return 'Attributes are being loaded';
-        else if (!this.attributes.length) return 'There are no attributes available for this type of node';
+        else if (!this.attributes.length) return 'There are no attributes available';
         return null;
       },
     },

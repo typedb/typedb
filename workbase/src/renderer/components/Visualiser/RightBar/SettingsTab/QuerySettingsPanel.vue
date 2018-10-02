@@ -1,15 +1,12 @@
 <template>
-    <div class="panel-container">
+    <div class="panel-container noselect">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
+            <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Query Settings</h1>
         </div>
         <div v-show="showQuerySettings">
-        <div class="panel-content" v-if="!currentKeyspace">
-            Please select a keyspace
-        </div>
 
-        <div class="panel-content" v-else>
+        <div class="panel-content">
             <div class="panel-content-item">
                 <h1 class="panel-label">Query Limit:</h1>
                 <div class="panel-value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
@@ -37,13 +34,10 @@
     props: ['localStore'],
     data() {
       return {
-        showQuerySettings: false,
+        showQuerySettings: true,
       };
     },
     computed: {
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
       queryLimit() {
         return QueryUtils.getQueryLimit();
       },

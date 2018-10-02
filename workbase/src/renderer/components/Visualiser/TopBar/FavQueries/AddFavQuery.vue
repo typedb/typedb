@@ -1,11 +1,11 @@
 <template>
     <div class="add-fav-query z-depth-3">
         <div class="panel-body">
-            <vue-tooltip content="please write a query name" :isOpen="showAddFavQueryToolTip" :usePortal="false" :child="queryNameInput" v-on:close-tooltip="$emit('toggle-fav-query-tooltip', false)"></vue-tooltip>
+            <vue-tooltip className="fav-query-name-tooltip" content="please write a query name" :isOpen="showAddFavQueryToolTip" :usePortal="false" :child="queryNameInput" v-on:close-tooltip="$emit('toggle-fav-query-tooltip', false)"></vue-tooltip>
             <vue-button v-on:clicked="addFavQuery" icon="floppy-disk" className="vue-button save-query-btn"></vue-button>
         </div>
         <div class="editor-tab">
-            <div @click="$emit('close-add-query-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
+            <div class="close-add-fav-query-container" @click="$emit('close-add-query-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
         </div>
     </div>
 </template>
@@ -19,7 +19,7 @@
 
   export default {
     name: 'AddFavQuery',
-    props: ['currentQuery', 'currentKeyspace', 'showAddFavQueryToolTip'],
+    props: ['currentQuery', 'currentKeyspace', 'showAddFavQueryToolTip', 'favQueries'],
     data() {
       return {
         currentQueryName: '',
@@ -34,10 +34,16 @@
         this.currentQueryName = val;
       },
       addFavQuery(event) {
-        event.stopPropagation();
+        if (event.stopPropagation) event.stopPropagation();
 
-        if (this.currentQueryName === '') {
+        const favQueryNames = this.favQueries.map(x => x.name);
+
+        if (favQueryNames.includes(this.currentQueryName)) {
+          this.$notifyInfo('Query name already saved. Please choose a different name.');
+        } else if (this.currentQueryName === '') {
           this.$emit('toggle-fav-query-tooltip', true);
+        } else if (!this.currentQuery.length) {
+          this.$notifyInfo('Please type in a query.');
         } else {
           this.$emit('close-add-query-panel');
 
@@ -48,7 +54,7 @@
           );
           this.$emit('refresh-queries');
           this.currentQueryName = '';
-          this.$notifyInfo('New query saved!', 'bottom-right');
+          this.$notifyInfo('New query saved!');
         }
       },
       renderQueryNameInput() {

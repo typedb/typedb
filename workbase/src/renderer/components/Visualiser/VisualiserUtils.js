@@ -1,16 +1,17 @@
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
 
-function loadNeighbours(node, neighboursLimit) {
+function getNeighboursQuery(node, neighboursLimit) {
   switch (node.baseType) {
     case 'ENTITY_TYPE':
     case 'ATTRIBUTE_TYPE':
     case 'RELATIONSHIP_TYPE':
+      return `match $x id "${node.id}"; $y isa $x; offset ${node.offset}; limit ${neighboursLimit}; get $y;`;
     case 'ENTITY':
-      return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get;`;
+      return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $r, $y;`;
     case 'ATTRIBUTE':
-      return `match $x id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get;`;
+      return `match $x has attribute $y; $y id "${node.id}"; offset ${node.offset}; limit ${neighboursLimit}; get $x;`;
     case 'RELATIONSHIP':
-      return `match $r id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $r, $x;`;
+      return `match $r id "${node.id}"; $r ($x, $y); offset ${node.offset}; limit ${neighboursLimit}; get $x;`;
     default:
       throw new Error(`Unrecognised baseType of thing: ${node.baseType}`);
   }
@@ -35,7 +36,6 @@ function limitQuery(query) {
   return limitedQuery;
 }
 
-
 function buildExplanationQuery(answer, queryPattern) {
   let query = 'match ';
   let attributeQuery = null;
@@ -56,18 +56,17 @@ async function computeAttributes(nodes) {
         type: await (await attr.type()).label(),
         value: await attr.value(),
       })));
-      return node;
+    } else {
+      node.attributes = await Promise.all((await (await node.attributes()).collect()).map(async attr => ({
+        type: await attr.label(),
+      })));
     }
-    node.attributes = await Promise.all((await (await node.attributes()).collect()).map(async attr => ({
-      type: await attr.label(),
-    })));
     return node;
   }));
 }
 
-
 export default {
-  loadNeighbours,
+  getNeighboursQuery,
   limitQuery,
   buildExplanationQuery,
   computeAttributes,

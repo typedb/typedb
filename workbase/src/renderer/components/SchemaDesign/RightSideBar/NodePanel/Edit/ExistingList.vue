@@ -42,6 +42,9 @@ export default {
       typeFilter: '',
     };
   },
+  created() {
+    this.localStore.registerCanvasEventHandler('click', () => { this.$emit('close-tool-tip'); });
+  },
   computed: {
     instances() {
       const meta = this.localStore.getMetaTypeInstances();
@@ -55,14 +58,6 @@ export default {
         .filter(type => String(type).toLowerCase().indexOf(this.typeFilter) > -1)
         .filter(type => !(this.typesAlreadySelected.map(x => x.label).includes(type)))
         .sort();
-    },
-    readyToRegisterEvents() {
-      return this.localStore.isInit;
-    },
-  },
-  watch: {
-    readyToRegisterEvents() {
-      this.localStore.registerCanvasEventHandler('click', () => { this.$emit('close-tool-tip'); });
     },
   },
   methods: {

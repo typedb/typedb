@@ -20,25 +20,20 @@ export default {
       showContextMenu: false,
     };
   },
+  created() {
+    this.localStore.registerCanvasEventHandler('oncontext', (mouseEvent) => {
+      this.repositionMenu(mouseEvent);
+      this.showContextMenu = true;
+    });
+    this.localStore.registerCanvasEventHandler('click', () => { this.showContextMenu = false; });
+    this.localStore.registerCanvasEventHandler('selectNode', () => { this.showContextMenu = false; });
+    this.localStore.registerCanvasEventHandler('deselectNode', () => { this.showContextMenu = false; });
+    this.localStore.registerCanvasEventHandler('dragStart', () => { this.showContextMenu = false; });
+  },
 
   computed: {
     selectedNode() {
       return this.localStore.getSelectedNode();
-    },
-    readyToRegisterEvents() {
-      return this.localStore.isInit;
-    },
-  },
-  watch: {
-    readyToRegisterEvents() {
-      this.localStore.registerCanvasEventHandler('oncontext', (mouseEvent) => {
-        this.repositionMenu(mouseEvent);
-        this.showContextMenu = true;
-      });
-      this.localStore.registerCanvasEventHandler('click', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('selectNode', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('deselectNode', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('dragStart', () => { this.showContextMenu = false; });
     },
   },
   methods: {
