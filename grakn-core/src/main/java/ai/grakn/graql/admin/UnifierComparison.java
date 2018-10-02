@@ -21,7 +21,6 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
-import com.google.common.base.Equivalence;
 import java.util.Set;
 
 /**

@@ -1,12 +1,28 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
 
 public abstract class TestQueryPattern {
 
@@ -69,7 +85,7 @@ public abstract class TestQueryPattern {
                     //(x[], y[]), 9-11
                     "{$r5 (baseRole1: $x1_5, baseRole2: $x2_5); $x1_5 isa baseRoleEntity; $x2_5 isa anotherBaseRoleEntity;}",
                     "{$r5b (baseRole1: $x1_5b, baseRole2: $x2_5b); $x1_5b id '" + baseEntityId + "'; $x2_5b id '" + anotherBaseEntityId + "';}",
-                    "{$r5c (baseRole1: $x1_5c, baseRole2: $x2_5c); $x1_5c id '" + baseEntityId + "'; $x2_5c id '" + anotherBaseEntityId + "';}",
+                    "{$r5c (baseRole1: $x1_5c, baseRole2: $x2_5c); $x1_5c id '" + subEntityId + "'; $x2_5c id '" + anotherBaseEntityId + "';}",
 
                     //11-15
                     "{$r6 (baseRole1: $x1_6, baseRole2: $x2_6); $r6 id '" + relationId + "';}",
@@ -78,6 +94,7 @@ public abstract class TestQueryPattern {
                     "{$r6d (baseRole1: $x1_6d, baseRole2: $x2_6d); $x2_6d id '" + baseEntityId + "';$r6d id '" + relationId + "';}",
                     "{$r6e (baseRole1: $x1_6e, baseRole2: $x2_6e); $x1_6e id '" + baseEntityId + "'; $x2_6e id '" + anotherBaseEntityId + "';$r6e id '" + relationId + "';}"
             );
+
         }
     };
 

@@ -12,13 +12,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
-<<<<<<< HEAD
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-=======
- * You should have received a copy of the GNU General Public License
- * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
->>>>>>> central/stable
  */
 
 package ai.grakn.graql.internal.reasoner;
@@ -72,7 +67,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.reasoner.TestQueryPattern.differentResourceVariants;
 import static ai.grakn.graql.internal.reasoner.TestQueryPattern.subList;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
@@ -592,51 +586,21 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testUnification_EXACT_TernaryRelationWithTypes_RepeatingRelationPlayers_withMetaRoles(){
-        EmbeddedGraknTx<?> graph =  unificationWithTypesSet.tx();
-        String patternString = "{$x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}";
-        String patternString2 = "{$y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}";
-        String patternString3 = "{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3);
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
-        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
-
-        Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
-        Unifier unifier2 = childQuery2.getMultiUnifier(parentQuery).getUnifier();
-        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
-                var("y1"), var("x1"),
-                var("y2"), var("x2"),
-                var("y3"), var("x3")
-        ));
-        assertTrue(unifier.containsAll(correctUnifier));
-        assertTrue(unifier2.containsAll(correctUnifier));
-    }
-
-    @Test
     public void testUnification_EXACT_TernaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
         EmbeddedGraknTx<?> graph =  unificationWithTypesSet.tx();
-        String patternString = "{$x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}";
-        String patternString2 = "{$y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}";
-        String patternString3 = "{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
-        Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
-        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2);
-        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3);
-        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(pattern2, graph);
-        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(pattern3, graph);
+        ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{$x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}"), graph);
+        ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{$y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}"), graph);
+        ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}"), graph);
 
-        Unifier unifier = childQuery.getMultiUnifier(parentQuery).getUnifier();
-        Unifier unifier2 = childQuery2.getMultiUnifier(parentQuery).getUnifier();
-        Unifier correctUnifier = new UnifierImpl(ImmutableMultimap.of(
+        MultiUnifier exactUnifier = childQuery.getMultiUnifier(parentQuery, UnifierType.EXACT);
+        MultiUnifier exactUnifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.EXACT);
+        MultiUnifier correctRuleUnifier = new MultiUnifierImpl(ImmutableMultimap.of(
                 var("y1"), var("x1"),
                 var("y2"), var("x2"),
                 var("y3"), var("x3")
         ));
-        assertTrue(unifier.containsAll(correctUnifier));
-        assertTrue(unifier2.containsAll(correctUnifier));
+        assertTrue(exactUnifier.equals(correctRuleUnifier));
+        assertTrue(exactUnifier2.equals(MultiUnifierImpl.nonExistent()));
     }
 
     @Test
@@ -785,92 +749,28 @@ public class AtomicQueryTest {
     public void testUnification_EXACT_differentRelationVariants(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity);
-
-        exactUnification(qs.get(0), qs, new ArrayList<>(), graph);
-
-        exactUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 4)), graph);
-        exactUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 4)), graph);
-        exactUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(2, 3)), graph);
-
-        exactUnification(qs.get(5), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
-        exactUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
-        exactUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
-
-        exactUnification(qs.get(9), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), graph);
-        exactUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), graph);
+        qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
     }
 
     @Test
     public void testUnification_EXACT_differentRelationVariantsWithRelationVariable(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation);
-
-        exactUnification(qs.get(0), qs, new ArrayList<>(), graph);
-
-        exactUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 4)), graph);
-        exactUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 4)), graph);
-        exactUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(2, 3)), graph);
-
-        exactUnification(qs.get(5), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
-        exactUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
-        exactUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
-
-        exactUnification(qs.get(9), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), graph);
-        exactUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), graph);
+        qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
     }
 
     @Test
     public void testUnification_EXACT_differentTypeVariants(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
-
-        exactUnification(qs.get(0), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
-        exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
-
-        exactUnification(qs.get(4), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(5), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(6), qs, new ArrayList<>(), graph);
-
-        exactUnification(qs.get(7), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(8), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(9), qs, new ArrayList<>(), graph);
+        qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
     }
 
     @Test
     public void testUnification_EXACT_differentResourceVariants(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
-
-        exactUnification(qs.get(0), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
-        exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
-
-        exactUnification(qs.get(4), qs, Collections.singletonList(qs.get(5)), graph);
-        exactUnification(qs.get(5), qs, Collections.singletonList(qs.get(4)), graph);
-
-        exactUnification(qs.get(6), qs, Collections.singletonList(qs.get(8)), graph);
-        exactUnification(qs.get(7), qs, Collections.singletonList(qs.get(9)), graph);
-        exactUnification(qs.get(8), qs, Collections.singletonList(qs.get(6)), graph);
-        exactUnification(qs.get(9), qs, Collections.singletonList(qs.get(7)), graph);
-
-        exactUnification(qs.get(10), qs, Collections.singletonList(qs.get(12)), graph);
-        exactUnification(qs.get(11), qs, Collections.singletonList(qs.get(13)), graph);
-        exactUnification(qs.get(12), qs, Collections.singletonList(qs.get(10)), graph);
-        exactUnification(qs.get(13), qs, Collections.singletonList(qs.get(11)), graph);
-
-        exactUnification(qs.get(14), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(15), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(16), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(17), qs, new ArrayList<>(), graph);
+        List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
+        qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
     }
 
     @Test
@@ -939,7 +839,7 @@ public class AtomicQueryTest {
     @Test
     public void testUnification_STRUCTURAL_differentResourceVariants(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
+        List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
 
         structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
