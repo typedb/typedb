@@ -87,7 +87,7 @@ public abstract class TestQueryPattern {
                     "{$r5b (baseRole1: $x1_5b, baseRole2: $x2_5b); $x1_5b id '" + baseEntityId + "'; $x2_5b id '" + anotherBaseEntityId + "';}",
                     "{$r5c (baseRole1: $x1_5c, baseRole2: $x2_5c); $x1_5c id '" + subEntityId + "'; $x2_5c id '" + anotherBaseEntityId + "';}",
 
-                    //11-15
+                    //12-16
                     "{$r6 (baseRole1: $x1_6, baseRole2: $x2_6); $r6 id '" + relationId + "';}",
                     "{$r6b (baseRole1: $x1_6b, baseRole2: $x2_6b); $r6b id '" + anotherRelationId + "';}",
                     "{$r6c (baseRole1: $x1_6c, baseRole2: $x2_6c); $x1_6c isa anotherBaseRoleEntity; $r6c id '" + relationId + "';}",
@@ -173,6 +173,12 @@ public abstract class TestQueryPattern {
     static <T> List<T> subList(List<T> list, Collection<Integer> elements){
         List<T> subList = new ArrayList<>();
         elements.forEach(el -> subList.add(list.get(el)));
+        return subList;
+    }
+
+    static <T> List<T> subListExcluding(List<T> list, Collection<Integer> toExclude){
+        List<T> subList = new ArrayList<>(list);
+        toExclude.forEach(el -> subList.remove(list.get(el)));
         return subList;
     }
 

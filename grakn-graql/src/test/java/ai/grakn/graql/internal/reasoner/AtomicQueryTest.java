@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.TestQueryPattern.subList;
+import static ai.grakn.graql.internal.reasoner.TestQueryPattern.subListExcluding;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
@@ -774,6 +775,107 @@ public class AtomicQueryTest {
     }
 
     @Test
+    public void testUnification_RULE_differentRelationVariants(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        List<String> qs = TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity);
+
+        ruleUnification(qs.get(0), qs, qs, graph);
+
+        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3)), graph);
+        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 11)), graph);
+        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 4, 9, 10, 11)), graph);
+        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 10)), graph);
+
+        ruleUnification(qs.get(5), qs, subListExcluding(qs, Lists.newArrayList(7, 9, 10, 11)), graph);
+        ruleUnification(qs.get(6), qs, subListExcluding(qs, Lists.newArrayList(7, 8, 9, 10, 11)), graph);
+        ruleUnification(qs.get(7), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 8)), graph);
+        ruleUnification(qs.get(8), qs, subListExcluding(qs, Lists.newArrayList(6, 7, 9, 10, 11)), graph);
+
+        ruleUnification(qs.get(9), qs, subListExcluding(qs, Lists.newArrayList(3, 5, 6, 8)), graph);
+        ruleUnification(qs.get(10), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 5, 6, 8, 11)), graph);
+        ruleUnification(qs.get(11), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), graph);
+    }
+
+    @Test
+    public void testUnification_RULE_differentRelationVariantsWithRelationVariable(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        List<String> qs = TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation);
+
+        //TODO
+        ruleUnification(qs.get(0), qs, qs, graph);
+
+        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3, 14)), graph);
+        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 11)), graph);
+        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 4, 9, 10, 11)), graph);
+        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 10)), graph);
+
+        ruleUnification(qs.get(5), qs, subListExcluding(qs, Lists.newArrayList(7, 9, 10, 11)), graph);
+        ruleUnification(qs.get(6), qs, subListExcluding(qs, Lists.newArrayList(7, 8, 9, 10, 11)), graph);
+        ruleUnification(qs.get(7), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 8)), graph);
+        ruleUnification(qs.get(8), qs, subListExcluding(qs, Lists.newArrayList(6, 7, 9, 10, 11)), graph);
+
+        ruleUnification(qs.get(9), qs, subListExcluding(qs, Lists.newArrayList(3, 5, 6, 8)), graph);
+        ruleUnification(qs.get(10), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 5, 6, 8, 11)), graph);
+        ruleUnification(qs.get(11), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), graph);
+
+        ruleUnification(qs.get(12), qs, subListExcluding(qs, Lists.newArrayList(13)), graph);
+        ruleUnification(qs.get(13), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 5, 6, 8, 11)), graph);
+        ruleUnification(qs.get(14), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), graph);
+        ruleUnification(qs.get(15), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), graph);
+        ruleUnification(qs.get(16), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), graph);
+    }
+
+    @Test
+    public void testUnification_RULE_differentTypeVariants(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
+
+        //TODO
+        ruleUnification(qs.get(0), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(1), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
+        ruleUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
+
+        ruleUnification(qs.get(4), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(5), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(6), qs, new ArrayList<>(), graph);
+
+        ruleUnification(qs.get(7), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(8), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(9), qs, new ArrayList<>(), graph);
+    }
+
+    @Test
+    public void testUnification_RULE_differentResourceVariants(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
+
+        //TODO
+        ruleUnification(qs.get(0), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(1), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
+        ruleUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
+
+        ruleUnification(qs.get(4), qs, Collections.singletonList(qs.get(5)), graph);
+        ruleUnification(qs.get(5), qs, Collections.singletonList(qs.get(4)), graph);
+
+        ruleUnification(qs.get(6), qs, Collections.singletonList(qs.get(8)), graph);
+        ruleUnification(qs.get(7), qs, Collections.singletonList(qs.get(9)), graph);
+        ruleUnification(qs.get(8), qs, Collections.singletonList(qs.get(6)), graph);
+        ruleUnification(qs.get(9), qs, Collections.singletonList(qs.get(7)), graph);
+
+        ruleUnification(qs.get(10), qs, Collections.singletonList(qs.get(12)), graph);
+        ruleUnification(qs.get(11), qs, Collections.singletonList(qs.get(13)), graph);
+        ruleUnification(qs.get(12), qs, Collections.singletonList(qs.get(10)), graph);
+        ruleUnification(qs.get(13), qs, Collections.singletonList(qs.get(11)), graph);
+
+        ruleUnification(qs.get(14), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(15), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(16), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(17), qs, new ArrayList<>(), graph);
+    }
+
+    @Test
     public void testUnification_STRUCTURAL_differentRelationVariants(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity);
@@ -815,6 +917,12 @@ public class AtomicQueryTest {
         structuralUnification(qs.get(9), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), graph);
         structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), graph);
+
+        structuralUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(13)), graph);
+        structuralUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(12)), graph);
+        structuralUnification(qs.get(14), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(15), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(16), qs, new ArrayList<>(), graph);
     }
 
     @Test
@@ -869,12 +977,24 @@ public class AtomicQueryTest {
         queries.forEach(parent -> unification(child, parent, queriesWithUnifier.contains(parent) || parent.equals(child), unifierType, graph));
     }
 
+    private void structuralUnification(String child, List<String> queries, List<String> queriesWithUnifier, EmbeddedGraknTx graph){
+        unification(child, queries, queriesWithUnifier, UnifierType.STRUCTURAL, graph);
+    }
+
+    private void exactUnification(String child, List<String> queries, List<String> queriesWithUnifier, EmbeddedGraknTx graph){
+        unification(child, queries, queriesWithUnifier, UnifierType.EXACT, graph);
+    }
+
+    private void ruleUnification(String child, List<String> queries, List<String> queriesWithUnifier, EmbeddedGraknTx graph){
+        unification(child, queries, queriesWithUnifier, UnifierType.RULE, graph);
+    }
+
 
     private MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, EmbeddedGraknTx graph){
         ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), graph);
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), graph);
 
-        queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
+        if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists){
@@ -946,14 +1066,6 @@ public class AtomicQueryTest {
                 assertCollectionsEqual(projectedParentToChild, projectedChild);
             }
         }
-    }
-
-    private void structuralUnification(String child, List<String> queries, List<String> queriesWithUnifier, EmbeddedGraknTx graph){
-        queries.forEach(parent -> unification(child, parent, queriesWithUnifier.contains(parent) || parent.equals(child), UnifierType.STRUCTURAL, graph));
-    }
-
-    private void exactUnification(String child, List<String> queries, List<String> queriesWithUnifier, EmbeddedGraknTx graph){
-        queries.forEach(parent -> unification(child, parent, queriesWithUnifier.contains(parent) || parent.equals(child), UnifierType.EXACT, graph));
     }
 
 
