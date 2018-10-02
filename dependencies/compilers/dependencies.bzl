@@ -26,29 +26,16 @@ def antlr_dependencies():
     )
 
 
-def protobuf_dependencies():
+def grpc_dependencies():
 
-    native.http_archive(
-        name = "bazel_skylib",
-        sha256 = "bbccf674aa441c266df9894182d80de104cabd19be98be002f6d478aaa31574d",
-        strip_prefix = "bazel-skylib-2169ae1c374aab4a09aa90e65efe1a3aad4e279b",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/2169ae1c374aab4a09aa90e65efe1a3aad4e279b.tar.gz"],
+    native.git_repository(
+        name = "com_github_grpc_grpc",
+        remote = "https://github.com/grpc/grpc",
+        tag = "v1.15.1"
     )
 
-    native.bind(name = "six", actual = "@six_archive//:six")
-    native.new_http_archive(
-       name = "six_archive",
-       build_file = "@com_google_protobuf//:six.BUILD",
-       sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
-       urls = ["https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz#md5=34eed507548117b2ab523ab14b2f8b55"],
+    native.git_repository(
+        name = "org_pubref_rules_proto",
+        remote = "https://github.com/pubref/rules_proto",
+        commit = "27da2e7af9e4a1c43c584be2f05be8a301a642b6",
     )
-
-    # This com_google_protobuf repository is required for proto_library rule.
-    # It provides the protocol compiler binary (i.e., protoc).
-    native.http_archive(
-        name = "com_google_protobuf",
-        sha256 = "0a4c6d0678eb2f063df332cff1a41647ef692c067b5cfb19e51bca778e79d9e0",
-        strip_prefix = "protobuf-3.6.1",
-        urls = ["https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-all-3.6.1.zip"],
-    )
-

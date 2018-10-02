@@ -16,57 +16,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 proto_library(
-    name = "session-proto",
-    srcs = ["proto/Session.proto"],
-    deps = [":answer-proto",
-            ":concept-proto"],
-    proto_source_root = "protocol",
-    visibility = ["//client-protocol:__subpackages__"]
-)
-
-proto_library(
-    name = "answer-proto",
-    srcs = ["proto/Answer.proto"],
-    deps = [":concept-proto"],
-    proto_source_root = "protocol",
-    visibility = ["//client-protocol:__subpackages__"]
-)
-
-proto_library(
-    name = "concept-proto",
-    srcs = ["proto/Concept.proto"],
-    proto_source_root = "protocol",
-    visibility = ["//client-protocol:__subpackages__"]
-)
-
-proto_library(
-    name = "keyspace-proto",
-    srcs = ["proto/Keyspace.proto"],
-    proto_source_root = "protocol",
-    visibility = ["//client-protocol:__subpackages__"]
-)
-
-
-java_proto_library(
-    name = "client-java-proto",
-    deps = [":session-proto",
-            ":answer-proto",
-            "concept-proto",
-            "keyspace-proto"],
-    visibility = [
-        "//server:__subpackages__",
-        "//client-java:__subpackages__",
-    ]
-)
-
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
-py_proto_library(
-    name = "client-python-proto",
+    name = "client-proto",
     srcs = glob(["proto/*.proto"]),
-    protoc = "@com_google_protobuf//:protoc",
-    visibility = [
-        "//client-python:__subpackages__",
-    ]
+    visibility = ["//protocol:__subpackages__"]
+)
+
+load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+java_grpc_compile(
+    name = "client-java-proto",
+    deps = [":client-proto"],
+)
+
+load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
+python_grpc_compile(
+    name = "client-python-proto",
+    deps = [":client-proto"],
+)
+
+load("@org_pubref_rules_proto//node:compile.bzl", "node_grpc_compile")
+node_grpc_compile(
+    name = "client-node-proto",
+    deps = [":client-proto"],
 )

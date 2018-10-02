@@ -18,28 +18,56 @@
 
 workspace(name = "grakn_core")
 
+
+###################
+# Load Buil Tools #
+###################
+
 # Load additional build tools, such bazel-deps and unused-deps
 load("//dependencies/tools:dependencies.bzl", "tools_dependencies")
 tools_dependencies()
 
-# Load runtime dependencies from maven
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
-maven_dependencies()
 
-# Load additional compiler tools, such as ANTLR and Protobuf
-load(
-    "//dependencies/compilers:dependencies.bzl",
-    "antlr_dependencies",
-    "protobuf_dependencies"
-)
+#####################################
+# Load Compiler Dependencies: ANTLR #
+#####################################
+
+# Load compiler tool: ANTLR
+load("//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
 antlr_dependencies()
-protobuf_dependencies()
 
 # Load dependencies for ANTLR rules
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
-# Load versions rule from skylib, for Protobuf, and check that bazel >= 0.5.4
-load("@bazel_skylib//:lib.bzl", "versions")
-versions.check(minimum_bazel_version = "0.5.4")
 
+####################################
+# Load Compiler Dependencies: GRPC #
+####################################
+
+# Load Protobuf dependencies
+load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies")
+grpc_dependencies()
+
+load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
+com_github_grpc_grpc_bazel_grpc_deps()
+
+# Load Java Protobuf dependencies
+load("@org_pubref_rules_proto//java:deps.bzl", "java_grpc_compile")
+java_grpc_compile()
+
+# Load Python Protobuf dependencies
+load("@org_pubref_rules_proto//python:deps.bzl", "python_grpc_compile")
+python_grpc_compile()
+
+# Load Node.js Protobuf dependencies
+load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
+node_grpc_compile()
+
+
+########################################
+# Load Runtime Dependencies from Maven #
+########################################
+
+load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+maven_dependencies()
