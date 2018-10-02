@@ -3,10 +3,7 @@ syntax = "proto3";
 option java_package = "ai.grakn.rpc.proto";
 option java_outer_classname = "AnswerProto";
 
-// Import statements can be simplified by removing "client-protocol/proto/"
-// once we can delcare import_prefix in //client-protocol:client-protocol. I.e.,
-// once this PR has been merged: https://github.com/bazelbuild/bazel/pull/5536
-import "Concept.proto";
+import "protocol/session/Concept.proto";
 
 package session;
 
