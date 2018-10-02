@@ -1,9 +1,9 @@
 <template>
     <div class="footer noselect" v-if="currentKeyspace">
         <div class="canvas-data">
-            <div class="data-item"> entities: {{entities}}</div>
-            <div class="data-item"> attributes: {{attributes}}</div>
-            <div class="data-item"> relationships: {{relationships}}</div>
+            <div class="data-item no-of-entities"> entities: {{entities}}</div>
+            <div class="data-item no-of-attributes"> attributes: {{attributes}}</div>
+            <div class="data-item no-of-relationships"> relationships: {{relationships}}</div>
         </div>
     </div>
 </template>
@@ -35,7 +35,7 @@
 <script>
 
 export default {
-  name: 'Footer',
+  name: 'GraknFooter',
   props: ['localStore'],
   data() {
     return {

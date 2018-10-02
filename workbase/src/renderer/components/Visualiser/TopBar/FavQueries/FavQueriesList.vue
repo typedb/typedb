@@ -11,10 +11,10 @@
                         </div>
                         <div class="fav-query-right">
                             <div class="fav-query-btns">
-                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button save-edited-fav-query"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button run-fav-query-btn"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button edit-fav-query-btn"></vue-button>
+                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button delete-fav-query-btn"></vue-button>
                             </div>
                         </div>
                     </div>

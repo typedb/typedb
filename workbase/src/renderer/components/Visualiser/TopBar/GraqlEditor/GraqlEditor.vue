@@ -2,8 +2,8 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button icon="star" className="vue-button" v-on:clicked="toggleFavQueriesList"></vue-button>
-            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
+            <vue-button icon="star" className="vue-button fav-queries-container-btn" v-on:clicked="toggleFavQueriesList"></vue-button>
+            <vue-button rightIcon="locate" className="vue-button types-container-btn" v-on:clicked="toggleTypesContainer"></vue-button>
         </div>
 
     <div class="center">
@@ -21,7 +21,7 @@
 
                         <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
 
-                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon"></vue-icon></div>
+                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon add-fav-query-btn"></vue-icon></div>
                         <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="12" className="tab-icon"></vue-icon></div>
                         <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="12" className="tab-icon"></vue-icon></div>
 
@@ -62,7 +62,7 @@
 
 <div class="right">
     <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="loadSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button"></vue-button>
+    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button clear-graph-btn"></vue-button>
     <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
 </div>
 
@@ -270,7 +270,7 @@
         });
 
         this.codeMirror.on('focus', () => {
-          this.maximizeEditor();
+          if (this.editorMinimized) this.maximizeEditor();
         });
       });
     },
