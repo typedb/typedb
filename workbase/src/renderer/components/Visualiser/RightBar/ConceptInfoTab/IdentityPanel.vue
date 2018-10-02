@@ -64,7 +64,7 @@
     },
     watch: {
       nodes(nodes) {
-        this.showConceptInfoContent = nodes && nodes.length === 1;
+        if (nodes && nodes.length === 1) this.showConceptInfoContent = true;
       },
     },
     methods: {
