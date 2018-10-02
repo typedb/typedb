@@ -6,7 +6,7 @@
                     <div class="tab-panel" v-for="k in Object.keys(metaTypeInstances)" :key="k">
                         <div class="tab-list" v-show="currentTab===k">
                             <div v-for="i in metaTypeInstances[k]" :key="i">
-                                <vue-button v-on:clicked="typeSelected(i)" :text="i" className="vue-button"></vue-button>
+                                <vue-button :id="i" v-on:clicked="typeSelected(i)" :text="i" className="vue-button type-btn"></vue-button>
                             </div>
                         </div>
                     </div>
