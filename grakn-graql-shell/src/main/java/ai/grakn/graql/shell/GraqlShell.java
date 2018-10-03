@@ -144,7 +144,7 @@ public class GraqlShell implements AutoCloseable {
      * The string to be displayed at the prompt
      */
     private static final String consolePrompt(Keyspace keyspace) {
-        return ANSI_PURPLE + keyspace.toString() + "> " + ANSI_RESET;
+        return ANSI_PURPLE + keyspace.toString() + ANSI_RESET + "> ";
     }
 
     /**
@@ -166,8 +166,6 @@ public class GraqlShell implements AutoCloseable {
         java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
 
         while ((queryString = console.readLine()) != null) {
-            console.setPrompt(consolePrompt(tx.keyspace()));
-
             Matcher matcher = commandPattern.matcher(queryString);
 
             if (matcher.matches()) {
