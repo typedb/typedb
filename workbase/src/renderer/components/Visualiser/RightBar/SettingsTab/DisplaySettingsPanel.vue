@@ -53,15 +53,15 @@
 
 <script>
   import { Chrome } from 'vue-color';
+  import { mapGetters } from 'vuex';
 
-  import { TOGGLE_COLOUR, TOGGLE_LABEL } from '@/components/shared/StoresActions';
+  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
 
 
   export default {
-    name: 'ConceptDisplayPanel',
+    name: 'DisplaySettingsPanel',
     components: { Chrome },
-    props: ['localStore'],
     data() {
       return {
         showConceptDisplayContent: true,
@@ -82,20 +82,14 @@
       this.loadColour();
     },
     computed: {
-      metaTypeInstances() {
-        return this.localStore.getMetaTypeInstances();
-      },
+      ...mapGetters(['metaTypeInstances', 'selectedNode', 'currentKeyspace']),
       node() {
-        let node = this.localStore.getSelectedNode();
-
-        if (node && node.baseType.includes('Type')) {
-          node = null;
+        if (this.selectedNode && this.selectedNode.baseType.includes('Type')) {
+          return null;
         }
-        return node;
+        return this.selectedNode;
       },
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
+  
     },
     watch: {
       showConceptDisplayContent(open) {
@@ -124,7 +118,7 @@
     methods: {
       async loadAttributeTypes() {
         if (!this.currentType) return;
-        const graknTx = await this.localStore.openGraknTx();
+        const graknTx = await this.$store.dispatch('openGraknTx');
 
         const type = await graknTx.getSchemaConcept(this.currentType);
 
@@ -148,7 +142,7 @@
       toggleAttributeToLabel(attribute) {
         // Persist changes into localstorage for current type
         DisplaySettings.toggleLabelByType({ type: this.currentType, attribute });
-        this.localStore.dispatch(TOGGLE_LABEL, this.currentType);
+        this.$store.dispatch(UPDATE_NODES_LABEL, this.currentType);
         this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
       },
       toggleContent() {
@@ -165,7 +159,7 @@
         if (DisplaySettings.getTypeColours(this.currentType) !== col) {
           if (!col) this.colour.hex = 'default';
           DisplaySettings.toggleColourByType({ type: this.currentType, colourString: col });
-          this.localStore.dispatch(TOGGLE_COLOUR, this.currentType);
+          this.$store.dispatch(UPDATE_NODES_COLOUR, this.currentType);
         }
       },
     },

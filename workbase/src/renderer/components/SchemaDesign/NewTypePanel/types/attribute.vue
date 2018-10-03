@@ -11,7 +11,7 @@ import DatatypeHandler from './handlers/DatatypeHandler.vue';
 
 export default {
   name: 'AttributeTab',
-  props: ['instances', 'localStore'],
+  props: ['instances'],
   components: { DatatypeHandler, NameAndSuperTypesHandler },
   data() {
     return {
@@ -37,7 +37,7 @@ export default {
       const dataType = this.$refs.dataTypeHandler.getDataType();
       const inheritDatatype = !this.enableDataTypeInAttribute;
 
-      return this.localStore.dispatch(DEFINE_ATTRIBUTE_TYPE, { label, superType, dataType, inheritDatatype });
+      return this.$store.dispatch(DEFINE_ATTRIBUTE_TYPE, { label, superType, dataType, inheritDatatype });
     },
     clearPanel() {
       this.$refs.superTypesHandler.$emit('clear-panel');
