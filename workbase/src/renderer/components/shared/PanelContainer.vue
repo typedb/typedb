@@ -59,7 +59,7 @@
 </style>
 <script>
 export default {
-  props: ['title', 'localStore', 'disablePanel', 'isOpen'],
+  props: ['title', 'disablePanel', 'isOpen'],
   data() {
     return {
       contentNotEmpty: true,
@@ -73,7 +73,7 @@ export default {
       return (this.isActive && !this.hideSlider);
     },
     isActive() {
-      const localStoreActive = (this.localStore) ? this.localStore.isActive() : true;
+      const localStoreActive = this.$store.getters.isActive;
       return localStoreActive && !this.disablePanel;
     },
   },

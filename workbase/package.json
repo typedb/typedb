@@ -90,8 +90,8 @@
     "vue-electron": "^1.0.6",
     "vue-router": "^2.5.3",
     "vue-toasted": "^1.1.19",
-    "vuex": "^2.3.1",
-    "winston": "3.0.0-rc1"
+    "vuex": "^3.0.1",
+    "winston": "3.1.0"
   },
   "devDependencies": {
     "@vue/test-utils": "^1.0.0-beta.19",

@@ -7,9 +7,7 @@
         </div>
     </div>
 </template>
-
 <style scoped>
-
     .footer {
         border-top: var(--container-darkest-border);
         background-color: #282828;
@@ -29,11 +27,10 @@
         display: flex;
         margin-left: 5px;
     }
-
 </style>
 
 <script>
-
+import { mapGetters } from 'vuex';
 export default {
   name: 'GraknFooter',
   props: ['localStore'],
@@ -45,19 +42,7 @@ export default {
     };
   },
   computed: {
-    currentKeyspace() {
-      return this.localStore.getCurrentKeyspace();
-    },
-    getData() {
-      return this.localStore.canvasData;
-    },
-  },
-  watch: {
-    getData(canvasData) {
-      this.entities = canvasData.entities;
-      this.attributes = canvasData.attributes;
-      this.relationships = canvasData.relationships;
-    },
+    ...mapGetters(['currentKeyspace', 'canvasData']),
   },
 };
 </script>

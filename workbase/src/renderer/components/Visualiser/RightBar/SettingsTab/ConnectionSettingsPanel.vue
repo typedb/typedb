@@ -25,7 +25,6 @@
   export default {
 
     name: 'ConnectionSettings',
-    props: ['localStore'],
     data() {
       return {
         showConnectionSettings: true,

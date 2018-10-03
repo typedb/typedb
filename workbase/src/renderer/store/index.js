@@ -1,8 +1,8 @@
 import storage from '@/components/shared/PersistentStorage';
-
+import dataVisualiserStore from '@/components/Visualiser/store';
 import Vue from 'vue';
 import Vuex from 'vuex';
-import createLogger from 'vuex/dist/logger';
+// import createLogger from 'vuex/dist/logger';
 
 import * as actions from './actions';
 import * as getters from './getters';
@@ -60,6 +60,9 @@ export default new Vuex.Store({
     },
   },
   strict: debug,
-  plugins: debug ? [createLogger()] : [],
+  plugins: [],
+  modules: {
+    dataVisualiser: dataVisualiserStore,
+  },
 });
 

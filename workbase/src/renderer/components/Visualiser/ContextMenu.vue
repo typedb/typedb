@@ -10,7 +10,6 @@
 
   export default {
     name: 'ContextMenu',
-    props: ['localStore'],
     data() {
       return {
         showContextMenu: false,
@@ -21,23 +20,23 @@
       };
     },
     created() {
-      this.localStore.registerCanvasEventHandler('oncontext', (params) => {
-        // Do not show context menu when keyspace is not selected or canvasData is empty
-        if (!this.currentKeyspace || (!this.localStore.canvasData.entities && !this.localStore.canvasData.attributes && !this.localStore.canvasData.relationships)) return;
+      // this.$store.registerCanvasEventHandler('oncontext', (params) => {
+      //   // Do not show context menu when keyspace is not selected or canvasData is empty
+      //   if (!this.currentKeyspace || (!this.localStore.canvasData.entities && !this.localStore.canvasData.attributes && !this.localStore.canvasData.relationships)) return;
 
-        // check which menu items to enable
-        this.enableDelete = this.verifyEnableDelete();
-        this.enableExplain = this.verifyEnableExplain();
-        this.enableShortestPath = this.verifyEnableShortestPath();
+      //   // check which menu items to enable
+      //   this.enableDelete = this.verifyEnableDelete();
+      //   this.enableExplain = this.verifyEnableExplain();
+      //   this.enableShortestPath = this.verifyEnableShortestPath();
 
-        this.repositionMenu(params);
-        this.showContextMenu = true;
-      });
-      this.localStore.registerCanvasEventHandler('click', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('selectNode', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('deselectNode', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('dragStart', () => { this.showContextMenu = false; });
-      this.localStore.registerCanvasEventHandler('zoom', () => { this.showContextMenu = false; });
+      //   this.repositionMenu(params);
+      //   this.showContextMenu = true;
+      // });
+      // this.localStore.registerCanvasEventHandler('click', () => { this.showContextMenu = false; });
+      // this.localStore.registerCanvasEventHandler('selectNode', () => { this.showContextMenu = false; });
+      // this.localStore.registerCanvasEventHandler('deselectNode', () => { this.showContextMenu = false; });
+      // this.localStore.registerCanvasEventHandler('dragStart', () => { this.showContextMenu = false; });
+      // this.localStore.registerCanvasEventHandler('zoom', () => { this.showContextMenu = false; });
     },
     computed: {
       selectedNodes() {
