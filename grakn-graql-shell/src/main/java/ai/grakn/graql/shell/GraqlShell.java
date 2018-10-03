@@ -39,6 +39,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -57,8 +59,6 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
  */
 public class GraqlShell implements AutoCloseable {
 
-    private static final String PROMPT = ">>> ";
-
     private static final String EDIT_COMMAND = "edit";
     private static final String COMMIT_COMMAND = "commit";
     private static final String ROLLBACK_COMMAND = "rollback";
@@ -68,6 +68,12 @@ public class GraqlShell implements AutoCloseable {
     private static final String EXIT_COMMAND = "exit";
     private static final String LICENSE_COMMAND = "license";
     private static final String CLEAN_COMMAND = "clean";
+
+    private static final String ANSI_PURPLE = "\u001B[35m";
+    private static final String ANSI_CYAN = "\u001B[36m";
+    private static final String ANSI_RESET = "\u001B[0m";
+
+
 
     private boolean errorOccurred = false;
 
@@ -138,6 +144,15 @@ public class GraqlShell implements AutoCloseable {
     }
 
     /**
+     * The string to be displayed at the prompt
+     * @param keyspace
+     */
+    private static final String consolePrompt(ZonedDateTime zonedDateTime, Keyspace keyspace) {
+        String time = zonedDateTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy hh:mm:ss"));
+        return ANSI_CYAN + time + ANSI_PURPLE + " " + keyspace.toString() + ANSI_RESET + "> ";
+    }
+
+    /**
      * Run a Read-Evaluate-Print loop until the input terminates
      */
     private void executeRepl() throws IOException, InterruptedException {
@@ -146,7 +161,7 @@ public class GraqlShell implements AutoCloseable {
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
 
-        console.setPrompt(PROMPT);
+        console.setPrompt(consolePrompt(ZonedDateTime.now(), tx.keyspace()));
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
@@ -156,6 +171,8 @@ public class GraqlShell implements AutoCloseable {
         java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
 
         while ((queryString = console.readLine()) != null) {
+            console.setPrompt(consolePrompt(ZonedDateTime.now(), tx.keyspace()));
+
             Matcher matcher = commandPattern.matcher(queryString);
 
             if (matcher.matches()) {
@@ -260,11 +277,13 @@ public class GraqlShell implements AutoCloseable {
     private void clean() throws IOException {
         // Get user confirmation to clean graph
         console.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
-        console.println("Type 'confirm' to continue.");
+        console.println("Type 'confirm' to continue..");
         String line = console.readLine();
         if (line != null && line.equals("confirm")) {
-            console.println("Cleaning...");
+            console.print("Cleaning keyspace...");
+            console.flush();
             client.keyspaces().delete(keyspace);
+            console.println("done.");
             reopenTx();
         } else {
             console.println("Cancelling clean.");
