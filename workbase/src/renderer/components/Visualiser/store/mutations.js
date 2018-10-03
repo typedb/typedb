@@ -31,4 +31,16 @@ export default {
         relationships: state.visFacade.getAllNodes().filter(x => x.baseType === 'RELATIONSHIP').length };
     }
   },
+  showContextMenu(state, show) {
+    state.showContextMenu = show;
+  },
+  enableDelete(state, enable) {
+    state.contextMenuOptions.enableDelete = enable;
+  },
+  enableExplain(state, enable) {
+    state.contextMenuOptions.enableExplain = enable;
+  },
+  enableShortestPath(state, enable) {
+    state.contextMenuOptions.enableShortestPath = enable;
+  },
 };

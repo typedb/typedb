@@ -194,21 +194,18 @@ async function constructEdges(result) {
   return edges.flatMap(x => x);
 }
 
-async function buildFromConceptMap(result, limitRoleplayers) {
+async function buildFromConceptMap(result, autoLoadRolePlayers, limitRoleplayers) {
   const nodes = await prepareNodes(await attachExplanation(result));
   const edges = await constructEdges(result);
 
   // Check if auto-load role players is selected
-  if (QuerySettings.getRolePlayersStatus()) {
+  if (autoLoadRolePlayers) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
-
     const roleplayers = await relationshipsRolePlayers(relationships, limitRoleplayers, QuerySettings.getNeighboursLimit());
-
 
     nodes.push(...roleplayers.nodes);
     edges.push(...roleplayers.edges);
   }
-
   return { nodes, edges };
 }
 
