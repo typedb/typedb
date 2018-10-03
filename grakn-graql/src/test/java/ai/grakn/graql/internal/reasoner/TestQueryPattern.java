@@ -107,9 +107,10 @@ public abstract class TestQueryPattern {
             return Lists.newArrayList(
                     "{$x isa $type;}",
                     "{$xb isa resource;}",
-                    "{$xc isa $typec;$typec label resource-long;}",
-                    "{$xd isa resource-long;}",
-                    "{$xe isa attribute;}",
+                    "{$xc isa! resource;}",
+                    "{$xd isa $typed;$typed label resource-long;}",
+                    "{$xe isa resource-long;}",
+                    "{$xf isa attribute;}",
 
                     //5-7
                     "{$x1a isa resource; $x1a id '" + resourceId + "';}",

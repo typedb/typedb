@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -132,7 +131,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){
         if (p == this) return MultiUnifierImpl.trivial();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
-        //if (unifierType.equivalence() != null && !unifierType.equivalence().equivalent(p, this)) return MultiUnifierImpl.nonExistent();
+        if (unifierType.equivalence() != null && !unifierType.equivalence().equivalent(p, this)) return MultiUnifierImpl.nonExistent();
 
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
         MultiUnifier multiUnifier = this.getAtom().getMultiUnifier(parent.getAtom(), unifierType);

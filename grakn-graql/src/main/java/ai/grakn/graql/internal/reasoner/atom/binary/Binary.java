@@ -194,6 +194,7 @@ public abstract class Binary extends Atom {
         //check for incompatibilities
         if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept())
                 || !unifierType.typeCompatibility(parentType, childType)
+                || !unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType)
                 || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
                 || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentPredicateVarName), this.getIdPredicate(childPredicateVarName))
                 || !unifierType.valueCompatibility(parentAtom.getPredicate(parentVarName, ValuePredicate.class), this.getPredicate(childVarName, ValuePredicate.class))

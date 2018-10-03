@@ -775,11 +775,11 @@ public class ReasoningTest {
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverEntityHierarchy(){
         QueryBuilder qb = test21.tx().graql().infer(true);
-        String queryString = "match $x isa entity1; get;";
-        String queryString2 = "match $x isa sub-entity1; get;";
+        String queryString = "match $x isa baseEntity; get;";
+        String queryString2 = "match $x isa subEntity; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        assertEquals(answers.size(), 1);
+        assertEquals(1, answers.size());
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
     }

@@ -861,25 +861,25 @@ public class AtomicQueryTest {
     public void testUnification_differentTypeVariants_EXACT(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
-        subListExcluding(qs, Lists.newArrayList(2, 3, 6, 7)).forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
-        exactUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
-        exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
-        exactUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7)), graph);
-        exactUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6)), graph);
+        subListExcluding(qs, Lists.newArrayList(3, 4, 7, 8)).forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
+        exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), graph);
+        exactUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), graph);
+        exactUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(8)), graph);
+        exactUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(7)), graph);
     }
 
     @Test
     public void testUnification_differentTypeVariants_STRUCTURAL(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
-        subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 7)).forEach(q -> structuralUnification(q, qs, new ArrayList<>(), graph));
+        subListExcluding(qs, Lists.newArrayList(3, 4, 6, 7, 8)).forEach(q -> structuralUnification(q, qs, new ArrayList<>(), graph));
     
-        structuralUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
-        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
+        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), graph);
+        structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), graph);
 
-        structuralUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
-        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(5, 7)), graph);
-        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(5, 6)), graph);
+        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
+        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
+        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
     }
 
     @Test

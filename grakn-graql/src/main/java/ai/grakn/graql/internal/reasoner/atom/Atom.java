@@ -73,12 +73,13 @@ public abstract class Atom extends AtomicBase {
     public RelationshipAtom toRelationshipAtom(){
         throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
     }
+
     public IsaAtom toIsaAtom(){
         throw GraqlQueryException.illegalAtomConversion(this, IsaAtom.class);
     }
 
     public boolean isUnifiableWith(Atom atom){
-        return !this.getMultiUnifier(atom, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent());
+       return !this.getMultiUnifier(atom, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
@@ -178,7 +179,7 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
 
-    private boolean isRuleApplicable(InferenceRule child){
+    protected boolean isRuleApplicable(InferenceRule child){
         return isRuleApplicableViaAtom(child.getRuleConclusionAtom());
     }
 
