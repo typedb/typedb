@@ -86,6 +86,7 @@ dependencies:
     auto-value:
       version: "1.4.1"
       lang: java
+      processorClasses: ["com.google.auto.value.processor.AutoValueProcessor"]
 
   com.google.cloud.bigtable:
     bigtable-hbase-1.0:

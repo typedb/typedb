@@ -23,6 +23,7 @@ def _jar_artifact_impl(ctx):
 package(default_visibility = ['//visibility:public'])
 java_import(
     name = 'jar',
+    tags = ['maven_coordinates={artifact}'],
     jars = ['{jar_name}'],{srcjar_attr}
 )
 filegroup(
@@ -32,7 +33,7 @@ filegroup(
         '{src_name}'
     ],
     visibility = ['//visibility:public']
-)\n""".format(jar_name = jar_name, src_name = src_name, srcjar_attr = srcjar_attr)
+)\n""".format(artifact = ctx.attr.artifact, jar_name = jar_name, src_name = src_name, srcjar_attr = srcjar_attr)
     ctx.file(ctx.path("jar/BUILD"), build_file_contents, False)
     return None
 
@@ -63,6 +64,7 @@ def jar_artifact_callback(hash):
         src_sha256 = src_sha256
     )
     native.bind(name = hash["bind"], actual = hash["actual"])
+
 
 def list_dependencies():
     return [

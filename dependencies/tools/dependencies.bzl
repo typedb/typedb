@@ -57,6 +57,6 @@ def tools_dependencies():
     native.http_file(
         name = "bazel_deps",
         executable = True,
-        sha256 = "32d743d261c233c5e71d0e5fc79291c3481bbf524f95ebc73159167c3cee0d96",
-        urls = ["https://github.com/graknlabs/bazel-deps/releases/download/v0.1/grakn-bazel-deps-v0.1.jar"],
+        sha256 = "43278a0042e253384543c4700021504019c1f51f3673907a1b25bb1045461c0c",
+        urls = ["https://github.com/graknlabs/bazel-deps/releases/download/v0.2/grakn-bazel-deps-v0.2.jar"],
     )
