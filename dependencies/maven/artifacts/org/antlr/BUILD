@@ -46,9 +46,6 @@ java_library(
     exports = [
         "//external:jar/org/antlr/antlr4-runtime"
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/org/abego/treelayout:org-abego-treelayout-core"
-    ],
     visibility = [
         "//visibility:public"
     ]

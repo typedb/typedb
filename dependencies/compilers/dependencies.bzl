@@ -18,13 +18,11 @@
 
 def antlr_dependencies():
 
-    native.http_archive(
+    native.git_repository(
         name = "rules_antlr",
-        sha256 = "acd2a25f31aeeea5f58cdb434ae109d03826ae7cc11fe9efce1740102e3f4531",
-        strip_prefix = "rules_antlr-0.1.0",
-        urls = ["https://github.com/marcohu/rules_antlr/archive/0.1.0.tar.gz"],
+        remote = "https://github.com/marcohu/rules_antlr",
+        tag = "0.1.0" # sync version with //dependencies/maven/artifacts/org/antlr
     )
-
 
 def grpc_dependencies():
 

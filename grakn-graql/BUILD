@@ -30,6 +30,6 @@ java_library(
     name = "grakn-graql",
     srcs = [":graql-java"],
     deps = [
-        "@antlr4_runtime//jar",
+        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
     ],
 )

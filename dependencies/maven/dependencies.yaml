@@ -255,7 +255,7 @@ dependencies:
 
   org.antlr:
     antlr4-runtime:
-      version: "4.5"
+      version: "4.7.1" # sync version with @antlr4_runtime//jar
       lang: java
 
   org.apache.cassandra:
