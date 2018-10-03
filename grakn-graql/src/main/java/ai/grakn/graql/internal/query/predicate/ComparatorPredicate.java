@@ -23,6 +23,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
@@ -35,7 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-abstract class ComparatorPredicate implements ValuePredicate {
+public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
     private final Optional<Object> value;
@@ -116,7 +117,7 @@ abstract class ComparatorPredicate implements ValuePredicate {
         return persistedValue().equals(that.persistedValue());
     }
     @Override
-    public boolean isCompatibleWith(ValuePredicate predicate) {
+    public boolean isCompatibleWith(ValuePredicate predicate, UnifierComparison unifierType) {
         ComparatorPredicate that = (ComparatorPredicate) predicate;
         Object val = this.value().orElse(null);
         Object thatVal = that.value().orElse(null);
@@ -126,8 +127,9 @@ abstract class ComparatorPredicate implements ValuePredicate {
         return ((!val.equals(thatVal))
                 || ((!(this instanceof EqPredicate) || !(that instanceof NeqPredicate))
                 && (!(that instanceof NeqPredicate) || !(this instanceof EqPredicate))))
-                && (this.gremlinPredicate(val).test(thatVal)
-                || that.gremlinPredicate(thatVal).test(val));
+                && unifierType.traversalCompatibility(that.gremlinPredicate(thatVal), this.gremlinPredicate(val), thatVal, val);
+                //&& (this.gremlinPredicate(val).test(thatVal)
+                //|| that.gremlinPredicate(thatVal).test(val));
     }
 
     @Override

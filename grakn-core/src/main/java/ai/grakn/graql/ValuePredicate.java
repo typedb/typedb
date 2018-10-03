@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -49,7 +50,7 @@ public interface ValuePredicate {
      * @return true if compatible
      */
     @CheckReturnValue
-    boolean isCompatibleWith(ValuePredicate predicate);
+    boolean isCompatibleWith(ValuePredicate predicate, UnifierComparison unifierType);
 
     /**
      * @return the value comparing against, if this is an "equality" predicate, otherwise nothing

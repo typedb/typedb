@@ -20,8 +20,10 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import java.util.Set;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 /**
  *
@@ -63,6 +65,9 @@ public interface UnifierComparison {
      */
     boolean typePlayability(ReasonerQuery query, Var var, Type type);
 
+
+
+    <V> boolean traversalCompatibility(P<V> parent, P<V> child, V parentVal, V childVal);
 
     /**
      *

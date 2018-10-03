@@ -823,19 +823,29 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
 
-        //TODO
-        ruleUnification(qs.get(0), qs, new ArrayList<>(), graph);
-        ruleUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        ruleUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
-        ruleUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
+        /*
+        ruleUnification(qs.get(0), qs, qs, graph);
+        ruleUnification(qs.get(1), qs, subList(qs, Lists.newArrayList(0, 2, 5, 6, 7, 8, 9, 10)), graph);
+        ruleUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(0, 1, 5, 6, 7, 8, 9, 10)), graph);
+        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10)), graph);
+        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10)), graph);
+        ruleUnification(qs.get(5), qs, qs, graph);
 
-        ruleUnification(qs.get(4), qs, new ArrayList<>(), graph);
-        ruleUnification(qs.get(5), qs, new ArrayList<>(), graph);
-        ruleUnification(qs.get(6), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 9, 10)), graph);
+        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 8, 9, 10)), graph);
+        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 7, 9, 10)), graph);
 
-        ruleUnification(qs.get(7), qs, new ArrayList<>(), graph);
-        ruleUnification(qs.get(8), qs, new ArrayList<>(), graph);
-        ruleUnification(qs.get(9), qs, new ArrayList<>(), graph);
+        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8)), graph);
+        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8)), graph);
+        */
+
+        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 14, 15, 16)), graph);
+        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 15, 16)), graph);
+
+        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 15, 16)), graph);
+        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 13, 15, 16)), graph);
+        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 16)), graph);
+        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 15)), graph);
     }
 
     @Test
@@ -972,9 +982,9 @@ public class AtomicQueryTest {
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
-        if (unifierExists){
+        if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
-            assertTrue("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, !multiUnifierInverse.isEmpty());
+            assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
         return multiUnifier;

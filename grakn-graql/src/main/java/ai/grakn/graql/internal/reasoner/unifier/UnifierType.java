@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.unifier;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -29,6 +30,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
@@ -82,6 +84,11 @@ public enum UnifierType implements UnifierComparison, UnifierEquivalenceLink {
         }
 
         @Override
+        public <V> boolean traversalCompatibility(P<V> parent, P<V> child, V parentVal, V childVal){
+            return child.test(parentVal) || parent.test(childVal);
+        }
+
+        @Override
         public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
             return isEquivalentCollection(parent, child, this::valueCompatibility);
         }
@@ -124,6 +131,11 @@ public enum UnifierType implements UnifierComparison, UnifierEquivalenceLink {
         }
 
         @Override
+        public <V> boolean traversalCompatibility(P<V> parent, P<V> child, V parentVal, V childVal){
+            return child.test(parentVal) || parent.test(childVal);
+        }
+
+        @Override
         public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
             return isEquivalentCollection(parent, child, this::valueCompatibility);
         }
@@ -163,12 +175,17 @@ public enum UnifierType implements UnifierComparison, UnifierEquivalenceLink {
 
         @Override
         public boolean idCompatibility(Atomic parent, Atomic child) {
-            return child == null || parent == null || parent.isCompatibleWith(child);
+            return child == null || parent == null || parent.isCompatibleWith(child, this);
         }
 
         @Override
         public boolean valueCompatibility(Atomic parent, Atomic child) {
-            return child == null || parent == null || parent.isCompatibleWith(child);
+            return child == null || parent == null || child.isCompatibleWith(parent, this);
+        }
+
+        @Override
+        public <V> boolean traversalCompatibility(P<V> parent, P<V> child, V parentVal, V childVal){
+            return parent.test(childVal);
         }
 
         @Override

@@ -112,20 +112,20 @@ public abstract class TestQueryPattern {
                     "{$xe isa resource-long;}",
                     "{$xf isa attribute;}",
 
-                    //5-7
+                    //6-8
                     "{$x1a isa resource; $x1a id '" + resourceId + "';}",
                     "{$x1b isa resource; $x1b id '" + anotherResourceId + "';}",
                     "{$x1c isa $type1; $type1 label resource;$x1c id '" + anotherResourceId + "';}",
 
-                    //8-9
+                    //9-10
                     "{$x2a isa resource; $x2a == 'someValue';}",
                     "{$x2b isa resource; $x2b == 'someOtherValue';}",
 
-                    //10-11
+                    //11-12
                     "{$x3a isa resource-long; $x3a == '0';}",
                     "{$x3b isa resource-long; $x3b == '1';}",
 
-                    //12-15
+                    //13-16
                     "{$x4a isa resource-long; $x4a > '0';}",
                     "{$x4b isa resource-long; $x4b < '1';}",
                     "{$x4c isa resource-long; $x4c >= '0';}",
