@@ -170,11 +170,10 @@ export async function filterMaps(answers) { // Filter out ConceptMaps that conta
 async function getFilteredNeighbourAnswers(node, graknTx, limit) {
   const query = getNeighboursQuery(node, limit);
   const resultAnswers = await (await graknTx.query(query)).collect();
-  debugger;
   const filteredResult = await filterMaps(resultAnswers);
   if (resultAnswers.length !== filteredResult.length) {
     const offsetDiff = resultAnswers.length - filteredResult.length;
-    node.offset += QuerySettings.getNeighboursLimit();// is someone updating this in the vis dataset?
+    node.offset += QuerySettings.getNeighboursLimit();
     return filteredResult.concat(await getFilteredNeighbourAnswers(node, graknTx, offsetDiff));
   }
   return resultAnswers;
@@ -208,7 +207,6 @@ async function getRelationshipNeighbours(node, graknTx, limit) {
       .filter(thing => roleplayersIds.includes(thing.id))
       .map(thing => ({ from: node.id, to: thing.id, label: roleLabel }));
   }));
-  debugger;
   return { nodes, edges };
 }
 
