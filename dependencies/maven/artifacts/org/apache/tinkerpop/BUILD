@@ -85,13 +85,16 @@ java_library(
         "//external:jar/org/apache/tinkerpop/spark-gremlin"
     ],
     runtime_deps = [
+        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/thoughtworks/paranamer:paranamer",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/org/apache/spark:spark-core-2-10",
+        "//dependencies/maven/artifacts/io/netty:netty",
+        "//dependencies/maven/artifacts/io/netty:netty-all",
+        "//dependencies/maven/artifacts/org/apache/spark:spark-core-2-11",
+        "//dependencies/maven/artifacts/org/scala-lang/modules:scala-xml-2-11",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         "//dependencies/maven/artifacts/org/xerial/snappy:snappy-java",
         ":gremlin-core",
-        ":gremlin-groovy",
         ":hadoop-gremlin"
     ],
     visibility = [

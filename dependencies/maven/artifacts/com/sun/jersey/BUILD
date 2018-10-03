@@ -35,7 +35,6 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/sun/xml/bind:jaxb-impl",
-        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-jaxrs",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-xc",
         "//dependencies/maven/artifacts/org/codehaus/jettison:jettison",

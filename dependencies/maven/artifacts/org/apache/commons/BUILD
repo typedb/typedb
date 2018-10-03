@@ -14,6 +14,18 @@ java_library(
 
 
 java_library(
+    name = "commons-crypto",
+    exports = [
+        "//external:jar/org/apache/commons/commons-crypto"
+    ],
+    visibility = [
+        "//dependencies/maven/artifacts:__subpackages__"
+    ]
+)
+
+
+
+java_library(
     name = "commons-lang3",
     exports = [
         "//external:jar/org/apache/commons/commons-lang3"

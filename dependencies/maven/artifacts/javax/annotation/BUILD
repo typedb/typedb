@@ -1,7 +1,7 @@
 java_library(
-    name = "minlog",
+    name = "javax-annotation-api",
     exports = [
-        "//external:jar/com/esotericsoftware/minlog/minlog"
+        "//external:jar/javax/annotation/javax-annotation-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

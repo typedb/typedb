@@ -15,9 +15,9 @@ java_library(
 
 
 java_library(
-    name = "jackson-module-scala-2-10",
+    name = "jackson-module-scala-2-11",
     exports = [
-        "//external:jar/com/fasterxml/jackson/module/jackson-module-scala-2-10"
+        "//external:jar/com/fasterxml/jackson/module/jackson-module-scala-2-11"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
@@ -29,25 +29,6 @@ java_library(
     ],
     visibility = [
         "//visibility:public"
-    ]
-)
-
-
-
-java_library(
-    name = "jackson-module-scala-2-11",
-    exports = [
-        "//external:jar/com/fasterxml/jackson/module/jackson-module-scala-2-11"
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
-        "//dependencies/maven/artifacts/org/scala-lang:scala-reflect",
-        ":jackson-module-paranamer"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 

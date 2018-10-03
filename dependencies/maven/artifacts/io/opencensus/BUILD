@@ -4,8 +4,7 @@ java_library(
         "//external:jar/io/opencensus/opencensus-api"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/google/errorprone:error-prone-annotations",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
+        "//dependencies/maven/artifacts/com/google/errorprone:error-prone-annotations"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

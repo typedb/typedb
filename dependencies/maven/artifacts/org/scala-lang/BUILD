@@ -5,7 +5,6 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/org/scala-lang/modules:scala-parser-combinators-2-11",
-        "//dependencies/maven/artifacts/org/scala-lang/modules:scala-xml-2-11",
         ":scala-library",
         ":scala-reflect"
     ],

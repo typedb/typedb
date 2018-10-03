@@ -73,7 +73,7 @@ dependencies:
       lang: java
 
   com.fasterxml.jackson.module:
-    jackson-module-scala_2.10:
+    jackson-module-scala_2.11:
       version: "2.9.2"
       lang: java
 
@@ -105,7 +105,7 @@ dependencies:
 
   com.google.guava:
     guava:
-      version: "19.0"
+      version: "23.0"
       lang: java
 
   com.google.protobuf:
@@ -192,24 +192,24 @@ dependencies:
 
   io.grpc:
     grpc-core:
-      version: "1.8.0"
+      version: "1.15.0"
       lang: java
     grpc-netty:
-      version: "1.8.0"
+      version: "1.15.0"
       lang: java
     grpc-protobuf:
-      version: "1.8.0"
+      version: "1.15.0"
       lang: java
     grpc-stub:
-      version: "1.8.0"
+      version: "1.15.0"
       lang: java
     grpc-testing:
-      version: "1.8.0"
+      version: "1.15.0"
       lang: java
 
   io.netty:
     netty-all:
-      version: "4.1.28.Final"
+      version: "4.1.27.Final"
       lang: java
     netty-tcnative-boringssl-static:
       version: "2.0.14.Final"
@@ -276,8 +276,8 @@ dependencies:
       lang: java
 
   org.apache.spark:
-    spark-core_2.10:
-      version: "1.6.1"
+    spark-core_2.11:
+      version: "2.2.0"
       lang: java
       exclude:
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
@@ -287,6 +287,7 @@ dependencies:
       - "org.slf4j:jcl-over-slf4j"
       - "log4j:log4j"
       - "io.dropwizard.metrics:metrics-core"
+      - "org.scala-lang.modules:scala-xml_2.11"
 
   org.apache.tinkerpop:
     gremlin-core:
@@ -296,13 +297,12 @@ dependencies:
       - "org.slf4j:slf4j-log4j12"
       - "org.slf4j:jcl-over-slf4j"
     hadoop-gremlin:
-      version: "3.2.5"
+      version: "3.3.3"
       lang: java
       exclude:
       - "javax.servlet:javax.servlet-api"
       - "com.fasterxml.jackson.core:jackson-core"
       - "com.fasterxml.jackson.core:jackson-databind"
-      - "org.apache.spark:spark-core_2.10"
       - "javax.servlet:javax.servlet-api"
       - "org.slf4j:slf4j-log4j12"
       - "org.slf4j:jcl-over-slf4j"
@@ -312,7 +312,7 @@ dependencies:
       - "org.mortbay.jetty:jetty-util"
       - "commons-logging:commons-logging"
     spark-gremlin:
-      version: "3.2.5"
+      version: "3.3.3"
       lang: java
       exclude:
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"

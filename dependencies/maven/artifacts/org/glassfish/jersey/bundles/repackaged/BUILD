@@ -1,7 +1,7 @@
 java_library(
-    name = "javax-servlet",
+    name = "jersey-guava",
     exports = [
-        "//external:jar/org/eclipse/jetty/orbit/javax-servlet"
+        "//external:jar/org/glassfish/jersey/bundles/repackaged/jersey-guava"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

@@ -1,10 +1,10 @@
 java_library(
-    name = "chill-2-10",
+    name = "chill-2-11",
     exports = [
-        "//external:jar/com/twitter/chill-2-10"
+        "//external:jar/com/twitter/chill-2-11"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/esotericsoftware/kryo:kryo",
+        "//dependencies/maven/artifacts/com/esotericsoftware:kryo-shaded",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         ":chill-java"
     ],

@@ -17,11 +17,12 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/com/google/code/gson:gson",
         "//dependencies/maven/artifacts/com/google/errorprone:error-prone-annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/instrumentation:instrumentation-api",
         "//dependencies/maven/artifacts/io/opencensus:opencensus-api",
         "//dependencies/maven/artifacts/io/opencensus:opencensus-contrib-grpc-metrics",
+        "//dependencies/maven/artifacts/org/codehaus/mojo:animal-sniffer-annotations",
         ":grpc-context"
     ],
     visibility = [
@@ -57,7 +58,6 @@ java_library(
         "//dependencies/maven/artifacts/com/google/api/grpc:proto-google-common-protos",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java-util",
         ":grpc-core",
         ":grpc-protobuf-lite"
     ],

@@ -1,7 +1,7 @@
 java_library(
-    name = "mesos-jar-shaded-protobuf",
+    name = "j2objc-annotations",
     exports = [
-        "//external:jar/org/apache/mesos/mesos-jar-shaded-protobuf"
+        "//external:jar/com/google/j2objc/j2objc-annotations"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
