@@ -296,8 +296,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getMultiUnifier(parent, UnifierType.EXACT);
     }
 
-    @Override
-    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType){
+    /**
+     * @param parent query we want to unify this query with
+     * @param unifierType unifier type
+     * @return corresponding multiunifier
+     */
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierType unifierType){
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 

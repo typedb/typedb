@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;

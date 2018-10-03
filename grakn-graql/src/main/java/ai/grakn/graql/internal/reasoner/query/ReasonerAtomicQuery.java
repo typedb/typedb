@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Preconditions;
@@ -128,9 +129,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
      */
     @Override
-    public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierComparison unifierType){
-        if (p == this) return new MultiUnifierImpl();
+    public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){
+        if (p == this) return MultiUnifierImpl.trivial();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
+        //if (unifierType.equivalence() != null && !unifierType.equivalence().equivalent(p, this)) return MultiUnifierImpl.nonExistent();
+
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
         MultiUnifier multiUnifier = this.getAtom().getMultiUnifier(parent.getAtom(), unifierType);
 

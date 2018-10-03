@@ -48,7 +48,7 @@ public abstract class QueryCollectionBase{
     public abstract Stream<ReasonerQueryImpl> stream();
     public abstract Stream<Equivalence.Wrapper<ReasonerQueryImpl>> wrappedStream();
 
-    Equivalence<ReasonerQuery> equality(){ return ReasonerQueryEquivalence.Equality;}
+    ReasonerQueryEquivalence equality(){ return ReasonerQueryEquivalence.Equality;}
 
     private boolean isQueryDisconnected(Equivalence.Wrapper<ReasonerQueryImpl> query){
         return getImmediateNeighbours(query).isEmpty();

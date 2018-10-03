@@ -112,6 +112,9 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier merge(Unifier d) {
+        if (this.equals(nonExistent()) || d == null){
+            System.out.println();
+        }
         return new UnifierImpl(
                 Sets.union(
                         this.mappings(),

@@ -274,7 +274,10 @@ public class ReasonerUtils {
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
-            if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType, unifierType));
+            if (parentType != null){
+                Unifier childUnifier = childType.getUnifier(parentType, unifierType);
+                if (childUnifier != null) unifier = unifier.merge(childUnifier);
+            }
         }
         return unifier;
     }

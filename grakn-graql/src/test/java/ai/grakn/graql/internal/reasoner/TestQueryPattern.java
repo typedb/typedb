@@ -145,8 +145,8 @@ public abstract class TestQueryPattern {
             if (args.length != 4){ throw new IllegalStateException(); }
             String entityId = args[0].id().getValue();
             String anotherEntityId = args[1].id().getValue();
-            String resourceId = args[0].id().getValue();
-            String anotherResourceId = args[0].id().getValue();
+            String resourceId = args[2].id().getValue();
+            String anotherResourceId = args[3].id().getValue();
             return Lists.newArrayList(
                     "{$x has resource $r;}",
                     "{$xb has resource-long $rb;}",
