@@ -7,7 +7,7 @@ import {
   INITIALISE_VISUALISER,
   CURRENT_KEYSPACE_CHANGED,
   CANVAS_RESET,
-  DELETE_NODES,
+  DELETE_SELECTED_NODES,
 } from '@/components/shared/StoresActions';
 import Grakn from 'grakn';
 import logger from '@/../Logger';
@@ -175,7 +175,7 @@ export default {
     });
   },
 
-  async [DELETE_NODES]({ state, commit }) {
+  async [DELETE_SELECTED_NODES]({ state, commit }) {
     state.selectedNodes.forEach((node) => {
       state.visFacade.deleteNode(node);
     });

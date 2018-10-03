@@ -6,7 +6,7 @@
     </div>
 </template>
 <script>
-  import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, DELETE_NODES } from '@/components/shared/StoresActions';
+  import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, DELETE_SELECTED_NODES } from '@/components/shared/StoresActions';
   import { mapGetters } from 'vuex';
 
 
@@ -33,7 +33,7 @@
     methods: {
       deleteNode() {
         this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.dispatch(DELETE_NODES).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
+        this.$store.dispatch(DELETE_SELECTED_NODES).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
       },
       explainNode() {
         this.$store.commit('contextMenu', { show: false, x: null, y: null });

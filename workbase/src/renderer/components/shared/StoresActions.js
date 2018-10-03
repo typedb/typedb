@@ -16,7 +16,7 @@ export const RUN_CURRENT_QUERY = 'run-current-query';
 export const EXPLAIN_CONCEPT = 'explain-concept';
 export const UPDATE_NODES_LABEL = 'update-nodes-label';
 export const UPDATE_NODES_COLOUR = 'update-nodes-colour';
-export const DELETE_NODES = 'delete-node';
+export const DELETE_SELECTED_NODES = 'delete-nodes';
 
 
 // Common actions shared by the two canvas stores (SchemaDesign && DataManagement)
