@@ -945,26 +945,28 @@ public class AtomicQueryTest {
 
         structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(2), qs, Collections.singletonList(qs.get(3)), graph);
-        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(2)), graph);
+        structuralUnification(qs.get(2), qs, new ArrayList<>(), graph);
 
-        structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(5)), graph);
-        structuralUnification(qs.get(5), qs, Collections.singletonList(qs.get(4)), graph);
+        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), graph);
+        structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), graph);
 
-        structuralUnification(qs.get(6), qs, Collections.singletonList(qs.get(8)), graph);
+        structuralUnification(qs.get(5), qs, Collections.singletonList(qs.get(6)), graph);
+        structuralUnification(qs.get(6), qs, Collections.singletonList(qs.get(5)), graph);
+
         structuralUnification(qs.get(7), qs, Collections.singletonList(qs.get(9)), graph);
-        structuralUnification(qs.get(8), qs, Collections.singletonList(qs.get(6)), graph);
+        structuralUnification(qs.get(8), qs, Collections.singletonList(qs.get(10)), graph);
         structuralUnification(qs.get(9), qs, Collections.singletonList(qs.get(7)), graph);
+        structuralUnification(qs.get(10), qs, Collections.singletonList(qs.get(8)), graph);
 
-        structuralUnification(qs.get(10), qs, Collections.singletonList(qs.get(12)), graph);
         structuralUnification(qs.get(11), qs, Collections.singletonList(qs.get(13)), graph);
-        structuralUnification(qs.get(12), qs, Collections.singletonList(qs.get(10)), graph);
+        structuralUnification(qs.get(12), qs, Collections.singletonList(qs.get(14)), graph);
         structuralUnification(qs.get(13), qs, Collections.singletonList(qs.get(11)), graph);
+        structuralUnification(qs.get(14), qs, Collections.singletonList(qs.get(12)), graph);
 
-        structuralUnification(qs.get(14), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(15), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(16), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(17), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(18), qs, new ArrayList<>(), graph);
     }
 
     private void unification(String child, List<String> queries, List<String> queriesWithUnifier, UnifierType unifierType, EmbeddedGraknTx graph){

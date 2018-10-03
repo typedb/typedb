@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
@@ -36,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -180,21 +182,26 @@ public abstract class Binary extends Atom {
         if (!(parentAtom instanceof Binary)) {
             throw GraqlQueryException.unificationAtomIncompatibility();
         }
-        if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept()) ) return UnifierImpl.nonExistent();
 
-        Multimap<Var, Var> varMappings = HashMultimap.create();
+        boolean inferTypes = unifierType == UnifierType.RULE;
         Var childVarName = this.getVarName();
         Var parentVarName = parentAtom.getVarName();
         Var childPredicateVarName = this.getPredicateVariable();
         Var parentPredicateVarName = parentAtom.getPredicateVariable();
+        Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
+        Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
 
         //check for incompatibilities
-        if( !unifierType.idCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
+        if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept())
+                || !unifierType.typeCompatibility(parentType, childType)
+                || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
                 || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentPredicateVarName), this.getIdPredicate(childPredicateVarName))
                 || !unifierType.valueCompatibility(parentAtom.getPredicate(parentVarName, ValuePredicate.class), this.getPredicate(childVarName, ValuePredicate.class))
-                || !unifierType.valueCompatibility(parentAtom.getPredicate(parentPredicateVarName, ValuePredicate.class), this.getPredicate(childPredicateVarName, ValuePredicate.class))){
+                || !unifierType.valueCompatibility(parentAtom.getPredicate(parentPredicateVarName, ValuePredicate.class), this.getPredicate(childPredicateVarName, ValuePredicate.class)) ){
                      return UnifierImpl.nonExistent();
         }
+
+        Multimap<Var, Var> varMappings = HashMultimap.create();
 
         if (parentVarName.isUserDefinedName()
                 && childVarName.isUserDefinedName()) {

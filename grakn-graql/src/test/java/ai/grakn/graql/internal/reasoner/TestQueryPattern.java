@@ -150,42 +150,35 @@ public abstract class TestQueryPattern {
             return Lists.newArrayList(
                     "{$x has resource $r;}",
                     "{$xb has resource-long $rb;}",
+                    "{$xc has resource-long $rc; $xc isa baseRoleEntity;}",
 
-                    //2-3
+                    //3-4
                     "{$x1a has resource $r1a; $x1a id '" + entityId + "';}",
                     "{$x1b has resource $r1b; $x1b id '" + anotherEntityId + "';}",
 
-                    //4-5
+                    //5-6
                     "{$x2a has resource $r2a; $r2a id '" + resourceId + "';}",
                     "{$x2b has resource $r2b; $r2b id '" + anotherResourceId + "';}",
 
-                    //6-9
+                    //7-10
                     "{$x3a has resource 'someValue';}",
                     "{$x3b has resource 'someOtherValue';}",
                     "{$x3c has resource $x3c; $x3c == 'someValue';}",
                     "{$x3d has resource $x3d; $x3d == 'someOtherValue';}",
 
-                    //10-13
+                    //11-14
                     "{$x4a has resource-long '0';}",
                     "{$x4b has resource-long '1';}",
                     "{$x4c has resource-long $x4c; $x4c == '0';}",
                     "{$x4d has resource-long $x4d; $x4d == '1';}",
 
-                    //14-17
+                    //15-18
                     "{$x5a has resource-long $x5a; $x5a > '0';}",
                     "{$x5b has resource-long $x5b; $x5b < '1';}",
                     "{$x5c has resource-long $x5c; $x5c >= '0';}",
                     "{$x5d has resource-long $x5d; $x5d <= '1';}",
 
-                    //18-22
-                    //TODO
-                    //"{$x6a has resource $r6a;$r6a != $r2_6a;}",
-                    //"{$x6b has resource $r6b;$r6b != $r2_6b; $r2_6b id '" + resourceId + "';}",
-                    //"{$x6c has resource $r6c;$x6c != $x2_6c;}",
-                    //"{$x6d has resource $r6d;$x6d != $x2_6d; $x2_6d id '" + resourceId + "';}",
-                    //"{$x6e has resource $r6e;$x6e != $r6e;}",
-
-                    //23-30
+                    //19-26
                     "{$x7a has resource-long $r7a;$r7a > 23; $r7a < 27;}",
                     "{$x7b isa baseRoleEntity, has resource-long $r7b;$r7b > 23; $r7b < 27;}",
                     "{$x7c isa $type;$type label baseRoleEntity;$x7c has resource-long $r7c;$r7c > 23; $r7c < 27;}",
@@ -193,7 +186,15 @@ public abstract class TestQueryPattern {
                     "{$x7e isa baseRoleEntity;$x7e has resource-long $r7e;$r7e > 23;}",
                     "{$x7f isa baseRoleEntity;$x7f has resource-long $r7f;$r7f > 27;$r7f < 29;}",
                     "{$x7g isa baseRoleEntity;$x7g has resource-long $r7g;$r7g > 27;$r7g < 23;}",
-                    "{$x7h isa baseRoleEntity;$x7h has resource-long $r7hh;$r7h > 23; $r2_7h < 27;}"
+                    "{$x7h isa baseRoleEntity;$x7h has resource-long $r7h;$r7h > 23; $r2_7h < 27;}"
+
+                    //TODO
+                    //18-22
+                    //"{$x6a has resource $r6a;$r6a != $r2_6a;}",
+                    //"{$x6b has resource $r6b;$r6b != $r2_6b; $r2_6b id '" + resourceId + "';}",
+                    //"{$x6c has resource $r6c;$x6c != $x2_6c;}",
+                    //"{$x6d has resource $r6d;$x6d != $x2_6d; $x2_6d id '" + resourceId + "';}",
+                    //"{$x6e has resource $r6e;$x6e != $r6e;}",
             );
         }
     };

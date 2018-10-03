@@ -40,15 +40,12 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
 import ai.grakn.kb.internal.concept.EntityImpl;
@@ -66,7 +63,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
@@ -284,7 +280,8 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom parent = (ResourceAtom) parentAtom;
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
 
-        if (unifier == null || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
+        if (unifier == null
+                || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
             return UnifierImpl.nonExistent();
         }
 
