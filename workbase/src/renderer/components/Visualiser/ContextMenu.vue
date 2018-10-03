@@ -1,26 +1,26 @@
 <template>
     <div v-show="contextMenu.show" ref="contextMenu" id="context-menu" class="z-depth-2">
-        <li @click="(verifyEnableDelete) ? deleteNode() : false" class="context-action" :class="{'disabled':!verifyEnableDelete}">Delete</li>
-        <li @click="(verifyEnableExplain) ? explainNode() : false" class="context-action" :class="{'disabled':!verifyEnableExplain}">Explain</li>
-        <li @click="(verifyEnableShortestPath) ? computeShortestPath() : false" class="context-action" :class="{'disabled':!verifyEnableShortestPath}">Shortest Path</li>
+        <li @click="(enableDelete) ? deleteNode() : false" class="context-action" :class="{'disabled':!enableDelete}">Delete</li>
+        <li @click="(enableExplain) ? explainNode() : false" class="context-action" :class="{'disabled':!enableExplain}">Explain</li>
+        <li @click="(enableShortestPath) ? computeShortestPath() : false" class="context-action" :class="{'disabled':!enableShortestPath}">Shortest Path</li>
     </div>
 </template>
 <script>
-  import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT } from '@/components/shared/StoresActions';
+  import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, DELETE_NODES } from '@/components/shared/StoresActions';
   import { mapGetters } from 'vuex';
 
 
   export default {
     name: 'ContextMenu',
     computed: {
-      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu', 'contextMenuOptions', 'visFacade']),
-      verifyEnableDelete() {
+      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu', 'visFacade']),
+      enableDelete() {
         return (this.selectedNodes);
       },
-      verifyEnableExplain() {
+      enableExplain() {
         return (this.selectedNodes && this.selectedNodes[0].isInferred);
       },
-      verifyEnableShortestPath() {
+      enableShortestPath() {
         return (this.selectedNodes && this.selectedNodes.length === 2);
       },
     },
@@ -32,20 +32,17 @@
     },
     methods: {
       deleteNode() {
-        this.selectedNodes.forEach((node) => {
-          this.visFacade.container.visualiser.deleteNode(node);
-        });
-        this.$store.commit('selectedNodes', null);
         this.$store.commit('contextMenu', { show: false, x: null, y: null });
+        this.$store.dispatch(DELETE_NODES).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
       },
       explainNode() {
-        this.$store.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
         this.$store.commit('contextMenu', { show: false, x: null, y: null });
+        this.$store.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
       },
       computeShortestPath() {
+        this.$store.commit('contextMenu', { show: false, x: null, y: null });
         this.$store.commit('currentQuery', `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
         this.$store.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Run Query'); });
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
       },
     },
   };

@@ -32,6 +32,6 @@ export default {
     }
   },
   contextMenu(state, contextMenu) {
-    state.contextMenu = { show: contextMenu.show, x: contextMenu.x, y: contextMenu.y };
+    state.contextMenu = contextMenu;
   },
 };
