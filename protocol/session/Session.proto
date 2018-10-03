@@ -34,6 +34,7 @@ service SessionService {
 
 message Transaction {
     message Req {
+        map<string, string> metadata = 1000;
         oneof req {
             Open.Req open_req = 1;
             Commit.Req commit_req = 2;
@@ -51,6 +52,7 @@ message Transaction {
         }
     }
     message Res {
+        map<string, string> metadata = 1000;
         oneof res {
             Open.Res open_res = 1;
             Commit.Res commit_res = 2;

@@ -30,6 +30,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -46,7 +47,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
 import ai.grakn.kb.internal.concept.EntityImpl;
@@ -54,7 +54,6 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -66,6 +65,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
  *
@@ -123,8 +123,18 @@ public abstract class ResourceAtom extends Binary{
         );
     }
 
+    /**
+     * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
+     * - $x isa ???;
+     * - $r isa resource;
+     * We pick the latter as the type information is available.
+     *
+     * @return corresponding isa atom
+     */
     @Override
-    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), getParentQuery()); }
+    public IsaAtom toIsaAtom(){
+        return IsaAtom.create(getPredicateVariable(), Graql.var(), getTypeId(), false, getParentQuery());
+    }
 
     @Override
     public String toString(){
@@ -147,8 +157,8 @@ public abstract class ResourceAtom extends Binary{
                 && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
     }
 
-    private boolean multiPredicateEquivalent(ResourceAtom that, Equivalence<Atomic> equiv){
-        return ReasonerUtils.isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
+    private boolean multiPredicateEquivalent(ResourceAtom that, AtomicEquivalence equiv){
+        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
     }
 
     @Override
@@ -167,7 +177,7 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    boolean predicateBindingsEquivalent(Binary at, Equivalence<Atomic> equiv) {
+    boolean predicateBindingsEquivalent(Binary at, AtomicEquivalence equiv) {
         if (!(at instanceof ResourceAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
 
         ResourceAtom that = (ResourceAtom) at;
@@ -282,12 +292,20 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom) {
-        if (!(parentAtom instanceof ResourceAtom)){
-            return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
+    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+        if (!(parentAtom instanceof ResourceAtom)) {
+            if (parentAtom instanceof IsaAtom){ return this.toIsaAtom().getUnifier(parentAtom, unifierType); }
+            else {
+                throw GraqlQueryException.unificationAtomIncompatibility();
+            }
         }
-        Unifier unifier = super.getUnifier(parentAtom);
+
         ResourceAtom parent = (ResourceAtom) parentAtom;
+        Unifier unifier = super.getUnifier(parentAtom, unifierType);
+
+        if (unifier == null || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
+            return UnifierImpl.nonExistent();
+        }
 
         //unify relation vars
         Var childRelationVarName = this.getRelationVariable();

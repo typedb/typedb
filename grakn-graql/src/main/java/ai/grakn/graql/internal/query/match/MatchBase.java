@@ -77,8 +77,6 @@ public class MatchBase extends AbstractMatch {
         validatePattern(tx);
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, tx);
-        LOG.trace("Created query plan");
-        LOG.trace(graqlTraversal.toString());
         return streamWithTraversal(this.getPattern().commonVars(), tx, graqlTraversal);
     }
 

@@ -4,6 +4,7 @@
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
   height: auto;
+  min-height: 22px !important;
   color: black;
   width: 100%;
 }
@@ -179,7 +180,14 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   position: absolute;
   z-index: 6;
   display: none;
+  height: 0px !important;
 }
+
+.CodeMirror-vscrollbar, .CodeMirror-hscrollbar, .CodeMirror-scrollbar-filler, .CodeMirror-gutter-filler:focus {
+  outline: none;
+}
+
+
 .CodeMirror-vscrollbar {
   right: 0; top: 0;
   overflow-x: hidden;

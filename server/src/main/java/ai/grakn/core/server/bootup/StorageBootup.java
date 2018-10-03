@@ -19,7 +19,9 @@
 package ai.grakn.core.server.bootup;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.core.server.GraknConfig;
+import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -28,13 +30,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static ai.grakn.core.server.bootup.BootupProcessExecutor.SH;
 import static ai.grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
@@ -52,10 +55,10 @@ public class StorageBootup {
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
-    private static final Path STORAGE_PIDFILE = Paths.get(File.separator,"tmp","grakn-storage.pid");
-    private static final Path STORAGE_BIN = Paths.get("services", "cassandra", "cassandra");
-    private static final Path NODETOOL_BIN = Paths.get("services", "cassandra", "nodetool");
+    private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
+    private static final String JAVA_OPTS = GraknSystemProperty.STORAGE_JAVAOPTS.value();
+
 
     private BootupProcessExecutor bootupProcessExecutor;
     private final Path graknHome;
@@ -80,8 +83,8 @@ public class StorageBootup {
         }
     }
 
-   public void stop() {
-       bootupProcessExecutor.stopProcessIfRunning(STORAGE_PIDFILE, DISPLAY_NAME);
+    public void stop() {
+        bootupProcessExecutor.stopProcessIfRunning(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
@@ -89,12 +92,12 @@ public class StorageBootup {
     }
 
     public void statusVerbose() {
-        System.out.println(DISPLAY_NAME +" pid = '"+ bootupProcessExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
-                "' (from "+ STORAGE_PIDFILE +"), '"+ bootupProcessExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) +"' (from ps -ef)");
+        System.out.println(DISPLAY_NAME + " pid = '" + bootupProcessExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
+                "' (from " + STORAGE_PIDFILE + "), '" + bootupProcessExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) + "' (from ps -ef)");
     }
 
     public void clean() {
-        System.out.print("Cleaning "+ DISPLAY_NAME +"...");
+        System.out.print("Cleaning " + DISPLAY_NAME + "...");
         System.out.flush();
         try (Stream<Path> files = Files.walk(STORAGE_DATA)) {
             files.map(Path::toFile)
@@ -106,7 +109,7 @@ public class StorageBootup {
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
-            System.out.println("Unable to clean "+ DISPLAY_NAME);
+            System.out.println("Unable to clean " + DISPLAY_NAME);
         }
     }
 
@@ -116,34 +119,25 @@ public class StorageBootup {
 
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
-     *
+     * <p>
      * A {@link BootupException} will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
      * @throws BootupException
      */
     private void start() {
-        // services/cassandra/cassandra -p <storage-pidfile> -l <storage-logdir>
-        List<String> storageCmd = Arrays.asList(STORAGE_BIN.toString(), "-p", STORAGE_PIDFILE.toString(), "-l", getStorageLogPathFromGraknProperties().toAbsolutePath().toString());
-        List<String> storageCmd_EscapeWhitespace = storageCmd.stream().map(string -> string.replace(" ", "\\ ")).collect(Collectors.toList());
-
-        // services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'
-        List<String> isStorageRunningCmd_EscapeWhitespace = Arrays.asList(SH, "-c",
-                NODETOOL_BIN.toString().replace(" ", "\\ ") + " statusthrift | tr -d '\n\r'");
-
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        BootupProcessResult startStorage = bootupProcessExecutor.executeAndWait(storageCmd_EscapeWhitespace, graknHome.toFile());
+        Future<BootupProcessResult> result = bootupProcessExecutor.executeAsync(storageCommand(), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
-        while(LocalDateTime.now().isBefore(timeout) && startStorage.exitCode() == 0) {
+
+        while (LocalDateTime.now().isBefore(timeout) && !result.isDone()) {
             System.out.print(".");
             System.out.flush();
 
-            BootupProcessResult isStorageRunning = bootupProcessExecutor.executeAndWait(isStorageRunningCmd_EscapeWhitespace, graknHome.toFile());
-
-            if(isStorageRunning.stdout().trim().equals("running")) {
+            if (storageStatus().equals("running")) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -155,14 +149,61 @@ public class StorageBootup {
             }
         }
 
-        String errorMessage = "Process exited with code " + startStorage.exitCode() + ": '" + startStorage.stderr() + "'";
         System.out.println("FAILED!");
-        System.err.println("Unable to start " + DISPLAY_NAME + ". ");
-        System.err.println(errorMessage);
-        throw new BootupException();
+        System.err.println("Unable to start " + DISPLAY_NAME + ".");
+        try {
+            String errorMessage = "Process exited with code '" + result.get().exitCode() + "': '" + result.get().stderr() + "'";
+            System.err.println(errorMessage);
+            throw new BootupException(errorMessage);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new BootupException(e);
+        }
+    }
+
+    private String storageStatus() {
+        return bootupProcessExecutor.executeAndWait(nodetoolCommand(), graknHome.toFile()).stdout().trim();
+    }
+
+    private List<String> storageCommand() {
+        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
+        ArrayList<String> storageCommand = new ArrayList<>();
+        storageCommand.add("java");
+        storageCommand.add("-cp");
+        storageCommand.add(getStorageClassPath());
+        storageCommand.add("-Dlogback.configurationFile=" + logback);
+        storageCommand.add("-Dcassandra.logdir=" + getStorageLogPathFromGraknProperties());
+        storageCommand.add("-Dcassandra-pidfile=" + STORAGE_PIDFILE.toString());
+        //default port over for JMX connections, needed for nodetool status
+        storageCommand.add("-Dcassandra.jmx.local.port=7199");
+        // stop the jvm on OutOfMemoryError as it can result in some data corruption
+        storageCommand.add("-XX:+CrashOnOutOfMemoryError");
+        if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {
+            storageCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
+        }
+        storageCommand.add(GraknCassandra.class.getCanonicalName());
+        return storageCommand;
+    }
+
+    private String getStorageClassPath() {
+        return graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
+                + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
+    }
+
+
+    private List<String> nodetoolCommand() {
+        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
+        String classpath = graknHome.resolve("services").resolve("lib").toString() + File.separator + "*";
+        return Arrays.asList(
+                "java", "-cp", classpath,
+                "-Dlogback.configurationFile=" + logback,
+                NodeTool.class.getCanonicalName(),
+                "statusthrift"
+        );
     }
 
     private Path getStorageLogPathFromGraknProperties() {
-        return Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+        Path logPath = Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+        return logPath.isAbsolute() ? logPath : graknHome.resolve(logPath);
     }
+
 }

@@ -25,6 +25,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
@@ -265,7 +266,7 @@ public class ReasonerUtils {
      * @param childParentUnifier unifier to unify child with parent
      * @return combined unifier for type atoms
      */
-    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier){
+    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierComparison unifierType){
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Var childVarName = childType.getVarName();
@@ -273,7 +274,7 @@ public class ReasonerUtils {
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
-            if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType));
+            if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType, unifierType));
         }
         return unifier;
     }
