@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.plan;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
