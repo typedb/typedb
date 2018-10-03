@@ -27,69 +27,134 @@ describe('Favourite queries', () => {
   });
 
   test('select keyspace', async () => {
-    app.client.click('#keyspaces');
+    app.client.click('.keyspaces');
     await app.client.waitUntilWindowLoaded();
 
     const keyspaceList = app.client.selectByAttribute('class', 'keyspaces-list');
     assert.ok(keyspaceList);
 
-    assert.equal(await app.client.getText('#keyspaces'), 'keyspace');
+    assert.equal(await app.client.getText('.keyspaces'), 'keyspace');
 
     app.client.click('#gene');
 
-    assert.equal(await app.client.getText('#keyspaces'), 'gene');
+    assert.equal(await app.client.getText('.keyspaces'), 'gene');
   });
 
-  test('add favourite query', async () => {
-    app.client.click('#types-panel');
-    await app.client.waitUntilWindowLoaded();
-    const typesPanel = app.client.selectByAttribute('class', 'types-panel');
+  test('add new favourite query', async () => {
+    app.client.click('.CodeMirror');
 
-    assert.ok(typesPanel);
-    app.client.click('#entities');
     await sleep(1000);
 
-    app.client.click('#add-query-btn').keys('fav-query').click('#save-fav-query');
+    app.client.keys('match $x isa person; get;');
 
-    app.client.rightClick('#graph-div');
-    await sleep(1000);
-    app.client.click('#clear-graph');
-    await sleep(1000);
-    app.client.click('.confirm');
+    app.client.click('.add-fav-query-btn');
+
     await sleep(1000);
 
-    app.client.click('#fav-queries-btn');
-    await app.client.waitUntilWindowLoaded();
+    app.client.click('.save-query-btn');
 
-    await sleep(3000);
+    assert.equal(await app.client.getText('.fav-query-name-tooltip'), 'please write a query name');
 
-    const queryNameSaved = await app.client.getText('#list-key');
+    app.client.click('.query-name-input');
+
     await sleep(1000);
-    assert.equal(queryNameSaved, 'fav-query');
+
+    app.client.keys('get persons');
+
+    app.client.click('.save-query-btn');
+
+    await sleep(1000);
+
+    assert.equal(await app.client.getText('.toasted'), 'New query saved!\nCLOSE');
+
+    app.client.click('.close-add-fav-query-container');
+    app.client.click('.action');
   });
 
-  test('use favourite query', async () => {
-    const favQueriesList = await app.client.getHTML('#fav-queries-list');
-    assert.ok(favQueriesList);
+  test('add existing favourite query', async () => {
+    app.client.click('.add-fav-query-btn');
 
-    let noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'nodes: 0');
+    await sleep(1000);
 
-    app.client.click('#use-btn');
-    app.client.click('#run-query');
-    await sleep(3000);
+    app.client.click('.query-name-input');
 
-    noOfNodes = await app.client.getText('#nodes');
-    assert.equal(noOfNodes, 'nodes: 2');
+    await sleep(1000);
+
+    app.client.keys('get persons');
+
+    await sleep(1000);
+
+    app.client.click('.save-query-btn');
+
+    await sleep(1000);
+
+    assert.equal(await app.client.getText('.toasted'), 'Query name already saved. Please choose a different name.\nCLOSE');
+  });
+
+
+  test('run favourite query', async () => {
+    app.client.click('.fav-queries-container-btn');
+
+    await sleep(1000);
+
+    app.client.click('.run-fav-query-btn');
+
+    await sleep(1000);
+
+    app.client.click('.run-btn');
+
+    await sleep(1000);
+
+    const noOfEntities = await app.client.getText('.no-of-entities');
+    assert.equal(noOfEntities, 'entities: 30');
+
+    app.client.click('.clear-graph-btn');
+  });
+
+  test('edit favourite query', async () => {
+    app.client.click('.fav-queries-container-btn');
+
+    await sleep(1000);
+
+    app.client.click('.edit-fav-query-btn');
+
+    await sleep(1000);
+
+    app.client.click('.CodeMirror-focused');
+
+    await sleep(1000);
+
+    app.client.keys(['ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'limit 1; ']);
+
+    await sleep(1000);
+
+    app.client.click('.save-edited-fav-query');
+
+    await sleep(1000);
+
+    app.client.click('.run-fav-query-btn');
+
+    await sleep(1000);
+
+    app.client.click('.run-btn');
+
+    await sleep(1000);
+
+    const noOfEntities = await app.client.getText('.no-of-entities');
+    assert.equal(noOfEntities, 'entities: 1');
   });
 
   test('delete favourite query', async () => {
-    app.client.click('#fav-queries-btn');
-    await app.client.waitUntilWindowLoaded();
+    app.client.click('.fav-queries-container-btn');
 
-    app.client.click('#delete-btn');
+    await sleep(1000);
+
+    app.client.click('.delete-fav-query-btn');
+
     await sleep(2000);
-    const noQueriesSaved = await app.client.getText('#no-saved');
-    assert.equal(noQueriesSaved, 'no saved queries');
+
+    assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');
+
+    await sleep(1000);
   });
 });

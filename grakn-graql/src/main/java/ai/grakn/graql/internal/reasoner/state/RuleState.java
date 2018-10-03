@@ -49,7 +49,7 @@ public class RuleState extends QueryStateBase{
 
     @Override
     public String toString(){
-        return getClass() + "\n" + rule + "\n";
+        return super.toString() + "\n" + rule + "\n";
     }
 
     @Override

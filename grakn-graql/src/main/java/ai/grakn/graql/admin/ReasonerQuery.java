@@ -110,6 +110,21 @@ public interface ReasonerQuery{
     boolean isTypeRoleCompatible(Var typedVar, Type parentType);
 
     /**
+     * @param parent query we want to unify this query with
+     * @return corresponding multiunifier
+     */
+    @CheckReturnValue
+    MultiUnifier getMultiUnifier(ReasonerQuery parent);
+
+    /**
+     * @param parent query we want to unify this query with
+     * @param unifierType unifier type
+     * @return corresponding multiunifier
+     */
+    @CheckReturnValue
+    MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType);
+
+    /**
      * resolves the query
      * @return stream of answers
      */
@@ -122,6 +137,13 @@ public interface ReasonerQuery{
      */
     @CheckReturnValue
     ImmutableMap<Var, Type> getVarTypeMap();
+
+    /**
+     * @param inferTypes whether types should be inferred from ids
+     * @return map of variable name - corresponding type pairs
+     */
+    @CheckReturnValue
+    ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes);
 
     /**
      * Returns a var-type of this query with possible additions coming from supplied partial answer.

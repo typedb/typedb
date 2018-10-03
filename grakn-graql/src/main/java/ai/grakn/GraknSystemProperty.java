@@ -31,10 +31,11 @@ public enum GraknSystemProperty {
     // what's the difference between grakn.dir and main.basedir? how do they relate to grakn.conf? etc.
     CURRENT_DIRECTORY("grakn.dir"),
     CONFIGURATION_FILE("grakn.conf"),
-    TEST_PROFILE("grakn.test-profile"),
-    PROJECT_RELATIVE_DIR("main.basedir"),
+    TEST_PROFILE("grakn.test-profile"), // Only used in tests
+    PROJECT_RELATIVE_DIR("main.basedir"), // Only used in tests
     GRAKN_PID_FILE("grakn.pidfile"),
-    ENGINE_JAVAOPTS("engine.javaopts");
+    ENGINE_JAVAOPTS("engine.javaopts"),
+    STORAGE_JAVAOPTS("storage.javaopts");
 
     private String key;
 

@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 import static java.util.stream.Collectors.toSet;
@@ -344,15 +345,23 @@ public abstract class Atom extends AtomicBase {
     public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
+     * attempt to find a UNIQUE unifier with the parent atom
      * @param parentAtom atom to be unified with
+     * @param unifierType type of unifier to be computed
      * @return corresponding unifier
      */
-    public abstract Unifier getUnifier(Atom parentAtom);
+    @Nullable
+    public abstract Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType);
+
     /**
      * find the (multi) unifier with parent atom
      * @param parentAtom atom to be unified with
      * @param unifierType type of unifier to be computed
      * @return multiunifier
      */
-    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){
+        //NB only for relations we can have non-unique unifiers
+        Unifier unifier = this.getUnifier(parentAtom, unifierType);
+        return unifier != null? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
+    }
 }

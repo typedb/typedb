@@ -24,7 +24,7 @@
 
     <groupId>ai.grakn</groupId>
     <artifactId>grakn-core</artifactId>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>1.4.0</version>
     <packaging>pom</packaging>
 
     <name>Grakn Core</name>
@@ -140,7 +140,7 @@
         <spark-core.version>2.5.1</spark-core.version>
         <commons-collections.version>3.2.1</commons-collections.version>
         <rest-assured.version>2.7.0</rest-assured.version>
-        <spark.version>1.6.1</spark.version>
+        <spark.version>2.2.0</spark.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
         <mjson.version>1.4.0</mjson.version>
@@ -163,10 +163,10 @@
         <prometheus.version>0.0.13</prometheus.version>
         <auto-value.version>1.4.1</auto-value.version>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
-        <grpc.version>1.8.0</grpc.version>
-        <netty-all.version>4.1.29.Final</netty-all.version>
+        <grpc.version>1.15.0</grpc.version>
+        <netty-all.version>4.1.27.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
-        <netty.version>2.0.14.Final</netty.version>
+        <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
@@ -280,7 +280,7 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>spark-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
@@ -311,7 +311,7 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>hadoop-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
@@ -324,10 +324,6 @@
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-core_2.10</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
@@ -431,7 +427,7 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.10</artifactId>
+                <artifactId>jackson-module-scala_2.11</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -548,7 +544,7 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.spark</groupId>
-                <artifactId>spark-core_2.10</artifactId>
+                <artifactId>spark-core_2.11</artifactId>
                 <version>${spark.version}</version>
                 <exclusions>
                     <exclusion>
@@ -578,6 +574,10 @@
                     <exclusion>
                         <groupId>io.dropwizard.metrics</groupId>
                         <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.scala-lang.modules</groupId>
+                        <artifactId>scala-xml_2.11</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -665,7 +665,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <version>${netty.version}</version>
+                <version>${netty-ssl.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sparkjava</groupId>
@@ -782,7 +782,7 @@
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-core</artifactId>
-                <version>1.8.0</version>
+                <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
@@ -842,7 +842,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>19.0</version>
+                <version>23.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.auto.value</groupId>
@@ -989,7 +989,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.5.0</version>
+                    <version>1.6.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
@@ -1142,6 +1142,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                     <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                    <skip>${skipTests}</skip>
                 </configuration>
                 <executions>
                     <execution>

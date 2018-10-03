@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.UnmodifiableIterator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,6 +37,12 @@ import javax.annotation.Nonnull;
  *
  * <p>
  * Implementation of the {@link MultiUnifier} interface.
+ *
+ * Special cases:
+ *
+ * Identity unifier: contains a single trivial unifier.
+ * Unifier doesn't exist: unifier is an empty set.
+ *
  * </p>
  *
  * @author Kasper Piskorski
@@ -53,17 +60,32 @@ public class MultiUnifierImpl implements MultiUnifier{
     }
 
     /**
-     * identity multiunifier
+     * identity multiunifier: single trivial unifier
      */
-    public MultiUnifierImpl(){
-        this.multiUnifier = ImmutableSet.of(new UnifierImpl());
-    }
+    public MultiUnifierImpl(){ this.multiUnifier = ImmutableSet.of(new UnifierImpl()); }
+
+
+    public static MultiUnifierImpl trivial(){ return new MultiUnifierImpl();}
+    public static MultiUnifierImpl nonExistent(){ return new MultiUnifierImpl(new HashSet<>());}
 
     @SafeVarargs
     MultiUnifierImpl(ImmutableMultimap<Var, Var>... maps){
         this.multiUnifier = ImmutableSet.<Unifier>builder()
                 .addAll(Stream.of(maps).map(UnifierImpl::new).iterator())
                 .build();
+    }
+
+    @Override
+    public boolean equals(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        MultiUnifierImpl u2 = (MultiUnifierImpl) obj;
+        return this.multiUnifier.equals(u2.multiUnifier);
+    }
+
+    @Override
+    public int hashCode(){
+        return multiUnifier.hashCode();
     }
 
     @Override

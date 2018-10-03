@@ -84,11 +84,11 @@ To clear the entire knowledge graph area, press Shift + the "Clear" button.
 
 ### Investigate a Node
 
-A single click on any node in the knowledge graph brings up a pane of information about the node at the top right hand side of the screen. The information displayed includes the ID of the node, its type and any resources associated with it, as shown in the figure below.
+A single click on any node in the knowledge graph brings up a pane of information about the node at the top right hand side of the screen. The information displayed includes the ID of the node, its type and any attributes associated with it, as shown in the figure below.
 
 ![Single click](/images/single-click-info-pane.png)
 
-Holding shift and making a click on a node also brings up the resources associated with it, displaying them in the knowledge graph, as shown.
+Holding shift and making a double click on a node also brings up the attributes associated with it, displaying them in the knowledge graph, as shown.
 
 ![Single click](/images/shift-click.png)
 
@@ -199,15 +199,7 @@ If you want to tidy your display to align the nodes horizontally or vertically, 
 
 ## Console
 
-You can use this console to make queries instead of running a Graql shell in your terminal. You can run `match` and `compute` queries, but because the visualiser is read-only, you cannot make insertions.
-
-## Tasks
-
-The tasks page is used to monitor the asynchronous tasks run by Grakn engine, and stop them if necessary. Tasks shown are those that perform loading or post processing, which is triggered after loading. It is possible to list, filter, sort and stop tasks.
-
-## Config
-
-This pane displays a view on the Grakn configuration file, showing configurable properties and their values.
+You can use this console to view the answers of queries you run, instead of running a Graql shell in your terminal. You can run `match` and `compute` queries, but because the visualiser is read-only, you cannot make insertions.
 
 ## Documentation
 
