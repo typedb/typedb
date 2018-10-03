@@ -39,8 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -70,7 +68,6 @@ public class GraqlShell implements AutoCloseable {
     private static final String CLEAN_COMMAND = "clean";
 
     private static final String ANSI_PURPLE = "\u001B[35m";
-    private static final String ANSI_CYAN = "\u001B[36m";
     private static final String ANSI_RESET = "\u001B[0m";
 
 
@@ -145,11 +142,9 @@ public class GraqlShell implements AutoCloseable {
 
     /**
      * The string to be displayed at the prompt
-     * @param keyspace
      */
-    private static final String consolePrompt(ZonedDateTime zonedDateTime, Keyspace keyspace) {
-        String time = zonedDateTime.format(DateTimeFormatter.ofPattern("dd-MM-yyyy hh:mm:ss"));
-        return ANSI_CYAN + time + ANSI_PURPLE + " " + keyspace.toString() + ANSI_RESET + "> ";
+    private static final String consolePrompt(Keyspace keyspace) {
+        return ANSI_PURPLE + keyspace.toString() + "> " + ANSI_RESET;
     }
 
     /**
@@ -161,7 +156,7 @@ public class GraqlShell implements AutoCloseable {
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
 
-        console.setPrompt(consolePrompt(ZonedDateTime.now(), tx.keyspace()));
+        console.setPrompt(consolePrompt(tx.keyspace()));
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
@@ -171,7 +166,7 @@ public class GraqlShell implements AutoCloseable {
         java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
 
         while ((queryString = console.readLine()) != null) {
-            console.setPrompt(consolePrompt(ZonedDateTime.now(), tx.keyspace()));
+            console.setPrompt(consolePrompt(tx.keyspace()));
 
             Matcher matcher = commandPattern.matcher(queryString);
 
