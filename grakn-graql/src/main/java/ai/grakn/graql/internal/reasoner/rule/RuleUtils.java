@@ -113,7 +113,7 @@ public class RuleUtils {
      * @return all rules that are reachable from the entry types
      */
     public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
-        final Equivalence<Atomic> equivalence = AtomicEquivalence.AlphaEquivalence;
+        final AtomicEquivalence equivalence = AtomicEquivalence.AlphaEquivalence;
 
         Set<InferenceRule> rules = new HashSet<>();
         Set<Equivalence.Wrapper<Atom>> visitedAtoms = new HashSet<>();

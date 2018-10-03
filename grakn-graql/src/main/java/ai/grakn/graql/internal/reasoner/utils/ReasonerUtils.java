@@ -282,11 +282,13 @@ public class ReasonerUtils {
     /**
      * @param parent type
      * @param child type
+     * @param direct flag indicating whether only direct types should be considered
      * @return true if child is a subtype of parent
      */
-    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child) {
-        if (parent == null) return true;
+    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
+        if (parent == null ) return true;
         if (child == null) return false;
+        if (direct) return parent.equals(child);
         if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
         SchemaConcept superType = child;
         while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
@@ -301,8 +303,8 @@ public class ReasonerUtils {
      * @param child {@link SchemaConcept}
      * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
      */
-    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
-        return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
+    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
+        return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
     }
 
 

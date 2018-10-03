@@ -282,7 +282,7 @@ public class InferenceRule {
             //NB: only rewriting atoms from the same type hierarchy
             body.getAtoms(Atom.class)
                     .map(at ->
-                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept()) ?
+                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
                                     at : at.rewriteToUserDefined(parentAtom)
                     )
                     .forEach(bodyRewrites::add);

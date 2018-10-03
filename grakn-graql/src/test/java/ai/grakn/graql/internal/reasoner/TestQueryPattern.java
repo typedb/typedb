@@ -105,26 +105,36 @@ public abstract class TestQueryPattern {
             String resourceId = args[0].id().getValue();
             String anotherResourceId = args[1].id().getValue();
             return Lists.newArrayList(
-                    "{$x isa resource;}",
-                    "{$xb isa resource-long;}",
+                    "{$x isa $type;}",
+                    "{$xb isa resource;}",
+                    "{$xc isa $typec;$typec label resource-long;}",
+                    "{$xd isa resource-long;}",
+                    "{$xe isa attribute;}",
 
-                    //2-3
+                    //5-7
                     "{$x1a isa resource; $x1a id '" + resourceId + "';}",
                     "{$x1b isa resource; $x1b id '" + anotherResourceId + "';}",
+                    "{$x1c isa $type1; $type1 label resource;$x1c id '" + anotherResourceId + "';}",
 
-                    //4-5
+                    //8-9
                     "{$x2a isa resource; $x2a == 'someValue';}",
                     "{$x2b isa resource; $x2b == 'someOtherValue';}",
 
-                    //6-7
+                    //10-11
                     "{$x3a isa resource-long; $x3a == '0';}",
                     "{$x3b isa resource-long; $x3b == '1';}",
 
-                    //7-8
+                    //12-15
                     "{$x4a isa resource-long; $x4a > '0';}",
                     "{$x4b isa resource-long; $x4b < '1';}",
                     "{$x4c isa resource-long; $x4c >= '0';}",
                     "{$x4d isa resource-long; $x4d <= '1';}"
+
+                    //16-18
+                    //TODO
+                    //"{$x5a isa resource ; $x5a != $f;}",
+                    //"{$x5b isa resource ; $x5b != $fb; $x5b id '" + resourceId + "';}",
+                    //"{$x5c isa resource ; $x5c != $fc; $fc id '" + resourceId + "';}"
             );
         }
     };
@@ -165,7 +175,25 @@ public abstract class TestQueryPattern {
                     "{$x5a has resource-long $x5a; $x5a > '0';}",
                     "{$x5b has resource-long $x5b; $x5b < '1';}",
                     "{$x5c has resource-long $x5c; $x5c >= '0';}",
-                    "{$x5d has resource-long $x5d; $x5d <= '1';}"
+                    "{$x5d has resource-long $x5d; $x5d <= '1';}",
+
+                    //18-22
+                    //TODO
+                    //"{$x6a has resource $r6a;$r6a != $r2_6a;}",
+                    //"{$x6b has resource $r6b;$r6b != $r2_6b; $r2_6b id '" + resourceId + "';}",
+                    //"{$x6c has resource $r6c;$x6c != $x2_6c;}",
+                    //"{$x6d has resource $r6d;$x6d != $x2_6d; $x2_6d id '" + resourceId + "';}",
+                    //"{$x6e has resource $r6e;$x6e != $r6e;}",
+
+                    //23-30
+                    "{$x7a has resource-long $r7a;$r7a > 23; $r7a < 27;}",
+                    "{$x7b isa baseRoleEntity, has resource-long $r7b;$r7b > 23; $r7b < 27;}",
+                    "{$x7c isa $type;$type label baseRoleEntity;$x7c has resource-long $r7c;$r7c > 23; $r7c < 27;}",
+                    "{$x7d isa baseRoleEntity;$x7d has resource-long > 23;}",
+                    "{$x7e isa baseRoleEntity;$x7e has resource-long $r7e;$r7e > 23;}",
+                    "{$x7f isa baseRoleEntity;$x7f has resource-long $r7f;$r7f > 27;$r7f < 29;}",
+                    "{$x7g isa baseRoleEntity;$x7g has resource-long $r7g;$r7g > 27;$r7g < 23;}",
+                    "{$x7h isa baseRoleEntity;$x7h has resource-long $r7hh;$r7h > 23; $r2_7h < 27;}"
             );
         }
     };

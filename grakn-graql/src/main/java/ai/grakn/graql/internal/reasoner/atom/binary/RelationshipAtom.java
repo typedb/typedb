@@ -543,16 +543,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public boolean isUnifiableWith(Atom atom){
-        //findbugs complains about cast without it
-        if (!(atom instanceof RelationshipAtom)) return false;
-        RelationshipAtom that = (RelationshipAtom) atom;
-
-        //rule head atom is applicable if it is unifiable
-        return !this.getRelationPlayerMappings(that).isEmpty();
-    }
-
-    @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if (!(ruleAtom instanceof RelationshipAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
         RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
