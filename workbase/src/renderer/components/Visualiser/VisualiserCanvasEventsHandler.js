@@ -1,5 +1,4 @@
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
-import ContextMenuUtils from './ContextMenuUtils';
 
 export default {
   registerHandlers({ state, dispatch, commit }) {
@@ -7,7 +6,7 @@ export default {
       event: 'selectNode',
       callback: (params) => {
         commit('selectedNodes', params.nodes);
-        commit('showContextMenu', false);
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
 
@@ -24,7 +23,7 @@ export default {
       event: 'click',
       callback: (params) => {
         if (!params.nodes.length) { commit('selectedNodes', null); }
-        commit('showContextMenu', false);
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
 
@@ -42,17 +41,15 @@ export default {
           commit('selectedNodes', null);
           state.visFacade.getNetwork().unselectAll();
         }
+      },
+    });
 
-        /* Context Menu */
+    commit('registerCanvasEvent', {
+      event: 'oncontext',
+      callback: (params) => {
         // Show context menu when keyspace is selected and canvas has data
         if (state.currentKeyspace && (state.canvasData.entities || state.canvasData.attributes || state.canvasData.relationships)) {
-          // check which menu items to enable
-          commit('enableDelete', ContextMenuUtils.verifyEnableDelete());
-          commit('enableExplain', ContextMenuUtils.verifyEnableExplain());
-          commit('enableShortestPath', ContextMenuUtils.verifyEnableShortestPath());
-
-          ContextMenuUtils.repositionMenu(params);
-          commit('showContextMenu', true);
+          commit('contextMenu', { show: true, x: params.pointer.DOM.x, y: params.pointer.DOM.y });
         }
       },
     });
@@ -73,21 +70,21 @@ export default {
     commit('registerCanvasEvent', {
       event: 'deselectNode',
       callback: () => {
-        commit('showContextMenu', false);
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
 
     commit('registerCanvasEvent', {
       event: 'dragStart',
       callback: () => {
-        commit('showContextMenu', false);
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
 
     commit('registerCanvasEvent', {
       event: 'zoom',
       callback: () => {
-        commit('showContextMenu', false);
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
   },

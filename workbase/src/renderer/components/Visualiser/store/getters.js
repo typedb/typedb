@@ -9,7 +9,6 @@ export default {
   selectedNode: state => ((state.selectedNodes) ? state.selectedNodes[0] : null),
   canvasData: state => state.canvasData,
   isActive: state => (state.currentKeyspace !== null),
-  showContextMenu: state => state.showContextMenu,
-  contextMenuOptions: state => state.contextMenuOptions,
+  contextMenu: state => state.contextMenu,
   visFacade: state => state.visFacade,
 };

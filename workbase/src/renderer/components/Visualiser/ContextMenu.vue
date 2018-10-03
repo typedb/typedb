@@ -1,8 +1,8 @@
 <template>
-    <div v-show="showContextMenu" id="context-menu" class="z-depth-2">
-        <li @click="(contextMenuOptions.enableDelete) ? deleteNode() : false" class="context-action" :class="{'disabled':!contextMenuOptions.enableDelete}">Delete</li>
-        <li @click="(contextMenuOptions.enableExplain) ? explainNode() : false" class="context-action" :class="{'disabled':!contextMenuOptions.enableExplain}">Explain</li>
-        <li @click="(contextMenuOptions.enableShortestPath) ? computeShortestPath() : false" class="context-action" :class="{'disabled':!contextMenuOptions.enableShortestPath}">Shortest Path</li>
+    <div v-show="contextMenu.show" ref="contextMenu" id="context-menu" class="z-depth-2">
+        <li @click="(verifyEnableDelete) ? deleteNode() : false" class="context-action" :class="{'disabled':!verifyEnableDelete}">Delete</li>
+        <li @click="(verifyEnableExplain) ? explainNode() : false" class="context-action" :class="{'disabled':!verifyEnableExplain}">Explain</li>
+        <li @click="(verifyEnableShortestPath) ? computeShortestPath() : false" class="context-action" :class="{'disabled':!verifyEnableShortestPath}">Shortest Path</li>
     </div>
 </template>
 <script>
@@ -13,7 +13,22 @@
   export default {
     name: 'ContextMenu',
     computed: {
-      ...mapGetters(['selectedNodes', 'currentKeyspace', 'showContextMenu', 'contextMenuOptions', 'visFacade']),
+      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu', 'contextMenuOptions', 'visFacade']),
+      verifyEnableDelete() {
+        return (this.selectedNodes);
+      },
+      verifyEnableExplain() {
+        return (this.selectedNodes && this.selectedNodes[0].isInferred);
+      },
+      verifyEnableShortestPath() {
+        return (this.selectedNodes && this.selectedNodes.length === 2);
+      },
+    },
+    watch: {
+      contextMenu(contextMenu) {
+        this.$refs.contextMenu.style.left = `${contextMenu.x}px`;
+        this.$refs.contextMenu.style.top = `${contextMenu.y}px`;
+      },
     },
     methods: {
       deleteNode() {
@@ -21,16 +36,16 @@
           this.visFacade.container.visualiser.deleteNode(node);
         });
         this.$store.commit('selectedNodes', null);
-        this.$store.commit('showContextMenu', false);
+        this.$store.commit('contextMenu', { show: false, x: null, y: null });
       },
       explainNode() {
         this.$store.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
-        this.$store.commit('showContextMenu', false);
+        this.$store.commit('contextMenu', { show: false, x: null, y: null });
       },
       computeShortestPath() {
         this.$store.commit('currentQuery', `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
         this.$store.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Run Query'); });
-        this.$store.commit('showContextMenu', false);
+        this.$store.commit('contextMenu', { show: false, x: null, y: null });
       },
     },
   };

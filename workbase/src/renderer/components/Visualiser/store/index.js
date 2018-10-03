@@ -13,8 +13,7 @@ const state = {
   loadingQuery: false,
   graknSession: undefined,
   canvasData: { entities: 0, attributes: 0, relationships: 0 },
-  showContextMenu: false,
-  contextMenuOptions: { enableDelete: false, enableExplain: false, enableShortestPath: false },
+  contextMenu: { show: false, x: null, y: null },
 };
 
 export default {
