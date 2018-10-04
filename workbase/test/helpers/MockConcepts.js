@@ -62,6 +62,8 @@ function getMockEntity2() {
     isAttribute: () => false,
     isEntity: () => true,
     isThing: () => true,
+    isInferred: () => Promise.resolve(false),
+    isRelationship: () => false,
   };
 }
 
@@ -98,6 +100,8 @@ function getMockRelationship() {
     isInferred: () => Promise.resolve(false),
     isAttribute: () => false,
     isEntity: () => false,
+    isThing: () => true,
+    isRelationship: () => true,
     offset: 0,
   };
 }
@@ -167,6 +171,18 @@ function getMockAnswerContainingImplicitType() {
   };
 }
 
+function getMockAnswerContainingRelationship() {
+  return {
+    explanation: () => {},
+    map: () => {
+      const map = new Map();
+      map.set('r', getMockRelationship());
+      map.set('c', getMockEntity2());
+      return map;
+    },
+  };
+}
+
 export default {
   getMockEntityType,
   getMockAttributeType,
@@ -183,5 +199,6 @@ export default {
   getMockAnswer3,
   getMockQueryPattern3,
   getMockAnswerContainingImplicitType,
+  getMockAnswerContainingRelationship,
 };
 

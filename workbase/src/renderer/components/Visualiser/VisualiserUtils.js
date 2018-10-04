@@ -170,6 +170,7 @@ export async function filterMaps(answers) { // Filter out ConceptMaps that conta
 async function getFilteredNeighbourAnswers(node, graknTx, limit) {
   const query = getNeighboursQuery(node, limit);
   const resultAnswers = await (await graknTx.query(query)).collect();
+  debugger;
   const filteredResult = await filterMaps(resultAnswers);
   if (resultAnswers.length !== filteredResult.length) {
     const offsetDiff = resultAnswers.length - filteredResult.length;

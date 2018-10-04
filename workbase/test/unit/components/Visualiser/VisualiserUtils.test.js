@@ -97,19 +97,29 @@ jest.mock('@/components/shared/PersistentStorage', () => ({
 //   });
 // });
 
-describe('Filters out Answers that contain inferred concepts in their ConceptMap', () => {
-  test('contains implicit type', async () => {
-    const containsImplicit = await filterMaps([MockConcepts.getMockAnswerContainingImplicitType(), MockConcepts.getMockAnswer1()]);
-    expect(containsImplicit).toHaveLength(1);
-  });
-  test('does not contains implicit type', async () => {
-    const containsImplicit = await filterMaps([MockConcepts.getMockAnswer1(), MockConcepts.getMockAnswer2()]);
-    expect(containsImplicit).toHaveLength(2);
-  });
-});
+// describe('Filters out Answers that contain inferred concepts in their ConceptMap', () => {
+//   test('contains implicit type', async () => {
+//     const containsImplicit = await filterMaps([MockConcepts.getMockAnswerContainingImplicitType(), MockConcepts.getMockAnswer1()]);
+//     expect(containsImplicit).toHaveLength(1);
+//   });
+//   test('does not contains implicit type', async () => {
+//     const containsImplicit = await filterMaps([MockConcepts.getMockAnswer1(), MockConcepts.getMockAnswer2()]);
+//     expect(containsImplicit).toHaveLength(2);
+//   });
+// });
 
 describe('Get neighbours data', () => {
   test('entity', async () => {
-    const neighboursData = await getNeighboursData();
+    const mockGraknTx = {
+      query: () => Promise.resolve({ collect: () => Promise.resolve([MockConcepts.getMockAnswerContainingRelationship()]) }),
+    };
+    const neighboursData = await getNeighboursData(MockConcepts.getMockEntity1(), mockGraknTx, 1);
+
+    expect(neighboursData.nodes).toHaveLength(2);
+    expect(neighboursData.edges).toHaveLength(2);
+    expect(JSON.stringify(neighboursData.nodes[0])).toBe(JSON.stringify(MockConcepts.getMockRelationship()));
+    expect(JSON.stringify(neighboursData.nodes[1])).toBe(JSON.stringify(MockConcepts.getMockEntity2()));
+    expect(JSON.stringify(neighboursData.edges[0])).toBe('{"from":"6666","to":"3333","label":"son"}');
+    expect(JSON.stringify(neighboursData.edges[1])).toBe('{"from":"6666","to":"4444","label":"father"}');
   });
 });
