@@ -7,14 +7,17 @@ import {
   INITIALISE_VISUALISER,
   CURRENT_KEYSPACE_CHANGED,
   CANVAS_RESET,
+  DELETE_SELECTED_NODES,
 } from '@/components/shared/StoresActions';
 import Grakn from 'grakn';
 import logger from '@/../Logger';
 import VisFacade from '@/components/CanvasVisualiser/Facade';
 
 import {
-  addResetGraphListener, loadMetaTypeInstances,
-  validateQuery, computeAttributes,
+  addResetGraphListener,
+  loadMetaTypeInstances,
+  validateQuery,
+  computeAttributes,
   mapAnswerToExplanationQuery,
   getNeighboursData } from '../VisualiserUtils';
 import QuerySettings from '../RightBar/SettingsTab/QuerySettings';
@@ -104,7 +107,7 @@ export default {
 
       if (result[0].map) {
         const autoloadRolePlayers = QuerySettings.getRolePlayersStatus();
-        data = await VisualiserGraphBuilder.buildFromConceptMap(result, autoloadRolePlayers, false);
+        data = await VisualiserGraphBuilder.buildFromConceptMap(result, autoloadRolePlayers, true);
       } else { // result is conceptList
         // TBD - handle multiple paths
         const path = result[0];
@@ -159,15 +162,23 @@ export default {
       commit('loadingQuery', true);
       const graknTx = await dispatch('openGraknTx');
       const result = (await (await graknTx.query(query)).collect());
-      graknTx.close();
 
       const data = await VisualiserGraphBuilder.buildFromConceptMap(result, true, false);
       state.visFacade.addToCanvas(data);
       const nodesWithAttributes = await computeAttributes(data.nodes);
+      graknTx.close();
+
       state.visFacade.updateNode(nodesWithAttributes);
       const styledEdges = data.edges.map(edge => Object.assign(edge, state.visStyle.computeExplanationEdgeStyle()));
       state.visFacade.container.visualiser.updateEdge(styledEdges);
       commit('loadingQuery', false);
     });
+  },
+
+  async [DELETE_SELECTED_NODES]({ state, commit }) {
+    state.selectedNodes.forEach((node) => {
+      state.visFacade.deleteNode(node);
+    });
+    commit('selectedNodes', null);
   },
 };

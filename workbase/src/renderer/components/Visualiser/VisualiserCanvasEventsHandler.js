@@ -6,6 +6,7 @@ export default {
       event: 'selectNode',
       callback: (params) => {
         commit('selectedNodes', params.nodes);
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
 
@@ -22,6 +23,7 @@ export default {
       event: 'click',
       callback: (params) => {
         if (!params.nodes.length) { commit('selectedNodes', null); }
+        commit('contextMenu', { show: false, x: null, y: null });
       },
     });
 
@@ -39,7 +41,18 @@ export default {
           commit('selectedNodes', null);
           state.visFacade.getNetwork().unselectAll();
         }
-      } });
+      },
+    });
+
+    commit('registerCanvasEvent', {
+      event: 'oncontext',
+      callback: (params) => {
+        // Show context menu when keyspace is selected and canvas has data
+        if (state.currentKeyspace && (state.canvasData.entities || state.canvasData.attributes || state.canvasData.relationships)) {
+          commit('contextMenu', { show: true, x: params.pointer.DOM.x, y: params.pointer.DOM.y });
+        }
+      },
+    });
 
     commit('registerCanvasEvent', {
       event: 'doubleClick',
@@ -51,6 +64,28 @@ export default {
         const visNode = state.visFacade.getNode(nodeId);
         const action = (params.event.srcEvent.shiftKey) ? 'loadAttributes' : 'loadNeighbours';
         dispatch(action, { visNode, neighboursLimit });
-      } });
+      },
+    });
+
+    commit('registerCanvasEvent', {
+      event: 'deselectNode',
+      callback: () => {
+        commit('contextMenu', { show: false, x: null, y: null });
+      },
+    });
+
+    commit('registerCanvasEvent', {
+      event: 'dragStart',
+      callback: () => {
+        commit('contextMenu', { show: false, x: null, y: null });
+      },
+    });
+
+    commit('registerCanvasEvent', {
+      event: 'zoom',
+      callback: () => {
+        commit('contextMenu', { show: false, x: null, y: null });
+      },
+    });
   },
 };
