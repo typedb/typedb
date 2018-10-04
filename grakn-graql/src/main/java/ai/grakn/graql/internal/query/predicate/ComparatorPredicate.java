@@ -131,10 +131,13 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     @Override
     public boolean isCompatibleWith(ValuePredicate predicate) {
+        if (!(predicate instanceof ComparatorPredicate)) return predicate.isCompatibleWith(this);
         ComparatorPredicate that = (ComparatorPredicate) predicate;
         Object val = this.value().orElse(null);
         Object thatVal = that.value().orElse(null);
         if (val == null || thatVal == null) return true;
+        //NB this is potentially dangerous e.g. if a user types a long as a char in the query
+        if (!val.getClass().equals(thatVal.getClass())) return false;
 
         //checks for !=/= contradiction
         boolean contradiction = ((val.equals(thatVal))

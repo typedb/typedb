@@ -837,10 +837,10 @@ public class AtomicTest {
         String resourceString2 = "{$x has res-double > 4.0;}";
         String resourceString3 = "{$x has res-double < 3.0;}";
         String resourceString4 = "{$x has res-double < 4.0;}";
-        String resourceString5 = "{$x has res-double >= 5;}";
-        String resourceString6 = "{$x has res-double <= 5;}";
+        String resourceString5 = "{$x has res-double >= 5.0;}";
+        String resourceString6 = "{$x has res-double <= 5.0;}";
         String resourceString7 = "{$x has res-double == 3.14;}";
-        String resourceString8 = "{$x has res-double !== 5;}";
+        String resourceString8 = "{$x has res-double !== 5.0;}";
 
         Atom resource = ReasonerQueries.atomic(conjunction(resourceString, graph), graph).getAtom();
         Atom resource2 = ReasonerQueries.atomic(conjunction(resourceString2, graph), graph).getAtom();
@@ -955,10 +955,10 @@ public class AtomicTest {
         String queryString2 = "{$x isa res-double > 4.0;($x, $y);}";
         String queryString3 = "{$x isa res-double < 3.0;($x, $y);}";
         String queryString4 = "{$x isa res-double < 4.0;($x, $y);}";
-        String queryString5 = "{$x isa res-double >= 5;($x, $y);}";
-        String queryString6 = "{$x isa res-double <= 5;($x, $y);}";
+        String queryString5 = "{$x isa res-double >= 5.0;($x, $y);}";
+        String queryString6 = "{$x isa res-double <= 5.0;($x, $y);}";
         String queryString7 = "{$x isa res-double == 3.14;($x, $y);}";
-        String queryString8 = "{$x isa res-double !== 5;($x, $y);}";
+        String queryString8 = "{$x isa res-double !== 5.0;($x, $y);}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();

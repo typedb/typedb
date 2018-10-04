@@ -173,7 +173,12 @@ public enum UnifierType implements UnifierComparison, UnifierEquivalenceLink {
 
         @Override
         public boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child) {
-            return parent.isEmpty() || child.stream().allMatch(cp -> parent.stream().anyMatch(pp -> valueCompatibility(pp, cp)));
+            return child.stream().allMatch(cp -> child.stream().allMatch(pp -> valueCompatibility(pp, cp)))
+                    && parent.stream().allMatch(cp -> parent.stream().allMatch(pp -> valueCompatibility(pp, cp)))
+                    && (
+                            parent.isEmpty()
+                                    || child.stream().allMatch(cp -> parent.stream().allMatch(pp -> valueCompatibility(pp, cp)))
+                    );
         }
 
         @Override

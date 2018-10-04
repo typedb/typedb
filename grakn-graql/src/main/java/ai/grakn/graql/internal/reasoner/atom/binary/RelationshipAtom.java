@@ -914,9 +914,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 })
                                                 //check for value predicate compatibility
                                                 .filter(crp -> {
-                                                    ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
-                                                    ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
-                                                    return matchType.valueCompatibility(parentVP, childVP);
+                                                    Set<Atomic> parentVP = parentAtom.getPredicates(prp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
+                                                    Set<Atomic> childVP = this.getPredicates(crp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
+                                                    return matchType.attributeValueCompatibility(parentVP, childVP);
                                                 })
                                                 //check linked resources
                                                 .filter(crp -> {
