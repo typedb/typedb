@@ -21,6 +21,8 @@ java_grpc_compile(
     name = "client-java-proto",
     deps = [
         "//protocol/session:session-proto",
+        "//protocol/session:answer-proto",
+        "//protocol/session:concept-proto",
         "//protocol/keyspace:keyspace-proto",
     ],
     visibility = [
@@ -34,6 +36,8 @@ python_grpc_compile(
     name = "client-python-proto",
     deps = [
         "//protocol/session:session-proto",
+        "//protocol/session:answer-proto",
+        "//protocol/session:concept-proto",
         "//protocol/keyspace:keyspace-proto",
     ],
     visibility = ["//client-python:__subpackages__"]
@@ -44,6 +48,8 @@ node_grpc_compile(
     name = "client-node-proto",
     deps = [
         "//protocol/session:session-proto",
+        "//protocol/session:answer-proto",
+        "//protocol/session:concept-proto",
         "//protocol/keyspace:keyspace-proto",
     ],
     visibility = ["//client-node:__subpackages__"]

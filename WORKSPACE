@@ -45,22 +45,22 @@ antlr_dependencies()
 # Load Compiler Dependencies: GRPC #
 ####################################
 
-# Load Protobuf dependencies
+# Load GRPC dependencies
 load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies")
 grpc_dependencies()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_bazel_grpc_deps()
 
-# Load Java Protobuf dependencies
+# Load GRPC Java dependencies
 load("@org_pubref_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
-# Load Python Protobuf dependencies
+# Load GRPC Python dependencies
 load("@org_pubref_rules_proto//python:deps.bzl", "python_grpc_compile")
 python_grpc_compile()
 
-# Load Node.js Protobuf dependencies
+# Load GRPC Node.js dependencies
 load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
 

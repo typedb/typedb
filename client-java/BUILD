@@ -20,7 +20,7 @@ package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "client-java",
-    srcs = glob(["src/main/java/**/*.java"]),
+    srcs = ["//protocol:client-java-proto"] + glob(["src/main/java/**/*.java"]),
     deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
