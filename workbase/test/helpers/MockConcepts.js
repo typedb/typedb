@@ -34,6 +34,7 @@ function getMockImplicitRelationshipType() {
     baseType: 'RELATIONSHIP_TYPE',
     id: '2222',
     isImplicit: () => Promise.resolve(true),
+    isThing: () => false,
   };
 }
 
@@ -48,6 +49,7 @@ function getMockEntity1() {
     isInferred: () => Promise.resolve(false),
     isAttribute: () => false,
     isEntity: () => true,
+    isThing: () => true,
     offset: 0,
   };
 }
@@ -59,6 +61,7 @@ function getMockEntity2() {
     type: () => Promise.resolve(getMockEntityType()),
     isAttribute: () => false,
     isEntity: () => true,
+    isThing: () => true,
   };
 }
 
@@ -73,6 +76,7 @@ function getMockAttribute() {
     isType: () => false,
     isInferred: () => Promise.resolve(false),
     isAttribute: () => true,
+    isThing: () => true,
     offset: 0,
   };
 }
@@ -150,6 +154,19 @@ function getMockAnswer3() {
 
 const getMockQueryPattern3 = '{$c id 4444; $p id 3333; $1234 (child: $c, parent: $p) isa parentship;}';
 
+function getMockAnswerContainingImplicitType() {
+  return {
+    explanation: () => {},
+    map: () => {
+      const map = new Map();
+      map.set('p', getMockEntity1());
+      map.set('c', getMockEntity2());
+      map.set('r', getMockImplicitRelationship());
+      return map;
+    },
+  };
+}
+
 export default {
   getMockEntityType,
   getMockAttributeType,
@@ -165,5 +182,6 @@ export default {
   getMockQueryPattern2,
   getMockAnswer3,
   getMockQueryPattern3,
+  getMockAnswerContainingImplicitType,
 };
 

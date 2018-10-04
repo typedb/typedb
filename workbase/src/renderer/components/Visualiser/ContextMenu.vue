@@ -13,7 +13,7 @@
   export default {
     name: 'ContextMenu',
     computed: {
-      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu', 'visFacade']),
+      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu']),
       enableDelete() {
         return (this.selectedNodes);
       },

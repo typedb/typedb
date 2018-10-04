@@ -10,5 +10,4 @@ export default {
   canvasData: state => state.canvasData,
   isActive: state => (state.currentKeyspace !== null),
   contextMenu: state => state.contextMenu,
-  visFacade: state => state.visFacade,
 };
