@@ -87,6 +87,10 @@ function resetCanvas() {
   this.container.visualiser.clearGraph();
 }
 
+function deleteNode(node) {
+  this.container.visualiser.deleteNode(node);
+}
+
 function registerEventHandler(event, fn) {
   this.container.visualiser.getNetwork().on(event, fn);
 }
@@ -113,6 +117,7 @@ const prototype = {
   getAllEdges,
   updateNode,
   getNetwork,
+  deleteNode,
 };
 
 export default {

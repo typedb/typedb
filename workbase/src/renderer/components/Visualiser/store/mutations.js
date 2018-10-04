@@ -31,4 +31,7 @@ export default {
         relationships: state.visFacade.getAllNodes().filter(x => x.baseType === 'RELATIONSHIP').length };
     }
   },
+  contextMenu(state, contextMenu) {
+    state.contextMenu = contextMenu;
+  },
 };
