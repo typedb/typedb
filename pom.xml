@@ -968,11 +968,11 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>snapshots</id>
+            <id>mavengraknai</id>
             <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
-            <id>releases</id>
+            <id>oss-sonatype</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
@@ -1222,7 +1222,20 @@
 
     <profiles>
         <profile>
-            <id>grakn-releases</id>
+            <id>test-deploy-jars</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/releases</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>deploy-jars</id>
             <build>
                 <plugins>
                     <plugin>
@@ -1272,11 +1285,11 @@
             </build>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
