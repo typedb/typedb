@@ -1,0 +1,83 @@
+//
+// GRAKN.AI - THE KNOWLEDGE GRAPH
+// Copyright (C) 2018 Grakn Labs Ltd
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+
+syntax = "proto3";
+
+option java_package = "ai.grakn.rpc.proto";
+option java_outer_classname = "AnswerProto";
+
+import "Concept.proto";
+
+package session;
+
+message Answer {
+    oneof answer {
+        AnswerGroup answerGroup = 1;
+        ConceptMap conceptMap = 2;
+        ConceptList conceptList = 3;
+        ConceptSet conceptSet = 4;
+        ConceptSetMeasure conceptSetMeasure = 5;
+        Value value = 6;
+    }
+}
+
+message Explanation {
+    string pattern = 1;
+    repeated ConceptMap answers = 2;
+}
+
+message AnswerGroup {
+    Concept owner = 1;
+    repeated Answer answers = 2;
+    Explanation explanation = 3;
+}
+
+message ConceptMap {
+    map<string, Concept> map = 1;
+    Explanation explanation = 2;
+}
+
+message ConceptList {
+    ConceptIds list = 1;
+    Explanation explanation = 2;
+}
+
+message ConceptSet {
+    ConceptIds set = 1;
+    Explanation explanation = 2;
+}
+
+message ConceptSetMeasure {
+    ConceptIds set = 1;
+    Number measurement = 2;
+    Explanation explanation = 3;
+}
+
+message Value {
+    Number number = 1;
+    Explanation explanation = 2;
+}
+
+message ConceptIds {
+    repeated string ids = 1;
+}
+
+message Number {
+    string value = 1;
+    // We use a string to contain the full representation of a number
+}

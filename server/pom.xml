@@ -148,12 +148,6 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
 
-        <!-- Required For REST Components and Headers-->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-        </dependency>
-
         <!--Logging dependencies: Compile scope needed to override parent test scope-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
