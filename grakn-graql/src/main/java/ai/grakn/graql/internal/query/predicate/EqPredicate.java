@@ -48,6 +48,12 @@ class EqPredicate extends ComparatorPredicate {
     }
 
     @Override
+    public boolean containsEquality(){ return true;}
+
+    @Override
+    public int signum() { return 0; }
+
+    @Override
     public String toString() {
         Optional<Object> value = value();
         if (value.isPresent()) {

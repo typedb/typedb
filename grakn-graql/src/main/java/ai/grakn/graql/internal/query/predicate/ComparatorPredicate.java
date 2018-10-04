@@ -23,7 +23,6 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
@@ -36,6 +35,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+/**
+ * Abstract class for value predicates involving comparators.
+ */
 public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
@@ -116,20 +118,37 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         ComparatorPredicate that = (ComparatorPredicate) o;
         return persistedValue().equals(that.persistedValue());
     }
+
+    /**
+     * @return returns the sign of inequality, +ve for going in increasing, -ve for decreasing direction and 0 for 0
+     */
+    public abstract int signum();
+
+    /**
+     * @return true if the inequality contains equality
+     */
+    public boolean containsEquality(){ return false;}
+
     @Override
-    public boolean isCompatibleWith(ValuePredicate predicate, UnifierComparison unifierType) {
+    public boolean isCompatibleWith(ValuePredicate predicate) {
         ComparatorPredicate that = (ComparatorPredicate) predicate;
         Object val = this.value().orElse(null);
         Object thatVal = that.value().orElse(null);
         if (val == null || thatVal == null) return true;
 
         //checks for !=/= contradiction
-        return ((!val.equals(thatVal))
-                || ((!(this instanceof EqPredicate) || !(that instanceof NeqPredicate))
-                && (!(that instanceof NeqPredicate) || !(this instanceof EqPredicate))))
-                && unifierType.traversalCompatibility(that.gremlinPredicate(thatVal), this.gremlinPredicate(val), thatVal, val);
-                //&& (this.gremlinPredicate(val).test(thatVal)
-                //|| that.gremlinPredicate(thatVal).test(val));
+        boolean contradiction = ((val.equals(thatVal))
+                && (
+                        ((this instanceof EqPredicate) && (that instanceof NeqPredicate))
+                        || ((that instanceof NeqPredicate) && (this instanceof EqPredicate)))
+        );
+
+        return !contradiction
+                && (
+                        val.equals(thatVal)?
+                                (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
+                                (this.gremlinPredicate(val).test(thatVal) || that.gremlinPredicate(thatVal).test(val))
+        );
     }
 
     @Override

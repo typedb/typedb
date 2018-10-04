@@ -24,7 +24,6 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
@@ -108,12 +107,12 @@ public abstract class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredi
     }
 
     @Override
-    public boolean isCompatibleWith(Object obj, UnifierComparison unifierType) {
+    public boolean isCompatibleWith(Object obj) {
         if (this.isAlphaEquivalent(obj)) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ValuePredicate that = (ValuePredicate) obj;
-        return this.getPredicate().isCompatibleWith(that.getPredicate(), unifierType);
+        return this.getPredicate().isCompatibleWith(that.getPredicate());
     }
 
     @Override

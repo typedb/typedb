@@ -102,7 +102,7 @@ public interface Atomic {
      * @return true if obj compatible
      */
     @CheckReturnValue
-    default boolean isCompatibleWith(Object obj, UnifierComparison unifierType){return isAlphaEquivalent(obj);}
+    default boolean isCompatibleWith(Object obj){return isAlphaEquivalent(obj);}
 
     /**
      * @return alpha-equivalence hash code

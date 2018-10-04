@@ -46,4 +46,7 @@ class ContainsPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return new P<>((v, s) -> ((String) v).contains((String) s), value);
     }
+
+    @Override
+    public int signum() { return 0;}
 }

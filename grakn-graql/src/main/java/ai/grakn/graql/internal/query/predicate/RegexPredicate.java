@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
@@ -68,7 +67,7 @@ abstract class RegexPredicate implements ValuePredicate {
     }
 
     @Override
-    public boolean isCompatibleWith(ValuePredicate predicate, UnifierComparison unifierType){
+    public boolean isCompatibleWith(ValuePredicate predicate){
         if (!(predicate instanceof EqPredicate)) return false;
         EqPredicate p = (EqPredicate) predicate;
         Object pVal = p.equalsValue().orElse(null);

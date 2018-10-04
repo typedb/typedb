@@ -823,7 +823,6 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
 
-        /*
         ruleUnification(qs.get(0), qs, qs, graph);
         ruleUnification(qs.get(1), qs, subList(qs, Lists.newArrayList(0, 2, 5, 6, 7, 8, 9, 10)), graph);
         ruleUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(0, 1, 5, 6, 7, 8, 9, 10)), graph);
@@ -837,15 +836,14 @@ public class AtomicQueryTest {
 
         ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8)), graph);
         ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8)), graph);
-        */
 
         ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 14, 15, 16)), graph);
         ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 15, 16)), graph);
 
-        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 15, 16)), graph);
+        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 12, 14, 15, 16)), graph);
         ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 13, 15, 16)), graph);
-        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 16)), graph);
-        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 15)), graph);
+        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 13, 14, 16)), graph);
+        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 13, 14, 15)), graph);
     }
 
     @Test
