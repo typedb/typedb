@@ -968,11 +968,11 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>snapshots</id>
+            <id>mavengraknai</id>
             <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
-            <id>releases</id>
+            <id>oss-sonatype</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
@@ -1222,7 +1222,20 @@
 
     <profiles>
         <profile>
-            <id>grakn-releases</id>
+            <id>test-deploy-jars</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/releases</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>deploy-jars</id>
             <build>
                 <plugins>
                     <plugin>
@@ -1234,6 +1247,7 @@
                             <additionalparam>-Xdoclint:none</additionalparam>
                             <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                             <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                            <skip>false</skip>
                         </configuration>
                         <executions>
                             <execution>
@@ -1263,7 +1277,7 @@
                         <artifactId>nexus-staging-maven-plugin</artifactId>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
+                            <serverId>oss-sonatype</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
@@ -1272,11 +1286,11 @@
             </build>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
