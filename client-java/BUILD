@@ -22,6 +22,10 @@ java_library(
     name = "client-java",
     srcs = ["//protocol:client-java-proto"] + glob(["src/main/java/**/*.java"]),
     deps = [
+        # Grakn Core dependencies
+        "//grakn-graql:grakn-graql",
+
+        # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
@@ -45,6 +49,5 @@ java_library(
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-simple",
-        "//grakn-graql:grakn-graql",
     ]
 )
