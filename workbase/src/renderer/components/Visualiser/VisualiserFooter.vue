@@ -1,9 +1,9 @@
 <template>
     <div class="footer noselect" v-if="currentKeyspace">
         <div class="canvas-data">
-            <div class="data-item no-of-entities"> entities: {{entities}}</div>
-            <div class="data-item no-of-attributes"> attributes: {{attributes}}</div>
-            <div class="data-item no-of-relationships"> relationships: {{relationships}}</div>
+            <div class="data-item no-of-entities"> entities: {{canvasData.entities}}</div>
+            <div class="data-item no-of-attributes"> attributes: {{canvasData.attributes}}</div>
+            <div class="data-item no-of-relationships"> relationships: {{canvasData.relationships}}</div>
         </div>
     </div>
 </template>
@@ -34,13 +34,6 @@ import { mapGetters } from 'vuex';
 export default {
   name: 'GraknFooter',
   props: ['localStore'],
-  data() {
-    return {
-      entities: 0,
-      attributes: 0,
-      relationships: 0,
-    };
-  },
   computed: {
     ...mapGetters(['currentKeyspace', 'canvasData']),
   },
