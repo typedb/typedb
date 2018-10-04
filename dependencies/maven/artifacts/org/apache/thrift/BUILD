@@ -9,7 +9,7 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

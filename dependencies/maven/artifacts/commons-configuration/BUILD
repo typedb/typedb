@@ -8,7 +8,7 @@ java_library(
         "//dependencies/maven/artifacts/commons-logging:commons-logging"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

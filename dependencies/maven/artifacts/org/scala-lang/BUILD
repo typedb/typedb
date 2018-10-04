@@ -5,6 +5,7 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/org/scala-lang/modules:scala-parser-combinators-2-11",
+        "//dependencies/maven/artifacts/org/scala-lang/modules:scala-xml-2-11",
         ":scala-library",
         ":scala-reflect"
     ],
@@ -21,7 +22,7 @@ java_library(
         "//external:jar/org/scala-lang/scala-library"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
@@ -51,7 +52,7 @@ java_library(
         ":scala-compiler"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

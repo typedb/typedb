@@ -64,7 +64,7 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(EmbeddedGraknTx<?> tx, Collection<Var> vars) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(ROLE_PLAYER.getLabel()).as(edge().name());
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.inE(ROLE_PLAYER.getLabel()).as(edge().name());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), tx);

@@ -5,7 +5,10 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/io/netty:netty",
-        "//dependencies/maven/artifacts/jline:jline"
+        "//dependencies/maven/artifacts/jline:jline",
+        "//dependencies/maven/artifacts/log4j:log4j",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-log4j12"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

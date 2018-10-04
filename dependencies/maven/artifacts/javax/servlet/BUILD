@@ -9,3 +9,15 @@ java_library(
 )
 
 
+
+java_library(
+    name = "servlet-api",
+    exports = [
+        "//external:jar/javax/servlet/servlet-api"
+    ],
+    visibility = [
+        "//dependencies/maven/artifacts:__subpackages__"
+    ]
+)
+
+

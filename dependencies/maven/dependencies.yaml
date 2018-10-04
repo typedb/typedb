@@ -38,6 +38,11 @@ dependencies:
       version: "1.2.3"
       lang: java
 
+  commons-configuration:
+    commons-configuration:
+      version: "1.10"
+      lang: java
+
   com.boundary:
     high-scale-lib:
       version: "1.0.6"
@@ -84,7 +89,7 @@ dependencies:
 
   com.google.auto.value:
     auto-value:
-      version: "1.4.1"
+      version: "1.5.3"
       lang: java
       processorClasses: ["com.google.auto.value.processor.AutoValueProcessor"]
 
@@ -267,6 +272,29 @@ dependencies:
       - "it.unimi.dsi:fastutil"
       - "ch.qos.logback:logback-core"
       - "ch.qos.logback:logback-classic"
+    cassandra-thrift:
+      version: "3.11.3"
+      lang: java
+      exclude:
+      - "it.unimi.dsi:fastutil"
+      - "ch.qos.logback:logback-core"
+      - "ch.qos.logback:logback-classic"
+
+  org.apache.commons:
+    commons-lang3:
+      version: "3.3.1"
+      lang: java
+
+  org.apache.hadoop:
+    hadoop-common:
+      version: "2.7.2"
+      lang: java
+    hadoop-annotations:
+      version: "2.7.2"
+      lang: java
+    hadoop-mapreduce-client-core:
+      version: "2.7.2"
+      lang: java
 
   org.apache.httpcomponents:
     httpclient:
@@ -289,6 +317,23 @@ dependencies:
       - "log4j:log4j"
       - "io.dropwizard.metrics:metrics-core"
       - "org.scala-lang.modules:scala-xml_2.11"
+    spark-launcher_2.11:
+      version: "2.2.0"
+      lang: java
+      exclude:
+      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+      - "javax.servlet:javax.servlet-api"
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:jcl-over-slf4j"
+      - "log4j:log4j"
+      - "io.dropwizard.metrics:metrics-core"
+      - "org.scala-lang.modules:scala-xml_2.11"
+
+  org.apache.thrift:
+    libthrift:
+      version: "0.9.2"
+      lang: java
 
   org.apache.tinkerpop:
     gremlin-core:
@@ -403,6 +448,14 @@ dependencies:
   org.rocksdb:
     rocksdbjni:
       version: "5.14.2"
+      lang: java
+
+  org.scala-lang:
+    scala-library:
+      version: "2.11.8"
+      lang: java
+    scalap:
+      version: "2.11.0"
       lang: java
 
   org.sharegov:

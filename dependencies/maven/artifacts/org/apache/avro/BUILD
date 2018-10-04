@@ -8,6 +8,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/commons:commons-compress",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/xerial/snappy:snappy-java"
     ],
     visibility = [

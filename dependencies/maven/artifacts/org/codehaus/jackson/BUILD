@@ -16,7 +16,8 @@ java_library(
         "//external:jar/org/codehaus/jackson/jackson-jaxrs"
     ],
     runtime_deps = [
-        ":jackson-core-asl"
+        ":jackson-core-asl",
+        ":jackson-mapper-asl"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -46,7 +47,8 @@ java_library(
         "//external:jar/org/codehaus/jackson/jackson-xc"
     ],
     runtime_deps = [
-        ":jackson-core-asl"
+        ":jackson-core-asl",
+        ":jackson-mapper-asl"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

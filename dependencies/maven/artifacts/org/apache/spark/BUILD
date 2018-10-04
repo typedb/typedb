@@ -65,7 +65,7 @@ java_library(
         ":spark-tags-2-11"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

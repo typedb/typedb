@@ -6,6 +6,7 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/com/jamesmurty/utils:java-xmlbuilder",
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
+        "//dependencies/maven/artifacts/commons-logging:commons-logging",
         "//dependencies/maven/artifacts/javax/activation:activation",
         "//dependencies/maven/artifacts/javax/mail:mail",
         "//dependencies/maven/artifacts/mx4j:mx4j",

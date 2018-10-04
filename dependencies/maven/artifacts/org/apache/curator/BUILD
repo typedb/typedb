@@ -5,7 +5,8 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper"
+        "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

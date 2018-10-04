@@ -4,7 +4,7 @@ java_library(
         "//external:jar/org/apache/hadoop/hadoop-annotations"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
@@ -17,10 +17,13 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
+        "//dependencies/maven/artifacts/log4j:log4j",
         "//dependencies/maven/artifacts/org/apache/curator:curator-framework",
         "//dependencies/maven/artifacts/org/apache/directory/server:apacheds-kerberos-codec",
         "//dependencies/maven/artifacts/org/apache/httpcomponents:httpclient",
-        "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper"
+        "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-log4j12"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -60,6 +63,10 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/gson:gson",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "//dependencies/maven/artifacts/com/jcraft:jsch",
+        "//dependencies/maven/artifacts/com/sun/jersey:jersey-core",
+        "//dependencies/maven/artifacts/com/sun/jersey:jersey-json",
+        "//dependencies/maven/artifacts/com/sun/jersey:jersey-server",
         "//dependencies/maven/artifacts/commons-cli:commons-cli",
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
         "//dependencies/maven/artifacts/commons-collections:commons-collections",
@@ -67,8 +74,12 @@ java_library(
         "//dependencies/maven/artifacts/commons-httpclient:commons-httpclient",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/commons-logging:commons-logging",
         "//dependencies/maven/artifacts/commons-net:commons-net",
         "//dependencies/maven/artifacts/javax/servlet/jsp:jsp-api",
+        "//dependencies/maven/artifacts/javax/servlet:servlet-api",
+        "//dependencies/maven/artifacts/log4j:log4j",
+        "//dependencies/maven/artifacts/net/java/dev/jets3t:jets3t",
         "//dependencies/maven/artifacts/org/apache/avro:avro",
         "//dependencies/maven/artifacts/org/apache/commons:commons-compress",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
@@ -77,12 +88,17 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/htrace:htrace-core",
         "//dependencies/maven/artifacts/org/apache/zookeeper:zookeeper",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
+        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",
+        "//dependencies/maven/artifacts/org/mortbay/jetty:jetty",
+        "//dependencies/maven/artifacts/org/mortbay/jetty:jetty-util",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-log4j12",
         "//dependencies/maven/artifacts/xmlenc:xmlenc",
         ":hadoop-annotations",
         ":hadoop-auth"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
@@ -158,11 +174,17 @@ java_library(
         "//external:jar/org/apache/hadoop/hadoop-mapreduce-client-core"
     ],
     runtime_deps = [
+        "//dependencies/maven/artifacts/com/google/inject/extensions:guice-servlet",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "//dependencies/maven/artifacts/io/netty:netty",
+        "//dependencies/maven/artifacts/org/apache/avro:avro",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-log4j12",
+        ":hadoop-annotations",
         ":hadoop-yarn-common"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
@@ -212,7 +234,9 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang"
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/commons-logging:commons-logging",
+        ":hadoop-annotations"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -247,6 +271,7 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/com/google/inject/extensions:guice-servlet",
         "//dependencies/maven/artifacts/com/google/inject:guice",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
         "//dependencies/maven/artifacts/com/sun/jersey/contribs:jersey-guice",
@@ -258,12 +283,18 @@ java_library(
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/commons-logging:commons-logging",
+        "//dependencies/maven/artifacts/javax/servlet:servlet-api",
         "//dependencies/maven/artifacts/javax/xml/bind:jaxb-api",
+        "//dependencies/maven/artifacts/log4j:log4j",
         "//dependencies/maven/artifacts/org/apache/commons:commons-compress",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-jaxrs",
+        "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-xc",
         "//dependencies/maven/artifacts/org/mortbay/jetty:jetty-util",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        ":hadoop-annotations",
         ":hadoop-yarn-api"
     ],
     visibility = [
