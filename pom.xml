@@ -90,7 +90,7 @@
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <grpc.version>1.15.0</grpc.version>
-        <netty-all.version>4.1.27.Final</netty-all.version>
+        <netty-all.version>4.1.30.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
@@ -105,7 +105,7 @@
         <zt-exec.version>1.10</zt-exec.version>
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
-        <astyanax.version>3.10.1</astyanax.version>
+        <astyanax.version>3.10.2</astyanax.version>
         <rocksdbjni.version>5.14.2</rocksdbjni.version>
     </properties>
 
@@ -322,6 +322,10 @@
                 <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
                     </exclusion>
@@ -352,6 +356,10 @@
                 <artifactId>hadoop-gremlin</artifactId>
                 <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
@@ -553,6 +561,10 @@
                 <version>${spark.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
                     </exclusion>
@@ -751,6 +763,21 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http2</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler-proxy</artifactId>
                 <version>${netty-all.version}</version>
             </dependency>
             <dependency>
