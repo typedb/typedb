@@ -27,19 +27,21 @@
 <script>
   export default {
     name: 'AttributesPanel',
-    props: ['localStore'],
     data() {
       return {
-        showAttributesPanel: undefined,
+        showAttributesPanel: true,
         attributes: null,
       };
     },
+    mounted() {
+      this.loadAttributes(this.selectedNodes);
+    },
     computed: {
       selectedNodes() {
-        return this.localStore.getSelectedNodes();
+        return this.$store.getters.selectedNodes;
       },
       currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
+        return this.$store.getters.currentKeyspace;
       },
       msg() {
         if (!this.currentKeyspace) return 'Please select a keyspace';
@@ -51,8 +53,13 @@
     },
     watch: {
       selectedNodes(nodes) {
+        this.loadAttributes(nodes);
+      },
+    },
+    methods: {
+      loadAttributes(nodes) {
         // If no node selected: close panel and return
-        if (!nodes || nodes.length > 1) { this.showAttributesPanel = false; return; }
+        if (!nodes || nodes.length > 1) return;
 
         const attributes = nodes[0].attributes;
 
@@ -60,8 +67,6 @@
 
         this.showAttributesPanel = true;
       },
-    },
-    methods: {
       toggleContent() {
         this.showAttributesPanel = !this.showAttributesPanel;
       },

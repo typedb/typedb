@@ -31,7 +31,6 @@
   export default {
 
     name: 'QuerySettings',
-    props: ['localStore'],
     data() {
       return {
         showQuerySettings: true,

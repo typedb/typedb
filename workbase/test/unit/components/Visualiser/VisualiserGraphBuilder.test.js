@@ -94,12 +94,3 @@ describe('relationshipsRolePlayers', () => {
 //     expect(data.edges[0].label).toBe('has');
 //   });
 // });
-
-// describe('filter implicit types', () => {
-//   test('implicit relationship', async () => {
-//     let concepts = [mockConcepts.getMockImplicitRelationship()];
-//     expect(concepts).toHaveLength(1);
-//     concepts = await VisualiserGraphBuilder.filterImplicitTypes(concepts);
-//     expect(concepts).toHaveLength(0);
-//   });
-// });

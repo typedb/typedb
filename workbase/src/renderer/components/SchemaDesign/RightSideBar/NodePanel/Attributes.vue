@@ -1,7 +1,6 @@
 <template>
 <div class="wrapper">
-  <edit-bar
-  :localStore="localStore"
+  <edit-bar 
   type="attribute"
   :typesAlreadySelected="attrTypes"
   :relatesToolTip="false"
@@ -86,7 +85,6 @@ import EditBar from './Edit/EditBar.vue';
 
 export default {
   name: 'NodeAttributesList',
-  props: ['localStore'],
   components: { EditBar },
   data() {
     return {
@@ -98,15 +96,15 @@ export default {
     this.localStore.registerCanvasEventHandler('click', () => { this.isEditMode = false; });
   },
   computed: {
-    selectedNode() { return this.localStore.getSelectedNode(); },
+    selectedNode() { return this.$store.getters.selectedNode; },
     editingMode() {
-      return this.localStore.getEditingMode();
+      return this.$store.getters.editingMode;
     },
   },
   watch: {
     async selectedNode(selectedNode) {
       if (!selectedNode) { this.attrTypes = []; return; }
-      const node = await this.localStore.getNode(selectedNode.id);
+      const node = await this.$store.getNode(selectedNode.id);
       const types = await node.attributes();
       this.attrTypes = await Promise.all(types.map(async t => ({ label: await t.getLabel(), dataType: await t.getDataType() })));
       this.attrTypes.sort((a, b) => ((a.label > b.label) ? 1 : -1));
@@ -114,7 +112,7 @@ export default {
   },
   methods: {
     deleteAttribute(attributeName) {
-      this.localStore.dispatch('deleteAttribute', { label: this.selectedNode.label, attributeName })
+      this.$store.dispatch('deleteAttribute', { label: this.selectedNode.label, attributeName })
         .then(() => { this.$notifySuccess(`Attribute [${attributeName}] removed.`); })
         .catch((err) => { this.$notifyError(err); });
     },

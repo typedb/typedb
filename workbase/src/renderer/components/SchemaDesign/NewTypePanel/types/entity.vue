@@ -9,7 +9,7 @@ import NameAndSuperTypesHandler from './handlers/NameAndSuperTypesHandler.vue';
 
 export default {
   name: 'EntityTab',
-  props: ['instances', 'localStore'],
+  props: ['instances'],
   components: { NameAndSuperTypesHandler },
   data() {
     return {
@@ -28,7 +28,7 @@ export default {
       const label = this.$refs.superTypesHandler.getTypeLabel();
       const superType = this.$refs.superTypesHandler.getSuperType();
 
-      return this.localStore.dispatch(DEFINE_ENTITY_TYPE, { label, superType });
+      return this.$store.dispatch(DEFINE_ENTITY_TYPE, { label, superType });
     },
     clearPanel() {
       this.$refs.superTypesHandler.$emit('clear-panel');

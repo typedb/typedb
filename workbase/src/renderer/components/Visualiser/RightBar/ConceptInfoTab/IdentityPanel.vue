@@ -31,21 +31,19 @@
 
 <script>
   export default {
-    name: 'ConceptInfoPanel',
-    props: ['localStore'],
+    name: 'IdentityPanel',
     data() {
       return {
-        showConceptInfoContent: (this.nodes && this.nodes.length === 1),
+        showConceptInfoContent: true,
       };
     },
     computed: {
       nodes() {
-        return this.localStore.getSelectedNodes();
+        return this.$store.getters.selectedNodes;
       },
       conceptInfo() {
         if (!this.nodes) return {};
         const node = this.nodes[0];
-
         if (node.baseType.includes('TYPE')) {
           return {
             id: node.id,
@@ -59,12 +57,12 @@
         };
       },
       currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
+        return this.$store.getters.currentKeyspace;
       },
     },
     watch: {
       nodes(nodes) {
-        this.showConceptInfoContent = nodes && nodes.length === 1;
+        if (nodes && nodes.length === 1) this.showConceptInfoContent = true;
       },
     },
     methods: {

@@ -14,8 +14,8 @@
 
                 <div class="content" v-if="showRightBar">
                     <keep-alive>
-                        <concept-info-tab v-if="showConceptInfoTab" :localStore="localStore"></concept-info-tab>
-                        <settings-tab v-if="showSettingsTab" :localStore="localStore"></settings-tab>
+                        <concept-info-tab v-if="showConceptInfoTab"></concept-info-tab>
+                        <settings-tab v-if="showSettingsTab"></settings-tab>
                     </keep-alive>
                 </div>
             </div>
@@ -114,7 +114,6 @@
 
   export default {
     components: { VueDraggableResizable, ConceptInfoTab, SettingsTab },
-    props: ['localStore'],
     data() {
       return {
         showConceptInfoTab: true,
