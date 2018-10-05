@@ -7,7 +7,7 @@ java_library(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-core"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 

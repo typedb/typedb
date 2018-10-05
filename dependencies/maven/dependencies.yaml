@@ -38,11 +38,6 @@ dependencies:
       version: "1.2.3"
       lang: java
 
-  commons-configuration:
-    commons-configuration:
-      version: "1.10"
-      lang: java
-
   com.boundary:
     high-scale-lib:
       version: "1.0.6"
@@ -91,7 +86,8 @@ dependencies:
     auto-value:
       version: "1.5.3"
       lang: java
-      processorClasses: ["com.google.auto.value.processor.AutoValueProcessor"]
+      processorClasses:
+      - "com.google.auto.value.processor.AutoValueProcessor"
 
   com.google.cloud.bigtable:
     bigtable-hbase-1.0:
@@ -173,6 +169,11 @@ dependencies:
       version: "3.2.1"
       lang: java
 
+  commons-configuration:
+    commons-configuration:
+      version: "1.10"
+      lang: java
+
   commons-io:
     commons-io:
       version: "2.3"
@@ -205,8 +206,8 @@ dependencies:
       version: "3.2.3"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.core:jackson-databind"
       - "com.fasterxml.jackson.core:jackson-core"
+      - "com.fasterxml.jackson.core:jackson-databind"
       - "org.slf4j:slf4j-api"
 
   io.grpc:
@@ -277,11 +278,6 @@ dependencies:
       version: "2.12"
       lang: java
 
-  junit:
-    junit:
-      version: "4.12"
-      lang: java
-
   net.jodah:
     failsafe:
       version: "1.0.4"
@@ -302,16 +298,16 @@ dependencies:
       version: "3.11.3"
       lang: java
       exclude:
-      - "it.unimi.dsi:fastutil"
-      - "ch.qos.logback:logback-core"
       - "ch.qos.logback:logback-classic"
+      - "ch.qos.logback:logback-core"
+      - "it.unimi.dsi:fastutil"
     cassandra-thrift:
       version: "3.11.3"
       lang: java
       exclude:
-      - "it.unimi.dsi:fastutil"
-      - "ch.qos.logback:logback-core"
       - "ch.qos.logback:logback-classic"
+      - "ch.qos.logback:logback-core"
+      - "it.unimi.dsi:fastutil"
 
   org.apache.commons:
     commons-lang3:
@@ -319,10 +315,10 @@ dependencies:
       lang: java
 
   org.apache.hadoop:
-    hadoop-common:
+    hadoop-annotations:
       version: "2.7.2"
       lang: java
-    hadoop-annotations:
+    hadoop-common:
       version: "2.7.2"
       lang: java
     hadoop-mapreduce-client-core:
@@ -342,28 +338,28 @@ dependencies:
       version: "2.2.0"
       lang: java
       exclude:
-      - "io.netty:netty"
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "javax.servlet:javax.servlet-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:jcl-over-slf4j"
-      - "log4j:log4j"
       - "io.dropwizard.metrics:metrics-core"
+      - "io.netty:netty"
+      - "javax.servlet:javax.servlet-api"
+      - "log4j:log4j"
       - "org.scala-lang.modules:scala-xml_2.11"
+      - "org.slf4j:jcl-over-slf4j"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:slf4j-log4j12"
     spark-launcher_2.11:
       version: "2.2.0"
       lang: java
       exclude:
-      - "io.netty:netty"
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "javax.servlet:javax.servlet-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:jcl-over-slf4j"
-      - "log4j:log4j"
       - "io.dropwizard.metrics:metrics-core"
+      - "io.netty:netty"
+      - "javax.servlet:javax.servlet-api"
+      - "log4j:log4j"
       - "org.scala-lang.modules:scala-xml_2.11"
+      - "org.slf4j:jcl-over-slf4j"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:slf4j-log4j12"
 
   org.apache.thrift:
     libthrift:
@@ -375,8 +371,8 @@ dependencies:
       version: "3.3.3"
       lang: java
       exclude:
-      - "org.slf4j:slf4j-log4j12"
       - "org.slf4j:jcl-over-slf4j"
+      - "org.slf4j:slf4j-log4j12"
     hadoop-gremlin:
       version: "3.3.3"
       lang: java
@@ -438,36 +434,36 @@ dependencies:
       version: "0.3.0"
       lang: java
       exclude:
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:slf4j-api"
+      - "ch.qos.logback:logback-classic"
+      - "com.boundary:high-scale-lib"
+      - "com.codahale.metrics:metrics-core"
       - "javax.servlet:javax.servlet-api"
+      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
       - "org.mortbay.jetty:servlet-api"
       - "org.mortbay.jetty:servlet-api-2.5"
-      - "com.boundary:high-scale-lib"
-      - "ch.qos.logback:logback-classic"
-      - "com.codahale.metrics:metrics-core"
-      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:slf4j-log4j12"
     janusgraph-core:
       version: "0.3.0"
       lang: java
       exclude:
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:slf4j-api"
+      - "ch.qos.logback:logback-classic"
+      - "com.boundary:high-scale-lib"
       - "javax.servlet:javax.servlet-api"
+      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
       - "org.mortbay.jetty:servlet-api"
       - "org.mortbay.jetty:servlet-api-2.5"
-      - "com.boundary:high-scale-lib"
-      - "ch.qos.logback:logback-classic"
-      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:slf4j-log4j12"
     janusgraph-hadoop:
       version: "0.3.0"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:slf4j-api"
-      - "log4j:log4j"
       - "com.codahale.metrics:metrics-core"
+      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+      - "log4j:log4j"
+      - "org.slf4j:slf4j-api"
+      - "org.slf4j:slf4j-log4j12"
 
   org.mockito:
     mockito-core:
@@ -504,10 +500,10 @@ dependencies:
     jcl-over-slf4j:
       version: "1.7.20"
       lang: java
-    log4j-over-slf4j:
+    slf4j-api:
       version: "1.7.20"
       lang: java
-    slf4j-api:
+    log4j-over-slf4j:
       version: "1.7.20"
       lang: java
     slf4j-simple:
