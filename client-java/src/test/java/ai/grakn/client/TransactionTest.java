@@ -67,6 +67,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -85,7 +86,7 @@ public class TransactionTest {
 
     // The gRPC server itself is "real" and can be connected to using the {@link #channel()}
     @Rule
-    public final static GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
+    public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
 
 
     @Rule
@@ -110,7 +111,7 @@ public class TransactionTest {
     @Test
     public void whenCreatingAGraknRemoteTx_MakeATxCallToGrpc() {
         try (GraknTx ignored = session.transaction(GraknTxType.WRITE)) {
-            verify(server.sessionService()).transaction(any());
+            verify(server.sessionService(), atLeast(1)).transaction(any());
         }
     }
 
