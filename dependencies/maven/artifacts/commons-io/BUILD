@@ -4,7 +4,7 @@ java_library(
         "//external:jar/commons-io/commons-io"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

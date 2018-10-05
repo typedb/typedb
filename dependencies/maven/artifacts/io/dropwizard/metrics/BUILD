@@ -47,7 +47,7 @@ java_library(
         ":metrics-core"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

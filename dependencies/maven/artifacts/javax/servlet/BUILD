@@ -4,7 +4,7 @@ java_library(
         "//external:jar/javax/servlet/javax-servlet-api"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

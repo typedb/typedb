@@ -88,7 +88,7 @@ public class JacksonPrinter extends Printer<Object> {
 
     @Override
     protected Object map(Map map) {
-        Stream<Map.Entry> entries = map.<Map.Entry>entrySet().stream();
+        Stream<Map.Entry> entries = map.entrySet().stream();
         return entries.collect(Collectors.toMap(
                 entry -> build(entry.getKey()),
                 entry -> build(entry.getValue())

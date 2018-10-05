@@ -4,7 +4,7 @@ java_library(
         "//external:jar/io/prometheus/simpleclient"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
@@ -19,7 +19,7 @@ java_library(
         ":simpleclient"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

@@ -18,11 +18,8 @@ java_library(
     exports = [
         "//external:jar/com/sun/jersey/jersey-core"
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api"
-    ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
