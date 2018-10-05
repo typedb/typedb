@@ -47,8 +47,8 @@ import ai.grakn.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.testing.GrpcServerRule;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,11 +77,19 @@ import static org.mockito.Mockito.when;
  */
 public class TransactionTest {
 
+    private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
+    private final static KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @ClassRule
-    public final static ServerRPCMock server = ServerRPCMock.create();
+    // The gRPC server itself is "real" and can be connected to using the {@link #channel()}
+    @Rule
+    public final static GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
+
+
+    @Rule
+    public final ServerRPCMock server = new ServerRPCMock(sessionService, keyspaceService);
 
     private final Grakn.Session session = mock(Grakn.Session.class);
 
@@ -91,8 +99,10 @@ public class TransactionTest {
 
     @Before
     public void setUp() {
-        when(session.sessionStub()).thenReturn(SessionServiceGrpc.newStub(server.channel()));
-        when(session.keyspaceBlockingStub()).thenReturn(KeyspaceServiceGrpc.newBlockingStub(server.channel()));
+        serverRule.getServiceRegistry().addService(sessionService);
+        serverRule.getServiceRegistry().addService(keyspaceService);
+        when(session.sessionStub()).thenReturn(SessionServiceGrpc.newStub(serverRule.getChannel()));
+        when(session.keyspaceBlockingStub()).thenReturn(KeyspaceServiceGrpc.newBlockingStub(serverRule.getChannel()));
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
     }
