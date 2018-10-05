@@ -10,7 +10,6 @@ import {
   DELETE_SELECTED_NODES,
 } from '@/components/shared/StoresActions';
 import Grakn from 'grakn';
-import Vue from 'vue';
 import logger from '@/../Logger';
 import VisFacade from '@/components/CanvasVisualiser/Facade';
 
@@ -77,24 +76,17 @@ export default {
     commit('loadingQuery', true);
     const graknTx = await dispatch('openGraknTx');
     const data = await getNeighboursData(visNode, graknTx, neighboursLimit);
-
-    if (!data.nodes.length && !data.edges.length) {
-      Vue.prototype.$notifyInfo('No more neighbours');
-      graknTx.close();
-      commit('loadingQuery', false);
-    } else {
-      visNode.offset += neighboursLimit;
-      state.visFacade.updateNode(visNode);
-      state.visFacade.addToCanvas(data);
-      if (data.nodes.length) state.visFacade.fitGraphToWindow();
-      commit('updateCanvasData');
-      const labelledNodes = await VisualiserGraphBuilder.prepareNodes(data.nodes);
-      state.visFacade.updateNode(labelledNodes);
-      const nodesWithAttribtues = await computeAttributes(data.nodes);
-      state.visFacade.updateNode(nodesWithAttribtues);
-      graknTx.close();
-      commit('loadingQuery', false);
-    }
+    visNode.offset += neighboursLimit;
+    state.visFacade.updateNode(visNode);
+    state.visFacade.addToCanvas(data);
+    if (data.nodes.length) state.visFacade.fitGraphToWindow();
+    commit('updateCanvasData');
+    const labelledNodes = await VisualiserGraphBuilder.prepareNodes(data.nodes);
+    state.visFacade.updateNode(labelledNodes);
+    const nodesWithAttribtues = await computeAttributes(data.nodes);
+    state.visFacade.updateNode(nodesWithAttribtues);
+    graknTx.close();
+    commit('loadingQuery', false);
   },
 
   //--------------------
