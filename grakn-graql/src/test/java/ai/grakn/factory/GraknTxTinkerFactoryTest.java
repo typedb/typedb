@@ -27,13 +27,11 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
-import java.nio.file.Paths;
 
 import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -44,22 +42,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GraknTxTinkerFactoryTest {
-    private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
-    private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
-    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
+    private final File TEST_CONFIG_FILE = new File(this.getClass().getClassLoader().getResource("inmemory-graph.properties").getFile());
+    private final GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
+    private final EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
     private TxFactory tinkerGraphFactory;
 
-
-    @BeforeClass
-    public static void setup(){
-        when(session.config()).thenReturn(TEST_CONFIG);
-    }
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setupTinkerGraphFactory(){
+    public void setupTinkerGraphFactory() {
+        when(session.config()).thenReturn(TEST_CONFIG);
         tinkerGraphFactory = new TxFactoryTinker(session);
     }
 
@@ -71,7 +65,7 @@ public class GraknTxTinkerFactoryTest {
     }
 
     @Test
-    public void whenBuildingTxFromTheSameFactory_ReturnSingletonGraphs(){
+    public void whenBuildingTxFromTheSameFactory_ReturnSingletonGraphs() {
         GraknTx tx1 = tinkerGraphFactory.open(GraknTxType.WRITE);
         TinkerGraph tinkerGraph1 = ((GraknTxTinker) tx1).getTinkerPopGraph();
         tx1.close();
@@ -91,12 +85,12 @@ public class GraknTxTinkerFactoryTest {
     }
 
     @Test
-    public void whenRetrievingGraphFromGraknTinkerGraph_ReturnTinkerGraph(){
+    public void whenRetrievingGraphFromGraknTinkerGraph_ReturnTinkerGraph() {
         assertThat(tinkerGraphFactory.getTinkerPopGraph(false), instanceOf(TinkerGraph.class));
     }
 
     @Test
-    public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
+    public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw() {
         Keyspace mytest = Keyspace.of("mytest");
         when(session.keyspace()).thenReturn(mytest);
         TxFactoryTinker factory = new TxFactoryTinker(session);
@@ -107,7 +101,7 @@ public class GraknTxTinkerFactoryTest {
     }
 
     @Test
-    public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
+    public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph() {
         TxFactoryTinker factory = new TxFactoryTinker(session);
         GraknTx graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();

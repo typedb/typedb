@@ -30,7 +30,7 @@
 
     <!-- Make sure every source file has the license at the top -->
     <module name="RegexpHeader">
-        <property name="headerFile" value="build/checkstyle/checkstyle-file-header.txt"/>
+        <property name="headerFile" value="config/checkstyle/checkstyle-file-header.txt"/>
         <property name="fileExtensions" value="java"/>
     </module>
 
