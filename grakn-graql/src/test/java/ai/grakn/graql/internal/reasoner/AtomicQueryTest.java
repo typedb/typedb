@@ -829,26 +829,29 @@ public class AtomicQueryTest {
         List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
 
         ruleUnification(qs.get(0), qs, qs, graph);
-        ruleUnification(qs.get(1), qs, subList(qs, Lists.newArrayList(0, 2, 5, 6, 7, 8, 9, 10)), graph);
-        ruleUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(0, 1, 5, 6, 7, 8, 9, 10)), graph);
-        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10)), graph);
-        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10)), graph);
+        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 13, 14, 15, 16, 17, 18)), graph);
+        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 13, 14, 15, 16, 17, 18)), graph);
+        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10, 11, 12)), graph);
+        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10, 11, 12)), graph);
         ruleUnification(qs.get(5), qs, qs, graph);
 
-        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 9, 10)), graph);
-        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 8, 9, 10)), graph);
-        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 7, 9, 10)), graph);
+        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 9, 10, 11, 12)), graph);
+        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 8, 9, 10, 11, 12)), graph);
+        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 7, 9, 10, 11, 12)), graph);
 
-        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8)), graph);
-        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8)), graph);
+        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 11)), graph);
+        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 11, 12)), graph);
 
-        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 14, 15, 16)), graph);
-        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 15, 16)), graph);
+        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 9, 10)), graph);
+        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 10)), graph);
 
-        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 12, 14, 15, 16)), graph);
-        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 13, 15, 16)), graph);
-        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 13, 14, 16)), graph);
-        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 11, 12, 13, 14, 15)), graph);
+        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 16, 17, 18)), graph);
+        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 15, 17, 18)), graph);
+
+        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 14, 16, 17, 18)), graph);
+        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 15, 17, 18)), graph);
+        ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 14, 15, 16, 18)), graph);
+        ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 14, 15, 16, 17)), graph);
     }
 
     @Test
@@ -860,37 +863,42 @@ public class AtomicQueryTest {
         exactUnification(qs.get(1), qs, new ArrayList<>(), graph);
         exactUnification(qs.get(2), qs, new ArrayList<>(), graph);
         exactUnification(qs.get(3), qs, new ArrayList<>(), graph);
+
         exactUnification(qs.get(4), qs, new ArrayList<>(), graph);
-
         exactUnification(qs.get(5), qs, new ArrayList<>(), graph);
+
         exactUnification(qs.get(6), qs, new ArrayList<>(), graph);
-
         exactUnification(qs.get(7), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(8), qs, Collections.singletonList(qs.get(10)), graph);
 
+        exactUnification(qs.get(8), qs, Collections.singletonList(qs.get(10)), graph);
         exactUnification(qs.get(9), qs, Collections.singletonList(qs.get(11)), graph);
         exactUnification(qs.get(10), qs, Collections.singletonList(qs.get(8)), graph);
         exactUnification(qs.get(11), qs, Collections.singletonList(qs.get(9)), graph);
-        exactUnification(qs.get(12), qs, Collections.singletonList(qs.get(14)), graph);
 
-        exactUnification(qs.get(13), qs, Collections.singletonList(qs.get(15)), graph);
-        exactUnification(qs.get(14), qs, Collections.singletonList(qs.get(12)), graph);
-        exactUnification(qs.get(15), qs, Collections.singletonList(qs.get(13)), graph);
-        exactUnification(qs.get(16), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(12), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(13), qs, new ArrayList<>(), graph);
 
-        exactUnification(qs.get(17), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(14), qs, Collections.singletonList(qs.get(16)), graph);
+        exactUnification(qs.get(15), qs, Collections.singletonList(qs.get(17)), graph);
+        exactUnification(qs.get(16), qs, Collections.singletonList(qs.get(14)), graph);
+        exactUnification(qs.get(17), qs, Collections.singletonList(qs.get(15)), graph);
+
         exactUnification(qs.get(18), qs, new ArrayList<>(), graph);
         exactUnification(qs.get(19), qs, new ArrayList<>(), graph);
         exactUnification(qs.get(20), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(21), qs, new ArrayList<>(), graph);
 
-        exactUnification(qs.get(21), qs, Collections.singletonList(qs.get(22)), graph);
-        exactUnification(qs.get(22), qs, Collections.singletonList(qs.get(21)), graph);
-        exactUnification(qs.get(23), qs, subList(qs, Lists.newArrayList(24)), graph);
-        exactUnification(qs.get(24), qs, subList(qs, Lists.newArrayList(23)), graph);
-        exactUnification(qs.get(25), qs, new ArrayList<>(), graph);
-        exactUnification(qs.get(26), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(22), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(23), qs, Collections.singletonList(qs.get(24)), graph);
+        exactUnification(qs.get(24), qs, Collections.singletonList(qs.get(23)), graph);
+
+        exactUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(26)), graph);
+        exactUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(25)), graph);
+
         exactUnification(qs.get(27), qs, new ArrayList<>(), graph);
         exactUnification(qs.get(28), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(29), qs, new ArrayList<>(), graph);
+        exactUnification(qs.get(30), qs, new ArrayList<>(), graph);
     }
 
     @Test
@@ -914,25 +922,28 @@ public class AtomicQueryTest {
         structuralUnification(qs.get(10), qs, Collections.singletonList(qs.get(8)), graph);
         structuralUnification(qs.get(11), qs, Collections.singletonList(qs.get(9)), graph);
 
-        structuralUnification(qs.get(12), qs, Collections.singletonList(qs.get(14)), graph);
-        structuralUnification(qs.get(13), qs, Collections.singletonList(qs.get(15)), graph);
-        structuralUnification(qs.get(14), qs, Collections.singletonList(qs.get(12)), graph);
-        structuralUnification(qs.get(15), qs, Collections.singletonList(qs.get(13)), graph);
+        structuralUnification(qs.get(12), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(13), qs, new ArrayList<>(), graph);
 
-        structuralUnification(qs.get(16), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(17), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(14), qs, Collections.singletonList(qs.get(16)), graph);
+        structuralUnification(qs.get(15), qs, Collections.singletonList(qs.get(17)), graph);
+        structuralUnification(qs.get(16), qs, Collections.singletonList(qs.get(14)), graph);
+        structuralUnification(qs.get(17), qs, Collections.singletonList(qs.get(15)), graph);
+
         structuralUnification(qs.get(18), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(19), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(20), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(21), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(22), qs, new ArrayList<>(), graph);
 
-        structuralUnification(qs.get(21), qs, Collections.singletonList(qs.get(22)), graph);
-        structuralUnification(qs.get(22), qs, Collections.singletonList(qs.get(21)), graph);
-        structuralUnification(qs.get(23), qs, subList(qs, Lists.newArrayList(24, 27)), graph);
-        structuralUnification(qs.get(24), qs, subList(qs, Lists.newArrayList(23, 27)), graph);
-        structuralUnification(qs.get(25), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(26), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(27), qs, subList(qs, Lists.newArrayList(23, 24)), graph);
+        structuralUnification(qs.get(23), qs, Collections.singletonList(qs.get(24)), graph);
+        structuralUnification(qs.get(24), qs, Collections.singletonList(qs.get(23)), graph);
+        structuralUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(26, 29)), graph);
+        structuralUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(25, 29)), graph);
+        structuralUnification(qs.get(27), qs, new ArrayList<>(), graph);
         structuralUnification(qs.get(28), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(25, 26)), graph);
+        structuralUnification(qs.get(30), qs, new ArrayList<>(), graph);
     }
 
     @Test
@@ -940,43 +951,46 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
 
-        ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(3, 4, 5, 6, 7, 8, 9, 10, 11)), graph);
-        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 26)), graph);
-        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 26, 28)), graph);
-        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(26)), graph);
+        ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
+        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28)), graph);
+        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28, 30)), graph);
+        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(28)), graph);
 
-        ruleUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11)), graph);
-        ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11)), graph);
+        ruleUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
+        ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
 
-        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11)), graph);
-        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11)), graph);
+        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
+        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
 
-        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 10)), graph);
-        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 11)), graph);
-        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8)), graph);
-        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9)), graph);
+        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 10, 12)), graph);
+        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 11, 12, 13)), graph);
+        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8, 12)), graph);
+        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9, 12, 13)), graph);
 
-        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 17, 18, 19)), graph);
-        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 16, 18, 19)), graph);
-        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(1, 2, 3, 12, 17, 18, 19)), graph);
-        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(1, 2, 3, 13, 16, 18, 19)), graph);
+        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8, 9, 10, 11)), graph);
+        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9, 11)), graph);
 
-        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(1, 2, 3, 13, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28)), graph);
-        ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(1, 2, 3, 12, 14, 16, 18, 19)), graph);
-        ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(1, 2, 3, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 27, 28)), graph);
-        ruleUnification(qs.get(19), qs, subList(qs, Lists.newArrayList(1, 2, 3, 12, 13, 14, 15, 16, 17, 18)), graph);
+        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 19, 20, 21)), graph);
+        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(1, 2, 3, 17, 18, 20, 21)), graph);
+        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 19, 20, 21)), graph);
+        ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 18, 20, 21)), graph);
 
-        ruleUnification(qs.get(20), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 20, 21, 22, 23, 24, 27, 28)), graph);
-        ruleUnification(qs.get(21), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 20, 21, 22, 23, 24, 27)), graph);
-        ruleUnification(qs.get(22), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 20, 21, 22, 23, 24, 27)), graph);
+        ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29, 30)), graph);
+        ruleUnification(qs.get(19), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 16, 18, 20, 21)), graph);
+        ruleUnification(qs.get(20), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30)), graph);
+        ruleUnification(qs.get(21), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 15, 16, 17, 18, 19, 20)), graph);
 
-        ruleUnification(qs.get(23), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 20, 21, 22, 23, 24, 25, 27)), graph);
-        ruleUnification(qs.get(24), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 20, 21, 22, 23, 24, 25, 27)), graph);
+        ruleUnification(qs.get(22), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29, 30)), graph);
+        ruleUnification(qs.get(23), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29)), graph);
+        ruleUnification(qs.get(24), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29)), graph);
 
-        ruleUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 23, 24, 27)), graph);
-        ruleUnification(qs.get(26), subListExcluding(qs, Lists.newArrayList(26)), new ArrayList<>(), graph);
-        ruleUnification(qs.get(27), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 18, 20, 21, 22, 23, 24, 25, 27)), graph);
-        ruleUnification(qs.get(28), qs, subList(qs, Lists.newArrayList(1, 3, 16, 18, 20)), graph);
+        ruleUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
+        ruleUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
+
+        ruleUnification(qs.get(27), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 25, 26, 29)), graph);
+        ruleUnification(qs.get(28), subListExcluding(qs, Lists.newArrayList(28)), new ArrayList<>(), graph);
+        ruleUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
+        ruleUnification(qs.get(30), qs, subList(qs, Lists.newArrayList(1, 3, 18, 20, 22)), graph);
     }
 
     private void unification(String child, List<String> queries, List<String> queriesWithUnifier, UnifierType unifierType, EmbeddedGraknTx graph){

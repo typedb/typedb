@@ -54,6 +54,9 @@ public abstract class TestQueryPattern {
                     "{(baseRole1: $x1_3, baseRole2: $x2_3); $x1_3 isa baseRoleEntity; $x2_3 isa anotherBaseRoleEntity;}",
                     "{(baseRole1: $x1_3b, baseRole2: $x2_3b); $x1_3b id '" + baseEntityId + "'; $x2_3b id '" + anotherBaseEntityId + "';}",
                     "{(baseRole1: $x1_3c, baseRole2: $x2_3c); $x1_3c id '" + subEntityId + "'; $x2_3c id '" + anotherBaseEntityId + "';}"
+
+                    //TODO
+                    //resources as roleplayers
                 );
             }
     };
@@ -123,15 +126,18 @@ public abstract class TestQueryPattern {
                     "{$x1b isa resource; $x1b id '" + anotherResourceId + "';}",
                     "{$x1c isa $type1; $type1 label resource;$x1c id '" + anotherResourceId + "';}",
 
-                    //9-10
+                    //9-12
                     "{$x2a isa resource; $x2a == 'someValue';}",
                     "{$x2b isa resource; $x2b == 'someOtherValue';}",
 
-                    //11-12
+                    "{$x2c isa resource; $x2c contains 'Value';}",
+                    "{$x2d isa resource; $x2d contains 'Other';}",
+
+                    //13-14
                     "{$x3a isa resource-long; $x3a == '0';}",
                     "{$x3b isa resource-long; $x3b == '1';}",
 
-                    //13-16
+                    //15-18
                     "{$x4a isa resource-long; $x4a > '0';}",
                     "{$x4b isa resource-long; $x4b < '1';}",
                     "{$x4c isa resource-long; $x4c >= '0';}",
@@ -171,34 +177,37 @@ public abstract class TestQueryPattern {
                     "{$x2a has resource $r2a; $r2a id '" + resourceId + "';}",
                     "{$x2b has resource $r2b; $r2b id '" + anotherResourceId + "';}",
 
-                    //8-11
+                    //8-13
                     "{$x3a has resource 'someValue';}",
                     "{$x3b has resource 'someOtherValue';}",
                     "{$x3c has resource $r3c; $r3c == 'someValue';}",
                     "{$x3d has resource $r3d; $r3d == 'someOtherValue';}",
 
-                    //12-15
+                    "{$x3e has resource $r3e; $r3e contains 'Value';}",
+                    "{$x3f has resource $r3f; $r3f contains 'Other';}",
+
+                    //14-17
                     "{$x4a has resource-long 0;}",
                     "{$x4b has resource-long 1;}",
                     "{$x4c has resource-long $r4c; $r4c == 0;}",
                     "{$x4d has resource-long $r4d; $r4d == 1;}",
 
-                    //16-19
+                    //18-21
                     "{$x5a has resource-long $r5a; $r5a > 0;}",
                     "{$x5b has resource-long $r5b; $r5b < 1;}",
                     "{$x5c has resource-long $r5c; $r5c >= 0;}",
                     "{$x5d has resource-long $r5d; $r5d <= 1;}",
 
-                    //20-22
+                    //22-24
                     "{$x7a has resource-long $r7a;$r7a > 23; $r7a < 27;}",
                     "{$x7b isa baseRoleEntity, has resource-long $r7b;$r7b > 23; $r7b < 27;}",
                     "{$x7c isa $type;$type label baseRoleEntity;$x7c has resource-long $r7c;$r7c > 23; $r7c < 27;}",
 
-                    //23-24
+                    //25-26
                     "{$x7d isa baseRoleEntity;$x7d has resource-long > 23;}",
                     "{$x7e isa baseRoleEntity;$x7e has resource-long $r7e;$r7e > 23;}",
 
-                    //25-28
+                    //27-30
                     "{$x7f isa baseRoleEntity;$x7f has resource-long $r7f;$r7f > 27;$r7f < 29;}",
                     "{$x7g isa baseRoleEntity;$x7g has resource-long $r7g;$r7g > 27;$r7g < 23;}",
                     "{$x7h isa baseRoleEntity;$x7h has resource-long $r7h;$r7h > 23; $r2_7h < 27;}",
