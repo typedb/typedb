@@ -45,7 +45,6 @@ java_library(
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api",
         "//dependencies/maven/artifacts/net/jodah:failsafe",
-        "//dependencies/maven/artifacts/org/apache/httpcomponents:httpclient",
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-simple",

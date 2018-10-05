@@ -782,11 +782,6 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
-                <version>${apache-http-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>${apache-http-core.version}</version>
             </dependency>
