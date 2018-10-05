@@ -37,6 +37,10 @@ if "%1" == "console" goto startconsole
 
 if "%1" == "server" goto startserver
 
+echo   Invalid argument: %1. Possible commands are:
+echo   Server:          grakn-core server [--help]
+echo   Console:         grakn-core console [--help]
+goto exiterror
 
 :missingargument
 
@@ -48,33 +52,27 @@ goto exiterror
 
 :startconsole
 
-if exists .\services\lib\core.console-*.jar (
+if exist .\services\lib\core.console-*.jar (
   set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\client;%GRAKN_HOME%\services\lib\*"
-  java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" ai.grakn.engine.bootup.Graql %*
+  java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" ai.grakn.core.console.Graql %*
   goto exit
 ) else (
-  echo Grakn Core Console is not included in this Grakn distribution.
-  echo You may want to install Grakn Core Console or Grakn Core (all).
+  echo Grakn Core Console is not included in this Grakn distribution^.
+  echo You may want to install Grakn Core Console or Grakn Core ^(all^)^.
   goto exiterror
 )
 
 :startserver
 
-if exists .\services\lib\core.server-*.jar (
+if exist .\services\lib\core.server-*.jar (
    set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\server;%GRAKN_HOME%\services\lib\*"
-   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" ai.grakn.engine.bootup.GraknBootup %*
+   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" ai.grakn.core.server.bootup.GraknBootup %*
    goto exit
 ) else (
-   echo "Grakn Core Server is not included in this Grakn distribution."
-   echo "You may want to install Grakn Core Server or Grakn Core (all)."
+   echo Grakn Core Server is not included in this Grakn distribution^.
+   echo You may want to install Grakn Core Server or Grakn Core ^(all^)^.
    goto exiterror
 )
-
-
-echo   Invalid argument: %1. Possible commands are:
-echo   Server:          grakn-core server [--help]
-echo   Console:         grakn-core console [--help]
-goto exiterror
 
 :exit
 exit /b 0
