@@ -4,7 +4,6 @@
         <div class="add-btn noselect" @click="showEditToolTip = !showEditToolTip">Add {{metaType}}</div>
         <edit-tool-tip
           :relatesToolTip="relatesToolTip"
-          :localStore="localStore" 
           :typesAlreadySelected="typesAlreadySelected"
           :showEditToolTip="showEditToolTip" 
           :type="type"
@@ -67,7 +66,7 @@ import EditToolTip from './EditToolTip';
 
 export default {
   name: 'EditBar',
-  props: ['localStore', 'typesAlreadySelected', 'relatesToolTip', 'type'],
+  props: ['typesAlreadySelected', 'relatesToolTip', 'type'],
   components: { CaretIcon, EditToolTip },
   data() {
     return {
@@ -79,10 +78,10 @@ export default {
   },
   computed: {
     showBar() {
-      return (this.localStore.getSelectedNode());
+      return (this.$store.getters.selectedNode);
     },
     editingMode() {
-      return this.localStore.getEditingMode();
+      return this.$store.getters.editingMode;
     },
     metaType() {
       if (this.type === 'attribute') {
@@ -94,7 +93,7 @@ export default {
   watch: {
     showBar(val) {
       if (!val) {
-        this.localStore.setEditingMode(undefined);
+        this.$store.commit('editingMode', undefined);
         this.showEditToolTip = false;
       }
     },
@@ -102,10 +101,10 @@ export default {
   methods: {
     toggleEditingMode() {
       if (this.editingMode === this.type) {
-        this.localStore.setEditingMode(undefined);
+        this.$store.commit('editingMode', undefined);
         this.showEditToolTip = false;
       } else {
-        this.localStore.setEditingMode(this.type);
+        this.$store.commit('editingMode', this.type);
         this.showEditToolTip = false;
       }
     },

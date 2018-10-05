@@ -1,8 +1,0 @@
-insert
-
-$x isa <species>
-    has potato <name>
-    has fridge <owner>
-    has bob <sex>
-    if(<birth> != "") do { has birth @date(<birth>, "yyyy-MM-dd") }
-    if(<death> != "") do { has death @date(<death>, "yyyy-MM-dd") };

@@ -13,12 +13,14 @@ export const ADD_TYPE = 'add-type';
 
 // Data Management store actions
 export const RUN_CURRENT_QUERY = 'run-current-query';
-export const TOGGLE_LABEL = 'toggle-label';
-export const TOGGLE_COLOUR = 'toggle-colour';
+export const EXPLAIN_CONCEPT = 'explain-concept';
+export const UPDATE_NODES_LABEL = 'update-nodes-label';
+export const UPDATE_NODES_COLOUR = 'update-nodes-colour';
+export const DELETE_SELECTED_NODES = 'delete-nodes';
 
 
 // Common actions shared by the two canvas stores (SchemaDesign && DataManagement)
-export const LOAD_METATYPE_INSTANCES = 'load-metatype-instances';
+export const UPDATE_METATYPE_INSTANCES = 'update-metatype-instances';
 export const INITIALISE_VISUALISER = 'initialise-visualiser';
 export const CANVAS_RESET = 'canvas-reset';
 export const CURRENT_KEYSPACE_CHANGED = 'current-keyspace-changed';

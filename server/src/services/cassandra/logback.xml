@@ -1,0 +1,50 @@
+<!--
+  ~ GRAKN.AI - THE KNOWLEDGE GRAPH
+  ~ Copyright (C) 2018 Grakn Labs Ltd
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as
+  ~ published by the Free Software Foundation, either version 3 of the
+  ~ License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<configuration scan="true">
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${cassandra.logdir:-logs}/cassandra.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${cassandra.logdir:-logs}/cassandra.log.%i.zip</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>20</maxIndex>
+        </rollingPolicy>
+
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>20MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>%-5level [%thread] %date{ISO8601} %F:%L - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%-5level %date{HH:mm:ss,SSS} %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="ERROR"/>
+
+    <logger name="org.apache.cassandra" level="INFO">
+        <appender-ref ref="${cassandra.log.appender:-FILE}"/>
+    </logger>
+
+    <logger name="com.thinkaurelius.thrift" level="ERROR"/>
+    <logger name="io.netty.util.internal.*" level="ERROR"/>
+</configuration>

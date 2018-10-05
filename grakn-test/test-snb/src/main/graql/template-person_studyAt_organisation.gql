@@ -1,6 +1,0 @@
-match
-    $person isa person, has person-id @long(<"Person.id">);
-    $organisation isa organisation, has organisation-id @long(<"Organisation.id">);
-insert
-    (school: $organisation, student: $person) isa study-at
-    has class-year @long(<"classYear">);

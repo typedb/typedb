@@ -49,11 +49,4 @@
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>
 
-    <Match>
-        <Or>
-            <Class name="ai.grakn.engine.GraknCreator" />
-        </Or>
-        <Bug pattern="MS_PKGPROTECT" />
-    </Match>
-
 </FindBugsFilter>

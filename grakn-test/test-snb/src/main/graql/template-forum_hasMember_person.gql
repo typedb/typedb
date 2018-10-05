@@ -1,6 +1,0 @@
-match
-    $forum isa forum, has forum-id @long(<"Forum.id">);
-    $person isa person, has person-id @long(<"Person.id">);
-insert
-    (group: $forum, member: $person) isa has-member
-    has join-date @date(<"joinDate">,"yyyy-MM-dd'T'HH:mm:ss.SSSZ");

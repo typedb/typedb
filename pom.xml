@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ GRAKN.AI - THE KNOWLEDGE GRAPH
   ~ Copyright (C) 2018 Grakn Labs Ltd
@@ -17,117 +16,24 @@
   ~ You should have received a copy of the GNU Affero General Public License
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ai.grakn</groupId>
-    <artifactId>grakn</artifactId>
+    <artifactId>grakn-core</artifactId>
+    <version>1.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <version>1.4.0-SNAPSHOT</version>
-    <name>Grakn</name>
+
+    <name>Grakn Core</name>
     <description>The Knowledge Graph</description>
     <url>https://grakn.ai</url>
-    <modules>
-        <module>grakn-kb</module>
-        <module>grakn-graql</module>
-        <module>grakn-graql-shell</module>
-        <module>grakn-engine</module>
-        <module>grakn-dashboard</module>
-        <module>grakn-migration</module>
-        <module>grakn-dist</module>
-        <module>grakn-test</module>
-        <module>grakn-core</module>
-        <module>grakn-test-profiles</module>
-        <module>grakn-factory</module>
-        <module>client-java</module>
-        <module>grakn-test-tools</module>
-    </modules>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.resource.encoding>UTF-8</project.resource.encoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>1.8</java.version>
-        <tinkerpop.version>3.2.9</tinkerpop.version>
-        <junit.version>4.12</junit.version>
-        <janus.version>0.2.0</janus.version>
-        <guava.version>19.0</guava.version>
-        <antlr.version>4.5</antlr.version>
-        <jline.version>2.12</jline.version>
-        <commons-cli.version>1.3</commons-cli.version>
-        <spark-core.version>2.5.1</spark-core.version>
-        <commons-collections.version>3.2.1</commons-collections.version>
-        <commons-csv.version>1.3</commons-csv.version>
-        <json.version>20160212</json.version>
-        <rest-assured.version>2.7.0</rest-assured.version>
-        <spark.version>1.6.1</spark.version>
-        <jinjava.version>2.1.0</jinjava.version>
-        <airline.version>0.6</airline.version>
-        <antlr4.visitor>true</antlr4.visitor>
-        <mjson.version>1.4.0</mjson.version>
-        <logback.version>1.2.3</logback.version>
-        <redis-mock.version>0.1.5</redis-mock.version>
-        <janino.version>2.7.8</janino.version>
-        <slf4j.version>1.7.20</slf4j.version>
-        <csv.version>1.4</csv.version>
-        <jool.version>3.8.5</jool.version>
-        <cassandra-unit.version>2.1.9.2</cassandra-unit.version>
-        <cassandra-all.version>2.1.17</cassandra-all.version>
-        <h2-database.version>1.4.192</h2-database.version>
-        <systen-rules.version>1.16.0</systen-rules.version>
-        <mockito.version>2.6.4</mockito.version>
-        <hamcrest.version>1.3</hamcrest.version>
-        <quickcheck.version>0.7</quickcheck.version>
-        <httpclient.version>4.5.3</httpclient.version>
-        <findbugs.version>3.0.1</findbugs.version>
-        <redis.version>2.9.0</redis.version>
-        <metrics.version>3.2.3</metrics.version>
-        <bytebuddy.version>1.6.14</bytebuddy.version>
-        <jmh-core.version>1.19</jmh-core.version>
-        <redis-test.version>0.6</redis-test.version>
-        <guava-retrying.version>2.0.0</guava-retrying.version>
-        <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
-        <jackson.version>2.8.5</jackson.version>
-        <prometheus.version>0.0.13</prometheus.version>
-        <auto-value.version>1.4.1</auto-value.version>
-        <main.basedir>${project.basedir}</main.basedir>
-        <spark-gremlin.version>3.2.5</spark-gremlin.version>
-        <grpc.version>1.8.0</grpc.version>
-        <netty-all.version>4.1.16.Final</netty-all.version>
-        <google-bigtable.version>0.9.5.1</google-bigtable.version>
-        <netty.version>1.1.33.Fork19</netty.version>
-        <apache-http-core.version>4.4.6</apache-http-core.version>
-        <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
-        <pf4j.version>1.3.0</pf4j.version>
-        <httpclient.version>4.5.1</httpclient.version>
-        <jersey.version>1.19</jersey.version>
-        <hystrix-core.version>1.5.12</hystrix-core.version>
-        <failsafe.version>1.0.4</failsafe.version>
-        <reactivex.version>1.3.2</reactivex.version>
-        <zip4j.version>1.3.2</zip4j.version>
-        <zt-exec.version>1.10</zt-exec.version>
-        <!--TODO: Delete Jackson dependency when we change to dropwizard-->
-        <jackson.version>2.9.2</jackson.version>
-        <skip.deploy.dist>false</skip.deploy.dist>
-    </properties>
-
     <organization>
-      <name>GRAKN.AI</name>
-      <url>https://grakn.ai</url>
+        <name>Grakn Labs</name>
+        <url>https://grakn.ai</url>
     </organization>
-
-    <licenses>
-        <license>
-            <name>GNU Affero GENERAL PUBLIC LICENSE, Version 3</name>
-            <url>https://www.gnu.org/licenses/agpl.txt</url>
-        </license>
-        <license>
-            <name>Grakn Commercial License</name>
-        </license>
-    </licenses>
-
     <developers>
         <developer>
             <name>Haikal Pribadi</name>
@@ -148,8 +54,14 @@
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>Marco Scoppetta</name>
-            <email>marco@grakn.ai</email>
+            <name>James Fletcher</name>
+            <email>james@grakn.ai</email>
+            <organization>Grakn Labs</organization>
+            <organizationUrl>http://grakn.ai</organizationUrl>
+        </developer>
+        <developer>
+            <name>Joshua Send</name>
+            <email>joshua@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
@@ -160,8 +72,14 @@
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
-            <name>James Fletcher</name>
-            <email>james@grakn.ai</email>
+            <name>Marco Scoppetta</name>
+            <email>marco@grakn.ai</email>
+            <organization>Grakn Labs</organization>
+            <organizationUrl>http://grakn.ai</organizationUrl>
+        </developer>
+        <developer>
+            <name>Soroush Saffari</name>
+            <email>soroush@grakn.ai</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
@@ -173,50 +91,115 @@
         </developer>
     </developers>
 
+    <licenses>
+        <license>
+            <name>GNU Affero GENERAL PUBLIC LICENSE, Version 3</name>
+            <url>https://www.gnu.org/licenses/agpl.txt</url>
+        </license>
+        <license>
+            <name>Grakn Commercial License</name>
+        </license>
+    </licenses>
+
     <scm>
         <connection>scm:git:git://github.com/graknlabs/grakn.git</connection>
         <developerConnection>scm:git:ssh://github.com:graknlabs/grakn.git</developerConnection>
-        <url>https://github.com/graknlabs/grakn/tree/master</url>
+        <url>https://github.com/graknlabs/grakn</url>
     </scm>
+
+    <repositories>
+        <!--Snapshot repository for 3rd party libraries -->
+        <repository>
+            <id>snapshots</id>
+            <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
+        </repository>
+        <repository>
+            <id>releases</id>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
+        </repository>
+    </repositories>
+
+    <modules>
+        <module>grakn-graql</module>
+        <module>console</module>
+        <module>server</module>
+        <module>dashboard</module>
+        <module>client-java</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.resource.encoding>UTF-8</project.resource.encoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>1.8</java.version>
+        <tinkerpop.version>3.3.3</tinkerpop.version>
+        <junit.version>4.12</junit.version>
+        <janus.version>0.3.0</janus.version>
+        <antlr.version>4.5</antlr.version>
+        <jline.version>2.12</jline.version>
+        <spark-core.version>2.5.1</spark-core.version>
+        <commons-collections.version>3.2.1</commons-collections.version>
+        <rest-assured.version>2.7.0</rest-assured.version>
+        <spark.version>2.2.0</spark.version>
+        <airline.version>0.6</airline.version>
+        <antlr4.visitor>true</antlr4.visitor>
+        <mjson.version>1.4.0</mjson.version>
+        <logback.version>1.2.3</logback.version>
+        <janino.version>2.7.8</janino.version>
+        <slf4j.version>1.7.20</slf4j.version>
+        <cassandra-unit.version>3.5.0.1</cassandra-unit.version>
+        <cassandra-all.version>3.11.3</cassandra-all.version>
+        <h2-database.version>1.4.192</h2-database.version>
+        <systen-rules.version>1.16.0</systen-rules.version>
+        <mockito.version>2.6.4</mockito.version>
+        <hamcrest.version>1.3</hamcrest.version>
+        <quickcheck.version>0.7</quickcheck.version>
+        <httpclient.version>4.5.3</httpclient.version>
+        <findbugs.version>3.0.1</findbugs.version>
+        <metrics.version>3.2.3</metrics.version>
+        <jmh-core.version>1.19</jmh-core.version>
+        <guava-retrying.version>2.0.0</guava-retrying.version>
+        <cassandra-driver-core.version>3.5.1</cassandra-driver-core.version>
+        <prometheus.version>0.0.13</prometheus.version>
+        <auto-value.version>1.4.1</auto-value.version>
+        <spark-gremlin.version>3.2.5</spark-gremlin.version>
+        <grpc.version>1.15.0</grpc.version>
+        <netty-all.version>4.1.30.Final</netty-all.version>
+        <google-bigtable.version>0.9.5.1</google-bigtable.version>
+        <netty-ssl.version>2.0.14.Final</netty-ssl.version>
+        <apache-http-core.version>4.4.6</apache-http-core.version>
+        <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
+        <pf4j.version>1.3.0</pf4j.version>
+        <jersey.version>1.19</jersey.version>
+        <hystrix-core.version>1.5.12</hystrix-core.version>
+        <failsafe.version>1.0.4</failsafe.version>
+        <reactivex.version>1.3.2</reactivex.version>
+        <zip4j.version>1.3.2</zip4j.version>
+        <zt-exec.version>1.10</zt-exec.version>
+        <jackson.version>2.9.2</jackson.version>
+        <skip.deploy.dist>false</skip.deploy.dist>
+        <astyanax.version>3.10.2</astyanax.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-core</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-kb</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>javax.servlet</artifactId>
-                        <groupId>org.eclipse.jetty.orbit</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>slf4j-api</artifactId>
-                        <groupId>org.slf4j</groupId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-factory</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <exclusions>
+                    <exclusion>
+                        <groupId>org.eclipse.jetty.orbit</groupId>
+                        <artifactId>javax.servlet</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
                         <artifactId>javax.servlet</artifactId>
@@ -239,7 +222,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>client-java</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -249,8 +232,8 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-engine</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <artifactId>core.server</artifactId>
+                <version>${project.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -260,40 +243,14 @@
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>grakn-graql-shell</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <artifactId>core.dashboard</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
-                <artifactId>migration-base</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <artifactId>core.console</artifactId>
+                <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>migration-sql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>migration-xml</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>migration-csv</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>migration-json</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>migration-export</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
@@ -323,8 +280,12 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>spark-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
@@ -334,12 +295,12 @@
                         <artifactId>javax.servlet-api</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>jackson-annotations</artifactId>
                         <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-annotations</artifactId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>jackson-core</artifactId>
                         <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -354,8 +315,12 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>hadoop-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
@@ -369,10 +334,6 @@
                         <artifactId>jackson-databind</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-core_2.10</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
                     </exclusion>
@@ -383,6 +344,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>jcl-over-slf4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-nop</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>log4j</groupId>
@@ -424,11 +389,6 @@
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-nop</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-core</artifactId>
                 <version>${logback.version}</version>
@@ -439,8 +399,8 @@
                 <version>${logback.version}</version>
             </dependency>
             <dependency>
-                <artifactId>httpclient</artifactId>
                 <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
                 <version>${httpclient.version}</version>
             </dependency>
             <dependency>
@@ -459,18 +419,8 @@
                 <version>${antlr.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-csv</artifactId>
-                <version>${csv.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jooq</groupId>
-                <artifactId>jooq</artifactId>
-                <version>${jool.version}</version>
-            </dependency>
-            <dependency>
-                <artifactId>jackson-databind</artifactId>
                 <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -485,7 +435,7 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.10</artifactId>
+                <artifactId>jackson-module-scala_2.11</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -494,8 +444,71 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-core</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-thrift</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-cassandra</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-recipes</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.janusgraph</groupId>
                 <artifactId>janusgraph-cassandra</artifactId>
+                <version>${janus.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>javax.servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api-2.5</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.boundary</groupId>
+                        <artifactId>high-scale-lib</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-classic</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.servicemix.bundles</groupId>
+                        <artifactId>org.apache.servicemix.bundles.commons-csv</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.janusgraph</groupId>
+                <artifactId>janusgraph-core</artifactId>
                 <version>${janus.version}</version>
                 <exclusions>
                     <exclusion>
@@ -533,10 +546,19 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>com.boundary</groupId>
+                <artifactId>high-scale-lib</artifactId>
+                <version>1.0.6</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.spark</groupId>
-                <artifactId>spark-core_2.10</artifactId>
+                <artifactId>spark-core_2.11</artifactId>
                 <version>${spark.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
@@ -565,6 +587,10 @@
                         <groupId>io.dropwizard.metrics</groupId>
                         <artifactId>metrics-core</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.scala-lang.modules</groupId>
+                        <artifactId>scala-xml_2.11</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -587,6 +613,10 @@
                     <exclusion>
                         <groupId>log4j</groupId>
                         <artifactId>log4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -640,9 +670,14 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>5.14.2</version>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <version>${netty.version}</version>
+                <version>${netty-ssl.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sparkjava</groupId>
@@ -676,8 +711,8 @@
                 <version>${metrics.version}</version>
                 <exclusions>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -687,16 +722,16 @@
                 <version>${metrics.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-databind</artifactId>
-                        <groupId>com.fasterxml.jackson.core</groupId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
                         <artifactId>jackson-core</artifactId>
-                        <groupId>com.fasterxml.jackson.core</groupId>
                     </exclusion>
                     <exclusion>
-                        <artifactId>slf4j-api</artifactId>
                         <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -726,9 +761,19 @@
                 <version>${netty-all.version}</version>
             </dependency>
             <dependency>
-                <groupId>redis.clients</groupId>
-                <artifactId>jedis</artifactId>
-                <version>${redis.version}</version>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http2</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler-proxy</artifactId>
+                <version>${netty-all.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -759,7 +804,12 @@
             <dependency>
                 <groupId>commons-cli</groupId>
                 <artifactId>commons-cli</artifactId>
-                <version>${commons-cli.version}</version>
+                <version>1.3</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
@@ -812,9 +862,14 @@
                 <version>${ldbc-driver.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>3.4.0</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
+                <version>23.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.auto.value</groupId>
@@ -828,19 +883,16 @@
                 <version>${findbugs.version}</version>
                 <scope>provided</scope>
             </dependency>
-
             <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>grakn-test-tools</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <scope>test</scope>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>2.0.2</version>
             </dependency>
 
             <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>redis-mock</artifactId>
-                <version>${redis-mock.version}</version>
-                <scope>test</scope>
+                <groupId>com.codahale.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>3.0.1</version>
             </dependency>
 
             <dependency>
@@ -862,15 +914,21 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.pholser</groupId>
-                <artifactId>junit-quickcheck-generators</artifactId>
-                <version>${quickcheck.version}</version>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.github.kstyrc</groupId>
-                <artifactId>embedded-redis</artifactId>
-                <version>${redis-test.version}</version>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-library</artifactId>
+                <version>${hamcrest.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.pholser</groupId>
+                <artifactId>junit-quickcheck-generators</artifactId>
+                <version>${quickcheck.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -892,12 +950,6 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.github.stefanbirkner</groupId>
-                <artifactId>system-rules</artifactId>
-                <version>${systen-rules.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.zeroturnaround</groupId>
                 <artifactId>zt-exec</artifactId>
                 <version>${zt-exec.version}</version>
@@ -908,8 +960,19 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.ws.rs</groupId>
+                <artifactId>jsr311-api</artifactId>
+                <version>1.1.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
     <dependencies>
         <dependency>
             <!-- SLF4J is the logging API all modules should use -->
@@ -919,28 +982,15 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
-    <repositories>
-        <!--Snapshot repository for 3rd party libraries -->
-        <repository>
-            <id>snapshots</id>
-            <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
-        </repository>
-        <repository>
-            <id>releases</id>
-            <url>https://oss.sonatype.org/content/repositories/releases</url>
-        </repository>
-    </repositories>
-
     <build>
+        <directory>${project.basedir}/target</directory>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -966,16 +1016,11 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.5.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.eclipse.m2e</groupId>
-                    <artifactId>lifecycle-mapping</artifactId>
-                    <version>1.0.0</version>
+                    <version>1.6.0</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>com.googlecode.maven-download-plugin</groupId>
@@ -1004,6 +1049,69 @@
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.commonjava.maven.plugins</groupId>
+                <artifactId>directory-maven-plugin</artifactId>
+                <version>0.3.1</version>
+                <executions>
+                    <execution>
+                        <id>core directory</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <project>
+                                <groupId>ai.grakn</groupId>
+                                <artifactId>grakn-core</artifactId>
+                            </project>
+                            <property>core.basedir</property>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>core.server directory</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <project>
+                                <groupId>ai.grakn</groupId>
+                                <artifactId>core.server</artifactId>
+                            </project>
+                            <property>core.server.basedir</property>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>core.console directory</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <project>
+                                <groupId>ai.grakn</groupId>
+                                <artifactId>core.console</artifactId>
+                            </project>
+                            <property>core.console.basedir</property>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>core.dashboard directory</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <project>
+                                <groupId>ai.grakn</groupId>
+                                <artifactId>core.dashboard</artifactId>
+                            </project>
+                            <property>core.dashboard.basedir</property>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -1039,10 +1147,10 @@
                 </configuration>
             </plugin>
             <plugin>
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-source-plugin</artifactId>
-               <version>2.2.1</version>
-               <executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
                     <execution>
                         <id>attach-sources</id>
                         <goals>
@@ -1061,6 +1169,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                     <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                    <skip>${skipTests}</skip>
                 </configuration>
                 <executions>
                     <execution>
@@ -1075,11 +1184,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.19.1</version>
-                <configuration>
-                    <systemProperties>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
-                    </systemProperties>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -1094,15 +1198,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.19.1</version>
                 <configuration>
-                    <systemProperties>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
-                    </systemProperties>
                     <!-- Added this because of crash during build. We have tests that can't run concurrently. -->
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
                     <argLine>-Xmx1024m</argLine>
-                    <!-- Added this config to try and help sort out flaky tests -->
-                    <runOrder>random</runOrder>
                 </configuration>
             </plugin>
             <plugin>
@@ -1200,6 +1299,7 @@
                         <executions>
                             <execution>
                                 <id>attach-aggregate-javadocs</id>
+                                <phase>package</phase>
                                 <goals>
                                     <goal>aggregate-jar</goal>
                                 </goals>
@@ -1244,5 +1344,4 @@
             </distributionManagement>
         </profile>
     </profiles>
-
 </project>

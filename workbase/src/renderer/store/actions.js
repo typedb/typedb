@@ -3,7 +3,7 @@ import EngineSettings from '@/components/EngineSettings';
 
 export const loadKeyspaces = async (context) => {
   try {
-    const resp = await context.state.grakn.keyspace.retrieve();
+    const resp = await context.state.grakn.keyspaces().retrieve();
     context.commit('setIsGraknRunning', true);
     context.commit('setKeyspaces', resp);
   } catch (e) {

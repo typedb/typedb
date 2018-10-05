@@ -26,19 +26,17 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;
@@ -46,8 +44,6 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -75,17 +71,21 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override public abstract VarPattern getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static IsaAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_IsaAtom(pattern.admin().var(), predicateId, predicateVar, pattern, parent);
+    public static IsaAtom create(Var var, Var predicateVar, VarPattern pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
+        return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
-    private static IsaAtom create(Var var, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        return create(var.isa(predicateVar).admin(), predicateVar, predicateId, parent);
+
+    public static IsaAtom create(Var var, Var predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
+        VarPatternAdmin pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
+        return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
     }
-    public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, ReasonerQuery parent) {
-        return create(var, predicateVar, type.id(), parent);
+
+    public static IsaAtom create(Var var, Var predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
+        VarPatternAdmin pattern = isDirect ? var.isaExplicit(predicateVar).admin() : var.isa(predicateVar).admin();
+        return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
-        IsaAtom atom = create(a.getPattern(), a.getPredicateVariable(), a.getTypeId(), parent);
+        IsaAtom atom = create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeId(), parent);
         atom.applicableRules = a.applicableRules;
         return atom;
     }
@@ -140,8 +140,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public IsaAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
-        Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
-        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
+        return create(getVarName(), getPredicateVariable(), type.id(), this.isDirect(), this.getParentQuery());
     }
 
     private IsaAtom inferEntityType(ConceptMap sub){
@@ -209,22 +208,12 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public Set<TypeAtom> unify(Unifier u){
-        Collection<Var> vars = u.get(getVarName());
-        return vars.isEmpty()?
-                Collections.singleton(this) :
-                vars.stream().map(v -> create(v, getPredicateVariable(), getTypeId(), this.getParentQuery())).collect(Collectors.toSet());
-    }
-
-    @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
+        return create(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), this.isDirect(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
-        return parentAtom.getPredicateVariable().isUserDefinedName()?
-                rewriteWithTypeVariable() :
-                this;
+        return this.rewriteWithTypeVariable(parentAtom);
     }
 }

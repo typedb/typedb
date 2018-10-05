@@ -1,5 +1,0 @@
-match
-    $organisation isa organisation, has organisation-id @long(<"Organisation.id">);
-    $place isa place, has place-id @long(<"Place.id">);
-insert
-    (located: $organisation, region: $place) isa is-located-in;

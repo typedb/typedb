@@ -46,7 +46,7 @@ ul.nav {
 </style>
 
 <script>
-import PanelContainer from '@/components/shared/PanelContainer/PanelContainer.vue';
+import PanelContainer from '@/components/shared/PanelContainer.vue';
 
 import Info from './NodePanel/Info.vue';
 import Attributes from './NodePanel/Attributes.vue';

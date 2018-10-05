@@ -1,5 +1,0 @@
-match
-    $post isa post, has message-id @long(<"Post.id">);
-    $person isa person, has person-id @long(<"Person.id">);
-insert
-    (product: $post, creator: $person) isa has-creator;

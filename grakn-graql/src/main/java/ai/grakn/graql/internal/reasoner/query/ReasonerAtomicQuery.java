@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -136,14 +135,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         MultiUnifier multiUnifier = this.getAtom().getMultiUnifier(parent.getAtom(), unifierType);
 
         Set<TypeAtom> childTypes = this.getAtom().getTypeConstraints().collect(Collectors.toSet());
-        if (childTypes.isEmpty()) return multiUnifier;
+        if (multiUnifier.isEmpty() || childTypes.isEmpty()) return multiUnifier;
 
         //get corresponding type unifiers
         Set<TypeAtom> parentTypes = parent.getAtom().getTypeConstraints().collect(Collectors.toSet());
-        if (multiUnifier.isEmpty()) return new MultiUnifierImpl(typeUnifier(childTypes, parentTypes, new UnifierImpl()));
 
         Set<Unifier> unifiers = multiUnifier.unifiers().stream()
-                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier))
+                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier, unifierType))
                 .collect(Collectors.toSet());
         return new MultiUnifierImpl(unifiers);
     }

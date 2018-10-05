@@ -1,11 +1,8 @@
 <template>
-  <transition name="slide-fade" appear> 
+  <transition name="slide-fade" appear>
         <div class="wrapper">
-            <app-bar></app-bar>
+            <app-bar v-if="showAppBar"></app-bar>
             <div class="main-wrapper">
-                <div class="side">
-                    <epics-bar></epics-bar>
-                </div>
                 <div class="content">
                     <keep-alive>
                         <router-view></router-view>
@@ -44,16 +41,6 @@
     position: relative;
 }
 
-.left-side{
-    position: relative;
-}
-
-.center{
-    position: relative;
-    display: flex;
-    flex: 1;
-}
-
 </style>
 
 <script>
@@ -64,24 +51,10 @@ import EpicsBar from './EpicsBar.vue';
 export default {
   name: 'MainTemplate',
   components: { AppBar, EpicsBar },
-  data() {
-    return {
-    };
-  },
-
-  created() {
-
-  },
-
-  mounted() {
-    this.$nextTick(() => {
-    });
-  },
-  watch: {
-
-  },
-  methods: {
-
+  computed: {
+    showAppBar() {
+      return (process.platform === 'darwin');
+    },
   },
 };
 </script>

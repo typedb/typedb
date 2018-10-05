@@ -1,4 +1,0 @@
-insert $x isa tag-class
-    has tag-class-id @long(<id>)
-    has name <name>
-    has url <url>;

@@ -13,6 +13,7 @@
 .classpath
 
 # Compiled files #
+dist/
 out/
 target/
 *.class
