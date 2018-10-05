@@ -24,7 +24,7 @@
 
     <groupId>ai.grakn</groupId>
     <artifactId>grakn-core</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Grakn Core</name>
@@ -164,7 +164,7 @@
         <auto-value.version>1.4.1</auto-value.version>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
         <grpc.version>1.15.0</grpc.version>
-        <netty-all.version>4.1.27.Final</netty-all.version>
+        <netty-all.version>4.1.30.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
@@ -177,7 +177,7 @@
         <zt-exec.version>1.10</zt-exec.version>
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
-        <astyanax.version>3.10.1</astyanax.version>
+        <astyanax.version>3.10.2</astyanax.version>
     </properties>
 
     <dependencyManagement>
@@ -282,6 +282,10 @@
                 <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
                     </exclusion>
@@ -312,6 +316,10 @@
                 <artifactId>hadoop-gremlin</artifactId>
                 <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
@@ -542,6 +550,10 @@
                 <version>${spark.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
                     </exclusion>
@@ -737,6 +749,26 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http2</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler-proxy</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${apache-http-core.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.janino</groupId>
@@ -949,11 +981,6 @@
         <directory>${project.basedir}/target</directory>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>templating-maven-plugin</artifactId>
-                    <version>1.0.0</version>
-                </plugin>
                 <plugin>
                     <groupId>org.antlr</groupId>
                     <artifactId>antlr4-maven-plugin</artifactId>

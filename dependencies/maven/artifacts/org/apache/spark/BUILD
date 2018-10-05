@@ -15,7 +15,6 @@ java_library(
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-graphite",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-json",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-jvm",
-        "//dependencies/maven/artifacts/io/netty:netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/net/java/dev/jets3t:jets3t",
         "//dependencies/maven/artifacts/net/jpountz/lz4:lz4",

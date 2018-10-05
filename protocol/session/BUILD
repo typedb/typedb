@@ -20,6 +20,7 @@ proto_library(
     name = "concept-proto",
     srcs = ["Concept.proto"],
 #    proto_source_root = "protocol/proto",
+    visibility = ["//protocol:__subpackages__"]
 )
 
 proto_library(
@@ -27,6 +28,7 @@ proto_library(
     srcs = ["Answer.proto"],
 #    proto_source_root = "protocol/proto",
     deps = [":concept-proto"],
+    visibility = ["//protocol:__subpackages__"]
 )
 
 proto_library(

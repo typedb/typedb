@@ -25,9 +25,6 @@ java_library(
     exports = [
         "//external:jar/com/netflix/astyanax/astyanax-cassandra-all-shaded"
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all"
-    ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
     ]

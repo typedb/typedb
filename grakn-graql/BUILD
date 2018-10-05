@@ -30,6 +30,7 @@ java_library(
     name = "grakn-graql",
     srcs = [":graql-java"] + glob(["src/main/java/**/*.java"]),
     deps = [
+        # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/com/boundary:high-scale-lib",
