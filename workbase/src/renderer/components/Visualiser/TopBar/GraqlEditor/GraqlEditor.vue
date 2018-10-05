@@ -12,7 +12,7 @@
                     <div class="editor-tooltip"><vue-tooltip content="type a query" :isOpen="showEditorToolTip" :child="dummyGraqlIcon" className="editor-tooltip" v-on:close-tooltip="showEditorToolTip = false"></vue-tooltip></div>
                     <textarea id="graqlEditor" ref="graqlEditor" rows="3"></textarea>
                     <div v-if="showEditorTab" class="editor-tab">
-                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
+                        <div @click="clearEditor" class="clear-editor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
                         <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
 
                         <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon add-fav-query-btn"></vue-icon></div>

@@ -2,8 +2,9 @@ import QuerySettings from './RightBar/SettingsTab/QuerySettings';
 import VisualiserGraphBuilder from './VisualiserGraphBuilder';
 const LETTER_G_KEYCODE = 71;
 const HAS_ATTRIBUTE_LABEL = 'has';
+const ISA_INSTANCE_LABEL = 'isa';
 
-export function getNeighboursQuery(node, neighboursLimit) {
+function getNeighboursQuery(node, neighboursLimit) {
   switch (node.baseType) {
     case 'ENTITY_TYPE':
     case 'ATTRIBUTE_TYPE':
@@ -133,12 +134,6 @@ export function mapAnswerToExplanationQuery(answer) {
   return query;
 }
 
-
-export function updateNodeOffset(state, visNode, limit) {
-  state.visFacade.updateNode({ id: visNode.id, offset: (visNode.offset + limit) });
-}
-
-
 /**
  * Checks if a ConceptMap inside the provided Answer contains at least one implicit concept
  * @param {Object} answer ConceptMap Answer to be inspected
@@ -179,6 +174,13 @@ async function getFilteredNeighbourAnswers(node, graknTx, limit) {
   return resultAnswers;
 }
 
+async function getTypeNeighbours(node, graknTx, limit) {
+  const filteredResult = await getFilteredNeighbourAnswers(node, graknTx, limit);
+  const nodes = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x);
+  const edges = nodes.map(instance => ({ from: instance.id, to: node.id, label: ISA_INSTANCE_LABEL }));
+  return { nodes, edges };
+}
+
 async function getEntityNeighbours(node, graknTx, limit) {
   const filteredResult = await getFilteredNeighbourAnswers(node, graknTx, limit);
   const nodes = filteredResult.map(x => Array.from(x.map().values())).flatMap(x => x);
@@ -201,17 +203,21 @@ async function getRelationshipNeighbours(node, graknTx, limit) {
   const roleplayersIds = nodes.map(x => x.id);
   const relationshipConcept = await graknTx.getConcept(node.id);
   const roleplayers = Array.from((await relationshipConcept.rolePlayersMap()).entries());
-  const edges = await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
+  const edges = (await Promise.all(Array.from(roleplayers, async ([role, setOfThings]) => {
     const roleLabel = await role.label();
     return Array.from(setOfThings.values())
       .filter(thing => roleplayersIds.includes(thing.id))
       .map(thing => ({ from: node.id, to: thing.id, label: roleLabel }));
-  }));
+  }))).flatMap(x => x);
   return { nodes, edges };
 }
 
 export async function getNeighboursData(visNode, graknTx, neighboursLimit) {
   switch (visNode.baseType) {
+    case 'ENTITY_TYPE':
+    case 'ATTRIBUTE_TYPE':
+    case 'RELATIONSHIP_TYPE':
+      return getTypeNeighbours(visNode, graknTx, neighboursLimit);
     case 'ENTITY':
       return getEntityNeighbours(visNode, graknTx, neighboursLimit);
     case 'RELATIONSHIP':
