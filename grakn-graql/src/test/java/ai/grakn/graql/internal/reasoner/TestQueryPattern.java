@@ -68,31 +68,37 @@ public abstract class TestQueryPattern {
             String relationId = args[3].id().getValue();
             String anotherRelationId = args[4].id().getValue();
             return Lists.newArrayList(
-                    "{$r (baseRole1: $x, baseRole2: $y);}",
+                    "{$r ($x, $y);}",
+                    "{$rb (role: $xb, role: $yb);}",
+                    "{$rc (baseRole1: $xc, baseRole2: $yc);}",
 
-                    //(x[], y), 1-4
+                    //(x[], y), 3-6
                     "{$r1 (baseRole1: $x1_1, baseRole2: $x2_1); $x1_1 isa baseRoleEntity;}",
                     "{$r1b (baseRole1: $x1_1b, baseRole2: $x2_1b); $x1_1b id '" + baseEntityId + "';}",
                     "{$r1c (baseRole1: $x1_1c, baseRole2: $x2_1c); $x1_1c id '" + anotherBaseEntityId + "';}",
                     "{$r1e (baseRole1: $x1_1d, baseRole2: $x2_1d); $x1_1d id '" + subEntityId + "';}",
 
-                    //(x, y[]), 5-8
+                    //(x, y[]), 7-10
                     "{$r2 (baseRole1: $x1_2, baseRole2: $x2_2); $x2_2 isa baseRoleEntity;}",
                     "{$r2b (baseRole1: $x1_2b, baseRole2: $x2_2b); $x2_2b id '" + baseEntityId + "';}",
                     "{$r2c (baseRole1: $x1_2c, baseRole2: $x2_2c); $x2_2c id '" + anotherBaseEntityId + "';}",
                     "{$r2d (baseRole1: $x1_2d, baseRole2: $x2_2d); $x2_2d id '" + subEntityId+ "';}",
 
-                    //(x[], y[]), 9-11
+                    //(x[], y[]), 11-13
                     "{$r5 (baseRole1: $x1_5, baseRole2: $x2_5); $x1_5 isa baseRoleEntity; $x2_5 isa anotherBaseRoleEntity;}",
                     "{$r5b (baseRole1: $x1_5b, baseRole2: $x2_5b); $x1_5b id '" + baseEntityId + "'; $x2_5b id '" + anotherBaseEntityId + "';}",
                     "{$r5c (baseRole1: $x1_5c, baseRole2: $x2_5c); $x1_5c id '" + subEntityId + "'; $x2_5c id '" + anotherBaseEntityId + "';}",
 
-                    //12-16
+                    //14-18
                     "{$r6 (baseRole1: $x1_6, baseRole2: $x2_6); $r6 id '" + relationId + "';}",
                     "{$r6b (baseRole1: $x1_6b, baseRole2: $x2_6b); $r6b id '" + anotherRelationId + "';}",
+
                     "{$r6c (baseRole1: $x1_6c, baseRole2: $x2_6c); $x1_6c isa anotherBaseRoleEntity; $r6c id '" + relationId + "';}",
                     "{$r6d (baseRole1: $x1_6d, baseRole2: $x2_6d); $x2_6d id '" + baseEntityId + "';$r6d id '" + relationId + "';}",
                     "{$r6e (baseRole1: $x1_6e, baseRole2: $x2_6e); $x1_6e id '" + baseEntityId + "'; $x2_6e id '" + anotherBaseEntityId + "';$r6e id '" + relationId + "';}"
+
+                    //"{$r ($x);}"
+                    //"{$rd (subRole1: $xd, subRole2: $yd);}",
             );
 
         }
