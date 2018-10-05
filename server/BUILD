@@ -15,3 +15,49 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+
+package(default_visibility = ["//visibility:public"])
+
+java_library(
+    name = "server",
+    srcs = ["//protocol:client-java-proto"] + glob(["src/main/java/**/*.java"]),
+    deps = [
+        # Grakn Core dependencies
+        "//grakn-graql:grakn-graql",
+        # "//dashboard:dashboard",
+
+        # External dependencies
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/com/boundary:high-scale-lib",
+        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml",
+        "//dependencies/maven/artifacts/com/github/rholder:guava-retrying",
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
+        "//dependencies/maven/artifacts/com/jayway/restassured:rest-assured",
+        "//dependencies/maven/artifacts/com/sparkjava:spark-core",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/io/airlift:airline",
+        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
+        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-servlets",
+        "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/io/grpc:grpc-netty",
+        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
+        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
+        "//dependencies/maven/artifacts/io/netty:netty-all",
+        "//dependencies/maven/artifacts/io/prometheus:simpleclient-servlet",
+        "//dependencies/maven/artifacts/jline:jline",
+        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
+    ]
+)
