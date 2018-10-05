@@ -126,16 +126,16 @@ dependencies:
 
   com.netflix.astyanax:
     astyanax-cassandra:
-      version: "3.10.1"
+      version: "3.10.2"
       lang: java
     astyanax-core:
-      version: "3.10.1"
+      version: "3.10.2"
       lang: java
     astyanax-recipes:
-      version: "3.10.1"
+      version: "3.10.2"
       lang: java
     astyanax-thrift:
-      version: "3.10.1"
+      version: "3.10.2"
       lang: java
 
   com.netflix.hystrix:
@@ -215,7 +215,16 @@ dependencies:
 
   io.netty:
     netty-all:
-      version: "4.1.27.Final"
+      version: "4.1.30.Final"
+      lang: java
+    netty-codec-http2:
+      version: "4.1.30.Final"
+      lang: java
+    netty-handler:
+      version: "4.1.30.Final"
+      lang: java
+    netty-handler-proxy:
+      version: "4.1.30.Final"
       lang: java
     netty-tcnative-boringssl-static:
       version: "2.0.14.Final"
@@ -309,6 +318,7 @@ dependencies:
       version: "2.2.0"
       lang: java
       exclude:
+      - "io.netty:netty"
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
       - "javax.servlet:javax.servlet-api"
       - "org.slf4j:slf4j-log4j12"
@@ -321,6 +331,7 @@ dependencies:
       version: "2.2.0"
       lang: java
       exclude:
+      - "io.netty:netty"
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
       - "javax.servlet:javax.servlet-api"
       - "org.slf4j:slf4j-log4j12"
@@ -346,27 +357,29 @@ dependencies:
       version: "3.3.3"
       lang: java
       exclude:
-      - "javax.servlet:javax.servlet-api"
       - "com.fasterxml.jackson.core:jackson-core"
       - "com.fasterxml.jackson.core:jackson-databind"
-      - "javax.servlet:javax.servlet-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:jcl-over-slf4j"
-      - "org.slf4j:slf4j-nop"
-      - "log4j:log4j"
       - "com.sun.jersey:jersey-client"
-      - "org.mortbay.jetty:jetty-util"
       - "commons-logging:commons-logging"
+      - "io.netty:netty"
+      - "javax.servlet:javax.servlet-api"
+      - "javax.servlet:javax.servlet-api"
+      - "log4j:log4j"
+      - "org.mortbay.jetty:jetty-util"
+      - "org.slf4j:jcl-over-slf4j"
+      - "org.slf4j:slf4j-log4j12"
+      - "org.slf4j:slf4j-nop"
     spark-gremlin:
       version: "3.3.3"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "javax.servlet:javax.servlet-api"
       - "com.fasterxml.jackson.core:jackson-annotations"
       - "com.fasterxml.jackson.core:jackson-core"
       - "com.fasterxml.jackson.core:jackson-databind"
+      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
       - "io.dropwizard.metrics:metrics-core"
+      - "io.netty:netty"
+      - "javax.servlet:javax.servlet-api"
     tinkergraph-gremlin:
       version: "3.3.3"
       lang: java

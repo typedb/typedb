@@ -26,7 +26,7 @@ java_library(
         "//client-java:client-java",
         "//grakn-graql:grakn-graql",
 
-        #External dependencies
+        # External dependencies
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
