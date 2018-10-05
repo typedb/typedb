@@ -21,13 +21,12 @@ package ai.grakn.factory;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.core.server.GraknConfig;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -43,26 +42,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class TxFactoryBuilderTest {
-    private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
-    private final static File TEST_CONFIG_FILE = Paths.get("../conf/test/tinker/grakn.properties").toFile();
+    private final EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
+    private final File TEST_CONFIG_FILE = new File(this.getClass().getClassLoader().getResource("inmemory-graph.properties").getFile());
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
-    private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
+    private final GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @BeforeClass
-    public static void setup(){
+    @Before
+    public void setup() {
         when(session.config()).thenReturn(TEST_CONFIG);
     }
 
     @Test
-    public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
+    public void whenBuildingInMemoryFactory_ReturnTinkerFactory() {
         assertThat(TxFactoryBuilder.getInstance().getFactory(session, false), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
-    public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
+    public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs() {
         //Factory 1 & 2 Definition
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.config()).thenReturn(TEST_CONFIG);
@@ -87,7 +86,7 @@ public class TxFactoryBuilderTest {
         Set<TxFactory> factories = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
-        for(int i =0; i < 20; i ++){
+        for (int i = 0; i < 20; i++) {
             futures.add(pool.submit(() -> factories.add(TxFactoryBuilder.getInstance().getFactory(session, false))));
         }
 
