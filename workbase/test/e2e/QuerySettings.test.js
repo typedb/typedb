@@ -69,64 +69,58 @@ describe('Query Settings', () => {
     assert.equal(noOfEntities, 'entities: 1');
 
     app.client.click('.clear-graph-btn');
+    app.client.click('.clear-editor');
   });
 
-//   test('set neighbours limit', async () => {
-//     app.client.click('#cog');
-//
-//     const entitiesTab = await app.client.getHTML('#query-settings');
-//     assert.ok(entitiesTab);
-//
-//     await app.client.setValue('#limit-neighbours', '1');
-//
-//     app.client.click('#types-panel');
-//     await app.client.waitUntilWindowLoaded();
-//
-//     const typesPanel = app.client.selectByAttribute('class', 'types-panel');
-//     assert.ok(typesPanel);
-//     await sleep(1000);
-//
-//     app.client.click('#list-relationships');
-//     await app.client.waitUntilWindowLoaded();
-//     app.client.click('#parentship-btn');
-//     await sleep(3000);
-//
-//     const noOfNodes = await app.client.getText('#nodes');
-//     assert.equal(noOfNodes, 'nodes: 2');
-//     const noOfEdges = await app.client.getText('#edges');
-//     assert.equal(noOfEdges, 'edges: 1');
-//
-//     app.client.rightClick('#graph-div');
-//     await sleep(1000);
-//     app.client.click('#clear-graph');
-//     await sleep(1000);
-//     app.client.click('.confirm');
-//     await sleep(1000);
-//   });
-//
-//   test('dont auto load neighbours', async () => {
-//     app.client.click('#cog');
-//
-//     const entitiesTab = await app.client.getHTML('#query-settings');
-//     assert.ok(entitiesTab);
-//
-//     await app.client.click('#load-role-players');
-//
-//     app.client.click('#types-panel');
-//     await app.client.waitUntilWindowLoaded();
-//
-//     const typesPanel = app.client.selectByAttribute('class', 'types-panel');
-//     assert.ok(typesPanel);
-//     await sleep(1000);
-//
-//     app.client.click('#list-relationships');
-//     await app.client.waitUntilWindowLoaded();
-//     app.client.click('#parentship-btn');
-//     await sleep(3000);
-//
-//     const noOfNodes = await app.client.getText('#nodes');
-//     assert.equal(noOfNodes, 'nodes: 1');
-//     const noOfEdges = await app.client.getText('#edges');
-//     assert.equal(noOfEdges, 'edges: 0');
-//   });
+  test('set neighbours limit', async () => {
+    app.client.click('.neighbour-limit-input');
+
+    await sleep(1000);
+
+    app.client.keys(['Backspace', 'Backspace', '1']);
+
+    await sleep(1000);
+
+    app.client.click('.CodeMirror');
+
+    await sleep(1000);
+
+    app.client.keys('match $x isa parentship; get;');
+
+    await sleep(1000);
+
+    app.client.click('.run-btn');
+
+    await sleep(1000);
+
+    const noOfEntities = await app.client.getText('.no-of-entities');
+    assert.equal(noOfEntities, 'entities: 1');
+
+    app.client.click('.clear-graph-btn');
+    app.client.click('.clear-editor');
+  });
+
+  test('dont auto load neighbours', async () => {
+    app.client.click('.load-roleplayers-switch');
+
+    await sleep(1000);
+
+    app.client.click('.CodeMirror');
+
+    await sleep(1000);
+
+    app.client.keys('match $x isa parentship; get;');
+
+    await sleep(1000);
+
+    app.client.click('.run-btn');
+
+    await sleep(1000);
+
+    const noOfEntities = await app.client.getText('.no-of-entities');
+    assert.equal(noOfEntities, 'entities: 0');
+
+    app.client.click('.clear-graph-btn');
+    app.client.click('.clear-editor');
+  });
 });

@@ -12,8 +12,8 @@
                 <div class="panel-value query-limit-input"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
             <div class="panel-content-item">
-                <h1 class="panel-label neighbour-limit-input">Neighbour Limit:</h1>
-                <div class="panel-value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
+                <h1 class="panel-label">Neighbour Limit:</h1>
+                <div class="panel-value neighbour-limit-input"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Load Roleplayers:</h1>
