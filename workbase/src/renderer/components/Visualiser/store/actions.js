@@ -74,9 +74,10 @@ export default {
 
   async loadNeighbours({ state, commit, dispatch }, { visNode, neighboursLimit }) {
     commit('loadingQuery', true);
-    visNode.offset += neighboursLimit;
     const graknTx = await dispatch('openGraknTx');
     const data = await getNeighboursData(visNode, graknTx, neighboursLimit);
+    visNode.offset += neighboursLimit;
+    state.visFacade.updateNode(visNode);
     state.visFacade.addToCanvas(data);
     if (data.nodes.length) state.visFacade.fitGraphToWindow();
     commit('updateCanvasData');

@@ -17,6 +17,7 @@ function getMockAttributeType() {
     id: '1111',
     label: () => Promise.resolve('name'),
     isImplicit: () => Promise.resolve(false),
+    isType: () => true,
   };
 }
 
@@ -183,6 +184,29 @@ function getMockAnswerContainingRelationship() {
   };
 }
 
+function getMockAnswerContainingEntity() {
+  return {
+    explanation: () => {},
+    map: () => {
+      const map = new Map();
+      map.set('x', getMockEntity1());
+      return map;
+    },
+  };
+}
+
+function getMockAnswerContainingTypeInstances() {
+  return {
+    explanation: () => {},
+    map: () => {
+      const map = new Map();
+      map.set('x', getMockEntity1());
+      return map;
+    },
+  };
+}
+
+
 export default {
   getMockEntityType,
   getMockAttributeType,
@@ -200,5 +224,7 @@ export default {
   getMockQueryPattern3,
   getMockAnswerContainingImplicitType,
   getMockAnswerContainingRelationship,
+  getMockAnswerContainingEntity,
+  getMockAnswerContainingTypeInstances,
 };
 
