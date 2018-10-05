@@ -92,7 +92,7 @@ describe('Filters out Answers that contain inferred concepts in their ConceptMap
 describe('Get neighbours data', () => {
   test('type', async () => {
     const mockGraknTx = {
-      query: () => Promise.resolve({ collect: () => Promise.resolve([MockConcepts.getMockAnswerContainingTypeInstances()]) }),
+      query: () => Promise.resolve({ collect: () => Promise.resolve([MockConcepts.getMockAnswerContainingEntity()]) }),
     };
     const neighboursData = await getNeighboursData(MockConcepts.getMockEntityType(), mockGraknTx, 1);
 

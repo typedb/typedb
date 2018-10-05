@@ -195,18 +195,6 @@ function getMockAnswerContainingEntity() {
   };
 }
 
-function getMockAnswerContainingTypeInstances() {
-  return {
-    explanation: () => {},
-    map: () => {
-      const map = new Map();
-      map.set('x', getMockEntity1());
-      return map;
-    },
-  };
-}
-
-
 export default {
   getMockEntityType,
   getMockAttributeType,
@@ -225,6 +213,5 @@ export default {
   getMockAnswerContainingImplicitType,
   getMockAnswerContainingRelationship,
   getMockAnswerContainingEntity,
-  getMockAnswerContainingTypeInstances,
 };
 
