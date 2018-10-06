@@ -625,6 +625,7 @@ public class ReasoningTest {
         GetQuery query5 = qb.parse(queryString5);
         GetQuery query6 = qb.parse(queryString6);
 
+
         List<ConceptMap> answers = query.execute();
         List<ConceptMap> answers2 = query2.execute();
         List<ConceptMap> answers3 = query3.execute();
@@ -637,8 +638,8 @@ public class ReasoningTest {
         assertEquals(1, answers3.size());
         assertEquals(1, answers4.size());
         assertEquals(answers.size() + answers2.size() + answers3.size() + answers4.size(), answers5.size());
-
         assertEquals(answers5.size() - answers4.size(), answers6.size());
+
     }
 
     @Test

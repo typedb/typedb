@@ -131,7 +131,11 @@ public abstract class ComparatorPredicate implements ValuePredicate {
 
     @Override
     public boolean isCompatibleWith(ValuePredicate predicate) {
-        if (!(predicate instanceof ComparatorPredicate)) return predicate.isCompatibleWith(this);
+        if (!(predicate instanceof ComparatorPredicate)
+                || predicate instanceof ContainsPredicate
+                || predicate instanceof NeqPredicate){
+            return predicate.isCompatibleWith(this);
+        }
         ComparatorPredicate that = (ComparatorPredicate) predicate;
         Object val = this.value().orElse(null);
         Object thatVal = that.value().orElse(null);
@@ -139,19 +143,9 @@ public abstract class ComparatorPredicate implements ValuePredicate {
         //NB this is potentially dangerous e.g. if a user types a long as a char in the query
         if (!val.getClass().equals(thatVal.getClass())) return false;
 
-        //checks for !=/= contradiction
-        boolean contradiction = ((val.equals(thatVal))
-                && (
-                        ((this instanceof EqPredicate) && (that instanceof NeqPredicate))
-                        || ((that instanceof NeqPredicate) && (this instanceof EqPredicate)))
-        );
-
-        return !contradiction
-                && (
-                        val.equals(thatVal)?
-                                (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
-                                (this.gremlinPredicate(val).test(thatVal) || that.gremlinPredicate(thatVal).test(val))
-        );
+        return val.equals(thatVal)?
+                (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
+                (this.gremlinPredicate(val).test(thatVal) || that.gremlinPredicate(thatVal).test(val));
     }
 
     @Override

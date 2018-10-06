@@ -858,10 +858,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return roleRelationPlayerMap;
     }
 
-    private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom) {
-        return getRelationPlayerMappings(parentAtom, UnifierType.RULE);
-    }
-
     /**
      * @param parentAtom reference atom defining the mapping
      * @param matchType type of match to be performed
