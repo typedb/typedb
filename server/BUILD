@@ -16,11 +16,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:public"])
+load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+java_grpc_compile(
+    name = "server-java-proto",
+    deps = [
+        "//protocol/session:session-proto",
+        "//protocol/session:answer-proto",
+        "//protocol/session:concept-proto",
+        "//protocol/keyspace:keyspace-proto",
+    ]
+)
 
 java_library(
     name = "server",
-    srcs = ["//protocol:client-java-proto"] + glob(["src/main/java/**/*.java"]),
+    srcs = [":server-java-proto"] + glob(["src/main/java/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",

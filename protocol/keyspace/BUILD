@@ -16,9 +16,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(
+    default_visibility = [
+        "//protocol:__subpackages__",
+        "//server:__subpackages__",
+        "//client-java:__subpackages__",
+        "//client-nodejs:__subpackages__",
+        "//client-python:__subpackages__",
+    ]
+)
+
 proto_library(
     name = "keyspace-proto",
     srcs = ["Keyspace.proto"],
-#    proto_source_root = "protocol/proto",
-    visibility = ["//protocol:__subpackages__"]
+    # proto_source_root = "protocol/keyspace",
 )

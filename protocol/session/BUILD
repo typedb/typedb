@@ -16,25 +16,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(
+    default_visibility = [
+        "//protocol:__subpackages__",
+        "//server:__subpackages__",
+        "//client-java:__subpackages__",
+        "//client-nodejs:__subpackages__",
+        "//client-python:__subpackages__",
+    ]
+)
+
 proto_library(
     name = "concept-proto",
     srcs = ["Concept.proto"],
-#    proto_source_root = "protocol/proto",
-    visibility = ["//protocol:__subpackages__"]
+    # proto_source_root = "protocol/session",
 )
 
 proto_library(
     name = "answer-proto",
     srcs = ["Answer.proto"],
-#    proto_source_root = "protocol/proto",
     deps = [":concept-proto"],
-    visibility = ["//protocol:__subpackages__"]
+    # proto_source_root = "protocol/session",
 )
 
 proto_library(
     name = "session-proto",
     srcs = ["Session.proto"],
-#    proto_source_root = "protocol/proto",
     deps = [":concept-proto", ":answer-proto"],
-    visibility = ["//protocol:__subpackages__"]
+    # proto_source_root = "protocol/session",
 )

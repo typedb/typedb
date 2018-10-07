@@ -18,9 +18,20 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+java_grpc_compile(
+    name = "client-java-proto",
+    deps = [
+        "//protocol/session:session-proto",
+        "//protocol/session:answer-proto",
+        "//protocol/session:concept-proto",
+        "//protocol/keyspace:keyspace-proto",
+    ]
+)
+
 java_library(
     name = "client-java",
-    srcs = ["//protocol:client-java-proto"] + glob(["src/main/java/**/*.java"]),
+    srcs = [":client-java-proto"] + glob(["src/main/java/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",

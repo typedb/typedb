@@ -16,21 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
-java_grpc_compile(
-    name = "client-java-proto",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ],
-    visibility = [
-        "//server:__subpackages__",
-        "//client-java:__subpackages__",
-    ]
-)
-
 load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
 python_grpc_compile(
     name = "client-python-proto",
