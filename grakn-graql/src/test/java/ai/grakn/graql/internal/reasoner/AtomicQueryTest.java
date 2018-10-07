@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.TestQueryPattern.subList;
 import static ai.grakn.graql.internal.reasoner.TestQueryPattern.subListExcluding;
+import static ai.grakn.graql.internal.reasoner.TestQueryPattern.subListExcludingElements;
 import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
@@ -991,6 +992,30 @@ public class AtomicQueryTest {
         ruleUnification(qs.get(28), subListExcluding(qs, Lists.newArrayList(28)), new ArrayList<>(), graph);
         ruleUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
         ruleUnification(qs.get(30), qs, subList(qs, Lists.newArrayList(1, 3, 18, 20, 22)), graph);
+    }
+
+    @Test
+    public void testUnification_orthogonalityOfVariants_EXACT(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        List<List<String>> queryTypes = Lists.newArrayList(
+                TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity),
+                TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation),
+                TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource),
+                TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource)
+                );
+        queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> exactUnification(q, qto, new ArrayList<>(), graph))));
+    }
+
+    @Test
+    public void testUnification_orthogonalityOfVariants_STRUCTURAL(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        List<List<String>> queryTypes = Lists.newArrayList(
+                TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity),
+                TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation),
+                TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource),
+                TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource)
+        );
+        queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> structuralUnification(q, qto, new ArrayList<>(), graph))));
     }
 
     private void unification(String child, List<String> queries, List<String> queriesWithUnifier, UnifierType unifierType, EmbeddedGraknTx graph){

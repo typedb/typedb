@@ -100,6 +100,7 @@ public abstract class TestQueryPattern {
                     "{$r6d (baseRole1: $x1_6d, baseRole2: $x2_6d); $x2_6d id '" + baseEntityId + "';$r6d id '" + relationId + "';}",
                     "{$r6e (baseRole1: $x1_6e, baseRole2: $x2_6e); $x1_6e id '" + baseEntityId + "'; $x2_6e id '" + anotherBaseEntityId + "';$r6e id '" + relationId + "';}"
 
+                    //TODO
                     //"{$r ($x);}"
                     //"{$rd (subRole1: $xd, subRole2: $yd);}",
             );
@@ -166,9 +167,6 @@ public abstract class TestQueryPattern {
                     "{$xc has resource-long $rc; $xc isa baseRoleEntity;}",
                     "{$xd has attribute $rd;}",
 
-                    //TODO
-                    //"{$xe has attribute $re;$re isa resource;}",
-
                     //4-5
                     "{$x1a has resource $r1a; $x1a id '" + entityId + "';}",
                     "{$x1b has resource $r1b; $x1b id '" + anotherEntityId + "';}",
@@ -214,6 +212,9 @@ public abstract class TestQueryPattern {
                     "{$x7i isa anotherBaseRoleEntity;$x7i has resource-long $r7i;$r7i > 23; $r7i < 27;}"
 
                     //TODO
+                    //"{$xe has attribute $re;$re isa resource;}",
+
+                    //TODO
                     //18-22
                     //"{$x6a has resource $r6a;$r6a != $r2_6a;}",
                     //"{$x6b has resource $r6b;$r6b != $r2_6b; $r2_6b id '" + resourceId + "';}",
@@ -236,11 +237,10 @@ public abstract class TestQueryPattern {
         return subList;
     }
 
-    void orthogonalityTest(){
-
+    static <T> List<T> subListExcludingElements(List<T> list, Collection<T> toExclude){
+        List<T> subList = new ArrayList<>(list);
+        toExclude.forEach(subList::remove);
+        return subList;
     }
-
-
-
 
 }

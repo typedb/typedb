@@ -49,7 +49,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 public class BenchmarkTest {
 
     //Needed to start cass depending on profile
