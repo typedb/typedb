@@ -19,19 +19,20 @@
 package ai.grakn.util;
 
 import com.google.common.base.Preconditions;
-import org.apache.http.HttpHost;
-import org.apache.http.client.utils.URIBuilder;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
- * This Util class just takes care of going from host and port to string and viceversa
+ * This Util class just takes care of going from host and port to string and vice-versa
  * The URI class would require a schema
  *
  * @author pluraliseseverythings
  */
 public class SimpleURI {
+    private final static String DEFAULT_PROTOCOL_NAME = "http";
     private final int port;
     private final String host;
 
@@ -64,18 +65,10 @@ public class SimpleURI {
         return String.format("%s:%d", host, port);
     }
 
-    public static SimpleURI withDefaultPort(String uri, int defaultPort) {
-        if (uri.contains(":")) {
-            return new SimpleURI(uri);
-        } else {
-            return new SimpleURI(uri, defaultPort);
-        }
-    }
-
     public URI toURI() {
         try {
-            return new URIBuilder().setScheme(HttpHost.DEFAULT_SCHEME_NAME).setHost(host).setPort(port).build();
-        } catch (URISyntaxException e) {
+            return new URL(DEFAULT_PROTOCOL_NAME, host, Integer.toString(port)).toURI();
+        } catch (MalformedURLException | URISyntaxException e) {
             throw new IllegalStateException(e);
         }
     }
