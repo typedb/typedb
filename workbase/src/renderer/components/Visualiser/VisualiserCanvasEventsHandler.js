@@ -87,5 +87,12 @@ export default {
         commit('contextMenu', { show: false, x: null, y: null });
       },
     });
+
+    commit('registerCanvasEvent', {
+      event: 'hold',
+      callback: (params) => {
+        if (params.nodes.length) { commit('selectedNodes', null); state.visFacade.getNetwork().unselectAll(); }
+      },
+    });
   },
 };
