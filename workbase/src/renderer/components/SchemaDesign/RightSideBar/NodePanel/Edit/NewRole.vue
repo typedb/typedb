@@ -25,7 +25,7 @@ export default {
     };
   },
   computed: {
-    metaTypeInstances() { return this.localStore.getMetaTypeInstances(); },
+    metaTypeInstances() { return this.$store.getters.metaTypeInstances; },
   },
   created() {
     this.$on('clear-panel', this.clearPanel);

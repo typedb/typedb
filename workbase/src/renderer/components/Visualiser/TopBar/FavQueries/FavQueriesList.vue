@@ -135,7 +135,7 @@
 
   export default {
     name: 'FavQueriesList',
-    props: ['localStore', 'currentKeyspace', 'favQueries'],
+    props: ['currentKeyspace', 'favQueries'],
     data() {
       return {
         codeMirror: [],
@@ -156,7 +156,7 @@
     },
     methods: {
       typeFavQuery(query) {
-        this.localStore.setCurrentQuery(query);
+        this.$store.commit('currentQuery', query);
       },
       removeFavQuery(index, queryName) {
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);

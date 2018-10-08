@@ -73,7 +73,6 @@
 
   export default {
     name: 'TypesContainer',
-    props: ['localStore', 'currentKeyspace'],
     data() {
       return {
         tabs: ['entities', 'attributes', 'relationships'],
@@ -82,7 +81,7 @@
     },
     computed: {
       metaTypeInstances() {
-        return this.localStore.getMetaTypeInstances();
+        return this.$store.getters.metaTypeInstances;
       },
     },
     methods: {
@@ -90,7 +89,7 @@
         this.currentTab = tab;
       },
       typeSelected(type) {
-        this.localStore.setCurrentQuery(`match $x isa ${type}; get;`);
+        this.$store.commit('currentQuery', `match $x isa ${type}; get;`);
       },
     },
   };

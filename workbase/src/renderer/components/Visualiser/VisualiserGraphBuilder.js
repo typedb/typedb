@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import Style from './Style';
 import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
@@ -15,16 +14,6 @@ async function attachExplanation(result) {
       return y;
     });
   }).flatMap(x => x);
-}
-
-// Filter out all implicit types
-async function filterImplicitTypes(concepts) {
-  return Promise.all(concepts.map(async (concept) => {
-    if (concept.isThing()) {
-      return (!await (await concept.type()).isImplicit()) ? concept : null;
-    }
-    return (!await concept.isImplicit()) ? concept : null;
-  })).then(concepts => concepts.filter(l => l));
 }
 
 function buildValue(array) {
@@ -205,21 +194,18 @@ async function constructEdges(result) {
   return edges.flatMap(x => x);
 }
 
-async function buildFromConceptMap(result, limitRoleplayers) {
-  const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
+async function buildFromConceptMap(result, autoLoadRolePlayers, limitRoleplayers) {
+  const nodes = await prepareNodes(await attachExplanation(result));
   const edges = await constructEdges(result);
 
   // Check if auto-load role players is selected
-  if (QuerySettings.getRolePlayersStatus()) {
+  if (autoLoadRolePlayers) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
-
     const roleplayers = await relationshipsRolePlayers(relationships, limitRoleplayers, QuerySettings.getNeighboursLimit());
-
 
     nodes.push(...roleplayers.nodes);
     edges.push(...roleplayers.edges);
   }
-
   return { nodes, edges };
 }
 
@@ -241,36 +227,12 @@ async function buildFromConceptList(path, pathNodes) {
   return data;
 }
 
-async function filterMaps(result) { // Filter out ConceptMaps that contains implicit relationships (used by loadNeighbours method)
-  const r = [];
-
-  await Promise.all(result.map(async (x) => {
-    const concepts = Array.from(x.map().values());
-
-    let containsImplicit = false;
-
-    for (const y of concepts) {
-      if (y.isThing() && !containsImplicit) {
-      // eslint-disable-next-line no-await-in-loop
-        containsImplicit = (await (await y.type()).isImplicit());
-      } else if (!containsImplicit) {
-      // eslint-disable-next-line no-await-in-loop
-        containsImplicit = (await y.isImplicit());
-      }
-    }
-    if (!containsImplicit) {
-      r.push(x);
-    }
-  }));
-  result.filter(l => l);
-
-  return r;
-}
 
 export default {
   buildFromConceptMap,
   buildFromConceptList,
   prepareNodes,
   relationshipsRolePlayers,
-  filterMaps,
+  attachExplanation,
+  constructEdges,
 };
