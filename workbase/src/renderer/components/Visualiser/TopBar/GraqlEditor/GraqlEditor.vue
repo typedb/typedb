@@ -172,13 +172,11 @@ import FavQueriesList from '../FavQueries/FavQueriesList';
 import TypesContainer from '../TypesContainer';
 import ErrorContainer from '../ErrorContainer';
 import AddFavQuery from '../FavQueries/AddFavQuery';
-import LoadingButton from '../../../UIElements/LoadingButton';
 
 
 export default {
   name: 'GraqlEditor',
   components: {
-    LoadingButton,
     AddFavQuery,
     ErrorContainer,
     FavQueriesList,
