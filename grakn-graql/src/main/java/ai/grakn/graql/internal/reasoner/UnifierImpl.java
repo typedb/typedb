@@ -58,6 +58,9 @@ public class UnifierImpl implements Unifier {
         this.unifier = ImmutableSetMultimap.<Var, Var>builder().putAll(mappings).build();
     }
 
+    public static UnifierImpl trivial(){return new UnifierImpl();}
+    public static UnifierImpl nonExistent(){ return null;}
+
     @Override
     public String toString(){
         return unifier.toString();

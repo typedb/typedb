@@ -137,7 +137,7 @@ public class OntologicalQueryTest {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //1 x noRoleEntity + 3 x 3 (hierarchy) anotherTwoRoleEntities
-        assertEquals(answers.size(), 10);
+        assertEquals(10, answers.size());
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
@@ -150,7 +150,7 @@ public class OntologicalQueryTest {
         String specificQueryString = "match $x isa reifiable-relation;get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
-        assertEquals(answers.size(), qb.<GetQuery>parse(specificQueryString).execute().size() * tx.getRelationshipType("reifiable-relation").subs().count());
+        assertEquals(qb.<GetQuery>parse(specificQueryString).execute().size() * tx.getRelationshipType("reifiable-relation").subs().count(), answers.size());
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
@@ -163,7 +163,7 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type sub noRoleEntity; get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count());
+        assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count(), answers.size());
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
@@ -174,7 +174,7 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa $type; $type sub relationship; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
 
-        assertEquals(answers.size(), tx.getRelationshipType("relationship").subs().flatMap(RelationshipType::instances).count());
+        assertEquals(tx.getRelationshipType("relationship").subs().flatMap(RelationshipType::instances).count(), answers.size());
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
@@ -205,7 +205,7 @@ public class OntologicalQueryTest {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> reifiableRelations = qb.<GetQuery>parse("match $x isa reifiable-relation;get;").execute();
-        assertEquals(answers.size(), tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count() + reifiableRelations.size());
+        assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count() + reifiableRelations.size(), answers.size());
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
@@ -222,7 +222,7 @@ public class OntologicalQueryTest {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
         List<ConceptMap> relations = qb.<GetQuery>parse("match $x isa relationship;get;").execute();
         //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
-        assertEquals(answers.size(), relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3);
+        assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelationship().type().isImplicit()).count() + 3, answers.size());
     }
 
     @Test
@@ -233,8 +233,8 @@ public class OntologicalQueryTest {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         assertEquals(
-                answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet()),
-                tx.getRelationshipType("reifying-relation").roles().collect(Collectors.toSet())
+                tx.getRelationshipType("reifying-relation").roles().collect(Collectors.toSet()),
+                answers.stream().map(ans -> ans.get("x")).collect(Collectors.toSet())
         );
     }
 
@@ -248,7 +248,7 @@ public class OntologicalQueryTest {
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing}
-        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5);
+        assertEquals(qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5, answers.size());
     }
 
     @Test
@@ -259,7 +259,7 @@ public class OntologicalQueryTest {
 
         //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2);
+        assertEquals(qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2, answers.size());
     }
 
     /** meta concepts **/
@@ -272,7 +272,7 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa entity;get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), noOfEntities);
+        assertEquals(noOfEntities, answers.size());
     }
 
     @Test
@@ -289,7 +289,7 @@ public class OntologicalQueryTest {
         //2 x ternary,
         //7 (3 reflexive) x reifying-relation
         //3 x has-description resource relation
-        assertEquals(answers.size(), 13);
+        assertEquals(13, answers.size());
     }
 
     @Test
@@ -299,6 +299,6 @@ public class OntologicalQueryTest {
         String queryString = "match $x isa attribute;get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
-        assertEquals(answers.size(), 2);
+        assertEquals(2, answers.size());
     }
 }

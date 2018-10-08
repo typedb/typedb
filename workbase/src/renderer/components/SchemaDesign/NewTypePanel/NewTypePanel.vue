@@ -12,7 +12,7 @@
           :is="activeTab" 
           :instances="metaTypeInstances" 
           ref="typeComponent" 
-          :localStore="localStore">
+        >
         </component>
       </keep-alive>
       <div class="add-line">
@@ -111,7 +111,7 @@ import Attribute from './types/attribute.vue';
 
 export default {
   name: 'NewTypePanel',
-  props: ['localStore', 'showPanel'],
+  props: ['showPanel'],
   components: {
     Entity,
     Relationship,
@@ -126,7 +126,7 @@ export default {
     };
   },
   computed: {
-    metaTypeInstances() { return this.localStore.getMetaTypeInstances(); },
+    metaTypeInstances() { return this.$store.getters.metaTypeInstances; },
   },
   methods: {
     sendQuery() {

@@ -9,15 +9,15 @@
         <div class="panel-content">
             <div class="panel-content-item">
                 <h1 class="panel-label">Query Limit:</h1>
-                <div class="panel-value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
+                <div class="panel-value query-limit-input"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Neighbour Limit:</h1>
-                <div class="panel-value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
+                <div class="panel-value neighbour-limit-input"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Load Roleplayers:</h1>
-                <div class="panel-value"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
+                <div class="panel-value load-roleplayers-switch"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
             </div>
         </div>
         </div>
@@ -31,7 +31,6 @@
   export default {
 
     name: 'QuerySettings',
-    props: ['localStore'],
     data() {
       return {
         showQuerySettings: true,

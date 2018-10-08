@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>1.4.0</version>
+    <version>1.5.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>The Knowledge Graph</description>
     <url>https://grakn.ai</url>
@@ -90,7 +90,7 @@
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <grpc.version>1.15.0</grpc.version>
-        <netty-all.version>4.1.27.Final</netty-all.version>
+        <netty-all.version>4.1.30.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
@@ -105,7 +105,7 @@
         <zt-exec.version>1.10</zt-exec.version>
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
-        <astyanax.version>3.10.1</astyanax.version>
+        <astyanax.version>3.10.2</astyanax.version>
         <rocksdbjni.version>5.14.2</rocksdbjni.version>
     </properties>
 
@@ -180,12 +180,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-core</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
@@ -200,7 +200,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -211,7 +211,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-factory</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -235,7 +235,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>client-java</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -246,7 +246,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-engine</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -257,37 +257,37 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -322,6 +322,10 @@
                 <version>${tinkerpop.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
                     </exclusion>
@@ -352,6 +356,10 @@
                 <artifactId>hadoop-gremlin</artifactId>
                 <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
@@ -552,6 +560,10 @@
                 <artifactId>spark-core_2.11</artifactId>
                 <version>${spark.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
@@ -754,6 +766,21 @@
                 <version>${netty-all.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http2</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler-proxy</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
                 <version>${apache-http-core.version}</version>
@@ -855,7 +882,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-test-tools</artifactId>
-                <version>1.4.0</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 
@@ -941,11 +968,11 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>snapshots</id>
+            <id>mavengraknai</id>
             <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
-            <id>releases</id>
+            <id>oss-sonatype</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
@@ -1195,7 +1222,20 @@
 
     <profiles>
         <profile>
-            <id>grakn-releases</id>
+            <id>test-deploy-jars</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/releases</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>deploy-jars</id>
             <build>
                 <plugins>
                     <plugin>
@@ -1207,6 +1247,7 @@
                             <additionalparam>-Xdoclint:none</additionalparam>
                             <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                             <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                            <skip>false</skip>
                         </configuration>
                         <executions>
                             <execution>
@@ -1236,7 +1277,7 @@
                         <artifactId>nexus-staging-maven-plugin</artifactId>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
+                            <serverId>oss-sonatype</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
@@ -1245,11 +1286,11 @@
             </build>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>

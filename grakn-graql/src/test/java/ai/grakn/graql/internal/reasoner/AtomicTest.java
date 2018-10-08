@@ -78,7 +78,7 @@ public class AtomicTest {
     public static final SampleKBContext reifiedResourceApplicabilitySet = SampleKBContext.load("reifiedResourceApplicabilityTest.gql");
 
     @ClassRule
-    public static final SampleKBContext unificationTestSet = SampleKBContext.load("unificationTest.gql");
+    public static final SampleKBContext genericSchema = SampleKBContext.load("genericSchema.gql");
 
     @Test
     public void testAtomsAreCorrectlyIdentifiedAsRecursive(){
@@ -93,7 +93,7 @@ public class AtomicTest {
 
     @Test
     public void testAtomFactoryProducesAtomsOfCorrectType(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String atomString = "{$x isa baseRoleEntity;}";
         String relString = "{($x, $y, $z) isa binary;}";
         String resString = "{$x has resource 'value';}";
@@ -117,27 +117,27 @@ public class AtomicTest {
 
     @Test
     public void testEquality_DifferentIsaVariants(){
-        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "isa", "baseRoleEntity", "subRoleEntity");
+        testEquality_DifferentTypeVariants(genericSchema.tx(), "isa", "baseRoleEntity", "subRoleEntity");
     }
 
     @Test
     public void testEquality_DifferentSubVariants(){
-        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "sub", "baseRoleEntity", "role1");
+        testEquality_DifferentTypeVariants(genericSchema.tx(), "sub", "baseRoleEntity", "baseRole1");
     }
 
     @Test
     public void testEquality_DifferentPlaysVariants(){
-        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "plays", "role1", "role2");
+        testEquality_DifferentTypeVariants(genericSchema.tx(), "plays", "baseRole1", "baseRole2");
     }
 
     @Test
     public void testEquality_DifferentRelatesVariants(){
-        testEquality_DifferentTypeVariants(unificationTestSet.tx(), "relates", "role1", "role2");
+        testEquality_DifferentTypeVariants(genericSchema.tx(), "relates", "baseRole1", "baseRole2");
     }
 
     @Test
     public void testEquality_DifferentHasVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String patternString = "{$x has resource;}";
         String patternString2 = "{$y has resource;}";
         String patternString3 = "{$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + ";}";
@@ -150,16 +150,16 @@ public class AtomicTest {
 
     @Test
     public void testEquivalence_DifferentRelationVariants(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String pattern = "{(role1: $x, role2: $y) isa binary;}";
-        String directPattern = "{(role1: $x, role2: $y) isa! binary;}";
-        String pattern2 = "{$r (role1: $x, role2: $y) isa binary;}";
-        String pattern3 = "{$z (role1: $x, role2: $y) isa binary;}";
-        String pattern4 = "{(role1: $x, role2: $y);}";
-        String pattern5 = "{(role1: $z, role2: $v) isa binary;}";
-        String pattern6 = "{(role: $x, role2: $y) isa binary;}";
-        String pattern7 = "{(role1: $x, role2: $y) isa $type;}";
-        String pattern8 = "{(role1: $x, role2: $y) isa $type;$type label binary;}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String pattern = "{(baseRole1: $x, baseRole2: $y) isa binary;}";
+        String directPattern = "{(baseRole1: $x, baseRole2: $y) isa! binary;}";
+        String pattern2 = "{$r (baseRole1: $x, baseRole2: $y) isa binary;}";
+        String pattern3 = "{$z (baseRole1: $x, baseRole2: $y) isa binary;}";
+        String pattern4 = "{(baseRole1: $x, baseRole2: $y);}";
+        String pattern5 = "{(baseRole1: $z, baseRole2: $v) isa binary;}";
+        String pattern6 = "{(role: $x, baseRole2: $y) isa binary;}";
+        String pattern7 = "{(baseRole1: $x, baseRole2: $y) isa $type;}";
+        String pattern8 = "{(baseRole1: $x, baseRole2: $y) isa $type;$type label binary;}";
 
         atomicEquality(pattern, pattern, true, graph);
         atomicEquality(pattern, directPattern, false, graph);
@@ -367,7 +367,7 @@ public class AtomicTest {
 
     @Test //missing role is ambiguous without cardinality constraints
     public void testRoleInference_RoleHierarchyInvolved() {
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String relationString = "{($p, subRole2: $gc) isa binary;}";
         String relationString2 = "{(subRole1: $gp, $p) isa binary;}";
         RelationshipAtom relation = (RelationshipAtom) ReasonerQueries.atomic(conjunction(relationString, graph), graph).getAtom();
@@ -1050,31 +1050,31 @@ public class AtomicTest {
 
     @Test
     public void testUnification_RelationWithRolesExchanged(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String relation = "{(role1: $x, role2: $y) isa binary;}";
-        String relation2 = "{(role1: $y, role2: $x) isa binary;}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String relation = "{(baseRole1: $x, baseRole2: $y) isa binary;}";
+        String relation2 = "{(baseRole1: $y, baseRole2: $x) isa binary;}";
         exactUnification(relation, relation2, true, true, graph);
     }
 
     @Test
     public void testUnification_RelationWithMetaRole(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String relation = "{(role1: $x, role: $y) isa binary;}";
-        String relation2 = "{(role1: $y, role: $x) isa binary;}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String relation = "{(baseRole1: $x, role: $y) isa binary;}";
+        String relation2 = "{(baseRole1: $y, role: $x) isa binary;}";
         exactUnification(relation, relation2, true, true, graph);
     }
 
     @Test
     public void testUnification_RelationWithRelationVar(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String relation = "{$x (role1: $r, role2: $z) isa binary;}";
-        String relation2 = "{$r (role1: $x, role2: $y) isa binary;}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String relation = "{$x (baseRole1: $r, baseRole2: $z) isa binary;}";
+        String relation2 = "{$r (baseRole1: $x, baseRole2: $y) isa binary;}";
         exactUnification(relation, relation2, true, true, graph);
     }
 
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         Concept instance = graph.graql().<GetQuery>parse("match $x isa subRoleEntity; get;").execute().iterator().next().get(var("x"));
         String relation = "{(role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "';}";
         String relation2 = "{(role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "';}";
@@ -1087,8 +1087,8 @@ public class AtomicTest {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String parentRelation = "{(role1: $x, role2: $y);}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String parentRelation = "{(baseRole1: $x, baseRole2: $y);}";
         String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v);}";
         String specialisedRelation2 = "{(subRole1: $y, anotherSubRole2: $x);}";
         String specialisedRelation3 = "{(subSubRole1: $u, subSubRole2: $v);}";
@@ -1104,14 +1104,14 @@ public class AtomicTest {
 
     @Test
     public void testUnification_BinaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentRelation = "{(subRole1: $x, subRole2: $y);}";
         String specialisedRelation = "{(subRole1: $u, subSubRole2: $v);}";
         String specialisedRelation2 = "{(subRole1: $y, subSubRole2: $x);}";
         String specialisedRelation3 = "{(subSubRole1: $u, subSubRole2: $v);}";
         String specialisedRelation4 = "{(subSubRole1: $y, subSubRole2: $x);}";
-        String specialisedRelation5 = "{(subSubRole1: $u, role3: $v);}";
-        String specialisedRelation6 = "{(role1: $u, role2: $v);}";
+        String specialisedRelation5 = "{(subSubRole1: $u, baseRole3: $v);}";
+        String specialisedRelation6 = "{(baseRole1: $u, baseRole2: $v);}";
 
         exactUnification(parentRelation, specialisedRelation, false, false, graph);
         exactUnification(parentRelation, specialisedRelation2, false, false, graph);
@@ -1123,10 +1123,10 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String parentRelation = "{(role1: $x, role2: $y, role3: $z);}";
-        String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(role1: $z, subRole2: $y, subSubRole3: $x);}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String parentRelation = "{(baseRole1: $x, baseRole2: $y, baseRole3: $z);}";
+        String specialisedRelation = "{(baseRole1: $u, subRole2: $v, subSubRole3: $q);}";
+        String specialisedRelation2 = "{(baseRole1: $z, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation3 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation4 = "{(subRole1: $y, subRole2: $z, subSubRole3: $x);}";
         String specialisedRelation5 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
@@ -1140,9 +1140,9 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithSubRoles(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentRelation = "{(subRole1: $x, subRole2: $y, subRole3: $z);}";
-        String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
+        String specialisedRelation = "{(baseRole1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation2 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation3 = "{(subRole1: $y, subRole2: $z, subSubRole3: $x);}";
         String specialisedRelation4 = "{(subSubRole1: $u, subRole2: $v, subSubRole3: $q);}";
@@ -1159,10 +1159,10 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_childrenRepeatRolePlayers(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String parentRelation = "{(role1: $x, role2: $y, role3: $z);}";
-        String specialisedRelation = "{(role1: $u, subRole2: $u, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(role1: $y, subRole2: $y, subSubRole3: $x);}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String parentRelation = "{(baseRole1: $x, baseRole2: $y, baseRole3: $z);}";
+        String specialisedRelation = "{(baseRole1: $u, subRole2: $u, subSubRole3: $q);}";
+        String specialisedRelation2 = "{(baseRole1: $y, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation3 = "{(subRole1: $u, subRole2: $u, subSubRole3: $q);}";
         String specialisedRelation4 = "{(subRole1: $y, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation5 = "{(subRole1: $u, subRole1: $u, subSubRole3: $q);}";
@@ -1176,10 +1176,10 @@ public class AtomicTest {
 
     @Test
     public void testUnification_TernaryRelationWithRoleHierarchy_ParentWithBaseRoles_parentRepeatRolePlayers(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String parentRelation = "{(role1: $x, role2: $x, role3: $y);}";
-        String specialisedRelation = "{(role1: $u, subRole2: $v, subSubRole3: $q);}";
-        String specialisedRelation2 = "{(role1: $z, subRole2: $y, subSubRole3: $x);}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String parentRelation = "{(baseRole1: $x, baseRole2: $x, baseRole3: $y);}";
+        String specialisedRelation = "{(baseRole1: $u, subRole2: $v, subSubRole3: $q);}";
+        String specialisedRelation2 = "{(baseRole1: $z, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation3 = "{(subRole1: $u, subRole2: $v, subSubRole3: $q);}";
         String specialisedRelation4 = "{(subRole1: $y, subRole2: $y, subSubRole3: $x);}";
         String specialisedRelation5 = "{(subRole1: $u, subRole1: $v, subSubRole3: $q);}";
@@ -1193,7 +1193,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_VariousResourceAtoms(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String resource = "{$x has resource $r;$r 'f';}";
         String resource2 = "{$r has resource $x;$x 'f';}";
         String resource3 = "{$r has resource 'f';}";
@@ -1207,7 +1207,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_VariousTypeAtoms(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String type = "{$x isa baseRoleEntity;}";
         String type2 = "{$y isa baseRoleEntity;}";
         String userDefinedType = "{$y isa $x;$x label 'baseRoleEntity';}";
@@ -1221,7 +1221,7 @@ public class AtomicTest {
 
     @Test
     public void testUnification_ParentHasFewerRelationPlayers() {
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String childString = "{(subRole1: $y, subRole2: $x) isa binary;}";
         String parentString = "{(subRole1: $x) isa binary;}";
         String parentString2 = "{(subRole2: $y) isa binary;}";
@@ -1238,8 +1238,8 @@ public class AtomicTest {
         List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
         List<ConceptMap> parentAnswers2 = parentQuery2.getQuery().execute();
 
-        Unifier unifier = childAtom.getUnifier(parentAtom);
-        Unifier unifier2 = childAtom.getUnifier(parentAtom2);
+        Unifier unifier = childAtom.getUnifier(parentAtom, UnifierType.EXACT);
+        Unifier unifier2 = childAtom.getUnifier(parentAtom2, UnifierType.EXACT);
 
         assertCollectionsEqual(
                 parentAnswers,
@@ -1261,9 +1261,9 @@ public class AtomicTest {
 
     @Test
     public void testUnification_ResourceWithIndirectValuePredicate(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
-        String resource = "{$x has resource $r;$r 'f';}";
-        String resource2 = "{$r has resource $x;$x 'f';}";
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        String resource = "{$x has resource $r;$r == 'f';}";
+        String resource2 = "{$r has resource $x;$x == 'f';}";
         String resource3 = "{$r has resource 'f';}";
 
         ReasonerAtomicQuery resourceQuery = ReasonerQueries.atomic(conjunction(resource, graph), graph);
@@ -1278,9 +1278,9 @@ public class AtomicTest {
         Atom resourceAtom2 = resourceQuery2.getAtom();
         Atom resourceAtom3 = resourceQuery3.getAtom();
 
-        Unifier unifier = resourceAtom.getUnifier(typeAtom);
-        Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
-        Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
+        Unifier unifier = resourceAtom.getUnifier(typeAtom, UnifierType.RULE);
+        Unifier unifier2 = resourceAtom2.getUnifier(typeAtom, UnifierType.RULE);
+        Unifier unifier3 = resourceAtom3.getUnifier(typeAtom, UnifierType.RULE);
 
         ConceptMap typeAnswer = typeQuery.getQuery().execute().iterator().next();
         ConceptMap resourceAnswer = resourceQuery.getQuery().execute().iterator().next();
@@ -1294,7 +1294,7 @@ public class AtomicTest {
 
     @Test
     public void testRewriteAndUnification(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentString = "{$r (subRole1: $x) isa binary;}";
         Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Var parentVarName = parentAtom.getVarName();
@@ -1327,9 +1327,9 @@ public class AtomicTest {
 
     @Test
     public void testUnification_MatchAllParentAtom(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         String parentString = "{$r($a, $x);}";
-        String childString = "{$rel (role1: $z, role2: $b) isa binary;}";
+        String childString = "{$rel (baseRole1: $z, baseRole2: $b) isa binary;}";
         Atom parent = ReasonerQueries.atomic(conjunction(parentString, graph), graph).getAtom();
         Atom child = ReasonerQueries.atomic(conjunction(childString, graph), graph).getAtom();
 
@@ -1352,10 +1352,10 @@ public class AtomicTest {
 
     @Test
     public void testUnification_IndirectRoles(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         VarPatternAdmin basePattern = var()
-                .rel(var("role1").label("subRole1"), var("y1"))
-                .rel(var("role2").label("subSubRole2"), var("y2"))
+                .rel(var("baseRole1").label("subRole1"), var("y1"))
+                .rel(var("baseRole2").label("subSubRole2"), var("y2"))
                 .isa("binary")
                 .admin();
 
@@ -1379,10 +1379,10 @@ public class AtomicTest {
 
     @Test
     public void testUnification_IndirectRoles_NoRelationType(){
-        EmbeddedGraknTx<?> graph = unificationTestSet.tx();
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
         VarPatternAdmin basePattern = var()
-                .rel(var("role1").label("subRole1"), var("y1"))
-                .rel(var("role2").label("subSubRole2"), var("y2"))
+                .rel(var("baseRole1").label("subRole1"), var("y1"))
+                .rel(var("baseRole2").label("subSubRole2"), var("y2"))
                 .admin();
 
         ReasonerAtomicQuery baseQuery = ReasonerQueries.atomic(Patterns.conjunction(Sets.newHashSet(basePattern)), graph);
@@ -1449,7 +1449,7 @@ public class AtomicTest {
         List<ConceptMap> parentAnswers = parentQuery.getQuery().execute();
 
         if (checkInverse) {
-            Unifier unifier2 = parentAtom.getUnifier(childAtom);
+            Unifier unifier2 = parentAtom.getUnifier(childAtom, UnifierType.EXACT);
             assertEquals(unifier.inverse(), unifier2);
             assertEquals(unifier, unifier2.inverse());
         }
