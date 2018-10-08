@@ -108,6 +108,21 @@ span.bp3-icon::before {
   display: none;
 }
 
+.delete-icon {
+  cursor: pointer;
+}
+
+.delete-icon:focus {
+  outline: none !important;
+}
+
+.delete-icon:hover {
+  fill: var(--red-4);
+}
+.delete-icon:active {
+  fill: var(--red-3);
+}
+
 /* buttons */
 
 .vue-button {
@@ -195,7 +210,7 @@ span.bp3-icon::before {
   font-size: 11px;
   height: 30px;
   border: 1px solid var(--border-darkest-color);
-  padding: 5px;
+  padding: 5px !important;
   caret-color: var(--green-4);
   line-height: 22px;
   -webkit-box-shadow: none;

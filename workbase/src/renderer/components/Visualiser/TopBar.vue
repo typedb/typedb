@@ -10,6 +10,7 @@
 
         <div class="right">
             <keyspaces-handler :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
+            <vue-button icon="cog" className="vue-button" v-on:clicked="$emit('toggle-preferences')"></vue-button>
         </div>
     </div>
 </template>

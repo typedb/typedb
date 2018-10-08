@@ -1,7 +1,8 @@
 <template>
     <transition name="fade" appear>
         <div class="visualiser-wrapper">
-            <top-bar></top-bar>
+            <top-bar v-on:toggle-preferences="showPreferences = !showPreferences"></top-bar>
+            <preferences v-show="showPreferences"  v-on:close-preferences="showPreferences = !showPreferences"></preferences>
             <div class="lower">
                 <div class="center">
                     <context-menu></context-menu>
@@ -54,12 +55,18 @@ import BottomBar from './BottomBar.vue';
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
 import VisualiserFooter from './VisualiserFooter';
+import Preferences from './Preferences';
 
 
 export default {
   name: 'VisualiserContent',
   components: {
-    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, VisualiserFooter,
+    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, VisualiserFooter, Preferences,
+  },
+  data() {
+    return {
+      showPreferences: false,
+    };
   },
   methods: {
     toggleRightBar() {

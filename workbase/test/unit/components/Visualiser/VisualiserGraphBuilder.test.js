@@ -29,7 +29,7 @@ describe('prepareNodes', () => {
   });
   test('relationship', async () => {
     const prepared = await VisualiserGraphBuilder.prepareNodes([mockConcepts.getMockRelationship()]);
-    expect(prepared[0].type).toBe('marriage');
+    expect(prepared[0].type).toBe('parentship');
   });
 });
 

@@ -33,7 +33,6 @@
 import { mapGetters } from 'vuex';
 export default {
   name: 'GraknFooter',
-  props: ['localStore'],
   computed: {
     ...mapGetters(['currentKeyspace', 'canvasData']),
   },
