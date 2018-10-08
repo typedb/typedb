@@ -79,16 +79,25 @@ Tracer tracer = Tracing.currentTracer();
 
 Then add a child span
 ```
-Span s = tracer.currentSpan();
-ScopedSpan childSpan = null; // A ScopedSpan places the Span into the thread local storage for access in this same way elsewhere
-if (s != null) {
-    childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
-} 
-... existing code ...
 
-if (childSpan != null) {
-    childSpan.finish(); // will automatically use the Tracer's configuration to report to Zipkin and restores previous ScopedSpan (TODO double check restore works properly)
-}
+        Tracer tracer = Tracing.currentTracer();
+        ScopedSpan childSpan = null;
+        if (tracer != null) {
+            Span s = tracer.currentSpan();
+            if (s != null) {
+                childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
+            } else {
+                childSpan = tracer.startScopedSpan("planForConjunction");
+            }
+        }
+```
+
+and finish with 
+```
+        if (tracer != null && childSpan != null) {
+            childSpan.finish();
+        }
+
 ```
 
 

@@ -109,12 +109,14 @@ public class GreedyTraversalPlan {
     private static List<Fragment> planForConjunction(ConjunctionQuery query, EmbeddedGraknTx<?> tx) {
 
         Tracer tracer = Tracing.currentTracer();
-        Span s = tracer.currentSpan();
-        ScopedSpan childSpan;
-        if (s != null) {
-            childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
-        } else {
-            childSpan = tracer.startScopedSpan("planForConjunction");
+        ScopedSpan childSpan = null;
+        if (tracer != null) {
+            Span s = tracer.currentSpan();
+            if (s != null) {
+                childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
+            } else {
+                childSpan = tracer.startScopedSpan("planForConjunction");
+            }
         }
 
 
@@ -208,7 +210,9 @@ public class GreedyTraversalPlan {
         addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
         LOG.trace("Greedy Plan = " + plan);
 
-        childSpan.finish();
+        if (tracer != null && childSpan != null) {
+            childSpan.finish();
+        }
 
         return plan;
     }
