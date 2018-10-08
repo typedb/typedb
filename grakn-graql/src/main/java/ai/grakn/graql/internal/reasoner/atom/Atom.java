@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 import static java.util.stream.Collectors.toSet;
@@ -68,8 +70,13 @@ public abstract class Atom extends AtomicBase {
     protected Set<InferenceRule> applicableRules = null;
 
     public RelationshipAtom toRelationshipAtom(){
-        throw GraqlQueryException.illegalAtomConversion(this);
+        throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
     }
+    public IsaAtom toIsaAtom(){
+        throw GraqlQueryException.illegalAtomConversion(this, IsaAtom.class);
+    }
+
+    public abstract boolean isUnifiableWith(Atom atom);
 
     @Override
     public boolean isAtom(){ return true;}
@@ -307,23 +314,19 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Atom> rewriteToAtoms(){ return Sets.newHashSet(this);}
 
-    public abstract Atom rewriteWithTypeVariable();
-
     /**
      * rewrites the atom to user-defined type variable
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    protected Atom rewriteWithTypeVariable(Atom parentAtom){
-        if (this.getPredicateVariable().isUserDefinedName() || !parentAtom.getPredicateVariable().isUserDefinedName()) return this;
-        return rewriteWithTypeVariable();
+    public Atom rewriteWithTypeVariable(Atom parentAtom){
+        if (parentAtom.getPredicateVariable().isUserDefinedName()
+                && !this.getPredicateVariable().isUserDefinedName()
+                && this.getClass() == parentAtom.getClass() ){
+            return rewriteWithTypeVariable();
+        }
+        return this;
     }
-
-    /**
-     * rewrites the atom to one with user defined relation variable
-     * @return rewritten atom
-     */
-    public Atom rewriteWithRelationVariable(){ return this;}
 
     /**
      * rewrites the atom to one with suitably user-defined names depending on provided parent
@@ -332,16 +335,33 @@ public abstract class Atom extends AtomicBase {
      */
     public abstract Atom rewriteToUserDefined(Atom parentAtom);
 
+
+    public abstract Atom rewriteWithTypeVariable();
+
     /**
+     * rewrites the atom to one with user defined relation variable
+     * @return rewritten atom
+     */
+    public Atom rewriteWithRelationVariable(){ return this;}
+
+    /**
+     * attempt to find a UNIQUE unifier with the parent atom
      * @param parentAtom atom to be unified with
+     * @param unifierType type of unifier to be computed
      * @return corresponding unifier
      */
-    public abstract Unifier getUnifier(Atom parentAtom);
+    @Nullable
+    public abstract Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType);
+
     /**
      * find the (multi) unifier with parent atom
      * @param parentAtom atom to be unified with
      * @param unifierType type of unifier to be computed
      * @return multiunifier
      */
-    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){ return new MultiUnifierImpl(getUnifier(parentAtom));}
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType){
+        //NB only for relations we can have non-unique unifiers
+        Unifier unifier = this.getUnifier(parentAtom, unifierType);
+        return unifier != null? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
+    }
 }

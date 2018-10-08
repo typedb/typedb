@@ -1,142 +1,46 @@
-/*GEOGROTESQUE FONT*/
-
-/*Thin*/
+/* Google Lekton font */
 @font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_A_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_A_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_A_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_A_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_A_0.ttf') format('truetype');
-    font-weight: 100;
+    font-family: 'Lekton';
+    src: url('../fonts/Lekton/Lekton-Regular.ttf');
 }
 
-/*Thin Italic*/
+
+/* Titillium Web font */
+
+/* Light */
 @font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_B_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_B_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_B_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_B_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_B_0.ttf') format('truetype');
-    font-weight: 100;
-    font-style: italic;
+    font-family: 'TitilliumWeb-Light';
+    src: url('../fonts/TitilliumWeb/TitilliumWeb-Light.ttf');
 }
 
-/*Ultralight*/
+
+/* Geogrotesque */
+
+
+ /*Light*/
 @font-face {
     font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_D_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_D_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_D_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_D_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_D_0.ttf') format('truetype');
-    font-weight: 200;
-}
-
-/*Ultralight Copy*/
-@font-face {
-    font-family: 'Geogrotesque-Ultralight';
-    src: url('../fonts/geogrotesque/32DC85_D_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_D_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_D_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_D_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_D_0.ttf') format('truetype');
-    font-weight: 200;
-}
-
-/*UltraLight Italic*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_C_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_C_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_C_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_C_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_C_0.ttf') format('truetype');
-    font-weight: 200;
-    font-style: italic;
-}
-
-/*Light*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_1_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_1_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_1_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_1_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_1_0.ttf') format('truetype');
     font-weight: 300;
-}
-
-/*Light copy*/
-@font-face {
-    font-family: 'Geogrotesque-Light';
-    src: url('../fonts/geogrotesque/32DC85_1_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_1_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_1_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_1_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_1_0.ttf') format('truetype');
-    font-weight: 300;
-}
-
-/*Light Italic*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_2_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_2_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_2_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_2_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_2_0.ttf') format('truetype');
-    font-weight: 300;
-    font-style: italic;
+    src: url('../fonts/Geogrotesque/Geogtq-Lg.otf');
 }
 
 /*Regular*/
 @font-face {
     font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_6_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_6_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_6_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_6_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_6_0.ttf') format('truetype');
     font-weight: 400;
+    src: url('../fonts/Geogrotesque/Geogtq-Rg.otf');
 }
 
-/*Regular Italic*/
+/*semi bold*/
 @font-face {
     font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_7_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_7_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_7_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_7_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_7_0.ttf') format('truetype');
-    font-weight: 400;
-    font-style: italic;
+    font-weight: 500;
+    src: url('../fonts/Geogrotesque/Geogtq-Md.otf');
 }
 
-/*Medium*/
+/*bold*/
 @font-face {
     font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_3_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_3_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_3_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_3_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_3_0.ttf') format('truetype');
     font-weight: 600;
-}
-
-/*Medium Italic*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_5_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_5_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_5_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_5_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_5_0.ttf') format('truetype');
-    font-weight: 600;
-    font-style: italic;
-}
-
-/*SemiBold*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_9_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_9_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_9_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_9_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_9_0.ttf') format('truetype');
-    font-weight: 700;
-}
-
-/*SemiBold Italic*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_8_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_8_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_8_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_8_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_8_0.ttf') format('truetype');
-    font-weight: 700;
-    font-style: italic;
-}
-
-/*Bold*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_4_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_4_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_4_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_4_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_4_0.ttf') format('truetype');
-    font-weight: 800;
-}
-
-/*Bold Italic*/
-@font-face {
-    font-family: 'Geogrotesque';
-    src: url('../fonts/geogrotesque/32DC85_0_0.eot');
-    src: url('../fonts/geogrotesque/32DC85_0_0.eot?#iefix') format('embedded-opentype'),url('../fonts/geogrotesque/32DC85_0_0.woff2') format('woff2'),url('../fonts/geogrotesque/32DC85_0_0.woff') format('woff'),url('../fonts/geogrotesque/32DC85_0_0.ttf') format('truetype');
-    font-weight: 800;
-    font-style: italic;
-}
-
-/* Google Lekton font */
-@font-face {
-    font-family: 'Lekton';
-    src: url('../fonts/lekton/Lekton-Regular.ttf');
+    src: url('../fonts/Geogrotesque/Geogtq-Sb.otf');
 }

@@ -258,4 +258,3 @@ when
 (parent: $il, child: $y) isa parentship;}
 then
 {(parent-in-law: $il, child-in-law: $x) isa in-laws;};
-

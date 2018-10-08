@@ -115,16 +115,19 @@ abstract class ComparatorPredicate implements ValuePredicate {
         ComparatorPredicate that = (ComparatorPredicate) o;
         return persistedValue().equals(that.persistedValue());
     }
-
     @Override
     public boolean isCompatibleWith(ValuePredicate predicate) {
-        if (!(predicate instanceof EqPredicate)) return false;
-        EqPredicate p = (EqPredicate) predicate;
-        Object v = persistedValue().orElse(null);
-        Object pval = p.equalsValue().orElse(null);
-        return v == null
-                || pval == null
-                || gremlinPredicate(v).test(pval);
+        ComparatorPredicate that = (ComparatorPredicate) predicate;
+        Object val = this.value().orElse(null);
+        Object thatVal = that.value().orElse(null);
+        if (val == null || thatVal == null) return true;
+
+        //checks for !=/= contradiction
+        return ((!val.equals(thatVal))
+                || ((!(this instanceof EqPredicate) || !(that instanceof NeqPredicate))
+                && (!(that instanceof NeqPredicate) || !(this instanceof EqPredicate))))
+                && (this.gremlinPredicate(val).test(thatVal)
+                || that.gremlinPredicate(thatVal).test(val));
     }
 
     @Override

@@ -19,7 +19,6 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -29,23 +28,14 @@ import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.engine.ServerRPC;
 import ai.grakn.engine.ServerStatus;
-import ai.grakn.engine.data.QueueSanityCheck;
-import ai.grakn.engine.data.RedisSanityCheck;
-import ai.grakn.engine.data.RedisWrapper;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.rpc.KeyspaceService;
 import ai.grakn.engine.rpc.OpenRequest;
 import ai.grakn.engine.rpc.ServerOpenRequest;
 import ai.grakn.engine.rpc.SessionService;
-import ai.grakn.engine.task.postprocessing.CountPostProcessor;
-import ai.grakn.engine.task.postprocessing.CountStorage;
-import ai.grakn.engine.task.postprocessing.IndexPostProcessor;
-import ai.grakn.engine.task.postprocessing.IndexStorage;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisCountStorage;
-import ai.grakn.engine.task.postprocessing.redisstorage.RedisIndexStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
@@ -53,16 +43,15 @@ import ai.grakn.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.jayway.restassured.RestAssured;
 import io.grpc.ServerBuilder;
+import org.apache.commons.io.FileUtils;
 import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
@@ -87,13 +76,20 @@ public class EngineContext extends CompositeTestRule {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
+    /**
+     * This is the equivalent of $GRAKN_HOME/db but for testing.
+     *
+     * Every instance of an EngineContext should have its own data dir and it is accomplished by using TemporaryFolder,
+     * which is a JUnit class. Another bonus which it has is the guarantee that the folder will be deleted after the test
+     * has finished.
+     *
+     * The dataDirTmp instance is listed as one of the rules under the testRules() method.
+     *
+     */
+    private Path dataDirTmp;
     private Server server;
-
-    private final GraknConfig config;
-    private JedisPool jedisPool;
+    private GraknConfig config;
     private spark.Service sparkHttp;
-
-    private final InMemoryRedisContext redis;
 
     public KeyspaceStore systemKeyspace() {
         return keyspaceStore;
@@ -108,20 +104,7 @@ public class EngineContext extends CompositeTestRule {
     private EngineGraknTxFactory engineGraknTxFactory;
 
     private EngineContext() {
-        config = createTestConfig();
-        redis = InMemoryRedisContext.create();
-    }
 
-    private EngineContext(GraknConfig config, InMemoryRedisContext redis) {
-        this.config = config;
-        this.redis = redis;
-    }
-
-    public static EngineContext create(GraknConfig config) {
-        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-        int redisPort = redisURI.getPort();
-        InMemoryRedisContext redis = InMemoryRedisContext.create(redisPort);
-        return new EngineContext(config, redis);
     }
 
     /**
@@ -135,26 +118,6 @@ public class EngineContext extends CompositeTestRule {
 
     public Server server() {
         return server;
-    }
-
-    public GraknConfig config() {
-        return config;
-    }
-
-    public RedisCountStorage redis() {
-        return redis(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-    }
-
-    public RedisCountStorage redis(String uri) {
-        SimpleURI simpleURI = new SimpleURI(uri);
-        return redis(simpleURI.getHost(), simpleURI.getPort());
-    }
-
-    public RedisCountStorage redis(String host, int port) {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        this.jedisPool = new JedisPool(poolConfig, host, port);
-        MetricRegistry metricRegistry = new MetricRegistry();
-        return RedisCountStorage.create(jedisPool, metricRegistry);
     }
 
     public SimpleURI uri() {
@@ -171,22 +134,17 @@ public class EngineContext extends CompositeTestRule {
 
     @Override
     protected final List<TestRule> testRules() {
-        return ImmutableList.of(
-                SessionContext.create(),
-                redis
-        );
+        return ImmutableList.of(SessionContext.create());
     }
 
     @Override
     protected final void before() throws Throwable {
+        dataDirTmp = Files.createTempDirectory("db-for-test");
+        config = createTestConfig(dataDirTmp.toString());
         RestAssured.baseURI = uri().toURI().toString();
         if (!config.getProperty(GraknConfigKey.TEST_START_EMBEDDED_COMPONENTS)) {
             return;
         }
-
-        SimpleURI redisURI = new SimpleURI(Iterables.getOnlyElement(config.getProperty(GraknConfigKey.REDIS_HOST)));
-
-        jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
         // To ensure consistency b/w test profiles and configuration files, when not using Janus
         // for a unit tests in an IDE, add the following option:
@@ -204,10 +162,7 @@ public class EngineContext extends CompositeTestRule {
 
         sparkHttp = spark.Service.ignite();
 
-        config.setConfigProperty(GraknConfigKey.REDIS_HOST, Collections.singletonList("localhost:" + redis.port()));
-        RedisWrapper redis = RedisWrapper.create(config);
-
-        server = startGraknEngineServer(redis);
+        server = startGraknEngineServer();
 
         LOG.info("engine started on " + uri());
     }
@@ -230,11 +185,13 @@ public class EngineContext extends CompositeTestRule {
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
-            jedisPool.close();
             sparkHttp.stop();
+            FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
         }
+
+
     }
 
     private void clearGraphs() {
@@ -272,9 +229,9 @@ public class EngineContext extends CompositeTestRule {
     /**
      * Create a configuration for use in tests, using random ports.
      */
-    public static GraknConfig createTestConfig() {
+    public static GraknConfig createTestConfig(String dataDir) {
         GraknConfig config = GraknConfig.create();
-
+        config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
 
         return config;
@@ -284,45 +241,34 @@ public class EngineContext extends CompositeTestRule {
         RestAssured.baseURI = "http://" + config.uri();
     }
 
-    public JedisPool getJedisPool() {
-        return jedisPool;
-    }
-
-    private Server startGraknEngineServer(RedisWrapper redisWrapper) throws IOException {
+    private Server startGraknEngineServer() throws IOException {
         EngineID id = EngineID.me();
         ServerStatus status = new ServerStatus();
 
         MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
-        LockProvider lockProvider = new JedisLockProvider(redisWrapper.getJedisPool());
+        LockProvider lockProvider = new ProcessWideLockProvider();
 
         keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
         engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
 
-
-        // post-processing
-        IndexStorage indexStorage = RedisIndexStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        CountStorage countStorage = RedisCountStorage.create(redisWrapper.getJedisPool(), metricRegistry);
-        IndexPostProcessor indexPostProcessor = IndexPostProcessor.create(lockProvider, indexStorage);
-        CountPostProcessor countPostProcessor = CountPostProcessor.create(config, engineGraknTxFactory, lockProvider, metricRegistry, countStorage);
-        PostProcessor postProcessor = PostProcessor.create(indexPostProcessor, countPostProcessor);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
-                .addService(new SessionService(requestOpener, postProcessor))
+                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
         GraknTestUtil.allocateSparkPort(config);
-        QueueSanityCheck queueSanityCheck = new RedisSanityCheck(redisWrapper);
 
         Server graknEngineServer = ServerFactory.createServer(id, config, status,
                 sparkHttp, Collections.emptyList(), rpcServerRPC,
                 engineGraknTxFactory, metricRegistry,
-                queueSanityCheck, lockProvider, postProcessor, keyspaceStore);
+                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();
 

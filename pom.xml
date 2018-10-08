@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>1.4.0-SNAPSHOT</version>
+    <version>1.5.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>The Knowledge Graph</description>
     <url>https://grakn.ai</url>
@@ -51,10 +51,10 @@
         <project.resource.encoding>UTF-8</project.resource.encoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <tinkerpop.version>3.2.9</tinkerpop.version>
+        <tinkerpop.version>3.3.3</tinkerpop.version>
         <junit.version>4.12</junit.version>
-        <janus.version>0.2.0</janus.version>
-        <guava.version>19.0</guava.version>
+        <janus.version>0.3.0</janus.version>
+        <guava.version>23.0</guava.version>
         <antlr.version>4.5</antlr.version>
         <jline.version>2.12</jline.version>
         <commons-cli.version>1.3</commons-cli.version>
@@ -63,19 +63,18 @@
         <commons-csv.version>1.3</commons-csv.version>
         <json.version>20160212</json.version>
         <rest-assured.version>2.7.0</rest-assured.version>
-        <spark.version>1.6.1</spark.version>
+        <spark.version>2.2.0</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
         <mjson.version>1.4.0</mjson.version>
         <logback.version>1.2.3</logback.version>
-        <redis-mock.version>0.1.5</redis-mock.version>
         <janino.version>2.7.8</janino.version>
         <slf4j.version>1.7.20</slf4j.version>
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
-        <cassandra-unit.version>2.1.9.2</cassandra-unit.version>
-        <cassandra-all.version>2.1.17</cassandra-all.version>
+        <cassandra-unit.version>3.5.0.1</cassandra-unit.version>
+        <cassandra-all.version>3.11.3</cassandra-all.version>
         <h2-database.version>1.4.192</h2-database.version>
         <systen-rules.version>1.16.0</systen-rules.version>
         <mockito.version>2.6.4</mockito.version>
@@ -83,22 +82,18 @@
         <quickcheck.version>0.7</quickcheck.version>
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
-        <redis.version>2.9.0</redis.version>
         <metrics.version>3.2.3</metrics.version>
         <bytebuddy.version>1.6.14</bytebuddy.version>
         <jmh-core.version>1.19</jmh-core.version>
-        <redis-test.version>0.6</redis-test.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
-        <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
-        <jackson.version>2.8.5</jackson.version>
+        <cassandra-driver-core.version>3.5.1</cassandra-driver-core.version>
         <prometheus.version>0.0.13</prometheus.version>
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
-        <spark-gremlin.version>3.2.5</spark-gremlin.version>
-        <grpc.version>1.8.0</grpc.version>
-        <netty-all.version>4.1.16.Final</netty-all.version>
+        <grpc.version>1.15.0</grpc.version>
+        <netty-all.version>4.1.30.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
-        <netty.version>1.1.33.Fork19</netty.version>
+        <netty-ssl.version>2.0.14.Final</netty-ssl.version>
         <apache-http-core.version>4.4.6</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
@@ -109,12 +104,12 @@
         <reactivex.version>1.3.2</reactivex.version>
         <zip4j.version>1.3.2</zip4j.version>
         <zt-exec.version>1.10</zt-exec.version>
-        <!--TODO: Delete Jackson dependency when we change to dropwizard-->
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
-
         <brave.version>5.1.2</brave.version>
         <brave-grpc.version>5.1.2</brave-grpc.version>
+        <astyanax.version>3.10.2</astyanax.version>
+        <rocksdbjni.version>5.14.2</rocksdbjni.version>
     </properties>
 
     <organization>
@@ -188,12 +183,12 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-core</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-kb</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>javax.servlet</artifactId>
@@ -208,7 +203,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <artifactId>slf4j-api</artifactId>
@@ -219,7 +214,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-factory</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.eclipse.jetty.orbit</groupId>
@@ -243,7 +238,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>client-java</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -254,7 +249,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-engine</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -265,37 +260,37 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-graql-shell</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-base</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-sql</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-xml</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-csv</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-json</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>migration-export</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
+                <version>1.5.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
@@ -327,8 +322,12 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>spark-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
@@ -358,8 +357,12 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>hadoop-gremlin</artifactId>
-                <version>${spark-gremlin.version}</version>
+                <version>${tinkerpop.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
@@ -373,10 +376,6 @@
                         <artifactId>jackson-databind</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-core_2.10</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>javax.servlet</groupId>
                         <artifactId>javax.servlet-api</artifactId>
                     </exclusion>
@@ -387,6 +386,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>jcl-over-slf4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-nop</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>log4j</groupId>
@@ -425,11 +428,6 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>log4j-over-slf4j</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-nop</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
@@ -489,13 +487,33 @@
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_2.10</artifactId>
+                <artifactId>jackson-module-scala_2.11</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-core</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-thrift</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-cassandra</artifactId>
+                <version>${astyanax.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.netflix.astyanax</groupId>
+                <artifactId>astyanax-recipes</artifactId>
+                <version>${astyanax.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.janusgraph</groupId>
@@ -531,6 +549,10 @@
                         <artifactId>logback-classic</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.apache.servicemix.bundles</groupId>
                         <artifactId>org.apache.servicemix.bundles.commons-csv</artifactId>
                     </exclusion>
@@ -538,9 +560,13 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.spark</groupId>
-                <artifactId>spark-core_2.10</artifactId>
+                <artifactId>spark-core_2.11</artifactId>
                 <version>${spark.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.module</groupId>
                         <artifactId>jackson-module-scala_2.10</artifactId>
@@ -569,6 +595,10 @@
                         <groupId>io.dropwizard.metrics</groupId>
                         <artifactId>metrics-core</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.scala-lang.modules</groupId>
+                        <artifactId>scala-xml_2.11</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -591,6 +621,10 @@
                     <exclusion>
                         <groupId>log4j</groupId>
                         <artifactId>log4j</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.codahale.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -644,9 +678,14 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdbjni.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
-                <version>${netty.version}</version>
+                <version>${netty-ssl.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sparkjava</groupId>
@@ -730,9 +769,19 @@
                 <version>${netty-all.version}</version>
             </dependency>
             <dependency>
-                <groupId>redis.clients</groupId>
-                <artifactId>jedis</artifactId>
-                <version>${redis.version}</version>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http2</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler-proxy</artifactId>
+                <version>${netty-all.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -836,14 +885,7 @@
             <dependency>
                 <groupId>ai.grakn</groupId>
                 <artifactId>grakn-test-tools</artifactId>
-                <version>1.4.0-SNAPSHOT</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>ai.grakn</groupId>
-                <artifactId>redis-mock</artifactId>
-                <version>${redis-mock.version}</version>
+                <version>1.5.0-SNAPSHOT</version>
                 <scope>test</scope>
             </dependency>
 
@@ -869,12 +911,6 @@
                 <groupId>com.pholser</groupId>
                 <artifactId>junit-quickcheck-generators</artifactId>
                 <version>${quickcheck.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.github.kstyrc</groupId>
-                <artifactId>embedded-redis</artifactId>
-                <version>${redis-test.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -944,11 +980,11 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>snapshots</id>
+            <id>mavengraknai</id>
             <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
-            <id>releases</id>
+            <id>oss-sonatype</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
@@ -979,7 +1015,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>1.5.0</version>
+                    <version>1.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -1074,6 +1110,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                     <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                    <skip>${skipTests}</skip>
                 </configuration>
                 <executions>
                     <execution>
@@ -1197,7 +1234,20 @@
 
     <profiles>
         <profile>
-            <id>grakn-releases</id>
+            <id>test-deploy-jars</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/releases</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>deploy-jars</id>
             <build>
                 <plugins>
                     <plugin>
@@ -1209,6 +1259,7 @@
                             <additionalparam>-Xdoclint:none</additionalparam>
                             <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                             <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                            <skip>false</skip>
                         </configuration>
                         <executions>
                             <execution>
@@ -1238,7 +1289,7 @@
                         <artifactId>nexus-staging-maven-plugin</artifactId>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
+                            <serverId>oss-sonatype</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
@@ -1247,11 +1298,11 @@
             </build>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>

@@ -18,8 +18,10 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
+import java.util.Set;
 
 /**
  *
@@ -27,24 +29,31 @@ import ai.grakn.graql.Var;
  * Interface for defining unifier comparisons.
  * </p>
  *
- *@author Kasper Piskorski
+ * @author Kasper Piskorski
  *
  */
 public interface UnifierComparison {
 
     /**
-     * @param parent {@link Type} of parent expression
-     * @param child {@link Type} of child expression
+     * @param parent {@link SchemaConcept} of parent expression
+     * @param child {@link SchemaConcept} of child expression
      * @return true if {@link Type}s are compatible
      */
-    boolean typeCompatibility(Type parent, Type child);
+    boolean typeCompatibility(SchemaConcept parent, SchemaConcept child);
 
     /**
      * @param parent {@link Atomic} of parent expression
      * @param child {@link Atomic} of child expression
-     * @return true if {@link Atomic}s compatible
+     * @return true if id predicates are compatible
      */
-    boolean atomicCompatibility(Atomic parent, Atomic child);
+    boolean idCompatibility(Atomic parent, Atomic child);
+
+    /**
+     * @param parent {@link Atomic} of parent expression
+     * @param child {@link Atomic} of child expression
+     * @return true if value predicates are compatible
+     */
+    boolean valueCompatibility(Atomic parent, Atomic child);
 
     /**
      * @param query to be checked
@@ -53,4 +62,23 @@ public interface UnifierComparison {
      * @return true if typing the typeVar with type is compatible with role configuration of the provided query
      */
     boolean typePlayability(ReasonerQuery query, Var var, Type type);
+
+
+    /**
+     *
+     * @param parent multipredicate of parent attribute
+     * @param child multipredicate of child attribute
+     * @return true if multipredicates of attributes are compatible
+     */
+    boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child);
+
+    /**
+     *
+     * @param parent {@link Atomic} query
+     * @param child {@link Atomic} query
+     * @param parentVar variable of interest in the parent query
+     * @param childVar variable of interest in the child query
+     * @return true if attributes attached to child var are compatible with attributes attached to parent var
+     */
+    default boolean attributeCompatibility(ReasonerQuery parent, ReasonerQuery child, Var parentVar, Var childVar){ return true;}
 }

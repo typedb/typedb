@@ -1,0 +1,129 @@
+define
+
+#Roles
+
+# Role hierarchy
+#
+#                             role
+#             /                 |                   \
+#         baseRole1         baseRole2                baseRole3
+#       /      \             /     \                |
+# subRole1   aSubRole1   subRole2  aSubRole1      subRole3
+#       |                    |                      |
+# subSubRole1            subSubRole2             subSubRole3
+#
+
+baseRole1 sub role;
+subRole1 sub baseRole1;
+anotherSubRole1 sub baseRole1;
+subSubRole1 sub subRole1;
+
+baseRole2 sub role;
+subRole2 sub baseRole2;
+anotherSubRole2 sub baseRole2;
+subSubRole2 sub subRole2;
+
+baseRole3 sub role;
+subRole3 sub baseRole3;
+subSubRole3 sub subRole3;
+
+#Entities
+#simple vertical hierarchy
+
+baseEntity sub entity
+    has resource
+    plays baseRole1
+    plays baseRole2
+    plays baseRole3
+    is-abstract;
+
+baseRoleEntity sub baseEntity;
+anotherBaseRoleEntity sub baseEntity;
+
+subRoleEntity sub baseRoleEntity
+    plays subRole1
+    plays anotherSubRole1
+    plays subRole2
+    plays anotherSubRole2
+    plays subRole3;
+
+subSubRoleEntity sub subRoleEntity
+    plays subSubRole1
+    plays subSubRole2
+    plays subSubRole3;
+
+baseRelation sub relationship
+    is-abstract
+    has resource;
+
+binary sub baseRelation
+    relates baseRole1
+    relates baseRole2
+    relates subRole1
+    relates subRole2
+    relates anotherSubRole1
+    relates anotherSubRole2
+    relates subSubRole1
+    relates subSubRole2;
+    
+ternary sub baseRelation
+    relates baseRole1
+    relates baseRole2
+    relates baseRole3
+    relates subRole1
+    relates subRole2
+    relates subRole3
+    relates anotherSubRole1
+    relates anotherSubRole2
+    relates subSubRole1
+    relates subSubRole2
+    relates subSubRole3;
+
+#Resources
+
+resource sub attribute datatype string
+    plays baseRole1
+    plays baseRole2;
+
+resource-long sub attribute datatype long
+    plays baseRole1
+    plays baseRole2;
+
+insert
+
+#Instances
+
+$a isa anotherBaseRoleEntity;
+
+$b isa baseRoleEntity, has resource 'b';
+
+$f isa subRoleEntity, has resource 'f';
+$m isa subSubRoleEntity, has resource 'm';
+$d isa subSubRoleEntity, has resource 'd';
+$s isa subSubRoleEntity, has resource 's';
+
+(anotherSubRole1: $m, subRole2: $s) isa binary;
+(subRole1: $f, anotherSubRole2: $d) isa binary;
+(subRole1: $m, anotherSubRole2: $d) isa binary;
+(anotherSubRole1: $m, anotherSubRole2: $d) isa binary;
+
+(subRole1: $f, subRole2: $s) isa binary;
+(subRole1: $f, subSubRole2: $d) isa binary;
+(subSubRole1: $m, subRole2: $s) isa binary;
+(subSubRole1: $m, subSubRole2: $d) isa binary;
+
+(baseRole1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
+(baseRole1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
+
+(subRole1: $f, subRole2: $m, subSubRole3: $d) isa ternary;
+(subRole1: $f, subRole2: $f, subSubRole3: $d) isa ternary;
+
+(subRole1: $f, subSubRole2: $m, subSubRole3: $d) isa ternary;
+(subRole1: $m, subSubRole2: $m, subSubRole3: $d) isa ternary;
+
+(subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
+(subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
+
+$dummy isa resource-long == 0;
+$dummy2 isa resource-long == 1;
+
