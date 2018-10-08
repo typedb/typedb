@@ -34,6 +34,14 @@ def grpc_dependencies():
 
     native.git_repository(
         name = "org_pubref_rules_proto",
-        remote = "https://github.com/pubref/rules_proto",
-        commit = "27da2e7af9e4a1c43c584be2f05be8a301a642b6",
+        remote = "https://github.com/graknlabs/rules_proto",
+        commit = "9fd93eb7a81e4d6082d2236ba492e13338080945",
+    )
+
+def python_dependencies():
+    native.git_repository(
+        name = "io_bazel_rules_python",
+        remote = "https://github.com/jkinkead/rules_python.git",
+        commit = "07785fcc2bd7b99f84954f2365f236e5bfe632f7",
+        sha256 = "43dba49e83b6ebb74545dc72e36b06ef8478e2954e2222936a0348be7307036b"
     )
