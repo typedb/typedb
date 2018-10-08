@@ -2,24 +2,22 @@ package ai.grakn.engine.attribute.deduplicator;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.attribute.deduplicator.queue.Attribute;
-import ai.grakn.engine.attribute.deduplicator.queue.RocksDbQueue;
+import ai.grakn.core.server.attribute.deduplicator.queue.Attribute;
+import ai.grakn.core.server.attribute.deduplicator.queue.RocksDbQueue;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class RocksDbQueueTest {
     @Test

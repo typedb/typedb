@@ -21,10 +21,11 @@ package ai.grakn.engine.controller.util;
 import ai.grakn.exception.GraknServerException;
 import mjson.Json;
 import org.junit.Test;
+
+import static ai.grakn.core.server.controller.util.Requests.extractJsonField;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import static ai.grakn.engine.controller.util.Requests.extractJsonField;
 
 public class RequestsTest {
     @Test

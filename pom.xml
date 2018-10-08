@@ -167,7 +167,7 @@
         <netty-all.version>4.1.30.Final</netty-all.version>
         <google-bigtable.version>0.9.5.1</google-bigtable.version>
         <netty-ssl.version>2.0.14.Final</netty-ssl.version>
-        <apache-http-core.version>4.4.6</apache-http-core.version>
+        <apache-http-core.version>4.4.1</apache-http-core.version>
         <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
         <pf4j.version>1.3.0</pf4j.version>
         <jersey.version>1.19</jersey.version>

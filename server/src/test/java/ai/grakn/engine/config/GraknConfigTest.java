@@ -19,7 +19,7 @@
 package ai.grakn.engine.config;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.engine.GraknConfig;
+import ai.grakn.core.server.GraknConfig;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Rule;
 import org.junit.Test;

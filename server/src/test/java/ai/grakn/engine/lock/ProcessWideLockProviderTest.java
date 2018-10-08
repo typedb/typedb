@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.lock;
 
+import ai.grakn.core.server.lock.ProcessWideLockProvider;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.locks.Lock;
@@ -35,18 +35,15 @@ public class ProcessWideLockProviderTest {
     private final String LOCK_NAME = "lock";
 
     @Rule
-    public final SystemOutRule systemOut = new SystemOutRule().enableLog();
-
-    @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void whenGivenLock_ReturnsLockWithSameClass(){
+    public void whenGivenLock_ReturnsLockWithSameClass() {
         assertThat(new ProcessWideLockProvider().getLock(LOCK_NAME).getClass(), equalTo(ReentrantLock.class));
     }
 
     @Test
-    public void whenUsingSameString_LocksAreTheSame(){
+    public void whenUsingSameString_LocksAreTheSame() {
         ProcessWideLockProvider l = new ProcessWideLockProvider();
 
         Lock lock1 = l.getLock(LOCK_NAME);
