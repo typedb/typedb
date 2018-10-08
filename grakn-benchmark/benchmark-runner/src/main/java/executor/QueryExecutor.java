@@ -28,6 +28,8 @@ import ai.grakn.util.SimpleURI;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +48,8 @@ public class QueryExecutor {
     private final String keyspace;
 
     final List<Query> queries;
+
+    private static final Logger LOG = LoggerFactory.getLogger(QueryExecutor.class);
 
     public QueryExecutor(String keyspace, String uri, String executionName, List<String> queryStrings) {
         this.keyspace = keyspace;
@@ -95,6 +99,7 @@ public class QueryExecutor {
             while (queryIterator.hasNext()) {
 
                 Query query = queryIterator.next().withTx(tx);
+                LOG.info("Running query: " + query.toString());
 
                 Span batchSpan = tracer.newTrace().name("batch-query-span");
                 batchSpan.tag("concepts", Integer.toString(numConcepts));

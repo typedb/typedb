@@ -24,6 +24,7 @@ import executionconfig.BenchmarkConfigurationFile;
 import executor.QueryExecutor;
 import generator.DataGenerator;
 import org.apache.http.entity.StringEntity;
+import org.apache.ignite.Ignite;
 import sharedconfig.Configs;
 
 import java.io.File;
@@ -109,6 +110,7 @@ public class BenchmarkManager {
      */
     private void runAtConcepts(List<Integer> numConceptsInRun) {
         for (int numConcepts : numConceptsInRun) {
+            LOG.info("Running queries with " + Integer.toString(numConcepts) + " concepts");
             this.dataGenerator.generate(numConcepts);
             this.queryExecutor.processStaticQueries(numQueryRepetitions, numConcepts);
         }
@@ -158,13 +160,13 @@ public class BenchmarkManager {
         restClient.close();
     }
 
-    public static void initIgniteServer() throws IgniteException {
-        Ignition.start();
+    public static Ignite initIgniteServer() throws IgniteException {
+        return Ignition.start();
     }
 
     public static void main(String[] args) throws IOException {
 
-        initIgniteServer();
+        Ignite ignite = initIgniteServer();
         initElasticSearch();
 
         Option configFileOption = Option.builder("c")
@@ -271,6 +273,8 @@ public class BenchmarkManager {
                                             benchmarkConfiguration.getQueries());
         BenchmarkManager manager = new BenchmarkManager(benchmarkConfiguration, dataGenerator, queryExecutor);
         manager.run();
+
+        ignite.close();
     }
 }
 

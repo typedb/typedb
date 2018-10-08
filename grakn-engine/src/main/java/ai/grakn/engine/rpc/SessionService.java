@@ -130,18 +130,20 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             // this is the gRPC thread
 
             try {
-                if (request.getMetadataOrDefault("traceIdLow", "").length() > 0) {
+                Tracer tracing = Tracing.currentTracer();
+                if (tracing != null && request.getMetadataOrDefault("traceIdLow", "").length() > 0) {
                     String traceIdHigh = request.getMetadataOrThrow("traceIdHigh");
                     String traceIdLow = request.getMetadataOrThrow("traceIdLow");
                     String spanId = request.getMetadataOrThrow("spanId");
                     String parentId = request.getMetadataOrDefault("parentId", "");
 
                     receivedTraceContext = GrpcMessageConversion.stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
+
                     // hop context across thread boundaries
                     // do this here in case we want to insert another span starting here, in this thread
                     // to the handleRequest() invocation (measure queue time)
                     // NOTE that doing this will flush the span started here, I think!
-                    Span queueSpan = Tracing.currentTracer()
+                    Span queueSpan = tracing
                             .newChild(receivedTraceContext)
                             .name("Server receive queue")
                             .start();
@@ -167,6 +169,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
+            // this variant should only be called IF we have a valid tracer, context etc.
+
             queueSpan.finish(); // queue time has finished!
             // hop the span context across thread boundaries
             Tracer tracer = Tracing.currentTracer();
