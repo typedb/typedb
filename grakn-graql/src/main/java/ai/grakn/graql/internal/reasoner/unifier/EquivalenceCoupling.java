@@ -21,13 +21,13 @@ package ai.grakn.graql.internal.reasoner.unifier;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 
 /**
- *
+ * Interface to couple {@link UnifierType} classes with corresponding {@link ReasonerQueryEquivalence}s.
  */
-public interface UnifierEquivalenceLink {
+public interface EquivalenceCoupling {
 
     /**
      *
-     * @return
+     * @return coupled equivalence class
      */
     ReasonerQueryEquivalence equivalence();
 }

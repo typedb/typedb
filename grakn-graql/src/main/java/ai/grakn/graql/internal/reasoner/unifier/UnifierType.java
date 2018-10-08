@@ -42,7 +42,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentC
  * @author Kasper Piskorski
  *
  */
-public enum UnifierType implements UnifierComparison, UnifierEquivalenceLink {
+public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
     /**
      *
