@@ -270,7 +270,7 @@ public class GraqlShell implements AutoCloseable {
     private void clean() throws IOException {
         // Get user confirmation to clean graph
         console.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
-        console.println("Type 'confirm' to continue..");
+        console.println("Type 'confirm' to continue...");
         String line = console.readLine();
         if (line != null && line.equals("confirm")) {
             console.print("Cleaning keyspace...");
