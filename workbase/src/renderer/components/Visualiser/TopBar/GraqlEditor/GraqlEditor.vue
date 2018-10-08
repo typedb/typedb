@@ -2,8 +2,8 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button icon="star" className="vue-button fav-queries-container-btn" v-on:clicked="toggleFavQueriesList"></vue-button>
-            <vue-button rightIcon="locate" className="vue-button types-container-btn" v-on:clicked="toggleTypesContainer"></vue-button>
+            <button @click="toggleFavQueriesList" class="btn fav-queries-container-btn"><vue-icon icon="star" className="vue-icon"></vue-icon></button>
+            <button @click="toggleTypesContainer" class="btn types-container-btn"><vue-icon icon="locate" className="vue-icon"></vue-icon></button>
         </div>
     <div class="center">
         <div class="center-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
@@ -51,9 +51,9 @@
     </div>
 
 <div class="right">
-    <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="showSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button clear-graph-btn"></vue-button>
-    <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
+    <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="showSpinner" className="btn run-btn"></vue-button>
+    <button @click="clearGraph" class="btn clear-graph-btn"><vue-icon icon="refresh" className="vue-icon"></vue-icon></button>
+    <!--<button @click="takeScreenshot" class="btn"><vue-icon icon="camera" className="vue-icon"></vue-icon></button>-->
 </div>
 
 </div>
@@ -172,11 +172,13 @@ import FavQueriesList from '../FavQueries/FavQueriesList';
 import TypesContainer from '../TypesContainer';
 import ErrorContainer from '../ErrorContainer';
 import AddFavQuery from '../FavQueries/AddFavQuery';
+import LoadingButton from '../../../UIElements/LoadingButton';
 
 
 export default {
   name: 'GraqlEditor',
   components: {
+    LoadingButton,
     AddFavQuery,
     ErrorContainer,
     FavQueriesList,
@@ -280,7 +282,7 @@ export default {
     },
     clearEditor() {
       this.codeMirror.setValue('');
-      this.maximizeEditor();
+      if (this.editorMinimized) this.maximizeEditor();
     },
     clearGraph() {
       if (!this.currentKeyspace) this.$emit('keyspace-not-selected');

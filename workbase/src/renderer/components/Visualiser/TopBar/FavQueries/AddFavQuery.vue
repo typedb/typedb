@@ -2,7 +2,7 @@
     <div class="add-fav-query z-depth-3">
         <div class="panel-body">
             <vue-tooltip className="fav-query-name-tooltip" content="please write a query name" :isOpen="showAddFavQueryToolTip" :usePortal="false" :child="queryNameInput" v-on:close-tooltip="$emit('toggle-fav-query-tooltip', false)"></vue-tooltip>
-            <vue-button v-on:clicked="addFavQuery" icon="floppy-disk" className="vue-button save-query-btn"></vue-button>
+            <button @click="addFavQuery" class="btn save-query-btn"><vue-icon icon="floppy-disk" className="vue-icon"></vue-icon></button>
         </div>
         <div class="editor-tab">
             <div class="close-add-fav-query-container" @click="$emit('close-add-query-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>

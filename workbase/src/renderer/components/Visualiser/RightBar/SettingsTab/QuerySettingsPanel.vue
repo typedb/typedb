@@ -9,15 +9,15 @@
         <div class="panel-content">
             <div class="panel-content-item">
                 <h1 class="panel-label">Query Limit:</h1>
-                <div class="panel-value query-limit-input"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
+                <input class="input-small panel-value query-limit-input" type="number" v-model="queryLimit">
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Neighbour Limit:</h1>
-                <div class="panel-value neighbour-limit-input"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
+                <input class="input-small panel-value neighbour-limit-input" type="number" v-model="neighboursLimit">
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Load Roleplayers:</h1>
-                <div class="panel-value load-roleplayers-switch"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
+                <div class="panel-value load-roleplayers-switch"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers"></vue-switch></div>
             </div>
         </div>
         </div>
@@ -34,17 +34,21 @@
     data() {
       return {
         showQuerySettings: true,
+        queryLimit: QueryUtils.getQueryLimit(),
+        neighboursLimit: QueryUtils.getNeighboursLimit(),
       };
     },
     computed: {
-      queryLimit() {
-        return QueryUtils.getQueryLimit();
-      },
-      neighboursLimit() {
-        return QueryUtils.getNeighboursLimit();
-      },
       loadRolePlayers() {
         return QueryUtils.getRolePlayersStatus();
+      },
+    },
+    watch: {
+      queryLimit(newVal) {
+        QueryUtils.setQueryLimit(newVal);
+      },
+      neighboursLimit(newVal) {
+        QueryUtils.setNeighboursLimit(newVal);
       },
     },
     methods: {
@@ -54,17 +58,12 @@
       toggleAutoloadRoleplayers(newVal) {
         QueryUtils.setRolePlayersStatus(newVal);
       },
-      updateQueryLimit(newVal) {
-        QueryUtils.setQueryLimit(newVal);
-      },
-      updateNeighboursLimit(newVal) {
-        QueryUtils.setNeighboursLimit(newVal);
-      },
     },
   };
 </script>
 
 <style scoped>
+
 
     .panel-content {
         padding: var(--container-padding);

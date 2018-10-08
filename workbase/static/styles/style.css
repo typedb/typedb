@@ -110,6 +110,39 @@ span.bp3-icon::before {
 
 /* buttons */
 
+.btn {
+  background: var(--button-color) none !important;
+  -webkit-box-shadow: none !important;
+  border: 1px solid var(--border-darkest-color);
+  box-shadow: none;
+  white-space: nowrap;
+  border-radius: 0px;
+  min-height: 30px;
+  margin: var(--element-margin);
+  cursor: pointer;
+
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+}
+
+.btn:hover {
+  border: 1px solid var(--button-hover-border-color);
+}
+
+.btn:active {
+  border: 1px solid var(--button-active-border-color);
+}
+
+.btn:focus {
+  outline: none;
+}
+
+
 .vue-button {
   background: var(--button-color) none !important;
   border: 1px solid var(--border-darkest-color) !important;
@@ -171,6 +204,10 @@ span.bp3-icon::before {
   fill: var(--green-4) !important;
 }
 
+.bp3-spinner-animation * {
+  margin-top: 3px;
+}
+
 .bp3-spinner-head {
   stroke: var(--green-4) !important;
 
@@ -185,8 +222,25 @@ span.bp3-icon::before {
 }
 
 
-/* queryNameInput */
+/* Input */
 
+.input-small {
+  background-color: var(--button-color);
+  color: var(--font-default);
+  font-size: 11px;
+  height: 22px;
+  border: 1px solid var(--border-darkest-color);
+  padding: 5px;
+  caret-color: var(--green-4);
+  line-height: 22px;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  border-radius: 0px;
+}
+
+.input-small:focus {
+  outline: none;
+}
 
 
 .vue-input .bp3-input {
@@ -242,6 +296,12 @@ color: var(--font-faded);
   margin-right: var(--element-margin) !important;
 }
 
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
 
 /* menu */
 
@@ -578,10 +638,10 @@ a {
 .z-depth-0 {
   box-shadow: none !important; }
 
-.z-depth-1, .card-panel, .card, .toast, .btn, .btn-large, .btn-floating, .dropdown-content, .collapsible, .side-nav {
+.z-depth-1 {
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2); }
 
-.z-depth-1-half, .btn:hover, .btn-large:hover, .btn-floating:hover {
+.z-depth-1-half {
   box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.14), 0 1px 7px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -1px rgba(0, 0, 0, 0.2); }
 
 .z-depth-2 {
@@ -590,7 +650,7 @@ a {
 .z-depth-3 {
   box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.3); }
 
-.z-depth-4, .modal {
+.z-depth-4  {
   box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.3); }
 
 .z-depth-5 {
