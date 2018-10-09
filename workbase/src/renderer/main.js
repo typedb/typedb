@@ -7,6 +7,7 @@ import store from './store';
 import LoadingButton from './components/UIElements/LoadingButton.vue';
 import VueTabs from './components/UIElements/VueTabs.vue';
 import VueIcon from './components/UIElements/VueIcon.vue';
+import VueSwitch from './components/UIElements/VueSwitch.vue';
 
 
 // Modules
@@ -31,6 +32,7 @@ CustomPlugins.registerNotifications();
 Vue.component('loading-button', LoadingButton);
 Vue.component('vue-tabs', VueTabs);
 Vue.component('vue-icon', VueIcon);
+Vue.component('vue-switch', VueSwitch);
 
 
 // Define a Vue Router and map all the routes to components - as defined in the routes.js file.

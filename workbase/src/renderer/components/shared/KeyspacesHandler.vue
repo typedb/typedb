@@ -2,7 +2,7 @@
 <div class="keyspaces-wrapper">
 
     <button :class="(this.showKeyspaceList) ? 'btn keyspaces keyspace-btn' : 'btn keyspaces'" @click="toggleKeyspaceList">
-        {{btnText}}
+        {{currentKeyspace | truncate}}
         <vue-icon icon="database" className="vue-icon database-icon"></vue-icon>
     </button>
 
@@ -106,11 +106,21 @@ export default {
       clickEvent: () => {
         this.showKeyspaceList = false;
       },
-      btnText: 'keyspace',
     };
   },
   computed: {
     ...mapGetters(['allKeyspaces', 'currentKeyspace', 'isGraknRunning']),
+  },
+  filters: {
+    truncate(ks) {
+      if (ks !== null) {
+        if (ks.length > 15) { // truncate long keyspace names
+          return `${ks.substring(0, 15)}...`;
+        }
+        return ks;
+      }
+      return 'keyspace';
+    },
   },
   watch: {
     allKeyspaces(val) {
@@ -122,17 +132,17 @@ export default {
         this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
       }
     },
-    currentKeyspace(ks) {
-      if (ks !== null) {
-        if (ks.length > 15) { // truncate long keyspace names
-          this.btnText = `${ks.substring(0, 15)}...`;
-        } else {
-          this.btnText = ks;
-        }
-      } else {
-        this.btnText = 'keyspace';
-      }
-    },
+    // currentKeyspace(ks) {
+    //   if (ks !== null) {
+    //     if (ks.length > 15) { // truncate long keyspace names
+    //       this.btnText = `${ks.substring(0, 15)}...`;
+    //     } else {
+    //       this.btnText = ks;
+    //     }
+    //   } else {
+    //     this.btnText = 'keyspace';
+    //   }
+    // },
     showKeyspaceList(show) {
       // Close keyspaces list when user clicks anywhere else
       if (show) window.addEventListener('click', this.clickEvent);
