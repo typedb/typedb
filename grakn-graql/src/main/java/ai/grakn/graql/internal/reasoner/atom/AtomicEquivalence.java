@@ -53,6 +53,8 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
 
     abstract public String name();
 
+    public <B extends Atomic, S extends B> boolean equivalentCollection(Collection<S> a1, Collection<S> a2){ return equivalence(a1, a2, this);}
+
     public static <B extends Atomic, S extends B> boolean equivalence(Collection<S> a1, Collection<S> a2, Equivalence<B> equiv){
         return ReasonerUtils.isEquivalentCollection(a1, a2, equiv);
     }
