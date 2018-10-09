@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class="right">
-                <keyspace-handler></keyspace-handler>
+                <keyspace-manager></keyspace-manager>
             </div>
         </div>
 
@@ -83,11 +83,11 @@
 </style>
 
 <script>
-import KeyspaceHandler from './KeyspaceHandler';
+import KeyspaceManager from './KeyspaceManager';
 
 export default {
   name: 'Preferences',
-  components: { KeyspaceHandler },
+  components: { KeyspaceManager },
   data() {
     return {
       currentPreference: 'keyspaces',

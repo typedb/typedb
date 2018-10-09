@@ -9,20 +9,22 @@
             </div>
             <div class="panel-content">
                 <div class="label">Name</div>
-                <div class="keyspace-name-input"><vue-input className="vue-input vue-input-small"></vue-input></div>
+                <div class="keyspace-name-input"><vue-input className="vue-input vue-input-small" v-on:input-changed="updateName"></vue-input></div>
             </div>
             <div class="row">
                 <vue-button v-on:clicked="showNewKeyspacePanel = false"text="CANCEL" className="vue-button"></vue-button>
-                <vue-button text="SAVE" className="vue-button"></vue-button>
+                <vue-button v-on:clicked="addNewKeyspace" text="SAVE" className="vue-button" :loading="loadSpinner"></vue-button>
             </div>
         </div>
 
-        <div class="keyspace-list" v-for="ks in allKeyspaces" :key="ks">
-            <div class="keyspace-label">
-                {{ks}}
-            </div>
-            <div class="right-side">
-                <vue-icon icon="trash" className="vue-icon delete-icon" iconSize="14"></vue-icon>
+        <div class="keyspace-list">
+            <div class="keyspace-item" v-for="ks in allKeyspaces" :key="ks">
+                <div class="keyspace-label">
+                    {{ks}}
+                </div>
+                <div class="right-side" @click="deleteKeyspace(ks)" >
+                    <vue-icon icon="trash" className="vue-icon delete-icon" iconSize="14"></vue-icon>
+                </div>
             </div>
         </div>
 
@@ -37,7 +39,7 @@
         width: 100%;
     }
 
-    .keyspace-list {
+    .keyspace-item {
         margin: var(--element-margin);
         padding: var(--container-padding);
         background-color: var(--gray-3);
@@ -45,6 +47,7 @@
         align-items: center;
         justify-content: space-between;
         height: 22px;
+        border: var(--container-light-border)
     }
 
     .new-keyspace-container {
@@ -73,16 +76,20 @@
     .panel-content {
          display: flex;
          align-items: center;
-         padding: 10px;
+         padding: 5px 10px 0px 10px;
      }
 
     .keyspace-name-input {
         width: 100%;
     }
 
+    .label {
+        margin-right: 10px;
+    }
+
     .row {
         display: flex;
-        padding: 10px;
+        padding: 5px 5px 5px 10px;
         justify-content: flex-end;
     }
 
@@ -98,13 +105,29 @@
     data() {
       return {
         showNewKeyspacePanel: false,
+        keyspaceName: '',
+        loadSpinner: false,
       };
     },
     computed: {
       ...mapGetters(['allKeyspaces']),
     },
     methods: {
+      updateName(name) {
+        this.keyspaceName = name;
+      },
       addNewKeyspace() {
+        if (!this.keyspaceName.length) return;
+        this.loadSpinner = true;
+        this.$store.dispatch('createKeyspace', this.keyspaceName)
+          .then(() => { this.$notifyInfo(`New keyspace, ${this.keyspaceName}, successfully created!`); })
+          .catch((error) => { this.$notifyError(error, 'Create keyspace'); })
+          .then(() => { this.loadSpinner = false; this.keyspaceName = ''; this.showNewKeyspacePanel = false; });
+      },
+      deleteKeyspace(keyspace) {
+        this.$store.dispatch('deleteKeyspace', keyspace)
+          .then(() => { this.$notifyInfo(`Keyspace, ${keyspace}, successfully deleted!`); })
+          .catch((error) => { this.$notifyError(error, 'Delete keyspace'); });
       },
     },
   };

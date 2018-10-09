@@ -29,7 +29,7 @@ describe('Load neighbours', () => {
   test('select keyspace', async () => {
     app.client.click('.keyspaces');
     await app.client.waitUntilWindowLoaded();
-    0;
+
     const keyspaceList = app.client.selectByAttribute('class', 'keyspaces-list');
     assert.ok(keyspaceList);
 
@@ -95,7 +95,10 @@ describe('Load neighbours', () => {
     assert.equal(noOfRelationships, 'relationships: 20');
 
     app.client.click('.clear-graph-btn');
+    await sleep(1000);
+
     app.client.click('.clear-editor');
+    await sleep(1000);
   });
 
   test('double click on attribute', async () => {
@@ -125,6 +128,7 @@ describe('Load neighbours', () => {
 
     app.client.click('.clear-graph-btn');
     app.client.click('.clear-editor');
+    await sleep(1000);
   });
 
   test('double click on relationship', async () => {

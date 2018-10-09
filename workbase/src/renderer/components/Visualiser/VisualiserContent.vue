@@ -18,7 +18,6 @@
 
 <style scoped>
 
-
     .visualiser-wrapper {
         display: flex;
         flex-direction: column;

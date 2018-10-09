@@ -45,10 +45,11 @@ describe('relationshipsRolePlayers', () => {
     expect(roleplayers.nodes.filter(x => x.id === '4444')[0].label).toBe('person: 4444');
 
     expect(roleplayers.edges).toHaveLength(2);
-    expect(roleplayers.edges.filter(x => x.label === 'spouse1')[0].from).toBe('6666');
-    expect(roleplayers.edges.filter(x => x.label === 'spouse1')[0].to).toBe('3333');
-    expect(roleplayers.edges.filter(x => x.label === 'spouse2')[0].from).toBe('6666');
-    expect(roleplayers.edges.filter(x => x.label === 'spouse2')[0].to).toBe('4444');
+
+    expect(roleplayers.edges.filter(x => x.label === 'son')[0].from).toBe('6666');
+    expect(roleplayers.edges.filter(x => x.label === 'son')[0].to).toBe('3333');
+    expect(roleplayers.edges.filter(x => x.label === 'father')[0].from).toBe('6666');
+    expect(roleplayers.edges.filter(x => x.label === 'father')[0].to).toBe('4444');
   });
 });
 
