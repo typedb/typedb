@@ -12,7 +12,7 @@ symlink: true
 
 A Python client for [Grakn](https://grakn.ai)
 
-Requires Grakn 1.3.0 and Python >= 3.6
+Works with Grakn >=1.3.0 up to this driver version, and Python >= 3.6
 
 # Installation
 
@@ -23,6 +23,8 @@ pip3 install grakn
 To obtain the Grakn database itself, head [here](https://grakn.ai/pages/documentation/get-started/setup-guide.html) for the setup guide.
 
 # Quickstart
+
+## Grakn client, sessions, and transactions
 
 In the interpreter or in your source, import `grakn`:
 
@@ -39,19 +41,34 @@ session = client.session(keyspace="mykeyspace")
 tx = session.transaction(grakn.TxType.WRITE)
 ```
 
-Alternatively, you can also use `with` statements as follows:
+Alternatively, you can also use `with` statements, which automatically closes sessions and transactions:
 ```
 client = grakn.Grakn(uri="localhost:48555")
 with client.session(keyspace="mykeyspace") as session:
     with session.transaction(grakn.TxType.READ) as tx:
         ...
 ```
-to automatically close sessions and transactions.
 
 Credentials can be passed into the initial constructor as a dictionary, if you are a KGMS user:
 ```
 client = grakn.Grakn(uri='localhost:48555', credentials={'username': 'xxxx', 'password': 'yyyy'})
 ```
+
+If a transaction fails (throws exception), it automatically gets closed.
+Also note that closing a transaction means that _all concept objects retrieved from that transaction are no longer queryable via internal getters/setters_.
+
+For example
+```
+# obtain a tx
+tx = session.transaction(grakn.TxType.READ)
+person_type = tx.get_schema_concept("person") # creates a local Concept object with the `tx` bound internally
+print("Label of person type: {0}".format(person_type.label()) # uses interal `tx` to retrieve label from server
+tx.close()
+# the following will raise an exception, internally bound transaction is closed
+print("Label of person type: {0}".format(person_type.label())
+```
+
+## Basic retrievals and insertions 
 
 You can execute Graql queries and iterate through the answers as follows:
 ```
@@ -90,7 +107,7 @@ print("Inserted a person with ID: {0}".format(concepts[0].id))
 tx.commit()
 ```
 
-Or you can use the methods available on Concept objects
+Or you can use the methods available on Concept objects, known as the Concept API:
 ```
 person_type = tx.get_schema_concept("person") # retrieve the "person" schema type 
 person = person_type.create()                 # instantiate a person
@@ -367,7 +384,7 @@ A `Type` concept has all the `SchemaConcept` methods plus the following:
   | --------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
   | `create(value)`             | *Attribute*           | Create new Attribute of this type with the provided value. The value provided must conform to the DataType specified for this AttributeType |
   | `attribute(value)`          | *Attribute* or *None* | Retrieve the Attribute with the provided value if it exists                                                                                 |
-  | `data_type()`               | *String*              | Get the data type to which instances of the AttributeType must have                                                                         |
+  | `data_type()`               | *Enum of Grakn.DataType*   | Get the data type to which instances of the AttributeType must have                                                                         |
   | `regex()`                   | *String* or *None*    | Retrieve the regular expression to which instances of this AttributeType must conform to, or `None` if no regular expression is set         |
   | `regex(String regex)`       | *None*                | Set the regular expression that instances of the AttributeType must conform to                                                              |
 
