@@ -1,7 +1,13 @@
 <template>
 <div class="keyspaces-wrapper">
 
-    <div class="keyspaces" @click="toggleKeyspaceList"><vue-tooltip class="keyspace-tooltip" content="Please select a keyspace" :isOpen="showKeyspaceTooltip" :child="keyspaceBtn"></vue-tooltip></div>
+    <button :class="(this.showKeyspaceList) ? 'btn keyspaces keyspace-btn' : 'btn keyspaces'" @click="toggleKeyspaceList">
+        {{btnText}}
+        <vue-icon icon="database" className="vue-icon database-icon"></vue-icon>
+    </button>
+
+    <tool-tip class="keyspace-tooltip" msg="Please select a keyspace" :isOpen="showKeyspaceTooltip" arrowPosition="right"></tool-tip>
+
 
         <ul id="keyspaces-list" class="keyspaces-list arrow_box z-depth-1" v-if="showKeyspaceList">
             <div style="text-align:center;" v-if="allKeyspaces && !allKeyspaces.length">no existing keyspace</div>
@@ -11,6 +17,15 @@
 </template>
 
 <style scoped>
+
+    .keyspace-tooltip {
+        right: 100px;
+        top: 8px;
+    }
+
+    .keyspaces {
+        display: flex;
+    }
 
     .arrow_box {
         position: relative;
@@ -38,10 +53,6 @@
         border-width: 11px;
         margin-left: -11px;
     }
-
-
-
-
 
 
 .keyspaces-list {
@@ -77,32 +88,29 @@
 
 <script>
 
-import * as React from 'react';
-import { Button } from '@blueprintjs/core';
 import storage from '@/components/shared/PersistentStorage';
+
 import { mapGetters } from 'vuex';
 
 import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
+import ToolTip from '../UIElements/ToolTip';
 
 export default {
   name: 'KeyspacesList',
   props: ['showKeyspaceTooltip'],
+  components: { ToolTip },
   data() {
     return {
       keyspaceItems: [],
-      keyBtn: null,
       showKeyspaceList: false,
-      keyspaceBtn: null,
       clickEvent: () => {
         this.showKeyspaceList = false;
       },
+      btnText: 'keyspace',
     };
   },
   computed: {
     ...mapGetters(['allKeyspaces', 'currentKeyspace', 'isGraknRunning']),
-  },
-  created() {
-    this.renderButton();
   },
   watch: {
     allKeyspaces(val) {
@@ -111,21 +119,24 @@ export default {
     },
     isGraknRunning(val) {
       if (!val) {
-        this.$notifyError('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
+        this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
       }
     },
-    currentKeyspace() {
-      this.renderButton();
-    },
-    showKeyspaceTooltip() {
-      this.renderButton();
+    currentKeyspace(ks) {
+      if (ks !== null) {
+        if (ks.length > 15) { // truncate long keyspace names
+          this.btnText = `${ks.substring(0, 15)}...`;
+        } else {
+          this.btnText = ks;
+        }
+      } else {
+        this.btnText = 'keyspace';
+      }
     },
     showKeyspaceList(show) {
       // Close keyspaces list when user clicks anywhere else
       if (show) window.addEventListener('click', this.clickEvent);
       else window.removeEventListener('click', this.clickEvent);
-
-      this.renderButton();
     },
   },
   methods: {
@@ -135,25 +146,6 @@ export default {
 
       this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, name);
       this.showKeyspaceList = false;
-    },
-    renderButton() {
-      let text;
-      if (this.currentKeyspace !== null) {
-        if (this.currentKeyspace.length > 15) { // truncate long keyspace names
-          text = `${this.currentKeyspace.substring(0, 15)}...`;
-        } else {
-          text = this.currentKeyspace;
-        }
-      } else {
-        text = 'keyspace';
-      }
-
-      this.keyspaceBtn = React.createElement(Button, {
-        text,
-        rightIcon: 'database',
-        intent: 'primary',
-        className: (this.showKeyspaceList) ? 'vue-button keyspace-btn' : 'vue-button',
-      });
     },
     toggleKeyspaceList() {
       this.$emit('keyspace-selected');
