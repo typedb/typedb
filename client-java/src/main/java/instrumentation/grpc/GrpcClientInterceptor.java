@@ -101,7 +101,6 @@ public class GrpcClientInterceptor implements ClientInterceptor {
 
             @Override
             public void sendMessage(ReqT message) {
-                Span span;
                 if (message instanceof SessionProto.Transaction.Req &&
                         ((SessionProto.Transaction.Req) message).
                                 getMetadataOrDefault("traceIdLow", "").

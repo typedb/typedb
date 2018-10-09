@@ -43,7 +43,6 @@
         <module>grakn-factory</module>
         <module>client-java</module>
         <module>grakn-test-tools</module>
-        <module>grakn-benchmark</module>
     </modules>
 
     <properties>

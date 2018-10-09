@@ -1,7 +1,0 @@
-Plan
-
-Minimum
-* schema - small number of concepts to start with
-* random data generation methodology - hard to make it meaningful
-* query generation from schema
-many of these may return nothing

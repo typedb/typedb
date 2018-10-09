@@ -78,6 +78,7 @@ public class Grakn {
         boolean benchmark = false;
         if (arguments.hasOption("benchmark")) {
             benchmark = true;
+            System.out.println("Benchmarking enabled");
         }
 
 

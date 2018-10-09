@@ -165,27 +165,19 @@
             <artifactId>brave</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.zipkin.brave</groupId>
-            <artifactId>brave-spring-beans</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.zipkin.reporter2</groupId>
-            <artifactId>zipkin-reporter-spring-beans</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-sender-urlconnection</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.opentracing.brave</groupId>
-            <artifactId>brave-opentracing</artifactId>
-            <version>0.31.1</version>
         </dependency>
         <dependency>
             <groupId>io.zipkin.brave</groupId>
             <artifactId>brave-instrumentation-grpc</artifactId>
             <version>${brave-grpc.version}</version>
+        </dependency>
+
+        <!-- Tracing instrumentation -->
+        <dependency>
+            <groupId>io.zipkin.brave</groupId>
+            <artifactId>brave</artifactId>
         </dependency>
 
     </dependencies>

@@ -55,7 +55,6 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
 import brave.Tracing;
 import brave.grpc.GrpcTracing;
-import brave.propagation.TraceContext;
 import com.google.common.collect.AbstractIterator;
 import instrumentation.grpc.GrpcClientInterceptor;
 import io.grpc.ManagedChannel;
@@ -87,37 +86,34 @@ public final class Grakn {
     private Keyspace keyspace;
 
 
-    volatile public TraceContext currentSpanContext;
-
     public Grakn(SimpleURI uri) {
+        // default: no benchmarking
+        this(uri, false);
+    }
 
-        // attach tracing to the client
-        AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+    public Grakn(SimpleURI uri, boolean benchmark) {
 
-        Tracing tracing = Tracing.newBuilder()
-                .localServiceName("query-benchmark-client-java")
-                .spanReporter(reporter)
-                .supportsJoin(true)
-                .build();
+        if (benchmark) {
+            // attach tracing to the client
+            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 
-        GrpcTracing grpcTracing = GrpcTracing.create(tracing);
-//                .toBuilder()
-//                .clientParser(new GrpcClientParser() {
-//                    @Override protected <M> void onMessageSent(M message, SpanCustomizer span) {
-//                        span.tag("grpc.message_sent", message.toString());
-//                    }
-//                })
-//                .build();
+            Tracing tracing = Tracing.newBuilder()
+                    .localServiceName("query-benchmark-client-java")
+                    .spanReporter(reporter)
+                    .supportsJoin(true)
+                    .build();
 
-        channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
-//                .intercept(grpcTracing.newClientInterceptor())
-                .intercept(new GrpcClientInterceptor(tracing))
-                .usePlaintext(true).build();
+            GrpcTracing.create(tracing);
+
+            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+                    .intercept(new GrpcClientInterceptor(tracing))
+                    .usePlaintext(true).build();
+        } else {
+            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+                    .usePlaintext(true).build();
+        }
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();
-
-
-
     }
 
     public Grakn.Session session(ai.grakn.Keyspace keyspace) {

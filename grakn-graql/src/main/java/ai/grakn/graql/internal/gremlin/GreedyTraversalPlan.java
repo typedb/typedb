@@ -45,10 +45,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import brave.ScopedSpan;
-import brave.Span;
-import brave.Tracer;
-import brave.Tracing;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -107,19 +103,6 @@ public class GreedyTraversalPlan {
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
     private static List<Fragment> planForConjunction(ConjunctionQuery query, EmbeddedGraknTx<?> tx) {
-
-        Tracer tracer = Tracing.currentTracer();
-        ScopedSpan childSpan = null;
-        if (tracer != null) {
-            Span s = tracer.currentSpan();
-            if (s != null) {
-                childSpan = tracer.startScopedSpanWithParent("planForConjunction", s.context());
-            } else {
-                childSpan = tracer.startScopedSpan("planForConjunction");
-            }
-        }
-
-
 
         final List<Fragment> plan = new ArrayList<>(); // this will be the final plan
         final Map<NodeId, Node> allNodes = new HashMap<>(); // all the nodes in the spanning tree
@@ -209,11 +192,6 @@ public class GreedyTraversalPlan {
         // add disconnected fragment set with no edge fragment
         addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
         LOG.trace("Greedy Plan = " + plan);
-
-        if (tracer != null && childSpan != null) {
-            childSpan.finish();
-        }
-
         return plan;
     }
 

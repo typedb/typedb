@@ -67,10 +67,6 @@
             <groupId>io.zipkin.brave</groupId>
             <artifactId>brave</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.zipkin.brave</groupId>
-            <artifactId>brave-spring-beans</artifactId>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
