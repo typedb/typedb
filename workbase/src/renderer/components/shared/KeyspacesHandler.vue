@@ -113,13 +113,11 @@ export default {
   },
   filters: {
     truncate(ks) {
-      if (ks !== null) {
-        if (ks.length > 15) { // truncate long keyspace names
-          return `${ks.substring(0, 15)}...`;
-        }
-        return ks;
-      }
-      return 'keyspace';
+      if (!ks) return 'keyspace';
+
+      if (ks.length > 15) return `${ks.substring(0, 15)}...`;
+
+      return ks;
     },
   },
   watch: {
@@ -132,17 +130,6 @@ export default {
         this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
       }
     },
-    // currentKeyspace(ks) {
-    //   if (ks !== null) {
-    //     if (ks.length > 15) { // truncate long keyspace names
-    //       this.btnText = `${ks.substring(0, 15)}...`;
-    //     } else {
-    //       this.btnText = ks;
-    //     }
-    //   } else {
-    //     this.btnText = 'keyspace';
-    //   }
-    // },
     showKeyspaceList(show) {
       // Close keyspaces list when user clicks anywhere else
       if (show) window.addEventListener('click', this.clickEvent);
