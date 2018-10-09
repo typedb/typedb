@@ -55,7 +55,7 @@
   import { Chrome } from 'vue-color';
   import { mapGetters } from 'vuex';
 
-  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL } from '@/components/shared/StoresActions';
+  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL, OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
 
 
@@ -118,7 +118,7 @@
     methods: {
       async loadAttributeTypes() {
         if (!this.currentType) return;
-        const graknTx = await this.$store.dispatch('openGraknTx');
+        const graknTx = await this.$store.dispatch(OPEN_GRAKN_TX);
 
         const type = await graknTx.getSchemaConcept(this.currentType);
 

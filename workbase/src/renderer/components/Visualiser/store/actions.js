@@ -8,6 +8,9 @@ import {
   CURRENT_KEYSPACE_CHANGED,
   CANVAS_RESET,
   DELETE_SELECTED_NODES,
+  OPEN_GRAKN_TX,
+  LOAD_NEIGHBOURS,
+  LOAD_ATTRIBUTES,
 } from '@/components/shared/StoresActions';
 import Grakn from 'grakn';
 import logger from '@/../Logger';
@@ -48,18 +51,18 @@ export default {
   },
 
   async [UPDATE_METATYPE_INSTANCES]({ dispatch, commit }) {
-    const graknTx = await dispatch('openGraknTx');
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
     const metaTypeInstances = await loadMetaTypeInstances(graknTx);
     graknTx.close();
     commit('metaTypeInstances', metaTypeInstances);
   },
 
-  openGraknTx({ state }) {
+  [OPEN_GRAKN_TX]({ state }) {
     return state.graknSession.transaction(Grakn.txType.WRITE);
   },
 
   async [UPDATE_NODES_LABEL]({ state, dispatch }, type) {
-    const graknTx = await dispatch('openGraknTx');
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
     const nodes = await Promise.all(state.visFacade.getAllNodes().filter(x => x.type === type).map(x => graknTx.getConcept(x.id)));
     const updatedNodes = await VisualiserGraphBuilder.prepareNodes(nodes);
     state.visFacade.container.visualiser.updateNode(updatedNodes);
@@ -72,9 +75,9 @@ export default {
     state.visFacade.updateNode(updatedNodes);
   },
 
-  async loadNeighbours({ state, commit, dispatch }, { visNode, neighboursLimit }) {
+  async [LOAD_NEIGHBOURS]({ state, commit, dispatch }, { visNode, neighboursLimit }) {
     commit('loadingQuery', true);
-    const graknTx = await dispatch('openGraknTx');
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
     const data = await getNeighboursData(visNode, graknTx, neighboursLimit);
     visNode.offset += neighboursLimit;
     state.visFacade.updateNode(visNode);
@@ -95,7 +98,7 @@ export default {
       const query = state.currentQuery;
       validateQuery(query);
       commit('loadingQuery', true);
-      const graknTx = await dispatch('openGraknTx');
+      const graknTx = await dispatch(OPEN_GRAKN_TX);
       const result = (await (await graknTx.query(query)).collect());
 
       if (!result.length) {
@@ -135,11 +138,11 @@ export default {
       throw e;
     }
   },
-  async loadAttributes({ state, commit, dispatch }, { visNode, neighboursLimit }) {
+  async [LOAD_ATTRIBUTES]({ state, commit, dispatch }, { visNode, neighboursLimit }) {
     const query = `match $x id "${visNode.id}" has attribute $y; offset ${visNode.attrOffset}; limit ${neighboursLimit}; get $y;`;
     state.visFacade.updateNode({ id: visNode.id, attrOffset: visNode.attrOffset + neighboursLimit });
 
-    const graknTx = await dispatch('openGraknTx');
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
     const result = await (await graknTx.query(query)).collect();
     const autoloadRolePlayers = QuerySettings.getRolePlayersStatus();
     const data = await VisualiserGraphBuilder.buildFromConceptMap(result, autoloadRolePlayers, false);
@@ -161,7 +164,7 @@ export default {
 
     queries.forEach(async (query) => {
       commit('loadingQuery', true);
-      const graknTx = await dispatch('openGraknTx');
+      const graknTx = await dispatch(OPEN_GRAKN_TX);
       const result = (await (await graknTx.query(query)).collect());
 
       const data = await VisualiserGraphBuilder.buildFromConceptMap(result, true, false);
