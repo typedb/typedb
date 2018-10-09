@@ -73,7 +73,7 @@ public abstract class NeqPredicate extends Predicate<Var> {
                 && ( (thisRefPredicate == null) ? (thisRefPredicate == thatRefPredicate) : equiv.equivalent(thisRefPredicate, thatRefPredicate) );
     }
 
-    private int bindingHash(Equivalence<Atomic> equiv){
+    private int bindingHash(AtomicEquivalence equiv){
         int hashCode = 1;
         IdPredicate idPredicate = this.getIdPredicate(this.getVarName());
         IdPredicate refIdPredicate = this.getIdPredicate(this.getPredicate());
