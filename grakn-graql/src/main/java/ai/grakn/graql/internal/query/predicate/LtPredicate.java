@@ -38,4 +38,7 @@ class LtPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return P.lt(value);
     }
+
+    @Override
+    public int signum() { return -1; }
 }
