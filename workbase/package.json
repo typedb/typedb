@@ -83,7 +83,6 @@
     "react-dom": "^16.4.2",
     "react-transition-group": "^2.4.0",
     "underscore": "1.8",
-    "v-tooltip": "^2.0.0-rc.33",
     "vis": "^4.21.0",
     "vue": "^2.5.8",
     "vue-color": "^2.6.0",

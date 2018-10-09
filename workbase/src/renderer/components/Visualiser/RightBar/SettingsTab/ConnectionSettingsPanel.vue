@@ -8,7 +8,7 @@
             <div class="panel-content">
                 <div class="panel-content-item">
                     <h1 class="panel-label">Host:</h1>
-                    <input class="input-small panel-value" type="number" v-model="engineHost">
+                    <input class="input-small panel-value" v-model="engineHost">
                 </div>
                 <div class="panel-content-item">
                     <h1 class="panel-label">Port:</h1>
