@@ -23,7 +23,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
 import ai.grakn.test.rule.SampleKBContext;
 import ai.grakn.test.kbs.SNBKB;
 import java.util.List;

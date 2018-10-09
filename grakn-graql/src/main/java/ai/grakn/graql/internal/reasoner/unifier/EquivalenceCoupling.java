@@ -16,32 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.predicate;
+package ai.grakn.graql.internal.reasoner.unifier;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 
-class GtePredicate extends ComparatorPredicate {
+/**
+ * Interface to couple {@link UnifierType} classes with corresponding {@link ReasonerQueryEquivalence}s.
+ */
+public interface EquivalenceCoupling {
 
     /**
-     * @param value the value that this predicate is testing against
+     *
+     * @return coupled equivalence class
      */
-    GtePredicate(Object value) {
-        super(value);
-    }
-
-    @Override
-    protected String getSymbol() {
-        return ">=";
-    }
-
-    @Override
-    <V> P<V> gremlinPredicate(V value) {
-        return P.gte(value);
-    }
-
-    @Override
-    public boolean containsEquality(){ return true;}
-
-    @Override
-    public int signum() { return 1; }
+    ReasonerQueryEquivalence equivalence();
 }
