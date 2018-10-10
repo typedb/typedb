@@ -29,13 +29,6 @@ SERVER_JAR_FILENAME="server-build-bin_deploy.jar"
 # ================================================
 # common helper functions
 # ================================================
-update_classpath_global_var() {
-  # Add path containing grakn.properties and logback.xml
-  CLASSPATH="${GRAKN_HOME}/${SERVER_JAR_FILENAME}"
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}"
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/
-}
-
 exit_if_java_not_found() {
   which "${JAVA_BIN}" > /dev/null
   exit_code=$?
@@ -52,6 +45,7 @@ exit_if_java_not_found() {
 
 exit_code=0
 
+java -cp ./server-build-bin_deploy.jar:./conf/ -Dgrakn.dir=/private/var/tmp/_bazel_lolski/c09c3eb3ec7089928055b4ffb0e3d55e/execroot/grakn_core/bazel-out/darwin-fastbuild/genfiles/server -Dgrakn.conf=/private/var/tmp/_bazel_lolski/c09c3eb3ec7089928055b4ffb0e3d55e/execroot/grakn_core/bazel-out/darwin-fastbuild/genfiles/server/conf/grakn.properties -Dengine.javaopts= ai.grakn.core.server.bootup.GraknBootup server start engine
 pushd "$GRAKN_HOME" > /dev/null
 exit_if_java_not_found
 
@@ -61,7 +55,7 @@ if [ -z "$1" ]; then
     echo "  Console:         grakn-core console [--help]"
 elif [ "$1" = "console" ]; then
     if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
-        update_classpath_global_var
+        CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}:${GRAKN_HOME}/conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.core.console.Graql "$@"
     else
         echo "Grakn Core Console is not included in this Grakn distribution."
@@ -69,7 +63,8 @@ elif [ "$1" = "console" ]; then
     fi
 elif [ "$1" = "server" ]; then
     if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
-        update_classpath_global_var
+        CLASSPATH="./${SERVER_JAR_FILENAME}:./conf/"
+        echo java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" ai.grakn.core.server.bootup.GraknBootup $@
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" ai.grakn.core.server.bootup.GraknBootup $@
     else
         echo "Grakn Core Server is not included in this Grakn distribution."

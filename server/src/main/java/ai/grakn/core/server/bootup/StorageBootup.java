@@ -185,8 +185,9 @@ public class StorageBootup {
     }
 
     private String getStorageClassPath() {
-//        return graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
-//                + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
+        // TODO:
+        // move server-build-bin_deploy.jar to the folder 'services/lib'
+        // then, this code should be graknHome.resolve("services/lib/*.jar")
         return graknHome.resolve("server-build-bin_deploy.jar").toString();
     }
 
