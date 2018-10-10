@@ -12,53 +12,145 @@ folder: docs
 
 ## Deployment
 
-TBC
+We shall begin with the deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the listing in [AWS Marketplace](https://aws.amazon.com/marketplace).
 
-### Stack parameters
-The following parameters are used to define the stack:
+![](/images/aws-solution-listing.png)
+
+At the moment we offer two deployment options:
+- **CloudFormation**
+
+AWS CloudFormation templates are JSON or YAML formatted files that simplify resource orchestration, provisioning and management on AWS. The template describes the service or application
+architecture and configuration and AWS CloudFormation uses the template to provision the required resources (such as EC2 instances, EBS storages, etc.). The deployed application together with its 
+associated resources is referred to as a `stack`.
+- **Grakn KGMS Amazon Machine Image (AMI)**
+
+Provides a Grakn-equipped image that can be used when launching instances. The AMI is specified when starting an instances and you are free to launch as many instances as need be, 
+combine them with instances using different AMIs and orchestrate them.
+
+To commence deployment, click yellow `Continue to Subscribe` button. Once subscribed, you should see the method configuration choice screen:
+
+![](/images/aws-deployment-methods.png)
+
+which allows to either pick the [AMI](#grakn-ami):
+ 
+![](/images/aws-deployment-ami.png)
+ 
+or the [CloudFormation](#grakn-cloudformation) options.
+
+![](/images/aws-deployment-cloudformation.png).
+
+To proceed please pick the required option and press the `Continue to Launch` button.
+ 
+### <a name="grakn-ami"></a>Grakn AMI 
+The AMI launch screen looks as follows:
+![](/images/aws-deployment-ami-launch.png).
+
+and allows to specify the instance parameters. After having specified the parameters, press the launch button to start a Grakn instance.  
+
+The AMI Provides an image with a preinstalled Grakn KGMS. The following list summarises the important locations:
+
+- Grakn dist: `/opt/grakn/`
+- Grakn config: /`opt/grakn/conf/grakn.properties`
+- logs: `/var/log/grakn/`
+
+
+#### Important: storage configuration
+By default Grakn is expecting the storage directory to be `/mnt/data1/`. We recommend attaching an EBS drive to the Grakn instance and mounting it so that storage is located on the EBS drive.
+The instructions how to attach the EBS drive can be found here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-attaching-volume.html
+
+In order to mount the drive, please follow the following procedure:
+* identify the EBS block name and path, to do this run `lsblk` command and find the name of attached EBS device. The path will then be `/dev/<BLOCK_NAME>`.
+* if the drive is not formatted, format it by executing:
+```
+mkfs -t ext4 <BLOCK_HOME>
+```
+
+* mount the drive by executing:
+```
+mount <BLOCK_PATH> /mnt/data1/
+```
+
+#### Running
+Grakn is configured as a service and by default it is not running. Once you have configured the storage, to start grakn the following command needs to be executed as root on target machine:
+```
+systemctl grakn start
+```
+
+To stop run:
+
+```
+systemctl grakn stop
+```
+
+
+### <a name="grakn-cloudformation"></a>CloudFormation
+After initiating launch, we arrive at the CloudFormation stack creation page:
+
+![](/images/aws-cloudformation.png).
+
+To proceed the deployment of Grakn, simple press the `Next` button and you will be taken to the stack parameter page;
+
+![](/images/aws-cloudformation-config.png).
+
+#### Stack parameters
+The following parameters and parameter groups are used to define the stack:
 
 * General:
     - **StackName**
     
         The name of your Grakn KGMS stack. This must be a valid system name, specifically, it must consist of only lowercase letters, numbers, and hyphens, and cannot exceed 50 characters. 
-      
-    - **KeyPairName**
-        
-        The key pair assigned to Grakn instances to allow SSH access.
+
+
+* Node Configuration:
+    - **GraknGroupSize**
     
-* Network:
+        Number of Grakn instances in the cluster.
+    - **GraknInstanceType**
+    
+        EC2 instance type of Grakn instances.
+    
+    - **EbsVolumeSize**
+    
+        Size in GB of each of the EBS volumes that are attached to Grakn instances.
+    - **OptimiseForEbs**
+    
+        Specifies whether to optimise Grakn Launch Configuration for EBS I/O.     
+    
+* VPC/Network:
     - **VPC**
     
         The id of the VPC the stack should be deployed into.
-    - **InternetFacingRouteTable**
-      
-        The id of an internet-facing Route Table in the VPC.
+
     - **GraknSubnetCidrBlock**
    
         The Grakn cluster will be deployed in a separate subnet and this setting specifies its IP CIDR range.
+    
+
+* Security Group:
+
     - **SSHLocation**
      
         The IP address range that can be used to access Grakn instances using SSH.
     - **gRPCLocation**
    
         The IP address range that can be used to make gRPC requests.
-     
 
-* Cluster:
-    - **GraknInstanceType**
-    
-        EC2 instance type of Grakn instances.
-    - **GraknGroupSize**
-    
-        Number of Grakn instances in the cluster.
-    - **EbsVolumeSize**
-    
-        Size in GB of each of the EBS volumes that are attached to Grakn instances.
-    - **OptimiseForEbs**
-    
-        Specifies whether to optimise Grakn Launch Configuration for EBS I/O.
+* Key Pair:
+     - **KeyPairName**
+                     
+        The key pair assigned to Grakn instances to allow SSH access.
         
-## Running Grakn
+Once satisfied, press `Next` to proceed and arrive at the Options screen:
+
+![](/images/aws-cloudformation-options.png).
+
+where you can adjust Tagging, Permissions and other options to your liking. Once done, press `Next` to arrive at the final Review screen:
+
+![](/images/aws-cloudformation-review.png).
+
+If happy with the deployment, press `Create` to start the deployment of the Grakn stack.
+        
+#### Running Grakn
 **A Grakn Cluster starts automatically running as user `grakn`.** There is no need to manually start grakn servers.
 **Once the deployment is started, please allow some time for the cluster to fully bootup and synchronise**. A reasonable rule of thumb for the bootup time is **2 minutes per cluster node**. The progress of cluster bootup can be
 checked by logging in to a cluster node and executing the [cluster health check](#cluster-check) command.
@@ -67,7 +159,7 @@ checked by logging in to a cluster node and executing the [cluster health check]
 ## User credentials
 In order to use Graql and Grakn consoles, user credentials are required. The default user is `grakn`, whereas the default password can be found in the `GraknUserPassword` output.
 
-**Once logged in, We strongly encourage to change the default user password**. In order to do so, log in to th Grakn console and type:
+**Once logged in, We strongly encourage to change the default user password**. In order to do so, log in to the Grakn console and type:
  
 ```
 UPDATE USER grakn WITH PASSWORD newpassword
