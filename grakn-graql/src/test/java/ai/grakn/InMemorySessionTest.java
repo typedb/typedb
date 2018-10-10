@@ -38,7 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class GraknTest {
+public class InMemorySessionTest {
 
     @Test
     public void testInMemory(){

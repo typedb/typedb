@@ -82,3 +82,52 @@ java_library(
         "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
     ]
 )
+
+java_test(
+    name = "ProcessWideLockProviderTest",
+    srcs = ["src/test/java/ai/grakn/engine/lock/ProcessWideLockProviderTest.java"],
+    deps = [":server"],
+    size = "small"
+)
+
+java_test(
+    name = "InMemorySessionTest",
+    srcs = ["src/test/java/ai/grakn/InMemorySessionTest.java"],
+    deps = [":grakn-graql"] + [
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core" # PREVIOUSLY UNDECLARED (it was already declared in grakn-graql)
+    ],
+    size = "small"
+)
+
+java_test(
+    name = "GraknTxOperationExceptionTest",
+    srcs = ["src/test/java/ai/grakn/exception/GraknTxOperationExceptionTest.java"],
+    deps = [":grakn-graql"] + [
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+    ],
+    size = "small"
+)
+
+java_test(
+    name = "TxFactoryBuilderTest",
+    srcs = ["src/test/java/ai/grakn/factory/TxFactoryBuilderTest.java"],
+    deps = [":grakn-graql"] + [
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+    ],
+    size = "small"
+)
+
+java_test(
+    name = "GraknTxTinkerFactoryTest",
+    srcs = ["src/test/java/ai/grakn/factory/GraknTxTinkerFactoryTest.java"],
+    deps = [":grakn-graql"] + [
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
+    ],
+    size = "small"
+)
+
+test_suite(
+    name = "unit_tests",
+    tags = ["small"],
+)

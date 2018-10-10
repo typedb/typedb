@@ -231,6 +231,7 @@ public class TransactionTest {
         }
     }
 
+    @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_TheTxCloses() {
         Query<?> query = match(var("x")).get();
@@ -251,6 +252,7 @@ public class TransactionTest {
         }
     }
 
+    @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenAnErrorOccurs_AllFutureActionsThrow() {
         Query<?> query = match(var("x")).get();
