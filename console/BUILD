@@ -37,3 +37,8 @@ java_library(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ]
 )
+
+exports_files(
+    ["conf/logback.xml"],
+    visibility = ["//visibility:public"]
+)
