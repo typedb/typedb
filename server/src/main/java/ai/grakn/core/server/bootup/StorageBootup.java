@@ -185,8 +185,9 @@ public class StorageBootup {
     }
 
     private String getStorageClassPath() {
-        return graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
-                + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
+//        return graknHome.resolve("services").resolve("lib").toString() + File.separator + "*"
+//                + File.pathSeparator + graknHome.resolve("services").resolve("cassandra");
+        return graknHome.resolve("server-build-bin_deploy.jar").toString();
     }
 
 

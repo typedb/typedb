@@ -24,13 +24,15 @@ GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="conf/grakn.properties"
 
 CONSOLE_JAR_FILENAME="console-build-bin_deploy.jar"
+SERVER_JAR_FILENAME="server-build-bin_deploy.jar"
 
 # ================================================
 # common helper functions
 # ================================================
 update_classpath_global_var() {
   # Add path containing grakn.properties and logback.xml
-  CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}"
+  CLASSPATH="${GRAKN_HOME}/${SERVER_JAR_FILENAME}"
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}"
   CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/
 }
 
@@ -66,7 +68,7 @@ elif [ "$1" = "console" ]; then
         echo "You may want to install Grakn Core Console or Grakn Core (all)."
     fi
 elif [ "$1" = "server" ]; then
-    if [ -f ./services/lib/core.server-*.jar ]; then
+    if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
         update_classpath_global_var
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" ai.grakn.core.server.bootup.GraknBootup $@
     else

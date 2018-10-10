@@ -80,5 +80,11 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
-    ]
+    ],
+    visibility = ["//visibility:public"]
+)
+
+exports_files(
+    ["conf/logback.xml", "conf/grakn.properties"],
+    visibility = ["//visibility:public"]
 )
