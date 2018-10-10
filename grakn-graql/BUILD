@@ -103,6 +103,7 @@ java_test(
 java_test(
     name = "TxFactoryBuilderTest",
     srcs = ["src/test/java/ai/grakn/factory/TxFactoryBuilderTest.java"],
+    resources = ["src/test/resources/inmemory-graph.properties"],
     deps = [":grakn-graql"] + [
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],
@@ -121,5 +122,5 @@ java_test(
 
 test_suite(
     name = "unit_tests",
-    tags = ["small"],
+    tags = ["small"]
 )
