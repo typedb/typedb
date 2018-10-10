@@ -285,6 +285,12 @@ All setters return the same concept object (`self`) to facilitate chaining sette
 
 **Concept**
 
+These fields are accessible in every `Concept`:
+
+| Field                   | Type        | Description                                      |
+| ----------------------  | ----------- | ------------------------------------------------ |
+| `id`                    | *String*      | Delete concept                                   |
+
 These methods are available on every type of `Concept`
 
 | Method                  | Return type | Description                                      |
