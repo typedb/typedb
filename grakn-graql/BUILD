@@ -86,7 +86,7 @@ java_test(
     name = "InMemorySessionTest",
     srcs = ["src/test/java/ai/grakn/InMemorySessionTest.java"],
     deps = [":grakn-graql"] + [
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core" # PREVIOUSLY UNDECLARED (it was already declared in grakn-graql)
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
     size = "small"
 )

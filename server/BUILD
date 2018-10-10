@@ -91,39 +91,29 @@ java_test(
 )
 
 java_test(
-    name = "InMemorySessionTest",
-    srcs = ["src/test/java/ai/grakn/InMemorySessionTest.java"],
-    deps = [":grakn-graql"] + [
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core" # PREVIOUSLY UNDECLARED (it was already declared in grakn-graql)
-    ],
-    size = "small"
-)
-
-java_test(
-    name = "GraknTxOperationExceptionTest",
-    srcs = ["src/test/java/ai/grakn/exception/GraknTxOperationExceptionTest.java"],
-    deps = [":grakn-graql"] + [
+    name = "RocksDbQueueTest",
+    srcs = ["src/test/java/ai/grakn/engine/attribute/deduplicator/RocksDbQueueTest.java"],
+    deps = [":server"] + ["//grakn-graql"] + [
+        "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
     size = "small"
 )
 
 java_test(
-    name = "TxFactoryBuilderTest",
-    srcs = ["src/test/java/ai/grakn/factory/TxFactoryBuilderTest.java"],
-    deps = [":grakn-graql"] + [
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-    ],
+    name = "GraknConfigTest",
+    srcs = ["src/test/java/ai/grakn/engine/config/GraknConfigTest.java"],
+    deps = [":server"] + ["//grakn-graql"],
     size = "small"
 )
 
 java_test(
-    name = "GraknTxTinkerFactoryTest",
-    srcs = ["src/test/java/ai/grakn/factory/GraknTxTinkerFactoryTest.java"],
-    deps = [":grakn-graql"] + [
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-    ],
+    name = "RequestsTest",
+    srcs = ["src/test/java/ai/grakn/engine/controller/util/RequestsTest.java"],
+     deps = [":server"] + ["//grakn-graql"] + [
+            "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+            "//dependencies/maven/artifacts/org/sharegov:mjson"
+        ],
     size = "small"
 )
 
