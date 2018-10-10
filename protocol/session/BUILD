@@ -16,6 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+exports_files([
+    "Concept.proto",
+    "Answer.proto",
+    "Session.proto"
+])
+
 package(
     default_visibility = [
         "//protocol:__subpackages__",

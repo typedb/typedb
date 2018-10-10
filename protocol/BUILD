@@ -16,18 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
-python_grpc_compile(
-    name = "client-python-proto",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ],
-    visibility = ["//client-python:__subpackages__"]
-)
-
 # TODO: enable this rule once it can load :answer-proto and :concept-proto
 # This is currently disabled because of the two following issues:
 # https://github.com/pubref/rules_proto/issues/3
