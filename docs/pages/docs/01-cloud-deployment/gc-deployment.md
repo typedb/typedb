@@ -1,7 +1,7 @@
 ---
 title: Google Cloud Deployment
 keywords: cloud, deployment, google
-tags: [getting-started, deployment, cloud]
+tags: [getting-started, deployment, cloud, gc]
 summary: "Deploying Grakn on Google Cloud Platform"
 sidebar: documentation_sidebar
 permalink: /docs/cloud-deployment/gc-deployment
