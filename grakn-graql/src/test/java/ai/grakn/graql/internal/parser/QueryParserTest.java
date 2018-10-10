@@ -1020,6 +1020,7 @@ public class QueryParserTest {
         assertParseEquivalence("match $x has name $z via $x; get $x;");
     }
 
+    @SuppressWarnings("CheckReturnValue")
     @Test(expected = GraqlSyntaxException.class)
     public void whenParsingMultipleQueriesLikeOne_Throw() {
         //noinspection ResultOfMethodCallIgnored
