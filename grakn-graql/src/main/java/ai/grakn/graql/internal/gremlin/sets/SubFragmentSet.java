@@ -82,7 +82,9 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
         Iterable<SubFragmentSet> subSets = fragmentSetOfType(SubFragmentSet.class, fragmentSets)::iterator;
 
         for (SubFragmentSet subSet : subSets) {
-//            if (subSet.explicitSub()) continue; // TODO is this necessary?
+            // skip optimising explicit subs until we have a clean implementation (add direct sub to Graql and use it in tryExpandSubs if is explicit sub here)
+            if (subSet.explicitSub()) continue;
+
             LabelFragmentSet labelSet = labelOf(subSet.superConcept(), fragmentSets);
             if (labelSet == null) continue;
 
