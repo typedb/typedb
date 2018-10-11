@@ -6,18 +6,18 @@ import {
   INITIALISE_VISUALISER,
   OPEN_GRAKN_TX,
   UPDATE_METATYPE_INSTANCES,
-  // UPDATE_NODES_LABEL,
-  // UPDATE_NODES_COLOUR,
-  // LOAD_NEIGHBOURS,
-  // DELETE_SELECTED_NODES,
+  UPDATE_NODES_LABEL,
+  UPDATE_NODES_COLOUR,
+  LOAD_NEIGHBOURS,
+  DELETE_SELECTED_NODES,
 } from '@/components/shared/StoresActions';
 import actions from '@/components/Visualiser/store/actions';
 import mutations from '@/components/Visualiser/store/mutations';
-
-import { addResetGraphListener, loadMetaTypeInstances } from '@/components/Visualiser/VisualiserUtils';
+import { addResetGraphListener, loadMetaTypeInstances, getNeighboursData, computeAttributes } from '@/components/Visualiser/VisualiserUtils';
 import VisualiserCanvasEventsHandler from '@/components/Visualiser/VisualiserCanvasEventsHandler';
+import VisualiserGraphBuilder from '@/components/Visualiser/VisualiserGraphBuilder';
 
-// import MockConcepts from '../../../../helpers/MockConcepts';
+import MockConcepts from '../../../../helpers/MockConcepts';
 
 
 jest.mock('grakn', () => ({ txType: { WRITE: 'write' } }));
@@ -30,10 +30,16 @@ jest.mock('@/components/CanvasVisualiser/Facade', () => ({
 jest.mock('@/components/Visualiser/VisualiserUtils', () => ({
   addResetGraphListener: jest.fn(),
   loadMetaTypeInstances: jest.fn(),
+  getNeighboursData: jest.fn().mockImplementation(() => Promise.resolve({ nodes: [{ id: 1234 }] })),
+  computeAttributes: jest.fn(),
 }));
 
 jest.mock('@/components/Visualiser/VisualiserCanvasEventsHandler', () => ({
   registerHandlers: jest.fn(),
+}));
+
+jest.mock('@/components/Visualiser/VisualiserGraphBuilder', () => ({
+  prepareNodes: jest.fn(),
 }));
 
 Vue.use(Vuex);
@@ -42,28 +48,41 @@ describe('actions', () => {
   let store;
   let setVisFacade;
   let registerCanvasEvent;
-  // const VisualiserGraphBuilder = { prepareNodes: jest.fn() };
+  let metaTypeInstances;
+  let loadingQuery;
 
   beforeEach(() => {
     setVisFacade = jest.fn();
     registerCanvasEvent = jest.fn();
+    metaTypeInstances = jest.fn();
+    loadingQuery = jest.fn();
 
 
     store = new Vuex.Store({
       state: {
-        visFacade: { resetCanvas: jest.fn(), getAllNodes: () => [], updateNode: jest.fn(), addToCanvas: jest.fn(), deleteNode: jest.fn(), registerEventHandler: jest.fn() },
+        visFacade: {
+          resetCanvas: jest.fn(),
+          getAllNodes: jest.fn().mockImplementation(() => [{ id: 1234, type: 'person' }]),
+          updateNode: jest.fn(),
+          addToCanvas: jest.fn(),
+          deleteNode: jest.fn(),
+          registerEventHandler: jest.fn(),
+          fitGraphToWindow: jest.fn(),
+        },
         selectedNodes: ['1234'],
         canvasData: { entities: 2, attributes: 2, relationships: 2 },
         currentQuery: 'match $x isa person; get;',
         currentKeyspace: 'gene',
         metaTypeInstances: {},
-        graknSession: { transaction: jest.fn() },
+        graknSession: { transaction: () => Promise.resolve({ close: jest.fn(), getConcept: () => Promise.resolve([{ id: 1234 }]) }) },
         visStyle: { computeNodeStyle: jest.fn() },
         loadingQuery: false,
       },
       mutations: {
         setVisFacade,
         registerCanvasEvent,
+        metaTypeInstances,
+        loadingQuery,
         selectedNodes: mutations.selectedNodes,
         updateCanvasData: mutations.updateCanvasData,
       },
@@ -77,7 +96,6 @@ describe('actions', () => {
     store.hotUpdate({
       mutations: { setVisFacade, registerCanvasEvent },
     });
-
 
     store.dispatch(INITIALISE_VISUALISER, mockContainer).then(() => {
       expect(addResetGraphListener).toHaveBeenCalled();
@@ -103,62 +121,63 @@ describe('actions', () => {
   //   });
   // });
 
-  // test('UPDATE_METATYPE_INSTANCES', () => {
-  //   store.dispatch(UPDATE_METATYPE_INSTANCES).then(() => {
-  //     expect(actions[OPEN_GRAKN_TX].mock.calls).toHaveLength(1);
-  //     expect(loadMetaTypeInstances).toHaveBeenCalled();
-  //     expect(store.mutations.metaTypeInstances).toHaveBeenCalled();
-  //   });
-  // });
-  //
+  test('UPDATE_METATYPE_INSTANCES', () => {
+    store.dispatch(UPDATE_METATYPE_INSTANCES).then(() => {
+      expect(loadMetaTypeInstances).toHaveBeenCalled();
+      expect(metaTypeInstances.mock.calls).toHaveLength(1);
+    });
+  });
+
   // test('OPEN_GRAKN_TX', () => {
-  //   const loadMetaTypeInstances = jest.fn();
+  //   store.hotUpdate({
+  //     state: { graknSession: { transaction: () => jest.fn() },
+  //     },
+  //   });
   //
   //   store.dispatch(OPEN_GRAKN_TX).then(() => {
-  //     expect(loadMetaTypeInstances).toHaveBeenCalled();
   //     expect(store.state.graknSession.transaction).toHaveBeenCalled();
   //   });
   // });
-  //
-  // test('UPDATE_NODES_LABEL', () => {
-  //   store.dispatch(UPDATE_NODES_LABEL, 'person').then(() => {
-  //     expect(actions[OPEN_GRAKN_TX].mock.calls).toHaveLength(1);
-  //     expect(store.state.visFacade.getAllNodes).toHaveBeenCalled();
-  //     expect(VisualiserGraphBuilder.prepareNodes).toHaveBeenCalled();
-  //     expect(store.state.visFacade.updateNode).toHaveBeenCalled();
-  //   });
-  // });
-  //
-  // test('UPDATE_NODES_COLOUR', () => {
-  //   store.dispatch(UPDATE_NODES_COLOUR, 'person').then(() => {
-  //     expect(store.state.visFacade.getAllNodes).toHaveBeenCalled();
-  //     expect(store.state.visStyle.computeNodeStyle).toHaveBeenCalled();
-  //     expect(store.state.visFacade.updateNode).toHaveBeenCalled();
-  //   });
-  // });
-  //
-  // test('LOAD_NEIGHBOURS', () => {
-  //   const getNeighboursData = jest.fn();
-  //   const mockVisNode = MockConcepts.getMockEntity1();
-  //   const computeAttributes = jest.fn();
-  //
-  //   store.dispatch(LOAD_NEIGHBOURS, mockVisNode, 1).then(() => {
-  //     expect(store.mutations.loadingQuery()).toHaveBeenCalledWith(true);
-  //     expect(actions[OPEN_GRAKN_TX].mock.calls).toHaveLength(1);
-  //     expect(getNeighboursData).toHaveBeenCalled();
-  //     expect(mockVisNode.offset).toBe(1);
-  //     expect(store.state.visFacade.updateNode).toHaveBeenCalled();
-  //     expect(store.state.visFacade.addToCanvas).toHaveBeenCalled();
-  //     expect(VisualiserGraphBuilder.prepareNodes).toHaveBeenCalled();
-  //     expect(computeAttributes).toHaveBeenCalled();
-  //     expect(store.mutations.loadingQuery()).toHaveBeenCalledWith(false);
-  //   });
-  // });
-  //
-  // test('DELETE_SELECTED_NODES', () => {
-  //   store.dispatch(DELETE_SELECTED_NODES, 'person').then(() => {
-  //     expect(store.state.visFacade.deleteNode).toHaveBeenCalledWith('1234');
-  //     expect(store.state.selectedNodes).toBe(null);
-  //   });
-  // });
+
+  test('UPDATE_NODES_LABEL', () => {
+    store.dispatch(UPDATE_NODES_LABEL, 'person').then(() => {
+      expect(store.state.visFacade.getAllNodes).toHaveBeenCalled();
+      expect(VisualiserGraphBuilder.prepareNodes).toHaveBeenCalled();
+      expect(store.state.visFacade.updateNode).toHaveBeenCalled();
+    });
+  });
+
+  test('UPDATE_NODES_COLOUR', () => {
+    store.dispatch(UPDATE_NODES_COLOUR, 'person').then(() => {
+      expect(store.state.visFacade.getAllNodes).toHaveBeenCalled();
+      expect(store.state.visStyle.computeNodeStyle).toHaveBeenCalled();
+      expect(store.state.visFacade.updateNode).toHaveBeenCalled();
+    });
+  });
+
+  test('LOAD_NEIGHBOURS', () => {
+    const mockVisNode = MockConcepts.getMockEntity1();
+
+    store.hotUpdate({
+      mutations: { loadingQuery, updateCanvasData: mutations.updateCanvasData,
+      },
+    });
+
+    store.dispatch(LOAD_NEIGHBOURS, { visNode: mockVisNode, neighboursLimit: 1 }).then(() => {
+      expect(loadingQuery.mock.calls).toHaveLength(2);
+      expect(getNeighboursData).toHaveBeenCalled();
+      expect(mockVisNode.offset).toBe(1);
+      expect(store.state.visFacade.updateNode).toHaveBeenCalled();
+      expect(store.state.visFacade.addToCanvas).toHaveBeenCalled();
+      expect(VisualiserGraphBuilder.prepareNodes).toHaveBeenCalled();
+      expect(computeAttributes).toHaveBeenCalled();
+    });
+  });
+
+  test('DELETE_SELECTED_NODES', () => {
+    store.dispatch(DELETE_SELECTED_NODES, 'person').then(() => {
+      expect(store.state.visFacade.deleteNode).toHaveBeenCalledWith('1234');
+      expect(store.state.selectedNodes).toBe(null);
+    });
+  });
 });
