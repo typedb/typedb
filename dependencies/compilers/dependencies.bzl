@@ -42,6 +42,6 @@ def python_dependencies():
     native.git_repository(
         name = "io_bazel_rules_python",
         remote = "https://github.com/graknlabs/rules_python.git",
-        commit = "ab4ab0e2cd735bfcc160b3c6cb331c4bbef2d0cd",
-        sha256 = "86c06d8dfc2c327d00eea0520d5145f2a33f06df1918316c686557a703370689"
+        commit = "abd475a72ae6a098cc9f859eb435dddd992bc884",
+        sha256 = "fe468b9396ef5c933679e1a5d846f777d0ea4731927df2149e5a01b328afd9b6"
     )
