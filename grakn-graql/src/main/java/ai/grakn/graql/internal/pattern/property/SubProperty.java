@@ -18,28 +18,15 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.executor.ConceptBuilder;
-import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code sub} property on a {@link ai.grakn.concept.Type}.

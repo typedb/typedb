@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.FibonacciHeap;
 import ai.grakn.graql.internal.query.executor.ConceptBuilder;
 import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
