@@ -81,6 +81,7 @@ java_library(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
     ],
+    resources = glob(["src/main/resources/*"]),
     visibility = ["//visibility:public"]
 )
 
