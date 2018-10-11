@@ -1,4 +1,4 @@
-def _impl(ctx):
+def _grakn_py_merge_sourcetrees_impl(ctx):
     args = [ctx.outputs.out.path] + [f.path for f in ctx.files.py_src + ctx.files.proto_src]
     ctx.actions.run(inputs = ctx.attr.py_src.files + ctx.attr.proto_src.files,
         outputs = [ctx.outputs.out],
@@ -10,7 +10,7 @@ def _impl(ctx):
 
 
 grakn_py_merge_sourcetrees = rule(
-    implementation = _impl,
+    implementation = _grakn_py_merge_sourcetrees_impl,
     attrs = {
         "py_src": attr.label(),
         "proto_src": attr.label(),
