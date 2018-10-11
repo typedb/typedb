@@ -10,9 +10,12 @@ import {
   UPDATE_NODES_COLOUR,
   LOAD_NEIGHBOURS,
   DELETE_SELECTED_NODES,
+  EXPLAIN_CONCEPT,
 } from '@/components/shared/StoresActions';
 import actions from '@/components/Visualiser/store/actions';
 import mutations from '@/components/Visualiser/store/mutations';
+import getters from '@/components/Visualiser/store/getters';
+
 import { addResetGraphListener, loadMetaTypeInstances, getNeighboursData, computeAttributes } from '@/components/Visualiser/VisualiserUtils';
 import VisualiserCanvasEventsHandler from '@/components/Visualiser/VisualiserCanvasEventsHandler';
 import VisualiserGraphBuilder from '@/components/Visualiser/VisualiserGraphBuilder';
@@ -69,7 +72,7 @@ describe('actions', () => {
           registerEventHandler: jest.fn(),
           fitGraphToWindow: jest.fn(),
         },
-        selectedNodes: ['1234'],
+        selectedNodes: [MockConcepts.getMockEntity1()],
         canvasData: { entities: 2, attributes: 2, relationships: 2 },
         currentQuery: 'match $x isa person; get;',
         currentKeyspace: 'gene',
@@ -87,6 +90,7 @@ describe('actions', () => {
         updateCanvasData: mutations.updateCanvasData,
       },
       actions,
+      getters,
     });
   });
 
@@ -179,5 +183,9 @@ describe('actions', () => {
       expect(store.state.visFacade.deleteNode).toHaveBeenCalledWith('1234');
       expect(store.state.selectedNodes).toBe(null);
     });
+  });
+
+  test('EXPLAIN_CONCEPT', () => {
+    store.dispatch(EXPLAIN_CONCEPT);
   });
 });
