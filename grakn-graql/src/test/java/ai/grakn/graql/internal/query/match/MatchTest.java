@@ -955,12 +955,12 @@ public class MatchTest {
     @Test
     public void directSubThingOnlyReturnsToplevelTypes() {
         Match query = qb.match(x.subExplicit("thing"));
-        HashSet<String> expectedLabels = new HashSet<>(Arrays.asList(
+        HashSet<String> expectedLabels = Sets.newHashSet(
                 "thing",
                 "entity",
                 "relationship",
                 "attribute"
-        ));
+        );
         List<ConceptMap> conceptMaps = query.stream().collect(Collectors.toList());
         assertTrue(conceptMaps.stream().allMatch(conceptMap ->
                 expectedLabels.contains(

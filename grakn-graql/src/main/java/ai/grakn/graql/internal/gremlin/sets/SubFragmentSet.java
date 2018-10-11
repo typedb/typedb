@@ -45,13 +45,13 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
 
         if (explicitSub()) {
             return ImmutableSet.of(
-                    Fragments.outSub(varProperty(), subConcept(), superConcept(), 1),
-                    Fragments.inSub(varProperty(), superConcept(), subConcept(), 1)
+                    Fragments.outSub(varProperty(), subConcept(), superConcept(), Fragments.TRAVERSE_ONE_SUB_EDGE),
+                    Fragments.inSub(varProperty(), superConcept(), subConcept(), Fragments.TRAVERSE_ONE_SUB_EDGE)
             );
         } else {
             return ImmutableSet.of(
-                    Fragments.outSub(varProperty(), subConcept(), superConcept(), -1),
-                    Fragments.inSub(varProperty(), superConcept(), subConcept(), -1)
+                    Fragments.outSub(varProperty(), subConcept(), superConcept(),Fragments.TRAVERSE_ALL_SUB_EDGES),
+                    Fragments.inSub(varProperty(), superConcept(), subConcept(), Fragments.TRAVERSE_ALL_SUB_EDGES)
             );
         }
     }

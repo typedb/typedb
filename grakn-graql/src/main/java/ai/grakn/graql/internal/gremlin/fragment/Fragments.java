@@ -51,6 +51,9 @@ import static java.util.stream.Collectors.joining;
  */
 public class Fragments {
 
+    public static int TRAVERSE_ALL_SUB_EDGES = -1;
+    public static int TRAVERSE_ONE_SUB_EDGE = 1;
+
     private Fragments() {
     }
 
@@ -151,12 +154,12 @@ public class Fragments {
      * @return
      */
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
-        return outSubs(traversal, -1);
+        return outSubs(traversal, TRAVERSE_ALL_SUB_EDGES);
     }
 
     /**
      * @param traversal
-     * @param subTraversalDepth: the number of `sub` edges to follow. -1 applies no limit, 0 follows no edges, 1 follows 1 edge etc.
+     * @param subTraversalDepth: the number of `sub` edges to follow. -1 (= TRAVERSE_ALL_SUB_EDGES) applies no limit, 0 follows no edges, 1 (= TRAVERSE_ONE_SUB_EDGE) follows 1 edge etc.
      * @param <T>
      * @return
      */
@@ -177,11 +180,11 @@ public class Fragments {
      * @return
      */
     static <T> GraphTraversal<T, Vertex> inSubs(GraphTraversal<T, Vertex> traversal) {
-        return inSubs(traversal, -1);
+        return inSubs(traversal, TRAVERSE_ALL_SUB_EDGES);
     }
     /**
      * @param traversal
-     * @param subTraversalDepth: the number of `sub` edges to follow. -1 applies no limit, 0 follows no edges, 1 follows 1 edge etc.
+     * @param subTraversalDepth: the number of `sub` edges to follow. -1 (= TRAVERSE_ALL_SUB_EDGES) applies no limit, 0 follows no edges, 1 (= TRAVERSE_ONE_SUB_EDGE) follows 1 edge etc.
      * @param <T>
      * @return
      */

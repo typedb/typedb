@@ -56,7 +56,7 @@ public abstract class OutSubFragment extends Fragment {
 
     @Override
     public String name() {
-        if (subTraversalDepthLimit() == -1) {
+        if (subTraversalDepthLimit() == Fragments.TRAVERSE_ALL_SUB_EDGES) {
             return "-[sub]->";
         } else {
             return "-[sub!" + Integer.toString(subTraversalDepthLimit()) + "]->";
