@@ -1,88 +1,54 @@
 <template>
-    <div class="loading-button btn btn-success noselect" @click="clickFunction">
-      <i class="btn-spinner" v-show="isLoading"></i>
-      <span class="btn-label" v-show="!isLoading">{{value}}</span>
-    </div>
+    <div ref="vueButton"></div>
 </template>
-<script>
 
-export default {
-  name: 'LoadingButton',
-  props: ['value', 'isLoading', 'clickFunction'],
-};
+<style scoped>
+
+</style>
+
+<script>
+  import { Button } from '@blueprintjs/core';
+
+  import ReactDom from 'react-dom';
+  import React from 'react';
+
+  export default {
+    name: 'VueButton',
+    props: ['text', 'icon', 'disabled', 'loading', 'rightIcon', 'className'],
+    mounted() {
+      this.$nextTick(() => {
+        this.renderButton();
+      });
+    },
+    watch: {
+      className() {
+        this.renderButton();
+      },
+      loading() {
+        this.renderButton();
+      },
+      disabled() {
+        this.renderButton();
+      },
+      icon() {
+        this.renderButton();
+      },
+      text() {
+        this.renderButton();
+      },
+    },
+    methods: {
+      renderButton() {
+        ReactDom.render(React.createElement(Button, {
+          text: this.text,
+          icon: this.icon,
+          loading: this.loading,
+          rightIcon: this.rightIcon,
+          className: this.className,
+          onClick: (e) => { this.$emit('clicked', e); },
+        }), this.$refs.vueButton);
+      },
+    },
+  };
 </script>
 
-
-<style lang="scss" scoped>
-
-.loading-button{
-  cursor: pointer;
-}
-
-// size of small spinner
-$spinner-size: 15px;
-
-// border size of small spinner
-$spinner-border-size: 2px;
-
-// spinner colors
-$spinner-inverse-color: #FFF;
-$spinner-default-color: #333;
-$spinner-accent-color: #4873cc; // blue
-
-@-webkit-keyframes rotation {
-   from { -webkit-transform: rotate(0deg); }
-   to { -webkit-transform: rotate(359deg); }
-}
-
-@keyframes rotation {
-   from { transform: rotate(0deg); }
-   to { transform: rotate(359deg); }
-}
-
-.btn-spinner {
-  // Make sure we use content box model for this
-  &, &:before, &:after {
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-    box-sizing: content-box;
-  }
-  height: $spinner-size;
-  width: $spinner-size;
-  display: inline-block;
-  position: relative;
-  top: 2px;
-  -webkit-animation: rotation 1s infinite linear;
-  animation: rotation .7s infinite linear;
-  border: $spinner-border-size solid lighten($spinner-accent-color,25%);
-  border-radius: 100%;
-  &:before {
-     content:"";
-     display:block;
-     position:absolute;
-     left: -$spinner-border-size;
-     top: -$spinner-border-size;
-     height: 100%;
-     width: 100%;
-     border-top: $spinner-border-size solid $spinner-accent-color;
-     border-left: $spinner-border-size solid transparent;
-     border-bottom: $spinner-border-size solid transparent;
-     border-right: $spinner-border-size solid transparent;
-     border-radius: 100%;
-  }
-}
-
-.btn-default .spinner {
-  border-color: rgba(0,0,0,0.33);
-  &:before {
-    border-top-color: $spinner-default-color;
-  }
-}
-
-.btn-spinner {
-  border-color: rgba($spinner-inverse-color,0.33);
-  &:before {
-    border-top-color: $spinner-inverse-color;
-  }
-}
-</style>

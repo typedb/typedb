@@ -68,8 +68,8 @@ function getNode(nodeId) {
   return this.container.visualiser.getNode(nodeId);
 }
 
-function updateNode(nodeId) {
-  return this.container.visualiser.updateNode(nodeId);
+function updateNode(node) {
+  return this.container.visualiser.updateNode(node);
 }
 
 function getAllNodes() {
@@ -87,12 +87,19 @@ function resetCanvas() {
   this.container.visualiser.clearGraph();
 }
 
+function deleteNode(node) {
+  this.container.visualiser.deleteNode(node);
+}
+
 function registerEventHandler(event, fn) {
   this.container.visualiser.getNetwork().on(event, fn);
 }
 
 function fitGraphToWindow() { this.container.visualiser.getNetwork().fit({ animation: { easingFunction: 'easeInOutQuad', duration: 500 } }); }
 
+function getNetwork() {
+  return this.container.visualiser.getNetwork();
+}
 const state = {
   container: undefined,
 };
@@ -109,6 +116,8 @@ const prototype = {
   getNode,
   getAllEdges,
   updateNode,
+  getNetwork,
+  deleteNode,
 };
 
 export default {

@@ -61,7 +61,6 @@ import GraqlCodeMirror from './TopBar/GraqlEditor/GraqlCodeMirror';
 import ConsoleUtils from './BottomBar/ConsoleUtils';
 
 export default {
-  props: ['localStore'],
   data() {
     return {
       showBottomBarContent: false,
@@ -88,7 +87,7 @@ export default {
       this.showBottomBarContent = !this.showBottomBarContent;
     },
     async runConsoleQuery() {
-      const result = await this.localStore.exectueQuery(this.codeMirror.getValue());
+      const result = await this.$store.dispatch('exectueQuery', { query: this.codeMirror.getValue() });
 
       result.forEach(async (x) => {
         const output = await ConsoleUtils.conceptToString(x);

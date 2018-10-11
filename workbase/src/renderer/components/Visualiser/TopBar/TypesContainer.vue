@@ -1,12 +1,12 @@
 <template>
-        <div class="types-container z-depth-3">
+        <div class="types-container z-depth-3 noselect">
             <div class="column">
                 <vue-tabs class="tabs" :tabs="tabs" v-on:tab-selected="toggleTab"></vue-tabs>
                 <div class="row">
                     <div class="tab-panel" v-for="k in Object.keys(metaTypeInstances)" :key="k">
                         <div class="tab-list" v-show="currentTab===k">
                             <div v-for="i in metaTypeInstances[k]" :key="i">
-                                <vue-button v-on:clicked="typeSelected(i)" :text="i" className="vue-button"></vue-button>
+                                <button @click="typeSelected(i)" class="btn delete-fav-query-btn">{{i}}</button>
                             </div>
                         </div>
                     </div>
@@ -21,7 +21,7 @@
 <style scoped>
 
     .editor-tab {
-        max-height: 123px;
+        max-height: 125px;
         width: 13px;
         flex-direction: column;
         display: flex;
@@ -32,7 +32,7 @@
 
     .tab-list {
         overflow: auto;
-        height: 70px;
+        height: 72px;
         display: flex;
         flex-wrap: wrap;
         flex-direction: row;
@@ -73,7 +73,6 @@
 
   export default {
     name: 'TypesContainer',
-    props: ['localStore', 'currentKeyspace'],
     data() {
       return {
         tabs: ['entities', 'attributes', 'relationships'],
@@ -82,7 +81,7 @@
     },
     computed: {
       metaTypeInstances() {
-        return this.localStore.getMetaTypeInstances();
+        return this.$store.getters.metaTypeInstances;
       },
     },
     methods: {
@@ -90,7 +89,7 @@
         this.currentTab = tab;
       },
       typeSelected(type) {
-        this.localStore.setCurrentQuery(`match $x isa ${type}; get;`);
+        this.$store.commit('currentQuery', `match $x isa ${type}; get;`);
       },
     },
   };

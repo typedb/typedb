@@ -60,9 +60,28 @@
 
 /* icon */
 
+.bp3-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vue-icon {
+  fill: var(--font-default);
+}
+
+span.bp3-icon::before {
+  display: none;
+}
+
+.right-bar-tab-icon {
+  fill: var(--font-default);
+}
+
 .tab-icon {
   cursor: pointer;
   padding: 1px;
+  fill: var(--font-default);
 }
 
 .tab-icon:focus {
@@ -81,75 +100,59 @@
   width: 12px !important;
 }
 
-.dummy-graql-icon {
-  display: none;
-}
-
-.dummy-star-icon {
-  display: none;
-}
-
 /* buttons */
 
-.vue-button {
+.btn {
   background: var(--button-color) none !important;
-  border: 1px solid var(--border-darkest-color) !important;
   -webkit-box-shadow: none !important;
-  box-shadow: none !important;
-  white-space: nowrap !important;
-  border-radius: 0px !important;
+  border: 1px solid var(--border-darkest-color);
+  box-shadow: none;
+  white-space: nowrap;
+  border-radius: 0px;
   min-height: 30px;
-  margin: var(--element-margin) !important;
+  margin: var(--element-margin);
+  cursor: pointer;
 
-    -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-    -khtml-user-select: none; /* Konqueror HTML */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* Internet Explorer/Edge */
-    user-select: none; /* Non-prefixed version, currently
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
 }
 
-.vue-button * {
-  fill: var(--font-default);
+.btn:hover {
+  border: 1px solid var(--button-hover-border-color);
 }
 
-.vue-button:hover {
-  border: 1px solid var(--button-hover-border-color) !important;
-  -webkit-box-shadow: none !important;
-  box-shadow: none !important;
+.btn:active {
+  border: 1px solid var(--button-active-border-color);
 }
 
-.vue-button:active {
-  border: 1px solid var(--button-active-border-color) !important;
-  -webkit-box-shadow: none !important;
-  box-shadow: none !important;
-}
-
-.vue-button:focus {
-  outline: none !important;
-}
-
-.vue-button:disabled{
-  border: 1px solid var(--border-dark-color) !important;
+.btn:focus {
+  outline: none;
 }
 
 .reset-setting-btn {
   height: 20px;
-  min-height: 20px !important;
+  min-height: 20px;
   width: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  margin: 0px !important;
+  margin: 0px;
   position: absolute;
   right: 10px;
 }
 
-
 .run-btn *{
   fill: var(--green-4) !important;
+}
+
+.bp3-spinner-animation * {
+  margin-top: 3px;
 }
 
 .bp3-spinner-head {
@@ -161,12 +164,14 @@
   stroke: var(--gray-4) !important;
 }
 
+.keyspace-btn {
+  border: 1px solid var(--button-hover-border-color) !important;
+}
 
-/* queryNameInput */
 
+/* Input */
 
-
-.vue-input .bp3-input {
+.input {
   background-color: var(--button-color);
   color: var(--font-default);
   font-size: 11px;
@@ -177,127 +182,36 @@
   line-height: 22px;
   -webkit-box-shadow: none;
   box-shadow: none;
-  border-radius: 0px !important;
-}
-
-.vue-input .bp3-input::placeholder {
-color: var(--font-faded);
-}
-
-.vue-input .bp3-input:hover {
-  /*border: 1px solid var(--green-4);*/
-  -webkit-box-shadow: none;
-  box-shadow: none;
-}
-
-.vue-input .bp3-input:focus {
-  /*border: 1px solid var(--green-5);*/
-  -webkit-box-shadow: none;
-  box-shadow: none;
-}
-
-.vue-input:focus {
-  -webkit-box-shadow: 0 0 0 1px var(--green-3), 0 0 0 3px var(--green-4), inset 0 1px 1px var(--green-5);
-  box-shadow: 0 0 0 1px var(--green-3), 0 0 0 3px var(--green-4), inset 0 1px 1px var(--green-5);
-}
-
-.vue-input-small .bp3-input{
-  height: 22px;
-  margin: 2px;
-}
-
-.limit-input {
-  width: 36px;
-}
-
-.limit-input .bp3-input {
-  padding-right: 0px !important;
-}
-
-.query-name-input {
-  width: 565px !important;
-  margin-right: var(--element-margin) !important;
-}
-
-
-/* menu */
-
-.vue-menu {
-  min-width: 90px;
-  max-height: 300px;
-  background-color: var(--gray-2);
-  overflow: scroll;
   border-radius: 0px;
 }
 
-.vue-menu-item {
-  background-color: var(--gray-2) !important;
+.input:focus {
+  outline: none;
+}
+
+.input-small {
+  background-color: var(--button-color);
+  color: var(--font-default);
+  font-size: 11px;
   height: 22px;
-  display: flex;
-  align-items: center;
-  z-index: 1 !important;
+  border: 1px solid var(--border-darkest-color);
+  padding: 5px;
+  caret-color: var(--green-4);
+  line-height: 22px;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  border-radius: 0px;
 }
 
-.vue-menu-item:hover {
-  background-color: var(--purple-4) !important;
+.input-small:focus {
+  outline: none;
 }
 
-.vue-menu-item:active {
-}
-
-
-/* popover */
-
-.bp3-popover-arrow-fill {
-  fill: var(--gray-2) !important;
-}
-
-.bp3-popover-arrow-border {
-  fill-opacity: 1 !important;
-}
-
-.bp3-popover-content {
-  background: var(--gray-2) !important;
-}
-
-.bp3-popover {
-  border-radius: 0px !important;
-  border: var(--container-darkest-border) !important;
-  box-shadow: none !important;
-}
-
-.bp3-popover {
-}
-
-.bp3-popover-arrow {
-  /*left: 133px !important;*/
-}
-
-/*tooltip*/
-
-.bp3-tooltip {
-  border: 1px solid var(--purple-1) !important;
-  box-shadow: none !important;
-}
-
-.editor-tooltip {
-  position: absolute;
-  transform-origin: right 17px 0px !important;
-}
-
-.bp3-tooltip .bp3-popover-arrow .bp3-popover-arrow-border {
-  fill: var(--purple-1) !important;
-  fill-opacity: 1 !important;
-}
-
-.bp3-tooltip .bp3-popover-arrow .bp3-popover-arrow-fill {
-  fill: var(--purple-3) !important;
-  fill-opacity: 1 !important;
-}
-
-.bp3-tooltip .bp3-popover-content {
-  background-color: var(--purple-3) !important;
-  border-radius: 0px !important;
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
 }
 
 /* tabs */
@@ -321,31 +235,6 @@ color: var(--font-faded);
 
 .bp3-tab-indicator {
   background-color: var(--green-4) !important;
-}
-
-/* vue switch */
-
-.vue-switch {
-  margin: 0px !important;
-  padding: 0px !important;
-  position: relative !important;
-  border: var(--container-darkest-border) !important;
-  border-radius: 1.75em;
-}
-
-.bp3-control-indicator{
-  outline: none !important;
-  margin: 0px !important;
-}
-
-.bp3-control.bp3-switch input:checked ~ .bp3-control-indicator  {
-  background: var(--green-4) !important;
-}
-
-.bp3-control.bp3-switch .bp3-control-indicator::before {
-  background-color: var(--gray-1);
-  -webkit-box-shadow: none;
-  box-shadow: none;
 }
 
 /* color picker */
@@ -429,38 +318,58 @@ color: var(--font-faded);
   justify-content: center;
 }
 
-/* fav query list */
+/* fav queries */
 
-  .fav-query-center *{
-    background-color: var(--gray-3) !important;
-  }
+.fav-query-center *{
+  background-color: var(--gray-3) !important;
+}
 
 .fav-query-center .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
   border: var(--container-darkest-border);
 }
 
 
-  .fav-query-center-editable *{
-    background-color: var(--gray-1) !important;
-  }
+.fav-query-center-editable *{
+  background-color: var(--gray-1) !important;
+}
 
 .fav-query-center-editable .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
   border: var(--container-darkest-border);
 }
 
+
 /*toast*/
 
 .toasted.primary.info {
   background-color: var(--purple-3) !important;
-  color: var(--font-default) !important;
-  border: var(--purple-1) !important;
+  border: 1px solid var(--purple-1) !important;
+}
+
+.toasted.primary.error {
+  background-color: var(--red-1) !important;
+  border: var(--red-2) !important;
+}
+
+.toasted.primary {
   border-radius: 0px !important;
+  padding: var(--container-padding) !important;
+  color: var(--font-default) !important;
+  width: 450px !important;
+  left: 35px !important;
+  box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.3) !important;
 }
 
 .toasted.primary .action {
   color: var(--font-default) !important;
+  margin: var(--element-margin) !important;
+  border-radius: 0px !important;
+  height: 31px;
 }
 
+.toasted.primary .action:hover {
+  text-decoration: none !important;
+  color: var(--green-4) !important;
+}
 
 /*Reset CSS*/
 html, body, div, span, applet, object, iframe,
@@ -532,10 +441,10 @@ a {
 .z-depth-0 {
   box-shadow: none !important; }
 
-.z-depth-1, .card-panel, .card, .toast, .btn, .btn-large, .btn-floating, .dropdown-content, .collapsible, .side-nav {
+.z-depth-1 {
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2); }
 
-.z-depth-1-half, .btn:hover, .btn-large:hover, .btn-floating:hover {
+.z-depth-1-half {
   box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.14), 0 1px 7px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -1px rgba(0, 0, 0, 0.2); }
 
 .z-depth-2 {
@@ -544,7 +453,7 @@ a {
 .z-depth-3 {
   box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.3); }
 
-.z-depth-4, .modal {
+.z-depth-4  {
   box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.3); }
 
 .z-depth-5 {
@@ -581,13 +490,6 @@ input, textarea {
   display: flex;
   flex: 6; }
 
-.align-center {
-  align-items: center;
-}
-
-.justify-center {
-  justify-content: center;
-}
 
 /* Transitions */
 

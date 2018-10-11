@@ -1,11 +1,11 @@
 <template>
     <div class="panel-container">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showAttributesPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" ></vue-icon>
+            <vue-icon :icon="(showAttributesPanel) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Attributes</h1>
         </div>
         <div v-show="showAttributesPanel">
-            <div class="content" v-if="msg">
+            <div class="content noselect" v-if="msg">
                 {{msg}}
             </div>
             <div class="content" v-else>
@@ -27,32 +27,39 @@
 <script>
   export default {
     name: 'AttributesPanel',
-    props: ['localStore'],
     data() {
       return {
-        showAttributesPanel: undefined,
+        showAttributesPanel: true,
         attributes: null,
       };
     },
+    mounted() {
+      this.loadAttributes(this.selectedNodes);
+    },
     computed: {
       selectedNodes() {
-        return this.localStore.getSelectedNodes();
+        return this.$store.getters.selectedNodes;
       },
       currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
+        return this.$store.getters.currentKeyspace;
       },
       msg() {
         if (!this.currentKeyspace) return 'Please select a keyspace';
         else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';
         else if (!this.attributes) return 'Attributes are being loaded';
-        else if (!this.attributes.length) return 'There are no attributes available for this type of node';
+        else if (!this.attributes.length) return 'There are no attributes available';
         return null;
       },
     },
     watch: {
       selectedNodes(nodes) {
+        this.loadAttributes(nodes);
+      },
+    },
+    methods: {
+      loadAttributes(nodes) {
         // If no node selected: close panel and return
-        if (!nodes || nodes.length > 1) { this.showAttributesPanel = false; return; }
+        if (!nodes || nodes.length > 1) return;
 
         const attributes = nodes[0].attributes;
 
@@ -60,8 +67,6 @@
 
         this.showAttributesPanel = true;
       },
-    },
-    methods: {
       toggleContent() {
         this.showAttributesPanel = !this.showAttributesPanel;
       },

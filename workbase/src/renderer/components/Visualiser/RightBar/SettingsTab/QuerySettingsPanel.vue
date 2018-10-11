@@ -1,26 +1,23 @@
 <template>
-    <div class="panel-container">
+    <div class="panel-container noselect">
         <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14"></vue-icon>
+            <vue-icon :icon="(showQuerySettings) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
             <h1>Query Settings</h1>
         </div>
         <div v-show="showQuerySettings">
-        <div class="panel-content" v-if="!currentKeyspace">
-            Please select a keyspace
-        </div>
 
-        <div class="panel-content" v-else>
+        <div class="panel-content">
             <div class="panel-content-item">
                 <h1 class="panel-label">Query Limit:</h1>
-                <div class="panel-value"><vue-input :defaultValue="queryLimit" v-on:input-changed="updateQueryLimit" className="vue-input vue-input-small"></vue-input></div>
+                <input class="input-small panel-value query-limit-input" type="number" v-model="queryLimit">
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Neighbour Limit:</h1>
-                <div class="panel-value"><vue-input :defaultValue="neighboursLimit" v-on:input-changed="updateNeighboursLimit" className="vue-input vue-input-small"></vue-input></div>
+                <input class="input-small panel-value neighbour-limit-input" type="number" v-model="neighboursLimit">
             </div>
             <div class="panel-content-item">
                 <h1 class="panel-label">Load Roleplayers:</h1>
-                <div class="panel-value"><vue-switch :defaultChecked="loadRolePlayers" v-on:switch-changed="toggleAutoloadRoleplayers" className="vue-input vue-input-small"></vue-switch></div>
+                <div class="panel-value load-roleplayers-switch"><vue-switch :isToggled="loadRolePlayers" v-on:toggled="updateLoadRoleplayers"></vue-switch></div>
             </div>
         </div>
         </div>
@@ -34,44 +31,35 @@
   export default {
 
     name: 'QuerySettings',
-    props: ['localStore'],
     data() {
       return {
-        showQuerySettings: false,
+        showQuerySettings: true,
+        queryLimit: QueryUtils.getQueryLimit(),
+        neighboursLimit: QueryUtils.getNeighboursLimit(),
+        loadRolePlayers: QueryUtils.getRolePlayersStatus(),
       };
     },
-    computed: {
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
+    watch: {
+      queryLimit(newVal) {
+        QueryUtils.setQueryLimit(newVal);
       },
-      queryLimit() {
-        return QueryUtils.getQueryLimit();
-      },
-      neighboursLimit() {
-        return QueryUtils.getNeighboursLimit();
-      },
-      loadRolePlayers() {
-        return QueryUtils.getRolePlayersStatus();
+      neighboursLimit(newVal) {
+        QueryUtils.setNeighboursLimit(newVal);
       },
     },
     methods: {
       toggleContent() {
         this.showQuerySettings = !this.showQuerySettings;
       },
-      toggleAutoloadRoleplayers(newVal) {
+      updateLoadRoleplayers(newVal) {
         QueryUtils.setRolePlayersStatus(newVal);
-      },
-      updateQueryLimit(newVal) {
-        QueryUtils.setQueryLimit(newVal);
-      },
-      updateNeighboursLimit(newVal) {
-        QueryUtils.setNeighboursLimit(newVal);
       },
     },
   };
 </script>
 
 <style scoped>
+
 
     .panel-content {
         padding: var(--container-padding);

@@ -70,7 +70,7 @@ abstract class RegexPredicate implements ValuePredicate {
     public boolean isCompatibleWith(ValuePredicate predicate){
         if (!(predicate instanceof EqPredicate)) return false;
         EqPredicate p = (EqPredicate) predicate;
-        Object pVal = p.equalsValue().orElse(null);
-        return pVal == null || regexPredicate().test(pVal);
+        Object thatVal = p.equalsValue().orElse(null);
+        return thatVal == null || this.regexPredicate().test(thatVal);
     }
 }

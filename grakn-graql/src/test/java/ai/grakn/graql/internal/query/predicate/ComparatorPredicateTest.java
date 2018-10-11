@@ -97,4 +97,7 @@ class MyComparatorPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return P.eq(value);
     }
+
+    @Override
+    public int signum() { return 0; }
 }

@@ -3,19 +3,19 @@
     <div>
             <div class="right-bar-container">
                 <div class="minimize-right-bar" v-bind:style= "[showRightBar ? {} : {'opacity': '1'}]" @click="toggleRightBar">
-                    <vue-icon :icon="(showRightBar) ? 'double-chevron-right' : 'double-chevron-left'" iconSize="14"></vue-icon>
+                    <vue-icon :icon="(showRightBar) ? 'double-chevron-right' : 'double-chevron-left'" iconSize="14" className="vue-icon"></vue-icon>
                 </div>
 
                 <div class="nav" v-if="showRightBar">
-                    <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab-selected' : 'nav-tab'" class="nav-tab"><vue-icon icon="info-sign"></vue-icon></div>
-                    <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab-selected' : 'nav-tab'" class="nav-tab"><vue-icon icon="cog"></vue-icon></div>
+                    <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="concept-info-tab"><vue-icon icon="info-sign" className="right-bar-tab-icon"></vue-icon></div>
+                    <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="settings-tab"><vue-icon icon="cog" className="right-bar-tab-icon"></vue-icon></div>
                     <div class="nav-bar-space"></div>
                 </div>
 
                 <div class="content" v-if="showRightBar">
                     <keep-alive>
-                        <concept-info-tab v-if="showConceptInfoTab" :localStore="localStore"></concept-info-tab>
-                        <settings-tab v-if="showSettingsTab" :localStore="localStore"></settings-tab>
+                        <concept-info-tab v-if="showConceptInfoTab"></concept-info-tab>
+                        <settings-tab v-if="showSettingsTab"></settings-tab>
                     </keep-alive>
                 </div>
             </div>
@@ -114,7 +114,6 @@
 
   export default {
     components: { VueDraggableResizable, ConceptInfoTab, SettingsTab },
-    props: ['localStore'],
     data() {
       return {
         showConceptInfoTab: true,

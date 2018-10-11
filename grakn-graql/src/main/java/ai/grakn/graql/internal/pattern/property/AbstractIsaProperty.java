@@ -98,7 +98,7 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
 
         //isa part
         VarPatternAdmin isaVar = varPatternForAtom(varName, typeVariable).admin();
-        return IsaAtom.create(isaVar, typeVariable, predicateId, parent);
+        return IsaAtom.create(varName, typeVariable, isaVar, predicateId, parent);
     }
 
     protected abstract VarPattern varPatternForAtom(Var varName, Var typeVariable);

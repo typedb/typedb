@@ -25,6 +25,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
@@ -265,7 +266,7 @@ public class ReasonerUtils {
      * @param childParentUnifier unifier to unify child with parent
      * @return combined unifier for type atoms
      */
-    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier){
+    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierComparison unifierType){
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Var childVarName = childType.getVarName();
@@ -273,7 +274,10 @@ public class ReasonerUtils {
 
             //types are unique so getting one is fine
             TypeAtom parentType = parentTypes.stream().filter(pt -> pt.getVarName().equals(parentVarName)).findFirst().orElse(null);
-            if (parentType != null) unifier = unifier.merge(childType.getUnifier(parentType));
+            if (parentType != null){
+                Unifier childUnifier = childType.getUnifier(parentType, unifierType);
+                if (childUnifier != null) unifier = unifier.merge(childUnifier);
+            }
         }
         return unifier;
     }
@@ -281,11 +285,13 @@ public class ReasonerUtils {
     /**
      * @param parent type
      * @param child type
+     * @param direct flag indicating whether only direct types should be considered
      * @return true if child is a subtype of parent
      */
-    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child) {
-        if (parent == null) return true;
+    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
+        if (parent == null ) return true;
         if (child == null) return false;
+        if (direct) return parent.equals(child);
         if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
         SchemaConcept superType = child;
         while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
@@ -300,8 +306,8 @@ public class ReasonerUtils {
      * @param child {@link SchemaConcept}
      * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
      */
-    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child) {
-        return parent != null && child == null || !typesCompatible(parent, child) && !typesCompatible(child, parent);
+    public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
+        return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
     }
 
 

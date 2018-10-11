@@ -18,6 +18,7 @@
 
 package ai.grakn.test.graql.shell;
 
+import ai.grakn.Keyspace;
 import ai.grakn.graql.shell.GraqlConsole;
 import ai.grakn.graql.shell.GraqlShellOptions;
 import ai.grakn.test.rule.EngineContext;
@@ -63,6 +64,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -106,7 +108,8 @@ public class GraqlShellIT {
     @Test
     public void testStartAndExitShell() throws Exception {
         // Assert simply that the shell starts and terminates without errors
-        assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
+        String output = runShellWithoutErrors("exit\n");
+        assertTrue(output.matches("[\\s\\S]*> exit(\r\n?|\n)"));
     }
 
     @Test
@@ -215,7 +218,7 @@ public class GraqlShellIT {
         ).split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", result[4]);
+        assertThat(result[4], endsWith("> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;"));
         assertTrue(result.length > 5);
     }
 
@@ -381,8 +384,8 @@ public class GraqlShellIT {
         String[] result = runShellWithoutErrors("define E sub entity;\nrollback\nmatch $x label E; get;\n").split("\n");
 
         // Make sure there are no results for get query
-        assertEquals(">>> match $x label E; get;", result[result.length-2]);
-        assertEquals(">>> ", result[result.length-1]);
+        assertThat(result[result.length-2], endsWith("> match $x label E; get;"));
+        assertThat(result[result.length-1], endsWith("> "));
     }
 
     @Test
@@ -424,8 +427,8 @@ public class GraqlShellIT {
         String[] lines = result.split("\n");
 
         // Make sure there are no results for get query
-        assertEquals(result, ">>> match $x isa entity; get;", lines[lines.length-2]);
-        assertEquals(result, ">>> ", lines[lines.length-1]);
+        assertThat(result, lines[lines.length-2], endsWith("> match $x isa entity; get;"));
+        assertThat(result, lines[lines.length-1], endsWith("> "));
     }
 
     @Test
@@ -537,9 +540,9 @@ public class GraqlShellIT {
                 containsString("entity"),
                 "clean",
                 is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
-                is("Type 'confirm' to continue."),
+                is("Type 'confirm' to continue..."),
                 "confirm",
-                is("Cleaning..."),
+                is("Cleaning keyspace...done."),
                 "match $x sub entity; get;",
                 containsString("entity"),
                 "rollback",
@@ -558,7 +561,7 @@ public class GraqlShellIT {
                 containsString("entity"),
                 "clean",
                 is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
-                is("Type 'confirm' to continue."),
+                is("Type 'confirm' to continue..."),
                 "n",
                 is("Cancelling clean."),
                 "match $x sub entity; get;",
@@ -566,7 +569,7 @@ public class GraqlShellIT {
                 containsString("entity"),
                 "clean",
                 is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
-                is("Type 'confirm' to continue."),
+                is("Type 'confirm' to continue..."),
                 "no thanks bad idea thanks for warning me",
                 is("Cancelling clean."),
                 "match $x sub entity; get;",
@@ -661,7 +664,7 @@ public class GraqlShellIT {
                 .collect(joining("\n", "", "\n"));
 
         List<Matcher<? super String>> matcherList = Stream.of(matchers)
-                .map(obj -> (obj instanceof Matcher) ? (Matcher<String>) obj : is(">>> " + obj))
+                .map(obj -> (obj instanceof Matcher) ? (Matcher<String>) obj : endsWith("> " + obj))
                 .collect(toList());
 
         String output = runShellWithoutErrors(input, arguments.toArray(new String[arguments.size()]));

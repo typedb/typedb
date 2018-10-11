@@ -175,7 +175,7 @@ public class ConceptMapImpl implements ConceptMap {
                     else {
                         if (concept.isSchemaConcept()
                                 && otherConcept.isSchemaConcept()
-                                && !ReasonerUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept())) {
+                                && !ReasonerUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
                             entryMap.put(
                                     var,
                                     Iterables.getOnlyElement(ReasonerUtils.topOrMeta(

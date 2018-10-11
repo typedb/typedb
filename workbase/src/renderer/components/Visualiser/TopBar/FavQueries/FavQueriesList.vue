@@ -11,10 +11,10 @@
                         </div>
                         <div class="fav-query-right">
                             <div class="fav-query-btns">
-                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+                                <button v-if="isEditable === index" @click="addFavQuery(index, query.name)" class="btn save-edited-fav-query"><vue-icon icon="floppy-disk" className="vue-icon"></vue-icon></button>
+                                <button v-if="isEditable !== index" @click="typeFavQuery(query.value)" class="btn run-fav-query-btn"><vue-icon icon="fast-forward" className="vue-icon"></vue-icon></button>
+                                <button v-if="isEditable !== index" @click="editQuery(index)" class="btn edit-fav-query-btn"><vue-icon icon="edit" className="vue-icon"></vue-icon></button>
+                                <button v-if="isEditable !== index" @click="removeFavQuery(index, query.name)" class="btn delete-fav-query-btn"><vue-icon icon="trash" className="vue-icon"></vue-icon></button>
                             </div>
                         </div>
                     </div>
@@ -135,7 +135,7 @@
 
   export default {
     name: 'FavQueriesList',
-    props: ['localStore', 'currentKeyspace', 'favQueries'],
+    props: ['currentKeyspace', 'favQueries'],
     data() {
       return {
         codeMirror: [],
@@ -156,13 +156,13 @@
     },
     methods: {
       typeFavQuery(query) {
-        this.localStore.setCurrentQuery(query);
+        this.$store.commit('currentQuery', query);
       },
       removeFavQuery(index, queryName) {
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);
         this.$emit('refresh-queries');
         this.codeMirror[index].toTextArea(); // Remove codemirror instance
-        this.$notifyInfo(`Query ${queryName} has been deleted from favourite queries.`, 'bottom-right');
+        this.$notifyInfo(`Query ${queryName} has been deleted from saved queries.`);
       },
       renderQueries() {
         const savedQueries = this.$refs.favQuery;
@@ -189,6 +189,7 @@
         this.$emit('refresh-queries');
         this.isEditable = null;
         this.codeMirror[index].setOption('readOnly', 'nocursor');
+        this.$notifyInfo(`Saved query ${queryName} has been updated.`);
       },
     },
   };

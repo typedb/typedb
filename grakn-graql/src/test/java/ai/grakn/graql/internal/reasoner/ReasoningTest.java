@@ -613,6 +613,7 @@ public class ReasoningTest {
         String queryString = "match $x isa resource 'partial bad flag'; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString2 = "match $x isa resource 'partial bad flag 2'; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString3 = "match $x isa resource 'bad flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
+
         String queryString4 = "match $x isa resource 'no flag' ; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString5 = "match $x isa resource; ($x, resource-owner: $y) isa resource-relation; get;";
         String queryString6 = "match $x isa resource; $x contains 'bad flag';($x, resource-owner: $y) isa resource-relation; get;";
@@ -624,6 +625,7 @@ public class ReasoningTest {
         GetQuery query5 = qb.parse(queryString5);
         GetQuery query6 = qb.parse(queryString6);
 
+
         List<ConceptMap> answers = query.execute();
         List<ConceptMap> answers2 = query2.execute();
         List<ConceptMap> answers3 = query3.execute();
@@ -631,12 +633,13 @@ public class ReasoningTest {
         List<ConceptMap> answers5 = query5.execute();
         List<ConceptMap> answers6 = query6.execute();
 
-        assertEquals(answers.size(), 2);
-        assertEquals(answers2.size(), 1);
-        assertEquals(answers3.size(), 1);
-        assertEquals(answers4.size(), 1);
-        assertEquals(answers5.size(), answers.size() + answers2.size() + answers3.size() + answers4.size());
-        assertEquals(answers6.size(), answers5.size() - answers4.size());
+        assertEquals(2, answers.size());
+        assertEquals(1, answers2.size());
+        assertEquals(1, answers3.size());
+        assertEquals(1, answers4.size());
+        assertEquals(answers.size() + answers2.size() + answers3.size() + answers4.size(), answers5.size());
+        assertEquals(answers5.size() - answers4.size(), answers6.size());
+
     }
 
     @Test
@@ -775,11 +778,11 @@ public class ReasoningTest {
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverEntityHierarchy(){
         QueryBuilder qb = test21.tx().graql().infer(true);
-        String queryString = "match $x isa entity1; get;";
-        String queryString2 = "match $x isa sub-entity1; get;";
+        String queryString = "match $x isa baseEntity; get;";
+        String queryString2 = "match $x isa subEntity; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
         List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
-        assertEquals(answers.size(), 1);
+        assertEquals(1, answers.size());
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
     }

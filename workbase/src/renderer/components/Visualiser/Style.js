@@ -1,5 +1,5 @@
 
-import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
+import DisplaySettings from './RightBar/SettingsTab/DisplaySettings';
 
 
 const DEFAULT_NODE_SHAPE = 'box';
@@ -61,7 +61,7 @@ function colourFromStorage(colour) {
 }
 
 function nodeColour(node) {
-  const colour = NodeSettings.getTypeColours(node.type);
+  const colour = DisplaySettings.getTypeColours(node.type);
   if (colour.length) return colourFromStorage(colour);
 
 
@@ -103,6 +103,8 @@ function nodeColour(node) {
         dimmedCol = DEFAULT_NODE_DIMMED;
       }
   }
+
+  DisplaySettings.toggleColourByType({ type: node.type, colourString: backgroundCol });
 
   return {
     background: backgroundCol,
@@ -174,6 +176,7 @@ function computeNodeStyle(node) {
       x: 2,
       y: 2,
     },
+    widthConstraint: { maximum: 600 },
   };
 }
 
@@ -196,6 +199,19 @@ function computeShortestPathEdgeStyle() {
       hover: 'rgba(166, 226, 46, 1)',
     },
     dashes: true,
+    font: {
+      color: '#00eca2',
+      background: '#1B1B1B',
+      strokeWidth: 0,
+    },
+    hoverWidth: 2,
+    selectionWidth: 2,
+    arrowStrikethrough: false,
+    arrows: { to: { enabled: false } },
+    smooth: {
+      enabled: false,
+      forceDirection: 'none',
+    },
   };
 }
 

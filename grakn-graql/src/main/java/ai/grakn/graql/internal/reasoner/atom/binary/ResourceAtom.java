@@ -30,6 +30,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -39,14 +40,12 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.AttributeTypeImpl;
 import ai.grakn.kb.internal.concept.EntityImpl;
@@ -54,7 +53,6 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -65,7 +63,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
  *
@@ -123,8 +121,18 @@ public abstract class ResourceAtom extends Binary{
         );
     }
 
+    /**
+     * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
+     * - $x isa ???;
+     * - $r isa resource;
+     * We pick the latter as the type information is available.
+     *
+     * @return corresponding isa atom
+     */
     @Override
-    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), getParentQuery()); }
+    public IsaAtom toIsaAtom(){
+        return IsaAtom.create(getPredicateVariable(), Graql.var(), getTypeId(), false, getParentQuery());
+    }
 
     @Override
     public String toString(){
@@ -147,8 +155,8 @@ public abstract class ResourceAtom extends Binary{
                 && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
     }
 
-    private boolean multiPredicateEquivalent(ResourceAtom that, Equivalence<Atomic> equiv){
-        return ReasonerUtils.isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
+    private boolean multiPredicateEquivalent(ResourceAtom that, AtomicEquivalence equiv){
+        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
     }
 
     @Override
@@ -167,7 +175,7 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    boolean predicateBindingsEquivalent(Binary at, Equivalence<Atomic> equiv) {
+    boolean predicateBindingsEquivalent(Binary at, AtomicEquivalence equiv) {
         if (!(at instanceof ResourceAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
 
         ResourceAtom that = (ResourceAtom) at;
@@ -196,27 +204,6 @@ public abstract class ResourceAtom extends Binary{
 
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
         return childAtom.isUnifiableWith(this);
-    }
-
-    @Override
-    public boolean isUnifiableWith(Atom atom) {
-        //findbugs complains about cast without it
-        if (!(atom instanceof ResourceAtom)) return false;
-
-        ResourceAtom parent = (ResourceAtom) atom;
-        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) this.getParentQuery();
-
-        //check type bindings compatibility
-        Type childType = childQuery.getVarTypeMap().get(this.getVarName());
-        Type parentType = parent.getParentQuery().getVarTypeMap().get(parent.getVarName());
-
-        if (childType != null && parentType != null && areDisjointTypes(childType, parentType)
-                || !childQuery.isTypeRoleCompatible(this.getVarName(), parentType)) return false;
-
-        //check value predicate compatibility
-        return parent.getMultiPredicate().isEmpty()
-                || this.getMultiPredicate().isEmpty()
-                || this.getMultiPredicate().stream().allMatch(childPredicate -> parent.getMultiPredicate().stream().anyMatch(parentPredicate -> parentPredicate.isCompatibleWith(childPredicate)));
     }
 
     @Override
@@ -282,12 +269,21 @@ public abstract class ResourceAtom extends Binary{
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom) {
-        if (!(parentAtom instanceof ResourceAtom)){
-            return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
+    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+        if (!(parentAtom instanceof ResourceAtom)) {
+            if (parentAtom instanceof IsaAtom){ return this.toIsaAtom().getUnifier(parentAtom, unifierType); }
+            else {
+                throw GraqlQueryException.unificationAtomIncompatibility();
+            }
         }
-        Unifier unifier = super.getUnifier(parentAtom);
+
         ResourceAtom parent = (ResourceAtom) parentAtom;
+        Unifier unifier = super.getUnifier(parentAtom, unifierType);
+
+        if (unifier == null
+                || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
+            return UnifierImpl.nonExistent();
+        }
 
         //unify relation vars
         Var childRelationVarName = this.getRelationVariable();

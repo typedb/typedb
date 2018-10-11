@@ -1,7 +1,6 @@
 import storage from '@/components/shared/PersistentStorage';
 import Vue from 'vue';
 import SchemaHandler from './SchemaHandler';
-import CanvasStoreMixin from '../shared/CanvasStoreMixin/CanvasStoreMixin';
 import Style from './Style';
 
 import { DEFINE_ENTITY_TYPE, DEFINE_ATTRIBUTE_TYPE, DEFINE_RELATIONSHIP_TYPE,
@@ -192,23 +191,6 @@ const watch = {
     this.schemaHandler = new SchemaHandler(tx);
     // }
   },
-  isInit() {
-    this.registerCanvasEventHandler('dragEnd', (params) => {
-      if (!params.nodes.length) return;
-      let positionMap = storage.get('schema-node-positions');
-
-      if (positionMap) {
-        positionMap = JSON.parse(positionMap);
-      } else {
-        positionMap = {};
-        storage.set('schema-node-positions', {});
-      }
-      params.nodes.forEach((nodeId) => {
-        positionMap[nodeId] = params.pointer.canvas;
-      });
-      storage.set('schema-node-positions', JSON.stringify(positionMap));
-    });
-  },
 };
 
 
@@ -258,14 +240,28 @@ const methods = {
       this.refreshSelectedNode();
     }).catch((e) => { this.openGraknTx(); throw e; });
   },
-  showSpinner() {
-    return this.loadingSchema;
-  },
   getEditingMode() {
     return this.editingMode;
   },
   setEditingMode(mode) {
     this.editingMode = mode;
+  },
+  registerVueCanvasEventHandlers() {
+    this.registerCanvasEventHandler('dragEnd', (params) => {
+      if (!params.nodes.length) return;
+      let positionMap = storage.get('schema-node-positions');
+
+      if (positionMap) {
+        positionMap = JSON.parse(positionMap);
+      } else {
+        positionMap = {};
+        storage.set('schema-node-positions', {});
+      }
+      params.nodes.forEach((nodeId) => {
+        positionMap[nodeId] = params.pointer.canvas;
+      });
+      storage.set('schema-node-positions', JSON.stringify(positionMap));
+    });
   },
 };
 
@@ -276,7 +272,6 @@ const state = {
 };
 
 export default new Vue({
-  mixins: [CanvasStoreMixin.create()],
   data() { return Object.assign(state, { actions }); },
   methods,
   watch,

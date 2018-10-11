@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import Style from './Style';
 import NodeSettings from './RightBar/SettingsTab/DisplaySettings';
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
@@ -15,16 +14,6 @@ async function attachExplanation(result) {
       return y;
     });
   }).flatMap(x => x);
-}
-
-// Filter out all implicit types
-async function filterImplicitTypes(concepts) {
-  return Promise.all(concepts.map(async (concept) => {
-    if (concept.isThing()) {
-      return (!await (await concept.type()).isImplicit()) ? concept : null;
-    }
-    return (!await concept.isImplicit()) ? concept : null;
-  })).then(concepts => concepts.filter(l => l));
 }
 
 function buildValue(array) {
@@ -132,7 +121,6 @@ async function prepareNodes(concepts) {
 async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
   const nodes = [];
   const edges = [];
-
   let roleplayers = await relationship.rolePlayersMap();
   roleplayers = Array.from(roleplayers.entries());
   if (limitRolePlayers) {
@@ -156,7 +144,7 @@ async function loadRolePlayers(relationship, limitRolePlayers, limit, offset) {
         default:
           throw new Error(`Unrecognised baseType of thing: ${thing.baseType}`);
       }
-      thing.offset = 1;
+      thing.offset = 0;
       thing.attrOffset = 0;
 
       nodes.push(thing);
@@ -206,24 +194,18 @@ async function constructEdges(result) {
   return edges.flatMap(x => x);
 }
 
-async function buildFromConceptMap(result) {
-  const nodes = await prepareNodes(await filterImplicitTypes(await attachExplanation(result)));
+async function buildFromConceptMap(result, autoLoadRolePlayers, limitRoleplayers) {
+  const nodes = await prepareNodes(await attachExplanation(result));
   const edges = await constructEdges(result);
 
   // Check if auto-load role players is selected
-  if (QuerySettings.getRolePlayersStatus()) {
+  if (autoLoadRolePlayers) {
     const relationships = nodes.filter(x => x.baseType === 'RELATIONSHIP');
-    const roleplayers = await relationshipsRolePlayers(relationships, true, QuerySettings.getNeighboursLimit());
-
-    relationships.map((rel) => {
-      rel.offset += QuerySettings.getNeighboursLimit();
-      return rel;
-    });
+    const roleplayers = await relationshipsRolePlayers(relationships, limitRoleplayers, QuerySettings.getNeighboursLimit());
 
     nodes.push(...roleplayers.nodes);
     edges.push(...roleplayers.edges);
   }
-
   return { nodes, edges };
 }
 
@@ -245,9 +227,12 @@ async function buildFromConceptList(path, pathNodes) {
   return data;
 }
 
+
 export default {
   buildFromConceptMap,
   buildFromConceptList,
   prepareNodes,
   relationshipsRolePlayers,
+  attachExplanation,
+  constructEdges,
 };

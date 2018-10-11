@@ -14,6 +14,7 @@ Indicators of centrality identify the most important vertices within a graph.
 [Wikipedia](https://en.wikipedia.org/wiki/Centrality)
 
 Currently, Graql supports two algorithms for computing centrality:
+
 - Degree
 - K-Core
 
@@ -34,10 +35,10 @@ compute centrality using degree;
 
 On the graph below we expect the degrees of the people to be:
 
-* **Barbara Herchelroth**: 3 - two marriages and a child
-* **Jacob Young**: 2 - a marriage and a child
-* **Mary Young**: 2 - two parents
-* **John Newman**: 1 - a marriage
+- **Barbara Herchelroth**: 3 - two marriages and a child
+- **Jacob Young**: 2 - a marriage and a child
+- **Mary Young**: 2 - two parents
+- **John Newman**: 1 - a marriage
 
 Instances with degree = 0 won't appear in the result. Therefore, the relationship concepts
 (marriage/parentship) don't have degrees.
@@ -51,7 +52,7 @@ if it plays a role in another relationship." %}
 
 Coreness is a measure that can help identify tightly interlinked groups within a network.
 An instance have coreness k if the instance belongs to a
-[k-core](https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores) but not to any
+[k-core](<https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores>) but not to any
 (k+1)-core.
 
 We can compute the coreness centrality using the following:
@@ -87,10 +88,10 @@ compute centrality in [person, marriage], using degree;
 
 The result will now be:
 
-* **Barbara Herchelroth**: 2
-* **Jacob Young**: 1
-* **Mary Young**: 0
-* **John Newman**: 1
+- **Barbara Herchelroth**: 2
+- **Jacob Young**: 1
+- **Mary Young**: 0
+- **John Newman**: 1
 
 The subgraph command can also be used when computing k-core centrality.
 
@@ -114,7 +115,7 @@ so the result map would only contain these types.
 Another example:
 
 ```graql-test-ignore
-compute centrality of [cat, dog] in [man, cat, dog, mans-best-friend], using k-core;
+compute centrality of [cat, dog], in [man, cat, dog, mans-best-friend], using k-core;
 ```
 
 where `mans-best-friend` is the relationship type containing two roles: human and pet.
