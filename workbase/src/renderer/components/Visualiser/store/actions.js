@@ -65,7 +65,7 @@ export default {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     const nodes = await Promise.all(state.visFacade.getAllNodes().filter(x => x.type === type).map(x => graknTx.getConcept(x.id)));
     const updatedNodes = await VisualiserGraphBuilder.prepareNodes(nodes);
-    state.visFacade.container.visualiser.updateNode(updatedNodes);
+    state.visFacade.updateNode(updatedNodes);
     graknTx.close();
   },
 
@@ -92,7 +92,6 @@ export default {
     commit('loadingQuery', false);
   },
 
-  //--------------------
   async [RUN_CURRENT_QUERY]({ state, dispatch, commit }) {
     try {
       const query = state.currentQuery;
