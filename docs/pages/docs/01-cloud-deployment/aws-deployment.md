@@ -12,7 +12,7 @@ folder: docs
 
 ## Deployment
 
-We shall begin with the deployment of Grakn instances. The procedure is straight-forward and takes advantage of the listing in [AWS Marketplace](https://aws.amazon.com/marketplace).
+We shall begin with the deployment of Grakn instances. The procedure is straight-forward and takes advantage of the listing in the [AWS Marketplace](https://aws.amazon.com/marketplace/pp/B07H8RMX5X).
 
 ![](/images/aws-solution-listing.png)
 
@@ -172,7 +172,7 @@ For more information on Auto Scaling Groups please visit [AWS Docs](https://docs
 By design, it is not possible to stop an instance belonging to an Auto Scaling Group. When a Scaling Policy triggers the removal of an instance, Auto Scaling will always Terminate the instance. As a result a different
 procedure is needed for stopping instances and it will be described here.
 
-**IMPORTANT** Before you proceed, make sure that the minimum capacity of the Auto Scaling Group the instance belongs to is at least one smaller than the current instance count, e.g. if you have 3 instances running and want to stop one, 
+**IMPORTANT:** Before you proceed, make sure that the minimum capacity of the Auto Scaling Group the instance belongs to is at least one smaller than the current instance count, e.g. if you have 3 instances running and want to stop one, 
 make sure the minimum capacity is at most 2. Otherwise new instances will be created in place of the stopped instance.
 
 The procedure is the following, for an instance you want to stop:

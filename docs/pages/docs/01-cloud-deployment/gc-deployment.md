@@ -11,7 +11,7 @@ folder: docs
 # GCP Marketplace
 
 ## Deployment
-We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the listing in [GCP Marketplace](https://console.cloud.google.com/marketplace/details/grakn-public/grakn-kgms-premium):
+We shall begin with deployment of a Grakn cluster. The procedure is straight-forward and takes advantage of the listing in the [GCP Marketplace](https://console.cloud.google.com/marketplace/details/grakn-public/grakn-kgms-premium):
 
 ![](/images/gc-solution-listing.png)
 
