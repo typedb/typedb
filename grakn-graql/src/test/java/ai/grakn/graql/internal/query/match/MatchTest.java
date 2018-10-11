@@ -57,8 +57,11 @@ import org.junit.rules.ExpectedException;
 import java.text.ParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -946,6 +949,32 @@ public class MatchTest {
 
         assertThat(query, variable(x, everyItem(not(isInstance()))));
         assertThat(query, variable(y, everyItem(not(isInstance()))));
+    }
+
+
+    @Test
+    public void directSubThingOnlyReturnsToplevelTypes() {
+        Match query = qb.match(x.subExplicit("thing"));
+        HashSet<String> expectedLabels = new HashSet<>(Arrays.asList(
+                "thing",
+                "entity",
+                "relationship",
+                "attribute"
+        ));
+        List<ConceptMap> conceptMaps = query.stream().collect(Collectors.toList());
+        assertTrue(conceptMaps.stream().allMatch(conceptMap ->
+                expectedLabels.contains(
+                        conceptMap.get("x").asSchemaConcept().label().toString()
+                )
+        ));
+    }
+
+    @Test
+    public void directSubEntityOnlyReturnsDirectChildTypes() {
+        Match query = qb.match(x.subExplicit("entity"));
+        int expectedEntityTypesCount = 8;
+        List<Concept> concepts = query.stream().map(conceptMap -> conceptMap.get("x")).collect(Collectors.toList());
+        assertEquals(expectedEntityTypesCount, concepts.size());
     }
 
     @Test

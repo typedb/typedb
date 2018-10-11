@@ -55,12 +55,10 @@ public abstract class OutIsaFragment extends Fragment {
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
 
-
-        // note to self: (josh)
         // from the traversal, branch to take either of these paths
         return Fragments.union(traversal, ImmutableSet.of(
                 Fragments.isVertex(__.identity()).out(ISA.getLabel()).out(SHARD.getLabel()),
-                edgeTraversal() // what is this doing??
+                edgeTraversal() // what is this doing?
         ));
     }
 

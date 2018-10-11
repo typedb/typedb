@@ -35,16 +35,25 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelO
  * @see EquivalentFragmentSets#sub(VarProperty, Var, Var)
  *
  * @author Felix Chapman
+ * @author Joshua Send
  */
 @AutoValue
 abstract class SubFragmentSet extends EquivalentFragmentSet {
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(
-                Fragments.outSub(varProperty(), subConcept(), superConcept()),
-                Fragments.inSub(varProperty(), superConcept(), subConcept())
-        );
+
+        if (explicitSub()) {
+            return ImmutableSet.of(
+                    Fragments.outSub(varProperty(), subConcept(), superConcept(), 1),
+                    Fragments.inSub(varProperty(), superConcept(), subConcept(), 1)
+            );
+        } else {
+            return ImmutableSet.of(
+                    Fragments.outSub(varProperty(), subConcept(), superConcept(), -1),
+                    Fragments.inSub(varProperty(), superConcept(), subConcept(), -1)
+            );
+        }
     }
 
     abstract Var subConcept();
@@ -73,6 +82,7 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
         Iterable<SubFragmentSet> subSets = fragmentSetOfType(SubFragmentSet.class, fragmentSets)::iterator;
 
         for (SubFragmentSet subSet : subSets) {
+//            if (subSet.explicitSub()) continue; // TODO is this necessary?
             LabelFragmentSet labelSet = labelOf(subSet.superConcept(), fragmentSets);
             if (labelSet == null) continue;
 

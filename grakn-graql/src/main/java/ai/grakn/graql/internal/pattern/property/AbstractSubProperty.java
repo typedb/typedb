@@ -18,7 +18,26 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.FibonacciHeap;
+import ai.grakn.graql.internal.query.executor.ConceptBuilder;
+import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 
 /**
@@ -26,4 +45,64 @@ import ai.grakn.graql.admin.UniqueVarProperty;
  */
 public abstract class AbstractSubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+
+    public abstract VarPatternAdmin superType();
+
+    @Override
+    public Stream<VarPatternAdmin> getTypes() {
+        return Stream.of(superType());
+    }
+
+    @Override
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(superType());
+    }
+
+    @Override
+    public String getProperty() {
+        return superType().getPrintableName();
+    }
+
+    @Override
+    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
+
+            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
+
+            if (builder.isPresent()) {
+                builder.get().sub(superConcept);
+            } else {
+                ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
+            }
+        };
+
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(superType().var()).produces(var).build());
+    }
+
+    @Override
+    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept concept = executor.get(var).asSchemaConcept();
+
+            SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
+            SchemaConcept actualSuperConcept = concept.sup();
+
+            if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
+                concept.delete();
+            }
+        };
+
+        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, superType().var()).build());
+    }
+
+    @Override
+    public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        Var varName = var.var().asUserDefined();
+        VarPatternAdmin typeVar = this.superType();
+        Var typeVariable = typeVar.var().asUserDefined();
+        IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+        return SubAtom.create(varName, typeVariable, predicateId, parent);
+    }
 }

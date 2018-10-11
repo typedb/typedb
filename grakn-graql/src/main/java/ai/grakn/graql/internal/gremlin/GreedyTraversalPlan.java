@@ -30,7 +30,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
-import ai.grakn.graql.internal.gremlin.fragment.InSubRepeatedFragment;
+import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
 import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
 import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
@@ -286,7 +286,7 @@ public class GreedyTraversalPlan {
             oldSize = instanceVarTypeMap.size();
             allFragments.stream()
                     .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
-                    .filter(fragment -> fragment instanceof InIsaFragment || fragment instanceof InSubRepeatedFragment)
+                    .filter(fragment -> fragment instanceof InIsaFragment || fragment instanceof InSubFragment)
                     .forEach(fragment -> instanceVarTypeMap.put(fragment.end(), labelVarTypeMap.get(fragment.start())));
         } while (oldSize != instanceVarTypeMap.size());
         return instanceVarTypeMap;
@@ -440,7 +440,7 @@ public class GreedyTraversalPlan {
                                            Set<Fragment> allFragments) {
 
         Set<Fragment> validSubFragments = allFragments.stream().filter(fragment -> {
-            if (fragment instanceof InSubRepeatedFragment) {
+            if (fragment instanceof InSubFragment) {
                 Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
                 if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
                     Node subType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes);

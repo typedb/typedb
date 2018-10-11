@@ -70,20 +70,12 @@ public class Fragments {
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InSubRepeatedFragment(varProperty, start, end);
+    public static Fragment inSub(VarProperty varProperty, Var start, Var end, int subTraversalDepthlimit) {
+        return new AutoValue_InSubFragment(varProperty, start, end, subTraversalDepthlimit);
     }
 
-    public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_OutSubRepeatedFragment(varProperty, start, end);
-    }
-
-    public static Fragment inSubLimited(VarProperty varProperty, Var start, Var end, int limit) {
-        return new AutoValue_InSubLimitedFragment(varProperty, start, end, limit);
-    }
-
-    public static Fragment outSubLimited(VarProperty varProperty, Var start, Var end, int limit) {
-        return new AutoValue_OutSubLimitedFragment(varProperty, start, end, limit);
+    public static Fragment outSub(VarProperty varProperty, Var start, Var end, int subTraversalDepthLimit) {
+        return new AutoValue_OutSubFragment(varProperty, start, end, subTraversalDepthLimit);
     }
 
     public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
@@ -151,39 +143,56 @@ public class Fragments {
         return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
     }
 
+
+    /**
+     * Default unlimiteid depth sub-edge traversal
+     * @param traversal
+     * @param <T>
+     * @return
+     */
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
+        return outSubs(traversal, -1);
+    }
+
+    /**
+     * @param traversal
+     * @param subTraversalDepth: the number of `sub` edges to follow. -1 applies no limit, 0 follows no edges, 1 follows 1 edge etc.
+     * @param <T>
+     * @return
+     */
+    static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal, int subTraversalDepth) {
         // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
         return union(traversal, ImmutableSet.of(
                 __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name()))
                 ,
-                __.repeat(__.out(SUB.getLabel())).emit()
+                __.<Vertex>until(__.loops().is(subTraversalDepth)).repeat(__.out(SUB.getLabel())).emit()
         )).unfold();
     }
 
+
+    /**
+     * Default unlimited-depth sub-edge traversal
+     * @param traversal
+     * @param <T>
+     * @return
+     */
     static <T> GraphTraversal<T, Vertex> inSubs(GraphTraversal<T, Vertex> traversal) {
+        return inSubs(traversal, -1);
+    }
+    /**
+     * @param traversal
+     * @param subTraversalDepth: the number of `sub` edges to follow. -1 applies no limit, 0 follows no edges, 1 follows 1 edge etc.
+     * @param <T>
+     * @return
+     */
+    static <T> GraphTraversal<T, Vertex> inSubs(GraphTraversal<T, Vertex> traversal, int subTraversalDepth) {
         // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
         return union(traversal, ImmutableSet.of(
                 __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
-                __.repeat(__.in(SUB.getLabel())).emit()
+                __.<Vertex>until(__.loops().is(subTraversalDepth)).repeat(__.in(SUB.getLabel())).emit()
         )).unfold();
     }
 
-    static <T> GraphTraversal<T, Vertex> outSubsLimited(GraphTraversal<T, Vertex> traversal, int subSteps) {
-        // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
-        return union(traversal, ImmutableSet.of(
-                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name()))
-                ,
-                __.repeat(__.out(SUB.getLabel())).times(subSteps).emit()
-        )).unfold();
-    }
-
-    static <T> GraphTraversal<T, Vertex> inSubsLimited(GraphTraversal<T, Vertex> traversal, int subSteps) {
-        // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
-        return union(traversal, ImmutableSet.of(
-                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
-                __.repeat(__.in(SUB.getLabel())).times(subSteps).emit()
-        )).unfold();
-    }
 
     /**
      * A type-safe way to do `__.union(a, b)`, as `Fragments.union(ImmutableSet.of(a, b))`.

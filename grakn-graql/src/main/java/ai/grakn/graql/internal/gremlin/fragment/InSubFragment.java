@@ -34,16 +34,40 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Abstract parent Fragment following in sub edges
+ * Fragment following in sub edges, potentially limited to some number of `sub` edges
  *
  * @author Felix Chapman
  * @author Joshua Send
  */
 
+@AutoValue
 public abstract class InSubFragment extends Fragment {
 
     @Override
     public abstract Var end();
+
+    public abstract int subTraversalDepthLimit();
+
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
+            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
+        return Fragments.inSubs(Fragments.isVertex(traversal), subTraversalDepthLimit());
+    }
+
+    @Override
+    public String name() {
+        if (subTraversalDepthLimit() == -1) {
+            return "<-[sub]-";
+        } else {
+            return "<-[sub!" + Integer.toString(subTraversalDepthLimit()) + "]-";
+        }
+    }
+
+    @Override
+    public Fragment getInverse() {
+        // TODO double check the inverse makes sense with a limit
+        return Fragments.outSub(varProperty(), end(), start(), subTraversalDepthLimit());
+    }
 
     @Override
     public double internalFragmentCost() {

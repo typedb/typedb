@@ -49,7 +49,7 @@ public class InPlaysFragmentTest {
         assertThat(traversal, is(__.V()
                 .has(Schema.VertexProperty.ID.name())
                 .in(PLAYS.getLabel())
-                .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold()
+                .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.<Vertex>until(__.loops().is(-1)).repeat(__.in(SUB.getLabel())).emit()).unfold()
         ));
     }
 }
