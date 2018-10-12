@@ -86,6 +86,6 @@ java_library(
 )
 
 exports_files(
-    ["conf/logback.xml", "conf/grakn.properties"],
+    ["conf/logback.xml", "conf/grakn.properties", "src/services/cassandra/logback.xml", "src/services/cassandra/cassandra.yaml"],
     visibility = ["//visibility:public"]
 )

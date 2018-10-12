@@ -175,7 +175,7 @@ public class EngineBootup {
         // TODO:
         // move server-build-bin_deploy.jar to the folder 'services/lib'
         // then, this code should be graknHome.resolve("services/lib/*.jar")
-        return graknHome.resolve("server-build-bin_deploy.jar").toString() + File.pathSeparator + graknHome.resolve("conf");
+        return graknHome.resolve("services/lib/server-build-bin_deploy.jar").toString() + File.pathSeparator + graknHome.resolve("conf");
     }
 
     private boolean isEngineReady(String host, int port, String path) {
