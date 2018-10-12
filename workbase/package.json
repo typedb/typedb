@@ -161,7 +161,7 @@
   },
   "husky": {
       "hooks": {
-        "pre-commit": "lint-staged $$ grep -E -r 'debugger|console' src/"
+        "pre-commit": "lint-staged $$ grep -E -r 'debugger' src/"
       }
    },
    "lint-staged": {
