@@ -107,7 +107,6 @@ export default {
       }
 
       let data;
-
       if (result[0].map) {
         const autoloadRolePlayers = QuerySettings.getRolePlayersStatus();
         data = await VisualiserGraphBuilder.buildFromConceptMap(result, autoloadRolePlayers, true);
@@ -173,7 +172,7 @@ export default {
 
       state.visFacade.updateNode(nodesWithAttributes);
       const styledEdges = data.edges.map(edge => Object.assign(edge, state.visStyle.computeExplanationEdgeStyle()));
-      state.visFacade.container.visualiser.updateEdge(styledEdges);
+      state.visFacade.updateEdge(styledEdges);
       commit('loadingQuery', false);
     });
   },

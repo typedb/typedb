@@ -10,15 +10,20 @@ import {
   UPDATE_NODES_COLOUR,
   LOAD_NEIGHBOURS,
   DELETE_SELECTED_NODES,
+  LOAD_ATTRIBUTES,
+  RUN_CURRENT_QUERY,
+  CURRENT_KEYSPACE_CHANGED,
   EXPLAIN_CONCEPT,
 } from '@/components/shared/StoresActions';
 import actions from '@/components/Visualiser/store/actions';
 import mutations from '@/components/Visualiser/store/mutations';
 import getters from '@/components/Visualiser/store/getters';
 
-import { addResetGraphListener, loadMetaTypeInstances, getNeighboursData, computeAttributes } from '@/components/Visualiser/VisualiserUtils';
+import { addResetGraphListener, loadMetaTypeInstances, getNeighboursData, computeAttributes, validateQuery, mapAnswerToExplanationQuery } from '@/components/Visualiser/VisualiserUtils';
 import VisualiserCanvasEventsHandler from '@/components/Visualiser/VisualiserCanvasEventsHandler';
 import VisualiserGraphBuilder from '@/components/Visualiser/VisualiserGraphBuilder';
+import QuerySettings from '@/components/Visualiser/RightBar/SettingsTab/QuerySettings';
+
 
 import MockConcepts from '../../../../helpers/MockConcepts';
 
@@ -33,8 +38,10 @@ jest.mock('@/components/CanvasVisualiser/Facade', () => ({
 jest.mock('@/components/Visualiser/VisualiserUtils', () => ({
   addResetGraphListener: jest.fn(),
   loadMetaTypeInstances: jest.fn(),
+  validateQuery: jest.fn(),
+  mapAnswerToExplanationQuery: jest.fn().mockImplementation(() => '{$y id 1234; $r (father: $m, role: $y) isa parentship; $m id 4444;}'),
   getNeighboursData: jest.fn().mockImplementation(() => Promise.resolve({ nodes: [{ id: 1234 }] })),
-  computeAttributes: jest.fn(),
+  computeAttributes: jest.fn().mockImplementation(() => Promise.resolve([MockConcepts.getMockEntity1()])),
 }));
 
 jest.mock('@/components/Visualiser/VisualiserCanvasEventsHandler', () => ({
@@ -43,57 +50,68 @@ jest.mock('@/components/Visualiser/VisualiserCanvasEventsHandler', () => ({
 
 jest.mock('@/components/Visualiser/VisualiserGraphBuilder', () => ({
   prepareNodes: jest.fn(),
+  buildFromConceptMap: jest.fn().mockImplementation(() => Promise.resolve({ nodes: [MockConcepts.getMockEntity1()], edges: [{ from: 1234, to: 4321, label: 'son' }] })),
+}));
+
+jest.mock('@/components/Visualiser/RightBar/SettingsTab/QuerySettings', () => ({
+  getRolePlayersStatus: jest.fn(),
 }));
 
 Vue.use(Vuex);
 
-describe('actions', () => {
-  let store;
-  let setVisFacade;
-  let registerCanvasEvent;
-  let metaTypeInstances;
-  let loadingQuery;
+let store;
+let loadingQuery;
+let mockVisNode;
+let setVisFacade;
+let registerCanvasEvent;
+let metaTypeInstances;
 
-  beforeEach(() => {
-    setVisFacade = jest.fn();
-    registerCanvasEvent = jest.fn();
-    metaTypeInstances = jest.fn();
-    loadingQuery = jest.fn();
+beforeEach(() => {
+  setVisFacade = jest.fn();
+  registerCanvasEvent = jest.fn();
+  metaTypeInstances = jest.fn();
+  loadingQuery = jest.fn();
+  mockVisNode = MockConcepts.getMockEntity1();
 
-
-    store = new Vuex.Store({
-      state: {
-        visFacade: {
-          resetCanvas: jest.fn(),
-          getAllNodes: jest.fn().mockImplementation(() => [{ id: 1234, type: 'person' }]),
-          updateNode: jest.fn(),
-          addToCanvas: jest.fn(),
-          deleteNode: jest.fn(),
-          registerEventHandler: jest.fn(),
-          fitGraphToWindow: jest.fn(),
-        },
-        selectedNodes: [MockConcepts.getMockEntity1()],
-        canvasData: { entities: 2, attributes: 2, relationships: 2 },
-        currentQuery: 'match $x isa person; get;',
-        currentKeyspace: 'gene',
-        metaTypeInstances: {},
-        graknSession: { transaction: () => Promise.resolve({ close: jest.fn(), getConcept: () => Promise.resolve([{ id: 1234 }]) }) },
-        visStyle: { computeNodeStyle: jest.fn() },
-        loadingQuery: false,
+  store = new Vuex.Store({
+    state: {
+      visFacade: {
+        resetCanvas: jest.fn(),
+        getAllNodes: jest.fn().mockImplementation(() => [{ id: 1234, type: 'person' }]),
+        updateNode: jest.fn(),
+        updateEdge: jest.fn(),
+        addToCanvas: jest.fn(),
+        deleteNode: jest.fn(),
+        registerEventHandler: jest.fn(),
+        fitGraphToWindow: jest.fn(),
       },
-      mutations: {
-        setVisFacade,
-        registerCanvasEvent,
-        metaTypeInstances,
-        loadingQuery,
-        selectedNodes: mutations.selectedNodes,
-        updateCanvasData: mutations.updateCanvasData,
+      selectedNodes: [MockConcepts.getMockRelationship()],
+      canvasData: { entities: 2, attributes: 2, relationships: 2 },
+      currentQuery: 'match $x isa person; get;',
+      currentKeyspace: 'gene',
+      metaTypeInstances: {},
+      graknSession: {
+        transaction: () => Promise.resolve({ query: () => Promise.resolve({ collect: () => Promise.resolve([MockConcepts.getMockAnswer2()]) }),
+          close: jest.fn(),
+          getConcept: () => Promise.resolve([{ id: 1234 }]) }),
       },
-      actions,
-      getters,
-    });
+      visStyle: { computeNodeStyle: jest.fn(), computeExplanationEdgeStyle: jest.fn() },
+      loadingQuery: false,
+    },
+    mutations: {
+      setVisFacade,
+      registerCanvasEvent,
+      metaTypeInstances,
+      loadingQuery,
+      selectedNodes: mutations.selectedNodes,
+      updateCanvasData: mutations.updateCanvasData,
+    },
+    actions,
+    getters,
   });
+});
 
+describe('actions', () => {
   test('INITIALISE_VISUALISER', () => {
     const mockContainer = {};
 
@@ -118,7 +136,7 @@ describe('actions', () => {
 
   // test('CURRENT_KEYSPACE_CHANGED', () => {
   //   store.dispatch(CURRENT_KEYSPACE_CHANGED, 'pokemon').then(() => {
-  //     expect(actions[CANVAS_RESET].mock.calls).toHaveLength(1);
+  //     // expect(actions[CANVAS_RESET].mock.calls).toHaveLength(1);
   //     expect(store.state.currentQuery).toBe('');
   //     expect(store.state.currentKeyspace).toBe('pokemon');
   //     expect(actions[UPDATE_METATYPE_INSTANCES].mock.calls).toHaveLength(1);
@@ -160,13 +178,6 @@ describe('actions', () => {
   });
 
   test('LOAD_NEIGHBOURS', () => {
-    const mockVisNode = MockConcepts.getMockEntity1();
-
-    store.hotUpdate({
-      mutations: { loadingQuery, updateCanvasData: mutations.updateCanvasData,
-      },
-    });
-
     store.dispatch(LOAD_NEIGHBOURS, { visNode: mockVisNode, neighboursLimit: 1 }).then(() => {
       expect(loadingQuery.mock.calls).toHaveLength(2);
       expect(getNeighboursData).toHaveBeenCalled();
@@ -178,14 +189,52 @@ describe('actions', () => {
     });
   });
 
+  test('RUN_CURRENT_QUERY', () => {
+    store.dispatch(RUN_CURRENT_QUERY).then(() => {
+      expect(validateQuery).toHaveBeenCalled();
+      expect(loadingQuery.mock.calls).toHaveLength(2);
+      expect(QuerySettings.getRolePlayersStatus).toHaveBeenCalled();
+      expect(VisualiserGraphBuilder.buildFromConceptMap).toHaveBeenCalled();
+      expect(store.state.visFacade.addToCanvas).toHaveBeenCalled();
+      expect(store.state.visFacade.fitGraphToWindow).toHaveBeenCalled();
+      expect(computeAttributes).toHaveBeenCalled();
+      expect(store.state.visFacade.updateNode).toHaveBeenCalled();
+    });
+  });
+});
+
+
+describe('actions 2', () => {
   test('DELETE_SELECTED_NODES', () => {
     store.dispatch(DELETE_SELECTED_NODES, 'person').then(() => {
-      expect(store.state.visFacade.deleteNode).toHaveBeenCalledWith('1234');
+      expect(store.state.visFacade.deleteNode).toHaveBeenCalled();
       expect(store.state.selectedNodes).toBe(null);
     });
   });
 
+  test('LOAD_ATTRIBUTES', () => {
+    store.dispatch(LOAD_ATTRIBUTES, { visNode: mockVisNode, neighboursLimit: 1 }).then(() => {
+      expect(store.state.visFacade.updateNode).toHaveBeenCalled();
+      expect(QuerySettings.getRolePlayersStatus).toHaveBeenCalled();
+      expect(VisualiserGraphBuilder.buildFromConceptMap).toHaveBeenCalled();
+      expect(store.state.visFacade.addToCanvas).toHaveBeenCalled();
+      expect(computeAttributes).toHaveBeenCalled();
+      expect(loadingQuery.mock.calls).toHaveLength(1);
+    });
+  });
+});
+
+describe('actions 3', () => {
   test('EXPLAIN_CONCEPT', () => {
-    store.dispatch(EXPLAIN_CONCEPT);
+    store.dispatch(EXPLAIN_CONCEPT).then(() => {
+      expect(mapAnswerToExplanationQuery).toHaveBeenCalled();
+      expect(loadingQuery.mock.calls).toHaveLength(2);
+      expect(VisualiserGraphBuilder.buildFromConceptMap).toHaveBeenCalled();
+      // expect(store.state.visFacade.addToCanvas).toHaveBeenCalled();
+      expect(computeAttributes).toHaveBeenCalled();
+      // expect(store.state.visFacade.updateNode).toHaveBeenCalled();
+      // expect(store.state.visStyle.computeExplanationEdgeStyle).toHaveBeenCalled();
+      // expect(store.state.visFacade.updateEdge).toHaveBeenCalled();
+    });
   });
 });
