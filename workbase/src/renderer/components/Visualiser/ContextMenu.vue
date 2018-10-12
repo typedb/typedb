@@ -15,8 +15,6 @@
     computed: {
       ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu']),
       enableDelete() {
-        debugger;
-        console.log('test');
         return (this.selectedNodes);
       },
       enableExplain() {
