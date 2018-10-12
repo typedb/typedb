@@ -6,17 +6,10 @@
 [![Coverage Status](https://codecov.io/gh/graknlabs/grakn/branch/master/graph/badge.svg)](https://codecov.io/gh/graknlabs/grakn)
 [![Javadocs](https://javadoc.io/badge/ai.grakn/grakn.svg)](https://javadoc.io/doc/ai.grakn/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
-[![Stack Overflow][stackoverflow-shield]][stackoverflow-link]
-[![Download count](https://img.shields.io/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download)
----
-[![Static Bugs](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=bugs)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=code_smells)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)
-[![Duplicated Code](https://sonarcloud.io/api/project_badges/measure?project=ai.grakn%3Agrakn&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=ai.grakn%3Agrakn)
+[![Stack Overflow](https://img.shields.io/badge/stackoverflow-grakn-796de3.svg)](https://stackoverflow.com/questions/tagged/grakn)
+[![Stack Overflow](https://img.shields.io/badge/stackoverflow-graql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/graql)
 
-[stackoverflow-shield]: https://img.shields.io/badge/stackoverflow-grakn-blue.svg
-[stackoverflow-link]: https://stackoverflow.com/questions/tagged/grakn
-
-Grakn is the knowledge graph engine to organise complex networks of data and making it queryable.
+Grakn is the knowledge graph engine to organise complex networks of data and make it queryable.
 
 | Get Started | Documentation | Discussion | _Join the Academy!_ |
 |:------------|:--------------|:-----------|:---------------------|
@@ -46,15 +39,15 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## System Requirements
 
-- Unix-based Operating Systems (Linux and Mac OSX)
 - Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
-- Yarn (in order to build Dashboard)
+
+- If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
 
 You can build Grakn using Maven:
 ```
 $ mvn package -DskipTests
 ```
-
+NOTE: you need to have [Yarn](https://yarnpkg.com) installed in order to compile Grakn from source.
 ## Licensing
 
 This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KGMS - get in touch with our team at enterprise@grakn.ai.

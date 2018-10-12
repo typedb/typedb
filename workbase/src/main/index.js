@@ -21,14 +21,18 @@ const winURL = isProd
 
 
 function buildApplicationMenu() {
+  const applicationSubmenu = [];
+  // The about window only works on Mac out-of-the-box - will need to implement custom for Windows/Linux
+  if (process.platform === 'darwin') {
+    applicationSubmenu.push({ label: 'About Grakn Workbase', selector: 'orderFrontStandardAboutPanel:' });
+    applicationSubmenu.push({ type: 'separator' });
+  }
+  applicationSubmenu.push({ label: 'Quit', accelerator: 'Command+Q', click() { app.quit(); } });
   // Create the Application's main menu
   const menuTemplate = [{
     label: 'Application',
-    submenu: [
-      { label: 'About Application', selector: 'orderFrontStandardAboutPanel:' },
-      { type: 'separator' },
-      { label: 'Quit', accelerator: 'Command+Q', click() { app.quit(); } },
-    ] }, {
+    submenu: applicationSubmenu,
+  }, {
     label: 'Edit',
     submenu: [
       { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
@@ -39,6 +43,13 @@ function buildApplicationMenu() {
       { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
       { label: 'Select All', accelerator: 'CmdOrCtrl+A', selector: 'selectAll:' },
     ] },
+  {
+    label: 'View',
+    submenu: [
+      {
+        role: 'reload',
+      }],
+  },
   ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
@@ -55,8 +66,8 @@ function createWindow() {
     icon: `${__static}/img/icon.png`,
     titleBarStyle: 'hidden',
     darkTheme: true,
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: 1100,
+    minHeight: 700,
     // Set webSecurity to false in development mode to avoid AJAX calls blocked due to CORS (due to WebapckDevServer).
     webPreferences: { webSecurity: isProd },
   });

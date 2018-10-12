@@ -84,8 +84,9 @@ public class TxRuleCache {
 
     private Set<SchemaConcept> getTypes(SchemaConcept type, boolean direct) {
         Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        if (type.isImplicit()) types.add(tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(type.label())));
-        return types;
+        return type.isImplicit()?
+                types.stream().flatMap(t -> Stream.of(t, tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(t.label())))).collect(Collectors.toSet()):
+                types;
     }
 
     /**

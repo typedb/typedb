@@ -29,8 +29,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.engine.ServerRPC;
+import ai.grakn.engine.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.engine.task.postprocessing.PostProcessor;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlQueryException;
@@ -44,7 +44,6 @@ import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.log.CommitLog;
 import ai.grakn.rpc.proto.AnswerProto;
 import ai.grakn.rpc.proto.ConceptProto;
 import ai.grakn.rpc.proto.KeyspaceProto;
@@ -91,7 +90,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -114,7 +112,7 @@ public class ServerRPCTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    private final PostProcessor mockedPostProcessor = mock(PostProcessor.class);
+    private final AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
 
     private ServerRPC rpcServerRPC;
@@ -128,11 +126,9 @@ public class ServerRPCTest {
 
     @Before
     public void setUp() throws IOException {
-        doNothing().when(mockedPostProcessor).submit(any(CommitLog.class));
-
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
         io.grpc.Server server = ServerBuilder.forPort(PORT)
-                .addService(new SessionService(requestOpener, mockedPostProcessor))
+                .addService(new SessionService(requestOpener, mockedAttributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
         rpcServerRPC = ServerRPC.create(server);

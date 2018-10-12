@@ -35,7 +35,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-abstract class ComparatorPredicate implements ValuePredicate {
+/**
+ * Abstract class for value predicates involving comparators.
+ */
+public abstract class ComparatorPredicate implements ValuePredicate {
 
     // Exactly one of these fields will be present
     private final Optional<Object> value;
@@ -116,15 +119,33 @@ abstract class ComparatorPredicate implements ValuePredicate {
         return persistedValue().equals(that.persistedValue());
     }
 
+    /**
+     * @return returns the sign of inequality, +ve for going in increasing, -ve for decreasing direction and 0 for 0
+     */
+    public abstract int signum();
+
+    /**
+     * @return true if the inequality contains equality
+     */
+    public boolean containsEquality(){ return false;}
+
     @Override
     public boolean isCompatibleWith(ValuePredicate predicate) {
-        if (!(predicate instanceof EqPredicate)) return false;
-        EqPredicate p = (EqPredicate) predicate;
-        Object v = persistedValue().orElse(null);
-        Object pval = p.equalsValue().orElse(null);
-        return v == null
-                || pval == null
-                || gremlinPredicate(v).test(pval);
+        if (!(predicate instanceof ComparatorPredicate)
+                || predicate instanceof ContainsPredicate
+                || predicate instanceof NeqPredicate){
+            return predicate.isCompatibleWith(this);
+        }
+        ComparatorPredicate that = (ComparatorPredicate) predicate;
+        Object val = this.value().orElse(null);
+        Object thatVal = that.value().orElse(null);
+        if (val == null || thatVal == null) return true;
+        //NB this is potentially dangerous e.g. if a user types a long as a char in the query
+        if (!val.getClass().equals(thatVal.getClass())) return false;
+
+        return val.equals(thatVal)?
+                (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
+                (this.gremlinPredicate(val).test(thatVal) || that.gremlinPredicate(thatVal).test(val));
     }
 
     @Override

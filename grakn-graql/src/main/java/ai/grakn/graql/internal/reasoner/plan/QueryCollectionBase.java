@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.plan;
 
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
@@ -48,7 +47,7 @@ public abstract class QueryCollectionBase{
     public abstract Stream<ReasonerQueryImpl> stream();
     public abstract Stream<Equivalence.Wrapper<ReasonerQueryImpl>> wrappedStream();
 
-    Equivalence<ReasonerQuery> equality(){ return ReasonerQueryEquivalence.Equality;}
+    ReasonerQueryEquivalence equality(){ return ReasonerQueryEquivalence.Equality;}
 
     private boolean isQueryDisconnected(Equivalence.Wrapper<ReasonerQueryImpl> query){
         return getImmediateNeighbours(query).isEmpty();

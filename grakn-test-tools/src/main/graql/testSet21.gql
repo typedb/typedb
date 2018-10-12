@@ -2,22 +2,22 @@ define
 
 #Entities
 
-entity1 sub entity;
-sub-entity1 sub entity1;
-entity2 sub entity;
+baseEntity sub entity;
+subEntity sub baseEntity;
+anotherBaseEntity sub entity;
 
 #Rules
 
 rule-1 sub rule
     when {
-    	$x isa entity2;
+    	$x isa anotherBaseEntity;
     }
     then {
-    	$x isa sub-entity1;
+    	$x isa subEntity;
     };
 
 insert
 
 #Data
 
-$x isa entity2;
+$x isa anotherBaseEntity;

@@ -1,5 +1,5 @@
 <template>
-  <transition name="slide-fade" appear> 
+  <transition name="slide-fade" appear>
     <div class="wrapper">
       <div class="login-header">
         <img src="static/img/logo-text.png" class="icon">
@@ -9,7 +9,7 @@
         <div class="title">Login</div>
           <div class="list">
           <div class="line">
-            <div class="label">Username</div> 
+            <div class="label">Username</div>
             <div><input class="grakn-input" v-model="username"></div>
           </div>
           <div class="line">
@@ -22,7 +22,7 @@
         </div>
         <div>
         </div>
-      </div>    
+      </div>
       <div class="inner settings z-depth-5">
         <div class="title">Grakn Server</div>
         <engine-tab></engine-tab>
@@ -93,7 +93,7 @@
     display: flex;
     flex-direction: column;
  }
- 
+
  .line {
     padding: 4px;
     display: flex;
@@ -111,10 +111,8 @@
 <script>
 import storage from '@/components/shared/PersistentStorage';
 
-import EngineTab from '../ManageSettings/tabs/EngineTab.vue';
 export default {
   name: 'LoginPage',
-  components: { EngineTab },
   data() {
     return {
       username: '',

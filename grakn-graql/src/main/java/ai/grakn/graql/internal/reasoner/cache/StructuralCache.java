@@ -20,13 +20,13 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.query.match.MatchBase;
-import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -55,7 +55,7 @@ import java.util.stream.Stream;
  */
 class StructuralCache<Q extends ReasonerQueryImpl>{
 
-    private final Equivalence<ReasonerQuery> equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
+    private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
 
     StructuralCache(){
@@ -74,7 +74,8 @@ class StructuralCache<Q extends ReasonerQueryImpl>{
         if (match != null){
             Q equivalentQuery = match.query();
             GraqlTraversal traversal = match.cachedElement();
-            Unifier unifier = equivalentQuery.getMultiUnifier(query, UnifierType.STRUCTURAL).getAny();
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, UnifierType.STRUCTURAL);
+            Unifier unifier = multiUnifier.getAny();
             Map<Var, ConceptId> idTransform = equivalentQuery.idTransform(query, unifier);
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);

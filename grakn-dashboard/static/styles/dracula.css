@@ -6,6 +6,7 @@
     Original dracula color scheme by Zeno Rocha (https://github.com/zenorocha/dracula-theme)
 
 */
+@import url("fonts.css");
 
 .cm-s-dracula.CodeMirror, .cm-s-dracula .CodeMirror-gutters {
     z-index: 2;

@@ -1,0 +1,26 @@
+define
+
+someEntity sub entity
+  has name;
+
+name sub attribute datatype string,
+  plays applicable-name;
+
+step sub entity,
+  plays step-role;
+
+module sub entity,
+  plays module-role;
+
+relation sub relationship,
+  relates step-role,
+  relates module-role,
+  relates applicable-name;
+
+insert
+
+$name isa name "someName";
+$step isa step;
+$module isa module;
+
+(step-role: $step, module-role: $module, applicable-name: $name) isa relation;

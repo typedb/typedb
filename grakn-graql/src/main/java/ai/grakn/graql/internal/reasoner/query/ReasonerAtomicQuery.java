@@ -24,10 +24,8 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -36,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.state.AnswerState;
 import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
 import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Preconditions;
@@ -131,21 +130,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
      */
     @Override
-    public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierComparison unifierType){
-        if (p == this) return new MultiUnifierImpl();
+    public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){
+        if (p == this) return MultiUnifierImpl.trivial();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
+        if (unifierType.equivalence() != null && !unifierType.equivalence().equivalent(p, this)) return MultiUnifierImpl.nonExistent();
+
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
         MultiUnifier multiUnifier = this.getAtom().getMultiUnifier(parent.getAtom(), unifierType);
 
         Set<TypeAtom> childTypes = this.getAtom().getTypeConstraints().collect(Collectors.toSet());
-        if (childTypes.isEmpty()) return multiUnifier;
+        if (multiUnifier.isEmpty() || childTypes.isEmpty()) return multiUnifier;
 
         //get corresponding type unifiers
         Set<TypeAtom> parentTypes = parent.getAtom().getTypeConstraints().collect(Collectors.toSet());
-        if (multiUnifier.isEmpty()) return new MultiUnifierImpl(typeUnifier(childTypes, parentTypes, new UnifierImpl()));
 
         Set<Unifier> unifiers = multiUnifier.unifiers().stream()
-                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier))
+                .map(unifier -> typeUnifier(childTypes, parentTypes, unifier, unifierType))
                 .collect(Collectors.toSet());
         return new MultiUnifierImpl(unifiers);
     }

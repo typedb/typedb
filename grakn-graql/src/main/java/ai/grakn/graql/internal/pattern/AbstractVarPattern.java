@@ -46,6 +46,7 @@ import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
+import ai.grakn.graql.internal.pattern.property.SubExplicitProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
@@ -237,6 +238,16 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     @Override
     public final VarPattern sub(VarPattern type) {
         return addProperty(SubProperty.of(type.admin()));
+    }
+
+    @Override
+    public final VarPattern subExplicit(String type) {
+        return subExplicit(Graql.label(type));
+    }
+
+    @Override
+    public final VarPattern subExplicit(VarPattern type) {
+        return addProperty(SubExplicitProperty.of(type.admin()));
     }
 
     @Override

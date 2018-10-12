@@ -31,12 +31,11 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
-import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -293,16 +292,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
+    @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery parent) {
         return getMultiUnifier(parent, UnifierType.EXACT);
     }
 
     /**
-     * @param parent query for which unifier to unify with should be found
+     * @param parent query we want to unify this query with
      * @param unifierType unifier type
      * @return corresponding multiunifier
      */
-    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType){
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierType unifierType){
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
@@ -320,7 +320,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.getValue()))
                 .filter(p -> p.getValue().isEntity())
-                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), this));
+                .map(p -> IsaAtom.create(p.getKey().getVarName(), var(), p.getValue().asEntity().type(), false,this));
     }
 
     private Map<Var, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
@@ -350,13 +350,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return varTypeMap;
     }
 
+    public ImmutableMap<Var, Type> getVarTypeMap(boolean inferTypes) {
+        Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
+        return ImmutableMap.copyOf(
+                getVarTypeMap()
+                        .entrySet().stream()
+                        .filter(e -> inferTypes ||
+                                isas.stream()
+                                        .filter(isa -> isa.getVarName().equals(e.getKey()))
+                                        .filter(isa -> Objects.nonNull(isa.getSchemaConcept()))
+                                        .anyMatch(isa -> isa.getSchemaConcept().equals(e.getValue()))
+                        )
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+        );
+    }
+
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap(ConceptMap sub) {
-        return ImmutableMap.copyOf(getVarTypeMap(
-                Stream.concat(
-                        getAtoms(IsaAtomBase.class),
-                        inferEntityTypes(sub)
-                )
+        return ImmutableMap.copyOf(
+                getVarTypeMap(
+                        Stream.concat(
+                                getAtoms(IsaAtomBase.class),
+                                inferEntityTypes(sub)
+                        )
                 )
         );
     }

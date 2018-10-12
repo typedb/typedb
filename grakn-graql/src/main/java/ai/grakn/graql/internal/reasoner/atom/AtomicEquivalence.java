@@ -51,6 +51,10 @@ import java.util.stream.Stream;
  */
 public abstract class AtomicEquivalence extends Equivalence<Atomic> {
 
+    abstract public String name();
+
+    public <B extends Atomic, S extends B> boolean equivalentCollection(Collection<S> a1, Collection<S> a2){ return equivalence(a1, a2, this);}
+
     public static <B extends Atomic, S extends B> boolean equivalence(Collection<S> a1, Collection<S> a2, Equivalence<B> equiv){
         return ReasonerUtils.isEquivalentCollection(a1, a2, equiv);
     }
@@ -67,7 +71,10 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
         return equivalenceHash(atoms.stream(), equiv);
     }
 
-    public final static Equivalence<Atomic> Equality = new AtomicEquivalence(){
+    public final static AtomicEquivalence Equality = new AtomicEquivalence(){
+
+        @Override
+        public String name(){ return "Equality";}
 
         @Override
         protected boolean doEquivalent(Atomic a, Atomic b) {
@@ -80,7 +87,10 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
         }
     };
 
-    public final static Equivalence<Atomic> AlphaEquivalence = new AtomicEquivalence(){
+    public final static AtomicEquivalence AlphaEquivalence = new AtomicEquivalence(){
+
+        @Override
+        public String name(){ return "AlphaEquivalence";}
 
         @Override
         protected boolean doEquivalent(Atomic a, Atomic b) {
@@ -93,7 +103,10 @@ public abstract class AtomicEquivalence extends Equivalence<Atomic> {
         }
     };
 
-    public final static Equivalence<Atomic> StructuralEquivalence = new AtomicEquivalence(){
+    public final static AtomicEquivalence StructuralEquivalence = new AtomicEquivalence(){
+
+        @Override
+        public String name(){ return "StructuralEquivalence";}
 
         @Override
         protected boolean doEquivalent(Atomic a, Atomic b) {

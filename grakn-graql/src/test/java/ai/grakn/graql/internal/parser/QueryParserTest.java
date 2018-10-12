@@ -1051,14 +1051,6 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
-        //noinspection ResultOfMethodCallIgnored
-        parse("match $x isa name; aggregate count $x;");
-    }
-
-    @Test
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));

@@ -45,9 +45,9 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -65,7 +65,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.base.Equivalence;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -190,6 +189,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public RelationshipAtom toRelationshipAtom(){ return this;}
 
     @Override
+    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery()); }
+
+    @Override
     public Set<Atom> rewriteToAtoms(){
         return this.getRelationPlayers().stream()
                 .map(rp -> create(relationPattern(getVarName(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
@@ -287,46 +289,48 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 //check relation players equivalent
                 && this.getRolePlayers().size() == that.getRolePlayers().size()
                 && this.getRelationPlayers().size() == that.getRelationPlayers().size()
-                && this.getRoleLabels().equals(that.getRoleLabels())
-                //check role-type bindings
-                && this.getRoleTypeMap().equals(that.getRoleTypeMap());
+                && this.getRoleLabels().equals(that.getRoleLabels());
     }
 
     private int baseHashCode(){
         int baseHashCode = 1;
         baseHashCode = baseHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
-        baseHashCode = baseHashCode * 37 + this.getRoleTypeMap().hashCode();
         baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
         return baseHashCode;
     }
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
+        if (!isBaseEquivalent(obj) || !super.isAlphaEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
-        //check id predicate bindings
-        return this.predicateBindingsAlphaEquivalent(that);
+        //check role-type and id predicate bindings
+        return this.getRoleTypeMap().equals(that.getRoleTypeMap())
+                && this.predicateBindingsAlphaEquivalent(that);
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
         int equivalenceHashCode = baseHashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
         return equivalenceHashCode;
     }
 
     private boolean predicateBindingsEquivalent(RelationshipAtom atom,
                                                 BiFunction<String, String, Boolean> conceptComparison,
-                                                Equivalence<Atomic> equiv) {
+                                                AtomicEquivalence equivalence) {
         Multimap<Role, String> thisIdMap = this.getRoleConceptIdMap();
         Multimap<Role, String> thatIdMap = atom.getRoleConceptIdMap();
-
         Multimap<Role, NeqPredicate> thisNeqMap = this.getRoleNeqPredicateMap();
         Multimap<Role, NeqPredicate> thatNeqMap = atom.getRoleNeqPredicateMap();
+        Multimap<Role, ValuePredicate> thisValueMap = this.getRoleValueMap();
+        Multimap<Role, ValuePredicate> thatValueMap = atom.getRoleValueMap();
         return thisIdMap.keySet().equals(thatIdMap.keySet())
                 && thisIdMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisIdMap.get(k), thatIdMap.get(k), conceptComparison))
                 && thisNeqMap.keySet().equals(thatNeqMap.keySet())
-                && thisNeqMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisNeqMap.get(k), thatNeqMap.get(k), equiv));
+                && thisNeqMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisNeqMap.get(k), thatNeqMap.get(k), equivalence))
+                && thisValueMap.keySet().equals(thatValueMap.keySet())
+                && thisValueMap.keySet().stream().allMatch(k -> ReasonerUtils.isEquivalentCollection(thisValueMap.get(k), thatValueMap.get(k), equivalence));
     }
 
     private boolean predicateBindingsAlphaEquivalent(RelationshipAtom atom) {
@@ -339,15 +343,17 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
+        if (!isBaseEquivalent(obj) || !super.isStructurallyEquivalent(obj)) return false;
         RelationshipAtom that = (RelationshipAtom) obj;
         // check bindings
-        return this.predicateBindingsStructurallyEquivalent(that);
+        return this.getRoleTypeMap(false).equals(that.getRoleTypeMap(false))
+                && this.predicateBindingsStructurallyEquivalent(that);
     }
 
     @Override
     public int structuralEquivalenceHashCode() {
         int equivalenceHashCode = baseHashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap(false).hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
         return equivalenceHashCode;
     }
@@ -483,6 +489,15 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Memoized
+    public Multimap<Role, ValuePredicate> getRoleValueMap() {
+        ImmutableMultimap.Builder<Role, ValuePredicate> builder = ImmutableMultimap.builder();
+        getRolePredicateMap(ValuePredicate.class)
+                .entries()
+                .forEach(e -> builder.put(e.getKey(), e.getValue()));
+        return builder.build();
+    }
+
+    @Memoized
     public Multimap<Role, NeqPredicate> getRoleNeqPredicateMap() {
         ImmutableMultimap.Builder<Role, NeqPredicate> builder = ImmutableMultimap.builder();
         getRolePredicateMap(NeqPredicate.class)
@@ -493,12 +508,23 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Memoized
     public Multimap<Role, Type> getRoleTypeMap() {
+        return getRoleTypeMap(false);
+    }
+
+    public Multimap<Role, Type> getRoleTypeMap(boolean inferTypes) {
         ImmutableMultimap.Builder<Role, Type> builder = ImmutableMultimap.builder();
         Multimap<Role, Var> roleMap = getRoleVarMap();
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
+                .filter(e -> {
+                    return inferTypes
+                            || getParentQuery().getAtoms(TypeAtom.class)
+                            .filter(t -> t.getVarName().equals(e.getValue()))
+                            .filter(t -> Objects.nonNull(t.getSchemaConcept()))
+                            .anyMatch(t -> t.getSchemaConcept().equals(varTypeMap.get(e.getValue())));
+                })
                 .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).label()))
                 .forEach(e -> builder.put(e.getKey(), varTypeMap.get(e.getValue())));
         return builder.build();
@@ -518,24 +544,16 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
-        if(ruleAtom.isResource()) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
-
-        //findbugs complains about cast without it
-        if (!(ruleAtom instanceof RelationshipAtom)) return false;
-        RelationshipAtom headAtom = (RelationshipAtom) ruleAtom;
-        RelationshipAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
-
-        //rule head atom is applicable if it is unifiable
-        return headAtom.getRelationPlayers().size() >= atomWithType.getRelationPlayers().size()
-                && !headAtom.getRelationPlayerMappings(atomWithType).isEmpty();
+        if (!(ruleAtom instanceof RelationshipAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
+        RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
+        return ruleAtom.isUnifiableWith(atomWithType);
     }
 
     @Override
     public RelationshipAtom addType(SchemaConcept type) {
         if (getTypeId() != null) return this;
-        Pair<VarPattern, IdPredicate> typedPair = getTypedPair(type);
         //NB: do not cache possible types
-        return create(typedPair.getKey(), typedPair.getValue().getVarName(), typedPair.getValue().getPredicate(), this.getParentQuery());
+        return create(this.getPattern(), this.getPredicateVariable(), type.id(), this.getParentQuery());
     }
 
     /**
@@ -712,9 +730,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         //return if all roles known and non-meta
         List<Role> explicitRoles = getExplicitRoles().collect(Collectors.toList());
         Map<Var, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
-        boolean allRolesMeta = explicitRoles.stream().allMatch(role ->
-                Schema.MetaSchema.isMetaLabel(role.label())
-        );
+        boolean allRolesMeta = explicitRoles.stream().allMatch(role -> Schema.MetaSchema.isMetaLabel(role.label()));
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
@@ -842,10 +858,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return roleRelationPlayerMap;
     }
 
-    private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom) {
-        return getRelationPlayerMappings(parentAtom, UnifierType.RULE);
-    }
-
     /**
      * @param parentAtom reference atom defining the mapping
      * @param matchType type of match to be performed
@@ -853,8 +865,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
         Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
-        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
-        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(!matchType.equals(UnifierType.STRUCTURAL));
+        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(!matchType.equals(UnifierType.STRUCTURAL));
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
@@ -894,13 +906,19 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 .filter(crp -> {
                                                     IdPredicate parentId = parentAtom.getIdPredicate(prp.getRolePlayer().var());
                                                     IdPredicate childId = this.getIdPredicate(crp.getRolePlayer().var());
-                                                    return matchType.atomicCompatibility(parentId, childId);
+                                                    return matchType.idCompatibility(parentId, childId);
                                                 })
                                                 //check for value predicate compatibility
                                                 .filter(crp -> {
-                                                    ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
-                                                    ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
-                                                    return matchType.atomicCompatibility(parentVP, childVP);
+                                                    Set<Atomic> parentVP = parentAtom.getPredicates(prp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
+                                                    Set<Atomic> childVP = this.getPredicates(crp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
+                                                    return matchType.attributeValueCompatibility(parentVP, childVP);
+                                                })
+                                                //check linked resources
+                                                .filter(crp -> {
+                                                    Var parentVar = prp.getRolePlayer().var();
+                                                    Var childVar = crp.getRolePlayer().var();
+                                                    return matchType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
                                                 })
                                                 .forEach(compatibleRelationPlayers::add)
                                 );
@@ -937,13 +955,15 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public Unifier getUnifier(Atom pAtom){
-        return getMultiUnifier(pAtom, UnifierType.EXACT).getUnifier();
+    public Unifier getUnifier(Atom pAtom, UnifierComparison unifierType){
+        return getMultiUnifier(pAtom, unifierType).getUnifier();
     }
 
     @Override
     public MultiUnifier getMultiUnifier(Atom pAtom, UnifierComparison unifierType) {
-        Unifier baseUnifier = super.getUnifier(pAtom);
+        Unifier baseUnifier = super.getUnifier(pAtom, unifierType);
+        if (baseUnifier == null){ return MultiUnifierImpl.nonExistent();}
+
         Set<Unifier> unifiers = new HashSet<>();
         if (pAtom.isRelation()) {
             RelationshipAtom parentAtom = pAtom.toRelationshipAtom();
@@ -953,7 +973,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             if (this.equals(parentAtom)
                     && this.getPartialSubstitutions().collect(toSet()).equals(parentAtom.getPartialSubstitutions().collect(toSet()))
                     && this.getTypeConstraints().collect(toSet()).equals(parentAtom.getTypeConstraints().collect(toSet()))){
-                return new MultiUnifierImpl();
+                return MultiUnifierImpl.trivial();
             }
 
             boolean unifyRoleVariables = parentAtom.getRelationPlayers().stream()
@@ -1004,8 +1024,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         return Stream.of(substitution.merge(relationSub));
     }
-
-
 
     /**
      * if any {@link Role} variable of the parent is user defined rewrite ALL {@link Role} variables to user defined (otherwise unification is problematic)

@@ -77,23 +77,22 @@ public abstract class AtomicBase implements Atomic {
     }
 
     /**
+     * @param var variable the predicate refers to
+     * @param type predicate type
+     * @param <T> predicate type generic
+     * @return specific predicates referring to provided variable
+     */
+    public <T extends Predicate> Stream<T> getPredicates(Var var, Class<T> type){
+        return getPredicates(type).filter(p -> p.getVarName().equals(var));
+    }
+
+    /**
      * @param var variable of interest
      * @return id predicate referring to prescribed variable
      */
     @Nullable
     public IdPredicate getIdPredicate(Var var){
-        return getPredicate(var, IdPredicate.class);
-    }
-
-    /**
-     * @param var variable the predicate refers to
-     * @param type predicate type
-     * @param <T> predicate type generic
-     * @return specific predicate referring to provided variable
-     */
-    @Nullable
-    public <T extends Predicate> T getPredicate(Var var, Class<T> type){
-        return getPredicates(type).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
+        return getPredicates(var, IdPredicate.class).findFirst().orElse(null);
     }
 
     @Override

@@ -73,8 +73,8 @@ public class CacheTest {
     @Before
     public void onStartup(){
         EmbeddedGraknTx<?> graph = testContext.tx();
-        String recordPatternString = "{(role1: $x, role2: $y) isa reifiable-relation;}";
-        String retrievePatternString = "{(role1: $p1, role2: $p2) isa reifiable-relation;}";
+        String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
+        String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
         Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, graph);
         Conjunction<VarPatternAdmin> retrievePattern = conjunction(retrievePatternString, graph);
         recordQuery = ReasonerQueries.atomic(recordPattern, graph);
@@ -284,7 +284,7 @@ public class CacheTest {
         EmbeddedGraknTx<?> tx = testContext.tx();
 
         Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));
@@ -300,7 +300,7 @@ public class CacheTest {
         EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE);
 
         Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
-        Pattern then = tx.graql().parser().parsePattern("{(role1: $x, role2: $y) isa binary;}");
+        Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
         Rule dummyRule = tx.putRule("dummyRule", when, then);
 
         SchemaConcept binary = tx.getSchemaConcept(Label.of("binary"));

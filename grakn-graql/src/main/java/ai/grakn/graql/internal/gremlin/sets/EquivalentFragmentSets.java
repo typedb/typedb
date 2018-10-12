@@ -45,6 +45,7 @@ public class EquivalentFragmentSets {
 
     private static final ImmutableCollection<FragmentSetOptimisation> OPTIMISATIONS = ImmutableSet.of(
             RolePlayerFragmentSet.ROLE_OPTIMISATION,
+            RolePlayerFragmentSet.IMPLICIT_RELATION_OPTIMISATION,
             AttributeIndexFragmentSet.ATTRIBUTE_INDEX_OPTIMISATION,
             RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION,
             LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION,
@@ -70,16 +71,29 @@ public class EquivalentFragmentSets {
      *
      * @author Felix Chapman
      */
+    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {
+        return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, roleLabels, relTypeLabels);
+    }
+
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
-        return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
+        return rolePlayer(varProperty, relation, edge, rolePlayer, role, null, null);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
      */
-    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType) {
-        return new AutoValue_SubFragmentSet(varProperty, subType, superType);
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType, boolean explicitSub) {
+        return new AutoValue_SubFragmentSet(varProperty, subType, superType, explicitSub);
     }
+
+    /**
+     * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
+     *
+     */
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType) {
+        return new AutoValue_SubFragmentSet(varProperty, subType, superType, false);
+    }
+
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.

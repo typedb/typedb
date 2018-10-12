@@ -42,11 +42,9 @@ public class GraknBootup {
     private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);
 
     private static final String ENGINE = "engine";
-    private static final String QUEUE = "queue";
     private static final String STORAGE = "storage";
 
     private final StorageBootup storageBootup;
-    private final QueueBootup queueBootup;
     private final EngineBootup engineBootup;
 
     /**
@@ -66,7 +64,7 @@ public class GraknBootup {
 
             BootupProcessExecutor bootupProcessExecutor = new BootupProcessExecutor();
             GraknBootup graknBootup = new GraknBootup(new StorageBootup(bootupProcessExecutor, graknHome, graknProperties),
-                    new QueueBootup(bootupProcessExecutor, graknHome), new EngineBootup(bootupProcessExecutor, graknHome, graknProperties));
+                    new EngineBootup(bootupProcessExecutor, graknHome, graknProperties));
 
             graknBootup.run(args);
             System.exit(0);
@@ -80,9 +78,8 @@ public class GraknBootup {
         }
     }
 
-    private GraknBootup(StorageBootup storageBootup, QueueBootup queueBootup, EngineBootup engineBootup) {
+    private GraknBootup(StorageBootup storageBootup, EngineBootup engineBootup) {
         this.storageBootup = storageBootup;
-        this.queueBootup = queueBootup;
         this.engineBootup = engineBootup;
     }
 
@@ -119,6 +116,8 @@ public class GraknBootup {
     /**
      * Accepts various Grakn commands (eg., 'grakn server start')
      * @param args arrays of arguments, eg., { 'server', 'start' }
+     *
+     *        option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
@@ -161,15 +160,11 @@ public class GraknBootup {
             case ENGINE:
                 engineBootup.stop();
                 break;
-            case QUEUE:
-                queueBootup.stop();
-                break;
             case STORAGE:
                 storageBootup.stop();
                 break;
             default:
                 engineBootup.stop();
-                queueBootup.stop();
                 storageBootup.stop();
         }
     }
@@ -177,10 +172,7 @@ public class GraknBootup {
     private void serverStart(String arg) {
         switch (arg) {
             case ENGINE:
-                engineBootup.startIfNotRunning();
-                break;
-            case QUEUE:
-                queueBootup.startIfNotRunning();
+                engineBootup.startIfNotRunning(arg);
                 break;
             case STORAGE:
                 storageBootup.startIfNotRunning();
@@ -188,8 +180,7 @@ public class GraknBootup {
             default:
                 ConfigProcessor.updateProcessConfigs();
                 storageBootup.startIfNotRunning();
-                queueBootup.startIfNotRunning();
-                engineBootup.startIfNotRunning();
+                engineBootup.startIfNotRunning(arg);
         }
     }
 
@@ -197,25 +188,24 @@ public class GraknBootup {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
-                "start ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]  Start Grakn (or optionally, only one of the component)\n" +
-                "stop ["+ENGINE+"|"+QUEUE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
+                "start ["+ENGINE+"|"+STORAGE+"|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
+                "stop ["+ENGINE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
                 "status                         Check if Grakn is running\n" +
                 "clean                          DANGEROUS: wipe data completely\n" +
                 "\n" +
                 "Tips:\n" +
                 "- Start Grakn with 'grakn server start'\n" +
-                "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n");
+                "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n" +
+                "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
     }
 
     private void serverStatus(String verboseFlag) {
         storageBootup.status();
-        queueBootup.status();
         engineBootup.status();
 
         if(verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
             storageBootup.statusVerbose();
-            queueBootup.statusVerbose();
             engineBootup.statusVerbose();
         }
     }
@@ -239,9 +229,8 @@ public class GraknBootup {
 
     private void clean() {
         boolean storage = storageBootup.isRunning();
-        boolean queue = queueBootup.isRunning();
         boolean grakn = engineBootup.isRunning();
-        if(storage || queue || grakn) {
+        if(storage || grakn) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
         }
@@ -253,7 +242,6 @@ public class GraknBootup {
             return;
         }
         storageBootup.clean();
-        queueBootup.clean();
         engineBootup.clean();
     }
 }
