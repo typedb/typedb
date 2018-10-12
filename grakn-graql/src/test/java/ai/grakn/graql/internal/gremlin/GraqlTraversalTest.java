@@ -165,8 +165,8 @@ public class GraqlTraversalTest {
 
         Fragment xId = id(titanicId, x, ConceptId.of("Titanic"));
         Fragment yId = id(movieId, y, ConceptId.of("movie"));
-        Fragment xSubY = outSub(subProperty, x, y);
-        Fragment ySubX = inSub(subProperty, y, x);
+        Fragment xSubY = outSub(subProperty, x, y, Fragments.TRAVERSE_ALL_SUB_EDGES);
+        Fragment ySubX = inSub(subProperty, y, x, Fragments.TRAVERSE_ALL_SUB_EDGES);
 
         Set<GraqlTraversal> expected = ImmutableSet.of(
                 traversal(xId, xSubY, yId),

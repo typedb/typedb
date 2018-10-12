@@ -35,20 +35,30 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.labelO
  * @see EquivalentFragmentSets#sub(VarProperty, Var, Var)
  *
  * @author Felix Chapman
+ * @author Joshua Send
  */
 @AutoValue
 abstract class SubFragmentSet extends EquivalentFragmentSet {
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(
-                Fragments.outSub(varProperty(), subConcept(), superConcept()),
-                Fragments.inSub(varProperty(), superConcept(), subConcept())
-        );
+
+        if (explicitSub()) {
+            return ImmutableSet.of(
+                    Fragments.outSub(varProperty(), subConcept(), superConcept(), Fragments.TRAVERSE_ONE_SUB_EDGE),
+                    Fragments.inSub(varProperty(), superConcept(), subConcept(), Fragments.TRAVERSE_ONE_SUB_EDGE)
+            );
+        } else {
+            return ImmutableSet.of(
+                    Fragments.outSub(varProperty(), subConcept(), superConcept(),Fragments.TRAVERSE_ALL_SUB_EDGES),
+                    Fragments.inSub(varProperty(), superConcept(), subConcept(), Fragments.TRAVERSE_ALL_SUB_EDGES)
+            );
+        }
     }
 
     abstract Var subConcept();
     abstract Var superConcept();
+    abstract boolean explicitSub();
 
     /**
      * A query can avoid navigating the sub hierarchy when the following conditions are met:
@@ -72,6 +82,9 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
         Iterable<SubFragmentSet> subSets = fragmentSetOfType(SubFragmentSet.class, fragmentSets)::iterator;
 
         for (SubFragmentSet subSet : subSets) {
+            // skip optimising explicit subs until we have a clean implementation (add direct sub to Graql and use it in tryExpandSubs if is explicit sub here)
+            if (subSet.explicitSub()) continue;
+
             LabelFragmentSet labelSet = labelOf(subSet.superConcept(), fragmentSets);
             if (labelSet == null) continue;
 

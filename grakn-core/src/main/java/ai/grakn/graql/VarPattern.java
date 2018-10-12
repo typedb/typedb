@@ -182,6 +182,22 @@ public interface VarPattern extends Pattern {
     VarPattern sub(VarPattern type);
 
     /**
+     * @param type a concept type id that this variable must be a kind of, without looking at parent types
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern subExplicit(String type);
+
+    /**
+     * @param type a concept type that this variable must be a kind of, without looking at parent type
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern subExplicit(VarPattern type);
+
+
+
+    /**
      * @param type a {@link Role} id that this relation type variable must have
      * @return this
      */

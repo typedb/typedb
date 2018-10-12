@@ -348,6 +348,11 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<VarPattern> visitSubExplicit(GraqlParser.SubExplicitContext ctx) {
+        return var -> var.subExplicit(visitVariable(ctx.variable()));
+    }
+
+    @Override
     public UnaryOperator<VarPattern> visitRelates(GraqlParser.RelatesContext ctx) {
         VarPattern superRole = ctx.superRole != null ? visitVariable(ctx.superRole) : null;
         return var -> var.relates(visitVariable(ctx.role), superRole);
