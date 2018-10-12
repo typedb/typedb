@@ -22,6 +22,13 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.Server;
 import ai.grakn.engine.ServerFactory;
 import ai.grakn.util.ErrorMessage;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +54,34 @@ public class Grakn {
      * @param args
      */
     public static void main(String[] args) {
+
+        Option enableBenchmark = Option.builder("b")
+                .longOpt("benchmark")
+                .hasArg(false)
+                .desc("Enable benchmarking via Zipkin on the server")
+                .required(false)
+                .type(Boolean.class)
+                .build();
+
+        Options options = new Options();
+        options.addOption(enableBenchmark);
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine arguments;
+        try {
+            arguments = parser.parse(options, args);
+        } catch (ParseException e) {
+            (new HelpFormatter()).printHelp("Grakn options", options);
+            throw new RuntimeException(e.getMessage());
+        }
+
+        boolean benchmark = false;
+        if (arguments.hasOption("benchmark")) {
+            benchmark = true;
+            System.out.println("Benchmarking enabled");
+        }
+
+
         Thread.setDefaultUncaughtExceptionHandler((Thread t, Throwable e) ->
                 LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e));
 
@@ -59,7 +94,7 @@ public class Grakn {
             enginePidManager.trackGraknPid();
 
             // Start Engine
-            Server server = ServerFactory.createServer();
+            Server server = ServerFactory.createServer(benchmark);
             server.start();
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
