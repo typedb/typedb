@@ -53,7 +53,9 @@ describe('Favourite queries', () => {
 
     app.client.click('.save-query-btn');
 
-    assert.equal(await app.client.getText('.fav-query-name-tooltip'), 'please write a query name');
+    await sleep(1000);
+
+    assert.equal(await app.client.getText('.fav-query-name-tooltip'), 'Please write a query name');
 
     app.client.click('.query-name-input');
 

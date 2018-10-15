@@ -51,8 +51,7 @@ describe('Canvas Data', () => {
 
     app.client.click('.run-btn');
 
-    await sleep(5000);
-
+    await sleep(10000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
     assert.equal(noOfEntities, 'entities: 2');

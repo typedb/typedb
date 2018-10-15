@@ -122,5 +122,17 @@ describe('Query Settings', () => {
 
     app.client.click('.clear-graph-btn');
     app.client.click('.clear-editor');
+
+    await sleep(1000);
+
+    app.client.click('.neighbour-limit-input');
+
+    await sleep(1000);
+
+    app.client.click('.load-roleplayers-switch');
+
+    await sleep(1000);
+
+    app.client.keys(['Backspace', 'Backspace', '20']);
   });
 });

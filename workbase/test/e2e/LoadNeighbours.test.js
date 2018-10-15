@@ -88,11 +88,11 @@ describe('Load neighbours', () => {
     await sleep(4000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
-    assert.equal(noOfEntities, 'entities: 18');
+    assert.equal(noOfEntities, 'entities: 10');
     const noOfAttributes = await app.client.getText('.no-of-attributes');
     assert.equal(noOfAttributes, 'attributes: 0');
     const noOfRelationships = await app.client.getText('.no-of-relationships');
-    assert.equal(noOfRelationships, 'relationships: 20');
+    assert.equal(noOfRelationships, 'relationships: 14');
 
     app.client.click('.clear-graph-btn');
     app.client.click('.clear-editor');
