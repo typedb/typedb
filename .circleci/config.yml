@@ -307,10 +307,10 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-#      - workbase-unit-tests: TODO: remove comment once workbase tests are fixed
-#          filters:
-#            tags:
-#              ignore: /.*/
+     - workbase-unit-tests:
+         filters:
+           tags:
+             ignore: /.*/
       - unit-it-test-1:
           requires:
             - build
@@ -335,9 +335,9 @@ workflows:
       - client-java-e2e:
           requires:
             - build
-#      - workbase-e2e: TODO: remove comment once workbase tests are fixed
-#           requires:
-#             - build
+     - workbase-e2e:
+          requires:
+            - build
 
   build-and-deploy:
     jobs:
