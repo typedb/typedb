@@ -121,6 +121,7 @@ span.bp3-icon::before {
   white-space: nowrap;
   border-radius: 0px;
   min-height: 30px;
+  min-width: 30px;
   margin: var(--element-margin);
   cursor: pointer;
 
@@ -212,6 +213,7 @@ span.bp3-icon::before {
   -webkit-box-shadow: none;
   box-shadow: none;
   border-radius: 0px;
+  width: 100%;
 }
 
 .input-small:focus {

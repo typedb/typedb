@@ -1,7 +1,7 @@
 <template>
     <div class="keyspace-handler-panel">
 
-        <vue-button v-on:clicked="showNewKeyspacePanel = true" icon="plus" className="vue-button"></vue-button>
+        <button @click="showNewKeyspacePanel = true" class="btn"><vue-icon icon="plus" className="vue-icon"></vue-icon></button>
         <div v-show="showNewKeyspacePanel" class="new-keyspace-container z-depth-3">
             <div class="new-keyspace-header">
                 <div class="preferences-title">Add New Keyspace</div>
@@ -9,11 +9,11 @@
             </div>
             <div class="panel-content">
                 <div class="label">Name</div>
-                <div class="keyspace-name-input"><vue-input className="vue-input vue-input-small" v-on:input-changed="updateName"></vue-input></div>
+                <div class="keyspace-name-input"><input class="input-small" v-model="keyspaceName"></div>
             </div>
             <div class="row">
-                <vue-button v-on:clicked="showNewKeyspacePanel = false"text="CANCEL" className="vue-button"></vue-button>
-                <vue-button v-on:clicked="addNewKeyspace" text="SAVE" className="vue-button" :loading="loadSpinner"></vue-button>
+                <button @click="showNewKeyspacePanel = false" class="btn">CANCEL</button>
+                <loading-button v-on:clicked="addNewKeyspace" text="SAVE" className="btn" :loading="loadSpinner"></loading-button>
             </div>
         </div>
 
@@ -113,9 +113,6 @@
       ...mapGetters(['allKeyspaces']),
     },
     methods: {
-      updateName(name) {
-        this.keyspaceName = name;
-      },
       addNewKeyspace() {
         if (!this.keyspaceName.length) return;
         this.loadSpinner = true;
