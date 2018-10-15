@@ -20,8 +20,12 @@ java_binary(
 
 genrule(
     name = "server-build-dist",
-    srcs = ["grakn-core", "server-build-bin_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml"],
+    srcs = [
+        "grakn-core",
+        "server-build-bin_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml",
+        "//dashboard:assets"
+        ],
     outs = ["grakn-core-server.zip"],
-    cmd  = "$(location server-packager.sh) $(location grakn-core) $(location server-build-bin_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) $(location grakn-core-server.zip)",
+    cmd  = "$(location server-packager.sh) $(location grakn-core-server.zip) $(location grakn-core) $(location server-build-bin_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
     tools = ["server-packager.sh"]
 )
