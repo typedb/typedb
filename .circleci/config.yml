@@ -257,11 +257,11 @@ jobs:
         steps:
           - *attach_grakn_workspace
           - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
-#          - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip TODO: re-enable e2e tests once workbase tests are fixed with new UI
-#          - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
-#          - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
+         - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip TODO: re-enable e2e tests once workbase tests are fixed with new UI
+         - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
+         - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
           - run: cd workbase && npm install
-#          - run: cd workbase && npm run e2e
+         - run: cd workbase && npm run e2e
           - run: cd workbase && npm run build
           - run: mv ./workbase/build/grakn-workbase-${GRAKN_VERSION}-mac.zip ~/grakn/artifacts
           - persist_to_workspace:
