@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;

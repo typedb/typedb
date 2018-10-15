@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
@@ -178,9 +178,16 @@ public class InferenceRule {
      * @return reasoner query formed of combining head and body queries
      */
     private ReasonerQueryImpl getCombinedQuery(){
-        Set<Atomic> allAtoms = new HashSet<>();
+        Set<Atomic> allAtoms = new HashSet<>(body.getAtoms());
+        //NB: if rule acts as a sub, do not include type overlap
+        boolean subHead = head.getAtom().isType();
+        if (subHead){
+            body.getAtoms().stream()
+                    .filter(Atomic::isType)
+                    .filter(at -> at.getVarName().equals(head.getAtom().getVarName()))
+                    .forEach(allAtoms::remove);
+        }
         allAtoms.add(head.getAtom());
-        allAtoms.addAll(body.getAtoms());
         return ReasonerQueries.create(allAtoms, tx);
     }
 
@@ -282,7 +289,7 @@ public class InferenceRule {
             //NB: only rewriting atoms from the same type hierarchy
             body.getAtoms(Atom.class)
                     .map(at ->
-                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept()) ?
+                            ReasonerUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
                                     at : at.rewriteToUserDefined(parentAtom)
                     )
                     .forEach(bodyRewrites::add);
