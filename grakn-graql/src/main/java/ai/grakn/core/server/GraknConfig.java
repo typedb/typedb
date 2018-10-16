@@ -30,8 +30,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -71,11 +73,21 @@ public class GraknConfig {
     }
 
     public static GraknConfig read(File path) {
+        InputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(path);
+        } catch (FileNotFoundException e) {
+            LOG.error("Could not load engine properties from {}", path, e);
+        }
+        return read(inputStream);
+    }
+
+    public static GraknConfig read(InputStream inputStream){
         Properties prop = new Properties();
-        try (FileInputStream inputStream = new FileInputStream(path)) {
+        try {
             prop.load(inputStream);
         } catch (IOException e) {
-            LOG.error("Could not load engine properties from {}", path, e);
+            LOG.error("Could not load engine properties from input stream provided", e);
         }
         LOG.info("Project directory in use: {}", PROJECT_PATH);
         LOG.info("Configuration file in use: {}", CONFIG_FILE_PATH);

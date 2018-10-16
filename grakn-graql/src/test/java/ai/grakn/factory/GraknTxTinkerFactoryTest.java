@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.File;
+import java.io.InputStream;
 
 import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -42,9 +42,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GraknTxTinkerFactoryTest {
-    private final File TEST_CONFIG_FILE = new File(this.getClass().getClassLoader().getResource("inmemory-graph.properties").getFile());
-    private final GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
-    private final EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
+    private final static InputStream TEST_CONFIG_FILE = GraknTxTinkerFactoryTest.class.getClassLoader().getResourceAsStream("inmemory-graph.properties");
+    private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
+    private EmbeddedGraknSession session;
     private TxFactory tinkerGraphFactory;
 
 
@@ -53,6 +53,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Before
     public void setupTinkerGraphFactory() {
+        session = mock(EmbeddedGraknSession.class);
         when(session.config()).thenReturn(TEST_CONFIG);
         tinkerGraphFactory = new TxFactoryTinker(session);
     }

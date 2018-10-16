@@ -50,7 +50,7 @@ load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "python_d
 grpc_dependencies()
 python_dependencies()
 
-# Python PIP dependencies
+## Python PIP dependencies
 load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
 pip_repositories()
 pip3_import(
