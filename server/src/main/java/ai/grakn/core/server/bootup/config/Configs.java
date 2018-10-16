@@ -34,7 +34,7 @@ public class Configs {
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
     public static GraknConfig graknConfig(){
-        return GraknConfig.read(graknConfigPath().toFile());
+        return GraknConfig.read(graknConfigPath());
     }
 
     public static StorageConfig storageConfig(){

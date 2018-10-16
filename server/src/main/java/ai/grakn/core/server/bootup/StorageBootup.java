@@ -66,7 +66,7 @@ public class StorageBootup {
 
     public StorageBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
-        this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
+        this.graknProperties = GraknConfig.read(graknPropertiesPath);
         this.bootupProcessExecutor = bootupProcessExecutor;
     }
 

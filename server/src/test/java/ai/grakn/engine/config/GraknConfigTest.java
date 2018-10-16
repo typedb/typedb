@@ -25,16 +25,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.InputStream;
+
 import static junit.framework.TestCase.assertNotNull;
 
 /**
  * Testing the {@link GraknConfig} class
  *
- * @author alexandraorth
  */
 public class GraknConfigTest {
 
-    private static GraknConfig configuration = GraknConfig.create();
+    private final static InputStream TEST_CONFIG_FILE = GraknConfigTest.class.getClassLoader().getResourceAsStream("inmemory-graph.properties");
+    private final static GraknConfig configuration = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

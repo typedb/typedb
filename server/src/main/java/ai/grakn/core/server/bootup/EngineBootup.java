@@ -66,7 +66,7 @@ public class EngineBootup {
         this.bootupProcessExecutor = bootupProcessExecutor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
-        this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
+        this.graknProperties = GraknConfig.read(graknPropertiesPath);
     }
 
     /**

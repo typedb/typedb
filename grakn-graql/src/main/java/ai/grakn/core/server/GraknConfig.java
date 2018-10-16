@@ -68,14 +68,16 @@ public class GraknConfig {
     }
 
     public static GraknConfig create() {
-        if(defaultConfig == null){ defaultConfig = GraknConfig.read(CONFIG_FILE_PATH.toFile()); }
+        if(defaultConfig == null){
+            defaultConfig = GraknConfig.read(CONFIG_FILE_PATH);
+        }
         return defaultConfig;
     }
 
-    public static GraknConfig read(File path) {
+    public static GraknConfig read(Path path) {
         InputStream inputStream = null;
         try {
-            inputStream = new FileInputStream(path);
+            inputStream = new FileInputStream(path.toString());
         } catch (FileNotFoundException e) {
             LOG.error("Could not load engine properties from {}", path, e);
         }
