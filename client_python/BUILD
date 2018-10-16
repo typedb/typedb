@@ -118,6 +118,28 @@ grakn_py_merge_sourcetrees(
     proto_src = ":generated_py_lib",
 )
 
+py_library(
+    name = "pypi_grpcio",
+    deps = [
+      requirement("grpcio")
+    ]
+)
+
+py_library(
+    name = "pypi_protobuf",
+    deps = [
+      requirement("protobuf")
+    ]
+)
+
+py_library(
+    name = "pypi_dependencies",
+    deps = [
+        ":pypi_grpcio",
+        ":pypi_protobuf"
+    ]
+)
+
 
 py_test(
     name = "test_concept",
@@ -125,8 +147,7 @@ py_test(
     data = [":dist"],
     imports = ["dist.zip"],
     deps = [
-        requirement("grpcio"),
-        requirement("protobuf"),
+        ":pypi_dependencies"
     ]
 )
 
@@ -136,8 +157,7 @@ py_test(
     data = [":dist"],
     imports = ["dist.zip"],
     deps = [
-        requirement("grpcio"),
-        requirement("protobuf"),
+        ":pypi_dependencies"
     ]
 )
 
@@ -147,8 +167,7 @@ py_test(
     data = [":dist"],
     imports = ["dist.zip"],
     deps = [
-        requirement("grpcio"),
-        requirement("protobuf"),
+        ":pypi_dependencies"
     ]
 )
 
