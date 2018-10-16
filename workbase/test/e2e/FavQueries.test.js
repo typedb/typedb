@@ -69,6 +69,8 @@ describe('Favourite queries', () => {
 
     assert.equal(await app.client.getText('.toasted'), 'New query saved!\nCLOSE');
 
+    await sleep(1000);
+
     app.client.click('.close-add-fav-query-container');
     app.client.click('.action');
   });
@@ -108,6 +110,8 @@ describe('Favourite queries', () => {
     await sleep(1000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
+    await sleep(1000);
+
     assert.equal(noOfEntities, 'entities: 30');
 
     app.client.click('.clear-graph-btn');
@@ -143,6 +147,8 @@ describe('Favourite queries', () => {
     await sleep(1000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
+    await sleep(1000);
+
     assert.equal(noOfEntities, 'entities: 1');
   });
 
