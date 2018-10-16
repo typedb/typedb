@@ -321,10 +321,13 @@ dependencies:
     hadoop-common:
       version: "2.7.2"
       lang: java
+      exclude:
+        - "javax.servlet:servlet-api"
     hadoop-mapreduce-client-core:
       version: "2.7.2"
       lang: java
-
+      exclude:
+      - "javax.servlet:servlet-api"
   org.apache.httpcomponents:
     httpclient:
       version: "4.5.3"
@@ -332,7 +335,7 @@ dependencies:
     httpcore:
       version: "4.4.6"
       lang: java
-
+#
   org.apache.spark:
     spark-core_2.11:
       version: "2.2.0"
