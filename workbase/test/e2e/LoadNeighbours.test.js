@@ -29,7 +29,7 @@ describe('Load neighbours', () => {
   test('select keyspace', async () => {
     app.client.click('.keyspaces');
     await app.client.waitUntilWindowLoaded();
-    0;
+
     const keyspaceList = app.client.selectByAttribute('class', 'keyspaces-list');
     assert.ok(keyspaceList);
 
