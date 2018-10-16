@@ -85,7 +85,7 @@ describe('Load neighbours', () => {
     app.client.leftClick('#graph-div');
     app.client.leftClick('#graph-div');
 
-    await sleep(4000);
+    await sleep(6000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
     assert.equal(noOfEntities, 'entities: 10');
@@ -114,7 +114,7 @@ describe('Load neighbours', () => {
     app.client.leftClick('#graph-div');
     app.client.leftClick('#graph-div');
 
-    await sleep(4000);
+    await sleep(6000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
     assert.equal(noOfEntities, 'entities: 1');
@@ -143,7 +143,7 @@ describe('Load neighbours', () => {
     app.client.leftClick('#graph-div');
     app.client.leftClick('#graph-div');
 
-    await sleep(4000);
+    await sleep(6000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
     assert.equal(noOfEntities, 'entities: 2');

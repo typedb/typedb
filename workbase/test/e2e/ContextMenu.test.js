@@ -55,31 +55,48 @@ describe('Favourite queries', () => {
 
     app.client.rightClick('#graph-div', 10, 10);
 
-    await sleep(1000);
+    await sleep(2000);
 
     assert.equal(await app.client.getText('#context-menu'), 'Delete\nExplain\nShortest Path');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.delete-nodes', 'class'), 'context-action delete-nodes disabled');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.explain-node', 'class'), 'context-action explain-node disabled');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.compute-shortest-path', 'class'), 'context-action compute-shortest-path disabled');
+    await sleep(2000);
   });
 
   test('right click on node', async () => {
     app.client.rightClick('#graph-div', 540, 470);
 
-    await sleep(1000);
+    await sleep(2000);
 
     assert.equal(await app.client.getAttribute('.delete-nodes', 'class'), 'context-action delete-nodes');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.explain-node', 'class'), 'context-action explain-node disabled');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.compute-shortest-path', 'class'), 'context-action compute-shortest-path disabled');
+    await sleep(2000);
   });
 
   test('right click on inferred node', async () => {
     app.client.rightClick('#graph-div', 750, 470);
 
-    await sleep(1000);
+    await sleep(2000);
 
     assert.equal(await app.client.getAttribute('.delete-nodes', 'class'), 'context-action delete-nodes');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.explain-node', 'class'), 'context-action explain-node');
+    await sleep(2000);
+
     assert.equal(await app.client.getAttribute('.compute-shortest-path', 'class'), 'context-action compute-shortest-path disabled');
+    await sleep(2000);
   });
 });
