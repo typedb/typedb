@@ -4,7 +4,7 @@ const electronPath = require('electron'); // Require Electron from the binaries 
 const path = require('path');
 
 const sleep = time => new Promise(r => setTimeout(r, time));
-jest.setTimeout(15000);
+jest.setTimeout(20000);
 
 const app = new Application({
   path: electronPath,
@@ -54,10 +54,20 @@ describe('Canvas Data', () => {
     await sleep(12000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
+
     assert.equal(noOfEntities, 'entities: 2');
+    await sleep(1000);
+
     const noOfAttributes = await app.client.getText('.no-of-attributes');
+    await sleep(1000);
+
     assert.equal(noOfAttributes, 'attributes: 1');
+    await sleep(1000);
+
     const noOfRelationships = await app.client.getText('.no-of-relationships');
+    await sleep(1000);
+
     assert.equal(noOfRelationships, 'relationships: 1');
+    await sleep(1000);
   });
 });
