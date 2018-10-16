@@ -14,7 +14,6 @@ import {
 } from '@/components/shared/StoresActions';
 import Grakn from 'grakn';
 import logger from '@/../Logger';
-import VisFacade from '@/components/CanvasVisualiser/Facade';
 
 import {
   addResetGraphListener,
@@ -28,9 +27,9 @@ import VisualiserGraphBuilder from '../VisualiserGraphBuilder';
 import VisualiserCanvasEventsHandler from '../VisualiserCanvasEventsHandler';
 
 export default {
-  [INITIALISE_VISUALISER]({ state, commit, dispatch }, container) {
+  [INITIALISE_VISUALISER]({ state, commit, dispatch }, { container, visFacade }) {
     addResetGraphListener(dispatch, CANVAS_RESET);
-    commit('setVisFacade', VisFacade.initVisualiser(container, state.visStyle));
+    commit('setVisFacade', visFacade.initVisualiser(container, state.visStyle));
     VisualiserCanvasEventsHandler.registerHandlers({ state, commit, dispatch });
   },
 
@@ -159,7 +158,6 @@ export default {
   },
   async [EXPLAIN_CONCEPT]({ state, dispatch, getters, commit }) {
     const queries = getters.selectedNode.explanation.answers().map(answer => mapAnswerToExplanationQuery(answer));
-
     queries.forEach(async (query) => {
       commit('loadingQuery', true);
       const graknTx = await dispatch(OPEN_GRAKN_TX);
@@ -167,6 +165,7 @@ export default {
 
       const data = await VisualiserGraphBuilder.buildFromConceptMap(result, true, false);
       state.visFacade.addToCanvas(data);
+      commit('updateCanvasData');
       const nodesWithAttributes = await computeAttributes(data.nodes);
       graknTx.close();
 
