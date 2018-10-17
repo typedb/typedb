@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 # inputs
-script="$1"
-jar="$2"
-logback_xml="$3"
-output="$4"
+output="$1"
+script="$2"
+jar="$3"
+logback_xml="$4"
 
 # configurations
 base_dir="grakn-core-console"

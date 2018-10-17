@@ -1,31 +1,31 @@
 java_binary(
-    name = "console-build-bin",
+    name = "jar-console",
     main_class = "ai.grakn.core.console.Graql",
     runtime_deps = ["//console:console"]
 )
 
 genrule(
-    name = "console-build-dist",
-    srcs = ["grakn-core", "console-build-bin_deploy.jar", "//console:conf/logback.xml"],
+    name = "distribution-console",
+    srcs = ["grakn-core", "jar-console_deploy.jar", "//console:conf/logback.xml"],
     outs = ["grakn-core-console.zip"],
-    cmd  = "$(location console-packager.sh) $(location grakn-core) $(location console-build-bin_deploy.jar) $(location //console:conf/logback.xml) $(location grakn-core-console.zip)",
+    cmd  = "$(location console-packager.sh) $(location grakn-core-console.zip) $(location grakn-core) $(location jar-console_deploy.jar) $(location //console:conf/logback.xml)",
     tools = ["console-packager.sh"]
 )
 
 java_binary(
-    name = "server-build-bin",
+    name = "jar-server",
     main_class = "ai.grakn.core.server.bootup.GraknBootup",
     runtime_deps = ["//server:server"]
 )
 
 genrule(
-    name = "server-build-dist",
+    name = "distribution-server",
     srcs = [
         "grakn-core",
-        "server-build-bin_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml",
+        "jar-server_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml",
         "//dashboard:assets"
         ],
     outs = ["grakn-core-server.zip"],
-    cmd  = "$(location server-packager.sh) $(location grakn-core-server.zip) $(location grakn-core) $(location server-build-bin_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    cmd  = "$(location server-packager.sh) $(location grakn-core-server.zip) $(location grakn-core) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
     tools = ["server-packager.sh"]
 )
