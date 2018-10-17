@@ -67,8 +67,8 @@ public class SimpleURI {
 
     public URI toURI() {
         try {
-            return new URL(DEFAULT_PROTOCOL_NAME, host, Integer.toString(port)).toURI();
-        } catch (MalformedURLException | URISyntaxException e) {
+            return new URI(DEFAULT_PROTOCOL_NAME, null, host, port, null, null, null);
+        } catch (URISyntaxException e) {
             throw new IllegalStateException(e);
         }
     }

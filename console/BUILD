@@ -16,8 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:public"])
-
 java_library(
     name = "console",
     srcs = glob(["src/main/java/**/*.java"]),
@@ -35,5 +33,11 @@ java_library(
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-all",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-    ]
+    ],
+    visibility = ["//visibility:public"]
+)
+
+exports_files(
+    ["conf/logback.xml"],
+    visibility = ["//visibility:public"]
 )

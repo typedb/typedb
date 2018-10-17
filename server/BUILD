@@ -79,7 +79,10 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
-    ]
+    ],
+    resources = glob(["src/main/resources/*"]),
+    visibility = ["//visibility:public"]
+
 )
 
 java_test(
@@ -124,4 +127,9 @@ java_test(
 test_suite(
     name = "unit_tests",
     tags = ["small"],
+)
+
+exports_files(
+    ["conf/logback.xml", "conf/grakn.properties", "src/services/cassandra/logback.xml", "src/services/cassandra/cassandra.yaml"],
+    visibility = ["//visibility:public"]
 )

@@ -23,15 +23,12 @@ JAVA_BIN=java
 GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="conf/grakn.properties"
 
+CONSOLE_JAR_FILENAME="services/lib/jar-console_deploy.jar"
+SERVER_JAR_FILENAME="services/lib/jar-server_deploy.jar"
+
 # ================================================
 # common helper functions
 # ================================================
-update_classpath_global_var() {
-  # Add path containing grakn.properties and logback.xml
-  CLASSPATH="${GRAKN_HOME}/services/lib/*"
-  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/
-}
-
 exit_if_java_not_found() {
   which "${JAVA_BIN}" > /dev/null
   exit_code=$?
@@ -56,16 +53,16 @@ if [ -z "$1" ]; then
     echo "  Server:          grakn-core server [--help]"
     echo "  Console:         grakn-core console [--help]"
 elif [ "$1" = "console" ]; then
-    if [ -f ./services/lib/core.console-*.jar ]; then
-        update_classpath_global_var
+    if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
+        CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}:${GRAKN_HOME}/conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" ai.grakn.core.console.Graql "$@"
     else
         echo "Grakn Core Console is not included in this Grakn distribution."
         echo "You may want to install Grakn Core Console or Grakn Core (all)."
     fi
 elif [ "$1" = "server" ]; then
-    if [ -f ./services/lib/core.server-*.jar ]; then
-        update_classpath_global_var
+    if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
+        CLASSPATH="./${SERVER_JAR_FILENAME}:./conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" ai.grakn.core.server.bootup.GraknBootup $@
     else
         echo "Grakn Core Server is not included in this Grakn distribution."
