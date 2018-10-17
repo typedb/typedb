@@ -132,7 +132,7 @@ describe('Favourite queries', () => {
 
     await app.client.click('.run-fav-query-btn');
 
-    const noOfEntities = await app.client.getText('.no-of-entities');
+    let noOfEntities = await app.client.getText('.no-of-entities');
 
 
     assert.equal(noOfEntities, 'entities: 0');
@@ -141,6 +141,8 @@ describe('Favourite queries', () => {
 
 
     await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
+
+    noOfEntities = await app.client.getText('.no-of-entities');
 
 
     assert.equal(noOfEntities, 'entities: 1');
