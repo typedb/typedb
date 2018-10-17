@@ -51,12 +51,12 @@ for asset in $dashboard_assets; do
     mkdir -p "$asset_target_dir" && cp "${asset}" "$asset_target_dir"
 done
 
-echo "the distribution will contain the following files:"
+echo "the grakn-core-server distribution will contain the following files:"
 find $base_dir
 
 zip -r "$output" "$base_dir"
 
-echo "grakn-core-server distribution has been successfully created!"
+echo "the grakn-core-server distribution has been successfully created!"
 
 # cleanup
 rm -rf "$base_dir"
