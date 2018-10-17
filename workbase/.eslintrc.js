@@ -7,7 +7,7 @@ module.exports = {
   plugins: [
     "import",
     "html",
-    "vue"  
+    "vue"
   ],
   env: {
     browser: true,
