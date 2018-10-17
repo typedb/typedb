@@ -51,7 +51,7 @@ describe('Canvas Data', () => {
 
     app.client.click('.run-btn');
 
-    await sleep(14000);
+    await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
 
     const noOfEntities = await app.client.getText('.no-of-entities');
     await sleep(1000);

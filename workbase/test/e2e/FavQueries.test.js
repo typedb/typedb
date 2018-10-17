@@ -146,8 +146,9 @@ describe('Favourite queries', () => {
 
     await sleep(1000);
 
+    await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) === 'entities: 1', 20000, 'wait for canvas data to be updated');
+
     const noOfEntities = await app.client.getText('.no-of-entities');
-    await sleep(2000);
 
     assert.equal(noOfEntities, 'entities: 1');
   });
