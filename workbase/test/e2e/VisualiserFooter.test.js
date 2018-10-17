@@ -41,34 +41,19 @@ describe('Canvas Data', () => {
   });
 
   test('test if canvas data is updated', async () => {
-    app.client.click('.CodeMirror');
+    await app.client.click('.CodeMirror');
 
-    await sleep(1000);
+    await app.client.keys('match $x isa person has attribute $y; $r ($x, $z); $r isa marriage; limit 1; get;');
 
-    app.client.keys('match $x isa person has attribute $y; $r ($x, $z); $r isa marriage; limit 1; get;');
-
-    await sleep(1000);
-
-    app.client.click('.run-btn');
+    await app.client.click('.run-btn');
 
     await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
 
     const noOfEntities = await app.client.getText('.no-of-entities');
-    await sleep(1000);
-
     assert.equal(noOfEntities, 'entities: 2');
-    await sleep(1000);
-
     const noOfAttributes = await app.client.getText('.no-of-attributes');
-    await sleep(1000);
-
     assert.equal(noOfAttributes, 'attributes: 1');
-    await sleep(1000);
-
     const noOfRelationships = await app.client.getText('.no-of-relationships');
-    await sleep(1000);
-
     assert.equal(noOfRelationships, 'relationships: 1');
-    await sleep(1000);
   });
 });

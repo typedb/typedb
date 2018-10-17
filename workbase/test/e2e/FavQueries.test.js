@@ -118,35 +118,23 @@ describe('Favourite queries', () => {
   });
 
   test('edit favourite query', async () => {
-    app.client.click('.fav-queries-container-btn');
+    await app.client.click('.fav-queries-container-btn');
 
-    await sleep(1000);
+    await app.client.click('.edit-fav-query-btn');
 
-    app.client.click('.edit-fav-query-btn');
+    await app.client.click('.CodeMirror-focused');
 
-    await sleep(1000);
+    await app.client.keys(['ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'limit 1; ']);
 
-    app.client.click('.CodeMirror-focused');
+    await app.client.click('.save-edited-fav-query');
 
-    await sleep(1000);
+    await app.client.click('.action');
 
-    app.client.keys(['ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'limit 1; ']);
+    await app.client.click('.run-fav-query-btn');
 
-    await sleep(1000);
+    await app.client.click('.run-btn');
 
-    app.client.click('.save-edited-fav-query');
-
-    await sleep(1000);
-
-    app.client.click('.run-fav-query-btn');
-
-    await sleep(1000);
-
-    app.client.click('.run-btn');
-
-    await sleep(1000);
-
-    await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) === 'entities: 1', 20000, 'wait for canvas data to be updated');
+    await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
 
     const noOfEntities = await app.client.getText('.no-of-entities');
 
