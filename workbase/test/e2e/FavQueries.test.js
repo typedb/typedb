@@ -4,7 +4,7 @@ const electronPath = require('electron'); // Require Electron from the binaries 
 const path = require('path');
 
 const sleep = time => new Promise(r => setTimeout(r, time));
-jest.setTimeout(15000);
+jest.setTimeout(30000);
 
 const app = new Application({
   path: electronPath,
@@ -134,9 +134,9 @@ describe('Favourite queries', () => {
 
     let noOfEntities = await app.client.getText('.no-of-entities');
 
-    assert.equal(noOfEntities, 'entities: 0');
+    await assert.equal(noOfEntities, 'entities: 0');
 
-    assert.equal((await app.client.getText('.CodeMirror'))[0], ' match $x isa person; limit 1; get;');
+    await assert.equal((await app.client.getText('.CodeMirror'))[0], ' match $x isa person; limit 1; get;');
 
     await app.client.click('.run-btn');
 
@@ -144,19 +144,15 @@ describe('Favourite queries', () => {
 
     noOfEntities = await app.client.getText('.no-of-entities');
 
-    assert.equal(noOfEntities, 'entities: 1');
+    await assert.equal(noOfEntities, 'entities: 1');
   });
 
   test('delete favourite query', async () => {
-    app.client.click('.fav-queries-container-btn');
+    await app.client.click('.fav-queries-container-btn');
 
-    await sleep(1000);
+    await app.client.click('.delete-fav-query-btn');
 
-    app.client.click('.delete-fav-query-btn');
-
-    await sleep(2000);
-
-    assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');
+    await assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');
 
     await sleep(1000);
   });
