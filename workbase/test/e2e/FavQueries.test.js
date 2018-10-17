@@ -147,7 +147,7 @@ describe('Favourite queries', () => {
     await sleep(1000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
-    await sleep(1000);
+    await sleep(2000);
 
     assert.equal(noOfEntities, 'entities: 1');
   });
