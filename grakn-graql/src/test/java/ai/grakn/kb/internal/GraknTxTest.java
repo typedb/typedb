@@ -137,6 +137,7 @@ public class GraknTxTest extends TxTestBase {
         assertEquals(100000L, tx.shardingThreshold());
     }
 
+    @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
         assertCacheOnlyContainsMetaTypes();
@@ -310,6 +311,7 @@ public class GraknTxTest extends TxTestBase {
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
     }
 
+    @SuppressWarnings("CheckReturnValue")
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
         String keyspace = "akeyspacewithkeys";
@@ -320,16 +322,15 @@ public class GraknTxTest extends TxTestBase {
         failAtOpeningTx(session, GraknTxType.BATCH, keyspace);
         graph.close();
 
-        //noinspection ResultOfMethodCallIgnored
         session.transaction(GraknTxType.BATCH);
         failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
         failAtOpeningTx(session, GraknTxType.READ, keyspace);
     }
 
+    @SuppressWarnings("CheckReturnValue")
     private void failAtOpeningTx(GraknSession session, GraknTxType txType, String keyspace){
         Exception exception = null;
         try{
-            //noinspection ResultOfMethodCallIgnored
             session.transaction(txType);
         } catch (GraknTxOperationException e){
             exception = e;

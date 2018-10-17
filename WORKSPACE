@@ -46,8 +46,19 @@ antlr_dependencies()
 ####################################
 
 # Load GRPC dependencies
-load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies")
+load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "python_dependencies")
 grpc_dependencies()
+python_dependencies()
+
+# Python PIP dependencies
+load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
+pip_repositories()
+pip3_import(
+    name = "python_grakn_deps",
+    requirements = "//client_python:requirements.txt",
+)
+load("@python_grakn_deps//:requirements.bzl", "pip_install")
+pip_install()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_bazel_grpc_deps()
@@ -63,6 +74,9 @@ python_grpc_compile()
 # Load GRPC Node.js dependencies
 load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
+
+
+
 
 
 ########################################
