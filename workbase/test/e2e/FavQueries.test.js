@@ -114,7 +114,7 @@ describe('Favourite queries', () => {
 
     assert.equal(noOfEntities, 'entities: 30');
 
-    app.client.click('.clear-graph-btn');
+    await app.client.click('.clear-graph-btn');
   });
 
   test('edit favourite query', async () => {
@@ -132,11 +132,16 @@ describe('Favourite queries', () => {
 
     await app.client.click('.run-fav-query-btn');
 
+    const noOfEntities = await app.client.getText('.no-of-entities');
+
+
+    assert.equal(noOfEntities, 'entities: 0');
+
     await app.client.click('.run-btn');
+
 
     await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
 
-    const noOfEntities = await app.client.getText('.no-of-entities');
 
     assert.equal(noOfEntities, 'entities: 1');
   });
