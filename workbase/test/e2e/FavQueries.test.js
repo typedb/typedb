@@ -132,24 +132,15 @@ describe('Favourite queries', () => {
 
     await app.client.click('.run-fav-query-btn');
 
-    let noOfEntities = await app.client.getText('.no-of-entities');
+    const noOfEntities = await app.client.getText('.no-of-entities');
 
     await assert.equal(noOfEntities, 'entities: 0');
 
     await assert.equal((await app.client.getText('.CodeMirror'))[0], ' match $x isa person; limit 1; get;');
-
-    await app.client.click('.run-btn');
-
-    await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
-
-    noOfEntities = await app.client.getText('.no-of-entities');
-
-    await assert.equal(noOfEntities, 'entities: 1');
+    await assert.equal((await app.client.getText('.CodeMirror'))[1], 'match $x isa person; limit 1; get;');
   });
 
   test('delete favourite query', async () => {
-    await app.client.click('.fav-queries-container-btn');
-
     await app.client.click('.delete-fav-query-btn');
 
     await assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');
