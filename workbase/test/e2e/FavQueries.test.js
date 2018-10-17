@@ -134,16 +134,15 @@ describe('Favourite queries', () => {
 
     let noOfEntities = await app.client.getText('.no-of-entities');
 
-
     assert.equal(noOfEntities, 'entities: 0');
 
-    await app.client.click('.run-btn');
+    assert.equal((await app.client.getText('.CodeMirror'))[0], ' match $x isa person; limit 1; get;');
 
+    await app.client.click('.run-btn');
 
     await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 20000, 'wait for canvas data to be updated');
 
     noOfEntities = await app.client.getText('.no-of-entities');
-
 
     assert.equal(noOfEntities, 'entities: 1');
   });
