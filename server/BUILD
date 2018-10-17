@@ -33,7 +33,6 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
-        # "//dashboard:dashboard",
 
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -93,7 +92,9 @@ java_test(
 java_test(
     name = "RocksDbQueueTest",
     srcs = ["src/test/java/ai/grakn/engine/attribute/deduplicator/RocksDbQueueTest.java"],
-    deps = [":server"] + ["//grakn-graql"] + [
+    deps = [
+        ":server",
+        "//grakn-graql",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
@@ -103,16 +104,19 @@ java_test(
 java_test(
     name = "GraknConfigTest",
     srcs = ["src/test/java/ai/grakn/engine/config/GraknConfigTest.java"],
-    deps = [":server"] + ["//grakn-graql"],
+    deps = [":server", "//grakn-graql"],
+    resources = ["src/test/resources/inmemory-graph.properties"],
     size = "small"
 )
 
 java_test(
     name = "RequestsTest",
     srcs = ["src/test/java/ai/grakn/engine/controller/util/RequestsTest.java"],
-     deps = [":server"] + ["//grakn-graql"] + [
-            "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-            "//dependencies/maven/artifacts/org/sharegov:mjson"
+     deps = [
+        ":server",
+        "//grakn-graql",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/sharegov:mjson"
         ],
     size = "small"
 )
