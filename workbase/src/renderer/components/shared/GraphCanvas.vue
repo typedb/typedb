@@ -27,6 +27,7 @@
 </style>
 
 <script>
+import VisFacade from '@/components/CanvasVisualiser/Facade';
 import { INITIALISE_VISUALISER } from './StoresActions';
 
 export default {
@@ -34,7 +35,7 @@ export default {
   mounted() {
     this.$nextTick(() => {
       const graphDiv = this.$refs.graph;
-      this.$store.dispatch(INITIALISE_VISUALISER, graphDiv);
+      this.$store.dispatch(INITIALISE_VISUALISER, { container: graphDiv, visFacade: VisFacade });
     });
   },
 };

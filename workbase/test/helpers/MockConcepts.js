@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 function getMockEntityType() {
   return {
     baseType: 'ENTITY_TYPE',
@@ -105,6 +106,7 @@ function getMockRelationship() {
     isEntity: () => false,
     isThing: () => true,
     isRelationship: () => true,
+    explanation: { answers: () => [getMockAnswer1(), getMockAnswer2()], queryPattern: () => '{$y id 1234; $r (father: $m, role: $y) isa parentship; $m id 4444;}' },
     offset: 0,
   };
 }
@@ -120,7 +122,7 @@ function getMockImplicitRelationship() {
 
 function getMockAnswer1() {
   return {
-    explanation: () => {},
+    explanation: {},
     map: () => {
       const map = new Map();
       map.set('p', getMockEntity1());
