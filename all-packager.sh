@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 echo "packaging the grakn-core-all distribution..."
 # inputs
 output="$1"
