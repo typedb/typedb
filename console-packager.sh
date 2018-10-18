@@ -1,38 +1,52 @@
 #!/usr/bin/env bash
 
-set -e
+set -e # exit immediately when there's a failure. add verbose flag '-x', (ie., 'set -xe') in order to debug the script
 
-echo "packaging the grakn-core-all distribution..."
+echo "========================================="
+echo "packaging the grakn-core-all distribution"
+echo "========================================="
+# 1. modules and configurations
 # inputs
 output="$1"
 script="$2"
 jar="$3"
 logback_xml="$4"
-
 # configurations
 base_dir="grakn-core-console"
 conf_dir="conf"
 services_dir="services"
 services_dir_lib="lib"
+echo
 
-# prepare directories and files
-echo "making directories..."
+# 2. prepare directories and files
+echo "--- making directories ---"
 mkdir -p "$base_dir"
 mkdir -p "$base_dir/$conf_dir"
 mkdir -p "$base_dir/$services_dir/$services_dir_lib"
-echo "the following directories have been created:"
+echo "--- the following directories have been created ---"
 find $base_dir
+echo
 
+# 3. copying files into the respective locations
+echo "--- copying files into the respective locations ---"
 cp "$script" "$base_dir"
 cp "$logback_xml" "$base_dir/$conf_dir"
 cp "$jar" "$base_dir/$services_dir/$services_dir_lib"
+echo
 
-echo "the grakn-core-console distribution will contain the following files:"
+# 4. the grakn-core-server distribution will contain the following files
+echo "--- the grakn-core-console distribution will contain the following files ---"
 find $base_dir
+echo
 
+# 5. building zip
+echo "--- building zip: 'zip -r \"$output\" \"$base_dir\"' ---"
 zip -r "$output" "$base_dir"
+echo
 
-echo "the grakn-core-console distribution has been successfully created!"
+echo "====================================================="
+echo "the grakn-core-console distribution has been created!"
+echo "====================================================="
 
-# cleanup
+# 6. cleanup
 rm -r "$base_dir"
