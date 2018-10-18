@@ -52,6 +52,7 @@ function getMockEntity1() {
     isAttribute: () => false,
     isEntity: () => true,
     isThing: () => true,
+    isRelationship: () => false,
     offset: 0,
   };
 }
@@ -75,12 +76,13 @@ function getMockAttribute() {
     id: '5555',
     type: () => Promise.resolve(getMockAttributeType()),
     value: () => Promise.resolve('John'),
-    owners: () => Promise.resolve({ next: () => Promise.resolve(getMockEntity1()) }),
+    owners: () => Promise.resolve({ next: () => Promise.resolve(getMockEntity1()), collect: () => Promise.resolve([getMockEntity1()]) }),
     attributes: () => Promise.resolve({ next: () => Promise.resolve(getMockAttribute()), collect: () => Promise.resolve([getMockAttribute()]) }), // eslint-disable-line no-use-before-define
     isType: () => false,
     isInferred: () => Promise.resolve(false),
     isAttribute: () => true,
     isThing: () => true,
+    isRelationship: () => false,
     offset: 0,
   };
 }
@@ -134,7 +136,7 @@ const getMockQueryPattern1 = '{(child: $c1, parent: $p) isa parentship;}';
 
 function getMockAnswer2() {
   return {
-    explanation: {},
+    explanation: () => 'mockExplanation',
     map: () => {
       const map = new Map();
       map.set('c', getMockEntity1());
@@ -176,7 +178,7 @@ function getMockAnswerContainingImplicitType() {
 
 function getMockAnswerContainingRelationship() {
   return {
-    explanation: () => {},
+    explanation: () => 'mockExplanation',
     map: () => {
       const map = new Map();
       map.set('r', getMockRelationship());
