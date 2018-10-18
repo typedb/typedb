@@ -41,3 +41,11 @@ genrule(
     cmd = "$(location all-packager.sh) $(location //:dist/grakn-core-all.zip) $(location grakn-core) $(location jar-console_deploy.jar) $(location //console:conf/logback.xml) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
     tools = ["all-packager.sh"]
 )
+
+test_suite(
+    name = "unit_tests",
+    tests = [
+        "//server:unit_tests",
+        "//grakn-graql:unit_tests"
+    ]
+)
