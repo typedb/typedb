@@ -46,6 +46,7 @@ test_suite(
     name = "unit_tests",
     tests = [
         "//server:unit_tests",
-        "//grakn-graql:unit_tests"
+        "//grakn-graql:unit_tests",
+        "//client-java:unit_tests"
     ]
 )
