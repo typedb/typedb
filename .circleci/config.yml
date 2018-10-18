@@ -36,16 +36,6 @@ references:
       attach_workspace:
         at: ~/grakn
 
-    list_unit_tests: &list_unit_tests
-      run:
-        name: List Of Unit Tests To Be Ran On This Machine
-        command: cat parallelise-unit-tests.txt
-
-    list_it_tests: &list_it_tests
-      run:
-        name: List Of IT Tests To Be Ran On This Machine
-        command: cat parallelise-it-tests.txt
-
     start_grakn_server: &start_grakn_server
       run: nohup grakn-dist/target/grakn-core-test/grakn server start
 
@@ -56,9 +46,6 @@ references:
           mkdir -p ~/grakn-surefire-reports/
           find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
         when: always
-
-    run_unit_it_tests: &run_unit_it_tests
-      run: mvn verify -Dsurefire.includesFile=`echo ~/grakn/parallelise-unit-tests.txt` -Dfailsafe.includesFile=`echo ~/grakn/parallelise-it-tests.txt` -P janus -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT -DMaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=1
 
 jobs:
   build:
@@ -77,7 +64,7 @@ jobs:
           paths:
             - .
 
-  unit-it-test-1:
+  unit-tests:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -86,41 +73,7 @@ jobs:
       - *install_node
       - *install_bazel
       - *attach_grakn_workspace
-      - run:
-          name: Create parallelise-unit-tests.txt and parallelise-it-tests.txt For Parallelisation Purpose
-          command: |
-            circleci tests glob "**/src/test/java/**/*Test.java" | circleci tests split --total="2" --index="0" > parallelise-unit-tests-filename.txt
-            cat parallelise-unit-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelise-unit-tests.txt
-            circleci tests glob "**/src/test/java/**/*IT.java" | circleci tests split --total="2" --index="0" > parallelise-it-tests-filename.txt
-            cat parallelise-it-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelise-it-tests.txt
-      - *list_unit_tests
-      - *list_it_tests
-      - *run_unit_it_tests
-      - *save_test_results
-      - store_artifacts:
-          path: ~/grakn-surefire-reports/
-      - store_test_results:
-          path: ~/grakn-surefire-reports/
-
-  unit-it-test-2:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
-      - *install_bazel
-      - *attach_grakn_workspace
-      - run:
-          name: Create parallelise-unit-tests.txt and parallelise-it-tests.txt For Parallelisation Purpose
-          command: |
-            circleci tests glob "**/src/test/java/**/*Test.java" | circleci tests split --total="2" --index="1" > parallelise-unit-tests-filename.txt
-            cat parallelise-unit-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelise-unit-tests.txt
-            circleci tests glob "**/src/test/java/**/*IT.java" | circleci tests split --total="2" --index="1" > parallelise-it-tests-filename.txt
-            cat parallelise-it-tests-filename.txt | xargs -I {} basename {} | xargs -I {} echo "**/{}" | sort > parallelise-it-tests.txt
-      - *list_unit_tests
-      - *list_it_tests
-      - *run_unit_it_tests
+      - run: bazel test //:unit_tests
       - *save_test_results
       - store_artifacts:
           path: ~/grakn-surefire-reports/
@@ -300,10 +253,7 @@ workflows:
 #          filters:
 #            tags:
 #              ignore: /.*/
-      - unit-it-test-1:
-          requires:
-            - build
-      - unit-it-test-2:
+      - unit-tests:
           requires:
             - build
       - distribution-e2e:
