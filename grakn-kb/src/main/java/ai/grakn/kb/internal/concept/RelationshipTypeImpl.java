@@ -77,7 +77,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     public Relationship addRelationship(boolean isInferred) {
         Relationship relationship = addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred, true);
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
         vertex().tx().txCache().addNewRelationship(relationship);
         return relationship;
     }
