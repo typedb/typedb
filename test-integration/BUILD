@@ -1,10 +1,6 @@
 java_library(
     name = "test-integration",
-    srcs = glob(["src/test/java/ai/**/*.java"]),
-   deps = [
-            # External dependencies
-#            "//dependencies/maven/artifacts/org/cassandraunit:cassandra-unit",
-        ]
+    srcs = glob(["src/test/java/ai/**/*.java"])
 )
 
 java_test(
@@ -13,14 +9,26 @@ java_test(
     test_class = "ai.grakn.test.engine.attribute.deduplicator.AttributeDeduplicatorIT",
     deps = [
         "//server",
-        ":EmbeddedCassandra",
+        ":CassandraContext",
         "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     resources = ["//server:grakn-properties"],
 )
 
+java_test(
+    name = "GraknEngineStartTest",
+    srcs = ["src/test/java/ai/grakn/engine/GraknEngineStartTest.java"],
+    test_class = "ai.grakn.test.engine.GraknEngineStartTest",
+    deps = [
+        "//server",
+        ":CassandraContext",
+        ":EngineContext",
+        "//grakn-graql",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"]
+)
+
 java_library(
-    name = "EmbeddedCassandra",
+    name = "CassandraContext",
     srcs = ["src/test/java/ai/grakn/rule/EmbeddedCassandraContext.java"],
     deps = [
         "//dependencies/maven/artifacts/org/cassandraunit:cassandra-unit",
@@ -28,7 +36,23 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/junit:junit"],
-    resources = ["//server:grakn-properties",
-                 "src/test/resources/cassandra-embedded.yaml",
+    resources = [ "src/test/resources/cassandra-embedded.yaml",
                  "src/test/resources/logback.xml"],
+)
+
+java_library(
+    name = "EngineContext",
+    srcs = ["src/test/java/ai/grakn/rule/EngineContext.java", "src/test/java/ai/grakn/util/GraknTestUtil.java"],
+    deps = [
+        "//server",
+        "//grakn-graql",
+        "//dependencies/maven/artifacts/junit:junit",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/sparkjava:spark-core",
+        "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/com/jayway/restassured:rest-assured",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core"],
+    resources = ["//server:grakn-properties"]
 )
