@@ -53,7 +53,6 @@
 
 <script>
   import { Chrome } from 'vue-color';
-  import { mapGetters } from 'vuex';
 
   import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL, OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
@@ -62,6 +61,7 @@
   export default {
     name: 'DisplaySettingsPanel',
     components: { Chrome },
+    props: ['tabId'],
     data() {
       return {
         showConceptDisplayContent: true,
@@ -82,7 +82,15 @@
       this.loadColour();
     },
     computed: {
-      ...mapGetters(['metaTypeInstances', 'selectedNode', 'currentKeyspace']),
+      metaTypeInstances() {
+        return this.$store.getters.metaTypeInstances(this.tabId);
+      },
+      selectedNode() {
+        return this.$store.getters.selectedNode(this.tabId);
+      },
+      currentKeyspace() {
+        return this.$store.getters.currentKeyspace(this.tabId);
+      },
       node() {
         if (this.selectedNode && this.selectedNode.baseType.includes('Type')) {
           return null;

@@ -30,12 +30,16 @@
 </style>
 
 <script>
-import { mapGetters } from 'vuex';
 export default {
   name: 'GraknFooter',
-  props: ['localStore'],
+  props: ['tabId'],
   computed: {
-    ...mapGetters(['currentKeyspace', 'canvasData']),
+    currentKeyspace() {
+      return this.$store.getters.currentKeyspace(this.tabId);
+    },
+    canvasData() {
+      return this.$store.getters.canvasData(this.tabId);
+    },
   },
 };
 </script>

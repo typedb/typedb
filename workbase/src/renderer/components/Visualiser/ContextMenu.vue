@@ -7,13 +7,21 @@
 </template>
 <script>
   import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, DELETE_SELECTED_NODES } from '@/components/shared/StoresActions';
-  import { mapGetters } from 'vuex';
 
 
   export default {
     name: 'ContextMenu',
+    props: ['tabId'],
     computed: {
-      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu']),
+      selectedNodes() {
+        return this.$store.getters.selectedNodes(this.tabId);
+      },
+      currentKeyspace() {
+        return this.$store.getters.currentKeyspace(this.tabId);
+      },
+      contextMenu() {
+        return this.$store.getters.contextMenu(this.tabId);
+      },
       enableDelete() {
         return (this.selectedNodes);
       },
@@ -32,17 +40,20 @@
     },
     methods: {
       deleteNode() {
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.dispatch(DELETE_SELECTED_NODES).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
+        this.$store.commit('contextMenu', { id: this.tabId, show: false, x: null, y: null });
+        this.$store.dispatch(DELETE_SELECTED_NODES, this.tabId).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
       },
       explainNode() {
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
+        this.$store.commit('contextMenu', { id: this.tabId, show: false, x: null, y: null });
+        this.$store.dispatch(EXPLAIN_CONCEPT, this.tabId).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
       },
       computeShortestPath() {
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.commit('currentQuery', `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
-        this.$store.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Run Query'); });
+        this.$store.commit('contextMenu', { id: this.tabId, show: false, x: null, y: null });
+        this.$store.commit('currentQuery', {
+          id: this.tabId,
+          query: `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`,
+        });
+        this.$store.dispatch(RUN_CURRENT_QUERY, this.tabId).catch((err) => { this.$notifyError(err, 'Run Query'); });
       },
     },
   };

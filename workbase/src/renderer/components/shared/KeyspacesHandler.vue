@@ -18,6 +18,10 @@
 
 <style scoped>
 
+    .keyspaces-wrapper {
+      z-index: 3;
+    }
+
     .keyspace-tooltip {
         right: 100px;
         top: 8px;
@@ -90,14 +94,12 @@
 
 import storage from '@/components/shared/PersistentStorage';
 
-import { mapGetters } from 'vuex';
-
 import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
 import ToolTip from '../UIElements/ToolTip';
 
 export default {
   name: 'KeyspacesList',
-  props: ['showKeyspaceTooltip'],
+  props: ['tabId', 'showKeyspaceTooltip'],
   components: { ToolTip },
   data() {
     return {
@@ -109,25 +111,31 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['allKeyspaces', 'currentKeyspace', 'isGraknRunning']),
+    allKeyspaces() {
+      return this.$store.getters.allKeyspaces;
+    },
+    currentKeyspace() {
+      return this.$store.getters.currentKeyspace(this.tabId);
+    },
+    isGraknRunning() {
+      return this.$store.getters.isGraknRunning;
+    },
   },
   filters: {
     truncate(ks) {
       if (!ks) return 'keyspace';
-
       if (ks.length > 15) return `${ks.substring(0, 15)}...`;
-
       return ks;
     },
   },
   watch: {
     allKeyspaces(val) {
       // If user deletes current keyspace from Keyspaces page, set new current keyspace to null
-      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, null); }
+      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, { id: this.tabId, keyspace: null }); }
     },
     isGraknRunning(val) {
       if (!val) {
-        this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
+        this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is ru00000inning <br> - check that host and port in connection settings are correct');
       }
     },
     showKeyspaceList(show) {
@@ -140,8 +148,7 @@ export default {
     setKeyspace(name) {
       this.$emit('keyspace-selected');
       storage.set('current_keyspace_data', name);
-
-      this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, name);
+      this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, { id: this.tabId, keyspace: name });
       this.showKeyspaceList = false;
     },
     toggleKeyspaceList() {

@@ -5,11 +5,11 @@
         </div>
 
         <div class="center">
-            <graql-editor v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
+            <graql-editor :tabId="tabId" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
         </div>
 
         <div class="right">
-            <keyspaces-handler :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
+            <keyspaces-handler :tabId="tabId" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
         </div>
     </div>
 </template>
@@ -78,6 +78,7 @@
 
     export default {
       components: { KeyspacesHandler, GraqlEditor },
+      props: ['tabId'],
       data() {
         return {
           showKeyspaceToolTip: false,

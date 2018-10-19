@@ -1,37 +1,40 @@
 export default {
-  currentQuery(state, query) {
-    state.currentQuery = query;
+  currentQuery(state, { id, query }) {
+    state.tabs[id].currentQuery = query;
   },
-  currentKeyspace(state, keyspace) {
-    state.currentKeyspace = keyspace;
+  currentKeyspace(state, { id, keyspace }) {
+    state.tabs[id].currentKeyspace = keyspace;
   },
-  loadingQuery(state, isRunning) {
-    state.loadingQuery = isRunning;
+  loadingQuery(state, { id, isRunning }) {
+    state.tabs[id].loadingQuery = isRunning;
   },
-  graknSession(state, session) {
-    state.graknSession = session;
+  graknSession(state, { id, session }) {
+    state.tabs[id].graknSession = session;
   },
-  setVisFacade(state, facade) {
-    state.visFacade = Object.freeze(facade); // Freeze it so that Vue does not attach watchers to its properties
+  setVisFacade(state, { id, facade }) {
+    state.tabs[id].visFacade = Object.freeze(facade); // Freeze it so that Vue does not attach watchers to its properties
   },
-  selectedNodes(state, nodeIds) {
-    state.selectedNodes = (nodeIds) ? state.visFacade.getNode(nodeIds) : null;
+  selectedNodes(state, { id, nodeIds }) {
+    state.tabs[id].selectedNodes = (nodeIds) ? state.visFacade.getNode(nodeIds) : null;
   },
-  metaTypeInstances(state, instances) {
-    state.metaTypeInstances = instances;
+  metaTypeInstances(state, { id, instances }) {
+    state.tabs[id].metaTypeInstances = instances;
   },
-  registerCanvasEvent(state, { event, callback }) {
-    state.visFacade.registerEventHandler(event, callback);
+  registerCanvasEvent(state, { id, event, callback }) {
+    state.tabs[id].visFacade.registerEventHandler(event, callback);
   },
-  updateCanvasData(state) {
-    if (state.visFacade) {
-      state.canvasData = {
-        entities: state.visFacade.getAllNodes().filter(x => x.baseType === 'ENTITY').length,
-        attributes: state.visFacade.getAllNodes().filter(x => x.baseType === 'ATTRIBUTE').length,
-        relationships: state.visFacade.getAllNodes().filter(x => x.baseType === 'RELATIONSHIP').length };
+  updateCanvasData(state, id) {
+    if (state.tabs[id].visFacade) {
+      state.tabs[id].canvasData = {
+        entities: state.tabs[id].visFacade.getAllNodes().filter(x => x.baseType === 'ENTITY').length,
+        attributes: state.tabs[id].visFacade.getAllNodes().filter(x => x.baseType === 'ATTRIBUTE').length,
+        relationships: state.tabs[id].visFacade.getAllNodes().filter(x => x.baseType === 'RELATIONSHIP').length };
     }
   },
-  contextMenu(state, contextMenu) {
-    state.contextMenu = contextMenu;
+  contextMenu(state, { id, contextMenu }) {
+    state.tabs[id].contextMenu = contextMenu;
+  },
+  addTab: (state, { id, tab }) => {
+    state.tabs[id] = tab;
   },
 };

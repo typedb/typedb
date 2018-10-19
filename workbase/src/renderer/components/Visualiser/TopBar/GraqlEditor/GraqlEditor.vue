@@ -148,13 +148,10 @@
         flex: 3;
         position: relative;
         align-items: center;
-
     }
 </style>
 
 <script>
-import { mapGetters } from 'vuex';
-
 import $ from 'jquery';
 import Spinner from '@/components/UIElements/Spinner.vue';
 import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActions';
@@ -179,6 +176,7 @@ export default {
     TypesContainer,
     Spinner,
   },
+  props: ['tabId'],
   data() {
     return {
       codeMirror: {},
@@ -198,7 +196,15 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(['currentQuery', 'currentKeyspace', 'showSpinner']),
+    currentQuery() {
+      return this.$store.getters.currentQuery(this.tabId);
+    },
+    currentKeyspace() {
+      return this.$store.getters.currentKeyspace(this.tabId);
+    },
+    showSpinner() {
+      return this.$store.getters.showSpinner(this.tabId);
+    },
   },
   watch: {
     currentQuery(query) {
@@ -211,9 +217,9 @@ export default {
       // Set the cursor at the end of existing content
       this.codeMirror.setCursor(this.codeMirror.lineCount(), 0);
     },
-    currentKeyspace() {
+    currentKeyspace(keyspace) {
       this.refreshFavQueries();
-      if (this.currentKeyspace) {
+      if (keyspace) {
         this.codeMirror.setOption('readOnly', false);
       }
       this.history.clearHistory();

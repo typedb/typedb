@@ -32,6 +32,7 @@
 <script>
   export default {
     name: 'IdentityPanel',
+    props: ['tabId'],
     data() {
       return {
         showConceptInfoContent: true,
@@ -39,7 +40,7 @@
     },
     computed: {
       nodes() {
-        return this.$store.getters.selectedNodes;
+        return this.$store.getters.selectedNodes(this.tabId);
       },
       conceptInfo() {
         if (!this.nodes) return {};
@@ -57,7 +58,7 @@
         };
       },
       currentKeyspace() {
-        return this.$store.getters.currentKeyspace;
+        return this.$store.getters.currentKeyspace(this.tabId);
       },
     },
     watch: {

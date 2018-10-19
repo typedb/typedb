@@ -27,6 +27,7 @@
 <script>
   export default {
     name: 'AttributesPanel',
+    props: ['tabId'],
     data() {
       return {
         showAttributesPanel: true,
@@ -38,10 +39,10 @@
     },
     computed: {
       selectedNodes() {
-        return this.$store.getters.selectedNodes;
+        return this.$store.getters.selectedNodes(this.tabId);
       },
       currentKeyspace() {
-        return this.$store.getters.currentKeyspace;
+        return this.$store.getters.currentKeyspace(this.tabId);
       },
       msg() {
         if (!this.currentKeyspace) return 'Please select a keyspace';
