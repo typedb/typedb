@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.engine;
+package ai.grakn.test.server;
 
 import ai.grakn.Keyspace;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.EngineContext;
+import ai.grakn.test.rule.ServerContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,17 +32,17 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.fail;
 
-public class GraknEngineStartTest {
+public class ServerStartIT {
 
     public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
 
-    public static final EngineContext engine1 = new EngineContext();
+    public static final ServerContext engine1 = new ServerContext();
 
-    public static final EngineContext engine2 = new EngineContext();
+    public static final ServerContext engine2 = new ServerContext();
 
-    public static final EngineContext engine3 = new EngineContext();
+    public static final ServerContext engine3 = new ServerContext();
 
-    private static final Set<EngineContext> engines = new HashSet<>(Arrays.asList(engine1, engine2, engine3));
+    private static final Set<ServerContext> engines = new HashSet<>(Arrays.asList(engine1, engine2, engine3));
 
     @ClassRule
     public static RuleChain chain = RuleChain

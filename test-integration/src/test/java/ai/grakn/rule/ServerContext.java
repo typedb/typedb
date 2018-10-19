@@ -68,10 +68,10 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * </p>
  *
  */
-public class EngineContext extends ExternalResource {
+public class ServerContext extends ExternalResource {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EngineContext.class);
-    private final InputStream TEST_CONFIG_FILE = EngineContext.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ServerContext.class);
+    private final InputStream TEST_CONFIG_FILE = ServerContext.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
 
     /**
      * This is the equivalent of $GRAKN_HOME/db but for testing.

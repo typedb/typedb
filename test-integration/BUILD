@@ -5,26 +5,28 @@ java_library(
 
 java_test(
     name = "AttributeDeduplicatorIT",
-    srcs = ["src/test/java/ai/grakn/engine/attribute/deduplicator/AttributeDeduplicatorIT.java"],
-    test_class = "ai.grakn.test.engine.attribute.deduplicator.AttributeDeduplicatorIT",
+    srcs = ["src/test/java/ai/grakn/server/attribute/deduplicator/AttributeDeduplicatorIT.java"],
+    test_class = "ai.grakn.test.server.attribute.deduplicator.AttributeDeduplicatorIT",
     deps = [
         "//server",
         ":CassandraContext",
         "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     resources = ["//server:grakn-properties"],
+    size = "medium"
 )
 
 java_test(
-    name = "GraknEngineStartTest",
-    srcs = ["src/test/java/ai/grakn/engine/GraknEngineStartTest.java"],
-    test_class = "ai.grakn.test.engine.GraknEngineStartTest",
+    name = "ServerStartIT",
+    srcs = ["src/test/java/ai/grakn/server/ServerStartIT.java"],
+    test_class = "ai.grakn.test.server.ServerStartIT",
     deps = [
         "//server",
         ":CassandraContext",
-        ":EngineContext",
+        ":ServerContext",
         "//grakn-graql",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"]
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
+    size = "medium"
 )
 
 java_library(
@@ -41,8 +43,8 @@ java_library(
 )
 
 java_library(
-    name = "EngineContext",
-    srcs = ["src/test/java/ai/grakn/rule/EngineContext.java", "src/test/java/ai/grakn/util/GraknTestUtil.java"],
+    name = "ServerContext",
+    srcs = ["src/test/java/ai/grakn/rule/ServerContext.java", "src/test/java/ai/grakn/util/GraknTestUtil.java"],
     deps = [
         "//server",
         "//grakn-graql",

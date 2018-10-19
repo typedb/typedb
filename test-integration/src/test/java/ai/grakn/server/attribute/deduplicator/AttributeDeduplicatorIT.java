@@ -1,4 +1,4 @@
-package ai.grakn.test.engine.attribute.deduplicator;
+package ai.grakn.test.server.attribute.deduplicator;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
