@@ -19,14 +19,81 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class TestQueryPattern {
 
     public abstract List<String> patternList(Concept... args);
+
+
+    /**
+     * Generates different relation patterns variants as a cartesian products of provided configurations.
+     *
+     * Example:
+     * [someRole, someType, {V123, V456, V789} ]
+     * [anotherRole, x, {V123}]
+     * [yetAnotherRole, x, {V456}]
+     *
+     * Will generate the following relations:
+     *
+     * (someRole: $genVarA, anotherRole: $genVarB, yetAnotherRole: $genVarC), someType($genVarA)
+     * (someRole: $genVarA, anotherRole: $genVarB, yetAnotherRole: $genVarC), [$genVarA/V123], [$genVarB/V123], [$genVarC/V456]
+     * (someRole: $genVarA, anotherRole: $genVarB, yetAnotherRole: $genVarC), [$genVarA/V456], [$genVarB/V123], [$genVarC/V456]
+     * (someRole: $genVarA, anotherRole: $genVarB, yetAnotherRole: $genVarC), [$genVarA/V789], [$genVarB/V123], [$genVarC/V456]
+     *
+     * @param spec
+     * @return
+     */
+    static Set<String> generateRelationPattern(
+            Multimap<Label, Pair<Label, List<ConceptId>>> spec,
+            List<ConceptId> relationIds){
+        Var relationVar = !relationIds.isEmpty()? Graql.var().asUserDefined() : Graql.var();
+        VarPattern[] basePattern = {relationVar};
+        List<Set<Pattern>> rpPatterns = new ArrayList<>();
+        Multimap<Label, VarPattern> rps = HashMultimap.create();
+        spec.entries().forEach(entry -> {
+            VarPattern rolePlayer = Graql.var().asUserDefined();
+            Label role = entry.getKey();
+            Label type = entry.getValue().getKey();
+            List<ConceptId> ids = entry.getValue().getValue();
+            basePattern[0] = basePattern[0].rel(role.getValue(), rolePlayer);
+            rps.put(role, rolePlayer);
+            Set<Pattern> rpPattern = new HashSet<>();
+            VarPattern typePattern = type != null ? rolePlayer.isa(type.getValue()) : null;
+            if (typePattern != null) rpPattern.add(typePattern);
+            ids.forEach(id -> {
+                VarPattern idPattern = rolePlayer.id(id);
+                Pattern rolePlayerPattern = typePattern != null ? typePattern.and(idPattern) : idPattern;
+                rpPattern.add(rolePlayerPattern);
+                relationIds.forEach(rid -> rpPattern.add(rolePlayerPattern.and(relationVar.id(rid))));
+            });
+            rpPatterns.add(rpPattern);
+        });
+
+        Set<String> patterns = new HashSet<>();
+
+        Sets.cartesianProduct(rpPatterns).forEach(product -> {
+            Pattern[] pattern = {basePattern[0]};
+            product.forEach(p -> pattern[0] = pattern[0].and(p));
+            patterns.add(pattern[0].toString());
+        });
+        return patterns;
+    }
 
     public final static TestQueryPattern differentRelationVariants = new TestQueryPattern() {
         @Override
