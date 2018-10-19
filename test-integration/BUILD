@@ -28,5 +28,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/junit:junit"],
-   resources = ["//server:grakn-properties", "src/test/resources/cassandra-embedded.yaml", "src/test/resources/logback.xml"],
+    resources = ["//server:grakn-properties",
+                 "src/test/resources/cassandra-embedded.yaml",
+                 "src/test/resources/logback.xml"],
 )

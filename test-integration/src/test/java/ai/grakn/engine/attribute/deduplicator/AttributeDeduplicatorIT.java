@@ -14,7 +14,7 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.util.Schema;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -33,9 +33,8 @@ public class AttributeDeduplicatorIT {
 
     private final InputStream TEST_CONFIG_FILE = AttributeDeduplicatorIT.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
 
-
-    @Rule
-    public EmbeddedCassandraContext cassandraContext = EmbeddedCassandraContext.create();
+    @ClassRule
+    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
 
     @Test
     public void shouldDeduplicateAttributes() {
@@ -106,7 +105,7 @@ public class AttributeDeduplicatorIT {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
                     var("owner").isa("owner")).get().execute();
-            for (ConceptMap conceptMap: conceptMaps) {
+            for (ConceptMap conceptMap : conceptMaps) {
                 owned.add(conceptMap.get("owned").asAttribute().id().getValue());
                 owner.add(conceptMap.get("owner").asEntity().id().getValue());
             }
@@ -157,7 +156,7 @@ public class AttributeDeduplicatorIT {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
                     var("owner").isa(ownerLabel)).get().execute();
-            for (ConceptMap conceptMap: conceptMaps) {
+            for (ConceptMap conceptMap : conceptMaps) {
                 owned.add(conceptMap.get("owned").asAttribute().id().getValue());
                 owner.add(conceptMap.get("owner").asAttribute().id().getValue());
             }
@@ -186,8 +185,8 @@ public class AttributeDeduplicatorIT {
         }
 
         try (EmbeddedGraknTx tx = txFactory.tx(keyspace, GraknTxType.WRITE)) {
-            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue  + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;").execute();
-            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue  + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;").execute();
+            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;").execute();
+            tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned; $owner2 isa owner has owned-attribute $owned;").execute();
             tx.graql().parse("insert $owned isa owned-attribute \"" + ownedAttributeValue + "\"; $owner1 isa owner has owned-attribute $owned;").execute();
             tx.commit();
         }
@@ -203,7 +202,7 @@ public class AttributeDeduplicatorIT {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
                     var("owner").isa("owner")).get().execute();
-            for (ConceptMap conceptMap: conceptMaps) {
+            for (ConceptMap conceptMap : conceptMaps) {
                 owned.add(conceptMap.get("owned").asAttribute().id().getValue());
                 owner.add(conceptMap.get("owner").asEntity().id().getValue());
             }
@@ -250,7 +249,7 @@ public class AttributeDeduplicatorIT {
             List<ConceptMap> conceptMaps = tx.graql().match(
                     var("owned").isa(ownedAttributeLabel).val(ownedAttributeValue),
                     var("owner").isa("owner")).get().execute();
-            for (ConceptMap conceptMap: conceptMaps) {
+            for (ConceptMap conceptMap : conceptMaps) {
                 owned.add(conceptMap.get("owned").asAttribute().id().getValue());
                 owner.add(conceptMap.get("owner").asEntity().id().getValue());
             }
@@ -304,7 +303,7 @@ public class AttributeDeduplicatorIT {
             ).get().execute();
             Set<String> owner = new HashSet<>();
             Set<String> arp = new HashSet<>();
-            for (ConceptMap conceptMap: conceptMaps) {
+            for (ConceptMap conceptMap : conceptMaps) {
                 owner.add(conceptMap.get("owner").asRelationship().id().getValue());
                 arp.add(conceptMap.get("arp").asAttribute().id().getValue());
             }
