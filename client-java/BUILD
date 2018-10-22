@@ -65,7 +65,9 @@ java_library(
 java_test(
     name = "TransactionTest",
     srcs = ["src/test/java/ai/grakn/client/TransactionTest.java","src/test/java/ai/grakn/client/ServerRPCMock.java"],
-    deps = [":client-java"] + ["//grakn-graql"] +[
+    deps = [
+        ":client-java",
+        "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-testing",

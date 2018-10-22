@@ -29,6 +29,24 @@ java_test(
     size = "medium"
 )
 
+java_test(
+    name = "BenchmarkIT",
+    srcs = ["src/test/java/ai/grakn/graql/reasoner/BenchmarkIT.java"],
+    test_class = "ai.grakn.test.graql.reasoner.BenchmarkIT",
+    deps = [
+        "//server",
+        "//client-java",
+        ":CassandraContext",
+        ":ServerContext",
+        "//grakn-graql",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/guava:guava"
+    ],
+    size = "medium",
+    resources = ["//server:grakn-properties"]
+)
+
 java_library(
     name = "CassandraContext",
     srcs = ["src/test/java/ai/grakn/rule/EmbeddedCassandraContext.java"],

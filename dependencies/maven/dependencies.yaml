@@ -278,6 +278,11 @@ dependencies:
       version: "2.12"
       lang: java
 
+  junit:
+    junit:
+      version: "4.12"
+      lang: java
+
   net.jodah:
     failsafe:
       version: "1.0.4"

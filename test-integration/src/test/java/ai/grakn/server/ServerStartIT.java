@@ -36,27 +36,27 @@ public class ServerStartIT {
 
     public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
 
-    public static final ServerContext engine1 = new ServerContext();
+    public static final ServerContext server1 = new ServerContext();
 
-    public static final ServerContext engine2 = new ServerContext();
+    public static final ServerContext server2 = new ServerContext();
 
-    public static final ServerContext engine3 = new ServerContext();
+    public static final ServerContext server3 = new ServerContext();
 
-    private static final Set<ServerContext> engines = new HashSet<>(Arrays.asList(engine1, engine2, engine3));
+    private static final Set<ServerContext> servers = new HashSet<>(Arrays.asList(server1, server2, server3));
 
     @ClassRule
     public static RuleChain chain = RuleChain
             .outerRule(cassandraContext)
-            .around(engine1)
-            .around(engine2)
-            .around(engine3);
+            .around(server1)
+            .around(server2)
+            .around(server3);
 
     @Test
     public void whenStartingMultipleEngines_InitializationSucceeds() {
         HashSet<CompletableFuture<Void>> futures = new HashSet<>();
 
         //Check That They Running
-        engines.forEach(engine -> futures.add(
+        servers.forEach(engine -> futures.add(
                 CompletableFuture.supplyAsync(engine::server).handle((result, exception) -> handleException(exception))
         ));
 
@@ -65,7 +65,7 @@ public class ServerStartIT {
 
     @Test
     public void whenStartingAndCreatingKeyspace_InitializationSucceeds() {
-        engines.forEach(engine ->{
+        servers.forEach(engine ->{
             engine.systemKeyspace().addKeyspace(Keyspace.of("grakn"));
         });
     }
