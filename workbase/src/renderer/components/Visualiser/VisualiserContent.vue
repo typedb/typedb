@@ -1,7 +1,11 @@
 <template>
     <transition name="fade" appear>
         <div>
-            <vis-tab :tabId="currentTab"></vis-tab>
+            <div class="vis-tabs">
+              <button @click="newTab" class="btn">New Tab</button>
+            </div>
+            <vis-tab v-if="test" :tabId="0"></vis-tab>
+            <vis-tab v-else :tabId="1"></vis-tab>
         </div>
     </transition>
 </template>
@@ -19,9 +23,13 @@ export default {
   data() {
     return {
       currentTab: 0,
+      test: true,
     };
   },
-  computed: {
+  methods: {
+    newTab() {
+      this.test = !this.test;
+    },
   },
 };
 </script>

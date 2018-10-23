@@ -17,77 +17,25 @@ jest.mock('@/components/shared/PersistentStorage', () => {});
 Vue.use(Vuex);
 
 describe('tabs', () => {
-  // test('creating new visualiser component creates new data object', () => {
-  //   const store = new Vuex.Store({
-  //     state: { tabs: {} },
-  //     mutations,
-  //   });
-
-  //   shallowMount(Object.assign({
-  //     store,
-  //   }, visTab), {
-  //     propsData: { tabId: 0 },
-  //   });
-
-  //   expect(store.state.tabs[0]).toBeDefined();
-  // });
-  // test('creating new visualiser component creates new data object with state', () => {
-  //   const store = new Vuex.Store({
-  //     state: { tabs: {} },
-  //     mutations,
-  //     getters,
-  //   });
-
-  //   shallowMount(Object.assign({
-  //     store,
-  //   }, visTab), {
-  //     propsData: { tabId: 0 },
-  //   });
-
-  //   expect(store.getters.currentQuery(0)).toBe('');
-  // });
-
-  // test('creating new visualiser component creates new data object with an independent state', () => {
-  //   const store = new Vuex.Store({
-  //     state: { tabs: {} },
-  //     mutations,
-  //     getters,
-  //   });
-
-  //   // first tab
-  //   shallowMount(Object.assign({
-  //     store,
-  //   }, visTab), {
-  //     propsData: { tabId: 0 },
-  //   });
-
-  //   expect(store.getters.currentQuery(0)).toBe('');
-
-  //   store.commit('currentQuery', { id: 0, query: 'A' });
-
-  //   expect(store.getters.currentQuery(0)).toBe('A');
-
-  //   // second tab
-  //   shallowMount(Object.assign({
-  //     store,
-  //   }, visTab), {
-  //     propsData: { tabId: 1 },
-  //   });
-
-  //   expect(store.getters.currentQuery(1)).toBe('');
-
-  //   store.commit('currentQuery', { id: 1, query: 'B' });
-
-  //   debugger;
-
-  //   expect(store.getters.currentQuery(1)).toBe('B');
-  // });
-
-  test('test rectivity of getters', () => {
+  test('creating new visualiser tab component creates new module with state and getters', () => {
     const store = new Vuex.Store({
     });
 
-    const visTab0 = shallowMount(Object.assign({
+    shallowMount(Object.assign({
+      store,
+    }, visTab), {
+      propsData: { tabId: 0 },
+    });
+
+    expect(store.state['tab-0']).toBeDefined();
+    expect(store.getters).toBeDefined();
+  });
+
+  test('creating new visualiser tab component', () => {
+    const store = new Vuex.Store({
+    });
+
+    shallowMount(Object.assign({
       store,
     }, visTab), {
       propsData: { tabId: 0 },
@@ -95,7 +43,32 @@ describe('tabs', () => {
 
     store.commit('tab-0/currentKeyspace', 'gene');
 
-    expect(visTab0.vm.currentKeyspace).toBe('gene');
+    expect(store.getters['tab-0/currentKeyspace']).toBe('gene');
+  });
+
+  test('destroying a tab component removes respective namespace', () => {
+    const store = new Vuex.Store({
+    });
+
+    // first tab
+    const tab0 = shallowMount(Object.assign({
+      store,
+    }, visTab), {
+      propsData: { tabId: 0 },
+    });
+
+    expect(store.state['tab-0']).toBeDefined();
+
+    tab0.destroy();
+
+    // first tab
+    shallowMount(Object.assign({
+      store,
+    }, visTab), {
+      propsData: { tabId: 1 },
+    });
+    expect(store.state['tab-0']).not.toBeDefined();
+    expect(store.state['tab-1']).toBeDefined();
   });
 });
 

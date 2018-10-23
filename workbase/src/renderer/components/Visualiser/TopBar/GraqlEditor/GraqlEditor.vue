@@ -264,11 +264,11 @@ export default {
         this.showFavQueriesList = false;
         this.showTypesContainer = false;
 
-        this.$store.commit('currentQuery', limitQuery(this.currentQuery));
+        this.$store.commit(`tab-${this.$options.propsData.tabId}/currentQuery`, limitQuery(this.currentQuery));
 
         this.history.addToHistory(this.currentQuery);
 
-        this.$store.dispatch(RUN_CURRENT_QUERY)
+        this.$store.dispatch(`tab-${this.$options.propsData.tabId}/${RUN_CURRENT_QUERY}`)
           .catch((err) => {
             if (!err.details) this.errorMsg = err.message;
             else this.errorMsg = err.details;
