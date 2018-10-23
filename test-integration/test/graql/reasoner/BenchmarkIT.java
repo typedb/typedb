@@ -28,9 +28,6 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.core.server.GraknConfig;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -58,7 +55,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.util.GraknTestUtil.randomKeyspace;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")
@@ -70,9 +66,6 @@ public class BenchmarkIT {
 
     public static final ServerContext server = new ServerContext();
 
-    private final InputStream TEST_CONFIG_FILE = BenchmarkIT.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
-
-
     @ClassRule
     public static RuleChain chain = RuleChain
             .outerRule(cassandraContext)
@@ -83,8 +76,8 @@ public class BenchmarkIT {
 
     @Before
     public void setupSession() {
-        keyspace = randomKeyspace();
-        this.session = EmbeddedGraknSession.createEngineSession(keyspace, GraknConfig.read(TEST_CONFIG_FILE), TxFactoryBuilder.getInstance());
+        this.session = server.sessionWithNewKeyspace();
+        this.keyspace = session.keyspace();
     }
 
     private void loadOntology(String fileName, GraknSession session){

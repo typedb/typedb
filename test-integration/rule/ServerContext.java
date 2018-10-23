@@ -37,6 +37,7 @@ import ai.grakn.core.server.rpc.OpenRequest;
 import ai.grakn.core.server.rpc.ServerOpenRequest;
 import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
+import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
@@ -189,6 +190,10 @@ public class ServerContext extends ExternalResource {
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
 
         return config;
+    }
+
+    public EmbeddedGraknSession sessionWithNewKeyspace(){
+        return EmbeddedGraknSession.createEngineSession(GraknTestUtil.randomKeyspace(), config);
     }
 
     private Server startGraknEngineServer() throws IOException {
