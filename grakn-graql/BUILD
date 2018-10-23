@@ -46,6 +46,7 @@ java_library(
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/io/netty:netty-tcnative-boringssl-static",
         "//dependencies/maven/artifacts/io/reactivex:rxjava",
+        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift", # PREVIOUSLY UNDECLARED

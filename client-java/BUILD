@@ -54,6 +54,11 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/reactivex:rxjava", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/netty:netty-all",
+        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
+        "//dependencies/maven/artifacts/io/zipkin/brave:brave-instrumentation-grpc",
+        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-sender-urlconnection",
+        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-reporter", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/io/zipkin/zipkin2:zipkin", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api",
         "//dependencies/maven/artifacts/net/jodah:failsafe",
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED

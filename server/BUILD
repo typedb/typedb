@@ -54,6 +54,7 @@ java_library(
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-io:commons-io", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/airlift:airline",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-json", # PREVIOUSLY UNDECLARED
@@ -67,6 +68,11 @@ java_library(
         "//dependencies/maven/artifacts/io/prometheus:simpleclient-common", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/prometheus:simpleclient-dropwizard", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/prometheus:simpleclient-servlet",
+        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
+        "//dependencies/maven/artifacts/io/zipkin/brave:brave-instrumentation-grpc",
+        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-sender-urlconnection",
+        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-reporter", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/io/zipkin/zipkin2:zipkin", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all", # PREVIOUSLY UNDECLARED
