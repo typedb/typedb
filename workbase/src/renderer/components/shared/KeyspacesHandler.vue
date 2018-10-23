@@ -91,6 +91,7 @@
 </style>
 
 <script>
+import { createNamespacedHelpers } from 'vuex';
 
 import storage from '@/components/shared/PersistentStorage';
 
@@ -110,13 +111,22 @@ export default {
       },
     };
   },
+  beforeCreate() {
+    const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace']),
+    };
+  },
   computed: {
     allKeyspaces() {
       return this.$store.getters.allKeyspaces;
     },
-    currentKeyspace() {
-      return this.$store.getters.currentKeyspace(this.tabId);
-    },
+    // currentKeyspace() {
+    //   return this.$store.getters.currentKeyspace(this.tabId);
+    // },
     isGraknRunning() {
       return this.$store.getters.isGraknRunning;
     },
@@ -131,7 +141,7 @@ export default {
   watch: {
     allKeyspaces(val) {
       // If user deletes current keyspace from Keyspaces page, set new current keyspace to null
-      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, { id: this.tabId, keyspace: null }); }
+      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(`tab-${this.$options.propsData.tabId}/${CURRENT_KEYSPACE_CHANGED}`, null); }
     },
     isGraknRunning(val) {
       if (!val) {
@@ -148,7 +158,7 @@ export default {
     setKeyspace(name) {
       this.$emit('keyspace-selected');
       storage.set('current_keyspace_data', name);
-      this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, { id: this.tabId, keyspace: name });
+      this.$store.dispatch(`tab-${this.$options.propsData.tabId}/${CURRENT_KEYSPACE_CHANGED}`, name);
       this.showKeyspaceList = false;
     },
     toggleKeyspaceList() {

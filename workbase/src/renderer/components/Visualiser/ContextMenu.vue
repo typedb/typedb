@@ -7,21 +7,22 @@
 </template>
 <script>
   import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, DELETE_SELECTED_NODES } from '@/components/shared/StoresActions';
+  import { createNamespacedHelpers } from 'vuex';
 
 
   export default {
     name: 'ContextMenu',
     props: ['tabId'],
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace', 'contextMenu', 'selectedNodes']),
+      };
+    },
     computed: {
-      selectedNodes() {
-        return this.$store.getters.selectedNodes(this.tabId);
-      },
-      currentKeyspace() {
-        return this.$store.getters.currentKeyspace(this.tabId);
-      },
-      contextMenu() {
-        return this.$store.getters.contextMenu(this.tabId);
-      },
       enableDelete() {
         return (this.selectedNodes);
       },

@@ -5,7 +5,8 @@
         "presets": [
           ["env", {
             "targets": { "node": 7 }
-          }]
+          }],
+          "stage-0"
         ]
       },
       "main": {

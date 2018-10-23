@@ -42,6 +42,10 @@
 
 
 <script>
+import { createNamespacedHelpers } from 'vuex';
+import getters from './store/getters';
+import mutations from './store/mutations';
+import actions from './store/actions';
 
 import TopBar from './TopBar.vue';
 import LeftBar from './LeftBar.vue';
@@ -60,7 +64,20 @@ export default {
   },
   props: ['tabId'],
   beforeCreate() {
-    this.$store.commit('addTab', { id: this.$options.propsData.tabId, tab: TabState.state() });
+    const namespace = `tab-${this.$options.propsData.tabId}`;
+
+    this.$store.registerModule(namespace, { namespaced: true, getters, state: TabState, mutations, actions });
+
+    const { mapGetters } = createNamespacedHelpers(namespace);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace']),
+    };
+  },
+  beforeDestroy() {
+    this.$store.unregisterModule(this.$options.propsData.tabId);
   },
 };
 </script>

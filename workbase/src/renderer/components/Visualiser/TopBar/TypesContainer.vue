@@ -70,6 +70,7 @@
 </style>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
 
   export default {
     name: 'TypesContainer',
@@ -79,17 +80,22 @@
         currentTab: 'entities',
       };
     },
-    computed: {
-      metaTypeInstances() {
-        return this.$store.getters.metaTypeInstances;
-      },
+    props: ['tabId'],
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.parent.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['metaTypeInstances']),
+      };
     },
     methods: {
       toggleTab(tab) {
         this.currentTab = tab;
       },
       typeSelected(type) {
-        this.$store.commit('currentQuery', `match $x isa ${type}; get;`);
+        this.$store.commit(`tab-${this.$options.parent.$options.propsData.tabId}/currentQuery`, `match $x isa ${type}; get;`);
       },
     },
   };

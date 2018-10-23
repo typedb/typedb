@@ -152,6 +152,8 @@
 </style>
 
 <script>
+import { createNamespacedHelpers } from 'vuex';
+
 import $ from 'jquery';
 import Spinner from '@/components/UIElements/Spinner.vue';
 import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActions';
@@ -195,16 +197,14 @@ export default {
       showEditorToolTip: false,
     };
   },
-  computed: {
-    currentQuery() {
-      return this.$store.getters.currentQuery(this.tabId);
-    },
-    currentKeyspace() {
-      return this.$store.getters.currentKeyspace(this.tabId);
-    },
-    showSpinner() {
-      return this.$store.getters.showSpinner(this.tabId);
-    },
+  beforeCreate() {
+    const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace', 'currentQuery', 'showSpinner']),
+    };
   },
   watch: {
     currentQuery(query) {

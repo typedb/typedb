@@ -30,16 +30,19 @@
 </style>
 
 <script>
+import { createNamespacedHelpers } from 'vuex';
+
 export default {
-  name: 'GraknFooter',
+  name: 'VisualiserFooter',
   props: ['tabId'],
-  computed: {
-    currentKeyspace() {
-      return this.$store.getters.currentKeyspace(this.tabId);
-    },
-    canvasData() {
-      return this.$store.getters.canvasData(this.tabId);
-    },
+  beforeCreate() {
+    const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace', 'canvasData']),
+    };
   },
 };
 </script>

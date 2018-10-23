@@ -33,7 +33,7 @@ export default {
   mounted() {
     this.$nextTick(() => {
       const graphDiv = this.$refs.graph;
-      this.$store.dispatch(INITIALISE_VISUALISER, { id: this.tabId, container: graphDiv, visFacade: VisFacade });
+      this.$store.dispatch(`tab-${this.tabId}/${INITIALISE_VISUALISER}`, { container: graphDiv, visFacade: VisFacade });
     });
   },
 };
