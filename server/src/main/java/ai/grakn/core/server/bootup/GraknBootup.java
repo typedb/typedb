@@ -41,7 +41,7 @@ import java.util.Scanner;
 public class GraknBootup {
     private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);
 
-    private static final String ENGINE = "engine";
+    private static final String ENGINE = "server";
     private static final String STORAGE = "storage";
 
     private final StorageBootup storageBootup;

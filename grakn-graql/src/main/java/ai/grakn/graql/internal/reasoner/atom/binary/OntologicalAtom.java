@@ -81,4 +81,27 @@ public abstract class OntologicalAtom extends TypeAtom {
                 createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery()) :
                 this;
     }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof OntologicalAtom) {
+            OntologicalAtom that = (OntologicalAtom) o;
+            return (this.getVarName().equals(that.getVarName()))
+                    && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
+        }
+        return false;
+    }
+
+    @Override
+    public final int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.getVarName().hashCode();
+        h *= 1000003;
+        h ^= (getTypeId() == null) ? 0 : this.getTypeId().hashCode();
+        return h;
+    }
 }

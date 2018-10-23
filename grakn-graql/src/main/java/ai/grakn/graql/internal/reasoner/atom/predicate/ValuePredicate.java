@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
@@ -48,8 +47,8 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
 
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    @Override public abstract VarPattern getPattern();
+    @Override public abstract ReasonerQuery getParentQuery();
 
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract ai.grakn.graql.ValuePredicate getPredicate();

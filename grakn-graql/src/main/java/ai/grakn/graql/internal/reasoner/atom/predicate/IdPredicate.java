@@ -29,7 +29,6 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -44,8 +43,8 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class IdPredicate extends Predicate<ConceptId>{
 
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    @Override public abstract VarPattern getPattern();
+    @Override public abstract ReasonerQuery getParentQuery();
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract ConceptId getPredicate();
 

@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Equivalence;
 import java.util.Set;
@@ -44,8 +43,8 @@ import java.util.Set;
 @AutoValue
 public abstract class NeqPredicate extends Predicate<Var> {
 
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    @Override public abstract VarPattern getPattern();
+    @Override public abstract ReasonerQuery getParentQuery();
     //need to have it explicitly here cause autovalue gets confused with the generic
     public abstract Var getPredicate();
 
