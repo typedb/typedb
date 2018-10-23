@@ -37,12 +37,10 @@ import ai.grakn.core.server.rpc.OpenRequest;
 import ai.grakn.core.server.rpc.ServerOpenRequest;
 import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
-import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
 import ai.grakn.test.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
-import com.jayway.restassured.RestAssured;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -57,7 +55,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.util.GraknTestUtil.randomKeyspace;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -113,15 +110,10 @@ public class ServerContext extends ExternalResource {
         return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
     }
 
-    public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return EmbeddedGraknSession.createEngineSession(randomKeyspace(), config);
-    }
-
     @Override
     protected final void before() throws Throwable {
         dataDirTmp = Files.createTempDirectory("db-for-test");
         config = createTestConfig(dataDirTmp.toString());
-        RestAssured.baseURI = "localhost:4567";
         LOG.info("starting engine...");
 
         // start engine
@@ -197,10 +189,6 @@ public class ServerContext extends ExternalResource {
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
 
         return config;
-    }
-
-    private static void setRestAssuredUri(GraknConfig config) {
-        RestAssured.baseURI = "http://" + config.uri();
     }
 
     private Server startGraknEngineServer() throws IOException {

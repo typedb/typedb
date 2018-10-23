@@ -63,8 +63,9 @@ java_library(
 )
 
 java_test(
-    name = "TransactionTest",
+    name = "transaction-test",
     srcs = ["src/test/java/ai/grakn/client/TransactionTest.java","src/test/java/ai/grakn/client/ServerRPCMock.java"],
+    test_class = "ai.grakn.client.TransactionTest",
     deps = [
         ":client-java",
         "//grakn-graql",
@@ -76,9 +77,4 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     size = "small",
-)
-
-test_suite(
-    name = "unit_tests",
-    tags = ["small"],
 )

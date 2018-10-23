@@ -37,7 +37,7 @@ import java.io.IOException;
  */
 public class EmbeddedCassandraContext extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandraContext.class);
-    private final static String DEFAULT_YAML_FILE_PATH = "cassandra-embedded.yaml";
+    private final static String DEFAULT_YAML_FILE_PATH = "test-integration/resources/cassandra-embedded.yaml";
 
     private String yamlFilePath;
 

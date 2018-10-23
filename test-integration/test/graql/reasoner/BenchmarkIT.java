@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknSession;
-import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -44,7 +43,6 @@ import ai.grakn.test.rule.ServerContext;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
-import com.google.common.io.Files;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -52,11 +50,12 @@ import org.junit.rules.RuleChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.util.GraknTestUtil.randomKeyspace;
@@ -90,14 +89,15 @@ public class BenchmarkIT {
 
     private void loadOntology(String fileName, GraknSession session){
         try {
-            File graqlFile = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value() + "/grakn-test-tools/src/main/graql/" + fileName);
-            String s = Files.toString(graqlFile, Charset.forName("UTF-8"));
+            InputStream inputStream = BenchmarkIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/"+fileName);
+            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             GraknTx tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
             tx.commit();
             tx.close();
         } catch (Exception e){
             System.err.println(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -314,7 +314,7 @@ public class BenchmarkIT {
      */
     @Test
     public void testMultiJoin()  {
-        final int N = 10000;
+        final int N = 100;
         final int limit = 100;
         LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
         loadJoinData(N);

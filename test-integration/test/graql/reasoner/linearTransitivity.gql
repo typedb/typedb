@@ -1,0 +1,50 @@
+define
+
+###################################################
+####################Schema######################
+#################################################
+
+entity2 sub entity
+    has index
+    plays S-from
+    plays S-to;
+a-entity sub entity2;
+
+P-from sub role;
+P-to sub role;
+P sub relationship, relates P-from, relates P-to;
+entity2 plays P-from plays P-to;
+
+Q-from sub role;
+Q-to sub role;
+Q sub relationship, relates Q-from, relates Q-to;
+entity2 plays Q-from plays Q-to;
+
+S-from sub role;
+S-to sub role;
+S sub relationship, relates S-from, relates S-to;
+
+index sub attribute, datatype string;
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+(Q-from: $x, Q-to: $y) isa Q;},
+then {
+(P-from: $x, P-to: $y) isa P;};
+
+rule-2
+when {
+(Q-from: $x, Q-to: $z) isa Q;
+(P-from: $z, P-to: $y) isa P;},
+then {
+(P-from: $x, P-to: $y) isa P;};
+
+rule-3
+when {
+(P-from: $x, P-to: $y) isa P;},
+then {
+(S-from: $x, S-to: $y) isa S;};
