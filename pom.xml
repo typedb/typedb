@@ -110,11 +110,11 @@
     <repositories>
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
-            <id>snapshots</id>
+            <id>mavengraknai</id>
             <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
         </repository>
         <repository>
-            <id>releases</id>
+            <id>oss-sonatype</id>
             <url>https://oss.sonatype.org/content/repositories/releases</url>
         </repository>
     </repositories>
@@ -178,6 +178,8 @@
         <zt-exec.version>1.10</zt-exec.version>
         <jackson.version>2.9.2</jackson.version>
         <skip.deploy.dist>false</skip.deploy.dist>
+        <brave.version>5.1.2</brave.version>
+        <brave-grpc.version>5.1.2</brave-grpc.version>
         <astyanax.version>3.10.2</astyanax.version>
     </properties>
 
@@ -958,11 +960,21 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <!--Brave-->
+            <dependency>
+                <groupId>io.zipkin.brave</groupId>
+                <artifactId>brave-bom</artifactId>
+                <version>${brave.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <dependency>
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
                 <version>2.6</version>
             </dependency>
+
             <dependency>
                 <groupId>javax.ws.rs</groupId>
                 <artifactId>jsr311-api</artifactId>
@@ -985,6 +997,7 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -1251,7 +1264,20 @@
 
     <profiles>
         <profile>
-            <id>grakn-releases</id>
+            <id>test-deploy-jars</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/snapshots</url>
+                </snapshotRepository>
+                <repository>
+                    <id>mavengraknai</id>
+                    <url>http://maven.grakn.ai/nexus/content/repositories/releases</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>deploy-jars</id>
             <build>
                 <plugins>
                     <plugin>
@@ -1263,6 +1289,7 @@
                             <additionalparam>-Xdoclint:none</additionalparam>
                             <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
                             <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                            <skip>false</skip>
                         </configuration>
                         <executions>
                             <execution>
@@ -1293,7 +1320,7 @@
                         <artifactId>nexus-staging-maven-plugin</artifactId>
                         <extensions>true</extensions>
                         <configuration>
-                            <serverId>ossrh</serverId>
+                            <serverId>oss-sonatype</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
@@ -1302,11 +1329,11 @@
             </build>
             <distributionManagement>
                 <snapshotRepository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>ossrh</id>
+                    <id>oss-sonatype</id>
                     <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>

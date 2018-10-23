@@ -63,7 +63,6 @@ public interface UnifierComparison {
      */
     boolean typePlayability(ReasonerQuery query, Var var, Type type);
 
-
     /**
      *
      * @param parent multipredicate of parent attribute

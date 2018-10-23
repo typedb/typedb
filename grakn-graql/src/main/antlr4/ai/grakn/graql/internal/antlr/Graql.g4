@@ -92,6 +92,7 @@ varPattern     : VARIABLE | variable? property (','? property)* ;
 property       : 'isa' variable                     # isa
                | 'isa!' variable                    # isaExplicit
                | 'sub' variable                     # sub
+               | 'sub!' variable                    # subExplicit
                | 'relates' role=variable ('as' superRole=variable)? # relates
                | 'plays' variable                   # plays
                | 'id' id                            # propId

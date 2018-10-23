@@ -4,7 +4,7 @@ const electronPath = require('electron'); // Require Electron from the binaries 
 const path = require('path');
 
 const sleep = time => new Promise(r => setTimeout(r, time));
-jest.setTimeout(15000);
+jest.setTimeout(30000);
 
 const app = new Application({
   path: electronPath,
@@ -53,7 +53,9 @@ describe('Favourite queries', () => {
 
     app.client.click('.save-query-btn');
 
-    assert.equal(await app.client.getText('.fav-query-name-tooltip'), 'please write a query name');
+    await sleep(1000);
+
+    assert.equal(await app.client.getText('.fav-query-name-tooltip'), 'Please write a query name');
 
     app.client.click('.query-name-input');
 
@@ -66,6 +68,8 @@ describe('Favourite queries', () => {
     await sleep(1000);
 
     assert.equal(await app.client.getText('.toasted'), 'New query saved!\nCLOSE');
+
+    await sleep(1000);
 
     app.client.click('.close-add-fav-query-container');
     app.client.click('.action');
@@ -106,54 +110,40 @@ describe('Favourite queries', () => {
     await sleep(1000);
 
     const noOfEntities = await app.client.getText('.no-of-entities');
+    await sleep(1000);
+
     assert.equal(noOfEntities, 'entities: 30');
 
-    app.client.click('.clear-graph-btn');
+    await app.client.click('.clear-graph-btn');
   });
 
   test('edit favourite query', async () => {
-    app.client.click('.fav-queries-container-btn');
+    await app.client.click('.fav-queries-container-btn');
 
-    await sleep(1000);
+    await app.client.click('.edit-fav-query-btn');
 
-    app.client.click('.edit-fav-query-btn');
+    await app.client.click('.CodeMirror-focused');
 
-    await sleep(1000);
+    await app.client.keys(['ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'limit 1; ']);
 
-    app.client.click('.CodeMirror-focused');
+    await app.client.click('.save-edited-fav-query');
 
-    await sleep(1000);
+    await app.client.click('.action');
 
-    app.client.keys(['ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'ArrowLeft', 'limit 1; ']);
-
-    await sleep(1000);
-
-    app.client.click('.save-edited-fav-query');
-
-    await sleep(1000);
-
-    app.client.click('.run-fav-query-btn');
-
-    await sleep(1000);
-
-    app.client.click('.run-btn');
-
-    await sleep(1000);
+    await app.client.click('.run-fav-query-btn');
 
     const noOfEntities = await app.client.getText('.no-of-entities');
-    assert.equal(noOfEntities, 'entities: 1');
+
+    await assert.equal(noOfEntities, 'entities: 0');
+
+    await assert.equal((await app.client.getText('.CodeMirror'))[0], ' match $x isa person; limit 1; get;');
+    await assert.equal((await app.client.getText('.CodeMirror'))[1], 'match $x isa person; limit 1; get;');
   });
 
   test('delete favourite query', async () => {
-    app.client.click('.fav-queries-container-btn');
+    await app.client.click('.delete-fav-query-btn');
 
-    await sleep(1000);
-
-    app.client.click('.delete-fav-query-btn');
-
-    await sleep(2000);
-
-    assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');
+    await assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');
 
     await sleep(1000);
   });
