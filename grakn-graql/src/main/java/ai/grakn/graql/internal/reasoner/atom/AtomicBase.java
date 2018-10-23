@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.reasoner.atom;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -30,10 +30,10 @@ import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -120,6 +120,26 @@ public abstract class AtomicBase implements Atomic {
     protected EmbeddedGraknTx<?> tx(){
         // TODO: This cast is unsafe - ReasonerQuery should return an EmbeddedGraknTx
         return (EmbeddedGraknTx<?>) getParentQuery().tx();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof AtomicBase) {
+            AtomicBase that = (AtomicBase) o;
+            return (this.getVarName().equals(that.getVarName()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.getVarName().hashCode();
+        return h;
     }
 }
 

@@ -26,8 +26,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
+
 import java.util.stream.Collectors;
 
 /**
@@ -42,9 +42,9 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class SubAtom extends OntologicalAtom {
 
-    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    @Override public abstract Var getPredicateVariable();
+    @Override public abstract VarPattern getPattern();
+    @Override public abstract ReasonerQuery getParentQuery();
 
     public static SubAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         return new AutoValue_SubAtom(var, predicateId, predicateVar, var.sub(predicateVar), parent);

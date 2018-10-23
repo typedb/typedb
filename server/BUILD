@@ -133,3 +133,9 @@ exports_files(
     ["conf/logback.xml", "conf/grakn.properties", "src/services/cassandra/logback.xml", "src/services/cassandra/cassandra.yaml"],
     visibility = ["//visibility:public"]
 )
+
+filegroup(
+    name = "grakn-properties",
+    srcs = ["conf/grakn.properties"],
+    visibility = ["//visibility:public"]
+)

@@ -1,0 +1,57 @@
+define
+
+###################################################
+####################Schema######################
+#################################################
+
+fromRole sub role;
+toRole sub role;
+
+genericEntity sub entity
+    has index
+    plays fromRole
+    plays toRole;
+
+A sub relationship, relates fromRole, relates toRole;
+B1 sub relationship, relates fromRole, relates toRole;
+B2 sub relationship, relates fromRole, relates toRole;
+C1 sub relationship, relates fromRole, relates toRole;
+C2 sub relationship, relates fromRole, relates toRole;
+C3 sub relationship, relates fromRole, relates toRole;
+C4 sub relationship, relates fromRole, relates toRole;
+D1 sub relationship, relates fromRole, relates toRole;
+D2 sub relationship, relates fromRole, relates toRole;
+
+index sub attribute, datatype long;
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+(fromRole: $x, toRole: $z) isa B1;
+(fromRole: $z, toRole: $y) isa B2;},
+then {
+(fromRole: $x, toRole: $y) isa A;};
+
+rule-2
+when {
+(fromRole: $x, toRole: $z) isa C1;
+(fromRole: $z, toRole: $y) isa C2;},
+then {
+(fromRole: $x, toRole: $y) isa B1;};
+
+rule-3
+when {
+(fromRole: $x, toRole: $z) isa C3;
+(fromRole: $z, toRole: $y) isa C4;},
+then {
+(fromRole: $x, toRole: $y) isa B2;};
+
+rule-4
+when {
+(fromRole: $x, toRole: $z) isa D1;
+(fromRole: $z, toRole: $y) isa D2;},
+then {
+(fromRole: $x, toRole: $y) isa C1;};
