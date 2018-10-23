@@ -45,9 +45,9 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationshipProperty;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -543,16 +543,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public boolean isUnifiableWith(Atom atom){
-        //findbugs complains about cast without it
-        if (!(atom instanceof RelationshipAtom)) return false;
-        RelationshipAtom that = (RelationshipAtom) atom;
-
-        //rule head atom is applicable if it is unifiable
-        return !this.getRelationPlayerMappings(that).isEmpty();
-    }
-
-    @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if (!(ruleAtom instanceof RelationshipAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
         RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
@@ -868,10 +858,6 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         return roleRelationPlayerMap;
     }
 
-    private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom) {
-        return getRelationPlayerMappings(parentAtom, UnifierType.RULE);
-    }
-
     /**
      * @param parentAtom reference atom defining the mapping
      * @param matchType type of match to be performed
@@ -924,9 +910,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                                                 })
                                                 //check for value predicate compatibility
                                                 .filter(crp -> {
-                                                    ValuePredicate parentVP = parentAtom.getPredicate(prp.getRolePlayer().var(), ValuePredicate.class);
-                                                    ValuePredicate childVP = this.getPredicate(crp.getRolePlayer().var(), ValuePredicate.class);
-                                                    return matchType.valueCompatibility(parentVP, childVP);
+                                                    Set<Atomic> parentVP = parentAtom.getPredicates(prp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
+                                                    Set<Atomic> childVP = this.getPredicates(crp.getRolePlayer().var(), ValuePredicate.class).collect(toSet());
+                                                    return matchType.attributeValueCompatibility(parentVP, childVP);
                                                 })
                                                 //check linked resources
                                                 .filter(crp -> {

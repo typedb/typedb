@@ -206,6 +206,12 @@
             <groupId>com.boundary</groupId>
             <artifactId>high-scale-lib</artifactId>
         </dependency>
+
+        <!-- Tracing instrumentation -->
+        <dependency>
+            <groupId>io.zipkin.brave</groupId>
+            <artifactId>brave</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -23,16 +23,19 @@ import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.controller.HttpController;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.core.server.lock.ProcessWideLockProvider;
-import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.rpc.KeyspaceService;
+import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.rpc.ServerOpenRequest;
 import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
 import ai.grakn.core.server.rpc.OpenRequest;
+import ai.grakn.keyspace.KeyspaceStoreImpl;
 import com.codahale.metrics.MetricRegistry;
-import io.grpc.ServerBuilder;
 import spark.Service;
+import io.grpc.ServerBuilder;
+import brave.Tracing;
+import zipkin2.reporter.AsyncReporter;
+import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -48,7 +51,7 @@ public class ServerFactory {
      *
      * @return a {@link Server} instance configured for Grakn Core
      */
-    public static Server createServer() {
+    public static Server createServer(boolean benchmark) {
         // grakn engine configuration
         EngineID engineId = EngineID.me();
         GraknConfig config = GraknConfig.create();
@@ -71,7 +74,7 @@ public class ServerFactory {
         // http services: spark, http controller, and gRPC server
         Service sparkHttp = Service.ignite();
         Collection<HttpController> httpControllers = Collections.emptyList();
-        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicatorDaemon, keyspaceStore);
+        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
         return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
     }
@@ -98,9 +101,23 @@ public class ServerFactory {
         return server;
     }
 
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore){
+    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore, boolean benchmark){
+        System.out.println(keyspaceStore);
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
+
+        if (benchmark) {
+            // Brave Instrumentation
+            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
+
+            // set a new global tracer with reporting
+            Tracing.newBuilder()
+                    .localServiceName("query-benchmark-server")
+                    .supportsJoin(false)
+                    .spanReporter(reporter)
+                    .build();
+
+        }
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))

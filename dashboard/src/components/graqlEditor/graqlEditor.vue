@@ -281,23 +281,22 @@ export default {
       this.state.eventHub.$emit('click-submit', query);
     },
     limitQuery(query){
-      let getRegex = /^(.*;)\s*(get\b.*;)$/;
-      let limitedQuery = query;
+        const getRegex = /^((.|\s)*;)\s*(get\b.*;)$/;
+        let limitedQuery = query;
 
-      //If there is no `get` the user mistyped the query
-      if(getRegex.test(query)){
-        let limitRegex = /.*;\s*(limit\b.*?;).*/;
-        let offsetRegex = /.*;\s*(offset\b.*?;).*/;
-        let deleteRegex = /^(.*;)\s*(delete\b.*;)$/;
-        let match = getRegex.exec(query);
-        limitedQuery = match[1];
-        let getPattern = match[2];
-        if (!(offsetRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} offset 0;`; }
-        if (!(limitRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} limit ${User.getQueryLimit()};`; }
-        limitedQuery = `${limitedQuery} ${getPattern}`;
-      }
-
-      return limitedQuery;
+        // If there is no `get` the user mistyped the query
+        if (getRegex.test(query)) {
+          const limitRegex = /.*;\s*(limit\b.*?;).*/;
+          const offsetRegex = /.*;\s*(offset\b.*?;).*/;
+          const deleteRegex = /^(.*;)\s*(delete\b.*;)$/;
+          const match = getRegex.exec(query);
+          limitedQuery = match[1];
+          const getPattern = match[3];
+          if (!(offsetRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} offset 0;`; }
+          if (!(limitRegex.test(query)) && !(deleteRegex.test(query))) { limitedQuery = `${limitedQuery} limit ${User.getQueryLimit()};`; }
+          limitedQuery = `${limitedQuery} ${getPattern}`;
+        }
+        return limitedQuery;
     },
     updateCurrentQuery() {
       this.currentQuery = this.codeMirror.getValue();

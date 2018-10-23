@@ -7,8 +7,8 @@
                 </div>
 
                 <div class="nav" v-if="showRightBar">
-                    <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab-selected' : 'nav-tab'" class="nav-tab"><vue-icon icon="info-sign" className="right-bar-tab-icon"></vue-icon></div>
-                    <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab-selected' : 'nav-tab'" class="nav-tab"><vue-icon icon="cog" className="right-bar-tab-icon"></vue-icon></div>
+                    <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="concept-info-tab"><vue-icon icon="info-sign" className="right-bar-tab-icon"></vue-icon></div>
+                    <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="settings-tab"><vue-icon icon="cog" className="right-bar-tab-icon"></vue-icon></div>
                     <div class="nav-bar-space"></div>
                 </div>
 

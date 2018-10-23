@@ -11,12 +11,15 @@ export const LOAD_SCHEMA = 'load-schema';
 export const ADD_TYPE = 'add-type';
 
 
-// Data Management store actions
+// Visualiser store actions
 export const RUN_CURRENT_QUERY = 'run-current-query';
 export const EXPLAIN_CONCEPT = 'explain-concept';
 export const UPDATE_NODES_LABEL = 'update-nodes-label';
 export const UPDATE_NODES_COLOUR = 'update-nodes-colour';
-export const DELETE_SELECTED_NODES = 'delete-nodes';
+export const DELETE_SELECTED_NODES = 'delete-selected-nodes';
+export const OPEN_GRAKN_TX = 'open-grakn-tx';
+export const LOAD_NEIGHBOURS = 'load-neighbours';
+export const LOAD_ATTRIBUTES = 'load-attributes';
 
 
 // Common actions shared by the two canvas stores (SchemaDesign && DataManagement)

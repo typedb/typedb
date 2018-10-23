@@ -116,6 +116,8 @@ public class GraknBootup {
     /**
      * Accepts various Grakn commands (eg., 'grakn server start')
      * @param args arrays of arguments, eg., { 'server', 'start' }
+     *
+     *        option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
@@ -170,7 +172,7 @@ public class GraknBootup {
     private void serverStart(String arg) {
         switch (arg) {
             case ENGINE:
-                engineBootup.startIfNotRunning();
+                engineBootup.startIfNotRunning(arg);
                 break;
             case STORAGE:
                 storageBootup.startIfNotRunning();
@@ -178,7 +180,7 @@ public class GraknBootup {
             default:
                 ConfigProcessor.updateProcessConfigs();
                 storageBootup.startIfNotRunning();
-                engineBootup.startIfNotRunning();
+                engineBootup.startIfNotRunning(arg);
         }
     }
 
@@ -186,14 +188,15 @@ public class GraknBootup {
         System.out.println("Usage: grakn-core server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
-                "start ["+ENGINE+"|"+STORAGE+"]  Start Grakn (or optionally, only one of the component)\n" +
+                "start ["+ENGINE+"|"+STORAGE+"|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
                 "stop ["+ENGINE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
                 "status                         Check if Grakn is running\n" +
                 "clean                          DANGEROUS: wipe data completely\n" +
                 "\n" +
                 "Tips:\n" +
                 "- Start Grakn with 'grakn server start'\n" +
-                "- Start or stop only one component with, e.g. 'grakn-core server start storage' or 'grakn-core server stop storage', respectively\n");
+                "- Start or stop only one component with, e.g. 'grakn-core server start storage' or 'grakn-core server stop storage', respectively\n" +
+                "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
     }
 
     private void serverStatus(String verboseFlag) {
