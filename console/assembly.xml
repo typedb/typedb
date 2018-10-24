@@ -41,16 +41,6 @@
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>
-
-        <!-- logback.xml -->
-
-        <fileSet>
-            <directory>${core.console.basedir}/conf</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-            <outputDirectory>conf</outputDirectory>
-        </fileSet>
     </fileSets>
 
     <dependencySets>
