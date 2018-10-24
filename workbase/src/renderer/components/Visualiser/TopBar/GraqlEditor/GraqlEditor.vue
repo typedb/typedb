@@ -2,20 +2,19 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button icon="star" className="vue-button fav-queries-container-btn" v-on:clicked="toggleFavQueriesList"></vue-button>
-            <vue-button rightIcon="locate" className="vue-button types-container-btn" v-on:clicked="toggleTypesContainer"></vue-button>
+            <button @click="toggleFavQueriesList" class="btn fav-queries-container-btn"><vue-icon icon="star" className="vue-icon"></vue-icon></button>
+            <button @click="toggleTypesContainer" class="btn types-container-btn"><vue-icon icon="locate" className="vue-icon"></vue-icon></button>
         </div>
     <div class="center">
         <div class="center-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
             <div class="column" v-bind:style="[(editorLinesNumber === 1) ? {'margin-bottom': '10px'} : {'margin-bottom': '0px'}]">
                 <div class="row">
-                    <div class="editor-tooltip"><vue-tooltip content="type a query" :isOpen="showEditorToolTip" :child="dummyGraqlIcon" className="editor-tooltip" v-on:close-tooltip="showEditorToolTip = false"></vue-tooltip></div>
+                    <tool-tip class="editor-tooltip" :isOpen="showEditorToolTip" msg="Type a query" arrowPosition="top" v-on:close-tooltip="showEditorToolTip = false"></tool-tip>
                     <textarea id="graqlEditor" ref="graqlEditor" rows="3"></textarea>
                     <div v-if="showEditorTab" class="editor-tab">
-                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
-                        <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
-
+                        <div @click="clearEditor" class="clear-editor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
                         <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon add-fav-query-btn"></vue-icon></div>
+                        <tool-tip class="star-tooltip" :isOpen="showStarToolTip" msg="Save a query" arrowPosition="top" v-on:close-tooltip="showStarToolTip = false"></tool-tip>
                         <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="12" className="tab-icon"></vue-icon></div>
                         <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="12" className="tab-icon"></vue-icon></div>
                     </div>
@@ -51,9 +50,9 @@
     </div>
 
 <div class="right">
-    <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="showSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button clear-graph-btn"></vue-button>
-    <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
+    <loading-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="showSpinner" className="btn run-btn"></loading-button>
+    <button @click="clearGraph" class="btn clear-graph-btn"><vue-icon icon="refresh" className="vue-icon"></vue-icon></button>
+    <!--<button @click="takeScreenshot" class="btn"><vue-icon icon="camera" className="vue-icon"></vue-icon></button>-->
 </div>
 
 </div>
@@ -62,16 +61,14 @@
 <style scoped>
 
     .editor-tooltip {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        position: absolute;
-        top: 22px;
+        top: 42px;
+        left: -30px;
     }
 
     .star-tooltip {
         position: absolute;
-        top: 10px;
+        top: 35px;
+        width: 90px;
     }
 
     .save-query {
@@ -157,9 +154,6 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import { Icon } from '@blueprintjs/core';
-
-import React from 'react';
 
 import $ from 'jquery';
 import Spinner from '@/components/UIElements/Spinner.vue';
@@ -172,11 +166,13 @@ import FavQueriesList from '../FavQueries/FavQueriesList';
 import TypesContainer from '../TypesContainer';
 import ErrorContainer from '../ErrorContainer';
 import AddFavQuery from '../FavQueries/AddFavQuery';
+import ToolTip from '../../../UIElements/ToolTip';
 
 
 export default {
   name: 'GraqlEditor',
   components: {
+    ToolTip,
     AddFavQuery,
     ErrorContainer,
     FavQueriesList,
@@ -195,17 +191,11 @@ export default {
       errorMsg: '',
       initialEditorHeight: undefined,
       editorMinimized: false,
-      starIcon: null,
       showStarToolTip: false,
       showAddFavQueryToolTip: false,
       showEditorTab: false,
-      dummyGraqlIcon: null,
-      dummyStarIcon: null,
       showEditorToolTip: false,
     };
-  },
-  created() {
-    this.renderIcons();
   },
   computed: {
     ...mapGetters(['currentQuery', 'currentKeyspace', 'showSpinner']),
@@ -230,6 +220,9 @@ export default {
     },
     favQueries(val) {
       if (!val.length) this.showFavQueriesList = false;
+    },
+    showAddFavQuery() {
+      this.showStarToolTip = false;
     },
   },
   mounted() {
@@ -280,7 +273,7 @@ export default {
     },
     clearEditor() {
       this.codeMirror.setValue('');
-      this.maximizeEditor();
+      if (this.editorMinimized) this.maximizeEditor();
     },
     clearGraph() {
       if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
@@ -352,25 +345,6 @@ export default {
     // },
     toggleFavQueryTooltip(val) {
       this.showAddFavQueryToolTip = val;
-    },
-    renderIcons() {
-      this.starIcon = React.createElement(Icon, {
-        icon: 'star',
-        className: 'tab-icon',
-        iconSize: 11,
-      });
-
-      // To show graql editor tooltip
-      this.dummyGraqlIcon = React.createElement(Icon, {
-        icon: 'star',
-        className: 'dummy-graql-icon',
-      });
-
-      // To show fav query tooltip
-      this.dummyStarIcon = React.createElement(Icon, {
-        icon: 'star',
-        className: 'dummy-star-icon',
-      });
     },
   },
 };

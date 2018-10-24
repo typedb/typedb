@@ -34,9 +34,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Fragment following in sub edges
+ * Fragment following in sub edges, potentially limited to some number of `sub` edges
  *
  * @author Felix Chapman
+ * @author Joshua Send
  */
 
 @AutoValue
@@ -45,15 +46,27 @@ public abstract class InSubFragment extends Fragment {
     @Override
     public abstract Var end();
 
+    public abstract int subTraversalDepthLimit();
+
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
-        return Fragments.inSubs(Fragments.isVertex(traversal));
+        return Fragments.inSubs(Fragments.isVertex(traversal), subTraversalDepthLimit());
     }
 
     @Override
     public String name() {
-        return "<-[sub]-";
+        if (subTraversalDepthLimit() == Fragments.TRAVERSE_ALL_SUB_EDGES) {
+            return "<-[sub]-";
+        } else {
+            return "<-[sub!" + Integer.toString(subTraversalDepthLimit()) + "]-";
+        }
+    }
+
+    @Override
+    public Fragment getInverse() {
+        // TODO double check the inverse makes sense with a limit
+        return Fragments.outSub(varProperty(), end(), start(), subTraversalDepthLimit());
     }
 
     @Override
@@ -62,13 +75,9 @@ public abstract class InSubFragment extends Fragment {
     }
 
     @Override
-    public Fragment getInverse() {
-        return Fragments.outSub(varProperty(), end(), start());
-    }
-
-    @Override
     public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
                                                            Map<Node, Map<Node, Fragment>> edges) {
         return directedEdges(NodeId.NodeType.SUB, nodes, edges);
     }
 }
+

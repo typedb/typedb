@@ -110,8 +110,8 @@ public abstract class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredi
         if (this.isAlphaEquivalent(obj)) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        ValuePredicate p2 = (ValuePredicate) obj;
-        return getPredicate().isCompatibleWith(p2.getPredicate());
+        ValuePredicate that = (ValuePredicate) obj;
+        return this.getPredicate().isCompatibleWith(that.getPredicate());
     }
 
     @Override

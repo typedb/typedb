@@ -4,7 +4,7 @@ const electronPath = require('electron'); // Require Electron from the binaries 
 const path = require('path');
 
 const sleep = time => new Promise(r => setTimeout(r, time));
-jest.setTimeout(15000);
+jest.setTimeout(30000);
 
 const app = new Application({
   path: electronPath,
@@ -40,25 +40,46 @@ describe('Canvas Data', () => {
     assert.equal(await app.client.getText('.keyspaces'), 'gene');
   });
 
-  test('test if canvas data is updated', async () => {
-    app.client.click('.CodeMirror');
+  test('entity', async () => {
+    await app.client.click('.CodeMirror');
 
-    await sleep(1000);
+    await app.client.keys('match $x isa person; limit 1; get;');
 
-    app.client.keys('match $x isa person has attribute $y; $r ($x, $z); $r isa parentship; limit 1; get;');
+    await app.client.click('.run-btn');
 
-    await sleep(1000);
-
-    app.client.click('.run-btn');
-
-    await sleep(5000);
-
+    await app.client.waitUntil(async () => (await app.client.getText('.no-of-entities')) !== 'entities: 0', 25000, 'wait for canvas data to be updated');
 
     const noOfEntities = await app.client.getText('.no-of-entities');
-    assert.equal(noOfEntities, 'entities: 2');
+    assert.equal(noOfEntities, 'entities: 1');
+
+    await app.client.click('.clear-editor');
+  });
+  test('attribute', async () => {
+    await app.client.click('.CodeMirror');
+
+    await app.client.keys('match $x isa age; limit 1; get;');
+
+    await app.client.click('.run-btn');
+
+    await app.client.waitUntil(async () => (await app.client.getText('.no-of-attributes')) !== 'attributes: 0', 25000, 'wait for canvas data to be updated');
+
     const noOfAttributes = await app.client.getText('.no-of-attributes');
     assert.equal(noOfAttributes, 'attributes: 1');
+
+    await app.client.click('.clear-editor');
+  });
+  test('relationship', async () => {
+    await app.client.click('.CodeMirror');
+
+    await app.client.keys('match $x isa parentship; limit 1; get;');
+
+    await app.client.click('.run-btn');
+
+    await app.client.waitUntil(async () => (await app.client.getText('.no-of-relationships')) !== 'relationships: 0', 25000, 'wait for canvas data to be updated');
+
     const noOfRelationships = await app.client.getText('.no-of-relationships');
     assert.equal(noOfRelationships, 'relationships: 1');
+
+    await app.client.click('.clear-editor');
   });
 });

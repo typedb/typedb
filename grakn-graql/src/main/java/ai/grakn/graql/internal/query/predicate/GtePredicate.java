@@ -38,4 +38,10 @@ class GtePredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return P.gte(value);
     }
+
+    @Override
+    public boolean containsEquality(){ return true;}
+
+    @Override
+    public int signum() { return 1; }
 }

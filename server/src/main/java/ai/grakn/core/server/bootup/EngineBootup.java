@@ -76,12 +76,12 @@ public class EngineBootup {
         return Grakn.class;
     }
 
-    public void startIfNotRunning() {
+    public void startIfNotRunning(String benchmarkFlag) {
         boolean isEngineRunning = bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
         if (isEngineRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
-            start();
+            start(benchmarkFlag);
         }
     }
 
@@ -117,11 +117,11 @@ public class EngineBootup {
         return bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
     }
 
-    private void start() {
+    private void start(String benchmarkFlag) {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(engineCommand(), graknHome.toFile());
+        Future<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(engineCommand(benchmarkFlag), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
 
@@ -151,10 +151,9 @@ public class EngineBootup {
         } catch (InterruptedException | ExecutionException e) {
             throw new BootupException(e);
         }
-
     }
 
-    private List<String> engineCommand() {
+    private List<String> engineCommand(String benchmarkFlag) {
         ArrayList<String> engineCommand = new ArrayList<>();
         engineCommand.add("java");
         engineCommand.add("-cp");
@@ -168,6 +167,9 @@ public class EngineBootup {
             engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
         engineCommand.add(getEngineMainClass().getName());
+
+        // benchmarking flag
+        engineCommand.add(benchmarkFlag);
         return engineCommand;
     }
 

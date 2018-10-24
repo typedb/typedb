@@ -117,14 +117,6 @@ public interface ReasonerQuery{
     MultiUnifier getMultiUnifier(ReasonerQuery parent);
 
     /**
-     * @param parent query we want to unify this query with
-     * @param unifierType unifier type
-     * @return corresponding multiunifier
-     */
-    @CheckReturnValue
-    MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType);
-
-    /**
      * resolves the query
      * @return stream of answers
      */

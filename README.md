@@ -9,7 +9,7 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-grakn-796de3.svg)](https://stackoverflow.com/questions/tagged/grakn)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-graql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/graql)
 
-Grakn is the knowledge graph engine to organise complex networks of data and making it queryable.
+Grakn is the knowledge graph engine to organise complex networks of data and make it queryable.
 
 | Get Started | Documentation | Discussion | _Join the Academy!_ |
 |:------------|:--------------|:-----------|:---------------------|

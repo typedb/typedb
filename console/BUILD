@@ -33,8 +33,14 @@ java_library(
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-all",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+    runtime_deps = [
+        #This needs to be available in the classpath otherwise Logback will print error messages:
+        "//dependencies/maven/artifacts/org/codehaus/janino:janino"
+    ]
 )
 
 exports_files(
