@@ -6,9 +6,9 @@ java_binary(
 
 genrule(
     name = "distribution-console",
-    srcs = ["grakn-core", "jar-console_deploy.jar", "//console:conf/logback.xml"],
+    srcs = ["grakn-core", "jar-console_deploy.jar"],
     outs = ["//:dist/grakn-core-console.zip"],
-    cmd  = "$(location console-packager.sh) $(location //:dist/grakn-core-console.zip) $(location grakn-core) $(location jar-console_deploy.jar) $(location //console:conf/logback.xml)",
+    cmd  = "$(location console-packager.sh) $(location //:dist/grakn-core-console.zip) $(location grakn-core) $(location jar-console_deploy.jar)",
     tools = ["console-packager.sh"]
 )
 
@@ -34,11 +34,11 @@ genrule(
     name = "distribution-all",
     srcs = [
         "grakn-core",
-        "jar-console_deploy.jar", "//console:conf/logback.xml",
+        "jar-console_deploy.jar",
         "jar-server_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml", "//dashboard:assets"
     ],
     outs = ["//:dist/grakn-core-all.zip"],
-    cmd = "$(location all-packager.sh) $(location //:dist/grakn-core-all.zip) $(location grakn-core) $(location jar-console_deploy.jar) $(location //console:conf/logback.xml) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    cmd = "$(location all-packager.sh) $(location //:dist/grakn-core-all.zip) $(location grakn-core) $(location jar-console_deploy.jar) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
     tools = ["all-packager.sh"]
 )
 
