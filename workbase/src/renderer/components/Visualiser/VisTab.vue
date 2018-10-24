@@ -69,7 +69,7 @@ export default {
     this.$store.registerModule(namespace, { namespaced: true, getters, state: TabState, mutations, actions });
   },
   beforeDestroy() {
-    this.$store.unregisterModule(`tab-${this.$options.propsData.tabId}`);
+    this.$store.unregisterModule(`tab-${this.tabId}`);
   },
 };
 </script>

@@ -3,7 +3,7 @@
         <div>
 
             <div class="vis-tabs">
-              <div v-for="tab in Array.from(tabs.keys())" :key="tab">
+              <div v-for="tab in Array.from(tabs.values())" :key="tab">
                 <div @click="toggleTab(tab)" :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
                   <div>Tab {{tab}}</div>
                   <div @click="closeTab(tab)"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
@@ -13,7 +13,7 @@
             </div>
 
             <keep-alive>
-              <template v-for="tab in Array.from(tabs.keys())">
+              <template v-for="tab in Array.from(tabs.values())">
                   <component v-if="currentTab === tab" :is="visTab" :tabId="tab" :key="tab"></component>
               </template>
             </keep-alive>
@@ -63,7 +63,7 @@ export default {
   data() {
     return {
       currentTab: 0,
-      tabs: new Map([[0, 0]]),
+      tabs: new Set([0]),
       visTab: 'VisTab',
     };
   },
@@ -72,12 +72,17 @@ export default {
       this.currentTab = tab;
     },
     newTab() {
-      const newTabId = Math.max(...Array.from(this.tabs.keys())) + 1;
-      this.tabs.set(newTabId, newTabId);
+      const newTabId = Math.max(...Array.from(this.tabs.values())) + 1;
+      this.tabs.add(newTabId);
       this.currentTab = newTabId;
     },
     closeTab(tab) {
-      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.keys())[0];
+      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.values())[0];
+
+      this.$children.forEach((x) => {
+        if (x.$options.propsData.tabId && x.$options.propsData.tabId === tab) x.$destroy();
+      });
+
       this.tabs.delete(tab);
     },
   },
