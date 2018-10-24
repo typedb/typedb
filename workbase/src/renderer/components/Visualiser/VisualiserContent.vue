@@ -4,8 +4,8 @@
 
             <div class="vis-tabs">
               <div v-for="tab in Array.from(tabs.values())" :key="tab">
-                <div @click="toggleTab(tab)" :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
-                  <div>Tab {{tab}}</div>
+                <div :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
+                  <div @click="toggleTab(tab)">Tab {{tab}}</div>
                   <div @click="closeTab(tab)"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
                 </div>
               </div>
@@ -77,13 +77,17 @@ export default {
       this.currentTab = newTabId;
     },
     closeTab(tab) {
-      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.values())[0];
-
       this.$children.forEach((x) => {
-        if (x.$options.propsData.tabId && x.$options.propsData.tabId === tab) x.$destroy();
+        if (x.tabId && x.tabId === tab) x.$destroy();
       });
-
       this.tabs.delete(tab);
+
+      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.values())[0];
+      else {
+        const temp = this.currentTab;
+        this.currentTab = null;
+        this.currentTab = temp;
+      }
     },
   },
 };
