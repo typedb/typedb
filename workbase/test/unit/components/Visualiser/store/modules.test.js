@@ -46,7 +46,7 @@ describe('tabs', () => {
     expect(store.getters['tab-0/currentKeyspace']).toBe('gene');
   });
 
-  test('destroying a tab component removes respective namespace', () => {
+  test('destroying a tab component removes respective namespace module', () => {
     const store = new Vuex.Store({
     });
 
