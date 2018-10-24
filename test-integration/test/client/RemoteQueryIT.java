@@ -38,6 +38,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -54,6 +55,7 @@ import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.test.rule.ServerContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -395,58 +397,94 @@ public class RemoteQueryIT {
             }
         }
     }
-//
-//    @Test
-//    public void testExecutingDeleteQueries_ConceptsAreDeleted() {
-//        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
-//            DeleteQuery deleteQuery = tx.graql().match(var("g").rel("x").rel("y").isa("has-genre")).delete("x", "y");
-//            deleteQuery.execute();
-//            assertTrue(tx.graql().match(var().rel("x").rel("y").isa("has-genre")).get("x", "y").execute().isEmpty());
-//
-//            deleteQuery = tx.graql().match(var("x").isa("person")).delete();
-//            deleteQuery.execute();
-//            assertTrue(tx.graql().match(var("x").isa("person")).get().execute().isEmpty());
-//        }
-//    }
 
-//
-////
-//////    @Test
-//////    public void testGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
-//////        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
-//////             GraknTx localTx = localSession.transaction(GraknTxType.READ)
-//////        ) {
-//////            GetQuery query = remoteTx.graql().match(var("x").isa("has-cast")).get();
-//////            Relationship remoteConcept = query.stream().findAny().get().get("x").asRelationship();
-//////            Relationship localConcept = localTx.getConcept(remoteConcept.id()).asRelationship();
-//////
-//////            assertEqualConcepts(localConcept, remoteConcept, Relationship::rolePlayers);
-//////
-//////            ImmutableMultimap.Builder<ConceptId, ConceptId> localRolePlayers = ImmutableMultimap.builder();
-//////            localConcept.rolePlayersMap().forEach((role, players) -> {
-//////                for (Thing player : players) {
-//////                    localRolePlayers.put(role.id(), player.id());
-//////                }
-//////            });
-//////
-//////            ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
-//////            remoteConcept.rolePlayersMap().forEach((role, players) -> {
-//////                for (Thing player : players) {
-//////                    remoteRolePlayers.put(role.id(), player.id());
-//////                }
-//////            });
-//////
-//////            assertEquals(localRolePlayers.build(), remoteRolePlayers.build());
-//////        }
-//////    }
+    @Test
+    public void testExecutingDeleteQueries_ConceptsAreDeleted() {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
+            EntityType person = tx.putEntityType("person");
+            AttributeType name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType email = tx.putAttributeType("email", DataType.STRING);
+            Role actor = tx.putRole("actor");
+            Role characterBeingPlayed = tx.putRole("character-being-played");
+            RelationshipType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            person.key(email).has(name);
+            person.plays(actor).plays(characterBeingPlayed);
+
+            Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
+            Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
+            hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
+            tx.commit();
+        }
+        try (Grakn.Transaction tx = remoteSession.transaction(GraknTxType.WRITE)) {
+            DeleteQuery deleteQuery = tx.graql().match(var("g").rel("x").rel("y").isa("has-cast")).delete("x", "y");
+            deleteQuery.execute();
+            assertTrue(tx.graql().match(var().rel("x").rel("y").isa("has-cast")).get("x", "y").execute().isEmpty());
+
+            deleteQuery = tx.graql().match(var("x").isa("person")).delete();
+            deleteQuery.execute();
+            assertTrue(tx.graql().match(var("x").isa("person")).get().execute().isEmpty());
+        }
+    }
+
+
+
+    @Test
+    public void testGettingARelationship_TheInformationOnTheRelationshipIsCorrect() {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
+            EntityType person = tx.putEntityType("person");
+            AttributeType name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType email = tx.putAttributeType("email", DataType.STRING);
+            Role actor = tx.putRole("actor");
+            Role characterBeingPlayed = tx.putRole("character-being-played");
+            RelationshipType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            person.key(email).has(name);
+            person.plays(actor).plays(characterBeingPlayed);
+
+            Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
+            Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
+            hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
+            tx.commit();
+        }
+        try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
+             GraknTx localTx = localSession.transaction(GraknTxType.READ)
+        ) {
+            GetQuery query = remoteTx.graql().match(var("x").isa("has-cast")).get();
+            Relationship remoteConcept = query.stream().findAny().get().get("x").asRelationship();
+            Relationship localConcept = localTx.getConcept(remoteConcept.id()).asRelationship();
+
+            assertEqualConcepts(localConcept, remoteConcept, Relationship::rolePlayers);
+
+            ImmutableMultimap.Builder<ConceptId, ConceptId> localRolePlayers = ImmutableMultimap.builder();
+            localConcept.rolePlayersMap().forEach((role, players) -> {
+                for (Thing player : players) {
+                    localRolePlayers.put(role.id(), player.id());
+                }
+            });
+
+            ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
+            remoteConcept.rolePlayersMap().forEach((role, players) -> {
+                for (Thing player : players) {
+                    remoteRolePlayers.put(role.id(), player.id());
+                }
+            });
+
+            assertEquals(localRolePlayers.build(), remoteRolePlayers.build());
+        }
+    }
 
 
     @Test
     public void testGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
+            EntityType human = tx.putEntityType("human");
+            EntityType man = tx.putEntityType("man").sup(human);
+            tx.putEntityType("child").sup(man);
+            tx.commit();
+        }
         try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
              GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").label("actor")).get();
+            GetQuery query = remoteTx.graql().match(var("x").label("man")).get();
             SchemaConcept remoteConcept = query.stream().findAny().get().get("x").asSchemaConcept();
             SchemaConcept localConcept = localTx.getConcept(remoteConcept.id()).asSchemaConcept();
 
@@ -460,10 +498,25 @@ public class RemoteQueryIT {
 
     @Test
     public void testGettingAThing_TheInformationOnTheThingIsCorrect() {
+        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
+            EntityType person = tx.putEntityType("person");
+            AttributeType name = tx.putAttributeType("name", DataType.STRING);
+            AttributeType email = tx.putAttributeType("email", DataType.STRING);
+            Role actor = tx.putRole("actor");
+            Role characterBeingPlayed = tx.putRole("character-being-played");
+            RelationshipType hasCast = tx.putRelationshipType("has-cast").relates(actor).relates(characterBeingPlayed);
+            person.key(email).has(name);
+            person.plays(actor).plays(characterBeingPlayed);
+
+            Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
+            Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
+            hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
+            tx.commit();
+        }
         try (GraknTx remoteTx = remoteSession.transaction(GraknTxType.READ);
              GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
-            GetQuery query = remoteTx.graql().match(var("x").has("name", "crime")).get();
+            GetQuery query = remoteTx.graql().match(var("x").isa("person")).get();
             Thing remoteConcept = query.stream().findAny().get().get("x").asThing();
             Thing localConcept = localTx.getConcept(remoteConcept.id()).asThing();
 
