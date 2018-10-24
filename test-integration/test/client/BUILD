@@ -3,9 +3,9 @@ java_test(
     srcs = ["RemoteConceptIT.java"],
     test_class = "ai.grakn.test.client.RemoteConceptIT",
     deps = [
-#        "//server",
-#        "//client-java",
-#        "//grakn-graql",
+        "//server",
+        "//client-java",
+        "//grakn-graql",
         "//test-integration/rule:cassandra-context",
         "//test-integration/rule:server-context",
         "//test-integration/util:grakn-test-util",
