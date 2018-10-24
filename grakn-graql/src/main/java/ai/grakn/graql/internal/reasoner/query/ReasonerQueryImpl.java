@@ -31,12 +31,11 @@ import ai.grakn.graql.admin.MultiUnifier;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
-import ai.grakn.graql.internal.reasoner.UnifierType;
+import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -282,6 +281,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
+        try{
+            List<Atomic> test = getAtoms().stream().filter(type::isInstance).map(type::cast).collect(Collectors.toList());
+        }catch(Exception e){
+            e.printStackTrace();
+        }
         return getAtoms().stream().filter(type::isInstance).map(type::cast);}
 
     @Override
@@ -296,8 +300,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getMultiUnifier(parent, UnifierType.EXACT);
     }
 
-    @Override
-    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierComparison unifierType){
+    /**
+     * @param parent query we want to unify this query with
+     * @param unifierType unifier type
+     * @return corresponding multiunifier
+     */
+    public MultiUnifier getMultiUnifier(ReasonerQuery parent, UnifierType unifierType){
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 

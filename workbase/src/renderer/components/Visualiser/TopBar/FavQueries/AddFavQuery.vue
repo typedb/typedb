@@ -1,8 +1,11 @@
 <template>
     <div class="add-fav-query z-depth-3">
         <div class="panel-body">
-            <vue-tooltip className="fav-query-name-tooltip" content="please write a query name" :isOpen="showAddFavQueryToolTip" :usePortal="false" :child="queryNameInput" v-on:close-tooltip="$emit('toggle-fav-query-tooltip', false)"></vue-tooltip>
-            <vue-button v-on:clicked="addFavQuery" icon="floppy-disk" className="vue-button save-query-btn"></vue-button>
+
+            <input class="input query-name-input" placeholder="Query name" v-model="currentQueryName">
+            <tool-tip class="fav-query-name-tooltip" :isOpen="showAddFavQueryToolTip" msg="Please write a query name" arrowPosition="top" v-on:close-tooltip="$emit('toggle-fav-query-tooltip', false);"></tool-tip>
+
+            <button @click="addFavQuery" class="btn save-query-btn"><vue-icon icon="floppy-disk" className="vue-icon"></vue-icon></button>
         </div>
         <div class="editor-tab">
             <div class="close-add-fav-query-container" @click="$emit('close-add-query-panel')"><vue-icon icon="cross" iconSize="12" className="tab-icon"></vue-icon></div>
@@ -11,14 +14,13 @@
 </template>
 
 <script>
-  import { InputGroup } from '@blueprintjs/core';
-
-  import React from 'react';
 
   import FavQueriesSettings from './FavQueriesSettings';
+  import ToolTip from '../../../UIElements/ToolTip';
 
   export default {
     name: 'AddFavQuery',
+    components: { ToolTip },
     props: ['currentQuery', 'currentKeyspace', 'showAddFavQueryToolTip', 'favQueries'],
     data() {
       return {
@@ -26,8 +28,10 @@
         queryNameInput: null,
       };
     },
-    created() {
-      this.renderQueryNameInput();
+    watch: {
+      currentQueryName() {
+        this.$emit('toggle-fav-query-tooltip');
+      },
     },
     methods: {
       updateCurrentQueryName(val) {
@@ -57,19 +61,22 @@
           this.$notifyInfo('New query saved!');
         }
       },
-      renderQueryNameInput() {
-        this.queryNameInput = React.createElement(InputGroup, {
-          className: 'vue-input query-name-input',
-          placeholder: 'Query name',
-          type: 'text',
-          onChange: (val) => { this.updateCurrentQueryName(val.target.value); },
-        });
-      },
     },
   };
 </script>
 
 <style scoped>
+
+    .query-name-input {
+        width: 565px !important;
+        margin-right: var(--element-margin) !important;
+    }
+
+    .fav-query-name-tooltip {
+        position: absolute;
+        top: 55px;
+        right: 250px;
+    }
 
 
     .add-fav-query {

@@ -103,9 +103,6 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> DATA_DIR = key("data-dir");
     public static final GraknConfigKey<String> LOG_DIR = key("log.dirs");
 
-    public static final GraknConfigKey<Boolean> TEST_START_EMBEDDED_COMPONENTS =
-            key("test.start.embedded.components", BOOL);
-
     /**
      * The name of the key, how it looks in the properties file
      */

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package ai.grakn.graql.internal.reasoner.unifier;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -64,16 +64,15 @@ public class MultiUnifierImpl implements MultiUnifier{
      */
     public MultiUnifierImpl(){ this.multiUnifier = ImmutableSet.of(new UnifierImpl()); }
 
-
-    public static MultiUnifierImpl trivial(){ return new MultiUnifierImpl();}
-    public static MultiUnifierImpl nonExistent(){ return new MultiUnifierImpl(new HashSet<>());}
-
     @SafeVarargs
-    MultiUnifierImpl(ImmutableMultimap<Var, Var>... maps){
+    public MultiUnifierImpl(ImmutableMultimap<Var, Var>... maps){
         this.multiUnifier = ImmutableSet.<Unifier>builder()
                 .addAll(Stream.of(maps).map(UnifierImpl::new).iterator())
                 .build();
     }
+
+    public static MultiUnifierImpl trivial(){ return new MultiUnifierImpl();}
+    public static MultiUnifierImpl nonExistent(){ return new MultiUnifierImpl(new HashSet<>());}
 
     @Override
     public boolean equals(Object obj){

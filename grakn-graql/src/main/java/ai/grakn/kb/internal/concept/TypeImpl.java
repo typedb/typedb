@@ -87,37 +87,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * Utility method used to create or find an instance of this type
-     *
-     * @param instanceBaseType The base type of the instances of this type
-     * @param finder The method to find the instrance if it already exists
-     * @param producer The factory method to produce the instance if it doesn't exist
-     * @return A new or already existing instance
-     */
-    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer, boolean isInferred) {
-        preCheckForInstanceCreation();
-
-        V instance = finder.get();
-        if(instance == null) {
-            instance = addInstance(instanceBaseType, producer, isInferred, false);
-        } else {
-            if(isInferred && !instance.isInferred()){
-                throw GraknTxOperationException.nonInferredThingExists(instance);
-            }
-        }
-        return instance;
-    }
-
-    /**
      * Utility method used to create an instance of this type
      *
      * @param instanceBaseType The base type of the instances of this type
      * @param producer The factory method to produce the instance
-     * @param checkNeeded indicates if a check is necessary before adding the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred, boolean checkNeeded){
-        if(checkNeeded) preCheckForInstanceCreation();
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred){
+        preCheckForInstanceCreation();
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
@@ -370,7 +347,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     private void updateAttributeRelationHierarchy(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner,
-                                     Role ownerRole, Role valueRole, RelationshipType relationshipType){
+                                                  Role ownerRole, Role valueRole, RelationshipType relationshipType){
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
         Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));

@@ -25,7 +25,7 @@ package ai.grakn;
  * When producing a graph using a {@link GraknSession} one of the following enums must be provided:
  * READ - A read only transaction. If you attempt to mutate the graph with such a transaction an exception will be thrown.
  * WRITE - A transaction which allows you to mutate the graph.
- * BATCH - A transaction which allows mutations to be performed more quickly but disables some consitency checks.
+ * BATCH - A transaction which allows mutations to be performed more quickly but disables some consistency checks.
  *
  * @author Grakn Warriors
  */

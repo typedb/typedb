@@ -57,3 +57,7 @@ grakn-test/test-integration/benchmarks/
 # VIM swap files #
 *.swp
 *.swo
+
+
+# Python cache #
+__pycache__

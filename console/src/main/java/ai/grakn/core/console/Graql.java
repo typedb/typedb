@@ -19,8 +19,11 @@
 package ai.grakn.core.console;
 
 import ai.grakn.util.GraknVersion;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.base.StandardSystemProperty;
 import org.apache.commons.cli.ParseException;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -50,6 +53,11 @@ public class Graql {
      * @param args
      */
     public static void main(String[] args) throws IOException, InterruptedException {
+
+        // Disable logging for Grakn console as we only use System.out
+        Logger root = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.OFF);
+
         GraqlShellOptionsFactory graqlShellOptionsFactory = GraqlShellOptions::create;
 
         new Graql(graqlShellOptionsFactory).run(args);

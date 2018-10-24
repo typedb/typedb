@@ -82,9 +82,18 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
      */
-    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType) {
-        return new AutoValue_SubFragmentSet(varProperty, subType, superType);
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType, boolean explicitSub) {
+        return new AutoValue_SubFragmentSet(varProperty, subType, superType, explicitSub);
     }
+
+    /**
+     * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
+     *
+     */
+    public static EquivalentFragmentSet sub(VarProperty varProperty, Var subType, Var superType) {
+        return new AutoValue_SubFragmentSet(varProperty, subType, superType, false);
+    }
+
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.

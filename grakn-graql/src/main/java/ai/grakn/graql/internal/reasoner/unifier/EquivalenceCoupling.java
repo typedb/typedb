@@ -16,27 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.utils;
+package ai.grakn.graql.internal.reasoner.unifier;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 
 /**
- *
- * <p>
- * Annotation for including a property in equals/hash auto-value generation.
- * NB: It has to be defined in the most specialised class.
- * </p>
- *
- * @author Robert Eggar
- *
+ * Interface to couple {@link UnifierType} classes with corresponding {@link ReasonerQueryEquivalence}s.
  */
-@Retention(SOURCE)
-@Target({METHOD, PARAMETER, FIELD})
-public @interface IncludeHashEquals {
+public interface EquivalenceCoupling {
+
+    /**
+     *
+     * @return coupled equivalence class
+     */
+    ReasonerQueryEquivalence equivalence();
 }

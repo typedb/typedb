@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
@@ -45,5 +46,18 @@ class ContainsPredicate extends ComparatorPredicate {
     @Override
     <V> P<V> gremlinPredicate(V value) {
         return new P<>((v, s) -> ((String) v).contains((String) s), value);
+    }
+
+    @Override
+    public int signum() { return 0;}
+
+    @Override
+    public boolean isCompatibleWith(ValuePredicate predicate){
+        if (predicate instanceof ContainsPredicate) return true;
+        if (!(predicate instanceof EqPredicate)) return false;
+        EqPredicate that = (EqPredicate) predicate;
+        Object val = this.value().orElse(null);
+        Object thatVal = that.value().orElse(null);
+        return val == null || thatVal != null && this.gremlinPredicate(val).test(thatVal);
     }
 }

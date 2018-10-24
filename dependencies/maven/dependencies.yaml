@@ -263,6 +263,27 @@ dependencies:
       version: "1.3.2"
       lang: java
 
+  io.zipkin.brave:
+    brave:
+      version: "5.1.2"
+      lang: java
+    brave-instrumentation-grpc:
+      version: "5.1.2"
+      lang: java
+
+  io.zipkin.reporter2:
+    zipkin-reporter:
+      version: "2.7.6"
+      lang: java
+    zipkin-sender-urlconnection:
+      version: "2.7.6"
+      lang: java
+
+  io.zipkin.zipkin2:
+    zipkin:
+      version: "2.9.4"
+      lang: java
+
   javax.servlet:
     javax.servlet-api:
       version: "3.1.0"
@@ -276,6 +297,11 @@ dependencies:
   jline:
     jline:
       version: "2.12"
+      lang: java
+
+  junit:
+    junit:
+      version: "4.12"
       lang: java
 
   net.jodah:

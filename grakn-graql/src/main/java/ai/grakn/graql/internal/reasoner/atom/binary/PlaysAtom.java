@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
-import ai.grakn.graql.internal.reasoner.utils.IgnoreHashEquals;
 import com.google.auto.value.AutoValue;
 
 /**
@@ -40,9 +39,9 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class PlaysAtom extends OntologicalAtom {
 
-    @Override @IgnoreHashEquals public abstract Var getPredicateVariable();
-    @Override @IgnoreHashEquals public abstract VarPattern getPattern();
-    @Override @IgnoreHashEquals public abstract ReasonerQuery getParentQuery();
+    @Override public abstract Var getPredicateVariable();
+    @Override public abstract VarPattern getPattern();
+    @Override public abstract ReasonerQuery getParentQuery();
 
     public static PlaysAtom create(Var var, Var predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         return new AutoValue_PlaysAtom(var, predicateId, predicateVar, var.plays(predicateVar), parent);

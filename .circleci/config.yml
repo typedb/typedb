@@ -192,23 +192,23 @@ jobs:
               - artifacts/*-linux.tar.gz
 
   build-workbase-mac:
-        macos:
-            xcode: "9.0"
-        working_directory: ~/grakn
-        steps:
-          - *attach_grakn_workspace
-          - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
-#          - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip TODO: re-enable e2e tests once workbase tests are fixed with new UI
-#          - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
-#          - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
-          - run: cd workbase && npm install
-#          - run: cd workbase && npm run e2e
-          - run: cd workbase && npm run build
-          - run: mv ./workbase/build/grakn-workbase-${GRAKN_VERSION}-mac.zip ~/grakn/artifacts
-          - persist_to_workspace:
-              root: ~/grakn
-              paths:
-                - artifacts/*-mac.zip
+      macos:
+          xcode: "9.0"
+      working_directory: ~/grakn
+      steps:
+        - *attach_grakn_workspace
+        - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
+        - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
+        - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
+        - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
+        - run: cd workbase && npm install
+        - run: cd workbase && npm run e2e
+        - run: cd workbase && npm run build
+        - run: mv ./workbase/build/grakn-workbase-${GRAKN_VERSION}-mac.zip ~/grakn/artifacts
+        - persist_to_workspace:
+            root: ~/grakn
+            paths:
+              - artifacts/*-mac.zip
 
   publish-github-draft:
     docker:
@@ -249,10 +249,10 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-#      - workbase-unit-tests: TODO: remove comment once workbase tests are fixed
-#          filters:
-#            tags:
-#              ignore: /.*/
+      - workbase-unit-tests:
+          filters:
+            tags:
+              ignore: /.*/
       - unit-tests:
           requires:
             - build
@@ -274,9 +274,9 @@ workflows:
       - client-java-e2e:
           requires:
             - build
-#      - workbase-e2e: TODO: remove comment once workbase tests are fixed
-#           requires:
-#             - build
+      - workbase-e2e:
+          requires:
+            - build
 
   build-and-deploy:
     jobs:

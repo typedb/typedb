@@ -27,6 +27,7 @@ import ai.grakn.util.Schema;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -130,6 +131,28 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         return putInstance(Schema.BaseType.ATTRIBUTE, () -> attribute(value), instanceBuilder, isInferred);
     }
+
+    /**
+     * Utility method used to create or find an instance of this type
+     *
+     * @param instanceBaseType The base type of the instances of this type
+     * @param finder The method to find the instrance if it already exists
+     * @param producer The factory method to produce the instance if it doesn't exist
+     * @return A new or already existing instance
+     */
+    private Attribute<D> putInstance(Schema.BaseType instanceBaseType, Supplier<Attribute<D>> finder, BiFunction<VertexElement, AttributeType<D>, Attribute<D>> producer, boolean isInferred) {
+        Attribute<D> instance = finder.get();
+        if(instance == null) {
+            instance = addInstance(instanceBaseType, producer, isInferred);
+        } else {
+            if(isInferred && !instance.isInferred()){
+                throw GraknTxOperationException.nonInferredThingExists(instance);
+            }
+        }
+        return instance;
+    }
+
+
 
     /**
      * Checks if all the regex's of the types of this resource conforms to the value provided.

@@ -91,8 +91,6 @@ public class GraknConfig {
         } catch (IOException e) {
             LOG.error("Could not load engine properties from input stream provided", e);
         }
-        LOG.info("Project directory in use: {}", PROJECT_PATH);
-        LOG.info("Configuration file in use: {}", CONFIG_FILE_PATH);
         return GraknConfig.of(prop);
     }
 

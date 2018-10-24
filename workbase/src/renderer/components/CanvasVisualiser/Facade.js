@@ -72,6 +72,10 @@ function updateNode(node) {
   return this.container.visualiser.updateNode(node);
 }
 
+function updateEdge(edge) {
+  return this.container.visualiser.updateEdge(edge);
+}
+
 function getAllNodes() {
   return this.container.visualiser.getNode();
 }
@@ -118,6 +122,7 @@ const prototype = {
   updateNode,
   getNetwork,
   deleteNode,
+  updateEdge,
 };
 
 export default {

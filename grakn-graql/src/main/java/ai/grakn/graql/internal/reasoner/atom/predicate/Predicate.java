@@ -68,4 +68,27 @@ public abstract class Predicate<T> extends AtomicBase {
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
     }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof Predicate) {
+            Predicate that = (Predicate) o;
+            return (this.getVarName().equals(that.getVarName()))
+                    && (this.getPredicate().equals(that.getPredicate()));
+        }
+        return false;
+    }
+
+    @Override
+    public final int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.getVarName().hashCode();
+        h *= 1000003;
+        h ^= this.getPredicate().hashCode();
+        return h;
+    }
 }
