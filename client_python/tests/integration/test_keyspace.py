@@ -42,3 +42,6 @@ class test_Keyspace(unittest.TestCase):
        session.close()
        #client.keyspaces().delete("keyspacetest")
 
+
+if __name__ == "__main__":
+    unittest.main()

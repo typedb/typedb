@@ -34,8 +34,8 @@ def grpc_dependencies():
 
     native.git_repository(
         name = "org_pubref_rules_proto",
-        remote = "https://github.com/graknlabs/rules_proto",
-        commit = "9fd93eb7a81e4d6082d2236ba492e13338080945",
+        remote = "https://github.com/pubref/rules_proto",
+        commit = "f493ce70027f353cd6964339018163207393ba93",
     )
 
 def python_dependencies():
