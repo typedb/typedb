@@ -73,12 +73,28 @@ jobs:
       - *install_node
       - *install_bazel
       - *attach_grakn_workspace
-      - run: bazel test //:unit_tests
+      - run: bazel test //:unit_tests --test_output=errors
       - *save_test_results
       - store_artifacts:
           path: ~/grakn-surefire-reports/
       - store_test_results:
           path: ~/grakn-surefire-reports/
+
+  it-tests:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - *prepare_apt_repositories
+    - *install_yarn_and_unzip
+    - *install_node
+    - *install_bazel
+    - *attach_grakn_workspace
+    - run: bazel test //test-integration:server_tests --test_output=errors
+    - *save_test_results
+    - store_artifacts:
+        path: ~/grakn-surefire-reports/
+    - store_test_results:
+        path: ~/grakn-surefire-reports/
 
   distribution-e2e:
     machine: true
@@ -256,6 +272,9 @@ workflows:
       - unit-tests:
           requires:
             - build
+      - it-tests:
+          requires:
+          - build
       - distribution-e2e:
           requires:
             - build
