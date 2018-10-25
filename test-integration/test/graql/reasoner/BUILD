@@ -1,7 +1,7 @@
 java_test(
     name = "benchmark-it",
-    srcs = ["BenchmarkIT.java"],
     test_class = "ai.grakn.test.graql.reasoner.BenchmarkIT",
+    srcs = ["BenchmarkIT.java"],
     deps = [
         "//server",
         "//client-java",
