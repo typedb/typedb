@@ -131,7 +131,7 @@ java_test(
 )
 
 test_suite(
-    name = "unit_tests",
+    name = "test-unit",
     tags = ["small"],
 )
 

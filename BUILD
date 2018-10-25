@@ -43,10 +43,10 @@ genrule(
 )
 
 test_suite(
-    name = "unit_tests",
+    name = "test-unit",
     tests = [
-        "//server:unit_tests",
-        "//grakn-graql:unit_tests",
-        "//client-java:unit_tests"
+        "//server:test-unit",
+        "//grakn-graql:test-unit",
+        "//client-java:test-unit"
     ]
 )

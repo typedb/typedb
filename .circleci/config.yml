@@ -64,7 +64,7 @@ jobs:
           paths:
             - .
 
-  unit-tests:
+  test-unit:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -80,7 +80,7 @@ jobs:
       - store_test_results:
           path: ~/grakn-surefire-reports/
 
-  it-tests:
+  test-integration:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -251,10 +251,10 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-      - unit-tests:
+      - test-unit:
           requires:
             - build
-      - it-tests:
+      - test-integration:
           requires:
           - build
       - distribution-e2e:
