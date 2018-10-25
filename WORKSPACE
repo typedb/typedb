@@ -55,7 +55,7 @@ load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import"
 pip_repositories()
 pip3_import(
     name = "python_grakn_deps",
-    requirements = "//client_python:requirements.txt",
+    requirements = "//dependencies/pypi:requirements.txt",
 )
 load("@python_grakn_deps//:requirements.bzl", "pip_install")
 pip_install()
