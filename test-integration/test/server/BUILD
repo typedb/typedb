@@ -1,7 +1,7 @@
 java_test(
     name = "attribute-deduplicator-it",
-    srcs = ["AttributeDeduplicatorIT.java"],
     test_class = "ai.grakn.test.server.attribute.deduplicator.AttributeDeduplicatorIT",
+    srcs = ["AttributeDeduplicatorIT.java"],
     deps = [
         "//server",
         "//test-integration/rule:cassandra-context",
@@ -13,8 +13,8 @@ java_test(
 
 java_test(
     name = "server-start-it",
-    srcs = ["ServerStartIT.java"],
     test_class = "ai.grakn.test.server.ServerStartIT",
+    srcs = ["ServerStartIT.java"],
     deps = [
         "//server",
         "//test-integration/rule:cassandra-context",
