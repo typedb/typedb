@@ -8,7 +8,7 @@ java_test(
         "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     resources = ["//server:grakn-properties"],
-    size = "medium"
+    size = "large"
 )
 
 java_test(
@@ -21,5 +21,5 @@ java_test(
         "//test-integration/rule:server-context",
         "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
-    size = "medium"
+    size = "large"
 )
