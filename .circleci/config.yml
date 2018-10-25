@@ -64,7 +64,7 @@ jobs:
           paths:
             - .
 
-  unit-tests:
+  test-unit:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -73,12 +73,28 @@ jobs:
       - *install_node
       - *install_bazel
       - *attach_grakn_workspace
-      - run: bazel test //:unit_tests
+      - run: bazel test //:test-unit --test_output=streamed
       - *save_test_results
       - store_artifacts:
           path: ~/grakn-surefire-reports/
       - store_test_results:
           path: ~/grakn-surefire-reports/
+
+  test-integration:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - *prepare_apt_repositories
+    - *install_yarn_and_unzip
+    - *install_node
+    - *install_bazel
+    - *attach_grakn_workspace
+    - run: bazel test //test-integration:test-integration --test_output=streamed
+    - *save_test_results
+    - store_artifacts:
+        path: ~/grakn-surefire-reports/
+    - store_test_results:
+        path: ~/grakn-surefire-reports/
 
   distribution-e2e:
     machine: true
@@ -103,24 +119,6 @@ jobs:
           path: ~/grakn-surefire-reports/
       - store_test_results:
           path: ~/grakn-surefire-reports/
-
-  snb-e2e:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - *attach_grakn_workspace
-      - *start_grakn_server
-      - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-core-test PACKAGE=./grakn-dist/target/grakn-core-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/load.sh
-      - run: PATH=$PATH:./grakn-test/test-snb/src/main/bash:./grakn-test/test-integration/src/test/bash:./grakn-dist/target/grakn-core-test PACKAGE=./grakn-dist/target/grakn-core-test WORKSPACE=. ./grakn-test/test-snb/src/main/bash/validate.sh
-
-  biomed-e2e:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - *attach_grakn_workspace
-      - *start_grakn_server
-      - run: PATH=$PATH:./grakn-dist/target/grakn-core-test ./grakn-test/test-biomed/load.sh
-      - run: PATH=$PATH:./grakn-dist/target/grakn-core-test ./grakn-test/test-biomed/validate.sh
 
   client-nodejs-e2e:
       machine: true
@@ -253,16 +251,13 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-      - unit-tests:
+      - test-unit:
           requires:
             - build
+      - test-integration:
+          requires:
+          - build
       - distribution-e2e:
-          requires:
-            - build
-      - snb-e2e:
-          requires:
-            - build
-      - biomed-e2e:
           requires:
             - build
       - client-nodejs-e2e:

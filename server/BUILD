@@ -92,14 +92,16 @@ java_library(
 )
 
 java_test(
-    name = "ProcessWideLockProviderTest",
+    name = "process-wide-lock-provider-test",
+    test_class = "ai.grakn.engine.lock.ProcessWideLockProviderTest",
     srcs = ["src/test/java/ai/grakn/engine/lock/ProcessWideLockProviderTest.java"],
     deps = [":server"],
     size = "small"
 )
 
 java_test(
-    name = "RocksDbQueueTest",
+    name = "rocks-db-queue-test",
+    test_class = "ai.grakn.engine.attribute.deduplicator.RocksDbQueueTest",
     srcs = ["src/test/java/ai/grakn/engine/attribute/deduplicator/RocksDbQueueTest.java"],
     deps = [
         ":server",
@@ -111,7 +113,8 @@ java_test(
 )
 
 java_test(
-    name = "GraknConfigTest",
+    name = "grakn-config-test",
+    test_class = "ai.grakn.engine.config.GraknConfigTest",
     srcs = ["src/test/java/ai/grakn/engine/config/GraknConfigTest.java"],
     deps = [":server", "//grakn-graql"],
     resources = ["src/test/resources/inmemory-graph.properties"],
@@ -119,7 +122,8 @@ java_test(
 )
 
 java_test(
-    name = "RequestsTest",
+    name = "requests-test",
+    test_class = "ai.grakn.engine.controller.util.RequestsTest",
     srcs = ["src/test/java/ai/grakn/engine/controller/util/RequestsTest.java"],
      deps = [
         ":server",
@@ -131,7 +135,7 @@ java_test(
 )
 
 test_suite(
-    name = "unit_tests",
+    name = "test-unit",
     tags = ["small"],
 )
 

@@ -82,3 +82,8 @@ java_test(
     ],
     size = "small",
 )
+
+test_suite(
+    name = "test-unit",
+    tags = ["small"],
+)
