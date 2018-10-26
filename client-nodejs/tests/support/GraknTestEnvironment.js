@@ -28,7 +28,7 @@ if(process.env.TEST_ENV === 'dist'){
     Grakn = require("../../dist/Grakn");
     graknClient = new Grakn(DEFAULT_URI);
 }else {
-    Grakn = require("../../src/Grakn");
+    Grakn = require("../../client-nodejs/src/Grakn");
     graknClient = new Grakn(DEFAULT_URI);
 }
 //Every test file instantiate a new GraknEnvironment - so session will be new for every test file

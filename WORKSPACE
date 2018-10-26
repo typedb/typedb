@@ -46,16 +46,17 @@ antlr_dependencies()
 ####################################
 
 # Load GRPC dependencies
-load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "python_dependencies")
+load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "python_dependencies", "node_dependencies")
 grpc_dependencies()
 python_dependencies()
+node_dependencies()
 
-# Python PIP dependencies
+## Python PIP dependencies
 load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
 pip_repositories()
 pip3_import(
     name = "python_grakn_deps",
-    requirements = "//client_python:requirements.txt",
+    requirements = "//dependencies/pypi:requirements.txt",
 )
 load("@python_grakn_deps//:requirements.bzl", "pip_install")
 pip_install()
@@ -75,8 +76,17 @@ python_grpc_compile()
 load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
 
+load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
+rules_nodejs_dependencies()
+load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
 
+node_repositories(package_json = ["//client-nodejs:package.json"])
 
+yarn_install(
+    name = "node_grakn_deps",
+    package_json = "//client-nodejs:package.json",
+    yarn_lock = "//client-nodejs:yarn.lock",
+)
 
 
 ########################################

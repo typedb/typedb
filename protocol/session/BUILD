@@ -28,7 +28,7 @@ package(
         "//server:__subpackages__",
         "//client-java:__subpackages__",
         "//client-nodejs:__subpackages__",
-        "//client-python:__subpackages__",
+        "//client_python:__subpackages__",
     ]
 )
 
