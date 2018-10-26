@@ -110,18 +110,6 @@ jobs:
       - store_test_results:
           path: ~/grakn-surefire-reports/
 
-  client-java-e2e:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - *attach_grakn_workspace
-      - run: mvn verify -pl :test-client-java -Dtest="ai.grakn.client.ClientJavaE2E" --also-make -DfailIfNoTests=false
-      - *save_test_results
-      - store_artifacts:
-          path: ~/grakn-surefire-reports/
-      - store_test_results:
-          path: ~/grakn-surefire-reports/
-
   client-nodejs-e2e:
       machine: true
       working_directory: ~/grakn
@@ -264,9 +252,6 @@ workflows:
           requires:
             - build
       - client-python-e2e:
-          requires:
-            - build
-      - client-java-e2e:
           requires:
             - build
       - workbase-e2e:
