@@ -102,6 +102,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
+      - run: bazel build //:distribution-all --sandbox_debug
       - run: bazel test //test-end-to-end:test-end-to-end --cache_test_results=no --test_output=streamed --spawn_strategy=standalone
       - *save_test_results
       - store_artifacts:
