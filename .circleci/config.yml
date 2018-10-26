@@ -258,7 +258,7 @@ workflows:
       - test-integration:
           requires:
           - build
-      - distribution-e2e:
+      - test-end-to-end:
           requires:
             - build
       - client-nodejs-e2e:
