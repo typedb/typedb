@@ -3,12 +3,31 @@ java_test(
     test_class = "ai.grakn.distribution.GraknGraqlCommandsE2E",
     srcs = [
         "//test-end-to-end/distribution:GraknGraqlCommandsE2E.java",
-        "//test-end-to-end/distribution:DistributionE2E_Constants.java"
+        "DistributionE2EConstants.java"
         ],
     deps = [
+        "//grakn-graql:grakn-graql",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api"
+    ],
+    data = ["//:distribution-all"]
+)
+
+java_test(
+    name = "grakn-graql-commands-with-a-running-grakn-e2e",
+    test_class = "ai.grakn.distribution.GraknGraqlCommands_WithARunningGraknE2E",
+    srcs = [
+        "//test-end-to-end/distribution:GraknGraqlCommands_WithARunningGraknE2E.java",
+        "DistributionE2EConstants.java"
+        ],
+    deps = [
+        "//grakn-graql:grakn-graql",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api"
     ],
     data = ["//:distribution-all"]
 )

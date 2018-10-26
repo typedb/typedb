@@ -32,11 +32,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
 
-import static ai.grakn.distribution.DistributionE2E_Constants.GRAKN_UNZIPPED_DIRECTORY;
-import static ai.grakn.distribution.DistributionE2E_Constants.assertGraknRunning;
-import static ai.grakn.distribution.DistributionE2E_Constants.assertGraknStopped;
-import static ai.grakn.distribution.DistributionE2E_Constants.assertZipExists;
-import static ai.grakn.distribution.DistributionE2E_Constants.unzipGrakn;
+import static ai.grakn.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static ai.grakn.distribution.DistributionE2EConstants.assertGraknRunning;
+import static ai.grakn.distribution.DistributionE2EConstants.assertGraknStopped;
+import static ai.grakn.distribution.DistributionE2EConstants.assertZipExists;
+import static ai.grakn.distribution.DistributionE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -59,12 +59,9 @@ public class GraknGraqlCommandsE2E {
 
     @Before
     public void beforeEachTests_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
-        assertGraknStopped();
         assertZipExists();
         unzipGrakn();
-        for (String f: Paths.get("dist").toFile().list()) {
-            System.out.println("-- " + f);
-        }
+        assertGraknStopped();
     }
 
     @After
@@ -92,16 +89,16 @@ public class GraknGraqlCommandsE2E {
         assertThat(grakn.toString() + " isn't an executable", grakn.toFile().canExecute(), equalTo(true));
     }
 
-//    /**
-//     * test 'grakn server start' and 'grakn server stop'
-//     */
-//    @Test
-//    public void grakn_shouldBeAbleToStartAndStop() throws IOException, InterruptedException, TimeoutException {
-//        commandExecutor.command("./grakn-core", "server", "start").execute();
-//        assertGraknRunning();
-//        commandExecutor.command("./grakn-core", "server", "stop").execute();
-//        assertGraknStopped();
-//    }
+    /**
+     * test 'grakn server start' and 'grakn server stop'
+     */
+    @Test
+    public void grakn_shouldBeAbleToStartAndStop() throws IOException, InterruptedException, TimeoutException {
+        commandExecutor.command("./grakn-core", "server", "start").execute();
+        assertGraknRunning();
+        commandExecutor.command("./grakn-core", "server", "stop").execute();
+        assertGraknStopped();
+    }
 
     /**
      * test 'grakn server help'
@@ -109,7 +106,7 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void grakn_testPrintServerHelp() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn-core", "server", "help").execute().outputUTF8();
-        assertThat(output, containsString("Usage: grakn server COMMAND"));
+        assertThat(output, containsString("Usage: grakn-core server COMMAND"));
     }
 
     /**
@@ -119,7 +116,7 @@ public class GraknGraqlCommandsE2E {
     public void grakn_testPrintStatus_whenCurrentlyStopped() throws IOException, InterruptedException, TimeoutException {
         assertGraknStopped();
         String output = commandExecutor.command("./grakn-core", "server", "status").execute().outputUTF8();
-        assertThat(output, allOf(containsString("Storage: NOT RUNNING"), containsString("Engine: NOT RUNNING")));
+        assertThat(output, allOf(containsString("Storage: NOT RUNNING"), containsString("Grakn Core Server: NOT RUNNING")));
     }
 
     /**
@@ -131,7 +128,7 @@ public class GraknGraqlCommandsE2E {
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
                 .command("./grakn-core", "server", "clean").execute().outputUTF8();
-        assertThat(output, allOf(containsString("Cleaning Storage...SUCCESS"), containsString("Cleaning Engine...SUCCESS")));
+        assertThat(output, allOf(containsString("Cleaning Storage...SUCCESS"), containsString("Cleaning Grakn Core Server...SUCCESS")));
     }
 
     /**
@@ -164,7 +161,7 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void grakn_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn-core", "help").execute().outputUTF8();
-        assertThat(output, containsString("Usage: grakn COMMAND"));
+        assertThat(output, containsString("Invalid argument:"));
     }
 
     /**
@@ -173,6 +170,6 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void grakn_whenReceivingInvalidCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn-core", "invalid-command").execute().outputUTF8();
-        assertThat(output, containsString("Usage: grakn COMMAND"));
+        assertThat(output, containsString("Invalid argument:"));
     }
 }
