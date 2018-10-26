@@ -25,11 +25,10 @@ def antlr_dependencies():
     )
 
 def grpc_dependencies():
-
     native.git_repository(
         name = "com_github_grpc_grpc",
-        remote = "https://github.com/grpc/grpc",
-        tag = "v1.15.1"
+        remote = "https://github.com/graknlabs/grpc",
+        commit = "da829a5ac902ab99eef14e6aad1d8e0cd173ec64"
     )
 
     native.git_repository(
@@ -44,4 +43,17 @@ def python_dependencies():
         remote = "https://github.com/graknlabs/rules_python.git",
         commit = "abd475a72ae6a098cc9f859eb435dddd992bc884",
         sha256 = "fe468b9396ef5c933679e1a5d846f777d0ea4731927df2149e5a01b328afd9b6"
+    )
+
+
+def node_dependencies():
+    native.git_repository(
+        name = "org_pubref_rules_node",
+        remote = "https://github.com/vmax/rules_node.git",
+        commit = "d45a6fe8968a0b792c416d905c19ffec3da2030c",
+    )
+    native.git_repository(
+        name = "build_bazel_rules_nodejs",
+        remote = "https://github.com/bazelbuild/rules_nodejs.git",
+        commit = "e29c446b2f0cddfa51c307f898162f55d64d1fde",
     )
