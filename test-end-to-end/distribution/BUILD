@@ -15,7 +15,7 @@ java_test(
 java_test(
     name = "grakn-graql-commands-with-a-running-grakn-e2e",
     test_class = "ai.grakn.distribution.GraknGraqlCommands_WithARunningGraknE2E",
-    srcs = [ "GraknGraqlCommandsE2E.java", "DistributionE2EConstants.java" ],
+    srcs = [ "GraknGraqlCommands_WithARunningGraknE2E.java", "DistributionE2EConstants.java" ],
     deps = [
         "//grakn-graql:grakn-graql",
         "//dependencies/maven/artifacts/commons-io:commons-io",
