@@ -25,11 +25,9 @@ import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
 
 import static ai.grakn.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
