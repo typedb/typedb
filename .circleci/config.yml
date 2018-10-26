@@ -259,9 +259,7 @@ workflows:
       - test-integration:
           requires:
           - build
-      - test-end-to-end:
-          requires:
-            - build
+      - test-end-to-end
       - client-nodejs-e2e:
           requires:
             - build
