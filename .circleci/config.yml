@@ -100,7 +100,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - *attach_grakn_workspace
+      - checkout
       - *install_bazel
       - run: bazel test //test-end-to-end:test-end-to-end --cache_test_results=no --test_output=streamed --spawn_strategy=standalone
       - *save_test_results
