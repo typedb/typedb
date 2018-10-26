@@ -96,11 +96,12 @@ jobs:
     - store_test_results:
         path: ~/grakn-surefire-reports/
 
-  distribution-e2e:
+  test-end-to-end:
     machine: true
     working_directory: ~/grakn
     steps:
       - *attach_grakn_workspace
+      - *install_bazel
       - run: bazel test //test-end-to-end:test-end-to-end --cache_test_results=no --test_output=streamed --spawn_strategy=standalone
       - *save_test_results
       - store_artifacts:
