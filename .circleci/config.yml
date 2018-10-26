@@ -96,24 +96,14 @@ jobs:
     - store_test_results:
         path: ~/grakn-surefire-reports/
 
-  distribution-e2e:
+  test-end-to-end:
     machine: true
     working_directory: ~/grakn
     steps:
-      - *attach_grakn_workspace
-      - run: mvn verify -pl :test-distribution -Dtest="ai.grakn.distribution.**"
-      - *save_test_results
-      - store_artifacts:
-          path: ~/grakn-surefire-reports/
-      - store_test_results:
-          path: ~/grakn-surefire-reports/
-
-  client-java-e2e:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - *attach_grakn_workspace
-      - run: mvn verify -pl :test-client-java -Dtest="ai.grakn.client.ClientJavaE2E" --also-make -DfailIfNoTests=false
+      - checkout
+      - *install_bazel
+      - run: bazel build //:distribution-all --sandbox_debug
+      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
       - *save_test_results
       - store_artifacts:
           path: ~/grakn-surefire-reports/
@@ -257,16 +247,11 @@ workflows:
       - test-integration:
           requires:
           - build
-      - distribution-e2e:
-          requires:
-            - build
+      - test-end-to-end
       - client-nodejs-e2e:
           requires:
             - build
       - client-python-e2e:
-          requires:
-            - build
-      - client-java-e2e:
           requires:
             - build
       - workbase-e2e:
