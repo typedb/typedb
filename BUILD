@@ -1,18 +1,4 @@
 java_binary(
-    name = "jar-console",
-    main_class = "ai.grakn.core.console.Graql",
-    runtime_deps = ["//console:console"]
-)
-
-genrule(
-    name = "distribution-console",
-    srcs = ["grakn-core", "jar-console_deploy.jar"],
-    outs = ["//:dist/grakn-core-console.zip"],
-    cmd  = "$(location console-packager.sh) $(location //:dist/grakn-core-console.zip) $(location grakn-core) $(location jar-console_deploy.jar)",
-    tools = ["console-packager.sh"]
-)
-
-java_binary(
     name = "jar-server",
     main_class = "ai.grakn.core.server.bootup.GraknBootup",
     runtime_deps = ["//server:server"]
@@ -42,6 +28,8 @@ genrule(
     tools = ["all-packager.sh"],
     visibility = ["//visibility:public"]
 )
+
+exports_files(["grakn-core"], visibility = ["//visibility:public"])
 
 test_suite(
     name = "test-unit",

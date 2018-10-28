@@ -43,6 +43,20 @@ java_library(
     ]
 )
 
+java_binary(
+    name = "jar-console",
+    main_class = "ai.grakn.core.console.Graql",
+    runtime_deps = ["//console:console"]
+)
+
+genrule(
+    name = "distribution",
+    srcs = ["//:grakn-core", "jar-console_deploy.jar"],
+    outs = ["dist/grakn-core-console.zip"],
+    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location dist/grakn-core-console.zip) $(location //:grakn-core) $(location jar-console_deploy.jar)",
+    tools = ["src/main/bash/distribution-packager.sh"]
+)
+
 exports_files(
     ["conf/logback.xml"],
     visibility = ["//visibility:public"]
