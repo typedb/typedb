@@ -57,7 +57,7 @@ jobs:
       - *install_yarn_and_unzip
       - *install_node
       - *install_bazel
-      - run: bazel build //:distribution-server //:distribution-console //:distribution-all --sandbox_debug
+      - run: bazel build //:distribution --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/dist/* dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
@@ -102,7 +102,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - run: bazel build //:distribution-all --sandbox_debug
+      - run: bazel build //:distribution --sandbox_debug
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
       - *save_test_results
       - store_artifacts:
