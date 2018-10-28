@@ -94,7 +94,8 @@ java_library(
 java_binary(
     name = "jar-server",
     main_class = "ai.grakn.core.server.bootup.GraknBootup",
-    runtime_deps = ["//server:server"]
+    runtime_deps = ["//server:server"],
+    visibility = ["//visibility:public"]
 )
 
 genrule(

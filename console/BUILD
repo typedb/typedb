@@ -46,7 +46,8 @@ java_library(
 java_binary(
     name = "jar-console",
     main_class = "ai.grakn.core.console.Graql",
-    runtime_deps = ["//console:console"]
+    runtime_deps = ["//console:console"],
+    visibility = ["//visibility:public"]
 )
 
 genrule(
