@@ -20,8 +20,7 @@ java_test(
         "//grakn-graql:grakn-graql",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-        "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api"
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"
     ],
     data = ["//:distribution-all"]
 )

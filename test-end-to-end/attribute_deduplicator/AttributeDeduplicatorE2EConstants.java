@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.distribution;
+package ai.grakn.attribute_deduplicator;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.core.server.GraknConfig;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class DistributionE2EConstants {
+public class AttributeDeduplicatorE2EConstants {
     public static final Path GRAKN_TARGET_DIRECTORY = Paths.get("dist");
     public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "grakn-core-all.zip");
     public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution test", "grakn-core-all");
