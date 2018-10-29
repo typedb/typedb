@@ -238,25 +238,23 @@ workflows:
   version: 2
   run-all-tests:
     jobs:
-#      - build:
-#          filters:
-#            tags:
-#              ignore: /.*/
-#      - workbase-unit-tests:
-#          filters:
-#            tags:
-#              ignore: /.*/
-#      - test-unit:
-#          requires:
-#            - build
-#      - test-integration:
-#          requires:
-#          - build
-#      - test-end-to-end
+      - build:
+          filters:
+            tags:
+              ignore: /.*/
+      - workbase-unit-tests:
+          filters:
+            tags:
+              ignore: /.*/
+      - test-unit:
+          requires:
+            - build
+      - test-integration:
+          requires:
+          - build
+      - test-end-to-end
       - client-nodejs-e2e
-#      - client-python-e2e:
-#          requires:
-#            - build
+      - client-python-e2e
       - workbase-e2e
 
   build-and-deploy:
