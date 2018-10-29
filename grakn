@@ -50,8 +50,8 @@ exit_if_java_not_found
 
 if [ -z "$1" ]; then
     echo "Missing argument. Possible commands are:"
-    echo "  Server:          grakn-core server [--help]"
-    echo "  Console:         grakn-core console [--help]"
+    echo "  Server:          grakn server [--help]"
+    echo "  Console:         grakn console [--help]"
 elif [ "$1" = "console" ]; then
     if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
         CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}:${GRAKN_HOME}/conf/"
@@ -70,8 +70,8 @@ elif [ "$1" = "server" ]; then
     fi
 else
     echo "Invalid argument: $1. Possible commands are: "
-    echo "  Server:          grakn-core server [--help]"
-    echo "  Console:         grakn-core console [--help]"
+    echo "  Server:          grakn server [--help]"
+    echo "  Console:         grakn console [--help]"
 fi
 
 exit_code=$?

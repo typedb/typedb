@@ -100,13 +100,13 @@ java_binary(
 
 genrule(
     name = "distribution",
-    srcs = [
-        "//:grakn-core",
-        "jar-server_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml",
+    srcs = glob(["conf/**", "src/services/**"]) + [
+        ":jar-server_deploy.jar",
+        "//:grakn",
         "//dashboard:assets"
         ],
     outs = ["//server:dist/grakn-core-server.zip"],
-    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn-core) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
     tools = ["src/main/bash/distribution-packager.sh"]
 )
 
@@ -159,7 +159,7 @@ test_suite(
 )
 
 exports_files(
-    ["conf/logback.xml", "conf/grakn.properties", "src/services/cassandra/logback.xml", "src/services/cassandra/cassandra.yaml"],
+    glob(["conf/**", "src/services/**"]),
     visibility = ["//visibility:public"]
 )
 

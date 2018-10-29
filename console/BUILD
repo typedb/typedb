@@ -52,9 +52,9 @@ java_binary(
 
 genrule(
     name = "distribution",
-    srcs = ["//:grakn-core", "jar-console_deploy.jar"],
+    srcs = ["//:grakn", "jar-console_deploy.jar"],
     outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location dist/grakn-core-console.zip) $(location //:grakn-core) $(location jar-console_deploy.jar)",
+    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location jar-console_deploy.jar)",
     tools = ["src/main/bash/distribution-packager.sh"]
 )
 

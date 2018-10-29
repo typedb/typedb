@@ -57,13 +57,13 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
         assertZipExists();
         unzipGrakn();
         assertGraknStopped();
-        commandExecutor.command("./grakn-core", "server", "start").execute();
+        commandExecutor.command("./grakn", "server", "start").execute();
         assertGraknRunning();
     }
 
     @AfterClass
     public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
-        commandExecutor.command("./grakn-core", "server", "stop").execute();
+        commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknStopped();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
@@ -78,7 +78,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
 
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(graql.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn-core", "console", "-k", randomKeyspace).execute().outputUTF8();
+                .command("./grakn", "console", "-k", randomKeyspace).execute().outputUTF8();
 
         assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
     }
@@ -91,7 +91,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
         String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
         String graql = "define person sub entity; insert $x isa person; match $x isa person; get;";
 
-        String output = commandExecutor.command("./grakn-core", "console", "-k", randomKeyspace, "-e", graql).execute().outputUTF8();
+        String output = commandExecutor.command("./grakn", "console", "-k", randomKeyspace, "-e", graql).execute().outputUTF8();
 
         assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
     }
@@ -104,7 +104,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
         String userInput = "y";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn-core", "server", "clean").execute().outputUTF8();
+                .command("./grakn", "server", "clean").execute().outputUTF8();
 
         assertThat(output, containsString("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup."));
     }
@@ -114,7 +114,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
      */
     @Test
     public void grakn_testPrintStatus_whenCurrentlyRunning() throws IOException, InterruptedException, TimeoutException {
-        String output = commandExecutor.command("./grakn-core", "server", "status").execute().outputUTF8();
+        String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
         assertThat(output, allOf(containsString("Storage: RUNNING"), containsString("Grakn Core Server: RUNNING")));
     }
 }

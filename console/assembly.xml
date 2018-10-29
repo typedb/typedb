@@ -25,8 +25,8 @@
         <fileSet>
             <directory>${core.basedir}</directory>
             <includes>
-                <include>grakn-core</include>
-                <include>grakn-core.bat</include>
+                <include>grakn</include>
+                <include>grakn.bat</include>
             </includes>
             <outputDirectory>${file.separator}</outputDirectory>
         </fileSet>

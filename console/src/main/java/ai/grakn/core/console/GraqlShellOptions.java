@@ -108,7 +108,7 @@ public class GraqlShellOptions {
         int width = helpFormatter.getWidth();
         int leftPadding = helpFormatter.getLeftPadding();
         int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "grakn-core console", null, options, leftPadding, descPadding, null);
+        helpFormatter.printHelp(printWriter, width, "grakn console", null, options, leftPadding, descPadding, null);
         printWriter.flush();
     }
 

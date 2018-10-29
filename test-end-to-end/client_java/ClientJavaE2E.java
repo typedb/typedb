@@ -86,7 +86,7 @@ public class ClientJavaE2E {
         LOG.info("setup_prepareDistribution() - done.");
 
         LOG.info("setup_prepareDistribution() - starting a new Grakn instance...");
-        commandExecutor.command("./grakn-core", "server", "start").execute();
+        commandExecutor.command("./grakn", "server", "start").execute();
         assertGraknRunning();
         LOG.info("setup_prepareDistribution() - Grakn started successfully.");
     }
@@ -99,7 +99,7 @@ public class ClientJavaE2E {
                 .redirectError(System.err)
                 .readOutput(true);
         LOG.info("cleanup_cleanupDistribution() - stopping the Grakn instance...");
-        commandExecutor.command("./grakn-core", "server", "stop").execute();
+        commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknStopped();
         LOG.info("cleanup_cleanupDistribution() - done.");
 

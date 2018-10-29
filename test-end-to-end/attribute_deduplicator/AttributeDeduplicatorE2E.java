@@ -58,13 +58,13 @@ public class AttributeDeduplicatorE2E {
         assertZipExists();
         unzipGrakn();
         assertGraknStopped();
-        commandExecutor.command("./grakn-core", "server", "start").execute();
+        commandExecutor.command("./grakn", "server", "start").execute();
         assertGraknRunning();
     }
 
     @AfterClass
     public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
-        commandExecutor.command("./grakn-core", "server", "stop").execute();
+        commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknStopped();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }

@@ -92,7 +92,7 @@ public class Graql {
     }
 
     private void help() {
-        System.out.println("Usage: grakn-core COMMAND\n" +
+        System.out.println("Usage: grakn COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "console  Start a REPL console for running Graql queries. Defaults to connecting to http://localhost\n" +

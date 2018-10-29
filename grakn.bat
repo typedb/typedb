@@ -38,15 +38,15 @@ if "%1" == "console" goto startconsole
 if "%1" == "server" goto startserver
 
 echo   Invalid argument: %1. Possible commands are:
-echo   Server:          grakn-core server [--help]
-echo   Console:         grakn-core console [--help]
+echo   Server:          grakn server [--help]
+echo   Console:         grakn console [--help]
 goto exiterror
 
 :missingargument
 
  echo   Missing argument. Possible commands are:
- echo   Server:          grakn-core server [--help]
- echo   Console:         grakn-core console [--help]
+ echo   Server:          grakn server [--help]
+ echo   Console:         grakn console [--help]
 
 goto exiterror
 

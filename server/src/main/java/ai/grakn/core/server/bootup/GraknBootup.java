@@ -94,7 +94,7 @@ public class GraknBootup {
         if (!javaVersion.equals("1.8")) {
             throw new RuntimeException(ErrorMessage.UNSUPPORTED_JAVA_VERSION.getMessage(javaVersion));
         }
-        if (!graknHome.resolve("grakn-core").toFile().exists()) {
+        if (!graknHome.resolve("grakn").toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
         if (!graknProperties.toFile().exists()) {
@@ -103,7 +103,7 @@ public class GraknBootup {
     }
 
     private static void printGraknLogo() {
-        Path ascii = Paths.get(".", "services", "grakn-core", "grakn-core-ascii.txt");
+        Path ascii = Paths.get(".", "services", "grakn", "grakn-core-ascii.txt");
         if(ascii.toFile().exists()) {
             try {
                 System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
@@ -185,7 +185,7 @@ public class GraknBootup {
     }
 
     private void serverHelp() {
-        System.out.println("Usage: grakn-core server COMMAND\n" +
+        System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "start ["+ENGINE+"|"+STORAGE+"|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
@@ -195,7 +195,7 @@ public class GraknBootup {
                 "\n" +
                 "Tips:\n" +
                 "- Start Grakn with 'grakn server start'\n" +
-                "- Start or stop only one component with, e.g. 'grakn-core server start storage' or 'grakn-core server stop storage', respectively\n" +
+                "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n" +
                 "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
     }
 
@@ -215,7 +215,7 @@ public class GraknBootup {
     }
 
     private void help() {
-        System.out.println("Usage: grakn-core COMMAND\n" +
+        System.out.println("Usage: grakn COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
                 "server     Manage Grakn components\n" +
@@ -224,7 +224,7 @@ public class GraknBootup {
                 "\n" +
                 "Tips:\n" +
                 "- Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)\n" +
-                "- You can then perform queries by opening a console with 'grakn-core console'");
+                "- You can then perform queries by opening a console with 'grakn console'");
     }
 
     private void clean() {
