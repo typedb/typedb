@@ -114,14 +114,16 @@ jobs:
       machine: true
       working_directory: ~/grakn
       steps:
-        - *attach_grakn_workspace
+        - checkout
         - *prepare_apt_repositories
         - *install_yarn_and_unzip
         - *install_node
         - *install_bazel
-        - *start_grakn_server
-        - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
-        - run: cd client-nodejs && yarn install && yarn run test
+        - run: bazel build //:distribution --sandbox_debug
+        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+        - run: bazel-genfiles/dist/grakn-core-all/grakn-core server start
+        - run: bazel-genfiles/dist/grakn-core-all/grakn-core console -f ./test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+        - run: bazel test //client-nodejs:test-integration
 
   client-python-e2e:
       machine: true
