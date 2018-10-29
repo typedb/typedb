@@ -75,52 +75,34 @@ java_library(
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 )
 
+#
+#java_test(
+#    name = "keyspace-test",
+#    test_class = "ai.grakn.KeyspaceTest",
+#    srcs = ["src/test/java/ai/grakn/KeyspaceTest.java"],
+#    deps = [":grakn-graql"],
+#    size = "small"
+#)
+#
+#java_test(
+#    name = "in-memory-session-test",
+#    test_class = "ai.grakn.InMemorySessionTest",
+#    srcs = ["src/test/java/ai/grakn/InMemorySessionTest.java"],
+#    deps = [":grakn-graql", "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"],
+#    size = "small"
+#)
+#
+#java_test(
+#    name = "grakn-tx-operation-exception-test",
+#    test_class = "ai.grakn.exception.GraknTxOperationExceptionTest",
+#    srcs = ["src/test/java/ai/grakn/exception/GraknTxOperationExceptionTest.java"],
+#    deps = [":grakn-graql","//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
+#    size = "small"
+#)
+#
 
-java_test(
-    name = "keyspace-test",
-    test_class = "ai.grakn.KeyspaceTest",
-    srcs = ["src/test/java/ai/grakn/KeyspaceTest.java"],
-    deps = [":grakn-graql"],
-    size = "small"
-)
-
-java_test(
-    name = "in-memory-session-test",
-    test_class = "ai.grakn.InMemorySessionTest",
-    srcs = ["src/test/java/ai/grakn/InMemorySessionTest.java"],
-    deps = [":grakn-graql", "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"],
-    size = "small"
-)
-
-java_test(
-    name = "grakn-tx-operation-exception-test",
-    test_class = "ai.grakn.exception.GraknTxOperationExceptionTest",
-    srcs = ["src/test/java/ai/grakn/exception/GraknTxOperationExceptionTest.java"],
-    deps = [":grakn-graql","//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
-    size = "small"
-)
-
-java_test(
-    name = "tx-factory-builder-test",
-    test_class = "ai.grakn.factory.TxFactoryBuilderTest",
-    srcs = ["src/test/java/ai/grakn/factory/TxFactoryBuilderTest.java"],
-    resources = ["src/test/resources/inmemory-graph.properties"],
-    deps = [":grakn-graql","//dependencies/maven/artifacts/org/mockito:mockito-core"],
-    size = "small"
-)
-
-java_test(
-    name = "grakn-tx-tinker-factory-test",
-    test_class = "ai.grakn.factory.GraknTxTinkerFactoryTest",
-    srcs = ["src/test/java/ai/grakn/factory/GraknTxTinkerFactoryTest.java"],
-    deps = [":grakn-graql", "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin"
-    ],
-    resources = ["src/test/resources/inmemory-graph.properties"],
-    size = "small"
-)
-
-test_suite(
-    name = "test-unit",
-    tags = ["small"]
-)
+#
+#test_suite(
+#    name = "test-unit",
+#    tags = ["small"]
+#)
