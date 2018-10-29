@@ -123,7 +123,7 @@ jobs:
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
         - run: nohup bazel-genfiles/dist/grakn-core-all/grakn-core server start
         - run: bazel-genfiles/dist/grakn-core-all/grakn-core console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-        - run: bazel test //client-nodejs:test-integration
+        - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
   client-python-e2e:
       machine: true
