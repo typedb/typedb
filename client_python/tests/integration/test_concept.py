@@ -23,17 +23,18 @@ import datetime
 from grakn.exception.GraknError import GraknError
 
 
-# run-once per testing
+from tests.integration.base import test_Base
+
 inst = grakn.Grakn("localhost:48555")
 session = inst.session("testkeyspace")
 
-class test_Base(unittest.TestCase):
+class test_concept_Base(test_Base):
     """ Sets up DB for use in tests """
 
     @classmethod
     def setUpClass(cls):
         """ Make sure we have some sort of schema and data in DB, only done once """
-        super(test_Base, cls).setUpClass()
+        super(test_concept_Base, cls).setUpClass()
 
         # temp tx to set up DB, don"t save it
         tx = session.transaction(grakn.TxType.WRITE)
@@ -56,7 +57,7 @@ class test_Base(unittest.TestCase):
 
 
 
-class test_Concept(test_Base):
+class test_Concept(test_concept_Base):
     """ Test methods available on all Concepts """
 
     def test_delete_schema_types(self):
@@ -107,7 +108,7 @@ class test_Concept(test_Base):
         self.assertTrue(age.is_attribute())
         self.assertFalse(age.is_relationship())
 
-class test_SchemaConcept(test_Base):
+class test_SchemaConcept(test_concept_Base):
     """ Test methods available on all SchemaConcepts """
     
     def test_set_label(self):
@@ -177,7 +178,7 @@ class test_SchemaConcept(test_Base):
 
 
 
-class test_Type(test_Base):
+class test_Type(test_concept_Base):
     """ Tests concept API of things common to Type objects """
 
     def test_is_abstract(self):
@@ -272,7 +273,7 @@ class test_Type(test_Base):
             self.assertEqual(len(keys), 0)
 
 
-class test_EntityType(test_Base):
+class test_EntityType(test_concept_Base):
 
     def test_create(self):
         person_type = self.tx.get_schema_concept("person")
@@ -280,7 +281,7 @@ class test_EntityType(test_Base):
         self.assertTrue(person.is_entity())
 
 
-class test_AttributeType(test_Base):
+class test_AttributeType(test_concept_Base):
 
     def test_create(self):
         str_attr_type = self.tx.put_attribute_type("firstname", grakn.DataType.STRING)
@@ -337,7 +338,7 @@ class test_AttributeType(test_Base):
         self.assertEqual(regex, "(good|bad)-dog")
 
 
-class test_RelationshipType(test_Base):
+class test_RelationshipType(test_concept_Base):
 
     def test_create(self):
         rel_type = self.tx.put_relationship_type("owner")
@@ -369,7 +370,7 @@ class test_RelationshipType(test_Base):
             self.assertEqual(roles[0].base_type, "ROLE")
 
 
-class test_Rule(test_Base):
+class test_Rule(test_concept_Base):
 
     def test_when_then(self):
         """ Test get valid  when/then """
@@ -388,7 +389,7 @@ class test_Rule(test_Base):
         self.assertIsNone(rule.get_then())
 
 
-class test_Role(test_Base):
+class test_Role(test_concept_Base):
 
     def test_relationships(self):
         """ Test retrieving relationships of a role """
@@ -414,7 +415,7 @@ class test_Role(test_Base):
         self.assertEqual(entity_types[0].label(), "person")
 
 
-class test_Thing(test_Base):
+class test_Thing(test_concept_Base):
 
     def test_is_inferred(self):
         person_type = self.tx.get_schema_concept("person")
@@ -555,7 +556,7 @@ class test_Thing(test_Base):
         self.assertEqual(len(empty_keys), 0)
 
 
-class test_Attribute(test_Base):
+class test_Attribute(test_concept_Base):
 
     def test_value(self):
         """ Get attribute value """
@@ -612,7 +613,7 @@ class test_Attribute(test_Base):
         self.assertTrue(person.id in labels and animal.id in labels)
 
 
-class test_Relationship(test_Base):
+class test_Relationship(test_concept_Base):
 
     def test_role_players_2_roles_1_player(self):
         """ Test role_players_map and role_players with 2 roles and 1 player each """

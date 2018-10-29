@@ -17,12 +17,9 @@
 # under the License.
 #
 
-from typing import Union, Optional
 
 from grakn.service.Session.util import enums
 from grakn.service.Session.util.RequestBuilder import RequestBuilder
-from grakn.service.Session.util import ResponseReader # must be imported this way to avoid circular import issue
-from grakn.service.Session.Concept import ConceptFactory
 from grakn.exception.GraknError import GraknError 
 
 
@@ -40,49 +37,60 @@ class Concept(object):
         method_response = self._tx_service.run_concept_method(self.id, del_request)
         return
 
-    def is_schema_concept(self) -> bool:
+    def is_schema_concept(self):
         """ Check if this concept is a schema concept """
         return isinstance(self, SchemaConcept)
+    is_schema_concept.__annotations__ = {'return': bool}
 
-    def is_type(self) -> bool:
+    def is_type(self):
         """ Check if this concept is a Type concept """
         return isinstance(self, Type)
+    is_type.__annotations__ = {'return': bool}
 
-    def is_thing(self) -> bool:
+    def is_thing(self):
         """ Check if this concept is a Thing concept """
         return isinstance(self, Thing)
+    is_thing.__annotations__ = {'return': bool}
 
-    def is_attribute_type(self) -> bool:
+    def is_attribute_type(self):
         """ Check if this concept is an AttributeType concept """
         return isinstance(self, AttributeType)
+    is_attribute_type.__annotations__ = {'return': bool}
 
-    def is_entity_type(self) -> bool:
+    def is_entity_type(self):
         """ Check if this concept is an EntityType concept """
         return isinstance(self, EntityType)
+    is_entity_type.__annotations__ = {'return': bool}
 
-    def is_relationship_type(self) -> bool:
+    def is_relationship_type(self):
         """ Check if this concept is a RelationshipType concept """
         return isinstance(self, RelationshipType)
+    is_relationship_type.__annotations__ = {'return': bool}
 
-    def is_role(self) -> bool:
+    def is_role(self):
         """ Check if this concept is a Role """
         return isinstance(self, Role)
+    is_role.__annotations__ = {'return': bool}
 
-    def is_rule(self) -> bool:
+    def is_rule(self):
         """ Check if this concept is a Rule concept """
         return isinstance(self, Rule)
+    is_rule.__annotations__ = {'return': bool}
 
-    def is_attribute(self) -> bool:
+    def is_attribute(self):
         """ Check if this concept is an Attribute concept """
         return isinstance(self, Attribute)
+    is_attribute.__annotations__ = {'return': bool}
 
-    def is_entity(self) -> bool:
+    def is_entity(self):
         """ Check if this concept is an Entity concept """
         return isinstance(self, Entity)
+    is_entity.__annotations__ = {'return': bool}
 
-    def is_relationship(self) -> bool:
+    def is_relationship(self):
         """ Check if this concept is a Relationship concept """
         return isinstance(self, Relationship)
+    is_relationship.__annotations__ = {'return': bool}
 
 
 class SchemaConcept(Concept):
@@ -121,6 +129,7 @@ class SchemaConcept(Concept):
             whichone = get_sup_response.WhichOneof('res')
             if whichone == 'schemaConcept':
                 grpc_schema_concept = get_sup_response.schemaConcept
+                from grakn.service.Session.Concept import ConceptFactory
                 concept = ConceptFactory.create_concept(self._tx_service, grpc_schema_concept)
                 return concept
             elif whichone == 'null':
@@ -137,11 +146,13 @@ class SchemaConcept(Concept):
         """ Retrieve the sub schema concepts of this schema concept, as an iterator """
         subs_req = RequestBuilder.ConceptMethod.SchemaConcept.subs()
         method_response = self._tx_service.run_concept_method(self.id, subs_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                     self._tx_service,
                     method_response.schemaConcept_subs_iter.id,
                     lambda tx_serv, iter_res: 
-                        ConceptFactory.create_concept(tx_serv,  
+                        ConceptFactory.create_concept(tx_serv,
                         iter_res.conceptMethod_iter_res.schemaConcept_subs_iter_res.schemaConcept)
                     )
 
@@ -149,17 +160,19 @@ class SchemaConcept(Concept):
         """ Retrieve the all supertypes (direct and higher level) of this schema concept as an iterator """
         sups_req = RequestBuilder.ConceptMethod.SchemaConcept.sups()
         method_response = self._tx_service.run_concept_method(self.id, sups_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.schemaConcept_sups_iter.id,
                 lambda tx_serv, iter_res:
-                    ConceptFactory.create_concept(tx_serv, 
+                    ConceptFactory.create_concept(tx_serv,
                     iter_res.conceptMethod_iter_res.schemaConcept_sups_iter_res.schemaConcept)
                 )
  
 class Type(SchemaConcept):
 
-    def is_abstract(self, value: bool = None) -> Optional[bool]:
+    def is_abstract(self, value=None):
         """
         Get/Set whether this schema Type object is abstract.
         When used as a setter returns `self` 
@@ -173,11 +186,14 @@ class Type(SchemaConcept):
             set_abstract_req = RequestBuilder.ConceptMethod.Type.set_abstract(value)
             method_response = self._tx_service.run_concept_method(self.id, set_abstract_req)
             return self
+    is_abstract.__annotations__ = {'value': bool, 'return': bool}
 
     def attributes(self):
         """ Retrieve all attributes attached to this Type as an iterator """
         attributes_req = RequestBuilder.ConceptMethod.Type.attributes()
         method_response = self._tx_service.run_concept_method(self.id, attributes_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_attributes_iter.id,
@@ -190,6 +206,8 @@ class Type(SchemaConcept):
         """ Retrieve all instances of this Type as an iterator """
         instances_req = RequestBuilder.ConceptMethod.Type.instances()
         method_response = self._tx_service.run_concept_method(self.id, instances_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_instances_iter.id,
@@ -202,6 +220,8 @@ class Type(SchemaConcept):
         """ Retrieve iterator of roles played by this type """
         playing_req = RequestBuilder.ConceptMethod.Type.playing()
         method_response = self._tx_service.run_concept_method(self.id, playing_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_playing_iter.id,
@@ -238,6 +258,8 @@ class Type(SchemaConcept):
         """ Retrieve an iterator of attribute types that this Type uses as keys """
         keys_req = RequestBuilder.ConceptMethod.Type.keys()
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.type_keys_iter.id,
@@ -268,16 +290,18 @@ class EntityType(Type):
         create_req = RequestBuilder.ConceptMethod.EntityType.create()
         method_response = self._tx_service.run_concept_method(self.id, create_req)
         grpc_entity_concept = method_response.entityType_create_res.entity
+        from grakn.service.Session.Concept import ConceptFactory
         return ConceptFactory.create_concept(self._tx_service, grpc_entity_concept)
 
 class AttributeType(Type):
     
     def create(self, value):
         """ Create an instance with this AttributeType """
-        self_data_type: enums.DataType = self.data_type()
+        self_data_type = self.data_type()
         create_inst_req = RequestBuilder.ConceptMethod.AttributeType.create(value, self_data_type)
         method_response = self._tx_service.run_concept_method(self.id, create_inst_req)
         grpc_attribute_concept = method_response.attributeType_create_res.attribute
+        from grakn.service.Session.Concept import ConceptFactory
         return ConceptFactory.create_concept(self._tx_service, grpc_attribute_concept)
         
     def attribute(self, value):
@@ -288,6 +312,7 @@ class AttributeType(Type):
         response = method_response.attributeType_attribute_res
         whichone = response.WhichOneof('res')
         if whichone == 'attribute':
+            from grakn.service.Session.Concept import ConceptFactory
             return ConceptFactory.create_concept(self._tx_service, response.attribute)
         elif whichone == 'null':
             return None
@@ -313,7 +338,7 @@ class AttributeType(Type):
         else:
             raise GraknError("Unknown datatype response for AttributeType: {0}".format(whichone))
 
-    def regex(self, pattern: str = None):
+    def regex(self, pattern=None):
         """ Get or set regex """
         if pattern is None:
             get_regex_req = RequestBuilder.ConceptMethod.AttributeType.get_regex()
@@ -323,6 +348,7 @@ class AttributeType(Type):
             set_regex_req = RequestBuilder.ConceptMethod.AttributeType.set_regex(pattern)
             method_response = self._tx_service.run_concept_method(self.id, set_regex_req)
             return self
+    regex.__annotations__ = {'pattern': str}
 
 
 class RelationshipType(Type):
@@ -334,12 +360,15 @@ class RelationshipType(Type):
         create_rel_inst_req = RequestBuilder.ConceptMethod.RelationType.create()
         method_response = self._tx_service.run_concept_method(self.id, create_rel_inst_req)
         grpc_relationship_concept = method_response.relationType_create_res.relation
+        from grakn.service.Session.Concept import ConceptFactory
         return ConceptFactory.create_concept(self._tx_service, grpc_relationship_concept)
         
     def roles(self):
         """ Retrieve roles in this relationship schema type """
         get_roles = RequestBuilder.ConceptMethod.RelationType.roles()
         method_response = self._tx_service.run_concept_method(self.id, get_roles)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.relationType_roles_iter.id,
@@ -396,6 +425,8 @@ class Role(SchemaConcept):
         # NOTE: relations vs relationships here
         relations_req = RequestBuilder.ConceptMethod.Role.relations()
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.role_relations_iter.id,
@@ -407,6 +438,8 @@ class Role(SchemaConcept):
         """ Retrieve an iterator of entities that play this role """
         players_req = RequestBuilder.ConceptMethod.Role.players()
         method_response = self._tx_service.run_concept_method(self.id, players_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.role_players_iter.id,
@@ -417,16 +450,18 @@ class Role(SchemaConcept):
 
 class Thing(Concept):
 
-    def is_inferred(self) -> bool:
+    def is_inferred(self):
         """ Is this instance inferred """
         is_inferred_req = RequestBuilder.ConceptMethod.Thing.is_inferred()
         method_response = self._tx_service.run_concept_method(self.id, is_inferred_req)
         return method_response.thing_isInferred_res.inferred
+    is_inferred.__annotations__ = {'return': bool}
 
     def type(self):
         """ Get the type (schema concept) of this Thing """
         type_req = RequestBuilder.ConceptMethod.Thing.type()
         method_response = self._tx_service.run_concept_method(self.id, type_req)
+        from grakn.service.Session.Concept import ConceptFactory
         return ConceptFactory.create_concept(self._tx_service, method_response.thing_type_res.type)
 
     def relationships(self, *roles):
@@ -434,6 +469,8 @@ class Thing(Concept):
         # NOTE `relations` rather than `relationships`
         relations_req = RequestBuilder.ConceptMethod.Thing.relations(roles)
         method_response = self._tx_service.run_concept_method(self.id, relations_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_relations_iter.id,
@@ -445,6 +482,8 @@ class Thing(Concept):
         """ Retrieve iterator of this Thing's attributes, filtered by optionally provided attribute types """
         attrs_req = RequestBuilder.ConceptMethod.Thing.attributes(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, attrs_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_attributes_iter.id,
@@ -456,6 +495,8 @@ class Thing(Concept):
         """ Retrieve iterator of roles this Thing plays """
         roles_req = RequestBuilder.ConceptMethod.Thing.roles()
         method_response = self._tx_service.run_concept_method(self.id, roles_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_roles_iter.id,
@@ -467,6 +508,8 @@ class Thing(Concept):
         """ Retrieve iterator of keys (i.e. actual attributes) of this Thing, filtered by the optionally provided attribute types """
         keys_req = RequestBuilder.ConceptMethod.Thing.keys(attribute_types)
         method_response = self._tx_service.run_concept_method(self.id, keys_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.thing_keys_iter.id,
@@ -499,12 +542,15 @@ class Attribute(Thing):
         value_req = RequestBuilder.ConceptMethod.Attribute.value()
         method_response = self._tx_service.run_concept_method(self.id, value_req)
         grpc_value_object = method_response.attribute_value_res.value
+        from grakn.service.Session.util import ResponseReader
         return ResponseReader.ResponseReader.from_grpc_value_object(grpc_value_object)
 
     def owners(self):
         """ Retrieve entities that have this attribute value """
         owners_req = RequestBuilder.ConceptMethod.Attribute.owners()
         method_response = self._tx_service.run_concept_method(self.id, owners_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.attribute_owners_iter.id,
@@ -524,10 +570,13 @@ class Relationship(Thing):
         # create the iterator to obtain all the pairs of (role, player)
         def to_pair(tx_service, iter_res):
             response = iter_res.conceptMethod_iter_res.relation_rolePlayersMap_iter_res
+            from grakn.service.Session.Concept import ConceptFactory
             role = ConceptFactory.create_concept(tx_service, response.role)
+            from grakn.service.Session.Concept import ConceptFactory
             player = ConceptFactory.create_concept(tx_service, response.player)
             return (role, player)
 
+        from grakn.service.Session.util import ResponseReader
         iterator = ResponseReader.ResponseReader.iter_res_to_iterator(
                     self._tx_service,
                     method_response.relation_rolePlayersMap_iter.id,
@@ -556,6 +605,8 @@ class Relationship(Thing):
         """ Retrieve role players filtered by roles """
         role_players_req = RequestBuilder.ConceptMethod.Relation.role_players(roles)
         method_response = self._tx_service.run_concept_method(self.id, role_players_req)
+        from grakn.service.Session.util import ResponseReader
+        from grakn.service.Session.Concept import ConceptFactory
         return ResponseReader.ResponseReader.iter_res_to_iterator(
                 self._tx_service,
                 method_response.relation_rolePlayers_iter.id,

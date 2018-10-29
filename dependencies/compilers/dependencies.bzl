@@ -40,9 +40,9 @@ def grpc_dependencies():
 def python_dependencies():
     native.git_repository(
         name = "io_bazel_rules_python",
-        remote = "https://github.com/graknlabs/rules_python.git",
-        commit = "abd475a72ae6a098cc9f859eb435dddd992bc884",
-        sha256 = "fe468b9396ef5c933679e1a5d846f777d0ea4731927df2149e5a01b328afd9b6"
+        remote = "https://github.com/bazelbuild/rules_python.git",
+        commit = "8b5d0683a7d878b28fffe464779c8a53659fc645",
+        sha256 = "8b32d2dbb0b0dca02e0410da81499eef8ff051dad167d6931a92579e3b2a1d48"
     )
 
 

@@ -41,33 +41,46 @@ py_library(
     ]),
     deps = [
         requirement("protobuf"),
-        requirement("grpcio")
+        requirement("grpcio"),
+        requirement("six"),
     ]
 )
 
 py_test(
     name = "test_concept",
-    srcs = ["tests/integration/test_concept.py"],
+    srcs = [
+        "tests/integration/base.py",
+        "tests/integration/test_concept.py"
+    ],
     deps = [
-        ":client_python"
+        ":client_python",
+        requirement("forbiddenfruit")
     ],
     imports = [".", "./client_python_proto"]
 )
 
 py_test(
     name = "test_grakn",
-    srcs = ["tests/integration/test_grakn.py"],
+    srcs = [
+        "tests/integration/base.py",
+        "tests/integration/test_grakn.py"
+    ],
     deps = [
-        ":client_python"
+        ":client_python",
+        requirement("forbiddenfruit")
     ],
     imports = [".", "./client_python_proto"]
 )
 
 py_test(
     name = "test_keyspace",
-    srcs = ["tests/integration/test_keyspace.py"],
+    srcs = [
+        "tests/integration/base.py",
+        "tests/integration/test_keyspace.py"
+    ],
     deps = [
-        ":client_python"
+        ":client_python",
+        requirement("forbiddenfruit")
     ],
     imports = [".", "./client_python_proto"]
 )

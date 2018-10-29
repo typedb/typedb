@@ -19,10 +19,11 @@
 
 import unittest
 import grakn
+from tests.integration.base import test_Base
 
 client = grakn.Grakn("localhost:48555")
 
-class test_Keyspace(unittest.TestCase):
+class test_Keyspace(test_Base):
 
    def test_retrieve_delete(self):
        """ Test retrieving and deleting a specific keyspace """
