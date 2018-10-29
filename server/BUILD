@@ -91,6 +91,25 @@ java_library(
 
 )
 
+java_binary(
+    name = "jar-server",
+    main_class = "ai.grakn.core.server.bootup.GraknBootup",
+    runtime_deps = ["//server:server"],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "distribution",
+    srcs = [
+        "//:grakn-core",
+        "jar-server_deploy.jar", "//server:conf/grakn.properties", "//server:conf/logback.xml", "//server:src/services/cassandra/logback.xml", "//server:src/services/cassandra/cassandra.yaml",
+        "//dashboard:assets"
+        ],
+    outs = ["//server:dist/grakn-core-server.zip"],
+    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn-core) $(location jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    tools = ["src/main/bash/distribution-packager.sh"]
+)
+
 java_test(
     name = "process-wide-lock-provider-test",
     test_class = "ai.grakn.engine.lock.ProcessWideLockProviderTest",

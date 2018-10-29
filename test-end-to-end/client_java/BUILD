@@ -11,5 +11,5 @@ java_test(
             "//dependencies/maven/artifacts/javax/ws/rs:jsr311-api",
             "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
         ],
-    data = ["//:distribution-all"]
+    data = ["//:distribution"]
 )
