@@ -51,15 +51,15 @@ grpc_dependencies()
 python_dependencies()
 node_dependencies()
 
-## Python PIP dependencies
-load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
-pip_repositories()
-pip3_import(
-    name = "python_grakn_deps",
-    requirements = "//dependencies/pypi:requirements.txt",
-)
-load("@python_grakn_deps//:requirements.bzl", "pip_install")
-pip_install()
+### Python PIP dependencies
+#load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
+#pip_repositories()
+#pip3_import(
+#    name = "python_grakn_deps",
+#    requirements = "//dependencies/pypi:requirements.txt",
+#)
+#load("@python_grakn_deps//:requirements.bzl", "pip_install")
+#pip_install()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_bazel_grpc_deps()
