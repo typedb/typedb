@@ -36,13 +36,14 @@
                     v-on:close-error="showError = false">
             </error-container>
             <fav-queries-list
+                    :tabId="tabId"
                     v-if="showFavQueriesList"
-                    :currentKeyspace="currentKeyspace"
                     :favQueries="favQueries"
                     v-on:close-fav-queries-panel="toggleFavQueriesList"
                     v-on:refresh-queries="refreshFavQueries">
             </fav-queries-list>
             <types-container
+                    :tabId="tabId"
                     v-if="showTypesContainer"
                     v-on:close-types-panel="showTypesContainer = false">
             </types-container>
@@ -246,7 +247,7 @@ export default {
       this.initialEditorHeight = $('.CodeMirror').height();
 
       this.codeMirror.on('change', (codeMirrorObj) => {
-        this.$store.commit('currentQuery', codeMirrorObj.getValue());
+        this.$store.commit(`tab-${this.tabId}/currentQuery`, codeMirrorObj.getValue());
         this.editorLinesNumber = codeMirrorObj.lineCount();
       });
       this.codeMirror.on('focus', () => {
@@ -264,11 +265,11 @@ export default {
         this.showFavQueriesList = false;
         this.showTypesContainer = false;
 
-        this.$store.commit(`tab-${this.$options.propsData.tabId}/currentQuery`, limitQuery(this.currentQuery));
+        this.$store.commit(`tab-${this.tabId}/currentQuery`, limitQuery(this.currentQuery));
 
         this.history.addToHistory(this.currentQuery);
 
-        this.$store.dispatch(`tab-${this.$options.propsData.tabId}/${RUN_CURRENT_QUERY}`)
+        this.$store.dispatch(`tab-${this.tabId}/${RUN_CURRENT_QUERY}`)
           .catch((err) => {
             if (!err.details) this.errorMsg = err.message;
             else this.errorMsg = err.details;
@@ -284,7 +285,7 @@ export default {
     clearGraph() {
       if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
       else {
-        this.$store.dispatch(CANVAS_RESET);
+        this.$store.dispatch(`tab-${this.tabId}/${CANVAS_RESET}`);
       }
     },
     toggleAddFavQuery() {

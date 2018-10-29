@@ -2,10 +2,14 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 
 import visTab from '@/components/Visualiser/VisTab';
-
-import { shallowMount } from '@vue/test-utils';
+import actions from '@/components/Visualiser/store/actions';
 import mutations from '@/components/Visualiser/store/mutations';
 import getters from '@/components/Visualiser/store/getters';
+import TabState from '@/components/Visualiser/store/tabState';
+
+
+import { shallowMount } from '@vue/test-utils';
+import MockConcepts from '../../../../helpers/MockConcepts';
 
 
 jest.mock('grakn', () => ({ txType: { WRITE: 'write' } }));
@@ -69,6 +73,35 @@ describe('tabs', () => {
     });
     expect(store.state['tab-0']).not.toBeDefined();
     expect(store.state['tab-1']).toBeDefined();
+  });
+
+  test('dispatching actions only effects namespaced state', async () => {
+    const store = new Vuex.Store({
+      state: { grakn: { session: () => jest.fn() } },
+    });
+
+    shallowMount(Object.assign({
+      store,
+    }, visTab), {
+      propsData: { tabId: 0 },
+    });
+
+    shallowMount(Object.assign({
+      store,
+    }, visTab), {
+      propsData: { tabId: 1 },
+    });
+
+    store.commit('tab-0/setVisFacade', { resetCanvas: jest.fn(), getAllNodes: jest.fn().mockImplementation(() => [{ id: 1234, type: 'person' }]) });
+    store.commit('tab-1/setVisFacade', { resetCanvas: jest.fn(), getAllNodes: jest.fn().mockImplementation(() => [{ id: 1234, type: 'person' }]) });
+
+    expect(store.getters['tab-0/currentKeyspace']).toBe(null);
+    expect(store.getters['tab-1/currentKeyspace']).toBe(null);
+
+    await store.dispatch('tab-0/current-keyspace-changed', 'gene');
+
+    expect(store.getters['tab-0/currentKeyspace']).toBe('gene');
+    expect(store.getters['tab-1/currentKeyspace']).toBe(null);
   });
 });
 

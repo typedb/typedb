@@ -53,6 +53,7 @@
 
 <script>
   import { Chrome } from 'vue-color';
+  import { createNamespacedHelpers } from 'vuex';
 
   import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL, OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
@@ -76,21 +77,21 @@
         },
       };
     },
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace', 'metaTypeInstances', 'selectedNode']),
+      };
+    },
     created() {
       this.loadMetaTypes();
       this.loadAttributeTypes();
       this.loadColour();
     },
     computed: {
-      metaTypeInstances() {
-        return this.$store.getters.metaTypeInstances(this.tabId);
-      },
-      selectedNode() {
-        return this.$store.getters.selectedNode(this.tabId);
-      },
-      currentKeyspace() {
-        return this.$store.getters.currentKeyspace(this.tabId);
-      },
       node() {
         if (this.selectedNode && this.selectedNode.baseType.includes('Type')) {
           return null;
@@ -126,7 +127,7 @@
     methods: {
       async loadAttributeTypes() {
         if (!this.currentType) return;
-        const graknTx = await this.$store.dispatch(OPEN_GRAKN_TX);
+        const graknTx = await this.$store.dispatch(`tab-${this.tabId}/${OPEN_GRAKN_TX}`);
 
         const type = await graknTx.getSchemaConcept(this.currentType);
 
@@ -150,7 +151,7 @@
       toggleAttributeToLabel(attribute) {
         // Persist changes into localstorage for current type
         DisplaySettings.toggleLabelByType({ type: this.currentType, attribute });
-        this.$store.dispatch(UPDATE_NODES_LABEL, this.currentType);
+        this.$store.dispatch(`tab-${this.tabId}/${UPDATE_NODES_LABEL}`, this.currentType);
         this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
       },
       toggleContent() {
@@ -167,7 +168,7 @@
         if (DisplaySettings.getTypeColours(this.currentType) !== col) {
           if (!col) this.colour.hex = 'default';
           DisplaySettings.toggleColourByType({ type: this.currentType, colourString: col });
-          this.$store.dispatch(UPDATE_NODES_COLOUR, this.currentType);
+          this.$store.dispatch(`tab-${this.tabId}/${UPDATE_NODES_COLOUR}`, this.currentType);
         }
       },
     },

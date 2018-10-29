@@ -34,7 +34,7 @@
   }
 
   .tab {
-    background-color: var(--gray-4);
+    background-color: var(--gray-1);
     width: 120px;
     height: 30px;
     border: var(--container-darkest-border);
@@ -47,8 +47,7 @@
   }
 
   .current-tab {
-    background-color: var(--gray-1);
-    border-top: none;
+    background-color: var(--gray-3);
   }
 
 </style>

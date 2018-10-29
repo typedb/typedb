@@ -41,20 +41,17 @@
     },
     methods: {
       deleteNode() {
-        this.$store.commit('contextMenu', { id: this.tabId, show: false, x: null, y: null });
-        this.$store.dispatch(DELETE_SELECTED_NODES, this.tabId).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
+        this.$store.commit(`tab-${this.tabId}/contextMenu`, { show: false, x: null, y: null });
+        this.$store.dispatch(`tab-${this.tabId}/${DELETE_SELECTED_NODES}`).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
       },
       explainNode() {
-        this.$store.commit('contextMenu', { id: this.tabId, show: false, x: null, y: null });
-        this.$store.dispatch(EXPLAIN_CONCEPT, this.tabId).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
+        this.$store.commit(`tab-${this.tabId}/contextMenu`, { show: false, x: null, y: null });
+        this.$store.dispatch(`tab-${this.tabId}/${EXPLAIN_CONCEPT}`).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
       },
       computeShortestPath() {
-        this.$store.commit('contextMenu', { id: this.tabId, show: false, x: null, y: null });
-        this.$store.commit('currentQuery', {
-          id: this.tabId,
-          query: `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`,
-        });
-        this.$store.dispatch(RUN_CURRENT_QUERY, this.tabId).catch((err) => { this.$notifyError(err, 'Run Query'); });
+        this.$store.commit(`tab-${this.tabId}/contextMenu`, { show: false, x: null, y: null });
+        this.$store.commit(`tab-${this.tabId}/currentQuery`, `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
+        this.$store.dispatch(`tab-${this.tabId}/${RUN_CURRENT_QUERY}`).catch((err) => { this.$notifyError(err, 'Run Query'); });
       },
     },
   };

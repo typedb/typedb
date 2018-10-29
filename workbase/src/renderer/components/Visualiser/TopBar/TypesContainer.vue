@@ -95,7 +95,7 @@
         this.currentTab = tab;
       },
       typeSelected(type) {
-        this.$store.commit(`tab-${this.$options.parent.$options.propsData.tabId}/currentQuery`, `match $x isa ${type}; get;`);
+        this.$store.commit(`tab-${this.tabId}/currentQuery`, `match $x isa ${type}; get;`);
       },
     },
   };

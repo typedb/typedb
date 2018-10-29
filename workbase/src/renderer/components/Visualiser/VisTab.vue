@@ -66,7 +66,7 @@ export default {
   beforeCreate() {
     const namespace = `tab-${this.$options.propsData.tabId}`;
 
-    this.$store.registerModule(namespace, { namespaced: true, getters, state: TabState, mutations, actions });
+    this.$store.registerModule(namespace, { namespaced: true, getters, state: TabState.create(), mutations, actions });
   },
   beforeDestroy() {
     this.$store.unregisterModule(`tab-${this.tabId}`);
