@@ -257,9 +257,7 @@ workflows:
 #      - client-python-e2e:
 #          requires:
 #            - build
-#      - workbase-e2e:
-#          requires:
-#            - build
+      - workbase-e2e
 
   build-and-deploy:
     jobs:
