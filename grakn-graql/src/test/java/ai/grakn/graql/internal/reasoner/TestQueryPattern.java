@@ -27,14 +27,14 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class TestQueryPattern {
 
@@ -42,7 +42,11 @@ public abstract class TestQueryPattern {
 
 
     /**
-     * Generates different relation patterns variants as a cartesian products of provided configurations.
+     * Generates different relation patterns variants as a cartesian products of provided id configurations.
+     *
+     * ( (role label): $x, (role label): $y, ...) {T1(x), T2(y), ...}, {[x/...], [y/...], ...}
+     *
+     * NB: only roleplayer ids are involved in the Cartesian Product
      *
      * Example:
      * [someRole, someType, {V123, V456, V789} ]
@@ -56,15 +60,17 @@ public abstract class TestQueryPattern {
      * (someRole: $genVarA, anotherRole: $genVarB, yetAnotherRole: $genVarC), [$genVarA/V456], [$genVarB/V123], [$genVarC/V456]
      * (someRole: $genVarA, anotherRole: $genVarB, yetAnotherRole: $genVarC), [$genVarA/V789], [$genVarB/V123], [$genVarC/V456]
      *
-     * @param spec
-     * @return
+     * @param spec roleplayer configuration in the form {role} -> {type label, {ids...}}
+     * @param relationIds list of id mappings for relation variable
+     * @return list of generated patterns as strings
      */
-    static Set<String> generateRelationPattern(
+    private static List<String> generateRelationPattern(
             Multimap<Label, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
         Var relationVar = !relationIds.isEmpty()? Graql.var().asUserDefined() : Graql.var();
         VarPattern[] basePattern = {relationVar};
-        List<Set<Pattern>> rpPatterns = new ArrayList<>();
+        List<List<Pattern>> rpTypePatterns = new ArrayList<>();
+        List<List<Pattern>> rpIdPatterns = new ArrayList<>();
         Multimap<Label, VarPattern> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
             VarPattern rolePlayer = Graql.var().asUserDefined();
@@ -73,59 +79,99 @@ public abstract class TestQueryPattern {
             List<ConceptId> ids = entry.getValue().getValue();
             basePattern[0] = basePattern[0].rel(role.getValue(), rolePlayer);
             rps.put(role, rolePlayer);
-            Set<Pattern> rpPattern = new HashSet<>();
-            VarPattern typePattern = type != null ? rolePlayer.isa(type.getValue()) : null;
-            if (typePattern != null) rpPattern.add(typePattern);
+            List<Pattern> rpPattern = Lists.newArrayList(rolePlayer);
+            List<Pattern> typePattern = Lists.newArrayList(rolePlayer);
+            if(type != null) typePattern.add(rolePlayer.isa(type.getValue()));
+
             ids.forEach(id -> {
                 VarPattern idPattern = rolePlayer.id(id);
-                Pattern rolePlayerPattern = typePattern != null ? typePattern.and(idPattern) : idPattern;
+                //Pattern rolePlayerPattern = typePattern != null ? typePattern.and(idPattern) : idPattern;
+                Pattern rolePlayerPattern = idPattern;
                 rpPattern.add(rolePlayerPattern);
                 relationIds.forEach(rid -> rpPattern.add(rolePlayerPattern.and(relationVar.id(rid))));
             });
-            rpPatterns.add(rpPattern);
+
+            rpIdPatterns.add(rpPattern);
+            rpTypePatterns.add(typePattern);
         });
 
-        Set<String> patterns = new HashSet<>();
+        List<Pattern> patterns = new ArrayList<>();
 
-        Sets.cartesianProduct(rpPatterns).forEach(product -> {
+        Stream.concat(
+                Lists.cartesianProduct(rpTypePatterns).stream(),
+                Lists.cartesianProduct(rpIdPatterns).stream()
+        )
+                //filter trivial patterns
+                .map(l -> l.stream()
+                        .filter(
+                                p -> p.admin().isConjunction()
+                                        || p.admin().asVarPattern().getProperties().findFirst().isPresent()
+                        )
+                        .collect(Collectors.toList()))
+                .forEach(product -> {
             Pattern[] pattern = {basePattern[0]};
             product.forEach(p -> pattern[0] = pattern[0].and(p));
-            patterns.add(pattern[0].toString());
+            if (!patterns.contains(pattern[0])) patterns.add(pattern[0]);
         });
-        return patterns;
+        return patterns.stream().map(Object::toString).collect(Collectors.toList());
     }
 
     public final static TestQueryPattern differentRelationVariants = new TestQueryPattern() {
         @Override
         public List<String> patternList(Concept... args) {
             if (args.length != 3){ throw new IllegalStateException(); }
-            String baseEntityId = args[0].id().getValue();
-            String anotherBaseEntityId = args[1].id().getValue();
-            String subEntityId = args[2].id().getValue();
-            return Lists.newArrayList(
-                    "{(baseRole1: $x, baseRole2: $y);}",
+            ConceptId baseEntityId = args[0].id();
+            ConceptId anotherBaseEntityId = args[1].id();
+            ConceptId subEntityId = args[2].id();
 
-                    //(x[], y), 1-4
-                    "{(baseRole1: $x1_1, baseRole2: $x2_1); $x1_1 isa baseRoleEntity;}",
-                    "{(baseRole1: $x1_1b, baseRole2: $x2_1b); $x1_1b id '" + baseEntityId + "';}",
-                    "{(baseRole1: $x1_1c, baseRole2: $x2_1c); $x1_1c id '" + anotherBaseEntityId + "';}",
-                    "{(baseRole1: $x1_1d, baseRole2: $x2_1d); $x1_1d id '" + subEntityId + "';}",
+            /**
+            (baseRole1: $x, baseRole2: $y);,
 
-                    //(x, y[]), 5-8
-                    "{(baseRole1: $x1_2, baseRole2: $x2_2); $x2_2 isa baseRoleEntity;}",
-                    "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x2_2b id '" + baseEntityId + "';}",
-                    "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x2_2c id '" + anotherBaseEntityId + "';}",
-                    "{(baseRole1: $x1_2d, baseRole2: $x2_2d); $x2_2d id '" + subEntityId + "';}",
+             //1-3
+             (baseRole1: $x1_2, baseRole2: $x2_2); $x2_2 isa anotherBaseRoleEntity;
+             (baseRole1: $x1_1, baseRole2: $x2_1); $x1_1 isa baseRoleEntity;
+             (baseRole1: $x1_3, baseRole2: $x2_3); $x1_3 isa baseRoleEntity; $x2_3 isa anotherBaseRoleEntity;
 
-                    //(x[], y[]), 9-11
-                    "{(baseRole1: $x1_3, baseRole2: $x2_3); $x1_3 isa baseRoleEntity; $x2_3 isa anotherBaseRoleEntity;}",
-                    "{(baseRole1: $x1_3b, baseRole2: $x2_3b); $x1_3b id '" + baseEntityId + "'; $x2_3b id '" + anotherBaseEntityId + "';}",
-                    "{(baseRole1: $x1_3c, baseRole2: $x2_3c); $x1_3c id '" + subEntityId + "'; $x2_3c id '" + anotherBaseEntityId + "';}"
+             //4-6
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x2_2b id '" + baseEntityId + "';}",
+             "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x2_2c id '" + anotherBaseEntityId + "';}",
+             "{(baseRole1: $x1_2d, baseRole2: $x2_2d); $x2_2d id '" + subEntityId + "';}",
 
-                    //TODO
-                    //resources as roleplayers
-                );
-            }
+             //7-10
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_1b id '" + baseEntityId + "';}",
+
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_1b id '" + baseEntityId + "'; $x2_2b id '" + baseEntityId + "';}",
+             "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x1_1b id '" + baseEntityId + "'; $x2_2c id '" + anotherBaseEntityId + "';}",
+             "{(baseRole1: $x1_2d, baseRole2: $x2_2d); $x1_1b id '" + baseEntityId + "'; $x2_2d id '" + subEntityId + "';}",
+
+             //11-14
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_1b id '" + anotherBaseEntityId + "';}",
+
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_1b id '" + anotherBaseEntityId + "'; $x2_2b id '" + baseEntityId + "';}",
+             "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x1_1b id '" + anotherBaseEntityId + "'; $x2_2c id '" + anotherBaseEntityId + "';}",
+             "{(baseRole1: $x1_2d, baseRole2: $x2_2d); $x1_1b id '" + anotherBaseEntityId + "'; $x2_2d id '" + subEntityId + "';}",
+
+             //15-18
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_1b id '" + subEntityId + "';}",
+
+             "{(baseRole1: $x1_2b, baseRole2: $x2_2b); $x1_1b id '" + subEntityId + "'; $x2_2b id '" + baseEntityId + "';}",
+             "{(baseRole1: $x1_2c, baseRole2: $x2_2c); $x1_1b id '" + subEntityId + "'; $x2_2c id '" + anotherBaseEntityId + "';}",
+             "{(baseRole1: $x1_2d, baseRole2: $x2_2d); $x1_1b id '" + subEntityId + "'; $x2_2d id '" + subEntityId + "';}",
+
+             //TODO
+             //resources as roleplayers
+
+             **/
+            List<String> variants = generateRelationPattern(
+                    ImmutableMultimap.of(
+                            Label.of("baseRole1"), new Pair<>(Label.of("baseRoleEntity"), Lists.newArrayList(baseEntityId, anotherBaseEntityId, subEntityId)),
+                            Label.of("baseRole2"), new Pair<>(Label.of("anotherBaseRoleEntity"), Lists.newArrayList(baseEntityId, anotherBaseEntityId, subEntityId))
+                    ),
+                    new ArrayList<>()
+            );
+
+            return variants;
+        }
     };
 
     public final static TestQueryPattern differentRelationVariantsWithRelationVariable = new TestQueryPattern() {
@@ -291,6 +337,12 @@ public abstract class TestQueryPattern {
             );
         }
     };
+
+    static <T> List<T> mergeToList(Collection<T>... lists){
+        List<T> mergedList = new ArrayList<>();
+        for (Collection<T> list : lists) mergedList.addAll(list);
+        return mergedList;
+    }
 
     static <T> List<T> subList(List<T> list, Collection<Integer> elements){
         List<T> subList = new ArrayList<>();

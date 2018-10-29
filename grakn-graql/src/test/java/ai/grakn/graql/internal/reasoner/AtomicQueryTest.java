@@ -692,18 +692,27 @@ public class AtomicQueryTest {
         structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
 
         structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 4)), graph);
-        structuralUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 4)), graph);
-        structuralUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(2, 3)), graph);
+        structuralUnification(qs.get(2), qs, new ArrayList<>(), graph);
+        structuralUnification(qs.get(3), qs, new ArrayList<>(), graph);
 
-        structuralUnification(qs.get(5), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
-        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
-        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
+        structuralUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(5, 6)), graph);
+        structuralUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(4, 6)), graph);
+        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(4, 5)), graph);
 
-        structuralUnification(qs.get(9), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), graph);
-        structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), graph);
+        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(7, 11, 15)), graph);
+        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+        structuralUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+        structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+
+        structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(7, 11, 15)), graph);
+        structuralUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+        structuralUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+        structuralUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+
+        structuralUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(7, 11, 15)), graph);
+        structuralUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+        structuralUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
+        structuralUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(8, 9, 10, 12, 13, 14, 16, 17, 18)), graph);
     }
 
     @Test
@@ -713,19 +722,28 @@ public class AtomicQueryTest {
 
         ruleUnification(qs.get(0), qs, qs, graph);
 
-        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3)), graph);
-        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 11)), graph);
-        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 4, 9, 10, 11)), graph);
-        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 10)), graph);
+        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(4, 6, 8, 10, 12, 14, 16, 18)), graph);
+        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(11, 12, 13, 14)), graph);
+        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(4, 6, 8, 10, 11, 12, 13, 14, 16, 18)), graph);
 
-        ruleUnification(qs.get(5), qs, subListExcluding(qs, Lists.newArrayList(7, 9, 10, 11)), graph);
-        ruleUnification(qs.get(6), qs, subListExcluding(qs, Lists.newArrayList(7, 8, 9, 10, 11)), graph);
-        ruleUnification(qs.get(7), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 8)), graph);
-        ruleUnification(qs.get(8), qs, subListExcluding(qs, Lists.newArrayList(6, 7, 9, 10, 11)), graph);
+        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(1, 3, 5, 6, 9, 10, 13, 14, 17, 18)), graph);
+        ruleUnification(qs.get(5), qs, subListExcluding(qs, Lists.newArrayList(4, 6, 8, 10, 12, 14, 16, 18)), graph);
+        ruleUnification(qs.get(6), qs, subListExcluding(qs, Lists.newArrayList(1, 3, 4, 5, 8, 9, 12, 13, 16, 17)), graph);
 
-        ruleUnification(qs.get(9), qs, subListExcluding(qs, Lists.newArrayList(3, 5, 6, 8)), graph);
-        ruleUnification(qs.get(10), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 5, 6, 8, 11)), graph);
-        ruleUnification(qs.get(11), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), graph);
+        ruleUnification(qs.get(7), qs, subListExcluding(qs, Lists.newArrayList(11, 12, 13, 14, 15, 16, 17, 18)), graph);
+        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 2, 4, 7)), graph);
+        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 3, 5, 7)), graph);
+        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 2, 6, 7)), graph);
+
+        ruleUnification(qs.get(11), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 7, 8, 9, 10, 15, 16, 17, 18)), graph);
+        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 4, 11)), graph);
+        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 1, 5, 11)), graph);
+        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 6, 11)), graph);
+
+        ruleUnification(qs.get(15), qs, subListExcluding(qs, Lists.newArrayList(7, 8, 9, 10, 11, 12, 13, 14)), graph);
+        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 2, 4, 15)), graph);
+        ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(0, 1, 2, 3, 5, 15)), graph);
+        ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(0, 2, 6, 15)), graph);
     }
 
     @Test
@@ -1507,7 +1525,7 @@ public class AtomicQueryTest {
     }
 
     private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        assertEquals(equiv.name() + " - Query: " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
+        assertEquals(equiv.name() + " - Queries:\n" + a.toString() + "\n=?\n" + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
