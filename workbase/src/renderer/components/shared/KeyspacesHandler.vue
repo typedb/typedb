@@ -142,7 +142,7 @@ export default {
     },
     isGraknRunning(val) {
       if (!val) {
-        this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is ru00000inning <br> - check that host and port in connection settings are correct');
+        this.$notifyInfo('It was not possible to retrieve keyspaces <br> - make sure Grakn is running <br> - check that host and port in connection settings are correct');
       }
     },
     showKeyspaceList(show) {

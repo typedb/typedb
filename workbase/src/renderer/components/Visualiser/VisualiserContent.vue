@@ -2,7 +2,7 @@
     <transition name="fade" appear>
         <div>
 
-            <div class="vis-tabs">
+            <div class="vis-tabs noselect">
               <div v-for="tab in Array.from(tabs.values())" :key="tab">
                 <div :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
                   <div @click="toggleTab(tab)" class="tab-title">Tab {{tab}}</div>
@@ -23,6 +23,10 @@
 </template>
 
 <style scoped>
+
+  .new-tab-btn {
+    margin-left: 0px !important;
+  }
 
   .tab-title {
     width: 100px;
