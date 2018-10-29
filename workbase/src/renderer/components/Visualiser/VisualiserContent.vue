@@ -5,11 +5,11 @@
             <div class="vis-tabs">
               <div v-for="tab in Array.from(tabs.values())" :key="tab">
                 <div :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
-                  <div @click="toggleTab(tab)">Tab {{tab}}</div>
-                  <div @click="closeTab(tab)"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
+                  <div @click="toggleTab(tab)" class="tab-title">Tab {{tab}}</div>
+                  <div v-if="tabs.size > 1" @click="closeTab(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
                 </div>
               </div>
-              <button v-if="tabs.size < 11" @click="newTab" class='btn new-tab-btn'><vue-icon icon="plus" className="vue-icon"></vue-icon></button>
+              <button v-if="tabs.size < 10" @click="newTab" class='btn new-tab-btn'><vue-icon icon="plus" className="vue-icon"></vue-icon></button>
             </div>
 
             <keep-alive>
@@ -24,13 +24,21 @@
 
 <style scoped>
 
+  .tab-title {
+    width: 100px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
   .vis-tabs {
     position: absolute;
-    bottom: 2.3%;
+    bottom: 2.1%;
     z-index: 1;
     width: 100%;
     display: flex;
     align-items: center;
+    height: 34px;
   }
 
   .tab {
@@ -43,7 +51,8 @@
     justify-content: center;
     cursor: pointer;
     justify-content: space-between;
-    padding: var(--container-padding);
+    padding-left: var(--container-padding);
+    padding-right: var(--container-padding);
   }
 
   .current-tab {
@@ -61,8 +70,8 @@ export default {
   components: { VisTab },
   data() {
     return {
-      currentTab: 0,
-      tabs: new Set([0]),
+      currentTab: 1,
+      tabs: new Set([1]),
       visTab: 'VisTab',
     };
   },
@@ -81,7 +90,7 @@ export default {
       });
       this.tabs.delete(tab);
 
-      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.values())[0];
+      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.values())[Math.max(...Array.from(this.tabs.values())) - 1];
       else {
         const temp = this.currentTab;
         this.currentTab = null;

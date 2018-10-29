@@ -2,15 +2,8 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 
 import visTab from '@/components/Visualiser/VisTab';
-import actions from '@/components/Visualiser/store/actions';
-import mutations from '@/components/Visualiser/store/mutations';
-import getters from '@/components/Visualiser/store/getters';
-import TabState from '@/components/Visualiser/store/tabState';
-
 
 import { shallowMount } from '@vue/test-utils';
-import MockConcepts from '../../../../helpers/MockConcepts';
-
 
 jest.mock('grakn', () => ({ txType: { WRITE: 'write' } }));
 

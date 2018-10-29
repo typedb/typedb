@@ -1,5 +1,5 @@
 <template>
-    <div class="footer noselect" v-if="currentKeyspace">
+    <div class="footer noselect">
         <div class="canvas-data">
             <div class="data-item no-of-entities"> entities: {{canvasData.entities}}</div>
             <div class="data-item no-of-attributes"> attributes: {{canvasData.attributes}}</div>
@@ -10,7 +10,7 @@
 <style scoped>
     .footer {
         border-top: var(--container-darkest-border);
-        background-color: #282828;
+        background-color: var(--gray-1);
         padding: var(--container-padding);
         display: flex;
         flex-direction: row;
@@ -41,7 +41,7 @@ export default {
     // computed
     this.$options.computed = {
       ...(this.$options.computed || {}),
-      ...mapGetters(['currentKeyspace', 'canvasData']),
+      ...mapGetters(['canvasData']),
     };
   },
 };

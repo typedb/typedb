@@ -1,8 +1,8 @@
 <template>
     <div class="visualiser-wrapper">
             <top-bar :tabId="tabId"></top-bar>
-            <div class="lower">
-                <div class="center">
+            <div class="vis-row">
+                <div class="vis-column">
                     <context-menu :tabId="tabId"></context-menu>
                     <graph-canvas :tabId="tabId"></graph-canvas>
                     <visualiser-footer :tabId="tabId"></visualiser-footer>
@@ -24,14 +24,14 @@
         background-color: #1B1B1B;
     }
 
-    .lower {
+    .vis-row {
         display: flex;
         flex-direction: row;
         flex: 1;
         position: relative;
     }
 
-    .center {
+    .vis-column {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
