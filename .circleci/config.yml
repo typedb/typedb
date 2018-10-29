@@ -121,7 +121,7 @@ jobs:
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
-        - run: bazel-genfiles/dist/grakn-core-all/grakn-core server start
+        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn-core server start
         - run: bazel-genfiles/dist/grakn-core-all/grakn-core console -f ./test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
         - run: bazel test //client-nodejs:test-integration
 
