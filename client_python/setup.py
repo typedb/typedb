@@ -14,6 +14,6 @@ setup(
     author_email='community@grakn.ai',
     url='https://github.com/graknlabs/grakn/tree/master/client-python',
     keywords=['grakn', 'database', 'graph', 'knowledgebase', 'knowledge-engineering'],
-    python_requires='>=3.6.0',
+    python_requires='>=2.7',
     install_requires=['grpcio', 'protobuf']
 )

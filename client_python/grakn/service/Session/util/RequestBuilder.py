@@ -16,12 +16,14 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+from datetime import datetime
 
 import protocol.session.Session_pb2 as transaction_messages
 import protocol.session.Concept_pb2 as concept_messages
 from grakn.service.Session.util import enums
 from grakn.service.Session.Concept import BaseTypeMapping
 
+import six
 
 class RequestBuilder(object):
     """ Static methods for generating GRPC requests """
@@ -84,14 +86,16 @@ class RequestBuilder(object):
         transaction_req.getSchemaConcept_req.CopyFrom(get_schema_concept_req)
         return transaction_req
 
-    @staticmethod
-    def get_attributes_by_value(value, datatype: enums.DataType):
+    def get_attributes_by_value(value, datatype):
         get_attrs_req = transaction_messages.Transaction.GetAttributes.Req()
         grpc_value_object = RequestBuilder.ConceptMethod.as_value_object(value, datatype)
         get_attrs_req.value.CopyFrom(grpc_value_object)
         transaction_req = transaction_messages.Transaction.Req()
         transaction_req.getAttributes_req.CopyFrom(get_attrs_req)
         return transaction_req
+    get_attributes_by_value.__annotations__ = {'datatype': enums.DataType}
+    get_attributes_by_value = staticmethod(get_attributes_by_value)
+
 
     @staticmethod
     def put_entity_type(label):
@@ -110,14 +114,15 @@ class RequestBuilder(object):
         transaction_req.putRelationType_req.CopyFrom(put_relation_type_req)
         return transaction_req
 
-    @staticmethod
-    def put_attribute_type(label, data_type: enums.DataType):
+    def put_attribute_type(label, data_type):
         put_attribute_type_req = transaction_messages.Transaction.PutAttributeType.Req()
         put_attribute_type_req.label = label
         put_attribute_type_req.dataType = data_type.value # retrieve enum value
         transaction_req = transaction_messages.Transaction.Req()
         transaction_req.putAttributeType_req.CopyFrom(put_attribute_type_req)
         return transaction_req
+    put_attribute_type.__annotations__ = {'data_type': enums.DataType}
+    put_attribute_type = staticmethod(put_attribute_type)
 
     @staticmethod
     def put_role(label):
@@ -172,8 +177,7 @@ class RequestBuilder(object):
             grpc_concept.baseType = grpc_base_type
             return grpc_concept
 
-        @staticmethod
-        def as_value_object(data, datatype: enums.DataType):
+        def as_value_object(data, datatype):
             msg = concept_messages.ValueObject()
             if datatype == enums.DataType.STRING:
                 msg.string = data
@@ -189,13 +193,17 @@ class RequestBuilder(object):
                 msg.double = data
             elif datatype == enums.DataType.DATE:
                 # convert local datetime into long
-                epoch_seconds_utc = data.timestamp()
+                epoch = datetime(1970, 1, 1)
+                diff = data - epoch
+                epoch_seconds_utc = int(diff.total_seconds())
                 epoch_ms_long_utc = int(epoch_seconds_utc*1000)
                 msg.date = epoch_ms_long_utc 
             else:
                 # TODO specialize exception
                 raise Exception("Unknown attribute datatype: {}".format(datatype))
             return msg
+        as_value_object.__annotations__ = {'datatype': enums.DataType}
+        as_value_object = staticmethod(as_value_object)
 
 
 

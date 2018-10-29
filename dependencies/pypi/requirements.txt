@@ -1,2 +1,4 @@
-grpcio==1.13.0
-protobuf==3.6.0
+grpcio==1.16.0
+protobuf==3.6.1
+six==1.11.0
+forbiddenfruit==0.1.2

@@ -22,8 +22,10 @@ import grakn
 from grakn.exception.GraknError import GraknError
 from grakn.service.Session.util.ResponseReader import Answer, Value, ConceptList, ConceptSet, ConceptSetMeasure, AnswerGroup
 
+from tests.integration.base import test_Base
 
-class test_PreDbSetup(unittest.TestCase):
+
+class test_grakn_PreDbSetup(test_Base):
     """ Tests Database interactions *before* anything needs to be inserted/created """
 
     # --- Test grakn client instantiation for one URI ---
@@ -93,13 +95,13 @@ class test_PreDbSetup(unittest.TestCase):
 inst = grakn.Grakn('localhost:48555')
 session = inst.session('testkeyspace')
 
-class test_Base(unittest.TestCase):
+class test_grakn_Base(test_Base):
     """ Sets up DB for use in tests """
 
     @classmethod
     def setUpClass(cls):
         """ Make sure we have some sort of schema and data in DB, only done once """
-        super(test_Base, cls).setUpClass()
+        super(test_grakn_Base, cls).setUpClass()
         # shared grakn instances and session for API testing 
 
         # temp tx to set up DB, don't save it
@@ -124,7 +126,7 @@ class test_Base(unittest.TestCase):
 
 
 
-class test_Transaction(test_Base):
+class test_Transaction(test_grakn_Base):
     """ Class for testing transaction methods, eg query, put attribute type... """
 
     # --- query tests ---
