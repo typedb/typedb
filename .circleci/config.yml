@@ -121,8 +121,8 @@ jobs:
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
-        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn-core server start
-        - run: bazel-genfiles/dist/grakn-core-all/grakn-core console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+        - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
         - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
   client-python-e2e:
@@ -162,8 +162,8 @@ jobs:
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
-        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn-core server start
-        - run: bazel-genfiles/dist/grakn-core-all/grakn-core console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+        - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
         - run: cd workbase && npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
