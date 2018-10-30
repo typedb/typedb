@@ -179,8 +179,9 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
 
-    protected boolean isRuleApplicable(InferenceRule child){
-        return isRuleApplicableViaAtom(child.getRuleConclusionAtom());
+    private boolean isRuleApplicable(InferenceRule child) {
+        return getIdPredicate(getVarName()) == null
+                && isRuleApplicableViaAtom(child.getRuleConclusionAtom());
     }
 
     protected abstract boolean isRuleApplicableViaAtom(Atom headAtom);
