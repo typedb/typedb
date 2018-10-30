@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class GraknTxTinkerFactoryTest {
-    private final static InputStream TEST_CONFIG_FILE = GraknTxTinkerFactoryTest.class.getClassLoader().getResourceAsStream("inmemory-graph.properties");
+    private final static InputStream TEST_CONFIG_FILE = GraknTxTinkerFactoryTest.class.getClassLoader().getResourceAsStream("grakn-graql/test/resources/inmemory-graph.properties");
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
     private EmbeddedGraknSession session;
     private TxFactory tinkerGraphFactory;

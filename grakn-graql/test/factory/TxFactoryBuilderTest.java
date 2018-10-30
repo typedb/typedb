@@ -50,7 +50,7 @@ import static org.mockito.Mockito.when;
 
 public class TxFactoryBuilderTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
-    private final static InputStream TEST_CONFIG_FILE = TxFactoryBuilderTest.class.getClassLoader().getResourceAsStream("inmemory-graph.properties");
+    private final static InputStream TEST_CONFIG_FILE = TxFactoryBuilderTest.class.getClassLoader().getResourceAsStream("grakn-graql/test/resources/inmemory-graph.properties");
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 
