@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.internal.antlr.GraqlLexer;
+import ai.grakn.graql.grammar.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;

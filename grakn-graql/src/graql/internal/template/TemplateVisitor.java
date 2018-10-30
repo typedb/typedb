@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.template;
 
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
-import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
+import ai.grakn.graql.grammar.GraqlTemplateBaseVisitor;
+import ai.grakn.graql.grammar.GraqlTemplateParser;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;

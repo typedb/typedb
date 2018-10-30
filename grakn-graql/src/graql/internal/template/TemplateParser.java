@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.template;
 
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.internal.antlr.GraqlTemplateLexer;
-import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
+import ai.grakn.graql.grammar.GraqlTemplateLexer;
+import ai.grakn.graql.grammar.GraqlTemplateParser;
 import ai.grakn.graql.internal.parser.GraqlErrorListener;
 import ai.grakn.graql.internal.template.macro.BooleanMacro;
 import ai.grakn.graql.internal.template.macro.ConcatMacro;

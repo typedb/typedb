@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.util;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.internal.antlr.GraqlLexer;
+import ai.grakn.graql.grammar.GraqlLexer;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 

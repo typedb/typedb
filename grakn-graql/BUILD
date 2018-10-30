@@ -22,18 +22,18 @@ load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 
 antlr4(
     name = "graql-java",
-    srcs = glob(["antlr4/*.g4"]),
+    srcs = glob(["src/graql/grammar/*.g4"]),
     visitor = True,
-    package = "ai.grakn.graql.internal.antlr"
+    package = "ai.grakn.graql.grammar"
 )
 
 genrule(
     name = "grakn-version",
     srcs = [
-        "templates/GraknVersion.java",
+        "templates/util/GraknVersion.java",
         "//:VERSION",
     ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/GraknVersion.java) >> $@",
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
     outs = ["util/GraknVersion.java"]
 )
 

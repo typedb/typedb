@@ -1238,7 +1238,7 @@
                     <verbose>true</verbose>
                     <excludes>
                         <!-- Skip generated classes, we only care about code we write -->
-                        <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
+                        <exclude>**/ai.grakn.graql.grammar/*.java</exclude>
                         <exclude>**/ai/grakn/rpc/proto/*.java</exclude>
                         <exclude>**/**AutoValue_**.java</exclude>
 
