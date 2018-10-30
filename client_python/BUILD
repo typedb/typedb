@@ -43,6 +43,7 @@ py_library(
         requirement("protobuf"),
         requirement("grpcio"),
         requirement("six"),
+        requirement("enum34")
     ]
 )
 
