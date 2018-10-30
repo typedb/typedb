@@ -133,7 +133,7 @@ public abstract class ResourceAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom(){
-        return IsaAtom.create(getPredicateVariable(), Graql.var(), getTypeId(), false, getParentQuery());
+        return IsaAtom.create(getAttributeVariable(), Graql.var(), getTypeId(), false, getParentQuery());
     }
 
     @Override
@@ -183,8 +183,8 @@ public abstract class ResourceAtom extends Binary{
         ResourceAtom that = (ResourceAtom) at;
         if (!multiPredicateEquivalent(that, equiv)) return false;
 
-        IdPredicate thisPredicate = this.getIdPredicate(this.getPredicateVariable());
-        IdPredicate predicate = that.getIdPredicate(that.getPredicateVariable());
+        IdPredicate thisPredicate = this.getIdPredicate(this.getAttributeVariable());
+        IdPredicate predicate = that.getIdPredicate(that.getAttributeVariable());
 
         return thisPredicate == null && predicate == null || thisPredicate != null && equiv.equivalent(thisPredicate, predicate);
     }
@@ -283,6 +283,7 @@ public abstract class ResourceAtom extends Binary{
         Unifier unifier = super.getUnifier(parentAtom, unifierType);
 
         if (unifier == null
+                || !unifierType.idCompatibility(parent.getIdPredicate(parent.getAttributeVariable()), this.getIdPredicate(this.getAttributeVariable()))
                 || !unifierType.attributeValueCompatibility(new HashSet<>(parent.getMultiPredicate()), new HashSet<>(this.getMultiPredicate())) ){
             return UnifierImpl.nonExistent();
         }

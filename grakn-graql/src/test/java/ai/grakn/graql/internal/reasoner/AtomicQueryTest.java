@@ -952,6 +952,7 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
 
+        /*
         ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
         ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28)), graph);
         ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28, 30)), graph);
@@ -959,7 +960,7 @@ public class AtomicQueryTest {
 
         ruleUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
         ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
-
+        */
         ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
         ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
 
