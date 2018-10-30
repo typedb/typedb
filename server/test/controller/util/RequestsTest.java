@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.controller.util;
+package ai.grakn.core.server.controller.util;
 
 import ai.grakn.exception.GraknServerException;
 import mjson.Json;

@@ -43,7 +43,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>${core.server.basedir}/src/services/</directory>
+            <directory>${core.server.basedir}/services/</directory>
             <includes>
                 <include>**</include>
             </includes>

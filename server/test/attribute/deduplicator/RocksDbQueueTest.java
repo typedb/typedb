@@ -1,4 +1,4 @@
-package ai.grakn.engine.attribute.deduplicator;
+package ai.grakn.core.server.attribute.deduplicator;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;

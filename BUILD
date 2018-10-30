@@ -6,14 +6,14 @@ genrule(
         "//dashboard:assets",
         "//server:conf/logback.xml",
         "//server:conf/grakn.properties",
-        "//server:jar-server_deploy.jar",
-        "//server:src/services/cassandra/cassandra.yaml",
-        "//server:src/services/cassandra/logback.xml",
-        "//server:src/services/grakn/grakn-core-ascii.txt",
+        "//server:server-binary_deploy.jar",
+        "//server:services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt",
     ],
     outs = ["//:dist/grakn-core-all.zip"],
-    cmd = "$(location distribution-packager.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //console:console-binary_deploy.jar) $(location //server:jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
-    tools = ["distribution-packager.sh"],
+    cmd = "$(location distribution.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //console:console-binary_deploy.jar) $(location //server:server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    tools = ["distribution.sh"],
     visibility = ["//visibility:public"]
 )
 
