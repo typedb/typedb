@@ -23,7 +23,7 @@ JAVA_BIN=java
 GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="conf/grakn.properties"
 
-CONSOLE_JAR_FILENAME="services/lib/jar-console_deploy.jar"
+CONSOLE_JAR_FILENAME="services/lib/console-binary_deploy.jar"
 SERVER_JAR_FILENAME="services/lib/jar-server_deploy.jar"
 
 # ================================================

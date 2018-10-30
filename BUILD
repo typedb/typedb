@@ -2,7 +2,7 @@ genrule(
     name = "distribution",
     srcs = [
         "//:grakn",
-        "//console:jar-console_deploy.jar",
+        "//console:console-binary_deploy.jar",
         "//dashboard:assets",
         "//server:conf/logback.xml",
         "//server:conf/grakn.properties",
@@ -12,7 +12,7 @@ genrule(
         "//server:src/services/grakn/grakn-core-ascii.txt",
     ],
     outs = ["//:dist/grakn-core-all.zip"],
-    cmd = "$(location distribution-packager.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //console:jar-console_deploy.jar) $(location //server:jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    cmd = "$(location distribution-packager.sh) $(location //:dist/grakn-core-all.zip) $(location //:grakn) $(location //console:console-binary_deploy.jar) $(location //server:jar-server_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:src/services/cassandra/logback.xml) $(location //server:src/services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
     tools = ["distribution-packager.sh"],
     visibility = ["//visibility:public"]
 )

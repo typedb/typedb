@@ -18,7 +18,7 @@
 
 java_library(
     name = "console",
-    srcs = glob(["src/main/java/**/*.java"]),
+    srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//client-java:client-java",
@@ -44,7 +44,7 @@ java_library(
 )
 
 java_binary(
-    name = "jar-console",
+    name = "console-binary",
     main_class = "ai.grakn.core.console.Graql",
     runtime_deps = ["//console:console"],
     visibility = ["//visibility:public"]
@@ -52,10 +52,10 @@ java_binary(
 
 genrule(
     name = "distribution",
-    srcs = ["//:grakn", "jar-console_deploy.jar"],
+    srcs = ["//:grakn", "console-binary_deploy.jar"],
     outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location src/main/bash/distribution-packager.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location jar-console_deploy.jar)",
-    tools = ["src/main/bash/distribution-packager.sh"]
+    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
+    tools = ["distribution.sh"]
 )
 
 exports_files(
