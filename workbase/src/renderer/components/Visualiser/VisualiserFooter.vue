@@ -14,7 +14,7 @@
         padding: var(--container-padding);
         display: flex;
         flex-direction: row;
-        z-index: 1;
+        z-index: 2;
         justify-content: flex-end;
     }
 

@@ -66,7 +66,7 @@
     /*padding: 5px 10px;*/
     right:5px;
     background-color: #282828;
-    z-index: 1;
+    z-index: 3;
     min-width: 100px;
     max-width:  130px;
     word-break: break-word;

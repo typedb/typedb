@@ -73,6 +73,7 @@
         position: absolute;
         right: 0px;
         top: 0px;
+        z-index: 1;
     }
 
     .nav {

@@ -25,7 +25,7 @@
         flex-direction: row;
         display: flex;
         justify-content: space-between;
-        z-index: 1;
+        z-index: 2;
     }
 
     .left {

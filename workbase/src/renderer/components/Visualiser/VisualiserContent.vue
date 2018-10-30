@@ -5,8 +5,10 @@
             <div class="vis-tabs noselect">
               <div v-for="tab in Array.from(tabs.values())" :key="tab">
                 <div :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
-                  <div @click="toggleTab(tab)" class="tab-title">Tab {{tab}}</div>
+                  <div v-if="tabToRename !== tab" @click="toggleTab(tab)" @click.right="renameTab(tab)" class="tab-title">Tab {{tab}}</div>
+                  <input v-else class="input-small rename-tab-input" :value="newName">
                   <div v-if="tabs.size > 1" @click="closeTab(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
+                  <div v-if="tabToRename === tab" @click="saveName(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="tick" iconSize="13"></vue-icon></div>
                 </div>
               </div>
               <button v-if="tabs.size < 10" @click="newTab" class='btn new-tab-btn'><vue-icon icon="plus" className="vue-icon"></vue-icon></button>
@@ -24,6 +26,10 @@
 
 <style scoped>
 
+  .rename-tab-input {
+    width: 60px;
+  }
+
   .new-tab-btn {
     margin-left: 0px !important;
   }
@@ -37,12 +43,13 @@
 
   .vis-tabs {
     position: absolute;
-    bottom: 2.1%;
+    bottom: 22px;
     z-index: 1;
     width: 100%;
     display: flex;
     align-items: center;
-    height: 34px;
+    height: 30px;
+    background-color: var(--gray-3);
   }
 
   .tab {
@@ -50,6 +57,7 @@
     width: 100px;
     height: 30px;
     border: var(--container-darkest-border);
+    border-top: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -61,7 +69,6 @@
 
   .current-tab {
     background-color: var(--canvas-color);
-    border-top: 1px solid transparent;
   }
 
 </style>
@@ -79,6 +86,8 @@ export default {
       tabs: new Set([1]),
       visTab: 'VisTab',
       LETTER_T_KEYCODE: 84,
+      tabToRename: undefined,
+      newName: '',
     };
   },
   created() {
@@ -107,6 +116,9 @@ export default {
         this.currentTab = null;
         this.currentTab = temp;
       }
+    },
+    renameTab(tab) {
+      this.tabToRename = tab;
     },
   },
 };
