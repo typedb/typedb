@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.attribute.deduplicator;
+package ai.grakn.core.server.deduplicator;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.core.server.GraknConfig;
-import ai.grakn.core.server.attribute.deduplicator.queue.Attribute;
-import ai.grakn.core.server.attribute.deduplicator.queue.RocksDbQueue;
+import ai.grakn.core.server.deduplicator.queue.Attribute;
+import ai.grakn.core.server.deduplicator.queue.RocksDbQueue;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import org.slf4j.Logger;
@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicator.deduplicate;
+import static ai.grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
 
 /**
  * This class is responsible for de-duplicating attributes. It is done to ensure that every attribute in Grakn stays unique.

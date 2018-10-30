@@ -2,8 +2,8 @@ package ai.grakn.core.server.attribute.deduplicator;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.core.server.attribute.deduplicator.queue.Attribute;
-import ai.grakn.core.server.attribute.deduplicator.queue.RocksDbQueue;
+import ai.grakn.core.server.deduplicator.queue.Attribute;
+import ai.grakn.core.server.deduplicator.queue.RocksDbQueue;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 

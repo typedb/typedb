@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.attribute.deduplicator.queue;
+package ai.grakn.core.server.deduplicator.queue;
 
 /**
  *

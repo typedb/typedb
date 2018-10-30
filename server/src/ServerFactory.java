@@ -19,7 +19,7 @@
 package ai.grakn.core.server;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
+import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.controller.HttpController;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.core.server.lock.ProcessWideLockProvider;

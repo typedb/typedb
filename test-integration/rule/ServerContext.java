@@ -28,7 +28,7 @@ import ai.grakn.core.server.Server;
 import ai.grakn.core.server.ServerFactory;
 import ai.grakn.core.server.ServerRPC;
 import ai.grakn.core.server.ServerStatus;
-import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
+import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.lock.ProcessWideLockProvider;

@@ -1,4 +1,4 @@
-package ai.grakn.attribute_deduplicator;
+package ai.grakn.deduplicator;
 
 
 import ai.grakn.GraknTxType;
@@ -31,11 +31,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
-import static ai.grakn.attribute_deduplicator.AttributeDeduplicatorE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static ai.grakn.attribute_deduplicator.AttributeDeduplicatorE2EConstants.assertGraknRunning;
-import static ai.grakn.attribute_deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
-import static ai.grakn.attribute_deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
-import static ai.grakn.attribute_deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
+import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknRunning;
+import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
+import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
+import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static ai.grakn.graql.Graql.count;

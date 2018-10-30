@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.core.server.ServerRPC;
-import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
+import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.benchmark.GrpcMessageConversion;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;

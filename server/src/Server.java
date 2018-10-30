@@ -18,7 +18,7 @@
 package ai.grakn.core.server;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
+import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.util.EngineID;
 import com.google.common.base.Stopwatch;

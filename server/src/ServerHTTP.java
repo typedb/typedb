@@ -20,7 +20,7 @@ package ai.grakn.core.server;
 
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
+import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.controller.ConceptController;
 import ai.grakn.core.server.controller.GraqlController;
 import ai.grakn.core.server.controller.HttpController;

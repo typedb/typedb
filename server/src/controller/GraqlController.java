@@ -24,7 +24,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.core.server.controller.response.ExplanationBuilder;
 import ai.grakn.core.server.controller.util.Requests;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
-import ai.grakn.core.server.attribute.deduplicator.AttributeDeduplicatorDaemon;
+import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;

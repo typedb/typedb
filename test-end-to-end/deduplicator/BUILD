@@ -1,6 +1,6 @@
 java_test(
     name = "attribute-deduplicator-e2e",
-    test_class = "ai.grakn.attribute_deduplicator.AttributeDeduplicatorE2E",
+    test_class = "ai.grakn.deduplicator.AttributeDeduplicatorE2E",
     srcs = ["AttributeDeduplicatorE2E.java", "AttributeDeduplicatorE2EConstants.java"],
     deps = [
         "//grakn-graql:grakn-graql",

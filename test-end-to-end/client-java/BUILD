@@ -1,6 +1,6 @@
 java_test(
     name = "client-java-e2e",
-    test_class = "ai.grakn.client_java.ClientJavaE2E",
+    test_class = "ai.grakn.client.ClientJavaE2E",
     srcs = ["ClientJavaE2E.java", "ClientJavaE2EConstants.java"],
     deps = [
             "//grakn-graql:grakn-graql",

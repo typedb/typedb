@@ -1,4 +1,4 @@
-package ai.grakn.client_java;
+package ai.grakn.client;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -28,12 +28,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import ai.grakn.client.Grakn;
-import static ai.grakn.client_java.ClientJavaE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static ai.grakn.client_java.ClientJavaE2EConstants.assertGraknRunning;
-import static ai.grakn.client_java.ClientJavaE2EConstants.assertGraknStopped;
-import static ai.grakn.client_java.ClientJavaE2EConstants.assertZipExists;
-import static ai.grakn.client_java.ClientJavaE2EConstants.unzipGrakn;
+import static ai.grakn.client.ClientJavaE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static ai.grakn.client.ClientJavaE2EConstants.assertGraknRunning;
+import static ai.grakn.client.ClientJavaE2EConstants.assertGraknStopped;
+import static ai.grakn.client.ClientJavaE2EConstants.assertZipExists;
+import static ai.grakn.client.ClientJavaE2EConstants.unzipGrakn;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.label;
