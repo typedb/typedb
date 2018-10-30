@@ -26,20 +26,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class TxFactoryBuilderTest {
     private final static EmbeddedGraknSession session = mock(EmbeddedGraknSession.class);
-    private final static InputStream TEST_CONFIG_FILE = TxFactoryBuilderTest.class.getClassLoader().getResourceAsStream("inmemory-graph.properties");
+    private final static InputStream TEST_CONFIG_FILE = TxFactoryBuilderTest.class.getClassLoader().getResourceAsStream("ai/grakn/factory/inmemory-graph.properties");
     private final static Keyspace KEYSPACE = Keyspace.of("keyspace");
     private final static GraknConfig TEST_CONFIG = GraknConfig.read(TEST_CONFIG_FILE);
 

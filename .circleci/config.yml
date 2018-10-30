@@ -73,7 +73,9 @@ jobs:
       - *install_node
       - *install_bazel
       - *attach_grakn_workspace
-      - run: bazel test //:test-unit --test_output=streamed
+      - run: bazel test //grakn-graql/... --test_output=streamed
+      - run: bazel test //server/... --test_output=streamed
+      - run: bazel test //client-java/... --test_output=streamed
       - *save_test_results
       - store_artifacts:
           path: ~/grakn-surefire-reports/

@@ -62,7 +62,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknTx graph) {
+    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknTx tx) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -95,7 +95,7 @@ class ConjunctionQuery {
                 .collect(toSet());
 
         // Apply final optimisations
-        EquivalentFragmentSets.optimiseFragmentSets(initialEquivalentFragmentSets, graph);
+        EquivalentFragmentSets.optimiseFragmentSets(initialEquivalentFragmentSets, tx);
 
         this.equivalentFragmentSets = ImmutableSet.copyOf(initialEquivalentFragmentSets);
     }
