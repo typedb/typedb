@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.lock;
+package ai.grakn.core.server.lock;
 
 import ai.grakn.core.server.lock.ProcessWideLockProvider;
 import org.junit.Rule;

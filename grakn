@@ -24,7 +24,7 @@ GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="conf/grakn.properties"
 
 CONSOLE_JAR_FILENAME="services/lib/console-binary_deploy.jar"
-SERVER_JAR_FILENAME="services/lib/jar-server_deploy.jar"
+SERVER_JAR_FILENAME="services/lib/server-binary_deploy.jar"
 
 # ================================================
 # common helper functions

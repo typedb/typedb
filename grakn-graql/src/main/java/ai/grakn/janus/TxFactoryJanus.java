@@ -84,7 +84,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_PROPERTIES;
     static {
-        String DEFAULT_CONFIG = "default-configs.properties";
+        String DEFAULT_CONFIG = "resources/default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
         try (InputStream in = TxFactoryJanus.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
@@ -217,7 +217,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     private static void makeIndicesVertexCentric(JanusGraphManagement management){
-        ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
+        ResourceBundle keys = ResourceBundle.getBundle("resources/indices-edges");
         Set<String> edgeLabels = keys.keySet();
         for(String edgeLabel : edgeLabels){
             String[] propertyKeyStrings = keys.getString(edgeLabel).split(",");
@@ -266,7 +266,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     private static void makeIndicesComposite(JanusGraphManagement management){
-        ResourceBundle keys = ResourceBundle.getBundle("indices-composite");
+        ResourceBundle keys = ResourceBundle.getBundle("resources/indices-composite");
         Set<String> keyString = keys.keySet();
         for(String propertyKeyLabel : keyString){
             String indexLabel = "by" + propertyKeyLabel;

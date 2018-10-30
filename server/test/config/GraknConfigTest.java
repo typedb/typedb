@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.engine.config;
+package ai.grakn.core.server.config;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.core.server.GraknConfig;
