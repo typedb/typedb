@@ -199,12 +199,19 @@ export default {
     };
   },
   beforeCreate() {
-    const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+    const { mapGetters, mapMutations, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
 
     // computed
     this.$options.computed = {
       ...(this.$options.computed || {}),
       ...mapGetters(['currentKeyspace', 'currentQuery', 'showSpinner']),
+    };
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapMutations(['setCurrentQuery']),
+      ...mapActions([RUN_CURRENT_QUERY, CANVAS_RESET]),
     };
   },
   watch: {
@@ -247,7 +254,7 @@ export default {
       this.initialEditorHeight = $('.CodeMirror').height();
 
       this.codeMirror.on('change', (codeMirrorObj) => {
-        this.$store.commit(`tab-${this.tabId}/currentQuery`, codeMirrorObj.getValue());
+        this.setCurrentQuery(codeMirrorObj.getValue());
         this.editorLinesNumber = codeMirrorObj.lineCount();
       });
       this.codeMirror.on('focus', () => {
@@ -265,16 +272,15 @@ export default {
         this.showFavQueriesList = false;
         this.showTypesContainer = false;
 
-        this.$store.commit(`tab-${this.tabId}/currentQuery`, limitQuery(this.currentQuery));
+        this.setCurrentQuery(limitQuery(this.currentQuery));
 
         this.history.addToHistory(this.currentQuery);
 
-        this.$store.dispatch(`tab-${this.tabId}/${RUN_CURRENT_QUERY}`)
-          .catch((err) => {
-            if (!err.details) this.errorMsg = err.message;
-            else this.errorMsg = err.details;
-            this.showError = true;
-          });
+        this[RUN_CURRENT_QUERY]().catch((err) => {
+          if (!err.details) this.errorMsg = err.message;
+          else this.errorMsg = err.details;
+          this.showError = true;
+        });
         this.showError = false;
       }
     },
@@ -285,7 +291,7 @@ export default {
     clearGraph() {
       if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
       else {
-        this.$store.dispatch(`tab-${this.tabId}/${CANVAS_RESET}`);
+        this[CANVAS_RESET]();
       }
     },
     toggleAddFavQuery() {

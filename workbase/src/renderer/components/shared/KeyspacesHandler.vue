@@ -112,12 +112,18 @@ export default {
     };
   },
   beforeCreate() {
-    const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+    const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
 
     // computed
     this.$options.computed = {
       ...(this.$options.computed || {}),
       ...mapGetters(['currentKeyspace']),
+    };
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapActions([CURRENT_KEYSPACE_CHANGED]),
     };
   },
   computed: {
@@ -138,7 +144,7 @@ export default {
   watch: {
     allKeyspaces(val) {
       // If user deletes current keyspace from Keyspaces page, set new current keyspace to null
-      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(`tab-${this.tabId}/${CURRENT_KEYSPACE_CHANGED}`, null); }
+      if (!val.includes(this.currentKeyspace)) { this[CURRENT_KEYSPACE_CHANGED](null); }
     },
     isGraknRunning(val) {
       if (!val) {
@@ -155,7 +161,7 @@ export default {
     setKeyspace(name) {
       this.$emit('keyspace-selected');
       storage.set('current_keyspace_data', name);
-      this.$store.dispatch(`tab-${this.tabId}/${CURRENT_KEYSPACE_CHANGED}`, name);
+      this[CURRENT_KEYSPACE_CHANGED](name);
       this.showKeyspaceList = false;
     },
     toggleKeyspaceList() {

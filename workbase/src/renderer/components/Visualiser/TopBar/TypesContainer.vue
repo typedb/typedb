@@ -82,12 +82,18 @@
     },
     props: ['tabId'],
     beforeCreate() {
-      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.parent.$options.propsData.tabId}`);
+      const { mapGetters, mapMutations } = createNamespacedHelpers(`tab-${this.$options.parent.$options.propsData.tabId}`);
 
       // computed
       this.$options.computed = {
         ...(this.$options.computed || {}),
         ...mapGetters(['metaTypeInstances']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapMutations(['setCurrentQuery']),
       };
     },
     methods: {
@@ -95,7 +101,7 @@
         this.currentTab = tab;
       },
       typeSelected(type) {
-        this.$store.commit(`tab-${this.tabId}/currentQuery`, `match $x isa ${type}; get;`);
+        this.setCurrentQuery(`match $x isa ${type}; get;`);
       },
     },
   };

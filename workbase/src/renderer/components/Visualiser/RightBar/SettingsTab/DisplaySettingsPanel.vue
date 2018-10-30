@@ -78,12 +78,18 @@
       };
     },
     beforeCreate() {
-      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+      const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
 
       // computed
       this.$options.computed = {
         ...(this.$options.computed || {}),
         ...mapGetters(['currentKeyspace', 'metaTypeInstances', 'selectedNode']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapActions([OPEN_GRAKN_TX, UPDATE_NODES_LABEL, UPDATE_NODES_COLOUR]),
       };
     },
     created() {
@@ -127,7 +133,7 @@
     methods: {
       async loadAttributeTypes() {
         if (!this.currentType) return;
-        const graknTx = await this.$store.dispatch(`tab-${this.tabId}/${OPEN_GRAKN_TX}`);
+        const graknTx = await this[OPEN_GRAKN_TX]();
 
         const type = await graknTx.getSchemaConcept(this.currentType);
 
@@ -151,7 +157,7 @@
       toggleAttributeToLabel(attribute) {
         // Persist changes into localstorage for current type
         DisplaySettings.toggleLabelByType({ type: this.currentType, attribute });
-        this.$store.dispatch(`tab-${this.tabId}/${UPDATE_NODES_LABEL}`, this.currentType);
+        this[UPDATE_NODES_LABEL](this.currentType);
         this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
       },
       toggleContent() {
@@ -168,7 +174,7 @@
         if (DisplaySettings.getTypeColours(this.currentType) !== col) {
           if (!col) this.colour.hex = 'default';
           DisplaySettings.toggleColourByType({ type: this.currentType, colourString: col });
-          this.$store.dispatch(`tab-${this.tabId}/${UPDATE_NODES_COLOUR}`, this.currentType);
+          this[UPDATE_NODES_COLOUR](this.currentType);
         }
       },
     },

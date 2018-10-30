@@ -14,12 +14,19 @@
     name: 'ContextMenu',
     props: ['tabId'],
     beforeCreate() {
-      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+      const { mapGetters, mapMutations, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
 
       // computed
       this.$options.computed = {
         ...(this.$options.computed || {}),
         ...mapGetters(['currentKeyspace', 'contextMenu', 'selectedNodes']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapMutations(['setCurrentQuery', 'setContextMenu']),
+        ...mapActions([RUN_CURRENT_QUERY, DELETE_SELECTED_NODES, EXPLAIN_CONCEPT]),
       };
     },
     computed: {
@@ -41,17 +48,17 @@
     },
     methods: {
       deleteNode() {
-        this.$store.commit(`tab-${this.tabId}/contextMenu`, { show: false, x: null, y: null });
-        this.$store.dispatch(`tab-${this.tabId}/${DELETE_SELECTED_NODES}`).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
+        this.setContextMenu({ show: false, x: null, y: null });
+        this[DELETE_SELECTED_NODES]().catch((err) => { this.$notifyError(err, 'Delete nodes'); });
       },
       explainNode() {
-        this.$store.commit(`tab-${this.tabId}/contextMenu`, { show: false, x: null, y: null });
-        this.$store.dispatch(`tab-${this.tabId}/${EXPLAIN_CONCEPT}`).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
+        this.setContextMenu({ show: false, x: null, y: null });
+        this[EXPLAIN_CONCEPT]().catch((err) => { this.$notifyError(err, 'Explain Concept'); });
       },
       computeShortestPath() {
-        this.$store.commit(`tab-${this.tabId}/contextMenu`, { show: false, x: null, y: null });
-        this.$store.commit(`tab-${this.tabId}/currentQuery`, `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
-        this.$store.dispatch(`tab-${this.tabId}/${RUN_CURRENT_QUERY}`).catch((err) => { this.$notifyError(err, 'Run Query'); });
+        this.setContextMenu({ show: false, x: null, y: null });
+        this.setCurrentQuery(`compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
+        this[RUN_CURRENT_QUERY]().catch((err) => { this.$notifyError(err, 'Run Query'); });
       },
     },
   };
