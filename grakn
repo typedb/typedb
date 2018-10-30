@@ -52,6 +52,7 @@ if [ -z "$1" ]; then
     echo "Missing argument. Possible commands are:"
     echo "  Server:          grakn server [--help]"
     echo "  Console:         grakn console [--help]"
+    echo "  Version:         grakn version"
 elif [ "$1" = "console" ]; then
     if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
         CLASSPATH="${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}:${GRAKN_HOME}/conf/"
@@ -60,7 +61,7 @@ elif [ "$1" = "console" ]; then
         echo "Grakn Core Console is not included in this Grakn distribution."
         echo "You may want to install Grakn Core Console or Grakn Core (all)."
     fi
-elif [ "$1" = "server" ]; then
+elif [ "$1" = "server" ] || [ "$1" = "version" ]; then
     if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
         CLASSPATH="./${SERVER_JAR_FILENAME}:./conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" ai.grakn.core.server.bootup.GraknBootup $@
@@ -72,6 +73,7 @@ else
     echo "Invalid argument: $1. Possible commands are: "
     echo "  Server:          grakn server [--help]"
     echo "  Console:         grakn console [--help]"
+    echo "  Version:         grakn version"
 fi
 
 exit_code=$?
