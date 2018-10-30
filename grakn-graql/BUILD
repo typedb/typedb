@@ -22,15 +22,19 @@ load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 
 antlr4(
     name = "graql-java",
-    srcs = glob(["src/main/antlr4/**/*.g4"]),
+    srcs = glob(["antlr4/*.g4"]),
     visitor = True,
+    package = "ai.grakn.graql.internal.antlr"
 )
 
 genrule(
     name = "grakn-version",
-    srcs = ["//:VERSION", "GraknVersion.template.java"],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location GraknVersion.template.java) >> $@",
-    outs = ["src/main/java/ai/grakn/util/GraknVersion.java"]
+    srcs = [
+        "templates/GraknVersion.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/GraknVersion.java) >> $@",
+    outs = ["util/GraknVersion.java"]
 )
 
 java_library(
@@ -38,7 +42,7 @@ java_library(
     srcs = [
         ":grakn-version",
         ":graql-java",
-    ] + glob(["src/main/java/**/*.java"]),
+    ] + glob(["src/**/*.java"]),
     deps = [
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -82,6 +86,7 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:log4j-over-slf4j",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    resources = glob(["src/resources/*"]),
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 )
 
@@ -89,7 +94,7 @@ java_library(
 java_test(
     name = "keyspace-test",
     test_class = "ai.grakn.KeyspaceTest",
-    srcs = ["src/test/java/ai/grakn/KeyspaceTest.java"],
+    srcs = ["test/KeyspaceTest.java"],
     deps = [":grakn-graql"],
     size = "small"
 )
@@ -97,36 +102,47 @@ java_test(
 java_test(
     name = "in-memory-session-test",
     test_class = "ai.grakn.InMemorySessionTest",
-    srcs = ["src/test/java/ai/grakn/InMemorySessionTest.java"],
-    deps = [":grakn-graql", "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"],
+    srcs = ["test/InMemorySessionTest.java"],
+    deps = [
+        ":grakn-graql",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+    ],
     size = "small"
 )
 
 java_test(
     name = "grakn-tx-operation-exception-test",
     test_class = "ai.grakn.exception.GraknTxOperationExceptionTest",
-    srcs = ["src/test/java/ai/grakn/exception/GraknTxOperationExceptionTest.java"],
-    deps = [":grakn-graql","//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
+    srcs = ["test/exception/GraknTxOperationExceptionTest.java"],
+    deps = [
+        ":grakn-graql",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+    ],
     size = "small"
 )
 
 java_test(
     name = "tx-factory-builder-test",
     test_class = "ai.grakn.factory.TxFactoryBuilderTest",
-    srcs = ["src/test/java/ai/grakn/factory/TxFactoryBuilderTest.java"],
-    resources = ["src/test/resources/inmemory-graph.properties"],
-    deps = [":grakn-graql","//dependencies/maven/artifacts/org/mockito:mockito-core"],
+    srcs = ["test/factory/TxFactoryBuilderTest.java"],
+    resources = ["test/resources/inmemory-graph.properties"],
+    deps = [
+        ":grakn-graql",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+    ],
     size = "small"
 )
 
 java_test(
     name = "grakn-tx-tinker-factory-test",
     test_class = "ai.grakn.factory.GraknTxTinkerFactoryTest",
-    srcs = ["src/test/java/ai/grakn/factory/GraknTxTinkerFactoryTest.java"],
-    deps = [":grakn-graql", "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin"
+    srcs = ["test/factory/GraknTxTinkerFactoryTest.java"],
+    deps = [
+        ":grakn-graql",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
     ],
-    resources = ["src/test/resources/inmemory-graph.properties"],
+    resources = ["test/resources/inmemory-graph.properties"],
     size = "small"
 )
 
