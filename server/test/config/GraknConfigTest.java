@@ -35,7 +35,7 @@ import static junit.framework.TestCase.assertNotNull;
  */
 public class GraknConfigTest {
 
-    private final static InputStream TEST_CONFIG_FILE = GraknConfigTest.class.getClassLoader().getResourceAsStream("inmemory-graph.properties");
+    private final static InputStream TEST_CONFIG_FILE = GraknConfigTest.class.getClassLoader().getResourceAsStream("server/test/resources/inmemory-graph.properties");
     private final static GraknConfig configuration = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule
