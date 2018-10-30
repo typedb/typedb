@@ -17,8 +17,9 @@
 # under the License.
 #
 
-import queue
 import six
+from six.moves import queue
+
 
 from grakn.service.Session.util.RequestBuilder import RequestBuilder
 import grakn.service.Session.util.ResponseReader as ResponseReader # for circular import issue
