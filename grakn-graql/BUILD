@@ -35,7 +35,10 @@ genrule(
 
 java_library(
     name = "grakn-graql",
-    srcs = [":graql-java"] + glob(["src/main/java/**/*.java"]),
+    srcs = [
+        ":grakn-version",
+        ":graql-java",
+    ] + glob(["src/main/java/**/*.java"]),
     deps = [
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

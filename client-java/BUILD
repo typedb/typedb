@@ -31,7 +31,7 @@ java_grpc_compile(
 
 java_library(
     name = "client-java",
-    srcs = [":client-java-proto"] + glob(["src/main/java/**/*.java"]),
+    srcs = [":client-java-proto"] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
@@ -68,7 +68,7 @@ java_library(
 
 java_test(
     name = "transaction-test",
-    srcs = ["src/test/java/ai/grakn/client/TransactionTest.java","src/test/java/ai/grakn/client/ServerRPCMock.java"],
+    srcs = glob(["test/**/*.java"]),
     test_class = "ai.grakn.client.TransactionTest",
     deps = [
         ":client-java",

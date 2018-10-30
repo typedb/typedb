@@ -56,7 +56,7 @@ import ai.grakn.util.SimpleURI;
 import brave.Tracing;
 import brave.grpc.GrpcTracing;
 import com.google.common.collect.AbstractIterator;
-import instrumentation.grpc.GrpcClientInterceptor;
+import ai.grakn.client.benchmark.GrpcClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import zipkin2.reporter.AsyncReporter;
