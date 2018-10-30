@@ -111,7 +111,7 @@ genrule(
 
 java_test(
     name = "process-wide-lock-provider-test",
-    test_class = "ai.grakn.engine.lock.ProcessWideLockProviderTest",
+    test_class = "ai.grakn.core.server.lock.ProcessWideLockProviderTest",
     srcs = ["test/lock/ProcessWideLockProviderTest.java"],
     deps = [":server"],
     size = "small"
@@ -119,7 +119,7 @@ java_test(
 
 java_test(
     name = "rocks-db-queue-test",
-    test_class = "ai.grakn.engine.attribute.deduplicator.RocksDbQueueTest",
+    test_class = "ai.grakn.core.server.attribute.deduplicator.RocksDbQueueTest",
     srcs = ["test/attribute/deduplicator/RocksDbQueueTest.java"],
     deps = [
         ":server",
@@ -132,7 +132,7 @@ java_test(
 
 java_test(
     name = "grakn-config-test",
-    test_class = "ai.grakn.engine.config.GraknConfigTest",
+    test_class = "ai.grakn.core.server.config.GraknConfigTest",
     srcs = ["test/config/GraknConfigTest.java"],
     deps = [":server", "//grakn-graql"],
     resources = ["test/resources/inmemory-graph.properties"],
@@ -141,7 +141,7 @@ java_test(
 
 java_test(
     name = "requests-test",
-    test_class = "ai.grakn.engine.controller.util.RequestsTest",
+    test_class = "ai.grakn.core.server.controller.util.RequestsTest",
     srcs = ["test/controller/util/RequestsTest.java"],
      deps = [
         ":server",
