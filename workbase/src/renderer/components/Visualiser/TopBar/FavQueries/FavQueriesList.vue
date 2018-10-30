@@ -155,7 +155,7 @@
 
       // methods
       this.$options.methods = {
-        ...(this.$options.compmethodsuted || {}),
+        ...(this.$options.methods || {}),
         ...mapMutations(['setCurrentQuery']),
       };
     },

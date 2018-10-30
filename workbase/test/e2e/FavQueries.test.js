@@ -141,6 +141,8 @@ describe('Favourite queries', () => {
   });
 
   test('delete favourite query', async () => {
+    await sleep(3000);
+
     await app.client.click('.delete-fav-query-btn');
 
     await assert.equal(await app.client.getText('.toasted'), 'Query get persons has been deleted from saved queries.\nCLOSE');

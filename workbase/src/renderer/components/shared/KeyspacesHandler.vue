@@ -91,7 +91,7 @@
 </style>
 
 <script>
-import { createNamespacedHelpers } from 'vuex';
+import { createNamespacedHelpers, mapGetters } from 'vuex';
 
 import storage from '@/components/shared/PersistentStorage';
 
@@ -127,12 +127,7 @@ export default {
     };
   },
   computed: {
-    allKeyspaces() {
-      return this.$store.getters.allKeyspaces;
-    },
-    isGraknRunning() {
-      return this.$store.getters.isGraknRunning;
-    },
+    ...mapGetters(['allKeyspaces', 'isGraknRunning']),
   },
   filters: {
     truncate(ks) {

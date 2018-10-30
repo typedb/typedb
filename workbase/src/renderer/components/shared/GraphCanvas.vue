@@ -24,16 +24,27 @@
 </style>
 
 <script>
+import { createNamespacedHelpers } from 'vuex';
+
 import VisFacade from '@/components/CanvasVisualiser/Facade';
 import { INITIALISE_VISUALISER } from './StoresActions';
 
 export default {
   name: 'GraphCanvas',
   props: ['tabId'],
+  beforeCreate() {
+    const { mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapActions([INITIALISE_VISUALISER]),
+    };
+  },
   mounted() {
     this.$nextTick(() => {
       const graphDiv = this.$refs.graph;
-      this.$store.dispatch(`tab-${this.tabId}/${INITIALISE_VISUALISER}`, { container: graphDiv, visFacade: VisFacade });
+      this[INITIALISE_VISUALISER]({ container: graphDiv, visFacade: VisFacade });
     });
   },
 };
