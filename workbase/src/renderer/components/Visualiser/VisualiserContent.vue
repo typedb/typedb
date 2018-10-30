@@ -83,7 +83,7 @@ export default {
   },
   created() {
     window.addEventListener('keydown', (e) => {
-      if ((e.keyCode === this.LETTER_T_KEYCODE) && e.metaKey && this.tabs.size < 10) this.newTab();
+      if ((e.keyCode === this.LETTER_T_KEYCODE) && e.metaKey && this.tabs.size < 10 ) this.newTab();
     });
   },
   methods: {
