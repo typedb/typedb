@@ -17,7 +17,7 @@ genrule(
     visibility = ["//visibility:public"]
 )
 
-exports_files(["grakn"], visibility = ["//visibility:public"])
+exports_files(["grakn", "VERSION"], visibility = ["//visibility:public"])
 
 test_suite(
     name = "test-unit",
