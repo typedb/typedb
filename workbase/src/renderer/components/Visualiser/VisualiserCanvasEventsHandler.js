@@ -1,4 +1,5 @@
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
+import { LOAD_ATTRIBUTES, LOAD_NEIGHBOURS } from '../shared/StoresActions';
 
 export default {
   registerHandlers({ state, dispatch, commit }) {
@@ -62,7 +63,7 @@ export default {
 
         const neighboursLimit = QuerySettings.getNeighboursLimit();
         const visNode = state.visFacade.getNode(nodeId);
-        const action = (params.event.srcEvent.shiftKey) ? 'loadAttributes' : 'loadNeighbours';
+        const action = (params.event.srcEvent.shiftKey) ? LOAD_ATTRIBUTES : LOAD_NEIGHBOURS;
         dispatch(action, { visNode, neighboursLimit });
       },
     });

@@ -12,7 +12,7 @@
             <div class="panel-content" v-else v-show="attributesLoaded">
 
                 <div class="panel-content-item">
-                    <div v-bind:class="(showTypeList) ? 'vue-button type-btn type-list-shown' : 'vue-button type-btn'" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
+                    <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
                 </div>
 
                 <div class="panel-list-item">
@@ -26,7 +26,7 @@
                 <div class="panel-content-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
                     <h1 class="sub-panel-header">
                         <div class="sub-title">Label</div>
-                        <div class="vue-button reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                        <div class="btn reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" class="vue-icon" iconSize="12"></vue-icon></div>
                     </h1>
                     <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
                     <ul v-else class="attribute-list">
@@ -39,7 +39,7 @@
                 <div v-bind:class="(showTypeList) ? 'colour-item disable-content' : 'colour-item'">
                     <h1 class="sub-panel-header">
                         <div class="sub-title">Colour</div>
-                        <div class="vue-button reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                        <div class="btn reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" className="vue-icon" iconSize="12"></vue-icon></div>
                     </h1>
                     <div class="row">
                         <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
@@ -55,7 +55,7 @@
   import { Chrome } from 'vue-color';
   import { mapGetters } from 'vuex';
 
-  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL } from '@/components/shared/StoresActions';
+  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL, OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
 
 
@@ -89,7 +89,7 @@
         }
         return this.selectedNode;
       },
-  
+
     },
     watch: {
       showConceptDisplayContent(open) {
@@ -118,7 +118,7 @@
     methods: {
       async loadAttributeTypes() {
         if (!this.currentType) return;
-        const graknTx = await this.$store.dispatch('openGraknTx');
+        const graknTx = await this.$store.dispatch(OPEN_GRAKN_TX);
 
         const type = await graknTx.getSchemaConcept(this.currentType);
 
@@ -211,8 +211,6 @@
         cursor: pointer;
         align-items: center;
         display: flex;
-        min-height: 22px;
-        margin: 0px !important;
     }
 
     .type-list {

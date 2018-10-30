@@ -223,7 +223,6 @@ async function buildFromConceptList(path, pathNodes) {
   data.edges.push(...roleplayers.edges);
 
   data.edges.map(edge => Object.assign(edge, Style.computeShortestPathEdgeStyle()));
-
   return data;
 }
 
@@ -233,6 +232,4 @@ export default {
   buildFromConceptList,
   prepareNodes,
   relationshipsRolePlayers,
-  attachExplanation,
-  constructEdges,
 };

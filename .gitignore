@@ -59,3 +59,7 @@ social_network
 # VIM swap files #
 *.swp
 *.swo
+
+
+# Python cache #
+__pycache__
