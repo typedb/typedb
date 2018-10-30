@@ -47,7 +47,7 @@
 
   .tab {
     background-color: var(--gray-1);
-    width: 120px;
+    width: 100px;
     height: 30px;
     border: var(--container-darkest-border);
     display: flex;
@@ -60,7 +60,8 @@
   }
 
   .current-tab {
-    background-color: var(--gray-3);
+    background-color: var(--canvas-color);
+    border-top: 1px solid transparent;
   }
 
 </style>
@@ -77,7 +78,13 @@ export default {
       currentTab: 1,
       tabs: new Set([1]),
       visTab: 'VisTab',
+      LETTER_T_KEYCODE: 84,
     };
+  },
+  created() {
+    window.addEventListener('keydown', (e) => {
+      if ((e.keyCode === this.LETTER_T_KEYCODE) && e.metaKey && this.tabs.size < 10) this.newTab();
+    });
   },
   methods: {
     toggleTab(tab) {

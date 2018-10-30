@@ -21,7 +21,7 @@
         width: 100%;
         height: 100%;
         position: absolute;
-        background-color: #1B1B1B;
+        background-color: var(--canvas-color);
     }
 
     .vis-row {
