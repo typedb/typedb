@@ -26,6 +26,13 @@ antlr4(
     visitor = True,
 )
 
+genrule(
+    name = "grakn-version",
+    srcs = ["//:VERSION", "GraknVersion.template.java"],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location GraknVersion.template.java) >> $@",
+    outs = ["src/main/java/ai/grakn/util/GraknVersion.java"]
+)
+
 java_library(
     name = "grakn-graql",
     srcs = [":graql-java"] + glob(["src/main/java/**/*.java"]),
