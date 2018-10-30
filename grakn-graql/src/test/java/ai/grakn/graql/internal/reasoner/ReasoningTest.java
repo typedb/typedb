@@ -514,6 +514,19 @@ public class ReasoningTest {
         assertTrue(answers3.iterator().next().get(var("y")).isAttribute());
     }
 
+    @Test
+    public void whenReasoningWithResourcesInRelationForm_ResultsAreComplete() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+        ConceptMap entity = qb.<GetQuery>parse("match $x isa genericEntity;get;").stream().findFirst().orElse(null);
+        String queryString = "match " +
+                "$rel($role:$x) isa @has-reattachable-resource-string;" +
+                "$x id '"  + entity.get("x").id() + "';" +
+                "get;";
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        assertEquals(7, answers.size());
+        answers.forEach(ans -> assertEquals(3, ans.size()));
+    }
+
     //TODO leads to cache inconsistency
     @Ignore
     @Test

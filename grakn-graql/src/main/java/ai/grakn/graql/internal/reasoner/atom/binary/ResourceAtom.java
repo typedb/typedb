@@ -71,11 +71,12 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentC
  * Atom implementation defining a resource atom corresponding to a {@link HasAttributeProperty}.
  * The resource structure is the following:
  *
- * has($varName, $predicateVariable = resource variable), type($predicateVariable)
+ * has($varName, $attributeVariable), type($attributeVariable)
  *
  * or in graql terms:
  *
- * $varName has <type> $predicateVariable; $predicateVariable isa <type>;
+ * $varName has <type> $attributeVariable;
+ * $attributeVariable isa $predicateVariable; [$predicateVariable/<type id>]
  *
  * </p>
  *
@@ -86,13 +87,14 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentC
 public abstract class ResourceAtom extends Binary{
 
     public abstract Var getRelationVariable();
+    public abstract Var getAttributeVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
-    public static ResourceAtom create(VarPattern pattern, Var attributeVar, Var relationVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AutoValue_ResourceAtom(pattern.admin().var(), pattern, parent, attributeVar, predicateId,  relationVariable, ImmutableSet.copyOf(ps));
+    public static ResourceAtom create(VarPattern pattern, Var attributeVariable, Var relationVariable, Var predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        return new AutoValue_ResourceAtom(pattern.admin().var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
     private static ResourceAtom create(ResourceAtom a, ReasonerQuery parent) {
-        ResourceAtom atom = create(a.getPattern(), a.getPredicateVariable(),  a.getRelationVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
+        ResourceAtom atom = create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
         atom.applicableRules = a.applicableRules;
         return atom;
     }
@@ -112,7 +114,7 @@ public abstract class ResourceAtom extends Binary{
         return RelationshipAtom.create(
                 Graql.var()
                         .rel(Schema.ImplicitType.HAS_OWNER.getLabel(type.label()).getValue(), getVarName())
-                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getPredicateVariable())
+                        .rel(Schema.ImplicitType.HAS_VALUE.getLabel(type.label()).getValue(), getAttributeVariable())
                         .isa(typeLabel.getValue())
                 .admin(),
                 getPredicateVariable(),
@@ -123,8 +125,8 @@ public abstract class ResourceAtom extends Binary{
 
     /**
      * NB: this is somewhat ambiguous cause from {$x has resource $r;} we can extract:
-     * - $x isa ???;
-     * - $r isa resource;
+     * - $r isa owner-type;
+     * - $x isa attribute-type;
      * We pick the latter as the type information is available.
      *
      * @return corresponding isa atom
@@ -137,7 +139,7 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()?
-                getPredicateVariable().toString() :
+                getAttributeVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().label() + " " +
                 multiPredicateString +
@@ -226,7 +228,7 @@ public abstract class ResourceAtom extends Binary{
         if (getMultiPredicate().isEmpty()){
             boolean predicateBound = getParentQuery().getAtoms(Atom.class)
                     .filter(at -> !at.equals(this))
-                    .anyMatch(at -> at.getVarNames().contains(getPredicateVariable()));
+                    .anyMatch(at -> at.getVarNames().contains(getAttributeVariable()));
             if (!predicateBound) {
                 errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE.getMessage(rule.then(), rule.label()));
             }
@@ -243,7 +245,7 @@ public abstract class ResourceAtom extends Binary{
     @Override
     public Set<Var> getVarNames() {
         Set<Var> varNames = super.getVarNames();
-        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
+        varNames.add(getAttributeVariable());
         if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
         return varNames;
     }
@@ -285,6 +287,14 @@ public abstract class ResourceAtom extends Binary{
             return UnifierImpl.nonExistent();
         }
 
+        //unify attribute vars
+        Var childAttributeVarName = this.getAttributeVariable();
+        Var parentAttributeVarName = parent.getAttributeVariable();
+        if (parentAttributeVarName.isUserDefinedName()
+                && !childAttributeVarName.equals(parentAttributeVarName)){
+            unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
+        }
+
         //unify relation vars
         Var childRelationVarName = this.getRelationVariable();
         Var parentRelationVarName = parent.getRelationVariable();
@@ -316,7 +326,7 @@ public abstract class ResourceAtom extends Binary{
         AttributeTypeImpl attributeType = AttributeTypeImpl.from(getSchemaConcept().asAttributeType());
 
         Concept owner = substitution.get(getVarName());
-        Var resourceVariable = getPredicateVariable();
+        Var resourceVariable = getAttributeVariable();
 
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
         Attribute attribute;
@@ -328,8 +338,11 @@ public abstract class ResourceAtom extends Binary{
             attribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
         }
 
-        attachAttribute(owner, attribute);
-        return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
+        if (attribute != null) {
+            attachAttribute(owner, attribute);
+            return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
+        }
+        return Stream.of(new ConceptMapImpl());
     }
 
     /**
@@ -344,15 +357,15 @@ public abstract class ResourceAtom extends Binary{
 
     @Override
     public ResourceAtom rewriteWithRelationVariable(){
-        Var attributeVariable = getPredicateVariable();
+        Var attributeVariable = getAttributeVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName().has(getSchemaConcept().label(), attributeVariable, relationVariable);
-        return create(newVar.admin(), attributeVariable, relationVariable, getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(newVar.admin(), attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getPredicateVariable().asUserDefined(), getRelationVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asUserDefined(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override
