@@ -6,11 +6,11 @@ java_test(
          "//grakn-graql",
          "//test-integration/rule:cassandra-context",
          "//test-integration/rule:server-context",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
-     size = "medium",
-     classpath_resources = ["//test-integration/resources:logback-test"]
- )
+     classpath_resources = ["//test-integration/resources:logback-test"],
+     size = "medium"
+)
 
 java_test(
   name = "validate-global-rules-it",

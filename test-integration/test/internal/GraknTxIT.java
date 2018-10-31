@@ -442,8 +442,8 @@ public class GraknTxIT {
         EntityType yes = tx.putEntityType("yes");
         EntityType entity = tx.getMetaEntityType();
         Type thing = tx.getMetaConcept();
-
-        assertThat(tx.sups(yes).collect(toSet()), containsInAnyOrder(yes, entity, thing));
+        Set<SchemaConcept> no = (Set<SchemaConcept>) tx.sups(yes).collect(toSet());
+        assertThat(no, containsInAnyOrder(yes, entity, thing));
         assertThat(tx.sups(entity).collect(toSet()), containsInAnyOrder(entity, thing));
         assertThat(tx.sups(thing).collect(toSet()), containsInAnyOrder(thing));
     }
