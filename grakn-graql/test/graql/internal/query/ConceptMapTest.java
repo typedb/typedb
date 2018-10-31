@@ -31,9 +31,7 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-/**
- * @author Felix Chapman
- */
+
 public class ConceptMapTest {
 
     private final Var varInAnswer = var("x");

@@ -174,7 +174,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
+            Collection<EquivalentFragmentSet> fragmentSets, GraknTx tx) {
 
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;
@@ -182,7 +182,7 @@ public class EquivalentFragmentSets {
         while (changed) {
             changed = false;
             for (FragmentSetOptimisation optimisation : OPTIMISATIONS) {
-                changed |= optimisation.apply(fragmentSets, graph);
+                changed |= optimisation.apply(fragmentSets, tx);
             }
         }
     }

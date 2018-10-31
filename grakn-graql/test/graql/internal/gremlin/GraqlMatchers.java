@@ -30,7 +30,6 @@ import java.util.function.Predicate;
 /**
  * Provides {@link Matcher} implementations used by Graql tests in calls to {@link Assert#assertThat}.
  *
- * @author Felix Chapman
  */
 public class GraqlMatchers {
 

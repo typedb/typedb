@@ -34,13 +34,13 @@ import static org.junit.Assert.fail;
 
 public class ServerStartIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
+    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
 
-    public static final ServerContext server1 = new ServerContext();
+    private static final ServerContext server1 = new ServerContext();
 
-    public static final ServerContext server2 = new ServerContext();
+    private static final ServerContext server2 = new ServerContext();
 
-    public static final ServerContext server3 = new ServerContext();
+    private static final ServerContext server3 = new ServerContext();
 
     private static final Set<ServerContext> servers = new HashSet<>(Arrays.asList(server1, server2, server3));
 
@@ -55,7 +55,7 @@ public class ServerStartIT {
     public void whenStartingMultipleEngines_InitializationSucceeds() {
         HashSet<CompletableFuture<Void>> futures = new HashSet<>();
 
-        //Check That They Running
+        //Check servers are running
         servers.forEach(engine -> futures.add(
                 CompletableFuture.supplyAsync(engine::server).handle((result, exception) -> handleException(exception))
         ));
@@ -65,7 +65,7 @@ public class ServerStartIT {
 
     @Test
     public void whenStartingAndCreatingKeyspace_InitializationSucceeds() {
-        servers.forEach(engine ->{
+        servers.forEach(engine -> {
             engine.systemKeyspace().addKeyspace(Keyspace.of("grakn"));
         });
     }

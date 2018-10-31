@@ -51,9 +51,7 @@ public class BatchExecutorClientIT {
     public static final ServerContext server = new ServerContext();
 
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
 
     public static final int MAX_DELAY = 100;
     private GraknSession session;

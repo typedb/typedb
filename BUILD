@@ -18,12 +18,3 @@ genrule(
 )
 
 exports_files(["grakn", "VERSION"], visibility = ["//visibility:public"])
-
-test_suite(
-    name = "test-unit",
-    tests = [
-        "//server:test-unit",
-        "//grakn-graql:test-unit",
-        "//client-java:test-unit"
-    ]
-)

@@ -29,9 +29,6 @@ import java.time.LocalDate;
 
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 
-/**
- * @author Felix Chapman
- */
 public class ComparatorPredicateTest {
 
     @Rule
@@ -97,4 +94,7 @@ class MyComparatorPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return P.eq(value);
     }
+
+    @Override
+    public int signum() { return 0; }
 }

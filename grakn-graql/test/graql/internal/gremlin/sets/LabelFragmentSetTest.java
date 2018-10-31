@@ -47,14 +47,14 @@ public class LabelFragmentSetTest {
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
-    private GraknTx graph;
+    private GraknTx tx;
 
     @Before
     public void setUp() {
-        graph = mock(GraknTx.class);
+        tx = mock(GraknTx.class);
 
-        when(graph.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
-        when(graph.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);
+        when(tx.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
+        when(tx.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
 
         assertEquals(Sets.difference(originalFragmentSets, ImmutableSet.of(labelFragment)), fragmentSets);
     }
@@ -81,7 +81,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -94,7 +94,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -108,7 +108,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
@@ -121,7 +121,7 @@ public class LabelFragmentSetTest {
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(originalFragmentSets);
 
-        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, graph);
+        LabelFragmentSet.REDUNDANT_LABEL_ELIMINATION_OPTIMISATION.apply(fragmentSets, tx);
 
         assertEquals(originalFragmentSets, fragmentSets);
     }
