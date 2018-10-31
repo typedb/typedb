@@ -14,8 +14,8 @@
 
                 <div class="content" v-if="showRightBar">
                     <keep-alive>
-                        <concept-info-tab v-if="showConceptInfoTab"></concept-info-tab>
-                        <settings-tab v-if="showSettingsTab"></settings-tab>
+                        <concept-info-tab :tabId="tabId" v-if="showConceptInfoTab"></concept-info-tab>
+                        <settings-tab :tabId="tabId" v-if="showSettingsTab"></settings-tab>
                     </keep-alive>
                 </div>
             </div>
@@ -73,6 +73,7 @@
         position: absolute;
         right: 0px;
         top: 0px;
+        z-index: 1;
     }
 
     .nav {
@@ -114,6 +115,7 @@
 
   export default {
     components: { VueDraggableResizable, ConceptInfoTab, SettingsTab },
+    props: ['tabId'],
     data() {
       return {
         showConceptInfoTab: true,

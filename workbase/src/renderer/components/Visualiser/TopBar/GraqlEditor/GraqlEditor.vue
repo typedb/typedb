@@ -36,13 +36,14 @@
                     v-on:close-error="showError = false">
             </error-container>
             <fav-queries-list
+                    :tabId="tabId"
                     v-if="showFavQueriesList"
-                    :currentKeyspace="currentKeyspace"
                     :favQueries="favQueries"
                     v-on:close-fav-queries-panel="toggleFavQueriesList"
                     v-on:refresh-queries="refreshFavQueries">
             </fav-queries-list>
             <types-container
+                    :tabId="tabId"
                     v-if="showTypesContainer"
                     v-on:close-types-panel="showTypesContainer = false">
             </types-container>
@@ -148,12 +149,11 @@
         flex: 3;
         position: relative;
         align-items: center;
-
     }
 </style>
 
 <script>
-import { mapGetters } from 'vuex';
+import { createNamespacedHelpers } from 'vuex';
 
 import $ from 'jquery';
 import Spinner from '@/components/UIElements/Spinner.vue';
@@ -179,6 +179,7 @@ export default {
     TypesContainer,
     Spinner,
   },
+  props: ['tabId'],
   data() {
     return {
       codeMirror: {},
@@ -197,8 +198,21 @@ export default {
       showEditorToolTip: false,
     };
   },
-  computed: {
-    ...mapGetters(['currentQuery', 'currentKeyspace', 'showSpinner']),
+  beforeCreate() {
+    const { mapGetters, mapMutations, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace', 'currentQuery', 'showSpinner']),
+    };
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapMutations(['setCurrentQuery']),
+      ...mapActions([RUN_CURRENT_QUERY, CANVAS_RESET]),
+    };
   },
   watch: {
     currentQuery(query) {
@@ -211,9 +225,9 @@ export default {
       // Set the cursor at the end of existing content
       this.codeMirror.setCursor(this.codeMirror.lineCount(), 0);
     },
-    currentKeyspace() {
+    currentKeyspace(keyspace) {
       this.refreshFavQueries();
-      if (this.currentKeyspace) {
+      if (keyspace) {
         this.codeMirror.setOption('readOnly', false);
       }
       this.history.clearHistory();
@@ -240,7 +254,7 @@ export default {
       this.initialEditorHeight = $('.CodeMirror').height();
 
       this.codeMirror.on('change', (codeMirrorObj) => {
-        this.$store.commit('currentQuery', codeMirrorObj.getValue());
+        this.setCurrentQuery(codeMirrorObj.getValue());
         this.editorLinesNumber = codeMirrorObj.lineCount();
       });
       this.codeMirror.on('focus', () => {
@@ -258,16 +272,15 @@ export default {
         this.showFavQueriesList = false;
         this.showTypesContainer = false;
 
-        this.$store.commit('currentQuery', limitQuery(this.currentQuery));
+        this.setCurrentQuery(limitQuery(this.currentQuery));
 
         this.history.addToHistory(this.currentQuery);
 
-        this.$store.dispatch(RUN_CURRENT_QUERY)
-          .catch((err) => {
-            if (!err.details) this.errorMsg = err.message;
-            else this.errorMsg = err.details;
-            this.showError = true;
-          });
+        this[RUN_CURRENT_QUERY]().catch((err) => {
+          if (!err.details) this.errorMsg = err.message;
+          else this.errorMsg = err.details;
+          this.showError = true;
+        });
         this.showError = false;
       }
     },
@@ -278,7 +291,7 @@ export default {
     clearGraph() {
       if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
       else {
-        this.$store.dispatch(CANVAS_RESET);
+        this[CANVAS_RESET]();
       }
     },
     toggleAddFavQuery() {

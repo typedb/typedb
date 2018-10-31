@@ -1,5 +1,5 @@
 export default {
-  currentQuery(state, query) {
+  setCurrentQuery(state, query) {
     state.currentQuery = query;
   },
   currentKeyspace(state, keyspace) {
@@ -31,7 +31,7 @@ export default {
         relationships: state.visFacade.getAllNodes().filter(x => x.baseType === 'RELATIONSHIP').length };
     }
   },
-  contextMenu(state, contextMenu) {
+  setContextMenu(state, contextMenu) {
     state.contextMenu = contextMenu;
   },
 };
