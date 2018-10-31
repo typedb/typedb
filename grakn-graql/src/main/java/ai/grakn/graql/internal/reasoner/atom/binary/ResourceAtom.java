@@ -312,12 +312,15 @@ public abstract class ResourceAtom extends Binary{
     }
 
     private void attachAttribute(Concept owner, Attribute attribute){
-        if (owner.isEntity()){
-            EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
-        } else if (owner.isRelationship()){
-            RelationshipImpl.from(owner.asRelationship()).attributeInferred(attribute);
-        } else if (owner.isAttribute()){
-            AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+        //check if link exists
+        if (owner.asThing().attributes(attribute.type()).noneMatch(a -> a.equals(attribute))) {
+            if (owner.isEntity()) {
+                EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+            } else if (owner.isRelationship()) {
+                RelationshipImpl.from(owner.asRelationship()).attributeInferred(attribute);
+            } else if (owner.isAttribute()) {
+                AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+            }
         }
     }
 
