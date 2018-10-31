@@ -58,8 +58,7 @@ define
 person sub entity
   plays parent
   plays child
-  plays spouse1
-  plays spouse2
+  plays spouse
 
   has identifier
   has firstname
@@ -88,8 +87,7 @@ gender sub attribute datatype string;
 # Roles and Relations
 
 marriage sub relationship
-  relates spouse1
-  relates spouse2
+  relates spouse
   has picture;
 
 parentship sub relationship
@@ -102,7 +100,7 @@ There are a number of things we can say about schema shown above:
 * there is one entity, `person`, which represents a person in the family whose genealogy data we are studying.
 * the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are expressed as strings, long, or date. Grakn also supports double and boolean.
 * there are two relationships that a `person` can participate in: `marriage` and `parentship`
-* the person can play different roles in those relationships, as a spouse (`spouse1` or `spouse2` - we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
+* the person can play different roles in those relationships, as a spouse (we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
 * the `marriage` relationship has an attribute, which is a URL to a wedding picture, if one exists.
 
 ### The Data
@@ -118,9 +116,9 @@ $8304 (parent: $57472, child: $41324624) isa parentship;
 $24816 (parent: $81976, child: $41096) isa parentship;
 $37104 isa parentship (parent: $49344, child: $41127960);
 ...
-$122884216 (spouse2: $57472, spouse1: $41406488) isa marriage;
-$40972456 (spouse2: $40964120, spouse1: $8248) isa marriage;
-$81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
+$122884216 (spouse: $57472, spouse: $41406488) isa marriage;
+$40972456 (spouse: $40964120, spouse: $8248) isa marriage;
+$81940536 (spouse: $233568, spouse: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 ```
 
 Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the knowledge graph.  We will show how to add more data in the [Extending The Knowledge Graph](#extending-the-knowledge-base) section. First, however, it is time to query the graph in the Graql shell.
