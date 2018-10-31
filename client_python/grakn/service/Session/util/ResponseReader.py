@@ -19,6 +19,7 @@
 
 import abc
 import datetime
+import six
 from grakn.service.Session.util import enums
 from grakn.service.Session.Concept import ConceptFactory
 from grakn.exception.GraknError import GraknError 
@@ -135,8 +136,9 @@ class Explanation(object):
 class Answer(object):
     """ Top level answer, provides interface """
 
-    def __init__(self, explanation: Explanation):
+    def __init__(self, explanation):
         self._explanation = explanation
+    __init__.__annotations__ = {'explanation': Explanation}
 
     @abc.abstractmethod
     def get(self): 
@@ -158,7 +160,7 @@ class Answer(object):
 class AnswerGroup(Answer):
 
     def __init__(self, owner_concept, answer_list, explanation):
-        super().__init__(explanation)
+        super(AnswerGroup, self).__init__(explanation)
         self._owner_concept = owner_concept
         self._answer_list = answer_list
 
@@ -176,7 +178,7 @@ class AnswerGroup(Answer):
 class ConceptMap(Answer):
 
     def __init__(self, concept_map, explanations):
-        super().__init__(explanations)
+        super(ConceptMap, self).__init__(explanations)
         self._concept_map = concept_map 
 
     def get(self, var=None):
@@ -209,9 +211,10 @@ class ConceptMap(Answer):
 
 class ConceptList(Answer):
 
-    def __init__(self, concept_id_list, explanation: Explanation):
-        super().__init__(explanation)
+    def __init__(self, concept_id_list, explanation):
+        super(ConceptList, self).__init__(explanation)
         self._concept_id_list = concept_id_list
+    __init__.__annotations__ = {'explanation': Explanation}
 
     def get(self):
         """ Get this ConceptList """
@@ -223,9 +226,10 @@ class ConceptList(Answer):
 
 class ConceptSet(Answer):
 
-    def __init__(self, concept_id_set, explanation: Explanation):
-        super().__init__(explanation)
+    def __init__(self, concept_id_set, explanation):
+        super(ConceptSet, self).__init__(explanation)
         self._concept_id_set = concept_id_set
+    __init__.__annotations__ = {'explanation': Explanation}
 
     def get(self):
         """ Get this ConceptSet """
@@ -237,9 +241,10 @@ class ConceptSet(Answer):
 
 class ConceptSetMeasure(ConceptSet):
 
-    def __init__(self, concept_id_set, number, explanation: Explanation):
-        super().__init__(concept_id_set, explanation)
+    def __init__(self, concept_id_set, number, explanation):
+        super(ConceptSetMeasure, self).__init__(concept_id_set, explanation)
         self._measurement = number
+    __init__.__annotations__ = {'explanation': Explanation}
 
     def measurement(self):
         return self._measurement
@@ -247,9 +252,10 @@ class ConceptSetMeasure(ConceptSet):
 
 class Value(Answer):
 
-    def __init__(self, number, explanation: Explanation):
-        super().__init__(explanation)
+    def __init__(self, number, explanation):
+        super(Value, self).__init__(explanation)
         self._number = number
+    __init__.__annotations__ = {'explanation': Explanation}
 
     def get(self):
         """ Get this Value object """
@@ -350,7 +356,7 @@ class AnswerConverter(object):
 
 
 
-class ResponseIterator(object):
+class ResponseIterator(six.Iterator):
     """ Retrieves next value in the Grakn response iterator """
 
     def __init__(self, tx_service , iterator_id, iter_resp_converter):

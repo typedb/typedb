@@ -57,7 +57,7 @@ jobs:
       - *install_yarn_and_unzip
       - *install_node
       - *install_bazel
-      - run: bazel build //:distribution-server //:distribution-console //:distribution-all --sandbox_debug
+      - run: bazel build //:distribution --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/dist/* dist/
       - persist_to_workspace: #share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
@@ -104,7 +104,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - run: bazel build //:distribution-all --sandbox_debug
+      - run: bazel build //:distribution --sandbox_debug
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
       - *save_test_results
       - store_artifacts:
@@ -116,29 +116,29 @@ jobs:
       machine: true
       working_directory: ~/grakn
       steps:
-        - *attach_grakn_workspace
+        - checkout
         - *prepare_apt_repositories
         - *install_yarn_and_unzip
         - *install_node
         - *install_bazel
-        - *start_grakn_server
-        - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
-        - run: cd client-nodejs && yarn install && yarn run test
+        - run: bazel build //:distribution --sandbox_debug
+        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+        - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+        - run: bazel test //client-nodejs:test-integration --test_output=streamed
 
   client-python-e2e:
       machine: true
       working_directory: ~/grakn
       steps:
-        - *attach_grakn_workspace
-        - run:
-            name: Install python deps
-            command: echo y | pyenv install 3.6.0; pyenv global 3.6.0
-        - run:
-            name: Install protobuf and grpc
-            command: pip install protobuf grpcio grpcio-tools --user
-        - *start_grakn_server
-        - run: cd client-python && make protobuf
-        - run: cd client-python && python -m unittest discover ./tests/integration/ -v
+        - checkout
+        - *prepare_apt_repositories
+        - *install_yarn_and_unzip
+        - *install_bazel
+        - run: bazel build //:distribution --sandbox_debug
+        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+        - run: bazel test //client_python:test_integration --test_output=streamed
 
   workbase-unit-tests:
       docker:
@@ -153,14 +153,17 @@ jobs:
       machine: true
       working_directory: ~/grakn
       steps:
-        - *attach_grakn_workspace
+        - checkout
         - *prepare_apt_repositories
+        - *install_yarn_and_unzip
         - *install_node
         - *install_bazel
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-        - *start_grakn_server
-        - run: cd grakn-dist/target/grakn-core-test/ && ./graql console -f ./examples/basic-genealogy.gql -k gene
+        - run: bazel build //:distribution --sandbox_debug
+        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+        - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
         - run: cd workbase && npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
@@ -250,15 +253,9 @@ workflows:
           requires:
           - build
       - test-end-to-end
-      - client-nodejs-e2e:
-          requires:
-            - build
-      - client-python-e2e:
-          requires:
-            - build
-      - workbase-e2e:
-          requires:
-            - build
+      - client-nodejs-e2e
+      - client-python-e2e
+      - workbase-e2e
 
   build-and-deploy:
     jobs:

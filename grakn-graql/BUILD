@@ -22,13 +22,27 @@ load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 
 antlr4(
     name = "graql-java",
-    srcs = glob(["src/main/antlr4/**/*.g4"]),
+    srcs = glob(["src/graql/grammar/*.g4"]),
     visitor = True,
+    package = "ai.grakn.graql.grammar"
+)
+
+genrule(
+    name = "grakn-version",
+    srcs = [
+        "templates/util/GraknVersion.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
+    outs = ["util/GraknVersion.java"]
 )
 
 java_library(
     name = "grakn-graql",
-    srcs = [":graql-java"] + glob(["src/main/java/**/*.java"]),
+    srcs = [
+        ":grakn-version",
+        ":graql-java",
+    ] + glob(["src/**/*.java"]),
     deps = [
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -72,5 +86,6 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:log4j-over-slf4j",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    resources = glob(["src/resources/*"]),
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 )

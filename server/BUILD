@@ -29,7 +29,7 @@ java_grpc_compile(
 
 java_library(
     name = "server",
-    srcs = [":server-java-proto"] + glob(["src/main/java/**/*.java"]),
+    srcs = [":server-java-proto"] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
@@ -86,23 +86,40 @@ java_library(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
     ],
-    resources = glob(["src/main/resources/*"]),
     visibility = ["//visibility:public"]
+)
 
+java_binary(
+    name = "server-binary",
+    main_class = "ai.grakn.core.server.bootup.GraknBootup",
+    runtime_deps = ["//server:server"],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "distribution",
+    srcs = glob(["conf/**", "services/**"]) + [
+        ":server-binary_deploy.jar",
+        "//:grakn",
+        "//dashboard:assets"
+        ],
+    outs = ["//server:dist/grakn-core-server.zip"],
+    cmd  = "$(location distribution.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location services/grakn/grakn-core-ascii.txt) $(location server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    tools = ["distribution.sh"]
 )
 
 java_test(
     name = "process-wide-lock-provider-test",
-    test_class = "ai.grakn.engine.lock.ProcessWideLockProviderTest",
-    srcs = ["src/test/java/ai/grakn/engine/lock/ProcessWideLockProviderTest.java"],
+    test_class = "ai.grakn.core.server.lock.ProcessWideLockProviderTest",
+    srcs = ["test/lock/ProcessWideLockProviderTest.java"],
     deps = [":server"],
     size = "small"
 )
 
 java_test(
     name = "rocks-db-queue-test",
-    test_class = "ai.grakn.engine.attribute.deduplicator.RocksDbQueueTest",
-    srcs = ["src/test/java/ai/grakn/engine/attribute/deduplicator/RocksDbQueueTest.java"],
+    test_class = "ai.grakn.core.server.attribute.deduplicator.RocksDbQueueTest",
+    srcs = ["test/attribute/deduplicator/RocksDbQueueTest.java"],
     deps = [
         ":server",
         "//grakn-graql",
@@ -114,17 +131,17 @@ java_test(
 
 java_test(
     name = "grakn-config-test",
-    test_class = "ai.grakn.engine.config.GraknConfigTest",
-    srcs = ["src/test/java/ai/grakn/engine/config/GraknConfigTest.java"],
+    test_class = "ai.grakn.core.server.config.GraknConfigTest",
+    srcs = ["test/config/GraknConfigTest.java"],
     deps = [":server", "//grakn-graql"],
-    resources = ["src/test/resources/inmemory-graph.properties"],
+    resources = ["test/resources/inmemory-graph.properties"],
     size = "small"
 )
 
 java_test(
     name = "requests-test",
-    test_class = "ai.grakn.engine.controller.util.RequestsTest",
-    srcs = ["src/test/java/ai/grakn/engine/controller/util/RequestsTest.java"],
+    test_class = "ai.grakn.core.server.controller.util.RequestsTest",
+    srcs = ["test/controller/util/RequestsTest.java"],
      deps = [
         ":server",
         "//grakn-graql",
@@ -140,7 +157,7 @@ test_suite(
 )
 
 exports_files(
-    ["conf/logback.xml", "conf/grakn.properties", "src/services/cassandra/logback.xml", "src/services/cassandra/cassandra.yaml"],
+    glob(["conf/**", "services/**"]),
     visibility = ["//visibility:public"]
 )
 

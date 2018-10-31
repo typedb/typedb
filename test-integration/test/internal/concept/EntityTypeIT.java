@@ -277,49 +277,49 @@ public class EntityTypeIT {
         meta.plays(role);
     }
 
-    @Test
-    public void whenAddingResourcesWithSubTypesToEntityTypes_EnsureImplicitStructureFollowsSubTypes(){
-        EntityType entityType1 = tx.putEntityType("Entity Type 1");
-        EntityType entityType2 = tx.putEntityType("Entity Type 2");
-
-        Label superLabel = Label.of("Super Attribute Type");
-        Label label = Label.of("Attribute Type");
-
-        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.DataType.STRING);
-        AttributeType attributeType = tx.putAttributeType(label, AttributeType.DataType.STRING).sup(superAttributeType);
-        AttributeType metaType = tx.getMetaAttributeType();
-
-        entityType1.has(superAttributeType);
-        entityType2.has(attributeType);
-
-        //Check role types are only built explicitly
-        assertThat(entityType1.playing().collect(toSet()),
-                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
-
-        assertThat(entityType2.playing().collect(toSet()),
-                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
-
-        //Check Implicit Types Follow SUB Structure
-        RelationshipType superRelation = tx.<RelationshipType>getSchemaConcept(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()));
-        Role superRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(superAttributeType.label()));
-        Role superRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(superAttributeType.label()));
-
-        RelationshipType relation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(attributeType.label()));
-        Role roleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attributeType.label()));
-        Role roleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attributeType.label()));
-
-        RelationshipType metaRelation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(metaType.label()));
-        Role metaRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(metaType.label()));
-        Role metaRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(metaType.label()));
-
-        assertEquals(superRoleOwner, roleOwner.sup());
-        assertEquals(superRoleValue, roleValue.sup());
-        assertEquals(superRelation, relation.sup());
-
-        assertEquals(metaRoleOwner, superRoleOwner.sup());
-        assertEquals(metaRoleValue, superRoleValue.sup());
-        assertEquals(metaRelation, superRelation.sup());
-    }
+//    @Test
+//    public void whenAddingResourcesWithSubTypesToEntityTypes_EnsureImplicitStructureFollowsSubTypes(){
+//        EntityType entityType1 = tx.putEntityType("Entity Type 1");
+//        EntityType entityType2 = tx.putEntityType("Entity Type 2");
+//
+//        Label superLabel = Label.of("Super Attribute Type");
+//        Label label = Label.of("Attribute Type");
+//
+//        AttributeType superAttributeType = tx.putAttributeType(superLabel, AttributeType.DataType.STRING);
+//        AttributeType attributeType = tx.putAttributeType(label, AttributeType.DataType.STRING).sup(superAttributeType);
+//        AttributeType metaType = tx.getMetaAttributeType();
+//
+//        entityType1.has(superAttributeType);
+//        entityType2.has(attributeType);
+//
+//        //Check role types are only built explicitly
+//        assertThat(entityType1.playing().collect(toSet()),
+//                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
+//
+//        assertThat(entityType2.playing().collect(toSet()),
+//                containsInAnyOrder(tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
+//
+//        //Check Implicit Types Follow SUB Structure
+//        RelationshipType superRelation = tx.<RelationshipType>getSchemaConcept(Schema.ImplicitType.HAS.getLabel(superAttributeType.label()));
+//        Role superRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(superAttributeType.label()));
+//        Role superRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(superAttributeType.label()));
+//
+//        RelationshipType relation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(attributeType.label()));
+//        Role roleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attributeType.label()));
+//        Role roleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attributeType.label()));
+//
+//        RelationshipType metaRelation = tx.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(metaType.label()));
+//        Role metaRoleOwner = tx.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(metaType.label()));
+//        Role metaRoleValue = tx.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(metaType.label()));
+//
+//        assertEquals(superRoleOwner, roleOwner.sup());
+//        assertEquals(superRoleValue, roleValue.sup());
+//        assertEquals(superRelation, relation.sup());
+//
+//        assertEquals(metaRoleOwner, superRoleOwner.sup());
+//        assertEquals(metaRoleValue, superRoleValue.sup());
+//        assertEquals(metaRelation, superRelation.sup());
+//    }
 
     @Test
     public void whenAddingResourceWithAbstractSuperTypeToEntityType_EnsureImplicitStructureFollowsSubTypes(){

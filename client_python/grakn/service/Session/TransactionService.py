@@ -17,8 +17,9 @@
 # under the License.
 #
 
-import queue
-from typing import Type
+import six
+from six.moves import queue
+
 
 from grakn.service.Session.util.RequestBuilder import RequestBuilder
 import grakn.service.Session.util.ResponseReader as ResponseReader # for circular import issue
@@ -27,7 +28,7 @@ from grakn.exception.GraknError import GraknError
 
 class TransactionService(object):
 
-    def __init__(self, keyspace, tx_type: enums.TxType, credentials, transaction_endpoint):
+    def __init__(self, keyspace, tx_type, credentials, transaction_endpoint):
         self.keyspace = keyspace
         self.tx_type = tx_type.value
         self.credentials = credentials
@@ -37,17 +38,19 @@ class TransactionService(object):
         # open the transaction with an 'open' message
         open_req = RequestBuilder.open_tx(keyspace, tx_type, credentials)
         self._communicator.send(open_req)
+    __init__.__annotations__ = {'tx_type': enums.TxType}
 
 
     # --- Passthrough targets ---
     # targets of top level Transaction class
 
-    def query(self, query: str, infer=True):
+    def query(self, query, infer=True):
         request = RequestBuilder.query(query, infer=infer)
         # print("Query request: {0}".format(request))
         response = self._communicator.send(request)
         # convert `response` into a python iterator
-        return ResponseReader.ResponseReader.query(self, response.query_iter) 
+        return ResponseReader.ResponseReader.query(self, response.query_iter)
+    query.__annotations__ = {'query': str}
 
     def commit(self):
         request = RequestBuilder.commit()
@@ -59,45 +62,53 @@ class TransactionService(object):
     def is_closed(self):
         return self._communicator._closed
 
-    def get_concept(self, concept_id: str): 
+    def get_concept(self, concept_id):
         request = RequestBuilder.get_concept(concept_id)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.get_concept(self, response.getConcept_res)
+    get_concept.__annotations__ = {'concept_id': str}
 
-    def get_schema_concept(self, label: str): 
+    def get_schema_concept(self, label):
         request = RequestBuilder.get_schema_concept(label)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.get_schema_concept(self, response.getSchemaConcept_res)
+    get_schema_concept.__annotations__ = {'label': str}
 
-    def get_attributes_by_value(self, attribute_value, data_type: enums.DataType):
+    def get_attributes_by_value(self, attribute_value, data_type):
         request = RequestBuilder.get_attributes_by_value(attribute_value, data_type)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.get_attributes_by_value(self, response.getAttributes_iter)
+    get_attributes_by_value.__annotations__ = {'data_type': enums.DataType}
 
-    def put_entity_type(self, label: str):
+    def put_entity_type(self, label):
         request = RequestBuilder.put_entity_type(label)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.put_entity_type(self, response.putEntityType_res)
+    put_entity_type.__annotations__ = {'label': str}
 
-    def put_relationship_type(self, label: str):
+    def put_relationship_type(self, label):
         request = RequestBuilder.put_relationship_type(label)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.put_relationship_type(self, response.putRelationType_res)
+    put_relationship_type.__annotations__ = {'label': str}
 
-    def put_attribute_type(self, label: str, data_type: enums.DataType):
+    def put_attribute_type(self, label, data_type):
         request = RequestBuilder.put_attribute_type(label, data_type)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.put_attribute_type(self, response.putAttributeType_res)
+    put_attribute_type.__annotations__ = {'label': str, 'data_type': enums.DataType}
 
-    def put_role(self, label: str):
+    def put_role(self, label):
         request = RequestBuilder.put_role(label)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.put_role(self, response.putRole_res)
+    put_role.__annotations__ = {'label': str}
 
-    def put_rule(self, label: str, when: str, then: str):
+    def put_rule(self, label, when, then):
         request = RequestBuilder.put_rule(label, when, then)
         response = self._communicator.send(request)
         return ResponseReader.ResponseReader.put_rule(self, response.putRule_res)
+    put_rule.__annotations__ = {'label': str, 'when': str, 'then': str}
 
     # --- Transaction Messages ---
 
@@ -108,13 +119,14 @@ class TransactionService(object):
         return response.conceptMethod_res.response
 
 
-    def iterate(self, iterator_id: int):
+    def iterate(self, iterator_id):
         request = RequestBuilder.next_iter(iterator_id)
         response = self._communicator.send(request)
-        return response.iterate_res 
+        return response.iterate_res
+    iterate.__annotations__ = {'iterator_id': int}
 
 
-class Communicator(object):
+class Communicator(six.Iterator):
     """ An iterator and interface for GRPC stream """
 
     def __init__(self, grpc_stream_constructor):

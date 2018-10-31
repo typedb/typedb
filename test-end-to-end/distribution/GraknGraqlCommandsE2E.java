@@ -71,7 +71,7 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void verifyDistributionFiles() {
         // assert files exist
-        final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn-core");
+        final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn");
         final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties");
         final Path assetsDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("services").resolve("assets");
         final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("services").resolve("cassandra");
@@ -92,9 +92,9 @@ public class GraknGraqlCommandsE2E {
      */
     @Test
     public void grakn_shouldBeAbleToStartAndStop() throws IOException, InterruptedException, TimeoutException {
-        commandExecutor.command("./grakn-core", "server", "start").execute();
+        commandExecutor.command("./grakn", "server", "start").execute();
         assertGraknRunning();
-        commandExecutor.command("./grakn-core", "server", "stop").execute();
+        commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknStopped();
     }
 
@@ -103,8 +103,8 @@ public class GraknGraqlCommandsE2E {
      */
     @Test
     public void grakn_testPrintServerHelp() throws IOException, InterruptedException, TimeoutException {
-        String output = commandExecutor.command("./grakn-core", "server", "help").execute().outputUTF8();
-        assertThat(output, containsString("Usage: grakn-core server COMMAND"));
+        String output = commandExecutor.command("./grakn", "server", "help").execute().outputUTF8();
+        assertThat(output, containsString("Usage: grakn server COMMAND"));
     }
 
     /**
@@ -113,7 +113,7 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void grakn_testPrintStatus_whenCurrentlyStopped() throws IOException, InterruptedException, TimeoutException {
         assertGraknStopped();
-        String output = commandExecutor.command("./grakn-core", "server", "status").execute().outputUTF8();
+        String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
         assertThat(output, allOf(containsString("Storage: NOT RUNNING"), containsString("Grakn Core Server: NOT RUNNING")));
     }
 
@@ -125,7 +125,7 @@ public class GraknGraqlCommandsE2E {
         String userInput = "y";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn-core", "server", "clean").execute().outputUTF8();
+                .command("./grakn", "server", "clean").execute().outputUTF8();
         assertThat(output, allOf(containsString("Cleaning Storage...SUCCESS"), containsString("Cleaning Grakn Core Server...SUCCESS")));
     }
 
@@ -137,7 +137,7 @@ public class GraknGraqlCommandsE2E {
         String userInput = "N";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn-core", "server", "clean").execute().outputUTF8();
+                .command("./grakn", "server", "clean").execute().outputUTF8();
         assertThat(output, containsString("Canceling clean operation"));
     }
 
@@ -149,7 +149,7 @@ public class GraknGraqlCommandsE2E {
         String userInput = "n";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn-core", "server", "clean").execute().outputUTF8();
+                .command("./grakn", "server", "clean").execute().outputUTF8();
         assertThat(output, containsString("Canceling clean operation"));
     }
 
@@ -158,7 +158,7 @@ public class GraknGraqlCommandsE2E {
      */
     @Test
     public void grakn_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
-        String output = commandExecutor.command("./grakn-core", "help").execute().outputUTF8();
+        String output = commandExecutor.command("./grakn", "help").execute().outputUTF8();
         assertThat(output, containsString("Invalid argument:"));
     }
 
@@ -167,7 +167,7 @@ public class GraknGraqlCommandsE2E {
      */
     @Test
     public void grakn_whenReceivingInvalidCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
-        String output = commandExecutor.command("./grakn-core", "invalid-command").execute().outputUTF8();
+        String output = commandExecutor.command("./grakn", "invalid-command").execute().outputUTF8();
         assertThat(output, containsString("Invalid argument:"));
     }
 }

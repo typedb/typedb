@@ -52,9 +52,9 @@ python_dependencies()
 node_dependencies()
 
 ## Python PIP dependencies
-load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip3_import")
+load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
 pip_repositories()
-pip3_import(
+pip_import(
     name = "python_grakn_deps",
     requirements = "//dependencies/pypi:requirements.txt",
 )
