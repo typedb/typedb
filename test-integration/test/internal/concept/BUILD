@@ -64,7 +64,74 @@ java_test(
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium",
-     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
-     jvm_flags = ["-XepDisableAllChecks"]
+     size = "medium"
+)
+java_test(
+     name = "relationship-it",
+     srcs = ["RelationshipIT.java"],
+     test_class = "ai.grakn.kb.internal.concept.RelationshipIT",
+     deps = [
+         "//grakn-graql",
+         "//test-integration/rule:cassandra-context",
+         "//test-integration/rule:server-context",
+         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+         "//dependencies/maven/artifacts/com/google/guava:guava",
+     ],
+     classpath_resources = ["//test-integration/resources:logback-test"],
+     size = "medium"
+)
+java_test(
+     name = "relationship-type-it",
+     srcs = ["RelationshipTypeIT.java"],
+     test_class = "ai.grakn.kb.internal.concept.RelationshipTypeIT",
+     deps = [
+         "//grakn-graql",
+         "//test-integration/rule:cassandra-context",
+         "//test-integration/rule:server-context",
+         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
+     ],
+     classpath_resources = ["//test-integration/resources:logback-test"],
+     size = "medium"
+)
+java_test(
+     name = "role-it",
+     srcs = ["RoleIT.java"],
+     test_class = "ai.grakn.kb.internal.concept.RoleIT",
+     deps = [
+         "//grakn-graql",
+         "//test-integration/rule:cassandra-context",
+         "//test-integration/rule:server-context",
+         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
+     ],
+     classpath_resources = ["//test-integration/resources:logback-test"],
+     size = "medium"
+)
+java_test(
+     name = "schema-concept-it",
+     srcs = ["SchemaConceptIT.java"],
+     test_class = "ai.grakn.kb.internal.concept.SchemaConceptIT",
+     deps = [
+         "//grakn-graql",
+         "//test-integration/rule:cassandra-context",
+         "//test-integration/rule:server-context",
+         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+     ],
+     classpath_resources = ["//test-integration/resources:logback-test"],
+     size = "medium"
+)
+java_test(
+     name = "schema-mutation-it",
+     srcs = ["SchemaMutationIT.java"],
+     test_class = "ai.grakn.kb.internal.concept.SchemaMutationIT",
+     deps = [
+         "//grakn-graql",
+         "//test-integration/rule:cassandra-context",
+         "//test-integration/rule:server-context",
+         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+         "//dependencies/maven/artifacts/com/google/guava:guava",
+     ],
+     classpath_resources = ["//test-integration/resources:logback-test"],
+     size = "medium"
 )

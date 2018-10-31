@@ -16,7 +16,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//grakn-graql"],
-    size = "small"
+    size = "medium"
 )
 
 java_test(
