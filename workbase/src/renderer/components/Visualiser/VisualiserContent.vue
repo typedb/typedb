@@ -119,19 +119,22 @@ export default {
     },
     toggleTab(tab) {
       this.currentTab = tab;
+      this.cancelRename();
     },
     newTab() {
-      const newTabId = Math.max(...Array.from(this.tabs.keys())) + 1;
+      const newTabId = Math.max(...Array.from(this.tabs.keys())) + 1; // Get max tab id and increment it for new tab id
       this.tabs.set(newTabId, undefined);
       this.currentTab = newTabId;
     },
     closeTab(tab) {
+      // Find tab compoenent which has same tabId as tab to be closed and destroy it manually
       this.$children.filter(x => (x.tabId && x.tabId === tab))[0].$destroy();
 
       this.tabs.delete(tab);
 
-      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.keys())[Math.max(...Array.from(this.tabs.keys())) - 1];
-      else {
+      // if tab being closes is same as current tab switch to first tab in tabs
+      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.keys())[0];
+      else { // re-set the same tab to trigger dynamic rerendering of list
         const temp = this.currentTab;
         this.currentTab = null;
         this.currentTab = temp;
