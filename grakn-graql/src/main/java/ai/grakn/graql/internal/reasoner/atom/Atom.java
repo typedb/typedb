@@ -180,7 +180,7 @@ public abstract class Atom extends AtomicBase {
     public Set<Var> getRoleExpansionVariables(){ return new HashSet<>();}
 
     private boolean isRuleApplicable(InferenceRule child) {
-        return getIdPredicate(getVarName()) == null
+        return (getIdPredicate(getVarName()) == null || child.isAppendRule())
                 && isRuleApplicableViaAtom(child.getRuleConclusionAtom());
     }
 

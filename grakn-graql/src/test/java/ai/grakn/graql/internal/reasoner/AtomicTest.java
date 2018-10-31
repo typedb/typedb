@@ -19,9 +19,11 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.admin.Atomic;
@@ -1040,6 +1042,28 @@ public class AtomicTest {
 
         assertEquals(1, atom.getApplicableRules().count());
         assertThat(atom2.getApplicableRules().collect(toSet()), empty());
+    }
+
+    @Test
+    public void testRuleApplicability_fixedConcepts(){
+        EmbeddedGraknTx<?> graph = ruleApplicabilitySet.tx();
+        QueryBuilder qb = graph.graql();
+        ConceptMap entity = qb.<GetQuery>parse("match $x isa anotherTwoRoleEntity; get;").stream().findFirst().orElse(null);
+        ConceptMap relation = qb.<GetQuery>parse("match $x isa binary; get;").stream().findFirst().orElse(null);
+        ConceptId relationId = relation.get("x").id();
+        ConceptId entityId = entity.get("x").id();
+
+        String queryString = "{$x isa binary;$x id '" + relationId + "';}";
+        String queryString2 = "{$x ($x1, $x2) isa binary;$x id '" + relationId + "';}";
+        String queryString3 = "{$x has description $r; $x id '" + entityId + "';}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(queryString, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(queryString2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(queryString3, graph), graph).getAtom();
+
+        assertThat(atom.getApplicableRules().collect(toSet()), empty());
+        assertThat(atom2.getApplicableRules().collect(toSet()), empty());
+        assertThat(atom3.getApplicableRules().collect(toSet()), empty());
     }
 
     /**
