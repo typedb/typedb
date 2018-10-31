@@ -32,7 +32,8 @@ function buildApplicationMenu() {
   const menuTemplate = [{
     label: 'Application',
     submenu: applicationSubmenu,
-  }, {
+  },
+  {
     label: 'Edit',
     submenu: [
       { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
@@ -66,7 +67,7 @@ function createWindow() {
     icon: `${__static}/img/icon.png`,
     titleBarStyle: 'hidden',
     darkTheme: true,
-    minWidth: 1100,
+    minWidth: 1150,
     minHeight: 700,
     // Set webSecurity to false in development mode to avoid AJAX calls blocked due to CORS (due to WebapckDevServer).
     webPreferences: { webSecurity: isProd },

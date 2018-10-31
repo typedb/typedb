@@ -1014,7 +1014,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 substitution.get(getVarName()).asRelationship() :
                 RelationshipTypeImpl.from(relationType).addRelationshipInferred();
 
-        roleVarMap.asMap().forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
+        roleVarMap.asMap()
+                .forEach((key, value) -> value.forEach(var -> relationship.assign(key, substitution.get(var).asThing())));
 
         ConceptMap relationSub = getRoleSubstitution().merge(
                 getVarName().isUserDefinedName()?
