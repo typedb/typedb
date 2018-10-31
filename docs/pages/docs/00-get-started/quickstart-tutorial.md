@@ -140,7 +140,7 @@ match $p isa person, has identifier $i; get;
 Find all the people who are married:
 
 ```graql
-match (spouse1: $x, spouse2: $y) isa marriage; $x has identifier $xi; $y has identifier $yi; get;
+match (spouse: $x, spouse: $y) isa marriage; $x has identifier $xi; $y has identifier $yi; get;
 ```
 
 List parent-child relationships with the names of each person:
