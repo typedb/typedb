@@ -221,12 +221,13 @@ public class InferenceRule {
                     .peek(bodyAtoms::add)
                     .collect(toSet());
             headAtom = ResourceAtom.create(
-                    headAtom.getPattern(),
-                    headAtom.getPredicateVariable(),
+                    resourceHead.getPattern(),
+                    resourceHead.getAttributeVariable(),
                     resourceHead.getRelationVariable(),
+                    resourceHead.getPredicateVariable(),
                     resourceHead.getTypeId(),
                     innerVps,
-                    headAtom.getParentQuery()
+                    resourceHead.getParentQuery()
             );
         }
 

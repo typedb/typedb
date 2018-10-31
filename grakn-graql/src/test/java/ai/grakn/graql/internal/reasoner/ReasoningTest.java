@@ -514,6 +514,25 @@ public class ReasoningTest {
         assertTrue(answers3.iterator().next().get(var("y")).isAttribute());
     }
 
+    @Test
+    public void whenReasoningWithResourcesInRelationForm_ResultsAreComplete() {
+        QueryBuilder qb = resourceAttachment.tx().graql().infer(true);
+
+        List<ConceptMap> concepts = qb.<GetQuery>parse("match $x isa genericEntity;get;").execute();
+        List<ConceptMap> subResources = qb.<GetQuery>parse(
+                "match $x isa genericEntity has subResource $res; get;").execute();
+
+        String queryString = "match " +
+                "$rel($role:$x) isa @has-reattachable-resource-string;" +
+                "$x isa genericEntity;" +
+                "get;";
+        List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
+        //base resource yield 3 roles: metarole, base attribute rule, specific role
+        //subresources yield 4 roles: all the above + specialised role
+        assertEquals(concepts.size() * 3 + subResources.size() * 4, answers.size());
+        answers.forEach(ans -> assertEquals(3, ans.size()));
+    }
+
     //TODO leads to cache inconsistency
     @Ignore
     @Test
