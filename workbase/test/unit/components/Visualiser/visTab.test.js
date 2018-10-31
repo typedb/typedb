@@ -2,6 +2,12 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 
 import visTab from '@/components/Visualiser/VisTab';
+import getters from '@/components/Visualiser/store/getters';
+import mutations from '@/components/Visualiser/store/mutations';
+import actions from '@/components/Visualiser/store/actions';
+
+import TabState from '@/components/Visualiser/store/tabState';
+
 
 import { shallowMount } from '@vue/test-utils';
 
@@ -95,6 +101,28 @@ describe('tabs', () => {
 
     expect(store.getters['tab-0/currentKeyspace']).toBe('gene');
     expect(store.getters['tab-1/currentKeyspace']).toBe(null);
+  });
+
+  test('unregistering a tab module renmoves namespace form store', async () => {
+    const store = new Vuex.Store({
+    });
+
+    store.registerModule('tab-0', { namespaced: true, getters, state: TabState.create(), mutations, actions });
+    store.registerModule('tab-1', { namespaced: true, getters, state: TabState.create(), mutations, actions });
+
+
+    expect(store.state['tab-0']).toBeDefined();
+    expect(store.state['tab-1']).toBeDefined();
+
+    store.unregisterModule('tab-1');
+
+    expect(store.state['tab-0']).toBeDefined();
+    expect(store.state['tab-1']).not.toBeDefined();
+
+    store.registerModule('tab-1', { namespaced: true, getters, state: TabState.create(), mutations, actions });
+
+    expect(store.state['tab-0']).toBeDefined();
+    expect(store.state['tab-1']).toBeDefined();
   });
 });
 

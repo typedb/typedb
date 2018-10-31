@@ -3,28 +3,41 @@
         <div>
 
             <div class="vis-tabs noselect">
-              <div v-for="tab in Array.from(tabs.values())" :key="tab">
+              <div v-for="tab in Array.from(tabs.keys())" :key="tab">
                 <div :class="(tab === currentTab) ? 'tab current-tab' : 'tab'">
-                  <div v-if="tabToRename !== tab" @click="toggleTab(tab)" @click.right="renameTab(tab)" class="tab-title">Tab {{tab}}</div>
-                  <input v-else class="input-small rename-tab-input" :value="newName">
-                  <div v-if="tabs.size > 1" @click="closeTab(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
-                  <div v-if="tabToRename === tab" @click="saveName(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="tick" iconSize="13"></vue-icon></div>
+
+                  <div class="tab-content" v-if="tabToRename !== tab">
+                    <div @click="toggleTab(tab)" @dblclick="renameTab(tab)" class="tab-title">{{(tabs.get(tab)) ? tabs.get(tab) : `Tab ${tab}`}}</div>
+                    <div v-if="tabs.size > 1" @click="closeTab(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
+                  </div>
+                  
+                  <div v-else class="tab-content">
+                    <input ref="renameTabInput" class="input-small rename-tab-input" v-model="newTabName">
+                    <div @click="cancelRename" class="close-tab-btn"><vue-icon className="tab-icon" icon="cross" iconSize="13"></vue-icon></div>
+                    <div  @click="saveName(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="tick" iconSize="13"></vue-icon></div>
+                  </div>
+
                 </div>
               </div>
               <button v-if="tabs.size < 10" @click="newTab" class='btn new-tab-btn'><vue-icon icon="plus" className="vue-icon"></vue-icon></button>
             </div>
 
-            <keep-alive>
-              <template v-for="tab in Array.from(tabs.values())">
+              <template v-for="tab in Array.from(tabs.keys())">
+                <keep-alive :key="tab">
                   <component v-if="currentTab === tab" :is="visTab" :tabId="tab" :key="tab"></component>
+                </keep-alive>
               </template>
-            </keep-alive>
 
         </div>
     </transition>
 </template>
 
 <style scoped>
+
+  .tab-content {
+    display: flex;
+    align-items: center;
+  }
 
   .rename-tab-input {
     width: 60px;
@@ -35,7 +48,7 @@
   }
 
   .tab-title {
-    width: 100px;
+    width: 75px;
     height: 100%;
     display: flex;
     align-items: center;
@@ -83,34 +96,41 @@ export default {
   data() {
     return {
       currentTab: 1,
-      tabs: new Set([1]),
+      tabs: new Map([[1, undefined]]),
       visTab: 'VisTab',
       LETTER_T_KEYCODE: 84,
       tabToRename: undefined,
-      newName: '',
+      newTabName: '',
     };
   },
   created() {
     window.addEventListener('keydown', (e) => {
+      // pressing CMD + T will create a new tab
       if ((e.keyCode === this.LETTER_T_KEYCODE) && e.metaKey && this.tabs.size < 10) this.newTab();
+
+      if (this.tabToRename && e.keyCode === 13) this.saveName(this.tabToRename); // Pressing enter will save tab name
+      if (this.tabToRename && e.keyCode === 27) this.tabToRename = undefined; // Pressing escape will cancel renaming of tab
     });
   },
   methods: {
+    truncate(name) {
+      if (name && name.length > 10) return `${name.substring(0, 10)}...`;
+      return name;
+    },
     toggleTab(tab) {
       this.currentTab = tab;
     },
     newTab() {
-      const newTabId = Math.max(...Array.from(this.tabs.values())) + 1;
-      this.tabs.add(newTabId);
+      const newTabId = Math.max(...Array.from(this.tabs.keys())) + 1;
+      this.tabs.set(newTabId, undefined);
       this.currentTab = newTabId;
     },
     closeTab(tab) {
-      this.$children.forEach((x) => {
-        if (x.tabId && x.tabId === tab) x.$destroy();
-      });
+      this.$children.filter(x => (x.tabId && x.tabId === tab))[0].$destroy();
+
       this.tabs.delete(tab);
 
-      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.values())[Math.max(...Array.from(this.tabs.values())) - 1];
+      if (this.currentTab === tab) this.currentTab = Array.from(this.tabs.keys())[Math.max(...Array.from(this.tabs.keys())) - 1];
       else {
         const temp = this.currentTab;
         this.currentTab = null;
@@ -119,6 +139,16 @@ export default {
     },
     renameTab(tab) {
       this.tabToRename = tab;
+      this.newTabName = this.tabs.get(tab);
+      this.$nextTick(() => this.$refs.renameTabInput[0].focus());
+    },
+    saveName(tab) {
+      this.tabs.set(tab, this.truncate(this.newTabName));
+      this.cancelRename();
+    },
+    cancelRename() {
+      this.tabToRename = undefined;
+      this.newTabName = '';
     },
   },
 };
