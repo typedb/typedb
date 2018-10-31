@@ -1,4 +1,4 @@
-package ai.grakn.core.server.attribute.deduplicator;
+package ai.grakn.core.server.deduplicator;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class RocksDbQueueTest {
+
     @Test
     public void shouldBeAbleToInsertNewAttributes() throws InterruptedException, IOException {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");

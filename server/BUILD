@@ -118,15 +118,16 @@ java_test(
 
 java_test(
     name = "rocks-db-queue-test",
-    test_class = "ai.grakn.core.server.attribute.deduplicator.RocksDbQueueTest",
-    srcs = ["test/attribute/deduplicator/RocksDbQueueTest.java"],
+    test_class = "ai.grakn.core.server.deduplicator.RocksDbQueueTest",
+    srcs = ["test/deduplicator/RocksDbQueueTest.java"],
     deps = [
         ":server",
         "//grakn-graql",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    size = "small"
+    size = "small",
+    flaky = True
 )
 
 java_test(

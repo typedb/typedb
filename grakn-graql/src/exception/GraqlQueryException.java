@@ -68,7 +68,7 @@ import static ai.grakn.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
  *
  * @author fppt
  */
-public class GraqlQueryException extends ai.grakn.exception.GraknException {
+public class GraqlQueryException extends GraknException {
 
     private final String NAME = "GraqlQueryException";
 
