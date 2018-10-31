@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraqlQueryException;
@@ -264,11 +265,14 @@ public class AtomicQueryTest {
     @BeforeClass
     public static void setupGenericSchema(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        Iterator<Entity> entities = graph.getEntityType("baseRoleEntity").instances().collect(toSet()).iterator();
+        EntityType subRoleEntityType = graph.getEntityType("subRoleEntity");
+        Iterator<Entity> entities = graph.getEntityType("baseRoleEntity").instances()
+                .filter(et -> !et.type().equals(subRoleEntityType) )
+                .collect(toSet()).iterator();
         entity = entities.next();
         anotherEntity = entities.next();
         anotherBaseEntity = graph.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
-        subEntity = graph.getEntityType("subRoleEntity").instances().findFirst().orElse(null);
+        subEntity = subRoleEntityType.instances().findFirst().orElse(null);
         Iterator<Relationship> relations = graph.getRelationshipType("baseRelation").subs().flatMap(RelationshipType::instances).iterator();
         relation = relations.next();
         anotherRelation = relations.next();
@@ -1034,7 +1038,6 @@ public class AtomicQueryTest {
     private void ruleUnification(String child, List<String> queries, List<String> queriesWithUnifier, EmbeddedGraknTx graph){
         unification(child, queries, queriesWithUnifier, UnifierType.RULE, graph);
     }
-
 
     private MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, EmbeddedGraknTx graph){
         ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), graph);
