@@ -16,6 +16,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+sh_binary(
+    name = "deploy-github",
+    srcs = ["deploy-github.sh"],
+    data = [":distribution", "//:VERSION"],
+)
+
+genrule(
+    name = "distribution",
+    srcs = ["//:grakn", "console-binary_deploy.jar"],
+    outs = ["dist/grakn-core-console"],
+    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console) $(location //:grakn) $(location console-binary_deploy.jar)",
+    tools = ["distribution.sh"]
+)
+
+java_binary(
+    name = "console-binary",
+    main_class = "ai.grakn.core.console.Graql",
+    runtime_deps = ["//console:console"],
+    visibility = ["//visibility:public"]
+)
+
 java_library(
     name = "console",
     srcs = glob(["src/**/*.java"]),
@@ -41,21 +62,6 @@ java_library(
         #This needs to be available in the classpath otherwise Logback will print error messages:
         "//dependencies/maven/artifacts/org/codehaus/janino:janino"
     ]
-)
-
-java_binary(
-    name = "console-binary",
-    main_class = "ai.grakn.core.console.Graql",
-    runtime_deps = ["//console:console"],
-    visibility = ["//visibility:public"]
-)
-
-genrule(
-    name = "distribution",
-    srcs = ["//:grakn", "console-binary_deploy.jar"],
-    outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
-    tools = ["distribution.sh"]
 )
 
 exports_files(
