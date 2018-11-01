@@ -129,17 +129,34 @@
 </style>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
+
   import FavQueriesSettings from './FavQueriesSettings';
   import GraqlCodeMirror from '../GraqlEditor/GraqlCodeMirror';
 
 
   export default {
     name: 'FavQueriesList',
-    props: ['currentKeyspace', 'favQueries'],
+    props: ['tabId', 'favQueries'],
     data() {
       return {
         codeMirror: [],
         isEditable: null,
+      };
+    },
+    beforeCreate() {
+      const { mapGetters, mapMutations } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapMutations(['setCurrentQuery']),
       };
     },
     mounted() {
@@ -156,7 +173,7 @@
     },
     methods: {
       typeFavQuery(query) {
-        this.$store.commit('currentQuery', query);
+        this.setCurrentQuery(query);
       },
       removeFavQuery(index, queryName) {
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);

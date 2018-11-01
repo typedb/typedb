@@ -42,7 +42,7 @@ export default {
   [CURRENT_KEYSPACE_CHANGED]({ state, dispatch, commit, rootState }, keyspace) {
     if (keyspace !== state.currentKeyspace) {
       dispatch(CANVAS_RESET);
-      commit('currentQuery', '');
+      commit('setCurrentQuery', '');
       commit('currentKeyspace', keyspace);
       commit('graknSession', rootState.grakn.session(keyspace));
       dispatch(UPDATE_METATYPE_INSTANCES);

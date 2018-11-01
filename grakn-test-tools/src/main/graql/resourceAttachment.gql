@@ -28,6 +28,7 @@ reattachable-resource-string sub attribute datatype string;
 derived-resource-string sub attribute datatype string;
 resource-long sub attribute datatype long;
 derived-resource-boolean sub attribute datatype boolean;
+subResource sub reattachable-resource-string;
 
 #Rules
 
@@ -83,7 +84,7 @@ attachUnattachedResourceToEntity sub rule
         $y has derived-resource-string 'unattached';
     };
 
-subResource sub reattachable-resource-string;
+
 
 insert
 

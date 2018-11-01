@@ -154,6 +154,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return stream of materialised answers
      */
     public Stream<ConceptMap> materialise(ConceptMap answer) {
+        //System.out.println("Materialising: " + this.withSubstitution(answer));
         return this.withSubstitution(answer)
                 .getAtom()
                 .materialise()

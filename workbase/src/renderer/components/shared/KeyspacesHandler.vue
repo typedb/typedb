@@ -18,6 +18,10 @@
 
 <style scoped>
 
+    .keyspaces-wrapper {
+      z-index: 3;
+    }
+
     .keyspace-tooltip {
         right: 100px;
         top: 8px;
@@ -62,7 +66,7 @@
     /*padding: 5px 10px;*/
     right:5px;
     background-color: #282828;
-    z-index: 1;
+    z-index: 3;
     min-width: 100px;
     max-width:  130px;
     word-break: break-word;
@@ -87,17 +91,16 @@
 </style>
 
 <script>
+import { createNamespacedHelpers, mapGetters } from 'vuex';
 
 import storage from '@/components/shared/PersistentStorage';
-
-import { mapGetters } from 'vuex';
 
 import { CURRENT_KEYSPACE_CHANGED } from './StoresActions';
 import ToolTip from '../UIElements/ToolTip';
 
 export default {
   name: 'KeyspacesList',
-  props: ['showKeyspaceTooltip'],
+  props: ['tabId', 'showKeyspaceTooltip'],
   components: { ToolTip },
   data() {
     return {
@@ -108,22 +111,35 @@ export default {
       },
     };
   },
+  beforeCreate() {
+    const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace']),
+    };
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapActions([CURRENT_KEYSPACE_CHANGED]),
+    };
+  },
   computed: {
-    ...mapGetters(['allKeyspaces', 'currentKeyspace', 'isGraknRunning']),
+    ...mapGetters(['allKeyspaces', 'isGraknRunning']),
   },
   filters: {
     truncate(ks) {
       if (!ks) return 'keyspace';
-
       if (ks.length > 15) return `${ks.substring(0, 15)}...`;
-
       return ks;
     },
   },
   watch: {
     allKeyspaces(val) {
       // If user deletes current keyspace from Keyspaces page, set new current keyspace to null
-      if (!val.includes(this.currentKeyspace)) { this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, null); }
+      if (!val.includes(this.currentKeyspace)) { this[CURRENT_KEYSPACE_CHANGED](null); }
     },
     isGraknRunning(val) {
       if (!val) {
@@ -140,8 +156,7 @@ export default {
     setKeyspace(name) {
       this.$emit('keyspace-selected');
       storage.set('current_keyspace_data', name);
-
-      this.$store.dispatch(CURRENT_KEYSPACE_CHANGED, name);
+      this[CURRENT_KEYSPACE_CHANGED](name);
       this.showKeyspaceList = false;
     },
     toggleKeyspaceList() {

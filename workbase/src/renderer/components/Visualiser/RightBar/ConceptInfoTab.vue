@@ -1,8 +1,8 @@
 <template>
     <div class="node-tab-content">
         <div class="tab-header noselect">Concept Info</div>
-        <identity-panel></identity-panel>
-        <attributes-panel></attributes-panel>
+        <identity-panel :tabId="tabId"></identity-panel>
+        <attributes-panel :tabId="tabId"></attributes-panel>
     </div>
 </template>
 <script>
@@ -11,6 +11,7 @@
 
   export default {
     name: 'ConceptInfoTab',
+    props: ['tabId'],
     components: { IdentityPanel, AttributesPanel },
   };
 </script>
