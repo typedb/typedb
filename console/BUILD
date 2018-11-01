@@ -33,7 +33,7 @@ genrule(
 java_binary(
     name = "console-binary",
     main_class = "ai.grakn.core.console.Graql",
-    runtime_deps = ["//console:console"],
+    runtime_deps = [":console"],
     visibility = ["//visibility:public"]
 )
 
