@@ -18,11 +18,6 @@
 
 def node_dependencies():
     native.git_repository(
-        name = "org_pubref_rules_node",
-        remote = "https://github.com/vmax/rules_node.git",
-        commit = "d45a6fe8968a0b792c416d905c19ffec3da2030c",
-    )
-    native.git_repository(
         name = "build_bazel_rules_nodejs",
         remote = "https://github.com/bazelbuild/rules_nodejs.git",
         commit = "e29c446b2f0cddfa51c307f898162f55d64d1fde",
