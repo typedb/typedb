@@ -25,8 +25,11 @@
 </template>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
+
   export default {
     name: 'AttributesPanel',
+    props: ['tabId'],
     data() {
       return {
         showAttributesPanel: true,
@@ -36,13 +39,16 @@
     mounted() {
       this.loadAttributes(this.selectedNodes);
     },
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['selectedNodes', 'currentKeyspace']),
+      };
+    },
     computed: {
-      selectedNodes() {
-        return this.$store.getters.selectedNodes;
-      },
-      currentKeyspace() {
-        return this.$store.getters.currentKeyspace;
-      },
       msg() {
         if (!this.currentKeyspace) return 'Please select a keyspace';
         else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';

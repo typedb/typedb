@@ -1,4 +1,5 @@
 import QuerySettings from './RightBar/SettingsTab/QuerySettings';
+import { LOAD_ATTRIBUTES, LOAD_NEIGHBOURS } from '../shared/StoresActions';
 
 export default {
   registerHandlers({ state, dispatch, commit }) {
@@ -6,7 +7,7 @@ export default {
       event: 'selectNode',
       callback: (params) => {
         commit('selectedNodes', params.nodes);
-        commit('contextMenu', { show: false, x: null, y: null });
+        commit('setContextMenu', { show: false, x: null, y: null });
       },
     });
 
@@ -23,7 +24,7 @@ export default {
       event: 'click',
       callback: (params) => {
         if (!params.nodes.length) { commit('selectedNodes', null); }
-        commit('contextMenu', { show: false, x: null, y: null });
+        commit('setContextMenu', { show: false, x: null, y: null });
       },
     });
 
@@ -49,7 +50,7 @@ export default {
       callback: (params) => {
         // Show context menu when keyspace is selected and canvas has data
         if (state.currentKeyspace && (state.canvasData.entities || state.canvasData.attributes || state.canvasData.relationships)) {
-          commit('contextMenu', { show: true, x: params.pointer.DOM.x, y: params.pointer.DOM.y });
+          commit('setContextMenu', { show: true, x: params.pointer.DOM.x, y: params.pointer.DOM.y });
         }
       },
     });
@@ -62,7 +63,7 @@ export default {
 
         const neighboursLimit = QuerySettings.getNeighboursLimit();
         const visNode = state.visFacade.getNode(nodeId);
-        const action = (params.event.srcEvent.shiftKey) ? 'loadAttributes' : 'loadNeighbours';
+        const action = (params.event.srcEvent.shiftKey) ? LOAD_ATTRIBUTES : LOAD_NEIGHBOURS;
         dispatch(action, { visNode, neighboursLimit });
       },
     });
@@ -70,21 +71,21 @@ export default {
     commit('registerCanvasEvent', {
       event: 'deselectNode',
       callback: () => {
-        commit('contextMenu', { show: false, x: null, y: null });
+        commit('setContextMenu', { show: false, x: null, y: null });
       },
     });
 
     commit('registerCanvasEvent', {
       event: 'dragStart',
       callback: () => {
-        commit('contextMenu', { show: false, x: null, y: null });
+        commit('setContextMenu', { show: false, x: null, y: null });
       },
     });
 
     commit('registerCanvasEvent', {
       event: 'zoom',
       callback: () => {
-        commit('contextMenu', { show: false, x: null, y: null });
+        commit('setContextMenu', { show: false, x: null, y: null });
       },
     });
 

@@ -1,5 +1,3 @@
-
-
 export default {
   currentQuery: state => state.currentQuery,
   currentKeyspace: state => state.currentKeyspace,

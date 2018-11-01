@@ -5,11 +5,11 @@
         </div>
 
         <div class="center">
-            <graql-editor v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
+            <graql-editor :tabId="tabId" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
         </div>
 
         <div class="right">
-            <keyspaces-handler :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
+            <keyspaces-handler :tabId="tabId" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
             <button class="btn" @click="$emit('toggle-preferences')"><vue-icon icon="cog" className="vue-icon"></vue-icon></button>
         </div>
     </div>
@@ -26,7 +26,7 @@
         flex-direction: row;
         display: flex;
         justify-content: space-between;
-        z-index: 1;
+        z-index: 2;
     }
 
     .left {
@@ -79,6 +79,7 @@
 
     export default {
       components: { KeyspacesHandler, GraqlEditor },
+      props: ['tabId'],
       data() {
         return {
           showKeyspaceToolTip: false,

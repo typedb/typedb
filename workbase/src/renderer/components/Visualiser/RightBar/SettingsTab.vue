@@ -2,7 +2,7 @@
     <div class="settings-tab-content">
         <div class="tab-header noselect">Settings</div>
         <query-settings-panel></query-settings-panel>
-        <concept-display-panel></concept-display-panel>
+        <concept-display-panel :tabId="tabId"></concept-display-panel>
         <connection-settings-panel></connection-settings-panel>
     </div>
 </template>
@@ -13,6 +13,7 @@
 
   export default {
     name: 'SettingsTab',
+    props: ['tabId'],
     components: { QuerySettingsPanel, ConceptDisplayPanel, ConnectionSettingsPanel },
   };
 </script>

@@ -208,17 +208,19 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
 
         Var relationVariable = relationship().var();
         Var attributeVariable = attribute().var().asUserDefined();
+        Var predicateVariable = Graql.var();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
-        IdPredicate predicate = typeVar != null? getIdPredicate(attributeVariable, typeVar, vars, parent) : null;
+        IdPredicate predicate = typeVar != null? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
 
         //add resource atom
         VarPatternAdmin resVar = relationVariable.isUserDefinedName()?
                 varName.has(type(), attributeVariable, relationVariable).admin() :
                 varName.has(type(), attributeVariable).admin();
-        return ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateId, predicates, parent);
+        ResourceAtom atom = ResourceAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
+        return atom;
     }
 }

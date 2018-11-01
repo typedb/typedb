@@ -3,6 +3,8 @@
 
 
 :root {
+  --canvas-color: #1B1B1B;
+
   --border-darkest-color: #1c1c1c;
   --border-dark-color: #242424;
   --border-light-color: #282828;

@@ -14,6 +14,28 @@ const app = new Application({
 beforeAll(async () => app.start());
 
 afterAll(async () => {
+  await sleep(2000);
+
+  app.client.click('.neighbour-limit-input');
+
+  await sleep(2000);
+
+  app.client.keys(['Backspace', 'Backspace', '20']);
+
+  await sleep(3000);
+
+  app.client.click('.query-limit-input');
+
+  await sleep(2000);
+
+  app.client.keys(['Backspace', 'Backspace', '30']);
+
+  await sleep(2000);
+
+  app.client.click('.load-roleplayers-switch');
+
+  await sleep(2000);
+
   if (app && app.isRunning()) {
     return app.stop();
   }
