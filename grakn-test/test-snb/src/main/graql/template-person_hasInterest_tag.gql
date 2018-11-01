@@ -1,4 +1,0 @@
-match
-    $person isa person, has person-id @long(<"Person.id">);
-    $tag isa tag, has tag-id @long(<"Tag.id">);
-insert (interest: $tag, interested: $person) isa has-interest;

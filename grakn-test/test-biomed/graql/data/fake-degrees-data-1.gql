@@ -1,6 +1,0 @@
-#This inserts the fake degrees
-
-match
-  $x isa interaction;
-insert
-  $x has degree 4;

@@ -1,6 +1,0 @@
-match
-    $person isa person, has person-id @long(<"Person.id">);
-    $person1 isa person, has person-id @long(<"Person1.id">);
-insert
-    (friend: $person, friend: $person1) isa knows
-    has creation-date @date(<"creationDate">,"yyyy-MM-dd'T'HH:mm:ss.SSSZ");

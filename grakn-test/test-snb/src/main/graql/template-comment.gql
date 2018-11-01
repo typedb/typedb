@@ -1,7 +1,0 @@
-insert $x isa comment
-    has message-id @long(<id>)
-    has creation-date @date(<creationDate>,"yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-    has location-ip <locationIP>
-    has browser-used <browserUsed>
-    if (<content> != "") do {has content <content>}
-    has length @long(<length>);

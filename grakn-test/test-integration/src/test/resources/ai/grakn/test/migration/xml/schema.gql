@@ -1,8 +1,0 @@
-define
-
-thingy sub entity
-    has name
-    has price;
-
-name sub attribute datatype string;
-price sub attribute datatype string;

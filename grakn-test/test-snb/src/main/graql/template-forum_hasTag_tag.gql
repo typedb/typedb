@@ -1,5 +1,0 @@
-match
-    $forum isa forum, has forum-id @long(<"Forum.id">);
-    $tag isa tag, has tag-id @long(<"Tag.id">);
-insert
-    (tagged: $forum, topic: $tag) isa has-tag;

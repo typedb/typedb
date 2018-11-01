@@ -1,4 +1,0 @@
-match
-    $pokemon has pokedex-no <pokemon_id>;
-    $type has type-id <type_id>;
-insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;
