@@ -42,7 +42,7 @@ public abstract class RelationPattern {
 
     private final List<Pattern> patterns;
 
-    protected RelationPattern(Map<Label, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
+    protected RelationPattern(Multimap<Label, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
         ImmutableMultimap.Builder<Label, Pair<Label, List<ConceptId>>> builder = ImmutableMultimap.builder();
         rpConf.forEach((key, value) -> builder.put(key, new Pair<>(value, ids)));
         this.patterns = generateRelationPatterns(

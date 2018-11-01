@@ -266,6 +266,7 @@ public class AtomicQueryTest {
     private static Attribute<Object> anotherResource;
 
     private static RelationPattern differentRelationVariants;
+    private static RelationPattern differentRelationVariantsWithMetaRoles;
     private static RelationPattern differentRelationVariantsWithRelationVariable;
 
     @BeforeClass
@@ -285,9 +286,12 @@ public class AtomicQueryTest {
         Iterator<Attribute<Object>> resources = graph.getAttributeType("resource").instances().collect(toSet()).iterator();
         resource = resources.next();
         anotherResource = resources.next();
+        System.out.println(entity);
+        System.out.println(anotherBaseEntity);
+        System.out.println(subEntity);
 
         differentRelationVariants = new RelationPattern(
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         Label.of("baseRole1"), Label.of("baseRoleEntity"),
                         Label.of("baseRole2"), Label.of("anotherBaseRoleEntity")
                 ),
@@ -349,8 +353,98 @@ public class AtomicQueryTest {
                 };
             }
         };
+
+        differentRelationVariantsWithMetaRoles = new RelationPattern(
+                ImmutableMultimap.of(
+                        Label.of("role"), Label.of("baseRoleEntity"),
+                        Label.of("role"), Label.of("anotherBaseRoleEntity")
+                ),
+                Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                new ArrayList<>()
+        ) {
+            
+            @Override
+            public int[][] exactMatrix(){
+                return new int[][]{
+                        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                        {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},//14
+                        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+                };
+            }
+            @Override
+            public int[][] structuralMatrix() {
+                return new int[][]{
+                        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//7
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//11
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},//14
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}
+                };
+            }
+
+            @Override
+            public int[][] ruleMatrix() {
+                return new int[][]{
+                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//0
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
+
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0},//3
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1},
+
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0},//7
+                        {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                        {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0},
+
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},//11
+                        {1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                        {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0},
+                        {1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0},
+
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1},//15
+                        {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0},
+                        {1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0},
+                        {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1}
+                };
+            }
+        };
+
         differentRelationVariantsWithRelationVariable = new RelationPattern(
-                ImmutableMap.of(
+                ImmutableMultimap.of(
                         Label.of("baseRole1"), Label.of("baseRoleEntity"),
                         Label.of("baseRole2"), Label.of("anotherBaseRoleEntity")
                 ),
@@ -837,6 +931,24 @@ public class AtomicQueryTest {
     }
 
     @Test
+    public void testUnification_differentRelationVariantsWithMetaRoles_EXACT(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        unification(differentRelationVariantsWithMetaRoles.patterns(), differentRelationVariantsWithMetaRoles.exactMatrix(), UnifierType.EXACT, graph);
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithMetaRoles_STRUCTURAL(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        unification(differentRelationVariantsWithMetaRoles.patterns(), differentRelationVariantsWithMetaRoles.structuralMatrix(), UnifierType.STRUCTURAL, graph);
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithMetaRoles_RULE(){
+        EmbeddedGraknTx<?> graph = genericSchema.tx();
+        unification(differentRelationVariantsWithMetaRoles.patterns(), differentRelationVariantsWithMetaRoles.ruleMatrix(), UnifierType.RULE, graph);
+    }
+
+    @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_EXACT(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         unification(differentRelationVariantsWithRelationVariable.patterns(), differentRelationVariantsWithRelationVariable.exactMatrix(), UnifierType.EXACT, graph);
@@ -1007,7 +1119,6 @@ public class AtomicQueryTest {
         EmbeddedGraknTx<?> graph = genericSchema.tx();
         List<String> qs = TestQueryPattern.differentResourceVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
 
-        /*
         ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
         ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28)), graph);
         ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28, 30)), graph);
@@ -1015,7 +1126,7 @@ public class AtomicQueryTest {
 
         ruleUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
         ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
-        */
+
         ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
         ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
 
