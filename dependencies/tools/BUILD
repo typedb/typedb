@@ -28,3 +28,12 @@ java_binary(
     visibility = ["//visibility:public"],
     runtime_deps = [":bazel-deps-jar"],
 )
+
+sh_binary(
+    name = "unused-deps",
+    srcs = ["unused-deps.sh"],
+    data = [
+        "@unused_deps//file",
+        "@unused_deps_osx//file",
+    ],
+)

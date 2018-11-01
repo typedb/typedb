@@ -50,8 +50,15 @@ def tools_dependencies():
     native.http_file(
         name = "unused_deps",
         executable = True,
-        sha256 = "686f8943610e1a5e3d196e2209dcb35f463c3b583a056dd8ae355acdc2a089d8",
-        urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.11.1/unused_deps"],
+        sha256 = "f6e8b5b3d95709964790473eddbd9ef552f4f9bd7d4136181aaf94594ee405cb",
+        urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.17.2/unused_deps"],
+    )
+
+    native.http_file(
+        name = "unused_deps_osx",
+        executable = True,
+        sha256 = "bce2a7064836d426cc59005ba75778216bda7bb06a997d58444598dac8b85ebc",
+        urls = ["https://github.com/bazelbuild/buildtools/releases/download/0.17.2/unused_deps.osx"],
     )
 
     native.http_file(
