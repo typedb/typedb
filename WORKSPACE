@@ -46,20 +46,9 @@ antlr_dependencies()
 ####################################
 
 # Load GRPC dependencies
-load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "python_dependencies", "node_dependencies")
+load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "node_dependencies")
 grpc_dependencies()
-python_dependencies()
 node_dependencies()
-
-## Python PIP dependencies
-load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
-pip_repositories()
-pip_import(
-    name = "python_grakn_deps",
-    requirements = "//dependencies/pypi:requirements.txt",
-)
-load("@python_grakn_deps//:requirements.bzl", "pip_install")
-pip_install()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_bazel_grpc_deps()
@@ -89,9 +78,27 @@ yarn_install(
 )
 
 
-########################################
-# Load Runtime Dependencies from Maven #
-########################################
+#####################################
+# Load Java dependencies from Maven #
+#####################################
 
 load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
 maven_dependencies()
+
+######################################
+# Load Python dependencies from PyPI #
+######################################
+
+# Load Python depdendencies for Bazel
+load("//dependencies/pypi:dependencies.bzl", "python_dependencies",)
+python_dependencies()
+
+# Load PyPI dependencies for Python applications
+load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
+pip_repositories()
+pip_import(
+    name = "pypi_dependencies",
+    requirements = "//dependencies/pypi:requirements.txt",
+)
+load("@pypi_dependencies//:requirements.bzl", "pip_install")
+pip_install()
