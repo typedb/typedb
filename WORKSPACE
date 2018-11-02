@@ -32,8 +32,8 @@ tools_dependencies()
 # Load Java dependencies from Maven #
 #####################################
 
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
-maven_dependencies()
+load("//dependencies/maven:dependencies.bzl", maven_dependencies_for_build = "maven_dependencies")
+maven_dependencies_for_build()
 
 
 ######################################
@@ -118,5 +118,5 @@ node_grpc_compile()
 # Load deployment dependencies        #
 #######################################
 
-load("//dependencies/deployment:dependencies.bzl", "maven_deployment_dependencies")
-maven_deployment_dependencies()
+load("//dependencies/deployment/maven:dependencies.bzl", maven_dependencies_for_deployment = "maven_dependencies")
+maven_dependencies_for_deployment()

@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//dependencies/deployment:rules.bzl", "deploy_maven_jar")
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "console",
@@ -43,7 +43,7 @@ java_library(
         #This needs to be available in the classpath otherwise Logback will print error messages:
         "//dependencies/maven/artifacts/org/codehaus/janino:janino"
     ],
-    tags = ["maven_coordinates=ai.grakn:grakn-core:core.console"],
+    tags = ["maven_coordinates=ai.grakn:core.console:{pom_version}"],
 )
 
 deploy_maven_jar(

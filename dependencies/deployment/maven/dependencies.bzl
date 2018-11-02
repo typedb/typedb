@@ -16,6 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//dependencies/deployment/maven:rules.bzl", _deploy_maven_jar = "deploy_maven_jar")
-
-deploy_maven_jar = _deploy_maven_jar
+def maven_dependencies():
+    native.git_repository(
+        name="com_github_google_bazel_common",
+        remote = "https://github.com/graknlabs/bazel-common.git",
+        commit = "ccd5a3c9dccb844ce45d8aaf4595d56668a2f2a2"
+    )

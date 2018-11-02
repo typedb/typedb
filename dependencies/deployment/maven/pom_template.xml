@@ -22,12 +22,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>{parent_group_id}</groupId>
-        <artifactId>{parent_artifact_id}</artifactId>
-        <version>{pom_version}</version>
-    </parent>
+    <groupId>{group_id}</groupId>
     <artifactId>{artifact_id}</artifactId>
+    <version>{pom_version}</version>
 
     <dependencies>
         {generated_bzl_deps}

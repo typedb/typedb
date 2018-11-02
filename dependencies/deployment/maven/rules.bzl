@@ -25,11 +25,12 @@ def _warn(msg):
     print('{red}{msg}{nc}'.format(red='\033[0;31m', msg=msg, nc='\033[0m'))
 
 def _parse_maven_coordinates(coordinate_string):
-    parent_group_id, parent_artifact_id, artifact_id = coordinate_string.split(':')
+    group_id, artifact_id, version = coordinate_string.split(':')
+    if version != '{pom_version}':
+        fail('should assign {pom_version} as Maven version via `tags` attribute')
     return struct(
-        parent_group_id = parent_group_id,
-        parent_artifact_id = parent_artifact_id,
-        artifact_id = artifact_id
+        group_id = group_id,
+        artifact_id = artifact_id,
     )
 
 def _generate_pom_xml(ctx, maven_coordinates):
@@ -43,9 +44,8 @@ def _generate_pom_xml(ctx, maven_coordinates):
             preferred_group_ids = [],
             excluded_artifacts = [],
             substitutions = {
-                "{parent_group_id}": maven_coordinates.parent_group_id,
-                "{parent_artifact_id}": maven_coordinates.parent_artifact_id,
-                "{artifact_id}": maven_coordinates.artifact_id
+                "{group_id}": maven_coordinates.group_id,
+                "{artifact_id}": maven_coordinates.artifact_id,
             }
         ),
         var = {
@@ -76,9 +76,9 @@ def _generate_deployment_script(ctx, maven_coordinates):
     preprocessed_script = ctx.actions.declare_file("_deploy.sh")
 
     # Maven artifact coordinates split by slash i.e. io/grakn/grakn-graql/grakn-graql
-    parent_coords = "/".join([
-        maven_coordinates.parent_group_id.replace('.', '/'),
-        maven_coordinates.parent_artifact_id
+    coordinates = "/".join([
+        maven_coordinates.group_id.replace('.', '/'),
+        maven_coordinates.artifact_id
     ])
 
     # Arguments are passed to `bazel run` via `--define=VAR=VALUE`
@@ -109,7 +109,7 @@ def _generate_deployment_script(ctx, maven_coordinates):
             "$MAVEN_PASSWORD": ctx.var.get("MAVEN_PASSWORD", "$MAVEN_PASSWORD"),
             "$MAVEN_URL": ctx.var.get("MAVEN_URL", "$MAVEN_URL"),
             "$MAVEN_USERNAME": ctx.var.get("MAVEN_USERNAME", "$MAVEN_USERNAME"),
-            "$PARENT": parent_coords,
+            "$COORDINATES": coordinates,
         },
         is_executable = True
     )

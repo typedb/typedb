@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
-load("//dependencies/deployment:rules.bzl", "deploy_maven_jar")
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 
 antlr4(
@@ -90,7 +90,7 @@ java_library(
     ],
     resources = glob(["src/resources/*"]),
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
-    tags = ["maven_coordinates=ai.grakn:grakn-core:grakn-graql"],
+    tags = ["maven_coordinates=ai.grakn:grakn-graql:{pom_version}"],
 )
 
 deploy_maven_jar(
