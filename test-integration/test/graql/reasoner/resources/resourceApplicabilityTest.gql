@@ -1,0 +1,59 @@
+define
+
+entity1 sub entity
+    has res-string
+    has res-double
+    has res-long
+    has res-boolean
+    has resource;
+entity2 sub entity
+    has resource;
+
+#Resources
+resource sub attribute datatype string;
+res-string sub attribute datatype string;
+res-double sub attribute datatype double;
+res-long sub attribute datatype long;
+res-boolean sub attribute datatype boolean;
+
+#Rules
+
+rule-1 sub rule
+when {
+    $x isa entity1;
+}
+then {
+    $x has res-string 'string';
+};
+
+rule-2 sub rule
+when {
+    $x isa entity1;
+}
+then {
+    $x has res-double 3.14;
+};
+
+rule-3 sub rule
+when {
+    $x isa entity1;
+}
+then {
+    $x has res-long 123;
+};
+
+rule-4 sub rule
+when {
+    $x isa entity1;
+}
+then {
+    $x has res-boolean 'true';
+};
+
+rule-5 sub rule
+when {
+    $x isa entity1;
+}
+then {
+    $x has resource 'test';
+};
