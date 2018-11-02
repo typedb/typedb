@@ -17,6 +17,8 @@
 #
 
 load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+load("//dependencies/deployment:rules.bzl", "deploy_maven_jar")
+
 java_grpc_compile(
     name = "server-java-proto",
     deps = [
@@ -86,7 +88,14 @@ java_library(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/ro/fortsoft/pf4j:pf4j",
     ],
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+    tags = ["maven_coordinates=ai.grakn:grakn-core:core.server"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":server"],
+    version_file = "//:VERSION",
 )
 
 java_binary(

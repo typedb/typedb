@@ -19,6 +19,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+load("//dependencies/deployment:rules.bzl", "deploy_maven_jar")
+
 java_grpc_compile(
     name = "client-java-proto",
     deps = [
@@ -56,7 +58,14 @@ java_library(
         "//dependencies/maven/artifacts/io/zipkin/zipkin2:zipkin", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/net/jodah:failsafe",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
-    ]
+    ],
+    tags = ["maven_coordinates=ai.grakn:grakn-core:client-java"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":client-java"],
+    version_file = "//:VERSION",
 )
 
 java_test(
