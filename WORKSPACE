@@ -41,7 +41,7 @@ maven_dependencies()
 ######################################
 
 # Load Python depdendencies for Bazel
-load("//dependencies/pypi:dependencies.bzl", "python_dependencies",)
+load("//dependencies/pip:dependencies.bzl", "python_dependencies",)
 python_dependencies()
 
 load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
@@ -50,7 +50,7 @@ pip_repositories()
 # Load PyPI dependencies for Python programs
 pip_import(
     name = "pypi_dependencies",
-    requirements = "//dependencies/pypi:requirements.txt",
+    requirements = "//dependencies/pip:requirements.txt",
 )
 load("@pypi_dependencies//:requirements.bzl", "pip_install")
 pip_install()
@@ -71,7 +71,7 @@ rules_nodejs_dependencies()
 load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
 node_repositories(package_json = ["//client-nodejs:package.json"])
 yarn_install(
-    name = "node_grakn_deps",
+    name = "nodejs_dependencies",
     package_json = "//client-nodejs:package.json",
     yarn_lock = "//client-nodejs:yarn.lock",
 )
