@@ -19,7 +19,7 @@
 
 load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
 load("@io_bazel_rules_python//python:python.bzl", "py_library", "py_test")
-load("@python_grakn_deps//:requirements.bzl", "requirement")
+load("@pypi_dependencies//:requirements.bzl", "requirement")
 
 
 python_grpc_compile(

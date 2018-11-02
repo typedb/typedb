@@ -16,4 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["requirements.txt"])
+def node_dependencies():
+    native.git_repository(
+        name = "build_bazel_rules_nodejs",
+        remote = "https://github.com/bazelbuild/rules_nodejs.git",
+        commit = "e29c446b2f0cddfa51c307f898162f55d64d1fde",
+    )

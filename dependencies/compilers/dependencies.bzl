@@ -36,24 +36,3 @@ def grpc_dependencies():
         remote = "https://github.com/pubref/rules_proto",
         commit = "f493ce70027f353cd6964339018163207393ba93",
     )
-
-def python_dependencies():
-    native.git_repository(
-        name = "io_bazel_rules_python",
-        remote = "https://github.com/bazelbuild/rules_python.git",
-        commit = "8b5d0683a7d878b28fffe464779c8a53659fc645",
-        sha256 = "8b32d2dbb0b0dca02e0410da81499eef8ff051dad167d6931a92579e3b2a1d48"
-    )
-
-
-def node_dependencies():
-    native.git_repository(
-        name = "org_pubref_rules_node",
-        remote = "https://github.com/vmax/rules_node.git",
-        commit = "d45a6fe8968a0b792c416d905c19ffec3da2030c",
-    )
-    native.git_repository(
-        name = "build_bazel_rules_nodejs",
-        remote = "https://github.com/bazelbuild/rules_nodejs.git",
-        commit = "e29c446b2f0cddfa51c307f898162f55d64d1fde",
-    )
