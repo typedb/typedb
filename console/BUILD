@@ -18,8 +18,8 @@
 
 sh_binary(
     name = "deploy-github",
-    srcs = ["deploy-github.sh"],
-    data = [":distribution", "//:VERSION"],
+    srcs = ["//dependencies/deployment/github:deployment.sh"],
+    data = [":distribution", "//:VERSION", "@ghr//file:file"],
 )
 
 genrule(

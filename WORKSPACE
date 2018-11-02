@@ -95,3 +95,11 @@ yarn_install(
 
 load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
 maven_dependencies()
+
+
+########################################
+#     Load Deployment Dependencies     #
+########################################
+
+load("//dependencies/deployment/github:dependencies.bzl", "dependencies_for_github_deployment")
+dependencies_for_github_deployment()
