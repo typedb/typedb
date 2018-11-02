@@ -6,17 +6,17 @@
         </div>
         <div class="content">
             <div class="left">
-                <div :class="(currentPreference === 'keyspaces') ? 'item item-selected' : 'item'">
+                <div :class="(currentPreference === 'KeyspaceManager') ? 'item item-selected' : 'item'" @click="currentPreference = 'KeyspaceManager'">
                     <vue-icon icon="chevron-right" className="vue-icon" iconSize="14"></vue-icon>
                     <div class="label">Keyspaces</div>
                 </div>
-                <div class="item">
+                <div :class="(currentPreference === 'ConnectionManager') ? 'item item-selected' : 'item'" @click="currentPreference = 'ConnectionManager'">
                     <vue-icon icon="chevron-right" className="vue-icon" iconSize="14"></vue-icon>
                     <div class="label">Connection</div>
                 </div>
             </div>
             <div class="right">
-                <keyspace-manager></keyspace-manager>
+                <component :is="currentPreference"></component>
             </div>
         </div>
 
@@ -84,13 +84,14 @@
 
 <script>
 import KeyspaceManager from './KeyspaceManager';
+import ConnectionManager from './ConnectionManager';
 
 export default {
   name: 'Preferences',
-  components: { KeyspaceManager },
+  components: { KeyspaceManager, ConnectionManager },
   data() {
     return {
-      currentPreference: 'keyspaces',
+      currentPreference: 'KeyspaceManager',
     };
   },
 };

@@ -102,6 +102,10 @@ span.bp3-icon::before {
   width: 12px !important;
 }
 
+.delete-icon {
+  cursor: pointer;
+}
+
 .delete-icon:focus {
   outline: none !important;
 }

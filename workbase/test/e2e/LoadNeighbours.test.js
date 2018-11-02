@@ -87,21 +87,12 @@ describe('Load neighbours', () => {
 
   //   await sleep(6000);
 
-<<<<<<< HEAD
-    app.client.click('.clear-graph-btn');
-    await sleep(1000);
-
-    app.client.click('.clear-editor');
-    await sleep(1000);
-  });
-=======
   //   const noOfEntities = await app.client.getText('.no-of-entities');
   //   assert.equal(noOfEntities, 'entities: 10');
   //   const noOfAttributes = await app.client.getText('.no-of-attributes');
   //   assert.equal(noOfAttributes, 'attributes: 0');
   //   const noOfRelationships = await app.client.getText('.no-of-relationships');
   //   assert.equal(noOfRelationships, 'relationships: 14');
->>>>>>> da601f84297feb64bdb351cdc6a95812d5cbeba4
 
   //   app.client.click('.clear-graph-btn');
   //   app.client.click('.clear-editor');
@@ -125,19 +116,12 @@ describe('Load neighbours', () => {
 
   //   await sleep(6000);
 
-<<<<<<< HEAD
-    app.client.click('.clear-graph-btn');
-    app.client.click('.clear-editor');
-    await sleep(1000);
-  });
-=======
   //   const noOfEntities = await app.client.getText('.no-of-entities');
   //   assert.equal(noOfEntities, 'entities: 1');
   //   const noOfAttributes = await app.client.getText('.no-of-attributes');
   //   assert.equal(noOfAttributes, 'attributes: 1');
   //   const noOfRelationships = await app.client.getText('.no-of-relationships');
   //   assert.equal(noOfRelationships, 'relationships: 0');
->>>>>>> da601f84297feb64bdb351cdc6a95812d5cbeba4
 
   //   app.client.click('.clear-graph-btn');
   //   app.client.click('.clear-editor');

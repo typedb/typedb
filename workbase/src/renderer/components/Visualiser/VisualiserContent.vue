@@ -1,17 +1,5 @@
 <template>
     <transition name="fade" appear>
-<<<<<<< HEAD
-        <div class="visualiser-wrapper">
-            <top-bar v-on:toggle-preferences="showPreferences = !showPreferences"></top-bar>
-            <preferences v-show="showPreferences"  v-on:close-preferences="showPreferences = !showPreferences"></preferences>
-            <div class="lower">
-                <div class="center">
-                    <context-menu></context-menu>
-                    <graph-canvas></graph-canvas>
-                    <visualiser-footer></visualiser-footer>
-                    <!--<bottom-bar></bottom-bar>-->
-                    <right-bar></right-bar>
-=======
         <div>
 
             <div class="vis-tabs noselect">
@@ -29,7 +17,6 @@
                     <div  @click="saveName(tab)" class="close-tab-btn"><vue-icon className="tab-icon" icon="tick" iconSize="13"></vue-icon></div>
                   </div>
 
->>>>>>> da601f84297feb64bdb351cdc6a95812d5cbeba4
                 </div>
               </div>
               <button v-if="tabs.size < 10" @click="newTab" class='btn new-tab-btn'><vue-icon icon="plus" className="vue-icon"></vue-icon></button>
@@ -99,28 +86,12 @@
 
 </style>
 
-<<<<<<< HEAD
-import GraphCanvas from '../shared/GraphCanvas.vue';
-import ContextMenu from './ContextMenu';
-import VisualiserFooter from './VisualiserFooter';
-import Preferences from './Preferences';
-=======
 <script>
->>>>>>> da601f84297feb64bdb351cdc6a95812d5cbeba4
 
 import VisTab from './VisTab.vue';
 
 export default {
   name: 'VisualiserContent',
-<<<<<<< HEAD
-  components: {
-    TopBar, LeftBar, RightBar, BottomBar, GraphCanvas, ContextMenu, VisualiserFooter, Preferences,
-  },
-  data() {
-    return {
-      showPreferences: false,
-    };
-=======
   components: { VisTab },
   data() {
     return {
@@ -140,7 +111,6 @@ export default {
       if (this.tabToRename && e.keyCode === 13) this.saveName(this.tabToRename); // Pressing enter will save tab name
       if (this.tabToRename && e.keyCode === 27) this.tabToRename = undefined; // Pressing escape will cancel renaming of tab
     });
->>>>>>> da601f84297feb64bdb351cdc6a95812d5cbeba4
   },
   methods: {
     truncate(name) {
