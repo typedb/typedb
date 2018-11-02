@@ -1,6 +1,0 @@
-match
-    $person isa person, has person-id @long(<"Person.id">);
-    $organisation isa organisation, has organisation-id @long(<"Organisation.id">);
-insert
-    (employer: $organisation, employee: $person) isa work-at
-    has work-from @long(<"workFrom">);

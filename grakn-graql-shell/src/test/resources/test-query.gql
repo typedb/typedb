@@ -1,2 +1,0 @@
-match $x isa entity;
-insert $y isa entity;

@@ -1,5 +1,0 @@
-# This file should be placed in `/lib/systemd/system/`
-# The service can be started with `systemctl start repeat-query`
-
-[Service]
-ExecStart=/home/ubuntu/repeat-query

@@ -1,5 +1,0 @@
-match $g isa gene has gene-symbol <GeneSymbol>;
-$d isa drug has drug-name <Drug>;
-insert
-    (chemical: $d, influenced: $g) isa action
-    	has action-type <InteractionType>;

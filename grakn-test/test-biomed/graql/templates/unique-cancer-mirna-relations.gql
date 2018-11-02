@@ -1,5 +1,0 @@
-match
-    $mirna has mirID <mirId>;
-    $cancer has name <Cancer>;
-insert
-    $rel (disease: $cancer, affected: $mirna) isa interaction;

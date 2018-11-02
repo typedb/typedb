@@ -1,5 +1,0 @@
-match
-    $tag isa tag-class, has tag-class-id @long(<"TagClass.id">);
-    $tag1 isa tag-class, has tag-class-id @long(<"TagClass1.id">);
-insert
-    (superclass: $tag, subclass: $tag1) isa is-subclass-of;

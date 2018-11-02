@@ -1,5 +1,0 @@
-match
-    $post isa post, has message-id @long(<"Post.id">);
-    $tag isa tag, has tag-id @long(<"Tag.id">);
-insert
-    (tagged: $post, topic: $tag) isa has-tag;

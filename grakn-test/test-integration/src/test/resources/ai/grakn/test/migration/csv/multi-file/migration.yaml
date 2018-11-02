@@ -1,8 +1,0 @@
-- input: src/test/resources/ai/grakn/test/migration/csv/multi-file/data/pokemon.csv
-  template: src/test/resources/ai/grakn/test/migration/csv/multi-file/templates/pokemon-migrator.gql
-
-- input: src/test/resources/ai/grakn/test/migration/csv/multi-file/data/types.csv
-  template: src/test/resources/ai/grakn/test/migration/csv/multi-file/templates/types-migrator.gql
-
-- input: src/test/resources/ai/grakn/test/migration/csv/multi-file/data/edges.csv
-  template: src/test/resources/ai/grakn/test/migration/csv/multi-file/templates/edges-migrator.gql

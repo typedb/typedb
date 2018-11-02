@@ -1,4 +1,0 @@
-insert $x isa forum
-    has forum-id @long(<id>)
-    has title <title>
-    has creation-date @date(<creationDate>,"yyyy-MM-dd'T'HH:mm:ss.SSSZ");

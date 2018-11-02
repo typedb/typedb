@@ -1,8 +1,0 @@
-insert
-
-$x isa make has name <Make>;
-$y isa model has name <Model>
-    has year <Year>
-    has price @double(Price)
-    if (<Description> != null) do { has description <Description> };
-(make-of-car: $x, model-of-car: $y) isa make-and-model;
