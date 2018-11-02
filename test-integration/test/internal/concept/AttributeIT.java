@@ -31,8 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.junit.After;
@@ -41,7 +40,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -60,14 +58,11 @@ import static org.junit.Assert.fail;
 
 public class AttributeIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
+    @ClassRule
+    public static final GraknServer server = new GraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-
-    @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
 
     private GraknTx tx;
     private GraknSession session;

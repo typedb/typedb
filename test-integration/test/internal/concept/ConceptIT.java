@@ -28,8 +28,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
@@ -38,7 +37,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -55,11 +53,8 @@ import static org.junit.Assert.assertTrue;
 
 public class ConceptIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

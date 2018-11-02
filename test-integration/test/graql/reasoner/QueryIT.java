@@ -31,8 +31,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -40,7 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.Set;
 
@@ -49,15 +47,9 @@ import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")
 public class QueryIT {
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-    private EmbeddedGraknTx tx;
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
+    private EmbeddedGraknTx tx;
 
     private static EmbeddedGraknSession geoGraphSession;
 

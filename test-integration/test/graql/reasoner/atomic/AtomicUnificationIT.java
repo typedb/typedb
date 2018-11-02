@@ -23,8 +23,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -37,7 +36,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -48,22 +46,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
 
 @SuppressWarnings("CheckReturnValue")
 public class AtomicUnificationIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private static EmbeddedGraknSession genericSchemaSession;
 

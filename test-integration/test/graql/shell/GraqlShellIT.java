@@ -21,6 +21,7 @@ package ai.grakn.test.graql.shell;
 import ai.grakn.core.console.GraqlConsole;
 import ai.grakn.core.console.GraqlShellOptions;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.test.rule.ServerContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
@@ -74,13 +75,8 @@ import static org.junit.Assert.fail;
 
 public class GraqlShellIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private static InputStream trueIn;
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";

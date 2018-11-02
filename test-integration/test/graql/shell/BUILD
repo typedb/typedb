@@ -6,7 +6,6 @@ java_test(
         "//grakn-graql",
         "//console",
         "//test-integration/rule:cassandra-context",
-        "//test-integration/rule:server-context",
         "//test-integration/util:grakn-test-util",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",

@@ -16,8 +16,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -27,7 +26,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -45,14 +43,8 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("CheckReturnValue")
 public class AtomicQueryEquivalenceIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private static EmbeddedGraknSession genericSchemaSession;
 

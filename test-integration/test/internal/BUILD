@@ -4,8 +4,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.ValidatorIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -18,8 +17,7 @@ java_test(
   test_class = "ai.grakn.kb.internal.ValidateGlobalRulesIT",
   deps = [
       "//grakn-graql",
-      "//test-integration/rule:cassandra-context",
-      "//test-integration/rule:server-context"
+      "//test-integration/rule:grakn-server"
   ],
   size = "medium",
   classpath_resources = ["//test-integration/resources:logback-test"]
@@ -31,8 +29,7 @@ java_test(
   test_class = "ai.grakn.kb.internal.GraknTxIT",
   deps = [
       "//grakn-graql",
-      "//test-integration/rule:cassandra-context",
-      "//test-integration/rule:server-context",
+      "//test-integration/rule:grakn-server",
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
       "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
   ],

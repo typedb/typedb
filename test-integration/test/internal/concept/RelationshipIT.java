@@ -33,8 +33,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
@@ -46,7 +45,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.util.List;
 import java.util.Set;
@@ -72,11 +70,8 @@ public class RelationshipIT {
     private EntityType type;
     private RelationshipType relationshipType;
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

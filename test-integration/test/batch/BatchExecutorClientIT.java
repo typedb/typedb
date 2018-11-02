@@ -28,14 +28,12 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,11 +45,8 @@ import static org.mockito.Mockito.spy;
 
 public class BatchExecutorClientIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     public static final int MAX_DELAY = 100;
     private GraknSession session;

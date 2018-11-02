@@ -4,8 +4,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.QueryValidityIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
             ],
     resources = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
@@ -18,8 +17,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.ResolutionPlanIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
@@ -33,8 +31,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.QueryIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//test-integration/test/graql/reasoner/graph:geo-graph"
             ],
     size = "medium",
@@ -46,8 +43,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.OntologicalQueryIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava",
                 "//test-integration/util:graql-test-util"
             ],

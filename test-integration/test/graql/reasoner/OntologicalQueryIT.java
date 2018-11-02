@@ -30,8 +30,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -42,7 +41,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -60,14 +58,8 @@ public class OntologicalQueryIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private static EmbeddedGraknSession genericSchemaSession;
 

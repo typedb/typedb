@@ -36,6 +36,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.test.rule.ServerContext;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -62,14 +63,8 @@ public class BenchmarkIT {
 
     private static final Logger LOG = LoggerFactory.getLogger(BenchmarkIT.class);
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private GraknSession session;
     private Keyspace keyspace;

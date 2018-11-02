@@ -29,8 +29,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
@@ -38,7 +37,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -55,11 +53,8 @@ import static org.junit.Assert.assertThat;
 
 public class ValidatorIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

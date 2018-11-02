@@ -32,8 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.test.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -44,7 +43,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.List;
 import java.util.Map;
@@ -66,13 +64,8 @@ import static org.junit.Assert.assertTrue;
  */
 public class RemoteConceptIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
     private static Grakn.Session session;
     private Grakn.Transaction tx;
 

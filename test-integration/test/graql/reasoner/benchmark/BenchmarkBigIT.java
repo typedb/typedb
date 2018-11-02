@@ -35,8 +35,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -44,7 +43,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -59,14 +57,8 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("CheckReturnValue")
 public class BenchmarkBigIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private GraknSession session;
     private Keyspace keyspace;

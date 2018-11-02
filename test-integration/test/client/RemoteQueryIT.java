@@ -51,8 +51,7 @@ import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -68,7 +67,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -119,13 +117,8 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class RemoteQueryIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
     private static GraknSession localSession;
     private static Grakn.Session remoteSession;

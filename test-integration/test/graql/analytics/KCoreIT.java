@@ -32,12 +32,10 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,11 +62,8 @@ public class KCoreIT {
 
     public GraknSession session;
 
-    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    private static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     @Before
     public void setUp() {

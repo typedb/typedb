@@ -29,14 +29,12 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.answer.Value;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.util.Schema;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,11 +49,8 @@ public class CountIT {
 
     public GraknSession session;
 
-    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    private static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     @Before
     public void setUp() {

@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import ai.grakn.graql.internal.gremlin.fragment.OutSubFragment;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
+import ai.grakn.test.rule.GraknServer;
 import ai.grakn.test.rule.ServerContext;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
@@ -57,11 +58,8 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings("CheckReturnValue")
 public class IsaExplicitIT {
 
-    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    private static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final GraknServer server = new GraknServer();
 
     private EmbeddedGraknTx<?> tx;
 

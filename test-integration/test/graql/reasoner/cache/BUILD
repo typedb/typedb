@@ -4,8 +4,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.LazyQueryCacheIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
     resources = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
@@ -18,8 +17,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.QueryCacheIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
     resources = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
@@ -32,8 +30,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.RuleCacheIT",
     deps = [
                 "//grakn-graql",
-                "//test-integration/rule:cassandra-context",
-                "//test-integration/rule:server-context",
+                "//test-integration/rule:grakn-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
     resources = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],

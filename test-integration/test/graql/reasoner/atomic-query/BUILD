@@ -4,8 +4,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.AtomicQueryEquivalenceIT",
     deps = [
             "//grakn-graql",
-            "//test-integration/rule:cassandra-context",
-            "//test-integration/rule:server-context",
+            "//test-integration/rule:grakn-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava"
         ],
@@ -19,8 +18,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.AtomicQueryIT",
     deps = [
             "//grakn-graql",
-            "//test-integration/rule:cassandra-context",
-            "//test-integration/rule:server-context",
+            "//test-integration/rule:grakn-server",
             "//test-integration/test/graql/reasoner/graph:geo-graph",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -36,8 +34,7 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.AtomicQueryUnificationIT",
     deps = [
             "//grakn-graql",
-            "//test-integration/rule:cassandra-context",
-            "//test-integration/rule:server-context",
+            "//test-integration/rule:grakn-server",
             "//test-integration/test/graql/reasoner/graph:geo-graph",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",

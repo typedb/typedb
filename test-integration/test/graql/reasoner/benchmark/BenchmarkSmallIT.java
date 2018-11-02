@@ -37,11 +37,9 @@ import ai.grakn.graql.internal.reasoner.graph.LinearTransitivityMatrixGraph;
 import ai.grakn.graql.internal.reasoner.graph.PathTreeGraph;
 import ai.grakn.graql.internal.reasoner.graph.TransitivityChainGraph;
 import ai.grakn.graql.internal.reasoner.graph.TransitivityMatrixGraph;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.GraknServer;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.List;
 
@@ -50,14 +48,8 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("CheckReturnValue")
 public class BenchmarkSmallIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final GraknServer server = new GraknServer();
 
 
     /**
