@@ -84,24 +84,6 @@ public class GraqlConsole {
         }
 
 
-        //  ------- Check option  ------------------------
-
-        Path path = options.getBatchLoadPath();
-
-        if (path != null) {
-            Keyspace keyspace = options.getKeyspace();
-            SimpleURI location = options.getUri();
-            SimpleURI httpUri = location != null ? location : Grakn.DEFAULT_HTTP_URI;
-            try {
-                BatchLoader.sendBatchRequest(httpUri, keyspace, path, sout, serr);
-            } catch (Exception e) {
-                sout.println("Batch failed \n" + CommonUtil.simplifyExceptionMessage(e));
-                return false;
-            }
-            return true;
-        }
-
-
         //   --------   If no option set we start GraqlShell   ----------
 
         OutputFormat outputFormat = options.getOutputFormat();
