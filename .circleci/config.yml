@@ -246,8 +246,12 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-      - test-unit
-      - test-integration
+      - test-unit:
+          requires:
+            - build
+      - test-integration:
+          requires:
+          - build
       - test-end-to-end
       - client-nodejs-e2e
       - client-python-e2e
