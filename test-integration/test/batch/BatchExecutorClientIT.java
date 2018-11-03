@@ -29,6 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.rule.GraknServer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -58,6 +59,9 @@ public class BatchExecutorClientIT {
     public void setupSession() {
         this.session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession(){ this.session.close();}
 
     @Test
     public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce() {

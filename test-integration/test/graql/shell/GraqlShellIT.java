@@ -20,9 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.core.console.GraqlConsole;
 import ai.grakn.core.console.GraqlShellOptions;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.test.rule.GraknServer;
-import ai.grakn.test.rule.ServerContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
@@ -43,7 +41,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

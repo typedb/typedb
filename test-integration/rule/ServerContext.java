@@ -133,7 +133,7 @@ public class ServerContext extends ExternalResource {
                 LOG.info("stopping engine...");
 
                 // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-                clearGraphs();
+//                clearGraphs();
                 server.close();
 
                 LOG.info("engine stopped.");

@@ -134,7 +134,7 @@ public class RemoteQueryIT {
 
     @After
     public void tearDown() {
-        remoteSession.close();
+        localSession.close(); remoteSession.close();
     }
 
     @Test

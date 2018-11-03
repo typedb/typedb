@@ -58,6 +58,7 @@ public class GraknServer extends ExternalResource {
         } catch (TTransportException | IOException | ConfigurationException e) {
             throw new RuntimeException("Cannot start Embedded Cassandra", e);
         }
+        System.out.println("Cassandra started.");
         try {
             dataDirTmp = Files.createTempDirectory("db-for-test");
         } catch (IOException e) {
