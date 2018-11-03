@@ -353,7 +353,7 @@ public class BenchmarkIT {
      */
     @Test
     public void testJoinRuleChain() {
-        final int N = 100;
+        final int N = 20; // TODO: Increase this number again to > 100, once we fix issue #4545
         LOG.debug(new Object() {}.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
 
@@ -375,10 +375,10 @@ public class BenchmarkIT {
                         queryPattern +
                         "limit 1;" +
                         "get;";
-                assertEquals(executeQuery(queryString, tx, "full").size(), 1);
-                assertEquals(executeQuery(subbedQueryString, tx, "first argument bound").size(), 1);
-                assertEquals(executeQuery(subbedQueryString2, tx, "second argument bound").size(), 1);
-                assertEquals(executeQuery(limitedQueryString, tx, "limit ").size(), 1);
+                assertEquals(1, executeQuery(queryString, tx, "full").size());
+                assertEquals(1, executeQuery(subbedQueryString, tx, "first argument bound").size());
+                assertEquals(1, executeQuery(subbedQueryString2, tx, "second argument bound").size());
+                assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size());
             }
         }
     }
