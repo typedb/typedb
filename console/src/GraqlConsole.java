@@ -20,7 +20,6 @@ package ai.grakn.core.console;
 
 import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
