@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+set -ex
 
 # 1. modules and configurations
 # inputs
@@ -9,7 +9,7 @@ script="$2"
 jar="$3"
 
 # configurations
-base_dir="$output"
+base_dir="grakn-core-console"
 services_dir="services"
 services_dir_lib="lib"
 
@@ -24,3 +24,9 @@ cp "$jar" "$base_dir/$services_dir/$services_dir_lib"
 
 # 4. the grakn-core-server distribution will contain the following files
 find $base_dir
+
+# 5. building zip
+zip -r "$output" "$base_dir"
+
+# 6. cleanup
+rm -rf "$base_dir"

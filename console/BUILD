@@ -19,14 +19,15 @@
 sh_binary(
     name = "deploy-github",
     srcs = ["//dependencies/deployment/github:deployment.sh"],
+    args = ["test-ghr", "grakn-core-console", "console/dist/grakn-core-console.zip"],
     data = [":distribution", "//:VERSION", "@ghr//file:file"],
 )
 
 genrule(
     name = "distribution",
     srcs = ["//:grakn", "console-binary_deploy.jar"],
-    outs = ["dist/grakn-core-console"],
-    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console) $(location //:grakn) $(location console-binary_deploy.jar)",
+    outs = ["dist/grakn-core-console.zip"],
+    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
     tools = ["distribution.sh"]
 )
 

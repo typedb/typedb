@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e # exit immediately when there's a failure. add verbose flag '-x', (ie., 'set -xe') in order to debug the script
+set -ex # exit immediately when there's a failure. add verbose flag '-x', (ie., 'set -xe') in order to debug the script
 
 echo "============================================"
 echo "packaging the grakn-core-server distribution"

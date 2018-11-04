@@ -111,6 +111,7 @@ genrule(
 sh_binary(
     name = "deploy-github",
     srcs = ["//dependencies/deployment/github:deployment.sh"],
+    args = ["test-ghr", "grakn-core-server", "server/dist/grakn-core-server.zip"],
     data = [":distribution", "//:VERSION", "@ghr//file:file"]
 )
 
