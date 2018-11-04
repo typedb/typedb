@@ -45,8 +45,7 @@ To run Grakn Core (which you can download from the [Download Centre](https://gra
 
 You can visit the [Setup Guide](http://dev.grakn.ai/docs/get-started/setup-guide) to help your installation.
 
-To build Grakn from source
-Grakn is built using [Bazel](https://bazel.build)
+Grakn is built using [Bazel](https://bazel.build). To build Grakn Core from source:
 1. Make sure you have Java 8 and Python 2 installed on your machine.
 2. [Install Bazel](https://docs.bazel.build/versions/master/install-os-x.html)
 3. Run:
