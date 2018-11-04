@@ -16,13 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-sh_binary(
-    name = "deploy-github",
-    srcs = ["//dependencies/deployment/github:deployment.sh"],
-    args = ["test-ghr", "grakn-core-console", "console/dist/grakn-core-console.zip"],
-    data = [":distribution", "//:VERSION", "@ghr//file:file"],
-)
-
 genrule(
     name = "distribution",
     srcs = ["//:grakn", "console-binary_deploy.jar"],

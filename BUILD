@@ -1,7 +1,6 @@
 sh_binary(
     name = "deploy-github",
     srcs = ["//dependencies/deployment/github:deployment.sh"],
-    args = ["test-ghr", "grakn-core-all", "dist/grakn-core-all.zip"],
     data = [":distribution", "//:VERSION", "@ghr//file:file"]
 )
 

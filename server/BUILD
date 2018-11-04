@@ -108,13 +108,6 @@ genrule(
     tools = ["distribution.sh"]
 )
 
-sh_binary(
-    name = "deploy-github",
-    srcs = ["//dependencies/deployment/github:deployment.sh"],
-    args = ["test-ghr", "grakn-core-server", "server/dist/grakn-core-server.zip"],
-    data = [":distribution", "//:VERSION", "@ghr//file:file"]
-)
-
 java_test(
     name = "process-wide-lock-provider-test",
     test_class = "ai.grakn.core.server.lock.ProcessWideLockProviderTest",
