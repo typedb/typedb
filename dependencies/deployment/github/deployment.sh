@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-set -x
+set -ex
 
 # arguments
 github_user="$1"
 github_token="$2"
-github_repository="test-ghr"
+github_repository="grakn"
 distribution_name="grakn-core-all"
 distribution_zipfile_path="dist/grakn-core-all.zip"
 
