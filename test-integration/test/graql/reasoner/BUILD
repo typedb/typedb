@@ -13,6 +13,6 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "medium",
-    resources = ["linearTransitivity.gql", "multiJoin.gql"],
+    data = ["linearTransitivity.gql", "multiJoin.gql"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
