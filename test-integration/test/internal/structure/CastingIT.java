@@ -27,7 +27,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
 public class CastingIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private GraknTx tx;
     private GraknSession session;

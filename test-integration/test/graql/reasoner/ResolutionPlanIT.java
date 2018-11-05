@@ -38,7 +38,7 @@ import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
@@ -84,7 +84,7 @@ public class ResolutionPlanIT {
     public RepeatRule repeatRule = new RepeatRule();
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession genericSchemaSession;
 

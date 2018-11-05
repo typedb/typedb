@@ -4,7 +4,7 @@ java_test(
   test_class = "ai.grakn.kb.internal.structure.CastingIT",
   deps = [
       "//grakn-graql",
-      "//test-integration/rule:grakn-server",
+      "//test-integration/rule:concurrent-grakn-server",
       "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
   ],
   size = "medium",
@@ -17,7 +17,7 @@ java_test(
   test_class = "ai.grakn.kb.internal.structure.EdgeIT",
   deps = [
       "//grakn-graql",
-      "//test-integration/rule:grakn-server",
+      "//test-integration/rule:concurrent-grakn-server",
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
   ],
   size = "medium",

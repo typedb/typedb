@@ -21,7 +21,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.cache.TxRuleCache;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.After;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 public class RuleCacheIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession ruleApplicabilitySession;
 

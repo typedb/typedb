@@ -43,7 +43,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.GraqlTestUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
@@ -70,7 +70,7 @@ import static org.junit.Assert.assertEquals;
 public class AtomicTypeInferenceIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession testContextSession;
 

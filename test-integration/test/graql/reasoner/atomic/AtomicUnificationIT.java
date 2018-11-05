@@ -23,7 +23,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class AtomicUnificationIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession genericSchemaSession;
 

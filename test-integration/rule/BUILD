@@ -31,8 +31,8 @@ java_library(
 )
 
 java_library(
-    name = "grakn-server",
-    srcs = ["GraknServer.java"],
+    name = "concurrent-grakn-server",
+    srcs = ["ConcurrentGraknServer.java"],
     deps = [
         "//server",
         "//grakn-graql",

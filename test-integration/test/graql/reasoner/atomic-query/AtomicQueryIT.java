@@ -42,7 +42,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import org.junit.AfterClass;
@@ -69,7 +69,7 @@ import static org.junit.Assert.assertTrue;
 public class AtomicQueryIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession materialisationTestSession;
     private static EmbeddedGraknSession geoGraphSession;

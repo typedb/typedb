@@ -32,7 +32,7 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RoleImpl;
 import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class ValidateGlobalRulesIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private GraknTx tx;
     private GraknSession session;

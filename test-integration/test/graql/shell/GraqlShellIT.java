@@ -20,7 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.core.console.GraqlConsole;
 import ai.grakn.core.console.GraqlShellOptions;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
@@ -72,7 +72,7 @@ import static org.junit.Assert.fail;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static InputStream trueIn;
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";

@@ -33,7 +33,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -71,7 +71,7 @@ public class PathIT {
     public GraknSession session;
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
 
     @Before

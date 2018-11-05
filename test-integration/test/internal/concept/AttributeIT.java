@@ -31,7 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.junit.After;
@@ -59,7 +59,7 @@ import static org.junit.Assert.fail;
 public class AttributeIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

@@ -5,7 +5,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -18,7 +18,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -32,7 +32,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -45,7 +45,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -58,7 +58,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -72,7 +72,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -86,7 +86,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -99,7 +99,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -113,7 +113,7 @@ java_test(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",

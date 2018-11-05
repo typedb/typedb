@@ -34,9 +34,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
-public class GraknServer extends ExternalResource {
+/**
+ * This rule starts Cassandra and Grakn Server and makes sure that both processes bind to random and unused ports.
+ * This rule allows all the integration tests to run concurrently on the same machine.
+ */
+public class ConcurrentGraknServer extends ExternalResource {
 
-    private final InputStream TEST_CONFIG_FILE = GraknServer.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
+    private final InputStream TEST_CONFIG_FILE = ConcurrentGraknServer.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
     private GraknConfig config;
     private Path dataDirTmp;
     private Server server;
@@ -47,13 +51,14 @@ public class GraknServer extends ExternalResource {
 
     private EngineGraknTxFactory engineGraknTxFactory;
 
-    public GraknServer() {
+    public ConcurrentGraknServer() {
         System.setProperty("java.security.manager", "nottodaypotato");
     }
 
     @Override
     protected void before() throws Throwable{
         try {
+            // Start Cassandra with config file for random ports.
             EmbeddedCassandraServerHelper.startEmbeddedCassandra(EmbeddedCassandraServerHelper.CASSANDRA_RNDPORT_YML_FILE, 30_000L);
         } catch (TTransportException | IOException | ConfigurationException e) {
             throw new RuntimeException("Cannot start Embedded Cassandra", e);

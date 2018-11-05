@@ -3,7 +3,7 @@ java_test(
     test_class = "ai.grakn.test.graql.internal.IsaExplicitIT",
     srcs = ["IsaExplicitIT.java"],
     deps = [
-        "//test-integration/rule:grakn-server",
+        "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//grakn-graql"],

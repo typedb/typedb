@@ -32,7 +32,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.test.util.GraknTestUtil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -56,7 +56,7 @@ import static org.junit.Assert.assertEquals;
 public class BenchmarkBigIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private Keyspace keyspace;
 

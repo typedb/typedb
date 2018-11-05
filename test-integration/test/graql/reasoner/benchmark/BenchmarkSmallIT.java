@@ -37,7 +37,7 @@ import ai.grakn.graql.internal.reasoner.graph.LinearTransitivityMatrixGraph;
 import ai.grakn.graql.internal.reasoner.graph.PathTreeGraph;
 import ai.grakn.graql.internal.reasoner.graph.TransitivityChainGraph;
 import ai.grakn.graql.internal.reasoner.graph.TransitivityMatrixGraph;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertEquals;
 public class BenchmarkSmallIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
 
     /**

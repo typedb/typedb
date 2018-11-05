@@ -51,7 +51,7 @@ import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -118,7 +118,7 @@ import static org.junit.Assert.assertTrue;
 public class RemoteQueryIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static GraknSession localSession;
     private static Grakn.Session remoteSession;

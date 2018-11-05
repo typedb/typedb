@@ -30,7 +30,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
@@ -60,7 +60,7 @@ public class SchemaMutationIT {
     private Role driver;
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

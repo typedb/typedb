@@ -12,7 +12,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 public class AtomicEquivalenceIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession genericSchemaSession;
 

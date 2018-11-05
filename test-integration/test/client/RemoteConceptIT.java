@@ -32,7 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.test.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -65,7 +65,7 @@ import static org.junit.Assert.assertTrue;
 public class RemoteConceptIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
     private static Grakn.Session session;
     private Grakn.Transaction tx;
 

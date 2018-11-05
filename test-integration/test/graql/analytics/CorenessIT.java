@@ -32,7 +32,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -63,7 +63,7 @@ public class CorenessIT {
     public GraknSession session;
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Before
     public void setUp() {

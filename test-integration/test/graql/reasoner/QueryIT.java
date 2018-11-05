@@ -31,7 +31,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("CheckReturnValue")
 public class QueryIT {
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
     private EmbeddedGraknTx tx;
 
     private static EmbeddedGraknSession geoGraphSession;

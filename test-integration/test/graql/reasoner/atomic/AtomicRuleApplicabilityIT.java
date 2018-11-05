@@ -20,7 +20,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.GraknServer;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 public class AtomicRuleApplicabilityIT {
 
     @ClassRule
-    public static final GraknServer server = new GraknServer();
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static EmbeddedGraknSession ruleApplicabilitySession;
     private static EmbeddedGraknSession resourceApplicabilitySession;
