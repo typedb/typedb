@@ -1,32 +1,31 @@
 #!/usr/bin/env bash
 
-set -ex
+set -ex # exit immediately when there's a failure. run the script in verbose mode (ie., print all the commands to stdout)
 
-# 1. modules and configurations
-# inputs
-output="$1"
-script="$2"
-jar="$3"
+# command-line arguments
+distribution_zipfile_path="$1"
+grakn_bootup_bash_script_path="$2"
+deploy_jar_path="$3"
 
 # configurations
-base_dir="grakn-core-console"
-services_dir="services"
-services_dir_lib="lib"
+distribution_basedir_name="grakn-core-console"
+distribution_servicesdir_name="services"
+distribution_libdir_name="lib"
 
-# 2. prepare directories and files
-mkdir -p "$base_dir"
-mkdir -p "$base_dir/$services_dir/$services_dir_lib"
-find $base_dir
+# 1. prepare directories and files
+mkdir -p "$distribution_basedir_name"
+mkdir -p "$distribution_basedir_name/$distribution_servicesdir_name/$distribution_libdir_name"
+find $distribution_basedir_name # list the directory structures so they can be examined
 
-# 3. copying files into the respective locations
-cp "$script" "$base_dir"
-cp "$jar" "$base_dir/$services_dir/$services_dir_lib"
+# 2. copying files into the respective locations
+cp "$grakn_bootup_bash_script_path" "$distribution_basedir_name"
+cp "$deploy_jar_path" "$distribution_basedir_name/$distribution_servicesdir_name/$distribution_libdir_name"
 
-# 4. the grakn-core-server distribution will contain the following files
-find $base_dir
+# 3. the grakn-core-server distribution will contain the following files
+find $distribution_basedir_name # list the files so they can be examined
 
-# 5. building zip
-zip -r "$output" "$base_dir"
+# 4. building zip
+zip -r "$distribution_zipfile_path" "$distribution_basedir_name"
 
-# 6. cleanup
-rm -rf "$base_dir"
+# 5. cleanup
+rm -rf "$distribution_basedir_name"
