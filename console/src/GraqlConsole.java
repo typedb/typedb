@@ -20,7 +20,6 @@ package ai.grakn.core.console;
 
 import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.SimpleURI;
@@ -80,24 +79,6 @@ public class GraqlConsole {
 
         if (options.displayVersion()) {
             sout.println(GraknVersion.VERSION);
-            return true;
-        }
-
-
-        //  ------- Check option  ------------------------
-
-        Path path = options.getBatchLoadPath();
-
-        if (path != null) {
-            Keyspace keyspace = options.getKeyspace();
-            SimpleURI location = options.getUri();
-            SimpleURI httpUri = location != null ? location : Grakn.DEFAULT_HTTP_URI;
-            try {
-                BatchLoader.sendBatchRequest(httpUri, keyspace, path, sout, serr);
-            } catch (Exception e) {
-                sout.println("Batch failed \n" + CommonUtil.simplifyExceptionMessage(e));
-                return false;
-            }
             return true;
         }
 
