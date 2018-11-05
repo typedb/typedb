@@ -15,6 +15,6 @@ java_test(
         "//dependencies/maven/artifacts/commons-io:commons-io"
     ],
     data = ["file-(with-parentheses).gql"],
-    size = "medium",
+    size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

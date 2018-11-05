@@ -12,7 +12,7 @@ java_test(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
-    size = "medium",
+    size = "large",
     data = ["linearTransitivity.gql", "multiJoin.gql"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
