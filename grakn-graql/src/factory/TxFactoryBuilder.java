@@ -22,7 +22,6 @@ import ai.grakn.GraknConfigKey;
 import ai.grakn.janus.TxFactoryJanus;
 import ai.grakn.janus.TxFactoryJanusHadoop;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,15 +98,5 @@ public class TxFactoryBuilder {
 
         LOG.trace("New factory created " + txFactory);
         return txFactory;
-    }
-
-    /**
-     * Clears all connections.
-     */
-    //TODO Should this close each of the factories (and wait for all open transactions to be closed?)
-    //TODO Calling this from within the code causes a memory leak
-    @VisibleForTesting
-    public static void refresh() {
-        openFactories.clear();
     }
 }
