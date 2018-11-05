@@ -14,6 +14,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/commons-io:commons-io"
     ],
-    size = "medium",
+    data = ["file-(with-parentheses).gql"],
+    size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

@@ -47,29 +47,24 @@ public class EdgeIT {
 
     private EmbeddedGraknTx tx;
     private EmbeddedGraknSession session;
-
-    @Before
-    public void setUp(){
-        session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
-    }
-
-    @After
-    public void tearDown(){
-        tx.close();
-        session.close();
-    }
-
     private EntityTypeImpl entityType;
     private EntityImpl entity;
     private EdgeElement edge;
 
     @Before
     public void createEdge() {
+        session = server.sessionWithNewKeyspace();
+        tx = session.transaction(GraknTxType.WRITE);
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
         entity = (EntityImpl) entityType.create();
         Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.id().getValue()).outE().next();
         edge = new EdgeElement(tx, tinkerEdge);
+    }
+
+    @After
+    public void tearDown(){
+        tx.close();
+        session.close();
     }
 
     @Test

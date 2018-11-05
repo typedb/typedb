@@ -13,7 +13,7 @@ java_test(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
-    size = "medium",
+    size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
@@ -31,6 +31,6 @@ java_test(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
-    size = "medium",
+    size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

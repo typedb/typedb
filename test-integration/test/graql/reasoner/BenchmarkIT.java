@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -78,7 +79,7 @@ public class BenchmarkIT {
 
     private void loadOntology(String fileName, Grakn.Session session){
         try {
-            InputStream inputStream = BenchmarkIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/"+fileName);
+            InputStream inputStream = new FileInputStream("test-integration/test/graql/reasoner/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
