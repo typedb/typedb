@@ -24,8 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
@@ -33,7 +32,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.time.LocalDateTime;
 import java.util.TimeZone;
@@ -45,15 +43,13 @@ import static org.junit.Assert.assertEquals;
 
 public class AttributeTypeIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
+    @ClassRule
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
     private AttributeType<String> attributeType;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
 
     private GraknTx tx;
     private GraknSession session;

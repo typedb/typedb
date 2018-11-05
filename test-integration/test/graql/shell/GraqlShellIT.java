@@ -20,8 +20,7 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.core.console.GraqlConsole;
 import ai.grakn.core.console.GraqlShellOptions;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
@@ -41,7 +40,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -73,13 +71,8 @@ import static org.junit.Assert.fail;
 
 public class GraqlShellIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static InputStream trueIn;
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";

@@ -36,14 +36,12 @@ import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Value;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,11 +76,8 @@ public class GraqlIT {
 
     public GraknSession session;
 
-    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    private static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Before
     public void setUp() {
