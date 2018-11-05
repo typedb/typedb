@@ -111,7 +111,12 @@ public class GraknServer extends ExternalResource {
         GraknConfig config = GraknConfig.read(TEST_CONFIG_FILE);
         config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
         config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
+        //We override the default store.port with the RPC_PORT given that we still use Thrift protocol to talk to Cassandra
         config.setConfigProperty(GraknConfigKey.STORAGE_PORT, EmbeddedCassandraServerHelper.getRpcPort());
+        //Hadoop cluster uses the Astyanax driver for some operations, so need to override the RPC_PORT (Thrift)
+        config.setConfigProperty(GraknConfigKey.HADOOP_STORAGE_PORT, EmbeddedCassandraServerHelper.getRpcPort());
+        //Hadoop cluster uses the CQL driver for some operations, so we need to instruct it to use the newly generate native transport port (CQL)
+        config.setConfigProperty(GraknConfigKey.STORAGE_CQL_NATIVE_PORT, EmbeddedCassandraServerHelper.getNativeTransportPort());
 
         return config;
     }

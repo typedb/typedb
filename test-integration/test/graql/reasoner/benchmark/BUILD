@@ -36,7 +36,7 @@ java_test(
         "//test-integration/test/graql/reasoner/graph:path-tree-graph",
         "//test-integration/test/graql/reasoner/graph:transitivity-matrix-graph",
     ],
-    size = "medium",
+    size = "large",
     resources = [
         "//test-integration/test/graql/reasoner/resources:generic-schema",
         "//test-integration/test/graql/reasoner/resources:unification-with-types"
