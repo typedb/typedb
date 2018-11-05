@@ -1,7 +1,7 @@
 sh_binary(
     name = "deploy-github",
     srcs = ["//dependencies/deployment/github:deployment.sh"],
-    data = [":distribution", "//:VERSION", "@ghr//file:file"]
+    data = [":distribution", ":VERSION", ":deployment.properties", "@ghr//file:file"]
 )
 
 genrule(

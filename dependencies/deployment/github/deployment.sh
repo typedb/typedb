@@ -12,7 +12,7 @@ github_user="$1"
 github_token="$2"
 
 # configurations
-github_repository="test-ghr"
+github_repository="cat deployment.properties | grep github.repository | cut -d '=' -f 2"
 distribution_name="grakn-core-all"
 distribution_zipfile_path="dist/grakn-core-all.zip"
 distribution_version=`cat VERSION`
