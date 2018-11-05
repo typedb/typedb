@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -63,14 +64,14 @@ public class OntologicalQueryIT {
 
     private static EmbeddedGraknSession genericSchemaSession;
 
-    private static void loadFromFile(String fileName, GraknSession session){
+    private static void loadFromFile(String fileName, GraknSession session) {
         try {
-            InputStream inputStream = OntologicalQueryIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/"+fileName);
+            InputStream inputStream = new FileInputStream("test-integration/test/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             GraknTx tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
-        } catch (Exception e){
+        } catch (Exception e) {
             System.err.println(e);
             throw new RuntimeException(e);
         }
@@ -79,23 +80,23 @@ public class OntologicalQueryIT {
     private static EmbeddedGraknTx tx;
 
     @BeforeClass
-    public static void loadContext(){
+    public static void loadContext() {
         genericSchemaSession = server.sessionWithNewKeyspace();
         loadFromFile("ruleApplicabilityTest.gql", genericSchemaSession);
     }
 
     @AfterClass
-    public static void closeSession(){
+    public static void closeSession() {
         genericSchemaSession.close();
     }
 
     @Before
-    public void setUp(){
+    public void setUp() {
         tx = genericSchemaSession.transaction(GraknTxType.WRITE);
     }
 
     @After
-    public void tearDown(){
+    public void tearDown() {
         tx.close();
     }
 
@@ -134,7 +135,7 @@ public class OntologicalQueryIT {
 //    }
 
     @Test
-    public void instancesOfSubsetOfTypesExcludingGivenType(){
+    public void instancesOfSubsetOfTypesExcludingGivenType() {
         String queryString = "match $x isa $type; $type sub entity; $type2 label noRoleEntity; $type2 != $type; get $x, $type;";
 
         List<ConceptMap> answers = tx.graql().infer(false).<GetQuery>parse(queryString).execute();
@@ -147,7 +148,7 @@ public class OntologicalQueryIT {
     //TODO need to correctly return THING and RELATIONSHIP mapping for %type
     @Ignore
     @Test
-    public void allInstancesAndTheirType(){
+    public void allInstancesAndTheirType() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; get;";
 
@@ -155,8 +156,9 @@ public class OntologicalQueryIT {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
-    @Test @Ignore //TODO: re-enable this test once we figure out why it randomly fails
-    public void allRolePlayerPairsAndTheirRelationType(){
+    @Test
+    @Ignore //TODO: re-enable this test once we figure out why it randomly fails
+    public void allRolePlayerPairsAndTheirRelationType() {
         QueryBuilder qb = tx.graql().infer(true);
         String relationString = "match $x isa relationship;get;";
         String rolePlayerPairString = "match ($u, $v) isa $type; get;";
@@ -179,10 +181,12 @@ public class OntologicalQueryIT {
         assertEquals(16, relations.size());
     }
 
-    /** HasAtom **/
+    /**
+     * HasAtom
+     **/
 
     @Test
-    public void allInstancesOfTypesThatCanHaveAGivenResourceType(){
+    public void allInstancesOfTypesThatCanHaveAGivenResourceType() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type has name; get;";
 
@@ -193,7 +197,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allInstancesOfTypesThatCanHaveAGivenResourceType_needInferenceToGetAllResults(){
+    public void allInstancesOfTypesThatCanHaveAGivenResourceType_needInferenceToGetAllResults() {
         QueryBuilder qb = tx.graql().infer(true);
 
         String queryString = "match $x isa $type; $type has description; get;";
@@ -204,10 +208,12 @@ public class OntologicalQueryIT {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
-    /** SubAtom **/
+    /**
+     * SubAtom
+     **/
 
     @Test
-    public void allInstancesOfTypesThatAreSubTypeOfGivenType(){
+    public void allInstancesOfTypesThatAreSubTypeOfGivenType() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type sub noRoleEntity; get;";
 
@@ -217,7 +223,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allInstancesOfTypesThatAreSubTypeOfGivenType_needInferenceToGetAllResults(){
+    public void allInstancesOfTypesThatAreSubTypeOfGivenType_needInferenceToGetAllResults() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type sub relationship; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -227,7 +233,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allTypesAGivenTypeSubs(){
+    public void allTypesAGivenTypeSubs() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match binary sub $x; get;";
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();
@@ -242,10 +248,12 @@ public class OntologicalQueryIT {
                 ));
     }
 
-    /** PlaysAtom **/
+    /**
+     * PlaysAtom
+     **/
 
     @Test
-    public void allInstancesOfTypesThatPlayGivenRole(){
+    public void allInstancesOfTypesThatPlayGivenRole() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type plays someRole; get;";
 
@@ -255,10 +263,12 @@ public class OntologicalQueryIT {
         assertCollectionsEqual(answers, qb.infer(false).<GetQuery>parse(queryString).execute());
     }
 
-    /** RelatesAtom **/
+    /**
+     * RelatesAtom
+     **/
 
     @Test
-    public void allInstancesOfRelationsThatRelateGivenRole(){
+    public void allInstancesOfRelationsThatRelateGivenRole() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa $type; $type relates someRole; get;";
 
@@ -271,7 +281,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allRolesGivenRelationRelates(){
+    public void allRolesGivenRelationRelates() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match reifying-relation relates $x; get;";
 
@@ -282,10 +292,12 @@ public class OntologicalQueryIT {
         );
     }
 
-    /** IsaAtom **/
+    /**
+     * IsaAtom
+     **/
 
     @Test
-    public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles(){
+    public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match (someRole: $x, subRole: $y) isa reifiable-relation;$x isa $type; get;";
 
@@ -295,7 +307,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles(){
+    public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match ($x, $y) isa reifiable-relation;$x isa $type; get;";
 
@@ -304,10 +316,12 @@ public class OntologicalQueryIT {
         assertEquals(qb.<GetQuery>parse("match $x isa reifiable-relation; get;").stream().count() * 5 * 2, answers.size());
     }
 
-    /** meta concepts **/
+    /**
+     * meta concepts
+     **/
 
     @Test
-    public void allInstancesOfMetaEntity(){
+    public void allInstancesOfMetaEntity() {
         QueryBuilder qb = tx.graql().infer(true);
         long noOfEntities = tx.admin().getMetaEntityType().instances().count();
         String queryString = "match $x isa entity;get;";
@@ -317,7 +331,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allInstancesOfMetaRelation(){
+    public void allInstancesOfMetaRelation() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa relationship;get;";
 
@@ -333,7 +347,7 @@ public class OntologicalQueryIT {
     }
 
     @Test
-    public void allInstancesOfMetaResource(){
+    public void allInstancesOfMetaResource() {
         QueryBuilder qb = tx.graql().infer(true);
         String queryString = "match $x isa attribute;get;";
 

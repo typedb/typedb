@@ -47,8 +47,7 @@ java_test(
                 "//dependencies/maven/artifacts/com/google/guava:guava",
                 "//test-integration/util:graql-test-util"
             ],
-    size = "medium",
-    resources = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
+    size = "large",
+    data = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
-

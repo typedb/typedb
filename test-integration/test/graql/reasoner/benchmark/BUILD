@@ -3,15 +3,16 @@ java_test(
     test_class = "ai.grakn.graql.internal.reasoner.BenchmarkBigIT",
     srcs = ["BenchmarkBigIT.java"],
     deps = [
-        "//server",
-        "//client-java",
-        "//grakn-graql",
-        "//test-integration/rule:grakn-server",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
-    size = "medium",
-    resources = [
+            "//server",
+            "//client-java",
+            "//grakn-graql",
+            "//test-integration/rule:grakn-server",
+            "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+            "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+            "//dependencies/maven/artifacts/com/google/guava:guava"
+        ],
+    size = "large",
+    data = [
            "//test-integration/test/graql/reasoner/resources:multi-join",
            "//test-integration/test/graql/reasoner/resources:linear-transivity"
            ],

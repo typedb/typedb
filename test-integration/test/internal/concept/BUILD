@@ -123,5 +123,5 @@ java_test(
          "//dependencies/maven/artifacts/com/google/guava:guava",
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+     size = "large"
 )

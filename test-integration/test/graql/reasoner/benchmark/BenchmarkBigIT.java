@@ -45,6 +45,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -76,7 +77,7 @@ public class BenchmarkBigIT {
 
     private void loadOntology(String fileName, GraknSession session){
         try {
-            InputStream inputStream = BenchmarkBigIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/benchmark/"+fileName);
+            InputStream inputStream = new FileInputStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             GraknTx tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
