@@ -19,6 +19,7 @@
 package ai.grakn.test.client;
 
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.client.Grakn;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -34,7 +35,6 @@ import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.test.rule.ServerContext;
-import ai.grakn.test.util.GraknTestUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
@@ -49,6 +49,7 @@ import org.junit.rules.RuleChain;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
@@ -151,7 +152,8 @@ public class RemoteConceptIT {
     @Before
     public void setUp() {
         // move session construction to setupClass
-        session = new Grakn(server.grpcUri()).session(GraknTestUtil.randomKeyspace());
+        Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
+        session = new Grakn(server.grpcUri()).session(randomKeyspace);
 
         tx = session.transaction(GraknTxType.WRITE);
 

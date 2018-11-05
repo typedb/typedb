@@ -20,8 +20,6 @@ package ai.grakn.distribution;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.core.server.GraknConfig;
-import ai.grakn.util.REST;
-import ai.grakn.util.SimpleURI;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 

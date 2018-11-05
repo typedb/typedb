@@ -34,7 +34,6 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.test.rule.EmbeddedCassandraContext;
 import ai.grakn.test.rule.ServerContext;
-import ai.grakn.test.util.GraknTestUtil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
@@ -51,6 +50,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
@@ -74,7 +74,7 @@ public class BenchmarkIT {
 
     @Before
     public void setupSession() {
-        this.keyspace = GraknTestUtil.randomKeyspace();
+        this.keyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
     }
 
     private void loadOntology(String fileName, Grakn.Session session){

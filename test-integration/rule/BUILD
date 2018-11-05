@@ -18,7 +18,6 @@ java_library(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/util:grakn-test-util",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/sparkjava:spark-core",

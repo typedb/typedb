@@ -101,10 +101,9 @@ genrule(
     srcs = glob(["conf/**", "services/**"]) + [
         ":server-binary_deploy.jar",
         "//:grakn",
-        "//dashboard:assets"
-        ],
+    ],
     outs = ["//server:dist/grakn-core-server.zip"],
-    cmd  = "$(location distribution.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location services/grakn/grakn-core-ascii.txt) $(location server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml) \"dashboard/static/\" $(locations //dashboard:assets)",
+    cmd  = "$(location distribution.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location services/grakn/grakn-core-ascii.txt) $(location server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml)",
     tools = ["distribution.sh"]
 )
 
@@ -136,19 +135,6 @@ java_test(
     srcs = ["test/config/GraknConfigTest.java"],
     deps = [":server", "//grakn-graql"],
     resources = ["test/resources/inmemory-graph.properties"],
-    size = "small"
-)
-
-java_test(
-    name = "requests-test",
-    test_class = "ai.grakn.core.server.controller.util.RequestsTest",
-    srcs = ["test/controller/util/RequestsTest.java"],
-     deps = [
-        ":server",
-        "//grakn-graql",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/sharegov:mjson"
-        ],
     size = "small"
 )
 

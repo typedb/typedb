@@ -44,31 +44,29 @@ public class Server implements AutoCloseable {
     private final GraknConfig config;
     private final ServerStatus serverStatus;
     private final LockProvider lockProvider;
-    private final ServerHTTP httpHandler;
+    private final ServerRPC rpcServer;
     private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     private final KeyspaceStore keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerHTTP httpHandler, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerRPC rpcServer, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
         // Lock provider
         this.lockProvider = lockProvider;
         this.keyspaceStore = keyspaceStore;
-        this.httpHandler = httpHandler;
+        this.rpcServer = rpcServer;
         this.engineId = engineId;
         this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
     }
 
     public void start() throws IOException {
         Stopwatch timer = Stopwatch.createStarted();
-        logStartMessage(
-                config.getProperty(GraknConfigKey.SERVER_HOST_NAME),
-                config.getProperty(GraknConfigKey.SERVER_PORT));
+        printGraknASCII();
         synchronized (this){
             lockAndInitializeSystemSchema();
-            httpHandler.startHTTP();
+            rpcServer.start();
         }
         attributeDeduplicatorDaemon.startDeduplicationDaemon();
         serverStatus.setReady(true);
@@ -79,7 +77,7 @@ public class Server implements AutoCloseable {
     public void close() {
         synchronized (this) {
             try {
-                httpHandler.stopHTTP();
+                rpcServer.close();
             } catch (InterruptedException e){
                 LOG.error(getFullStackTrace(e));
                 Thread.currentThread().interrupt();
@@ -108,20 +106,10 @@ public class Server implements AutoCloseable {
     }
 
 
-    private void logStartMessage(String host, int port) {
-        String address = "http://" + host + ":" + port;
+    private void printGraknASCII() {
         LOG.info("\n==================================================");
-        LOG.info("\n" + String.format(GraknConfig.GRAKN_ASCII, address));
+        LOG.info("\n" + GraknConfig.GRAKN_ASCII);
         LOG.info("\n==================================================");
     }
-
-    public ServerHTTP getHttpHandler() {
-        return httpHandler;
-    }
-
-    public LockProvider lockProvider(){
-        return lockProvider;
-    }
-
 }
 

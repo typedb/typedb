@@ -15,8 +15,6 @@ grakn_properties="$5"
 logback_xml="$6"
 storage_yaml="$7"
 storage_logback_xml="$8"
-dashboard_assets_dir_prefix="$9"
-dashboard_assets="${@:10}"
 # configurations
 base_dir="grakn-core-server"
 conf_dir="conf"
@@ -27,7 +25,6 @@ services_dir="services"
 services_dir_grakn="grakn"
 services_dir_storage="cassandra"
 services_dir_lib="lib"
-services_dir_assets="assets"
 echo
 
 # 2. prepare directories and files
@@ -39,7 +36,6 @@ mkdir -p "$base_dir/$data_dir/$data_dir_queue"
 mkdir -p "$base_dir/$services_dir/$services_dir_lib"
 mkdir -p "$base_dir/$services_dir/$services_dir_grakn"
 mkdir -p "$base_dir/$services_dir/$services_dir_storage"
-mkdir -p "$base_dir/$services_dir/$services_dir_assets"
 echo "--- the following directories have been created ---"
 find $base_dir
 echo
@@ -53,11 +49,6 @@ cp "$logo" "$base_dir/$services_dir/$services_dir_grakn"
 cp "$storage_yaml" "$base_dir/$services_dir/$services_dir_storage"
 cp "$storage_logback_xml" "$base_dir/$services_dir/$services_dir_storage"
 cp "$jar" "$base_dir/$services_dir/$services_dir_lib"
-for asset in $dashboard_assets; do
-    asset_target_dir=$(dirname "$base_dir/$services_dir/$services_dir_assets/${asset#$dashboard_assets_dir_prefix}")
-    echo "$asset" "$asset_target_dir"
-    mkdir -p "$asset_target_dir" && cp "${asset}" "$asset_target_dir"
-done
 echo
 
 # 4. the grakn-core-server distribution will contain the following files

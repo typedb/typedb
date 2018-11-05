@@ -1,7 +1,0 @@
-.idea/
-*.geany
-node_modules
-static/dashboard.js
-coverage
-.nyc_output
-.vscode

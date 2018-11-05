@@ -18,7 +18,6 @@
 
 package ai.grakn;
 
-import ai.grakn.core.server.Jacksonisable;
 import ai.grakn.exception.GraknTxOperationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,7 +39,7 @@ import java.util.regex.Pattern;
  * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
-public abstract class Keyspace implements Comparable<Keyspace>, Serializable, Jacksonisable {
+public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
     private static final int MAX_LENGTH = 48;
     private static final long serialVersionUID = 2726154016735929123L;
 
