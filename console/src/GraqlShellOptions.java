@@ -54,7 +54,6 @@ public class GraqlShellOptions {
     private static final String EXECUTE = "e";
     private static final String FILE = "f";
     private static final String URI = "r";
-    private static final String BATCH = "b";
     private static final String OUTPUT = "o";
     private static final String NO_INFER = "n";
     private static final String HELP = "h";
@@ -74,7 +73,6 @@ public class GraqlShellOptions {
         options.addOption(EXECUTE, "execute", true, "query to execute");
         options.addOption(FILE, "file", true, "graql file path to execute");
         options.addOption(URI, "uri", true, "uri to factory to engine");
-        options.addOption(BATCH, "batch", true, "graql file path to batch load");
         options.addOption(OUTPUT, "output", true, "output format for results");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
@@ -110,12 +108,6 @@ public class GraqlShellOptions {
         int descPadding = helpFormatter.getDescPadding();
         helpFormatter.printHelp(printWriter, width, "grakn console", null, options, leftPadding, descPadding, null);
         printWriter.flush();
-    }
-
-    @Nullable
-    public Path getBatchLoadPath() {
-        String path = cmd.getOptionValue(BATCH);
-        return path != null ? Paths.get(path) : null;
     }
 
     public boolean shouldInfer() {

@@ -9,7 +9,8 @@ java_test(
             "//test-integration/rule:grakn-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-            "//dependencies/maven/artifacts/com/google/guava:guava"
+            "//dependencies/maven/artifacts/com/google/guava:guava",
+            "//test-integration/util:grakn-test-util"
         ],
     size = "large",
     data = [
