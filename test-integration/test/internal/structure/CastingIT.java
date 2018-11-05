@@ -27,13 +27,11 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,11 +42,8 @@ import static org.junit.Assert.assertThat;
 
 public class CastingIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private GraknTx tx;
     private GraknSession session;

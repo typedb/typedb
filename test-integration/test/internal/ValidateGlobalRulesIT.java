@@ -32,13 +32,11 @@ import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RoleImpl;
 import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.stream.Collectors;
 
@@ -47,11 +45,8 @@ import static org.junit.Assert.assertTrue;
 
 public class ValidateGlobalRulesIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private GraknTx tx;
     private GraknSession session;

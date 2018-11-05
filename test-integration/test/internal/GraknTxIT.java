@@ -34,8 +34,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import ai.grakn.kb.internal.structure.Shard;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
@@ -46,7 +45,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -69,11 +67,8 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class GraknTxIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

@@ -79,6 +79,9 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
     public static final GraknConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
+    public static final GraknConfigKey<Integer> STORAGE_PORT = key("storage.port", INT);
+    public static final GraknConfigKey<Integer> HADOOP_STORAGE_PORT = key("janusgraphmr.ioformat.conf.storage.port", INT);
+    public static final GraknConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
     public static final GraknConfigKey<String> STORAGE_BATCH_LOADING = key("storage.batch-loading", STRING);
     public static final GraknConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
     public static final GraknConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);

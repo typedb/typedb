@@ -28,7 +28,6 @@ import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.TxFactoryBuilder;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import com.google.common.annotations.VisibleForTesting;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,12 +59,6 @@ public class EngineGraknTxFactory {
         this.engineConfig = engineConfig;
         this.lockProvider = lockProvider;
         this.keyspaceStore = keyspaceStore;
-    }
-
-    //Should only be used for testing
-    @VisibleForTesting
-    public synchronized void refreshConnections(){
-        TxFactoryBuilder.refresh();
     }
 
 

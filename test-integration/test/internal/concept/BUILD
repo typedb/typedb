@@ -4,8 +4,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.AttributeIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
      ],
@@ -18,8 +17,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.AttributeTypeIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -31,8 +29,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.ConceptIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
@@ -45,8 +42,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.EntityIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -58,8 +54,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.EntityTypeIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
@@ -72,8 +67,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.RelationshipIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
          "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -87,8 +81,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.RelationshipTypeIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -100,8 +93,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.RoleIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -113,8 +105,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.SchemaConceptIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
      ],
@@ -127,11 +118,10 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.SchemaMutationIT",
      deps = [
          "//grakn-graql",
-         "//test-integration/rule:cassandra-context",
-         "//test-integration/rule:server-context",
+         "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+     size = "large"
 )

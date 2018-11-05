@@ -32,13 +32,11 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,11 +58,8 @@ public class DegreeIT {
     public GraknSession session;
     private GraknTx tx;
 
-    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    private static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Before
     public void setUp() {

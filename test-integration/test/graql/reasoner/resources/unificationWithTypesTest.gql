@@ -1,0 +1,56 @@
+define
+
+#Roles
+
+role1 sub role;
+role2 sub role;
+role3 sub role;
+
+#Entities
+
+baseEntity sub entity
+    has resource;
+
+twoRoleEntity sub baseEntity
+    plays role1
+    plays role2;
+
+twoRoleEntity2 sub baseEntity
+    plays role1
+    plays role2;
+
+threeRoleEntity sub baseEntity
+    plays role1
+    plays role2
+    plays role3;
+
+threeRoleEntity2 sub baseEntity
+    plays role1
+    plays role2
+    plays role3;
+
+threeRoleEntity3 sub baseEntity
+    plays role1
+    plays role2
+    plays role3;
+
+subThreeRoleEntity sub threeRoleEntity;
+subSubThreeRoleEntity sub subThreeRoleEntity;
+
+#Relations
+
+binary sub relationship
+    relates role1
+    relates role2;
+
+ternary sub relationship
+    relates role1
+    relates role2
+    relates role3;
+
+resource sub attribute datatype string;
+
+insert
+
+$x isa twoRoleEntity has resource 'x1';
+$y isa twoRoleEntity has resource 'x2';

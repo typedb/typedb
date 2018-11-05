@@ -19,9 +19,6 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.core.server.GraknConfig;
 import ai.grakn.core.server.KeyspaceStore;
 import ai.grakn.core.server.Server;
@@ -52,10 +49,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
-import static ai.grakn.graql.Graql.var;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -131,11 +125,7 @@ public class ServerContext extends ExternalResource {
         try {
             noThrow(() -> {
                 LOG.info("stopping engine...");
-
-                // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-                clearGraphs();
                 server.close();
-
                 LOG.info("engine stopped.");
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
@@ -147,20 +137,6 @@ public class ServerContext extends ExternalResource {
         }
 
 
-    }
-
-    private void clearGraphs() {
-        // Drop all keyspaces
-        final Set<String> keyspaceNames = new HashSet<String>();
-        try (GraknTx systemGraph = engineGraknTxFactory.tx(KeyspaceStore.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
-            systemGraph.graql().match(var("x").isa("keyspace-name"))
-                    .forEach(x -> x.concepts().forEach(y -> {
-                        keyspaceNames.add(y.asAttribute().value().toString());
-                    }));
-        }
-
-        keyspaceNames.forEach(name -> keyspaceStore.deleteKeyspace(Keyspace.of(name)));
-        engineGraknTxFactory.refreshConnections();
     }
 
     private static void noThrow(RunnableWithExceptions fn, String errorMessage) {

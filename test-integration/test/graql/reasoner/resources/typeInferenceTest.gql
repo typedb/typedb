@@ -1,0 +1,125 @@
+define
+
+#Roles
+
+# Entity hierarchy
+#
+#                             role
+#         role1       role2           role3          role4
+#                       |
+#                    subRole2
+
+role1 sub role;
+role2 sub role;
+role3 sub role;
+role4 sub role;
+
+subRole2 sub role2;
+
+#Entities
+
+# Entity hierarchy
+#
+#                  entity
+#                     |
+#               noRoleEntity
+#              /            \                                   \
+#  singleRoleEntity(R3)   anotherSingleRoleEntity(R2, SR2)    yetAnotherSingleRoleEntity(R1)
+#           |                   |
+#   twoRoleEntity(+R4)     anotherTwoRoleEntity(+R3)
+#                               |
+#                         threeRoleEntity(+R4)
+
+noRoleEntity sub entity;
+
+#plays in twoRoleBinary
+yetAnotherSingleRoleEntity sub noRoleEntity
+    plays role1;
+
+#plays in twoRoleBinary, anotherTwoRoleBinary
+anotherSingleRoleEntity sub noRoleEntity
+    plays role2
+    plays subRole2;
+
+#plays in anotherTwoRoleBinary, threeRoleBinary
+singleRoleEntity sub noRoleEntity
+    plays role3;
+
+
+#plays in anotherTwoRoleBinary, threeRoleBinary
+twoRoleEntity sub singleRoleEntity
+    plays role4;
+
+#plays in twoRoleBinary, anotherTwoRoleBinary, threeRoleBinary
+anotherTwoRoleEntity sub anotherSingleRoleEntity
+    plays role3;
+#plays in twoRoleBinary, anotherTwoRoleBinary, threeRoleBinary
+threeRoleEntity sub anotherTwoRoleEntity
+    plays role4;
+
+#Relations
+
+twoRoleBinary sub relationship
+    relates role1
+    relates role2;
+
+anotherTwoRoleBinary sub relationship
+    relates role2
+    relates role3;
+
+threeRoleBinary sub relationship
+    relates subRole2
+    relates role3
+    relates role4;
+
+#3 instances
+rule-1 sub rule
+    when {
+        $x isa yetAnotherSingleRoleEntity;
+        $y isa anotherSingleRoleEntity;
+    }
+    then {
+        (role1: $x, role2: $y) isa twoRoleBinary;
+};
+
+#6 instances
+rule-2 sub rule
+    when {
+        $x isa anotherSingleRoleEntity;
+        $y isa anotherTwoRoleEntity;
+    }
+    then {
+        (role2: $x, role3: $y) isa anotherTwoRoleBinary;
+};
+
+#2 instances
+rule-3 sub rule
+    when {
+        $x isa anotherTwoRoleEntity;
+        $y isa threeRoleEntity;
+    }
+    then {
+        (role3: $x, role4: $y) isa threeRoleBinary;
+};
+
+#6 instances
+rule-4 sub rule
+    when {
+        $x isa anotherSingleRoleEntity;
+        $y isa anotherTwoRoleEntity;
+    }
+    then {
+        (subRole2: $x, role3: $y) isa threeRoleBinary;
+};
+
+insert
+$e isa noRoleEntity;
+
+$x isa singleRoleEntity;
+$y isa twoRoleEntity;
+
+$v isa anotherSingleRoleEntity;
+$z isa anotherTwoRoleEntity;
+$u isa threeRoleEntity;
+
+$q isa yetAnotherSingleRoleEntity;

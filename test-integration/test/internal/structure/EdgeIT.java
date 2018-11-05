@@ -24,52 +24,43 @@ import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.concept.EntityImpl;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class EdgeIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private EmbeddedGraknTx tx;
     private EmbeddedGraknSession session;
+    private EntityTypeImpl entityType;
+    private EntityImpl entity;
+    private EdgeElement edge;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(GraknTxType.WRITE);
+        // Create Edge
+        entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
+        entity = (EntityImpl) entityType.create();
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.id().getValue()).outE().next();
+        edge = new EdgeElement(tx, tinkerEdge);
     }
 
     @After
     public void tearDown(){
         tx.close();
         session.close();
-    }
-
-    private EntityTypeImpl entityType;
-    private EntityImpl entity;
-    private EdgeElement edge;
-
-    @Before
-    public void createEdge() {
-        entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
-        entity = (EntityImpl) entityType.create();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.id().getValue()).outE().next();
-        edge = new EdgeElement(tx, tinkerEdge);
     }
 
     @Test

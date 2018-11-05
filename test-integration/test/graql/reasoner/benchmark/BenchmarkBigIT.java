@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.reasoner;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
@@ -32,8 +32,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.test.util.GraknTestUtil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -41,11 +40,9 @@ import com.google.common.collect.Multimap;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -56,18 +53,10 @@ import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")
-public class BenchmarkIT {
-
-    private static final Logger LOG = LoggerFactory.getLogger(BenchmarkIT.class);
-
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-
-    public static final ServerContext server = new ServerContext();
+public class BenchmarkBigIT {
 
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private Keyspace keyspace;
 
@@ -78,12 +67,11 @@ public class BenchmarkIT {
 
     private void loadOntology(String fileName, Grakn.Session session){
         try {
-            InputStream inputStream = BenchmarkIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/"+fileName);
+            InputStream inputStream = new FileInputStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Grakn.Transaction tx = session.transaction(GraknTxType.WRITE);
             tx.graql().parser().parseQuery(s).execute();
             tx.commit();
-            tx.close();
         } catch (Exception e){
             System.err.println(e);
             throw new RuntimeException(e);
@@ -266,7 +254,7 @@ public class BenchmarkIT {
     public void testRandomSetLinearTransitivity()  {
         final int N = 2000;
         final int limit = 100;
-        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
         loadTransitivityData(N);
 
         try (Grakn.Session session = new Grakn(server.grpcUri()).session(keyspace)) {
@@ -312,7 +300,7 @@ public class BenchmarkIT {
     public void testMultiJoin()  {
         final int N = 100;
         final int limit = 100;
-        LOG.debug(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
         loadJoinData(N);
 
         try (Grakn.Session session = new Grakn(server.grpcUri()).session(keyspace)) {
@@ -354,7 +342,7 @@ public class BenchmarkIT {
     @Test
     public void testJoinRuleChain() {
         final int N = 20; // TODO: Increase this number again to > 100, once we fix issue #4545
-        LOG.debug(new Object() {}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {}.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
 
         try (Grakn.Session session = new Grakn(server.grpcUri()).session(keyspace)) {
@@ -391,7 +379,7 @@ public class BenchmarkIT {
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = query.execute();
         final long answerTime = System.currentTimeMillis() - startTime;
-        LOG.debug(msg + " results = " + results.size() + " answerTime: " + answerTime);
+        System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;
     }
 }

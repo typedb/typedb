@@ -1,19 +1,53 @@
 java_test(
-    name = "benchmark-it",
-    test_class = "ai.grakn.test.graql.reasoner.BenchmarkIT",
-    srcs = ["BenchmarkIT.java"],
+    name = "query-validity-it",
+    srcs = ["QueryValidityIT.java"],
+    test_class = "ai.grakn.graql.internal.reasoner.QueryValidityIT",
     deps = [
-        "//server",
-        "//client-java",
-        "//grakn-graql",
-        "//test-integration/rule:cassandra-context",
-        "//test-integration/rule:server-context",
-        "//test-integration/util:grakn-test-util",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
+                "//grakn-graql",
+                "//test-integration/rule:concurrent-grakn-server",
+                "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
+            ],
+    resources = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
     size = "medium",
-    resources = ["linearTransitivity.gql", "multiJoin.gql"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+java_test(
+    name = "resolution-plan-it",
+    srcs = ["ResolutionPlanIT.java"],
+    test_class = "ai.grakn.graql.internal.reasoner.ResolutionPlanIT",
+    deps = [
+                "//grakn-graql",
+                "//test-integration/rule:concurrent-grakn-server",
+                "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+                "//dependencies/maven/artifacts/com/google/guava:guava"
+            ],
+    resources = ["//test-integration/test/graql/reasoner/resources:resolution-plan"],
+    size = "medium",
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+java_test(
+    name = "query-it",
+    srcs = ["QueryIT.java"],
+    test_class = "ai.grakn.graql.internal.reasoner.QueryIT",
+    deps = [
+                "//grakn-graql",
+                "//test-integration/rule:concurrent-grakn-server",
+                "//test-integration/test/graql/reasoner/graph:geo-graph"
+            ],
+    size = "medium",
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+java_test(
+    name = "ontological-query-it",
+    srcs = ["OntologicalQueryIT.java"],
+    test_class = "ai.grakn.graql.internal.reasoner.OntologicalQueryIT",
+    deps = [
+                "//grakn-graql",
+                "//test-integration/rule:concurrent-grakn-server",
+                "//dependencies/maven/artifacts/com/google/guava:guava",
+                "//test-integration/util:graql-test-util"
+            ],
+    size = "large",
+    data = ["//test-integration/test/graql/reasoner/resources:rule-applicability"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

@@ -38,14 +38,12 @@ import ai.grakn.graql.internal.gremlin.fragment.OutIsaFragment;
 import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import ai.grakn.graql.internal.gremlin.fragment.OutSubFragment;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
@@ -57,11 +55,8 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings("CheckReturnValue")
 public class IsaExplicitIT {
 
-    private static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    private static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain.outerRule(cassandraContext).around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private EmbeddedGraknTx<?> tx;
 

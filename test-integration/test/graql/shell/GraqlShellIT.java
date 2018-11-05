@@ -20,12 +20,10 @@ package ai.grakn.test.graql.shell;
 
 import ai.grakn.core.console.GraqlConsole;
 import ai.grakn.core.console.GraqlShellOptions;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
-import ai.grakn.util.SimpleURI;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
@@ -42,7 +40,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -74,13 +71,8 @@ import static org.junit.Assert.fail;
 
 public class GraqlShellIT {
 
-    public static EmbeddedCassandraContext cassandraContext = new EmbeddedCassandraContext();
-    public static final ServerContext server = new ServerContext();
-
     @ClassRule
-    public static RuleChain chain = RuleChain
-            .outerRule(cassandraContext)
-            .around(server);
+    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     private static InputStream trueIn;
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
@@ -125,7 +117,7 @@ public class GraqlShellIT {
         assertThat(
                 result,
                 allOf(
-                        containsString("usage"), containsString("graql console"), containsString("-e"),
+                        containsString("usage"), containsString("grakn console"), containsString("-e"),
                         containsString("--execute <arg>"), containsString("query to execute")
                 )
         );
@@ -192,14 +184,14 @@ public class GraqlShellIT {
 
     @Test
     public void testFileOption() {
-        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
+        ShellResponse response = runShell("", "-f", "test-integration/test/graql/shell/file-(with-parentheses).gql");
         assertEquals("", response.err());
     }
 
     @Test
     public void testLoadCommand() throws Exception {
         assertShellMatches(
-                "load src/test/graql/shell test(weird name).gql",
+                "load test-integration/test/graql/shell/file-(with-parentheses).gql",
                 anything(),
                 "match movie sub entity; aggregate count;",
                 containsString("1")
@@ -209,7 +201,7 @@ public class GraqlShellIT {
     @Test
     public void testLoadCommandWithEscapes() throws Exception {
         assertShellMatches(
-                "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
+                "load test-integration/test/graql/shell/file-\\(with-parentheses\\).gql",
                 anything(),
                 "match movie sub entity; aggregate count;",
                 containsString("1")
@@ -590,17 +582,6 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenRunningBatchLoad_LoadCompletes() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-        runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch"),
-                "match $x isa movie; aggregate count;",
-                containsString("1")
-        );
-    }
-
-    @Test
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() {
         ShellResponse response = runShell(
                 "match $x sub concet; aggregate count;\n" +
@@ -746,9 +727,7 @@ public class GraqlShellIT {
         boolean uriSpecified = argList.contains("-r");
         if (!uriSpecified) {
             argList.add("-r");
-            boolean isBatchLoading = argList.contains("-b");
-            SimpleURI uri = isBatchLoading ? server.uri() : server.grpcUri();
-            argList.add(uri.toString());
+            argList.add(server.grpcUri().toString());
         }
 
         return argList.toArray(new String[argList.size()]);
