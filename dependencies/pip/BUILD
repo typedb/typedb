@@ -16,23 +16,4 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-def antlr_dependencies():
-
-    native.git_repository(
-        name = "rules_antlr",
-        remote = "https://github.com/marcohu/rules_antlr",
-        tag = "0.1.0" # sync version with //dependencies/maven/artifacts/org/antlr
-    )
-
-def grpc_dependencies():
-    native.git_repository(
-        name = "com_github_grpc_grpc",
-        remote = "https://github.com/graknlabs/grpc",
-        commit = "da829a5ac902ab99eef14e6aad1d8e0cd173ec64"
-    )
-
-    native.git_repository(
-        name = "org_pubref_rules_proto",
-        remote = "https://github.com/pubref/rules_proto",
-        commit = "f493ce70027f353cd6964339018163207393ba93",
-    )
+exports_files(["requirements.txt"])

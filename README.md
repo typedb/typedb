@@ -39,15 +39,28 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## System Requirements
 
-- Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
+### Running Grakn Core
 
-- If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
+To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need:
+1. Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
+2. If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
 
-You can build Grakn using Maven:
+You can visit the [Setup Guide](http://dev.grakn.ai/docs/get-started/setup-guide) to help your installation.
+
+### Compiling Grakn Core
+
+Grakn is built using [Bazel](https://bazel.build). To compile Grakn Core from source:
+1. Make sure you have Java 8 and Python 2 installed on your machine.
+2. [Install Bazel](https://docs.bazel.build/versions/master/install-os-x.html)
+3. Run:
 ```
-$ mvn package -DskipTests
+$ bazel build //...
 ```
-NOTE: you need to have [Yarn](https://yarnpkg.com) installed in order to compile Grakn from source.
+
+## Contributions
+
+Grakn Core is built using various state-of-the-art open-source Graph and Distributed Computing frameworks: [ANTLR](http://www.antlr.org), [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), [JanusGraph](http://janusgraph.org), and [RocksDB](https://rocksdb.org). Thank you!
+
 ## Licensing
 
 This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KGMS - get in touch with our team at enterprise@grakn.ai.

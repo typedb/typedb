@@ -46,8 +46,8 @@ npm_package(
         ]),
     deps = [
         ":client-nodejs-proto",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf"
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf"
     ]
 )
 
@@ -59,10 +59,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf"
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf"
     ]
 )
 
@@ -74,10 +74,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -89,10 +89,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -104,10 +104,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -119,10 +119,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -134,10 +134,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -149,10 +149,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -164,10 +164,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -179,10 +179,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -194,10 +194,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -209,10 +209,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -224,10 +224,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -239,10 +239,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 
@@ -254,10 +254,10 @@ nodejs_jest_test(
     ],
     deps = [
         ":client-nodejs",
-        "@node_grakn_deps//jest",
-        "@node_grakn_deps//fs-extra",
-        "@node_grakn_deps//grpc",
-        "@node_grakn_deps//google-protobuf",
+        "@nodejs_dependencies//jest",
+        "@nodejs_dependencies//fs-extra",
+        "@nodejs_dependencies//grpc",
+        "@nodejs_dependencies//google-protobuf",
     ]
 )
 

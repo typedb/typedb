@@ -29,37 +29,74 @@ tools_dependencies()
 
 
 #####################################
-# Load Compiler Dependencies: ANTLR #
+# Load Java dependencies from Maven #
 #####################################
 
-# Load compiler tool: ANTLR
+load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
+maven_dependencies()
+
+
+######################################
+# Load Python dependencies from PyPI #
+######################################
+
+# Load Python depdendencies for Bazel
+load("//dependencies/pip:dependencies.bzl", "python_dependencies",)
+python_dependencies()
+
+load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
+pip_repositories()
+
+# Load PyPI dependencies for Python programs
+pip_import(
+    name = "pypi_dependencies",
+    requirements = "//dependencies/pip:requirements.txt",
+)
+load("@pypi_dependencies//:requirements.bzl", "pip_install")
+pip_install()
+
+
+######################################
+# Load Node.js dependencies from NPM #
+######################################
+
+# Load Node.js depdendencies for Bazel
+load("//dependencies/npm:dependencies.bzl", "node_dependencies")
+node_dependencies()
+
+load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
+rules_nodejs_dependencies()
+
+# Load NPM dependencies for Node.js programs
+load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
+node_repositories(package_json = ["//client-nodejs:package.json"])
+yarn_install(
+    name = "nodejs_dependencies",
+    package_json = "//client-nodejs:package.json",
+    yarn_lock = "//client-nodejs:yarn.lock",
+)
+
+
+########################################
+# Load compiler dependencies for ANTLR #
+########################################
+
+# Load ANTLR dependencies for Bazel
 load("//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
 antlr_dependencies()
 
-# Load dependencies for ANTLR rules
+# Load ANTLR dependencies for ANTLR programs
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
 
-####################################
-# Load Compiler Dependencies: GRPC #
-####################################
+#######################################
+# Load compiler dependencies for GRPC #
+#######################################
 
 # Load GRPC dependencies
-load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies", "python_dependencies", "node_dependencies")
+load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies")
 grpc_dependencies()
-python_dependencies()
-node_dependencies()
-
-## Python PIP dependencies
-load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
-pip_repositories()
-pip_import(
-    name = "python_grakn_deps",
-    requirements = "//dependencies/pypi:requirements.txt",
-)
-load("@python_grakn_deps//:requirements.bzl", "pip_install")
-pip_install()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_bazel_grpc_deps()
@@ -75,27 +112,6 @@ python_grpc_compile()
 # Load GRPC Node.js dependencies
 load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
-
-load("@build_bazel_rules_nodejs//:package.bzl", "rules_nodejs_dependencies")
-rules_nodejs_dependencies()
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
-
-node_repositories(package_json = ["//client-nodejs:package.json"])
-
-yarn_install(
-    name = "node_grakn_deps",
-    package_json = "//client-nodejs:package.json",
-    yarn_lock = "//client-nodejs:yarn.lock",
-)
-
-
-########################################
-# Load Runtime Dependencies from Maven #
-########################################
-
-load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
-maven_dependencies()
-
 
 ########################################
 #     Load Deployment Dependencies     #
