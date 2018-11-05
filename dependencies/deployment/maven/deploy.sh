@@ -26,5 +26,31 @@ MAVEN_USERNAME="$MAVEN_USERNAME"
 COORDINATES="$COORDINATES"
 VERSION="{pom_version}"
 
+platform=$(uname)
+
+MD5_BINARY=""
+SHA1_BINARY=""
+
+if [[ "$platform" == "Darwin" ]]; then
+    MD5_BINARY="md5 -q"
+    SHA1_BINARY="shasum -a 1"
+elif [[ "$platform" == "Linux" ]]; then
+    MD5_BINARY="md5sum"
+    SHA1_BINARY="sha1sum"
+else
+    echo "Error: there are no md5 and sha1 binaries for your platform: $platform"
+    exit 1
+fi
+
+$MD5_BINARY pom.xml | awk '{print $1}' > pom.md5
+$MD5_BINARY lib.jar | awk '{print $1}' > lib.jar.md5
+curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5
+curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5
+
+$SHA1_BINARY pom.xml | awk '{print $1}' > pom.sha1
+$SHA1_BINARY lib.jar | awk '{print $1}' > lib.jar.sha1
+curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1
+curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1
+
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar
