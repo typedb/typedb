@@ -25,22 +25,30 @@
 </template>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
+
   export default {
     name: 'AttributesPanel',
-    props: ['localStore'],
+    props: ['tabId'],
     data() {
       return {
-        showAttributesPanel: undefined,
+        showAttributesPanel: true,
         attributes: null,
       };
     },
+    mounted() {
+      this.loadAttributes(this.selectedNodes);
+    },
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['selectedNodes', 'currentKeyspace']),
+      };
+    },
     computed: {
-      selectedNodes() {
-        return this.localStore.getSelectedNodes();
-      },
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
       msg() {
         if (!this.currentKeyspace) return 'Please select a keyspace';
         else if (!this.selectedNodes || this.selectedNodes.length > 1) return 'Please select a node';
@@ -51,8 +59,13 @@
     },
     watch: {
       selectedNodes(nodes) {
+        this.loadAttributes(nodes);
+      },
+    },
+    methods: {
+      loadAttributes(nodes) {
         // If no node selected: close panel and return
-        if (!nodes || nodes.length > 1) { this.showAttributesPanel = false; return; }
+        if (!nodes || nodes.length > 1) return;
 
         const attributes = nodes[0].attributes;
 
@@ -60,8 +73,6 @@
 
         this.showAttributesPanel = true;
       },
-    },
-    methods: {
       toggleContent() {
         this.showAttributesPanel = !this.showAttributesPanel;
       },

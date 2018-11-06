@@ -1,7 +1,0 @@
-{
-  "array-of-ints": [1, 2, 3],
-  "a-boolean": true,
-  "a-number": 42.1,
-  "a-string": "hi",
-  "a-null": null
-}

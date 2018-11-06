@@ -8,7 +8,7 @@
             <div class="content noselect" v-if="!currentKeyspace">
                 Please select a keyspace
             </div>
-            <div class="content noselect" v-else-if="!(nodes && nodes.length === 1)">
+            <div class="content noselect" v-else-if="!(selectedNodes && selectedNodes.length === 1)">
                 Please select a node
             </div>
             <div class="content" v-else>
@@ -30,22 +30,29 @@
 </template>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
+
   export default {
-    name: 'ConceptInfoPanel',
-    props: ['localStore'],
+    name: 'IdentityPanel',
+    props: ['tabId'],
     data() {
       return {
-        showConceptInfoContent: (this.nodes && this.nodes.length === 1),
+        showConceptInfoContent: true,
+      };
+    },
+    beforeCreate() {
+      const { mapGetters } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace', 'selectedNodes']),
       };
     },
     computed: {
-      nodes() {
-        return this.localStore.getSelectedNodes();
-      },
       conceptInfo() {
-        if (!this.nodes) return {};
-        const node = this.nodes[0];
-
+        if (!this.selectedNodes) return {};
+        const node = this.selectedNodes[0];
         if (node.baseType.includes('TYPE')) {
           return {
             id: node.id,
@@ -58,13 +65,10 @@
           baseType: (node.isInferred) ? `INFERRED_${node.baseType}` : node.baseType,
         };
       },
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
     },
     watch: {
-      nodes(nodes) {
-        this.showConceptInfoContent = nodes && nodes.length === 1;
+      selectedNodes(nodes) {
+        if (nodes && nodes.length === 1) this.showConceptInfoContent = true;
       },
     },
     methods: {

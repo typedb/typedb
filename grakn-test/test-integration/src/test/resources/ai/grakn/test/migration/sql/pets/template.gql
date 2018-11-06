@@ -1,8 +1,0 @@
-insert
-
-$x isa <SPECIES>
-    has name <NAME>
-    has owner <OWNER>
-    has sex <SEX>
-    if(<BIRTH> != null) do { has birth <BIRTH> }
-    if(<DEATH> != null) do { has death <DEATH> };

@@ -2,33 +2,24 @@
 <template>
     <div class="graqlEditor-container">
         <div class="left">
-            <vue-button icon="star" className="vue-button" v-on:clicked="toggleFavQueriesList"></vue-button>
-            <vue-button rightIcon="locate" className="vue-button" v-on:clicked="toggleTypesContainer"></vue-button>
+            <button @click="toggleFavQueriesList" class="btn fav-queries-container-btn"><vue-icon icon="star" className="vue-icon"></vue-icon></button>
+            <button @click="toggleTypesContainer" class="btn types-container-btn"><vue-icon icon="locate" className="vue-icon"></vue-icon></button>
         </div>
-
     <div class="center">
         <div class="center-wrapper" v-bind:style="[!currentKeyspace ? {opacity: 0.5} : {opacity: 1}]">
             <div class="column" v-bind:style="[(editorLinesNumber === 1) ? {'margin-bottom': '10px'} : {'margin-bottom': '0px'}]">
                 <div class="row">
-
-                    <div class="editor-tooltip"><vue-tooltip content="type a query" :isOpen="showEditorToolTip" :child="dummyGraqlIcon" className="editor-tooltip" v-on:close-tooltip="showEditorToolTip = false"></vue-tooltip></div>
-
+                    <tool-tip class="editor-tooltip" :isOpen="showEditorToolTip" msg="Type a query" arrowPosition="top" v-on:close-tooltip="showEditorToolTip = false"></tool-tip>
                     <textarea id="graqlEditor" ref="graqlEditor" rows="3"></textarea>
-
                     <div v-if="showEditorTab" class="editor-tab">
-                        <div @click="clearEditor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
-
-
-                        <vue-tooltip class="star-tooltip" content="save a query" className="star-tooltip" :isOpen="showStarToolTip" :child="dummyStarIcon" v-on:close-tooltip="showStarToolTip = false"></vue-tooltip>
-
-                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon"></vue-icon></div>
+                        <div @click="clearEditor" class="clear-editor"><vue-icon icon="cross" iconSize="10" className="tab-icon"></vue-icon></div>
+                        <div @click="toggleAddFavQuery"><vue-icon icon="star" iconSize="10" className="tab-icon add-fav-query-btn"></vue-icon></div>
+                        <tool-tip class="star-tooltip" :isOpen="showStarToolTip" msg="Save a query" arrowPosition="top" v-on:close-tooltip="showStarToolTip = false"></tool-tip>
                         <div v-if="editorLinesNumber > 1 && !editorMinimized" @click="minimizeEditor"><vue-icon icon="double-chevron-up" iconSize="12" className="tab-icon"></vue-icon></div>
                         <div v-else-if="editorLinesNumber > 1 && editorMinimized" @click="maximizeEditor"><vue-icon icon="double-chevron-down" iconSize="12" className="tab-icon"></vue-icon></div>
-
                     </div>
                 </div>
             </div>
-
             <add-fav-query
                     v-if="showAddFavQuery"
                     :currentQuery="currentQuery"
@@ -45,25 +36,24 @@
                     v-on:close-error="showError = false">
             </error-container>
             <fav-queries-list
+                    :tabId="tabId"
                     v-if="showFavQueriesList"
-                    :localStore="localStore"
-                    :currentKeyspace="currentKeyspace"
                     :favQueries="favQueries"
                     v-on:close-fav-queries-panel="toggleFavQueriesList"
                     v-on:refresh-queries="refreshFavQueries">
             </fav-queries-list>
             <types-container
+                    :tabId="tabId"
                     v-if="showTypesContainer"
-                    :localStore="localStore"
                     v-on:close-types-panel="showTypesContainer = false">
             </types-container>
         </div>
     </div>
 
 <div class="right">
-    <vue-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="loadSpinner" className="vue-button run-btn"></vue-button>
-    <vue-button v-on:clicked="clearGraph" icon="refresh" ref="clearButton" className="vue-button"></vue-button>
-    <!--<vue-button v-on:clicked="takeScreenshot" icon="camera" className="vue-button"></vue-button>-->
+    <loading-button v-on:clicked="runQuery" icon="play" ref="runQueryButton" :loading="showSpinner" className="btn run-btn"></loading-button>
+    <button @click="clearGraph" class="btn clear-graph-btn"><vue-icon icon="refresh" className="vue-icon"></vue-icon></button>
+    <!--<button @click="takeScreenshot" class="btn"><vue-icon icon="camera" className="vue-icon"></vue-icon></button>-->
 </div>
 
 </div>
@@ -72,16 +62,14 @@
 <style scoped>
 
     .editor-tooltip {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        position: absolute;
-        top: 22px;
+        top: 42px;
+        left: -30px;
     }
 
     .star-tooltip {
         position: absolute;
-        top: 10px;
+        top: 35px;
+        width: 90px;
     }
 
     .save-query {
@@ -161,236 +149,217 @@
         flex: 3;
         position: relative;
         align-items: center;
-
     }
 </style>
 
 <script>
+import { createNamespacedHelpers } from 'vuex';
 
-  import { Icon } from '@blueprintjs/core';
-
-  import React from 'react';
-
-  import $ from 'jquery';
-  import Spinner from '@/components/UIElements/Spinner.vue';
-  import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActions';
-  import ImageDataURI from 'image-data-uri';
-  import GraqlCodeMirror from './GraqlCodeMirror';
-  import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
-  import ManagementUtils from '../../VisualiserUtils';
-  import FavQueriesList from '../FavQueries/FavQueriesList';
-  import TypesContainer from '../TypesContainer';
-  import ErrorContainer from '../ErrorContainer';
-  import AddFavQuery from '../FavQueries/AddFavQuery';
+import $ from 'jquery';
+import Spinner from '@/components/UIElements/Spinner.vue';
+import { RUN_CURRENT_QUERY, CANVAS_RESET } from '@/components/shared/StoresActions';
+// import ImageDataURI from 'image-data-uri';
+import GraqlCodeMirror from './GraqlCodeMirror';
+import FavQueriesSettings from '../FavQueries/FavQueriesSettings';
+import { limitQuery } from '../../VisualiserUtils';
+import FavQueriesList from '../FavQueries/FavQueriesList';
+import TypesContainer from '../TypesContainer';
+import ErrorContainer from '../ErrorContainer';
+import AddFavQuery from '../FavQueries/AddFavQuery';
+import ToolTip from '../../../UIElements/ToolTip';
 
 
-  export default {
-    name: 'GraqlEditor',
-    props: ['localStore'],
-    components: {
-      AddFavQuery,
-      ErrorContainer,
-      FavQueriesList,
-      TypesContainer,
-      Spinner,
+export default {
+  name: 'GraqlEditor',
+  components: {
+    ToolTip,
+    AddFavQuery,
+    ErrorContainer,
+    FavQueriesList,
+    TypesContainer,
+    Spinner,
+  },
+  props: ['tabId'],
+  data() {
+    return {
+      codeMirror: {},
+      editorLinesNumber: 1,
+      showAddFavQuery: false,
+      showFavQueriesList: false,
+      showTypesContainer: false,
+      favQueries: [],
+      showError: false,
+      errorMsg: '',
+      initialEditorHeight: undefined,
+      editorMinimized: false,
+      showStarToolTip: false,
+      showAddFavQueryToolTip: false,
+      showEditorTab: false,
+      showEditorToolTip: false,
+    };
+  },
+  beforeCreate() {
+    const { mapGetters, mapMutations, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace', 'currentQuery', 'showSpinner']),
+    };
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapMutations(['setCurrentQuery']),
+      ...mapActions([RUN_CURRENT_QUERY, CANVAS_RESET]),
+    };
+  },
+  watch: {
+    currentQuery(query) {
+      if (query.length) { this.showEditorTab = true; this.showStarToolTip = false; this.showEditorToolTip = false; } else this.showEditorTab = false;
+
+      // We need this check because codeMirror reset the cursor position when calling getValue
+      if (query === this.codeMirror.getValue()) return;
+      this.codeMirror.setValue(query);
+      this.codeMirror.focus();
+      // Set the cursor at the end of existing content
+      this.codeMirror.setCursor(this.codeMirror.lineCount(), 0);
     },
-    data() {
-      return {
-        codeMirror: {},
-        editorLinesNumber: 1,
-        showAddFavQuery: false,
-        showFavQueriesList: false,
-        showTypesContainer: false,
-        favQueries: [],
-        showError: false,
-        errorMsg: '',
-        initialEditorHeight: undefined,
-        editorMinimized: false,
-        starIcon: null,
-        showStarToolTip: false,
-        showAddFavQueryToolTip: false,
-        showEditorTab: false,
-        dummyGraqlIcon: null,
-        dummyStarIcon: null,
-        showEditorToolTip: false,
-      };
+    currentKeyspace(keyspace) {
+      this.refreshFavQueries();
+      if (keyspace) {
+        this.codeMirror.setOption('readOnly', false);
+      }
+      this.history.clearHistory();
     },
-    created() {
-      this.renderIcons();
+    favQueries(val) {
+      if (!val.length) this.showFavQueriesList = false;
     },
-    computed: {
-      currentQuery() {
-        return this.localStore.getCurrentQuery();
-      },
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
-      loadSpinner() { return this.localStore.showSpinner(); },
+    showAddFavQuery() {
+      this.showStarToolTip = false;
     },
-    watch: {
-      currentQuery(query) {
-        if (query.length) { this.showEditorTab = true; this.showStarToolTip = false; this.showEditorToolTip = false; } else this.showEditorTab = false;
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.codeMirror = GraqlCodeMirror.getCodeMirror(this.$refs.graqlEditor);
+      this.codeMirror.setOption('readOnly', 'nocursor');
+      this.history = GraqlCodeMirror.createGraqlEditorHistory(this.codeMirror);
+      this.codeMirror.setOption('extraKeys', {
+        Enter: this.runQuery,
+        'Shift-Enter': 'newlineAndIndent',
+        'Shift-Up': this.history.undo,
+        'Shift-Down': this.history.redo,
+      });
 
+      this.initialEditorHeight = $('.CodeMirror').height();
 
-        // We need this check because codeMirror reset the cursor position when calling getValue
-        if (query === this.codeMirror.getValue()) return;
-        this.codeMirror.setValue(query);
-        this.codeMirror.focus();
-        // Set the cursor at the end of existing content
-        this.codeMirror.setCursor(this.codeMirror.lineCount(), 0);
-      },
-      currentKeyspace() {
-        this.refreshFavQueries();
-        if (this.currentKeyspace) {
-          this.codeMirror.setOption('readOnly', false);
-        }
-        this.history.clearHistory();
-      },
-      favQueries(val) {
-        if (!val.length) this.showFavQueriesList = false;
-      },
-    },
-    mounted() {
-      this.$nextTick(() => {
-        this.codeMirror = GraqlCodeMirror.getCodeMirror(this.$refs.graqlEditor);
-        this.codeMirror.setOption('readOnly', 'nocursor');
-        this.history = GraqlCodeMirror.createGraqlEditorHistory(this.codeMirror);
-        this.codeMirror.setOption('extraKeys', {
-          Enter: this.runQuery,
-          'Shift-Enter': 'newlineAndIndent',
-          'Shift-Up': this.history.undo,
-          'Shift-Down': this.history.redo,
+      this.codeMirror.on('change', (codeMirrorObj) => {
+        this.setCurrentQuery(codeMirrorObj.getValue());
+        this.editorLinesNumber = codeMirrorObj.lineCount();
+      });
+      this.codeMirror.on('focus', () => {
+        if (this.editorMinimized) this.maximizeEditor();
+      });
+    });
+  },
+  methods: {
+    runQuery(event) {
+      if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
+      else if (!this.currentQuery.length) {
+        if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to graql editor tooltip
+        this.showEditorToolTip = true;
+      } else {
+        this.showFavQueriesList = false;
+        this.showTypesContainer = false;
+
+        this.setCurrentQuery(limitQuery(this.currentQuery));
+
+        this.history.addToHistory(this.currentQuery);
+
+        this[RUN_CURRENT_QUERY]().catch((err) => {
+          if (!err.details) this.errorMsg = err.message;
+          else this.errorMsg = err.details;
+          this.showError = true;
         });
-
-        this.initialEditorHeight = $('.CodeMirror').height();
-
-        this.codeMirror.on('change', (codeMirrorObj) => {
-          this.localStore.setCurrentQuery(codeMirrorObj.getValue());
-          this.editorLinesNumber = codeMirrorObj.lineCount();
-        });
-
-        this.codeMirror.on('focus', () => {
-          if (this.editorMinimized) this.maximizeEditor();
+        this.showError = false;
+      }
+    },
+    clearEditor() {
+      this.codeMirror.setValue('');
+      if (this.editorMinimized) this.maximizeEditor();
+    },
+    clearGraph() {
+      if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
+      else {
+        this[CANVAS_RESET]();
+      }
+    },
+    toggleAddFavQuery() {
+      this.showAddFavQuery = !this.showAddFavQuery;
+    },
+    toggleFavQueriesList(event) {
+      if (!this.currentKeyspace) {
+        this.$emit('keyspace-not-selected');
+      } else if (!this.favQueries.length) {
+        if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to fav query tooltip
+        this.showEditorTab = true;
+        this.showStarToolTip = true;
+      } else {
+        if (this.showTypesContainer) this.showTypesContainer = false;
+        this.showFavQueriesList = !this.showFavQueriesList;
+      }
+    },
+    toggleTypesContainer() {
+      if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
+      else {
+        if (this.showFavQueriesList) this.showFavQueriesList = false;
+        this.showTypesContainer = !this.showTypesContainer;
+      }
+    },
+    refreshFavQueries() {
+      this.favQueries = this.objectToArray(
+        FavQueriesSettings.getFavQueries(this.currentKeyspace),
+      );
+    },
+    objectToArray(object) {
+      return Object.keys(object).map(key => ({
+        name: key,
+        value: object[key].replace('\n', ''),
+      }));
+    },
+    minimizeEditor() {
+      $('.CodeMirror').animate({
+        height: this.initialEditorHeight,
+      }, 300);
+      this.editorMinimized = true;
+    },
+    maximizeEditor() {
+      $('.CodeMirror').animate({
+        height: $('.CodeMirror-sizer').outerHeight(),
+      }, 300, () => {
+        $('.CodeMirror').css({
+          height: 'auto',
         });
       });
+      this.editorMinimized = false;
     },
-    methods: {
-      runQuery(event) {
-        if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
-        else if (!this.currentQuery.length) {
-          if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to graql editor tooltip
-          this.showEditorToolTip = true;
-        } else {
-          this.showFavQueriesList = false;
-          this.showTypesContainer = false;
+    // takeScreenshot() {
+    //   const canvas = document.getElementsByTagName('canvas')[0];
 
-          this.localStore.setCurrentQuery(
-            ManagementUtils.limitQuery(this.currentQuery),
-          );
+    //   // save canvas image as data url (png format by default)
+    //   const dataURL = canvas.toDataURL();
 
-          this.history.addToHistory(this.currentQuery);
+    //   const filePath = '/screenshots';
 
-          this.localStore.dispatch(RUN_CURRENT_QUERY)
-            .catch((err) => {
-              if (!err.details) this.errorMsg = err.message;
-              else this.errorMsg = err.details;
-              this.showError = true;
-            });
-          this.showError = false;
-        }
-      },
-      clearEditor() {
-        this.codeMirror.setValue('');
-        this.maximizeEditor();
-      },
-      clearGraph() {
-        if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
-        else {
-          this.localStore.dispatch(CANVAS_RESET);
-        }
-      },
-      toggleAddFavQuery() {
-        this.showAddFavQuery = !this.showAddFavQuery;
-      },
-      toggleFavQueriesList(event) {
-        if (!this.currentKeyspace) {
-          this.$emit('keyspace-not-selected');
-        } else if (!this.favQueries.length) {
-          if (event.stopPropagation) event.stopPropagation(); // to prevent event propogation to fav query tooltip
-          this.showEditorTab = true;
-          this.showStarToolTip = true;
-        } else {
-          if (this.showTypesContainer) this.showTypesContainer = false;
-          this.showFavQueriesList = !this.showFavQueriesList;
-        }
-      },
-      toggleTypesContainer() {
-        if (!this.currentKeyspace) this.$emit('keyspace-not-selected');
-        else {
-          if (this.showFavQueriesList) this.showFavQueriesList = false;
-          this.showTypesContainer = !this.showTypesContainer;
-        }
-      },
-      refreshFavQueries() {
-        this.favQueries = this.objectToArray(
-          FavQueriesSettings.getFavQueries(this.currentKeyspace),
-        );
-      },
-      objectToArray(object) {
-        return Object.keys(object).map(key => ({
-          name: key,
-          value: object[key].replace('\n', ''),
-        }));
-      },
-      takeScreenshot() {
-        const canvas = document.getElementsByTagName('canvas')[0];
-
-        // save canvas image as data url (png format by default)
-        const dataURL = canvas.toDataURL();
-
-        const filePath = '/Users/syedirtazaraza/Desktop/grakn/workbase/screenshots/screenshot';
-
-        ImageDataURI.outputFile(dataURL, filePath);
-      },
-      minimizeEditor() {
-        $('.CodeMirror').animate({
-          height: this.initialEditorHeight,
-        }, 300);
-        this.editorMinimized = true;
-      },
-      maximizeEditor() {
-        $('.CodeMirror').animate({
-          height: $('.CodeMirror-sizer').outerHeight(),
-        }, 300, () => {
-          $('.CodeMirror').css({
-            height: 'auto',
-          });
-        });
-        this.editorMinimized = false;
-      },
-      toggleFavQueryTooltip(val) {
-        this.showAddFavQueryToolTip = val;
-      },
-      renderIcons() {
-        this.starIcon = React.createElement(Icon, {
-          icon: 'star',
-          className: 'tab-icon',
-          iconSize: 11,
-        });
-
-        // To show graql editor tooltip
-        this.dummyGraqlIcon = React.createElement(Icon, {
-          icon: 'star',
-          className: 'dummy-graql-icon',
-        });
-
-        // To show fav query tooltip
-        this.dummyStarIcon = React.createElement(Icon, {
-          icon: 'star',
-          className: 'dummy-star-icon',
-        });
-      },
+    //   this.codeMirror.on('focus', () => {
+    //     if (this.editorMinimized) this.maximizeEditor();
+    //   });
+    //   this.editorMinimized = false;
+    // },
+    toggleFavQueryTooltip(val) {
+      this.showAddFavQueryToolTip = val;
     },
-  };
+  },
+};
 </script>
 

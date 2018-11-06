@@ -8,11 +8,11 @@
             <div class="panel-content">
                 <div class="panel-content-item">
                     <h1 class="panel-label">Host:</h1>
-                    <div class="panel-value"><vue-input :defaultValue="engineHost" v-on:input-changed="updateEngineHost" className="vue-input vue-input-small"></vue-input></div>
+                    <input class="input-small panel-value" v-model="engineHost">
                 </div>
                 <div class="panel-content-item">
                     <h1 class="panel-label">Port:</h1>
-                    <div class="panel-value"><vue-input :defaultValue="engineGrpcPort" v-on:input-changed="updateEngineGrpcPort" className="vue-input vue-input-small"></vue-input></div>
+                    <input class="input-small panel-value" type="number" v-model="engineGrpcPort">
                 </div>
             </div>
         </div>
@@ -25,7 +25,6 @@
   export default {
 
     name: 'ConnectionSettings',
-    props: ['localStore'],
     data() {
       return {
         showConnectionSettings: true,
@@ -39,15 +38,17 @@
         this.engineGrpcPort = Settings.getEngineGrpcPort();
       });
     },
+    watch: {
+      engineHost(newVal) {
+        Settings.setEngineHost(newVal);
+      },
+      engineGrpcPort(newVal) {
+        Settings.setEngineGrpcPort(newVal);
+      },
+    },
     methods: {
       toggleContent() {
         this.showConnectionSettings = !this.showConnectionSettings;
-      },
-      updateEngineHost(newVal) {
-        Settings.setEngineHost(newVal);
-      },
-      updateEngineGrpcPort(newVal) {
-        Settings.setEngineGrpcPort(newVal);
       },
     },
   };

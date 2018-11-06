@@ -1,7 +1,0 @@
-match
-    $mirna has mirID <mirId>;
-    $cancer has name <Cancer>;
-    $rel (disease: $cancer, affected: $mirna) isa interaction;
-insert
-    $article isa article, has title <Article>;
-    (fact: $rel, publication: $article) isa reference;

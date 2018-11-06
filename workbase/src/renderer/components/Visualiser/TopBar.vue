@@ -5,11 +5,11 @@
         </div>
 
         <div class="center">
-            <graql-editor :localStore="localStore" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
+            <graql-editor :tabId="tabId" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
         </div>
 
         <div class="right">
-            <keyspaces-handler :localStore="localStore" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
+            <keyspaces-handler :tabId="tabId" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
         </div>
     </div>
 </template>
@@ -25,7 +25,7 @@
         flex-direction: row;
         display: flex;
         justify-content: space-between;
-        z-index: 1;
+        z-index: 2;
     }
 
     .left {
@@ -77,8 +77,8 @@
     import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
 
     export default {
-      props: ['localStore'],
       components: { KeyspacesHandler, GraqlEditor },
+      props: ['tabId'],
       data() {
         return {
           showKeyspaceToolTip: false,

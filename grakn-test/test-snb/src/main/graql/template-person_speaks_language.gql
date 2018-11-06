@@ -1,4 +1,0 @@
-match
-    $person isa person, has person-id @long(<"Person.id">);
-insert
-    $person has speaks <"language">;

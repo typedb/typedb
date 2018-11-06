@@ -6,7 +6,7 @@
                     <div class="tab-panel" v-for="k in Object.keys(metaTypeInstances)" :key="k">
                         <div class="tab-list" v-show="currentTab===k">
                             <div v-for="i in metaTypeInstances[k]" :key="i">
-                                <vue-button v-on:clicked="typeSelected(i)" :text="i" className="vue-button"></vue-button>
+                                <button @click="typeSelected(i)" class="btn delete-fav-query-btn">{{i}}</button>
                             </div>
                         </div>
                     </div>
@@ -70,27 +70,38 @@
 </style>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
 
   export default {
     name: 'TypesContainer',
-    props: ['localStore', 'currentKeyspace'],
     data() {
       return {
         tabs: ['entities', 'attributes', 'relationships'],
         currentTab: 'entities',
       };
     },
-    computed: {
-      metaTypeInstances() {
-        return this.localStore.getMetaTypeInstances();
-      },
+    props: ['tabId'],
+    beforeCreate() {
+      const { mapGetters, mapMutations } = createNamespacedHelpers(`tab-${this.$options.parent.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['metaTypeInstances']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapMutations(['setCurrentQuery']),
+      };
     },
     methods: {
       toggleTab(tab) {
         this.currentTab = tab;
       },
       typeSelected(type) {
-        this.localStore.setCurrentQuery(`match $x isa ${type}; get;`);
+        this.setCurrentQuery(`match $x isa ${type}; get;`);
       },
     },
   };

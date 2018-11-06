@@ -42,7 +42,7 @@ To start Grakn, run `grakn server start`.
 To stop Grakn, run `grakn server stop`.    
 To remove all keyspaces from Grakn, run `grakn server clean`" %}
 
-Grakn Engine is configured by default to use port 4567, but this can be changed in the *grakn-engine.properties* file, found within the */conf* directory of the installation.
+Grakn Engine is configured by default to use port 4567, but this can be changed in the *grakn.properties* file, found within the */conf* directory of the installation.
 
 ## Test the Graql Shell
 

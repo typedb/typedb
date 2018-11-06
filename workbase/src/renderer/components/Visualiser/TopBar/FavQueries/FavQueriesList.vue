@@ -11,10 +11,10 @@
                         </div>
                         <div class="fav-query-right">
                             <div class="fav-query-btns">
-                                <vue-button v-if="isEditable === index" v-on:clicked="addFavQuery(index, query.name)" text="save" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="typeFavQuery(query.value)" icon="fast-forward" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="editQuery(index)" icon="edit" className="vue-button"></vue-button>
-                                <vue-button v-if="isEditable !== index" v-on:clicked="removeFavQuery(index, query.name)" icon="trash" className="vue-button"></vue-button>
+                                <button v-if="isEditable === index" @click="addFavQuery(index, query.name)" class="btn save-edited-fav-query"><vue-icon icon="floppy-disk" className="vue-icon"></vue-icon></button>
+                                <button v-if="isEditable !== index" @click="typeFavQuery(query.value)" class="btn run-fav-query-btn"><vue-icon icon="fast-forward" className="vue-icon"></vue-icon></button>
+                                <button v-if="isEditable !== index" @click="editQuery(index)" class="btn edit-fav-query-btn"><vue-icon icon="edit" className="vue-icon"></vue-icon></button>
+                                <button v-if="isEditable !== index" @click="removeFavQuery(index, query.name)" class="btn delete-fav-query-btn"><vue-icon icon="trash" className="vue-icon"></vue-icon></button>
                             </div>
                         </div>
                     </div>
@@ -129,17 +129,34 @@
 </style>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
+
   import FavQueriesSettings from './FavQueriesSettings';
   import GraqlCodeMirror from '../GraqlEditor/GraqlCodeMirror';
 
 
   export default {
     name: 'FavQueriesList',
-    props: ['localStore', 'currentKeyspace', 'favQueries'],
+    props: ['tabId', 'favQueries'],
     data() {
       return {
         codeMirror: [],
         isEditable: null,
+      };
+    },
+    beforeCreate() {
+      const { mapGetters, mapMutations } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapMutations(['setCurrentQuery']),
       };
     },
     mounted() {
@@ -156,7 +173,7 @@
     },
     methods: {
       typeFavQuery(query) {
-        this.localStore.setCurrentQuery(query);
+        this.setCurrentQuery(query);
       },
       removeFavQuery(index, queryName) {
         FavQueriesSettings.removeFavQuery(queryName, this.currentKeyspace);

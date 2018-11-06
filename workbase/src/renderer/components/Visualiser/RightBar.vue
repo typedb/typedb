@@ -7,15 +7,15 @@
                 </div>
 
                 <div class="nav" v-if="showRightBar">
-                    <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab-selected' : 'nav-tab'" class="nav-tab"><vue-icon icon="info-sign" className="right-bar-tab-icon"></vue-icon></div>
-                    <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab-selected' : 'nav-tab'" class="nav-tab"><vue-icon icon="cog" className="right-bar-tab-icon"></vue-icon></div>
+                    <div @click="toggleConceptInfoTab" :class="(showConceptInfoTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="concept-info-tab"><vue-icon icon="info-sign" className="right-bar-tab-icon"></vue-icon></div>
+                    <div @click="toggleSettingsTab" :class="(showSettingsTab) ? 'nav-tab nav-tab-selected' : 'nav-tab'" class="settings-tab"><vue-icon icon="cog" className="right-bar-tab-icon"></vue-icon></div>
                     <div class="nav-bar-space"></div>
                 </div>
 
                 <div class="content" v-if="showRightBar">
                     <keep-alive>
-                        <concept-info-tab v-if="showConceptInfoTab" :localStore="localStore"></concept-info-tab>
-                        <settings-tab v-if="showSettingsTab" :localStore="localStore"></settings-tab>
+                        <concept-info-tab :tabId="tabId" v-if="showConceptInfoTab"></concept-info-tab>
+                        <settings-tab :tabId="tabId" v-if="showSettingsTab"></settings-tab>
                     </keep-alive>
                 </div>
             </div>
@@ -73,6 +73,7 @@
         position: absolute;
         right: 0px;
         top: 0px;
+        z-index: 1;
     }
 
     .nav {
@@ -114,7 +115,7 @@
 
   export default {
     components: { VueDraggableResizable, ConceptInfoTab, SettingsTab },
-    props: ['localStore'],
+    props: ['tabId'],
     data() {
       return {
         showConceptInfoTab: true,

@@ -12,7 +12,7 @@
             <div class="panel-content" v-else v-show="attributesLoaded">
 
                 <div class="panel-content-item">
-                    <div v-bind:class="(showTypeList) ? 'vue-button type-btn type-list-shown' : 'vue-button type-btn'" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><vue-icon class="type-btn-caret" icon="caret-down"></vue-icon></div>
+                    <div v-bind:class="(showTypeList) ? 'btn type-btn type-list-shown' : 'btn type-btn'" @click="toggleTypeList"><div class="type-btn-text" >{{currentType}}</div><div class="type-btn-caret"><vue-icon className="vue-icon" icon="caret-down"></vue-icon></div></div>
                 </div>
 
                 <div class="panel-list-item">
@@ -26,7 +26,7 @@
                 <div class="panel-content-item" v-bind:class="(showTypeList) ? 'disable-content' : ''">
                     <h1 class="sub-panel-header">
                         <div class="sub-title">Label</div>
-                        <div class="vue-button right-bar-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                        <div class="btn reset-setting-btn" @click="toggleAttributeToLabel(undefined)"><vue-icon icon="eraser" class="vue-icon" iconSize="12"></vue-icon></div>
                     </h1>
                     <p v-if="!nodeAttributes.length">There are no attribute types available for this type of node.</p>
                     <ul v-else class="attribute-list">
@@ -39,7 +39,7 @@
                 <div v-bind:class="(showTypeList) ? 'colour-item disable-content' : 'colour-item'">
                     <h1 class="sub-panel-header">
                         <div class="sub-title">Colour</div>
-                        <div class="vue-button right-bar-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" iconSize="12"></vue-icon></div>
+                        <div class="btn reset-setting-btn" @click="setTypeColour(undefined)"><vue-icon icon="eraser" className="vue-icon" iconSize="12"></vue-icon></div>
                     </h1>
                     <div class="row">
                         <chrome v-model="colour" :disableAlpha="true" :disableFields="true"></chrome>
@@ -53,15 +53,16 @@
 
 <script>
   import { Chrome } from 'vue-color';
+  import { createNamespacedHelpers } from 'vuex';
 
-  import { TOGGLE_COLOUR, TOGGLE_LABEL } from '@/components/shared/StoresActions';
+  import { UPDATE_NODES_COLOUR, UPDATE_NODES_LABEL, OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
   import DisplaySettings from './DisplaySettings';
 
 
   export default {
-    name: 'ConceptDisplayPanel',
+    name: 'DisplaySettingsPanel',
     components: { Chrome },
-    props: ['localStore'],
+    props: ['tabId'],
     data() {
       return {
         showConceptDisplayContent: true,
@@ -76,26 +77,34 @@
         },
       };
     },
+    beforeCreate() {
+      const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace', 'metaTypeInstances', 'selectedNode']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapActions([OPEN_GRAKN_TX, UPDATE_NODES_LABEL, UPDATE_NODES_COLOUR]),
+      };
+    },
     created() {
       this.loadMetaTypes();
       this.loadAttributeTypes();
       this.loadColour();
     },
     computed: {
-      metaTypeInstances() {
-        return this.localStore.getMetaTypeInstances();
-      },
       node() {
-        let node = this.localStore.getSelectedNode();
-
-        if (node && node.baseType.includes('Type')) {
-          node = null;
+        if (this.selectedNode && this.selectedNode.baseType.includes('Type')) {
+          return null;
         }
-        return node;
+        return this.selectedNode;
       },
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
+
     },
     watch: {
       showConceptDisplayContent(open) {
@@ -124,7 +133,7 @@
     methods: {
       async loadAttributeTypes() {
         if (!this.currentType) return;
-        const graknTx = await this.localStore.openGraknTx();
+        const graknTx = await this[OPEN_GRAKN_TX]();
 
         const type = await graknTx.getSchemaConcept(this.currentType);
 
@@ -148,7 +157,7 @@
       toggleAttributeToLabel(attribute) {
         // Persist changes into localstorage for current type
         DisplaySettings.toggleLabelByType({ type: this.currentType, attribute });
-        this.localStore.dispatch(TOGGLE_LABEL, this.currentType);
+        this[UPDATE_NODES_LABEL](this.currentType);
         this.currentTypeSavedAttributes = DisplaySettings.getTypeLabels(this.currentType);
       },
       toggleContent() {
@@ -165,7 +174,7 @@
         if (DisplaySettings.getTypeColours(this.currentType) !== col) {
           if (!col) this.colour.hex = 'default';
           DisplaySettings.toggleColourByType({ type: this.currentType, colourString: col });
-          this.localStore.dispatch(TOGGLE_COLOUR, this.currentType);
+          this[UPDATE_NODES_COLOUR](this.currentType);
         }
       },
     },
@@ -217,8 +226,6 @@
         cursor: pointer;
         align-items: center;
         display: flex;
-        min-height: 22px;
-        margin: 0px !important;
     }
 
     .type-list {
