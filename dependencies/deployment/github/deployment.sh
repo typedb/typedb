@@ -21,12 +21,12 @@
 set -ex # exit immediately when there's a failure. run the script in verbose mode (ie., print all the commands to stdout)
 
 if [[ $# -ne 2 ]]; then
-    echo "Error: needs two arguments, <github-username> <github-token>"
+    echo "Error - needs two arguments: <github-username> <github-token>"
     exit 1
 fi
 
-if ! [[ "$(uname)" == "Darwin" ]] && ! [[ "$(uname)" == "Linux" ]]; then
-    echo "Error: your platform ('$(uname)') isn't supported. Try Linux or OS X instead."
+if [[ "$(uname)" != "Darwin" ]] && [[ "$(uname)" != "Linux" ]]; then
+    echo "Error - your platform ('$(uname)') isn't supported. Try Linux or OS X instead."
     exit 1
 fi
 
