@@ -78,7 +78,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all", # PREVIOUSLY UNDECLARED
 #        "//dependencies/maven/artifacts/org/apache/httpcomponents:httpcore", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core", # PREVIOUSLY UNDECLARED
-#        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
+        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
 #        "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
