@@ -20,11 +20,27 @@
 
 
 ARTIFACT="$ARTIFACT"
-MAVEN_PASSWORD="$MAVEN_PASSWORD"
-MAVEN_URL="$MAVEN_URL"
-MAVEN_USERNAME="$MAVEN_USERNAME"
 COORDINATES="$COORDINATES"
 VERSION="{pom_version}"
+
+if [[ $# -ne 3 ]]; then
+    echo "Should pass <snapshot|release> <maven-username> <maven-password> as arguments"
+    exit 1
+fi
+
+
+MAVEN_REPO_TYPE="$1"
+MAVEN_USERNAME="$2"
+MAVEN_PASSWORD="$3"
+
+
+if [[ "$MAVEN_REPO_TYPE" != "snapshot" ]] && [[ "$MAVEN_REPO_TYPE" != "release" ]]; then
+    echo "Error: first argument should be 'snapshot' or 'release', not '$MAVEN_REPO_TYPE'"
+    exit 1
+fi
+
+
+MAVEN_URL=$(grep "maven.repository-url.$MAVEN_REPO_TYPE" deployment.properties | cut -d '=' -f 2)
 
 platform=$(uname)
 

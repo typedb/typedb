@@ -81,17 +81,6 @@ def _generate_deployment_script(ctx, maven_coordinates):
         maven_coordinates.artifact_id
     ])
 
-    # Arguments are passed to `bazel run` via `--define=VAR=VALUE`
-    # `_warn` instead of `fail` because otherwise `bazel build //...` will fail
-    if not ctx.var.get("MAVEN_USERNAME"):
-        _warn("should specify username via --define=MAVEN_USERNAME= command line argument")
-
-    if not ctx.var.get("MAVEN_PASSWORD"):
-        _warn("should specify password via --define=MAVEN_PASSWORD= command line argument")
-
-    if not ctx.var.get("MAVEN_URL"):
-        _warn("should specify Maven url via --define=MAVEN_URL= command line argument")
-
     # Step 1: fill in {pom_version} from version_file
     ctx.actions.run_shell(
         inputs = [ctx.file._deployment_script_template, ctx.file.version_file],
@@ -106,9 +95,6 @@ def _generate_deployment_script(ctx, maven_coordinates):
         output = ctx.outputs.deployment_script,
         substitutions = {
             "$ARTIFACT": maven_coordinates.artifact_id,
-            "$MAVEN_PASSWORD": ctx.var.get("MAVEN_PASSWORD", "$MAVEN_PASSWORD"),
-            "$MAVEN_URL": ctx.var.get("MAVEN_URL", "$MAVEN_URL"),
-            "$MAVEN_USERNAME": ctx.var.get("MAVEN_USERNAME", "$MAVEN_USERNAME"),
             "$COORDINATES": coordinates,
         },
         is_executable = True
@@ -136,11 +122,12 @@ def _deploy_maven_jar_impl(ctx):
 
     return DefaultInfo(executable = ctx.outputs.deployment_script,
         runfiles = ctx.runfiles(
-            files=[jar, ctx.outputs.pom_file],
+            files=[jar, ctx.outputs.pom_file, ctx.file._deployment_properties],
             # generate symlinks with predictable names
             symlinks={
                 "lib.jar": jar,
-                "pom.xml": ctx.outputs.pom_file
+                "pom.xml": ctx.outputs.pom_file,
+                "deployment.properties": ctx.file._deployment_properties
             }))
 
 deploy_maven_jar = rule(
@@ -161,6 +148,10 @@ deploy_maven_jar = rule(
             allow_single_file = True,
             default = "//dependencies/deployment/maven:deploy.sh",
         ),
+        "_deployment_properties": attr.label(
+            allow_single_file = True,
+            default = "//:deployment.properties"
+        )
     },
     executable = True,
     outputs = {
