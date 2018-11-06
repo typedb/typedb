@@ -20,6 +20,5 @@
 def dependencies_for_github_deployment():
     native.http_file(
         name = "ghr",
-        executable = False,
         urls = ["https://github.com/tcnksm/ghr/releases/download/v0.10.2/ghr_v0.10.2_darwin_386.zip"]
     )
