@@ -1,4 +1,0 @@
-insert $x isa <type>
-    has place-id @long(<id>)
-    has name <name>
-    has url <url>;

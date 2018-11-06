@@ -86,7 +86,7 @@ function startRenderer () {
 function startMain () {
   return new Promise((resolve, reject) => {
     // Extend main webpack config to also run index.dev.js which installs devtools in Electron.
-    // mainConfig.entry.main = [path.join(__dirname, '../src/main/index.dev.js')].concat(mainConfig.entry.main)
+    mainConfig.entry.main = [path.join(__dirname, '../src/main/index.dev.js')].concat(mainConfig.entry.main)
 
     const compiler = webpack(mainConfig)
     //Trigger 'compiling' action in hot reload middleware before starting compilation after webpack watch

@@ -1,4 +1,0 @@
-match
-  $comment isa comment, has message-id @long(<"Comment.id">);
-  $place isa place, has place-id @long(<"Place.id">);
-insert (region: $place, located: $comment) isa is-located-in;

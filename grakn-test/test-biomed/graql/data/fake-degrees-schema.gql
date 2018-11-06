@@ -1,6 +1,0 @@
-# This is used to define the fake degrees which we later persist
-
-define
-degree sub attribute;
-interaction has degree;
-gene-target has degree;

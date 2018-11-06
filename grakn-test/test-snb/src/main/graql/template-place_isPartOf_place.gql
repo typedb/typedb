@@ -1,5 +1,0 @@
-match
-    $place isa place, has place-id @long(<"Place.id">);
-    $place1 isa place, has place-id @long(<"Place1.id">);
-insert
-    (part: $place1, whole: $place) isa is-part-of;

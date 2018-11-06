@@ -7,13 +7,29 @@
 </template>
 <script>
   import { RUN_CURRENT_QUERY, EXPLAIN_CONCEPT, DELETE_SELECTED_NODES } from '@/components/shared/StoresActions';
-  import { mapGetters } from 'vuex';
+  import { createNamespacedHelpers } from 'vuex';
 
 
   export default {
     name: 'ContextMenu',
+    props: ['tabId'],
+    beforeCreate() {
+      const { mapGetters, mapMutations, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['currentKeyspace', 'contextMenu', 'selectedNodes']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapMutations(['setCurrentQuery', 'setContextMenu']),
+        ...mapActions([RUN_CURRENT_QUERY, DELETE_SELECTED_NODES, EXPLAIN_CONCEPT]),
+      };
+    },
     computed: {
-      ...mapGetters(['selectedNodes', 'currentKeyspace', 'contextMenu']),
       enableDelete() {
         return (this.selectedNodes);
       },
@@ -32,17 +48,17 @@
     },
     methods: {
       deleteNode() {
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.dispatch(DELETE_SELECTED_NODES).catch((err) => { this.$notifyError(err, 'Delete nodes'); });
+        this.setContextMenu({ show: false, x: null, y: null });
+        this[DELETE_SELECTED_NODES]().catch((err) => { this.$notifyError(err, 'Delete nodes'); });
       },
       explainNode() {
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.dispatch(EXPLAIN_CONCEPT).catch((err) => { this.$notifyError(err, 'Explain Concept'); });
+        this.setContextMenu({ show: false, x: null, y: null });
+        this[EXPLAIN_CONCEPT]().catch((err) => { this.$notifyError(err, 'Explain Concept'); });
       },
       computeShortestPath() {
-        this.$store.commit('contextMenu', { show: false, x: null, y: null });
-        this.$store.commit('currentQuery', `compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
-        this.$store.dispatch(RUN_CURRENT_QUERY).catch((err) => { this.$notifyError(err, 'Run Query'); });
+        this.setContextMenu({ show: false, x: null, y: null });
+        this.setCurrentQuery(`compute path from "${this.selectedNodes[0].id}", to "${this.selectedNodes[1].id}";`);
+        this[RUN_CURRENT_QUERY]().catch((err) => { this.$notifyError(err, 'Run Query'); });
       },
     },
   };

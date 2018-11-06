@@ -1,7 +1,0 @@
-match
-    $mirna has mirID <miRNA>;
-    $gene has gene-symbol <Target-Gene>;
-    $rel (targeted-gene: $gene, targeting-mirna: $mirna) isa gene-target;
-insert
-    $article isa article, has pmid <PMID>;
-    (fact: $rel, publication: $article) isa reference;

@@ -1,6 +1,0 @@
-#This inserts the fake degrees
-
-match
-  $y isa gene-target;
-insert
-  $y has degree 5;

@@ -1,2 +1,0 @@
-# this is useful to enable mockito to mock final classes (https://github.com/mockito/mockito/wiki/What%27s-new-in-Mockito-2#unmockable)
-mock-maker-inline

@@ -1,5 +1,0 @@
-match
-    $tag isa tag, has tag-id @long(<"Tag.id">);
-    $tag-class isa tag-class, has tag-class-id @long(<"TagClass.id">);
-insert
-    (instance: $tag, class: $tag-class) isa has-type;
