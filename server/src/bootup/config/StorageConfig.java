@@ -40,6 +40,7 @@ import java.util.Map;
  * @author Kasper Piskorski
  */
 public class StorageConfig extends ProcessConfig<Object> {
+    //TODO reimplement without importing many packages from com.fasterxml.jackson
 
     private static final String EMPTY_VALUE = "";
     private static final String CONFIG_PARAM_PREFIX = "storage.internal.";

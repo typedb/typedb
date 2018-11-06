@@ -17,7 +17,6 @@
  */
 package ai.grakn.core.server;
 
-import ai.grakn.GraknConfigKey;
 import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.util.EngineID;
@@ -79,7 +78,7 @@ public class Server implements AutoCloseable {
             try {
                 rpcServer.close();
             } catch (InterruptedException e){
-                LOG.error(getFullStackTrace(e));
+                LOG.error(getFullStackTrace(e)); //TODO: remove commons-lang dependency
                 Thread.currentThread().interrupt();
             }
             attributeDeduplicatorDaemon.stopDeduplicationDaemon();

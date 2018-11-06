@@ -24,7 +24,8 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core"],
+#        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core"
+    ],
     resources = ["//server:grakn-properties"],
     visibility = ["//test-integration:__subpackages__"]
 )
@@ -41,7 +42,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
+#        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
         "//dependencies/maven/artifacts/org/cassandraunit:cassandra-unit",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",],
