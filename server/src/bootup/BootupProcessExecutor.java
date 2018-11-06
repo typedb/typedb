@@ -114,6 +114,10 @@ public class BootupProcessExecutor {
                 }
                 BootupProcessResult command =
                         executeAndWait(checkPIDRunningCommand(processPid), null);
+
+                if (command.exitCode() != 0) {
+                    System.out.println(command.stderr());
+                }
                 return command.exitCode() == 0;
             } catch (NumberFormatException | IOException e) {
                 return false;
