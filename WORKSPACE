@@ -112,3 +112,10 @@ python_grpc_compile()
 # Load GRPC Node.js dependencies
 load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
+
+########################################
+#     Load Deployment Dependencies     #
+########################################
+
+load("//dependencies/deployment/github:dependencies.bzl", "dependencies_for_github_deployment")
+dependencies_for_github_deployment()
