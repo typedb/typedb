@@ -18,37 +18,53 @@
 
 #!/usr/bin/env bash
 
-if [ $# -ne 2 ]; then
-    echo "Usage: bazel run //:deploy-github -- <github-username> <github-token>"
+set -ex # exit immediately when there's a failure. run the script in verbose mode (ie., print all the commands to stdout)
+
+if [[ $# -ne 2 ]]; then
+    echo "Error: needs two arguments, <github-username> <github-token>"
     exit 1
 fi
 
-set -ex # exit immediately when there's a failure. run the script in verbose mode (ie., print all the commands to stdout)
+if ! [[ "$(uname)" == "Darwin" ]] && ! [[ "$(uname)" == "Linux" ]]; then
+    echo "Error: your platform ('$(uname)') isn't supported. Try Linux or OS X instead."
+    exit 1
+fi
 
 # command-line arguments
 github_user="$1"
 github_token="$2"
 
 # configurations
-github_repository="`grep github.repository deployment.properties | cut -d '=' -f 2`"
 distribution_name="grakn-core-all"
 distribution_zipfile_path="dist/grakn-core-all.zip"
 distribution_version=`cat VERSION`
 distribution_basedir_name="$distribution_name-$distribution_version"
 distribution_zipfile_name="$distribution_basedir_name.zip"
+github_repository="`grep github.repository deployment.properties | cut -d '=' -f 2`"
 github_tag="v$distribution_version" # e.g, v1.5.0
+ghr_osx_basedir_name="ghr_v0.10.2_darwin_386"
+ghr_linux_basedir_name="ghr_v0.10.2_linux_386"
 ghr_executable_file_name="ghr"
-ghr_basedir_name="ghr_v0.10.2_darwin_386"
-ghr_zipfile_path="external/ghr/file/$ghr_basedir_name.zip"
 tmp_dir_name="tmp"
+
+# assign variables which needs to be initialised according to the platform (ie., OS X or Linux)
+if [ "$(uname)" == "Darwin" ]; then
+    ghr_basedir_name="$ghr_osx_basedir_name"
+    ghr_distribution_path="external/ghr_osx_zip/file/$ghr_basedir_name.zip"
+    unpack_ghr_based_on_platform="unzip $ghr_distribution_path -d $tmp_dir_name/"
+elif [ "$(uname)" == "Linux" ]; then
+    ghr_basedir_name="$ghr_linux_basedir_name"
+    ghr_distribution_path="external/ghr_linux_tar/file/$ghr_basedir_name.tar.gz"
+    unpack_ghr_based_on_platform="tar -xf $ghr_distribution_path -C $tmp_dir_name/"
+fi
 
 # 1. initialise tmp directory
 mkdir "$tmp_dir_name"
 cp "$distribution_zipfile_path" "$tmp_dir_name/$distribution_zipfile_name"
 
 # 2. create a draft release
-unzip "$ghr_zipfile_path" -d "$tmp_dir_name/"
+$unpack_ghr_based_on_platform # unpack ghr - unzip if on Mac, or tar -xf if on Linux
 "$tmp_dir_name/$ghr_basedir_name/$ghr_executable_file_name" -t "$github_token" -u "$github_user" -r "$github_repository" -delete -draft "$github_tag" "$tmp_dir_name/$distribution_zipfile_name"
-# ghr -t
+
 # 3. cleanup tmp directory
 rm -rf "$tmp_dir_name"

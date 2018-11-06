@@ -19,6 +19,10 @@
 
 def dependencies_for_github_deployment():
     native.http_file(
-        name = "ghr",
+        name = "ghr_osx_zip",
         urls = ["https://github.com/tcnksm/ghr/releases/download/v0.10.2/ghr_v0.10.2_darwin_386.zip"]
+    )
+    native.http_file(
+        name = "ghr_linux_tar",
+        urls = ["https://github.com/tcnksm/ghr/releases/download/v0.10.2/ghr_v0.10.2_linux_386.tar.gz"]
     )

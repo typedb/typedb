@@ -19,7 +19,7 @@
 sh_binary(
     name = "deploy-github-zip",
     srcs = ["//dependencies/deployment/github:deployment.sh"],
-    data = [":distribution", ":VERSION", ":deployment.properties", "@ghr//file:file"]
+    data = [":distribution", ":VERSION", ":deployment.properties", "@ghr_osx_zip//file:file", "@ghr_linux_tar//file:file"]
 )
 
 genrule(
