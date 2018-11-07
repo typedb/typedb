@@ -63,7 +63,7 @@ public class AttributeDeduplicatorDaemon {
     private static final int QUEUE_GET_BATCH_MAX = 1000;
     private static final Path queueDataDirRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
 
-    private ExecutorService executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
+    private ExecutorService executorServiceForDaemon = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
 
     private EngineGraknTxFactory txFactory;
     private RocksDbQueue queue;
@@ -132,7 +132,7 @@ public class AttributeDeduplicatorDaemon {
             }
             LOG.info("startDeduplicationDaemon() - attribute de-duplicator daemon stopped");
             return null;
-        }, executorService);
+        }, executorServiceForDaemon);
 
         daemon.exceptionally(e -> {
             LOG.error("An unhandled exception has occurred in the attribute de-duplicator daemon. ", e);
