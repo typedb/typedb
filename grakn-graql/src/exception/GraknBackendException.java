@@ -19,13 +19,8 @@
 package ai.grakn.exception;
 
 import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
-
-import java.net.URI;
 
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.COULD_NOT_REACH_ENGINE;
-import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
 import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
@@ -70,29 +65,7 @@ public class GraknBackendException extends GraknException {
         return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
     }
 
-    /**
-     * Thrown when engine cannot be reached.
-     */
-    public static GraknBackendException cannotReach(URI uri){
-        return create(COULD_NOT_REACH_ENGINE.getMessage(uri));
-    }
-
-    public static GraknBackendException serverStartupException(String message, Exception e){
-        return new GraknBackendException(ENGINE_STARTUP_ERROR.getMessage(message), e);
-    }
-
-    /**
-     * Thrown when trying to convert a {@link Concept} into a response object and failing to do so.
-     */
-    public static GraknBackendException convertingUnknownConcept(Concept concept){
-        return create(String.format("Cannot convert concept {%s} into response object due to it being of an unknown base type", concept));
-    }
-
     public static GraknBackendException initializationException(Keyspace keyspace) {
         return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
-    }
-
-    public static GraknBackendException noSuchKeyspace(Keyspace keyspace) {
-        return create("No such keyspace " + keyspace);
     }
 }

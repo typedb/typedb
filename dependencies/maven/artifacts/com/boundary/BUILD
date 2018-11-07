@@ -4,7 +4,7 @@ java_library(
         "//external:jar/com/boundary/high-scale-lib"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 

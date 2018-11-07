@@ -16,9 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-def node_dependencies():
+def maven_dependencies():
     native.git_repository(
-        name = "build_bazel_rules_nodejs",
-        remote = "https://github.com/graknlabs/rules_nodejs.git",
-        commit = "15d8a38af4ffaee9742195acf5b2cba73a86ce7a",
+        name="com_github_google_bazel_common",
+        remote = "https://github.com/graknlabs/bazel-common.git",
+        commit = "ccd5a3c9dccb844ce45d8aaf4595d56668a2f2a2"
     )

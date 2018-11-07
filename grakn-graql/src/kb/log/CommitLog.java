@@ -20,8 +20,6 @@ package ai.grakn.kb.log;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.auto.value.AutoValue;
 
 import java.util.HashMap;
@@ -35,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  *
  * <p>
- *     Stores the commit log of a {@link ai.grakn.GraknTx} which is uploaded to the server when the {@link ai.grakn.GraknSession} is closed.
+ *     Stores the commit log of a {@link ai.grakn.GraknTx} which is uploaded to the jserver when the {@link ai.grakn.GraknSession} is closed.
  *     The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
  * </p>
  *
@@ -44,21 +42,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @AutoValue
 public abstract class CommitLog {
 
-    @JsonProperty
     public abstract Keyspace keyspace();
 
-    @JsonProperty("instance-count")
     public abstract Map<ConceptId, Long> instanceCount();
 
-    @JsonProperty("new-attributes")
     public abstract Map<String, Set<ConceptId>> attributes();
 
-    @JsonCreator
-    public static CommitLog create(
-            @JsonProperty("keyspace") Keyspace keyspace,
-            @JsonProperty("instance-count") Map<ConceptId, Long> instanceCount,
-            @JsonProperty("new-attributes") Map<String, Set<ConceptId>> newAttributes
-    ){
+    public static CommitLog create(Keyspace keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes){
         return new AutoValue_CommitLog(keyspace, instanceCount, newAttributes);
     }
 

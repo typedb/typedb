@@ -26,6 +26,7 @@ import ai.grakn.core.server.deduplicator.queue.Attribute;
 import ai.grakn.core.server.deduplicator.queue.RocksDbQueue;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +35,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static ai.grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
@@ -59,6 +62,8 @@ public class AttributeDeduplicatorDaemon {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorDaemon.class);
     private static final int QUEUE_GET_BATCH_MAX = 1000;
     private static final Path queueDataDirRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
+
+    private ExecutorService executorServiceForDaemon = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
 
     private EngineGraknTxFactory txFactory;
     private RocksDbQueue queue;
@@ -127,7 +132,7 @@ public class AttributeDeduplicatorDaemon {
             }
             LOG.info("startDeduplicationDaemon() - attribute de-duplicator daemon stopped");
             return null;
-        });
+        }, executorServiceForDaemon);
 
         daemon.exceptionally(e -> {
             LOG.error("An unhandled exception has occurred in the attribute de-duplicator daemon. ", e);

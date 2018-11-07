@@ -16,9 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-def node_dependencies():
-    native.git_repository(
-        name = "build_bazel_rules_nodejs",
-        remote = "https://github.com/graknlabs/rules_nodejs.git",
-        commit = "15d8a38af4ffaee9742195acf5b2cba73a86ce7a",
+
+def dependencies_for_github_deployment():
+    native.http_file(
+        name = "ghr_osx_zip",
+        urls = ["https://github.com/tcnksm/ghr/releases/download/v0.10.2/ghr_v0.10.2_darwin_386.zip"]
+    )
+    native.http_file(
+        name = "ghr_linux_tar",
+        urls = ["https://github.com/tcnksm/ghr/releases/download/v0.10.2/ghr_v0.10.2_linux_386.tar.gz"]
     )

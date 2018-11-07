@@ -16,6 +16,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
+genrule(
+    name = "distribution",
+    srcs = ["//:grakn", "console-binary_deploy.jar"],
+    outs = ["dist/grakn-core-console.zip"],
+    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
+    tools = ["distribution.sh"]
+)
+
+java_binary(
+    name = "console-binary",
+    main_class = "ai.grakn.core.console.Graql",
+    runtime_deps = [":console"],
+    visibility = ["//visibility:public"]
+)
+
 java_library(
     name = "console",
     srcs = glob(["src/**/*.java"]),
@@ -25,37 +42,27 @@ java_library(
         "//grakn-graql:grakn-graql",
 
         # External dependencies
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
         "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/jline:jline",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-all",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
     visibility = ["//visibility:public"],
     runtime_deps = [
-        #This needs to be available in the classpath otherwise Logback will print error messages:
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino"
-    ]
+        "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
+    ],
+    tags = ["maven_coordinates=ai.grakn:core.console:{pom_version}"],
 )
 
-java_binary(
-    name = "console-binary",
-    main_class = "ai.grakn.core.console.Graql",
-    runtime_deps = ["//console:console"],
-    visibility = ["//visibility:public"]
-)
-
-genrule(
-    name = "distribution",
-    srcs = ["//:grakn", "console-binary_deploy.jar"],
-    outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
-    tools = ["distribution.sh"]
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":console"],
+    version_file = "//:VERSION",
 )
 
 exports_files(

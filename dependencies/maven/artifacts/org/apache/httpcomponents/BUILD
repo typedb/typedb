@@ -21,7 +21,7 @@ java_library(
         ":httpcore"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -33,7 +33,7 @@ java_library(
         "//external:jar/org/apache/httpcomponents/httpcore"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -43,21 +43,6 @@ java_library(
     name = "httpcore-nio",
     exports = [
         "//external:jar/org/apache/httpcomponents/httpcore-nio"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
-    ]
-)
-
-
-
-java_library(
-    name = "httpmime",
-    exports = [
-        "//external:jar/org/apache/httpcomponents/httpmime"
-    ],
-    runtime_deps = [
-        ":httpclient"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

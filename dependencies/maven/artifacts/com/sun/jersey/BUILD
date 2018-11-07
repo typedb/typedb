@@ -19,7 +19,7 @@ java_library(
         "//external:jar/com/sun/jersey/jersey-core"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
