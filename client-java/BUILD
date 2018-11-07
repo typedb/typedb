@@ -19,6 +19,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
 java_grpc_compile(
     name = "client-java-proto",
     deps = [
@@ -56,7 +58,14 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
-    ]
+    ],
+    tags = ["maven_coordinates=ai.grakn:client-java:{pom_version}"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":client-java"],
+    version_file = "//:VERSION",
 )
 
 java_test(

@@ -40,4 +40,4 @@ genrule(
     visibility = ["//visibility:public"]
 )
 
-exports_files(["grakn", "VERSION"], visibility = ["//visibility:public"])
+exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
