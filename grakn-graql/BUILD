@@ -47,16 +47,12 @@ java_library(
     ] + glob(["src/**/*.java"]),
     deps = [
         # External dependencies
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/io/netty:netty-tcnative-boringssl-static",
-        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift", # PREVIOUSLY UNDECLARED
@@ -78,9 +74,13 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scalap", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+    ],
     resources = glob(["src/resources/*"]),
-    javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
     tags = ["maven_coordinates=ai.grakn:grakn-graql:{pom_version}"],
+    javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 )
 
 deploy_maven_jar(
