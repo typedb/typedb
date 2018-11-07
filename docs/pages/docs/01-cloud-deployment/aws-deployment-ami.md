@@ -22,7 +22,8 @@ The AMI Provides an image with a preinstalled Grakn KGMS. The following list sum
 
 
 ## **IMPORTANT:** Storage configuration
-By default Grakn is expecting the storage directory to be `/mnt/data1/`. We recommend attaching an EBS drive to the Grakn instance and mounting it so that storage is located on the EBS drive.
+By default Grakn is expecting the storage directory to be `/mnt/data1/`. The storage directory is settable in the Grakn properties
+file located in `/opt/grakn/conf/`. We recommend attaching an EBS drive to the Grakn instance and mounting it so that storage is located on the EBS drive.
 The instructions how to attach the EBS drive can be found [here](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-attaching-volume.html).
 
 In order to mount the drive, please follow the following procedure:
@@ -40,11 +41,11 @@ mount <BLOCK_PATH> /mnt/data1/
 ## **IMPORTANT:** Running
 Grakn is configured as a service and by default it is not running. Once you have configured the storage, to start grakn the following command needs to be executed as root on the target machine:
 ```
-systemctl grakn start
+systemctl start grakn
 ```
 
 To stop run:
 
 ```
-systemctl grakn stop
+systemctl stop grakn
 ```
