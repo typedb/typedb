@@ -16,36 +16,45 @@
 
             <div class="content" v-else>
 
-                <div class="content-item">
+                <div class="row plays-row">
                     <div class="label">
                         Plays
                     </div>
                     <div class="value">
-                        <div v-bind:class="(showRolesList) ? 'vue-button role-btn role-list-shown' : 'vue-button role-btn'" @click="toggleRoleList"><div class="role-btn-text" >{{currentRole}}</div><vue-icon class="role-btn-caret" icon="caret-down"></vue-icon></div>
+                        <div v-bind:class="(showRolesList) ? 'btn role-btn role-list-shown' : 'btn role-btn'" @click="toggleRoleList"><div class="role-btn-text" >{{currentRole}}</div><vue-icon class="role-btn-caret" className="vue-icon" icon="caret-down"></vue-icon></div>
                     </div>
                 </div>
 
                 <div class="panel-list-item">
                     <div class="role-list" v-show="showRolesList">
-                        <ul v-for="role in Object.keys(relationships)" :key=role>
+                        <ul v-for="role in Object.keys(relationships)" :key="role">
                             <li class="role-item" @click="selectRole(role)" v-bind:class="[(role === currentRole) ? 'role-item-selected' : '']">{{role}}</li>
                         </ul>
                     </div>
                 </div>
 
-                <div class="content-item" v-for="rel in relationships[currentRole]" :key=rel>
+                <div v-if="showRolePLayers" v-for="rel in relationships[currentRole]" :key="rel">
                     <div class="column">
-                        <div class="row">
+                        <div class="row content-item">
                             <div class="label">
                                 In
                             </div>
                             <div class="value">
                                 {{rel}}
                             </div>
-                            <div class="vue-button right-bar-btn" @click="loadRolePlayers(rel)"><vue-icon icon="more" iconSize="12"></vue-icon></div>
+                            <!-- <div class="btn right-bar-btn" @click="loadRolePlayers(rel)"><vue-icon icon="more" className="vue-icon" iconSize="12"></vue-icon></div> -->
                         </div>
 
-                        <div class="roleplayers-list" v-show="showRolePLayers" v-for="(rp, index) in roleplayers[rel]" :key=index>
+                        <div class="row content-item">
+                            <div class="label">
+                                Where
+                            </div>
+                            <div class="value">
+                            </div>
+                        </div>
+                        
+
+                        <div v-if="showRolePLayers" class="roleplayers-list content-item" v-for="(rp, index) in roleplayers[rel]" :key="index">
                             <div class="label">
                                 {{rp.role}}
                             </div>
@@ -57,49 +66,55 @@
                 </div>
             </div>
 
+            <!-- <div class="content noselect" v-if="!(relationship.size)">
+                Please select a node
+            </div> -->
+
         </div>
 
     </div>
 </template>
 
 <script>
+  import { createNamespacedHelpers } from 'vuex';
+  import { OPEN_GRAKN_TX } from '@/components/shared/StoresActions';
+
+
   export default {
     name: 'RelationshipsPanel',
-    props: ['localStore'],
+    props: ['tabId'],
     data() {
       return {
-        showRelationshipsPanel: false,
+        showRelationshipsPanel: true,
         showRolesList: false,
         currentRole: '',
         relationships: {},
         showRolePLayers: false,
         roleplayers: {},
-        roleplayersLoading: false,
       };
     },
-    computed: {
-      selectedNodes() {
-        return this.localStore.getSelectedNodes();
-      },
-      currentKeyspace() {
-        return this.localStore.getCurrentKeyspace();
-      },
+    beforeCreate() {
+      const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+
+      // computed
+      this.$options.computed = {
+        ...(this.$options.computed || {}),
+        ...mapGetters(['selectedNodes', 'currentKeyspace']),
+      };
+
+      // methods
+      this.$options.methods = {
+        ...(this.$options.methods || {}),
+        ...mapActions([OPEN_GRAKN_TX]),
+      };
     },
     watch: {
-      async selectedNodes(nodes) {
-        // If no node selected: close panel and return
-        if (!nodes || nodes.length > 1) { this.showRelationshipsPanel = false; return; }
-
-        await this.loadRolesAndRelationships();
-
-        this.showRelationshipsPanel = true;
-      },
-      currentRole() {
+      async selectedNodes() {
         this.roleplayers = {};
-        this.showRolePLayers = false;
+        await this.loadRolesAndRelationships();
       },
-      currentKeyspace() {
-        this.showRelationshipsPanel = false;
+      async currentRole() {
+        await this.loadRolePlayers(this.relationships[this.currentRole][0]);
       },
     },
     methods: {
@@ -117,9 +132,9 @@
         // Initialize relationships map
         this.relationships = {};
 
-        const graknTx = await this.localStore.openGraknTx();
+        const graknTx = await this[OPEN_GRAKN_TX]();
 
-        const node = await this.localStore.getNode(this.selectedNodes[0].id, graknTx);
+        const node = await graknTx.getConcept(this.selectedNodes[0].id);
 
         const roles = await (await node.roles()).collect();
 
@@ -130,19 +145,18 @@
             this.relationships[roleLabel] = await Promise.all((await (await x.relationships()).collect()).map(async rel => rel.label()));
           }
         }));
-
         this.currentRole = Object.keys(this.relationships)[0];
 
         graknTx.close();
       },
       async loadRolePlayers(rel) {
-        this.roleplayersLoading = true;
+        this.showRolePLayers = false;
 
         // If roleplayers have not already been retrieved
         if (!this.roleplayers[rel]) {
-          const graknTx = await this.localStore.openGraknTx();
+          const graknTx = await this[OPEN_GRAKN_TX]();
 
-          const node = await this.localStore.getNode(this.selectedNodes[0].id, graknTx);
+          const node = await graknTx.getConcept(this.selectedNodes[0].id);
 
           const roles = await (await node.roles()).collect();
 
@@ -175,13 +189,17 @@
           graknTx.close();
         }
         this.showRolePLayers = true;
-        this.roleplayersLoading = false;
       },
     },
   };
 </script>
 
 <style scoped>
+
+    .plays-row {
+        padding-left: var(--container-padding);
+        padding-right: var(--container-padding);
+    }
 
     .column {
         display: flex;
@@ -193,7 +211,6 @@
         display: flex;
         flex-direction: row;
         align-items: center;
-        padding: 3px;
     }
 
     .roleplayers-list {
@@ -208,6 +225,7 @@
         display: flex;
         flex-direction: column;
         max-height: 300px;
+        overflow: scroll;
         justify-content: center;
         border-bottom: var(--container-darkest-border);
     }
@@ -267,8 +285,8 @@
         overflow: auto;
         position: absolute;
         width: 108px;
-        right: 10px;
-        margin-top: -5px;
+        right: 11px;
+        margin-top: 0px;
         z-index: 1;
     }
 

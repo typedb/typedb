@@ -3,7 +3,7 @@
         <div class="tab-header noselect">Concept Info</div>
         <identity-panel :tabId="tabId"></identity-panel>
         <attributes-panel :tabId="tabId"></attributes-panel>
-        <relationships-panel :localStore="localStore"></relationships-panel>
+        <relationships-panel :tabId="tabId"></relationships-panel>
     </div>
 </template>
 <script>
@@ -20,6 +20,6 @@
 </script>
 <style scoped>
     .node-tab-content {
-        width: 213.14px;
+        width: 214.14px;
     }
 </style>
