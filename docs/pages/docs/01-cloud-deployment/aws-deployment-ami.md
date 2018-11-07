@@ -27,15 +27,16 @@ file located in `/opt/grakn/conf/`. We recommend attaching an EBS drive to the G
 The instructions how to attach the EBS drive can be found [here](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-attaching-volume.html).
 
 In order to mount the drive, please follow the following procedure:
-* identify the EBS block name and path, to do this run `lsblk` command and find the name of attached EBS device. The path will then be `/dev/<BLOCK_NAME>`.
+* identify the EBS block name and path, to do this run `lsblk` command and find the name of attached EBS block. The block path is then `/dev/<BLOCK_NAME>`.
 * if the drive is not formatted, format it by executing:
 ```
-mkfs -t ext4 <BLOCK_HOME>
+mkfs -t ext4 <BLOCK_PATH>
 ```
+* make sure the mount directory exists and user `grakn` has write access to it
 
 * mount the drive by executing:
 ```
-mount <BLOCK_PATH> /mnt/data1/
+mount <BLOCK_PATH> <MOUNT_DIR>
 ```
 
 ## **IMPORTANT:** Running
