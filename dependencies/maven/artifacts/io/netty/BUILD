@@ -160,18 +160,6 @@ java_library(
 
 
 java_library(
-    name = "netty-tcnative-boringssl-static",
-    exports = [
-        "//external:jar/io/netty/netty-tcnative-boringssl-static"
-    ],
-    visibility = [
-        "//visibility:public"
-    ]
-)
-
-
-
-java_library(
     name = "netty-transport",
     exports = [
         "//external:jar/io/netty/netty-transport"

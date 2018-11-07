@@ -176,9 +176,6 @@ dependencies:
     netty-handler-proxy:
       version: "4.1.30.Final"
       lang: java
-    netty-tcnative-boringssl-static:
-      version: "2.0.14.Final"
-      lang: java
 
   io.zipkin.brave:
     brave:
