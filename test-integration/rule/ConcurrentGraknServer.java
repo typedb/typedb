@@ -43,7 +43,6 @@ public class ConcurrentGraknServer extends ExternalResource {
     private GraknConfig config;
     private Path dataDirTmp;
     private Server server;
-    private spark.Service sparkHttp;
 
     private KeyspaceStore keyspaceStore;
 
@@ -72,9 +71,6 @@ public class ConcurrentGraknServer extends ExternalResource {
         System.out.println("starting engine...");
 
         // start engine
-
-        sparkHttp = spark.Service.ignite();
-
         server = startGraknEngineServer();
 
         System.out.println("engine started ...");
@@ -84,7 +80,6 @@ public class ConcurrentGraknServer extends ExternalResource {
     protected void after() {
         try {
             server.close();
-            sparkHttp.stop();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);

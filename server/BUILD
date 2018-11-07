@@ -44,7 +44,6 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
-#        "//dependencies/maven/artifacts/com/sparkjava:spark-core",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-io:commons-io", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",

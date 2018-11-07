@@ -77,7 +77,6 @@ public class ServerContext extends ExternalResource {
     private Path dataDirTmp;
     private Server server;
     private GraknConfig config;
-    private spark.Service sparkHttp;
 
     public KeyspaceStore systemKeyspace() {
         return keyspaceStore;
@@ -107,9 +106,6 @@ public class ServerContext extends ExternalResource {
         LOG.info("starting engine...");
 
         // start engine
-
-        sparkHttp = spark.Service.ignite();
-
         server = startGraknEngineServer();
 
         LOG.info("engine started ...");
@@ -125,7 +121,6 @@ public class ServerContext extends ExternalResource {
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
-            sparkHttp.stop();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);

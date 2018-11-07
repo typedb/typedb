@@ -121,13 +121,6 @@ dependencies:
       version: "0.7"
       lang: java
 
-  com.sparkjava:
-    spark-core:
-      exclude:
-      - "org.slf4j:slf4j-api"
-      version: "2.5.1"
-      lang: java
-
   commons-cli:
     commons-cli:
       version: "1.3"
