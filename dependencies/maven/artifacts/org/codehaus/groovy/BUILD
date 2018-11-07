@@ -57,21 +57,6 @@ java_library(
 
 
 java_library(
-    name = "groovy-json",
-    exports = [
-        "//external:jar/org/codehaus/groovy/groovy-json"
-    ],
-    runtime_deps = [
-        ":groovy"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
-    ]
-)
-
-
-
-java_library(
     name = "groovy-json-jar-indy",
     exports = [
         "//external:jar/org/codehaus/groovy/groovy-json-jar-indy"

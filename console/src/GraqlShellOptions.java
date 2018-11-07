@@ -54,7 +54,6 @@ public class GraqlShellOptions {
     private static final String EXECUTE = "e";
     private static final String FILE = "f";
     private static final String URI = "r";
-    private static final String OUTPUT = "o";
     private static final String NO_INFER = "n";
     private static final String HELP = "h";
     private static final String VERSION = "v";
@@ -73,7 +72,6 @@ public class GraqlShellOptions {
         options.addOption(EXECUTE, "execute", true, "query to execute");
         options.addOption(FILE, "file", true, "graql file path to execute");
         options.addOption(URI, "uri", true, "uri to factory to engine");
-        options.addOption(OUTPUT, "output", true, "output format for results");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
         options.addOption(VERSION, "version", false, "print version");
@@ -95,10 +93,6 @@ public class GraqlShellOptions {
         return new GraqlShellOptions(options, cmd);
     }
 
-    public CommandLine cmd() {
-        return cmd;
-    }
-
     public void printUsage(PrintStream sout) {
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(sout, Charset.defaultCharset());
@@ -115,8 +109,7 @@ public class GraqlShellOptions {
     }
 
     public OutputFormat getOutputFormat() {
-        String format = cmd.getOptionValue(OUTPUT);
-        return format != null ? OutputFormat.get(format) : OutputFormat.DEFAULT;
+        return OutputFormat.DEFAULT;
     }
 
     @Nullable

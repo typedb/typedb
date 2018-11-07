@@ -223,7 +223,7 @@ public class GraknBootup {
                 "help       Print this message\n" +
                 "\n" +
                 "Tips:\n" +
-                "- Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)\n" +
+                "- Start Grakn with 'grakn server start'\n" +
                 "- You can then perform queries by opening a console with 'grakn console'");
     }
 

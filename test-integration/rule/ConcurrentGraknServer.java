@@ -1,6 +1,7 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.Keyspace;
 import ai.grakn.core.server.GraknConfig;
 import ai.grakn.core.server.KeyspaceStore;
 import ai.grakn.core.server.Server;
@@ -18,9 +19,7 @@ import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.test.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
-import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.commons.io.FileUtils;
@@ -32,7 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.UUID;
 
 /**
  * This rule starts Cassandra and Grakn Server and makes sure that both processes bind to random and unused ports.
@@ -44,7 +43,6 @@ public class ConcurrentGraknServer extends ExternalResource {
     private GraknConfig config;
     private Path dataDirTmp;
     private Server server;
-    private spark.Service sparkHttp;
 
     private KeyspaceStore keyspaceStore;
 
@@ -73,19 +71,15 @@ public class ConcurrentGraknServer extends ExternalResource {
         System.out.println("starting engine...");
 
         // start engine
-
-        sparkHttp = spark.Service.ignite();
-
         server = startGraknEngineServer();
 
-        System.out.println("engine started on " + uri());
+        System.out.println("engine started ...");
     }
 
     @Override
     protected void after() {
         try {
             server.close();
-            sparkHttp.stop();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -95,12 +89,8 @@ public class ConcurrentGraknServer extends ExternalResource {
 
     // GETTERS
 
-    public SimpleURI uri() {
-        return config.uri();
-    }
-
     public SimpleURI grpcUri() {
-        return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
+        return new SimpleURI(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
     }
 
     public KeyspaceStore systemKeyspace() {
@@ -115,7 +105,6 @@ public class ConcurrentGraknServer extends ExternalResource {
     private GraknConfig createTestConfig(String dataDir) {
         GraknConfig config = GraknConfig.read(TEST_CONFIG_FILE);
         config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
         //We override the default store.port with the RPC_PORT given that we still use Thrift protocol to talk to Cassandra
         config.setConfigProperty(GraknConfigKey.STORAGE_PORT, EmbeddedCassandraServerHelper.getRpcPort());
         //Hadoop cluster uses the Astyanax driver for some operations, so need to override the RPC_PORT (Thrift)
@@ -127,14 +116,13 @@ public class ConcurrentGraknServer extends ExternalResource {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace(){
-        return EmbeddedGraknSession.createEngineSession(GraknTestUtil.randomKeyspace(), config);
+        Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
+        return EmbeddedGraknSession.createEngineSession(randomKeyspace, config);
     }
 
     private Server startGraknEngineServer() throws IOException {
         EngineID id = EngineID.me();
         ServerStatus status = new ServerStatus();
-
-        MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
         LockProvider lockProvider = new ProcessWideLockProvider();
@@ -152,11 +140,8 @@ public class ConcurrentGraknServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
-        GraknTestUtil.allocateSparkPort(config);
 
-        Server graknEngineServer = ServerFactory.createServer(id, config, status,
-                sparkHttp, Collections.emptyList(), rpcServerRPC,
-                engineGraknTxFactory, metricRegistry,
+        Server graknEngineServer = ServerFactory.createServer(id, config, status, rpcServerRPC,
                 lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();

@@ -19,8 +19,6 @@
 package ai.grakn.concept;
 
 import ai.grakn.GraknTx;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
@@ -56,7 +54,6 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
-    @JsonValue
     public String getValue() {
         return value;
     }
@@ -72,7 +69,6 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @return The matching concept ID
      */
     @CheckReturnValue
-    @JsonCreator
     public static ConceptId of(String value){
         return new ConceptId(value);
     }

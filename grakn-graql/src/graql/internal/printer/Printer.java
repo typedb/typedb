@@ -26,7 +26,6 @@ import ai.grakn.graql.answer.ConceptMap;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.graql.answer.ConceptSetMeasure;
 import ai.grakn.graql.answer.Value;
-import mjson.Json;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -55,15 +54,6 @@ public abstract class Printer<Builder> {
      */
     public static Printer<StringBuilder> stringPrinter(boolean colorize, AttributeType... attributeTypes) {
         return new StringPrinter(colorize, attributeTypes);
-    }
-
-    /**
-     * Constructs a special type of Printer: JsonPrinter
-     *
-     * @return a new JsonPrinter object
-     */
-    public static Printer<Json> jsonPrinter() {
-        return new JsonPrinter();
     }
 
     /**

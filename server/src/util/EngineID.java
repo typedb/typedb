@@ -18,7 +18,6 @@
 
 package ai.grakn.core.server.util;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +41,6 @@ public abstract class EngineID implements Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(EngineID.class);
 
     @CheckReturnValue
-    @JsonValue
     public abstract String getValue();
 
     @CheckReturnValue

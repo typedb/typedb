@@ -29,8 +29,6 @@ grakn_properties_path="$5"
 logback_xml_path="$6"
 storage_yaml_path="$7"
 storage_logback_xml_path="$8"
-dashboard_assets_dir_prefix="$9"
-dashboard_asset_paths="${@:10}"
 
 # configurations
 distribution_basedir_name="grakn-core-server"
@@ -42,7 +40,6 @@ servicesdir_name="services"
 servicesdir_grakndir_name="grakn"
 servicesdir_storagedir_name="cassandra"
 servicesdir_libdir_name="lib"
-services_dir_assets="assets"
 
 
 # 2. prepare directories and files
@@ -53,7 +50,6 @@ mkdir -p "$distribution_basedir_name/$datadir_name/$datadir_queuedir_name"
 mkdir -p "$distribution_basedir_name/$servicesdir_name/$servicesdir_libdir_name"
 mkdir -p "$distribution_basedir_name/$servicesdir_name/$servicesdir_grakndir_name"
 mkdir -p "$distribution_basedir_name/$servicesdir_name/$servicesdir_storagedir_name"
-mkdir -p "$distribution_basedir_name/$servicesdir_name/$services_dir_assets"
 
 # 3. copying files into the respective locations
 cp "$grakn_bootup_bash_script_path" "$distribution_basedir_name"
@@ -63,10 +59,6 @@ cp "$grakn_logo_path" "$distribution_basedir_name/$servicesdir_name/$servicesdir
 cp "$storage_yaml_path" "$distribution_basedir_name/$servicesdir_name/$servicesdir_storagedir_name"
 cp "$storage_logback_xml_path" "$distribution_basedir_name/$servicesdir_name/$servicesdir_storagedir_name"
 cp "$deploy_jar_path" "$distribution_basedir_name/$servicesdir_name/$servicesdir_libdir_name"
-for asset in $dashboard_asset_paths; do
-    asset_target_dir=$(dirname "$distribution_basedir_name/$servicesdir_name/$services_dir_assets/${asset#$dashboard_assets_dir_prefix}")
-    mkdir -p "$asset_target_dir" && cp "${asset}" "$asset_target_dir"
-done
 
 # 4. the grakn-core-server distribution will contain the following files
 find $distribution_basedir_name
