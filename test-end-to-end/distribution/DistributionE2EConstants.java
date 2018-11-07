@@ -20,8 +20,6 @@ package ai.grakn.distribution;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.core.server.GraknConfig;
-import ai.grakn.util.REST;
-import ai.grakn.util.SimpleURI;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -52,15 +50,13 @@ public class DistributionE2EConstants {
     }
 
     public static void assertZipExists() {
-        System.out.println(ZIP_FULLPATH);
-        System.out.println(GRAKN_UNZIPPED_DIRECTORY);
-
         if(!ZIP_FULLPATH.toFile().exists()) {
             Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toAbsolutePath().toString() + "' could not be found. Please ensure it has been build (ie., run `mvn package`)");
         }
     }
 
     public static void unzipGrakn() throws IOException, InterruptedException, TimeoutException {
+        System.out.println("Unzipped Grakn to: " + GRAKN_UNZIPPED_DIRECTORY.toAbsolutePath());
         new ProcessExecutor()
                 .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
     }

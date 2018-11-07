@@ -159,6 +159,7 @@ public class RocksDbQueue implements AutoCloseable {
      * Serialisation helpers for the {@link RocksDbQueue}. Don't add any other serialisation methods that are not related to it.
      */
     static class SerialisationUtils {
+        //TODO: figure out if we could not use/depend on Json, which brings in mjson.Json
         static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(
                     "attribute-keyspace", attribute.keyspace().getValue(),

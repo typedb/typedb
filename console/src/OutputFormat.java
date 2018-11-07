@@ -33,23 +33,6 @@ public abstract class OutputFormat {
     abstract Printer<?> getPrinter(Set<AttributeType<?>> displayAttributes);
 
     static final OutputFormat DEFAULT = new OutputFormat.Graql();
-    
-    public static OutputFormat get(String name) {
-        switch (name) {
-            case "json":
-                return new OutputFormat.JSON();
-            case "graql":
-            default:
-                return new OutputFormat.Graql();
-        }
-    }
-
-    static class JSON extends OutputFormat {
-        @Override
-        Printer<?> getPrinter(Set<AttributeType<?>> displayAttributes) {
-            return Printer.jsonPrinter();
-        }
-    }
 
     static class Graql extends OutputFormat {
         @Override

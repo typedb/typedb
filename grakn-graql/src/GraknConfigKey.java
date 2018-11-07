@@ -22,11 +22,6 @@ import ai.grakn.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Class for keys of properties in the file {@code grakn.properties}.
@@ -55,27 +50,9 @@ public abstract class GraknConfigKey<T> {
     // These are helpful parser to describe how to parse parameters of certain types.
     public static final KeyParser<String> STRING = string -> string;
     public static final KeyParser<Integer> INT = Integer::parseInt;
-    public static final KeyParser<Boolean> BOOL = Boolean::parseBoolean;
     public static final KeyParser<Long> LONG = Long::parseLong;
-    public static final KeyParser<Path> PATH = Paths::get;
-    public static final KeyParser<List<String>> CSV = new KeyParser<List<String>>() {
-        @Override
-        public List<String> read(String string) {
-            Stream<String> split = Arrays.stream(string.split(","));
-            return split.map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
-        }
-
-        @Override
-        public String write(List<String> value) {
-            return value.stream().collect(Collectors.joining(","));
-        }
-    };
-
-    public static final GraknConfigKey<Integer> WEBSERVER_THREADS = key("webserver.threads", INT);
-    public static final GraknConfigKey<Integer> NUM_BACKGROUND_THREADS = key("background-tasks.threads", INT);
 
     public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
-    public static final GraknConfigKey<Integer> SERVER_PORT = key("server.port", INT);
     public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
     public static final GraknConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
@@ -86,19 +63,7 @@ public abstract class GraknConfigKey<T> {
     public static final GraknConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
     public static final GraknConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
 
-    public static final GraknConfigKey<List<String>> REDIS_HOST = key("queue.host", CSV);
-    public static final GraknConfigKey<List<String>> REDIS_SENTINEL_HOST = key("queue.sentinel.host", CSV);
-    public static final GraknConfigKey<String> REDIS_BIND = key("bind");
-    public static final GraknConfigKey<String> REDIS_SENTINEL_MASTER = key("queue.sentinel.master");
-    public static final GraknConfigKey<Integer> REDIS_POOL_SIZE = key("queue.pool-size", INT);
-    public static final GraknConfigKey<Integer> POST_PROCESSOR_POOL_SIZE = key("post-processor.pool-size", INT);
-    public static final GraknConfigKey<Integer> POST_PROCESSOR_DELAY = key("post-processor.delay", INT);
-
-    public static final GraknConfigKey<Path> STATIC_FILES_PATH = key("server.static-file-dir", PATH);
-
     public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
-
-    public static final GraknConfigKey<Integer> TASKS_RETRY_DELAY = key("tasks.retry.delay", INT);
 
     public static final GraknConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
     public static final GraknConfigKey<String> KB_MODE = key("knowledge-base.mode");

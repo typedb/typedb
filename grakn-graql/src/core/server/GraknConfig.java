@@ -21,8 +21,6 @@ package ai.grakn.core.server;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.SimpleURI;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -136,17 +134,12 @@ public class GraknConfig {
         return PROJECT_PATH.resolve(getProperty(pathKey));
     }
 
-    @JsonValue
     public Properties properties() {
         return prop;
     }
 
     public <T> T getProperty(GraknConfigKey<T> key) {
         return key.parse(prop.getProperty(key.name()), CONFIG_FILE_PATH);
-    }
-
-    public SimpleURI uri() {
-        return new SimpleURI(getProperty(GraknConfigKey.SERVER_HOST_NAME), getProperty(GraknConfigKey.SERVER_PORT));
     }
 
     private static String loadGraknAsciiFile(Path projectPath, Path graknAsciiPath) {

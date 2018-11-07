@@ -21,14 +21,10 @@ package ai.grakn.core.server.bootup;
 import ai.grakn.GraknConfigKey;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.core.server.GraknConfig;
-import ai.grakn.util.REST;
-import ai.grakn.util.SimpleURI;
 
-import javax.ws.rs.core.UriBuilder;
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -130,9 +126,9 @@ public class EngineBootup {
             System.out.flush();
 
             String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
-            int port = graknProperties.getProperty(GraknConfigKey.SERVER_PORT);
+            int port = graknProperties.getProperty(GraknConfigKey.GRPC_PORT);
 
-            if (bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host, port, REST.WebPath.STATUS)) {
+            if (bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host, port)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -181,15 +177,11 @@ public class EngineBootup {
         return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("conf");
     }
 
-    private boolean isEngineReady(String host, int port, String path) {
+    private static boolean isEngineReady(String host, int port) {
         try {
-            URL engineUrl = UriBuilder.fromUri(new SimpleURI(host, port).toURI()).path(path).build().toURL();
-            HttpURLConnection connection = (HttpURLConnection) engineUrl.openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            int code = connection.getResponseCode();
-            return code == 200;
+            Socket s = new Socket(host, port);
+            s.close();
+            return true;
         } catch (IOException e) {
             return false;
         }

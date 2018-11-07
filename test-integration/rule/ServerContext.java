@@ -19,6 +19,7 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.Keyspace;
 import ai.grakn.core.server.GraknConfig;
 import ai.grakn.core.server.KeyspaceStore;
 import ai.grakn.core.server.Server;
@@ -36,9 +37,7 @@ import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.test.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
-import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -48,7 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.UUID;
 
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -78,7 +77,6 @@ public class ServerContext extends ExternalResource {
     private Path dataDirTmp;
     private Server server;
     private GraknConfig config;
-    private spark.Service sparkHttp;
 
     public KeyspaceStore systemKeyspace() {
         return keyspaceStore;
@@ -97,12 +95,8 @@ public class ServerContext extends ExternalResource {
         return server;
     }
 
-    public SimpleURI uri() {
-        return config.uri();
-    }
-
     public SimpleURI grpcUri() {
-        return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
+        return new SimpleURI(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
     }
 
     @Override
@@ -112,12 +106,9 @@ public class ServerContext extends ExternalResource {
         LOG.info("starting engine...");
 
         // start engine
-
-        sparkHttp = spark.Service.ignite();
-
         server = startGraknEngineServer();
 
-        LOG.info("engine started on " + uri());
+        LOG.info("engine started ...");
     }
 
     @Override
@@ -130,7 +121,6 @@ public class ServerContext extends ExternalResource {
 
                 // There is no way to stop the embedded Casssandra, no such API offered.
             }, "Error closing engine");
-            sparkHttp.stop();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -163,20 +153,18 @@ public class ServerContext extends ExternalResource {
     public GraknConfig createTestConfig(String dataDir) {
         GraknConfig config = GraknConfig.read(TEST_CONFIG_FILE);
         config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
 
         return config;
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace(){
-        return EmbeddedGraknSession.createEngineSession(GraknTestUtil.randomKeyspace(), config);
+        Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
+        return EmbeddedGraknSession.createEngineSession(randomKeyspace, config);
     }
 
     private Server startGraknEngineServer() throws IOException {
         EngineID id = EngineID.me();
         ServerStatus status = new ServerStatus();
-
-        MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
         LockProvider lockProvider = new ProcessWideLockProvider();
@@ -194,11 +182,8 @@ public class ServerContext extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
-        GraknTestUtil.allocateSparkPort(config);
 
-        Server graknEngineServer = ServerFactory.createServer(id, config, status,
-                sparkHttp, Collections.emptyList(), rpcServerRPC,
-                engineGraknTxFactory, metricRegistry,
+        Server graknEngineServer = ServerFactory.createServer(id, config, status, rpcServerRPC,
                 lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();

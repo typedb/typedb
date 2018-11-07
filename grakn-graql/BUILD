@@ -19,6 +19,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
 
 antlr4(
     name = "graql-java",
@@ -47,19 +49,13 @@ java_library(
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/com/boundary:high-scale-lib",
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/module:jackson-module-scala-2-11",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/io/netty:netty-tcnative-boringssl-static",
-        "//dependencies/maven/artifacts/io/reactivex:rxjava",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
@@ -68,8 +64,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-mapreduce-client-core", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/org/apache/httpcomponents:httpclient",
-        "//dependencies/maven/artifacts/org/apache/httpcomponents:httpcore", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/apache/spark:spark-core-2-11",
         "//dependencies/maven/artifacts/org/apache/spark:spark-launcher-2-11", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift", # PREVIOUSLY UNDECLARED
@@ -82,10 +76,15 @@ java_library(
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/scala-lang:scalap", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/org/sharegov:mjson",
-        "//dependencies/maven/artifacts/org/slf4j:log4j-over-slf4j",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
     resources = glob(["src/resources/*"]),
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
+    tags = ["maven_coordinates=ai.grakn:grakn-graql:{pom_version}"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":grakn-graql"],
+    version_file = "//:VERSION",
 )
