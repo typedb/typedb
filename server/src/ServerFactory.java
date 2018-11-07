@@ -20,25 +20,19 @@ package ai.grakn.core.server;
 
 import ai.grakn.GraknConfigKey;
 import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import ai.grakn.core.server.controller.HttpController;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
+import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.core.server.lock.ProcessWideLockProvider;
 import ai.grakn.core.server.rpc.KeyspaceService;
-import ai.grakn.core.server.lock.LockProvider;
+import ai.grakn.core.server.rpc.OpenRequest;
 import ai.grakn.core.server.rpc.ServerOpenRequest;
 import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
-import ai.grakn.core.server.rpc.OpenRequest;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
-import com.codahale.metrics.MetricRegistry;
-import spark.Service;
-import io.grpc.ServerBuilder;
 import brave.Tracing;
+import io.grpc.ServerBuilder;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.reporter.urlconnection.URLConnectionSender;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * This is a factory class which contains methods for instantiating a {@link Server} in different ways.
@@ -57,8 +51,6 @@ public class ServerFactory {
         GraknConfig config = GraknConfig.create();
         ServerStatus status = new ServerStatus();
 
-        MetricRegistry metricRegistry = new MetricRegistry();
-
         // distributed locks
         LockProvider lockProvider = new ProcessWideLockProvider();
 
@@ -71,12 +63,10 @@ public class ServerFactory {
         // post-processing
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
 
-        // http services: spark, http controller, and gRPC server
-        Service sparkHttp = Service.ignite();
-        Collection<HttpController> httpControllers = Collections.emptyList();
+        // http services: gRPC server
         ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
-        return createServer(engineId, config, status, sparkHttp, httpControllers, rpcServerRPC, engineGraknTxFactory, metricRegistry, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+        return createServer(engineId, config, status, rpcServerRPC, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
@@ -85,15 +75,10 @@ public class ServerFactory {
      */
 
     public static Server createServer(
-            EngineID engineId, GraknConfig config, ServerStatus serverStatus,
-            Service sparkHttp, Collection<HttpController> httpControllers, ServerRPC rpcServerRPC,
-            EngineGraknTxFactory engineGraknTxFactory,
-            MetricRegistry metricRegistry,
+            EngineID engineId, GraknConfig config, ServerStatus serverStatus, ServerRPC rpcServer,
             LockProvider lockProvider, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
 
-        ServerHTTP httpHandler = new ServerHTTP(config, sparkHttp, engineGraknTxFactory, metricRegistry, serverStatus, attributeDeduplicatorDaemon, rpcServerRPC, httpControllers);
-
-        Server server = new Server(engineId, config, serverStatus, lockProvider, httpHandler, attributeDeduplicatorDaemon, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockProvider, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);

@@ -18,14 +18,12 @@ java_library(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/util:grakn-test-util",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/sparkjava:spark-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core"],
+    ],
     resources = ["//server:grakn-properties"],
     visibility = ["//test-integration:__subpackages__"]
 )
@@ -36,14 +34,11 @@ java_library(
     deps = [
         "//server",
         "//grakn-graql",
-        "//test-integration/util:grakn-test-util",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/sparkjava:spark-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
         "//dependencies/maven/artifacts/org/cassandraunit:cassandra-unit",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",],

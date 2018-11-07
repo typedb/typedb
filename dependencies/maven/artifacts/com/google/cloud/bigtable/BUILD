@@ -18,6 +18,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/hbase:hbase-client",
         "//dependencies/maven/artifacts/org/apache/hbase:hbase-common",
         "//dependencies/maven/artifacts/org/apache/hbase:hbase-protocol",
+        "//dependencies/maven/artifacts/org/apache/httpcomponents:httpclient",
         "//dependencies/maven/artifacts/org/apache/httpcomponents:httpcore",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],

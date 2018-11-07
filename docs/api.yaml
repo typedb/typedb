@@ -942,12 +942,9 @@ definitions:
       knowledge-base.sharding-threshold: 10000
       knowledge-base.schema-cache-timeout-ms: 600000
       server.host: 0.0.0.0
-      server.port: 4567
-      server.static-file-dir: ../services/assets/
       loader.repeat-commits: 5
       tasks.postprocessing.delay: 60000
       loader.threads: 4
-      webserver.threads: 64
       log.dirs: ../logs/
       log.level: INFO
       storage.backend: grakn-production
@@ -956,7 +953,6 @@ definitions:
       cache.db-cache-clean-wait: 20
       cache.db-cache-time: 180000
       cache.db-cache-size: 0.25
-      queue.host: localhost:6379
       queue.consumers: 32
       redis.pool-size: 32
   StatusResponse:

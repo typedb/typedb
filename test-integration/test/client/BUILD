@@ -7,7 +7,6 @@ java_test(
         "//client-java",
         "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
-        "//test-integration/util:grakn-test-util",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"

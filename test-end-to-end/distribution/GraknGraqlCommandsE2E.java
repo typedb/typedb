@@ -73,13 +73,11 @@ public class GraknGraqlCommandsE2E {
         // assert files exist
         final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn");
         final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties");
-        final Path assetsDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("services").resolve("assets");
         final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("services").resolve("cassandra");
         final Path libDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("services").resolve("lib");
 
         assertThat(grakn.toString() + " isn't present", grakn.toFile().exists(), equalTo(true));
         assertThat(graknProperties + " isn't present", graknProperties.toFile().exists(), equalTo(true));
-        assertThat(assetsDirectory.toString() + " isn't present", assetsDirectory.toFile().exists(), equalTo(true));
         assertThat(cassandraDirectory.toString() + " isn't present", cassandraDirectory.toFile().exists(), equalTo(true));
         assertThat(libDirectory.toString() + " isn't present", libDirectory.toFile().exists(), equalTo(true));
 

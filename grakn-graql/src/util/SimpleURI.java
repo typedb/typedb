@@ -20,10 +20,8 @@ package ai.grakn.util;
 
 import com.google.common.base.Preconditions;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 
 /**
  * This Util class just takes care of going from host and port to string and vice-versa
