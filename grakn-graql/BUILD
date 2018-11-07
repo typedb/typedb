@@ -19,6 +19,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
 
 antlr4(
     name = "graql-java",
@@ -78,4 +80,11 @@ java_library(
     ],
     resources = glob(["src/resources/*"]),
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
+    tags = ["maven_coordinates=ai.grakn:grakn-graql:{pom_version}"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":grakn-graql"],
+    version_file = "//:VERSION",
 )

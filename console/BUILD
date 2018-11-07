@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
 genrule(
     name = "distribution",
     srcs = ["//:grakn", "console-binary_deploy.jar"],
@@ -55,7 +57,14 @@ java_library(
     runtime_deps = [
         #This needs to be available in the classpath otherwise Logback will print error messages:
         "//dependencies/maven/artifacts/org/codehaus/janino:janino"
-    ]
+    ],
+    tags = ["maven_coordinates=ai.grakn:core.console:{pom_version}"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":console"],
+    version_file = "//:VERSION",
 )
 
 exports_files(
