@@ -47,7 +47,6 @@ java_library(
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
@@ -64,6 +63,7 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+        "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",

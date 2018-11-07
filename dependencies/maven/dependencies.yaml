@@ -213,11 +213,6 @@ dependencies:
       version: "4.12"
       lang: java
 
-  net.jodah:
-    failsafe:
-      version: "1.0.4"
-      lang: java
-
   net.lingala.zip4j:
     zip4j:
       version: "1.3.2"
