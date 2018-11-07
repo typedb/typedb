@@ -22,16 +22,35 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>target/embeddedCassandra/cassandra.log</file>
+        <append>true</append>
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+        <!-- encoders are assigned the type
+             ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-    <root level="ERROR">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="ai.grakn" level="DEBUG" additivity="false">
+    <logger name="ai.grakn" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <logger name="ai.grakn.engine.Server" level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="eclips" level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="org.apache.cassandra" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>
 

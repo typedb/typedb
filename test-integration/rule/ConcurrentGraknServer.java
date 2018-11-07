@@ -38,8 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * This rule starts Cassandra and Grakn Server and makes sure that both processes bind to random and unused ports.
@@ -51,10 +49,6 @@ public class ConcurrentGraknServer extends ExternalResource {
     private Path dataDirTmp;
     private Server graknServer;
     private spark.Service sparkHttp;
-    private ExecutorService executor;
-    private ExecutorService serverExecutor;
-    private RunnableServer serverRunnable;
-
 
     private KeyspaceStore keyspaceStore;
 
@@ -71,38 +65,36 @@ public class ConcurrentGraknServer extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            try {
-                Path ciao = Paths.get("test-integration/resources/cassandra-embedded.yaml");
-                byte[] bytes = Files.readAllBytes(ciao);
-                String result = new String(bytes, StandardCharsets.UTF_8);
-                storagePort = findUnusedLocalPort();
-                nativeTransportPort = findUnusedLocalPort();
-                rpcPort = findUnusedLocalPort();
-                result = result + "\nstorage_port: " + storagePort;
-                result = result + "\nnative_transport_port: " + nativeTransportPort;
-                result = result + "\nrpc_port: " + rpcPort;
-                InputStream pimped = new ByteArrayInputStream(result.getBytes(StandardCharsets.UTF_8));
+
+        try {
+            Path ciao = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+            byte[] bytes = Files.readAllBytes(ciao);
+            String result = new String(bytes, StandardCharsets.UTF_8);
+            storagePort = findUnusedLocalPort();
+            nativeTransportPort = findUnusedLocalPort();
+            rpcPort = findUnusedLocalPort();
+            result = result + "\nstorage_port: " + storagePort;
+            result = result + "\nnative_transport_port: " + nativeTransportPort;
+            result = result + "\nrpc_port: " + rpcPort;
+            InputStream pimped = new ByteArrayInputStream(result.getBytes(StandardCharsets.UTF_8));
 
 
-                String directory = "target/embeddedCassandra";
-                org.apache.cassandra.io.util.FileUtils.createDirectory(directory);
-                Path copyName = Paths.get(directory, "cassandra-embedded.yaml");
-                Files.copy(pimped, copyName);
+            String directory = "target/embeddedCassandra";
+            org.apache.cassandra.io.util.FileUtils.createDirectory(directory);
+            Path copyName = Paths.get(directory, "cassandra-embedded.yaml");
+            System.out.println("CASSANDRA LOGS: "+ Paths.get(directory).toAbsolutePath()+"/cassandra.log");
+            Files.copy(pimped, copyName);
 
-                File file = copyName.toFile();
+            File file = copyName.toFile();
 
-                System.setProperty("cassandra.config", "file:" + file.getAbsolutePath());
-                System.setProperty("cassandra-foreground", "true");
-                System.setProperty("cassandra.native.epoll.enabled", "false"); // JNA doesnt cope with relocated netty
-                System.setProperty("cassandra.unsafesystem", "true"); // disable fsync for a massive speedup on old platters
-                GraknCassandra.main(new String[]{});
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        Thread.sleep(5000);
+            System.setProperty("cassandra.config", "file:" + file.getAbsolutePath());
+            System.setProperty("cassandra-foreground", "true");
+            System.setProperty("cassandra.native.epoll.enabled", "false"); // JNA doesnt cope with relocated netty
+            System.setProperty("cassandra.unsafesystem", "true"); // disable fsync for a massive speedup on old platters
+            GraknCassandra.main(new String[]{});
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         System.out.println("Cassandra started.");
         try {
             dataDirTmp = Files.createTempDirectory("db-for-test");
@@ -139,11 +131,8 @@ public class ConcurrentGraknServer extends ExternalResource {
     @Override
     protected void after() {
         try {
-            executor.shutdownNow();
             graknServer.close();
             sparkHttp.stop();
-            serverRunnable.die();
-            serverExecutor.shutdownNow();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -196,57 +185,44 @@ public class ConcurrentGraknServer extends ExternalResource {
     }
 
     private void startGraknEngineServer() {
-        serverRunnable = new RunnableServer();
-        serverExecutor = Executors.newSingleThreadExecutor();
-        serverExecutor.execute(serverRunnable);
-    }
+        EngineID id = EngineID.me();
+        ServerStatus status = new ServerStatus();
 
-    class RunnableServer implements Runnable {
+        MetricRegistry metricRegistry = new MetricRegistry();
 
-        public void die(){
-            Thread.currentThread().interrupt();
+        // distributed locks
+        LockProvider lockProvider = new ProcessWideLockProvider();
+
+        keyspaceStore = new KeyspaceStoreImpl(config);
+
+        // tx-factory
+        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
+
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
+        OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
+
+        io.grpc.Server server = ServerBuilder.forPort(0)
+                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
+                .addService(new KeyspaceService(keyspaceStore))
+                .build();
+        ServerRPC rpcServerRPC = ServerRPC.create(server);
+        GraknTestUtil.allocateSparkPort(config);
+
+        Server graknEngineServer = ServerFactory.createServer(id, config, status,
+                sparkHttp, Collections.emptyList(), rpcServerRPC,
+                engineGraknTxFactory, metricRegistry,
+                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+
+        try {
+            graknEngineServer.start();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        @Override
-        public void run() {
-            EngineID id = EngineID.me();
-            ServerStatus status = new ServerStatus();
+        // Read the automatically allocated ports and write them back into the config
+        config.setConfigProperty(GraknConfigKey.GRPC_PORT, server.getPort());
 
-            MetricRegistry metricRegistry = new MetricRegistry();
-
-            // distributed locks
-            LockProvider lockProvider = new ProcessWideLockProvider();
-
-            keyspaceStore = new KeyspaceStoreImpl(config);
-
-            // tx-factory
-            engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
-
-            AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
-            OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
-
-            io.grpc.Server server = ServerBuilder.forPort(0)
-                    .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
-                    .addService(new KeyspaceService(keyspaceStore))
-                    .build();
-            ServerRPC rpcServerRPC = ServerRPC.create(server);
-            GraknTestUtil.allocateSparkPort(config);
-
-            Server graknEngineServer = ServerFactory.createServer(id, config, status,
-                    sparkHttp, Collections.emptyList(), rpcServerRPC,
-                    engineGraknTxFactory, metricRegistry,
-                    lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
-
-            try {
-                graknEngineServer.start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            // Read the automatically allocated ports and write them back into the config
-            config.setConfigProperty(GraknConfigKey.GRPC_PORT, server.getPort());
-
-            graknServer = graknEngineServer;
-        }
+        graknServer = graknEngineServer;
     }
+
 }
