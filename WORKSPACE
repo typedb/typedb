@@ -114,9 +114,12 @@ load("@org_pubref_rules_proto//node:deps.bzl", "node_grpc_compile")
 node_grpc_compile()
 
 
-#######################################
-# Load deployment dependencies        #
-#######################################
+########################################
+#     Load Deployment Dependencies     #
+########################################
+
+load("//dependencies/deployment/github:dependencies.bzl", "dependencies_for_github_deployment")
+dependencies_for_github_deployment()
 
 load("//dependencies/deployment/maven:dependencies.bzl", maven_dependencies_for_deployment = "maven_dependencies")
 maven_dependencies_for_deployment()

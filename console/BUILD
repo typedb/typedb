@@ -18,6 +18,21 @@
 
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
+genrule(
+    name = "distribution",
+    srcs = ["//:grakn", "console-binary_deploy.jar"],
+    outs = ["dist/grakn-core-console.zip"],
+    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
+    tools = ["distribution.sh"]
+)
+
+java_binary(
+    name = "console-binary",
+    main_class = "ai.grakn.core.console.Graql",
+    runtime_deps = [":console"],
+    visibility = ["//visibility:public"]
+)
+
 java_library(
     name = "console",
     srcs = glob(["src/**/*.java"]),
@@ -50,21 +65,6 @@ deploy_maven_jar(
     name = "deploy-maven-jar",
     targets = [":console"],
     version_file = "//:VERSION",
-)
-
-java_binary(
-    name = "console-binary",
-    main_class = "ai.grakn.core.console.Graql",
-    runtime_deps = ["//console:console"],
-    visibility = ["//visibility:public"]
-)
-
-genrule(
-    name = "distribution",
-    srcs = ["//:grakn", "console-binary_deploy.jar"],
-    outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
-    tools = ["distribution.sh"]
 )
 
 exports_files(
