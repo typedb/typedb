@@ -62,7 +62,7 @@ fi
 
 # Update the JAR contents to simulate Maven structure
 DIRECTORY_INSIDE_JAR=META-INF/maven/$GROUP_ID/$ARTIFACT/
-cp lib.jar _lib.jar # un-symlink it
+cp lib.jar lib-with-maven-metadata.jar # un-symlink it and add the maven metadata to the new copy afterwards
 mkdir -p $DIRECTORY_INSIDE_JAR/
 
 install -m 755 pom.xml $DIRECTORY_INSIDE_JAR/pom.xml
@@ -73,17 +73,17 @@ echo "version=$VERSION" >> $DIRECTORY_INSIDE_JAR/pom.properties
 echo "groupId=$GROUP_ID" >> $DIRECTORY_INSIDE_JAR/pom.properties
 echo "artifactId=$ARTIFACT" >> $DIRECTORY_INSIDE_JAR/pom.properties
 
-jar -fu _lib.jar META-INF/
+jar -fu lib-with-maven-metadata.jar META-INF/
 
 $MD5_BINARY pom.xml | awk '{print $1}' > pom.md5
-$MD5_BINARY _lib.jar | awk '{print $1}' > lib.jar.md5
+$MD5_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.md5
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5
 
 $SHA1_BINARY pom.xml | awk '{print $1}' > pom.sha1
-$SHA1_BINARY _lib.jar | awk '{print $1}' > lib.jar.sha1
+$SHA1_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.sha1
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1
 
 curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file _lib.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar
+curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar
