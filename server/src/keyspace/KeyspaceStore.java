@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server;
+package ai.grakn.core.server.keyspace;
 
 import ai.grakn.Keyspace;
 import ai.grakn.concept.Label;

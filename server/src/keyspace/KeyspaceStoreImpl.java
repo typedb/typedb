@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.keyspace;
+package ai.grakn.core.server.keyspace;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -27,7 +27,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.core.server.GraknConfig;
-import ai.grakn.core.server.KeyspaceStore;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.EmbeddedGraknSession;

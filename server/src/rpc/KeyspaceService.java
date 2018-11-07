@@ -20,7 +20,7 @@ package ai.grakn.core.server.rpc;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.core.server.KeyspaceStore;
+import ai.grakn.core.server.keyspace.KeyspaceStore;
 import ai.grakn.rpc.proto.KeyspaceProto;
 import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
 import io.grpc.Status;

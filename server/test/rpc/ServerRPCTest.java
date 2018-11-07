@@ -27,7 +27,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
-import ai.grakn.core.server.KeyspaceStore;
+import ai.grakn.core.server.keyspace.KeyspaceStore;
 import ai.grakn.core.server.ServerRPC;
 import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
