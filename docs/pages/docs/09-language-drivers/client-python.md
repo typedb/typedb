@@ -1,1 +1,1 @@
-../../../../client-python/README.md
+../../../../client_python/README.md

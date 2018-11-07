@@ -38,6 +38,12 @@ entries:
           - title: AWS Deployment
             output: web
             url: /docs/cloud-deployment/aws-deployment
+          - title: AWS AMI Deployment
+            output: web
+            url: /docs/cloud-deployment/aws-deployment-ami
+          - title: AWS CloudFormation Deployment
+            output: web
+            url: /docs/cloud-deployment/aws-deployment-cf
           - title: Best Practices
             output: web
             url: /docs/cloud-deployment/best-practices
