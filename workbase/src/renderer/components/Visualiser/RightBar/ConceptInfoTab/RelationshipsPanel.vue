@@ -44,7 +44,7 @@
                                 <div class="label">
                                     In
                                 </div>
-                                <div class="value">
+                                <div class="value relationship-item">
                                     {{rel}}
                                 </div>
                             </div>
@@ -59,10 +59,10 @@
 
                             <div v-if="showRolePLayers">
                                 <div class="roleplayers-list content-item" v-for="(rp, index) in relationships.get(currentRole).get(rel)" :key="index">
-                                    <div class="label">
+                                    <div class="label role-label">
                                         {{rp.role}}
                                     </div>
-                                    <div class="value">
+                                    <div class="value player-value">
                                         {{rp.player}}
                                     </div>
                                 </div>
