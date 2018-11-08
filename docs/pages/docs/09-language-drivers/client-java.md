@@ -1,1 +1,0 @@
-../../../../client-java/README.md
