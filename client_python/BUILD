@@ -17,29 +17,19 @@
 #
 
 
-load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
 load("@io_bazel_rules_python//python:python.bzl", "py_library", "py_test")
 load("@pypi_dependencies//:requirements.bzl", "requirement")
 
 
-python_grpc_compile(
-    name = "client_python_proto",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ]
-)
-
 py_library(
     name = "client_python",
-    srcs = [":client_python_proto"] + glob([
+    srcs = glob([
         "grakn/__init__.py",
         "grakn/exception/*.py",
         "grakn/service/**/*.py"
     ]),
     deps = [
+        "//protocol:protocol_python",
         requirement("protobuf"),
         requirement("grpcio"),
         requirement("six"),
@@ -57,7 +47,7 @@ py_test(
         ":client_python",
         requirement("forbiddenfruit")
     ],
-    imports = [".", "./client_python_proto"]
+    imports = [".", "../protocol/protocol_python_src"]
 )
 
 py_test(
@@ -70,7 +60,7 @@ py_test(
         ":client_python",
         requirement("forbiddenfruit")
     ],
-    imports = [".", "./client_python_proto"]
+    imports = [".", "../protocol/protocol_python_src"]
 )
 
 py_test(
@@ -83,7 +73,7 @@ py_test(
         ":client_python",
         requirement("forbiddenfruit")
     ],
-    imports = [".", "./client_python_proto"]
+    imports = [".", "../protocol/protocol_python_src"]
 )
 
 test_suite(

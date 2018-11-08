@@ -22,7 +22,7 @@ load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_grpc_compile(
-    name = "rpc-java-proto",
+    name = "protocol-java-src",
     deps = [
         "//protocol/session:session-proto",
         "//protocol/session:answer-proto",
@@ -32,8 +32,8 @@ java_grpc_compile(
 )
 
 java_library(
-    name = "rpc-java",
-    srcs = [":rpc-java-proto"],
+    name = "protocol-java",
+    srcs = [":protocol-java-src"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
@@ -46,6 +46,32 @@ java_library(
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":rpc-java"],
+    targets = [":protocol-java"],
     version_file = "//:VERSION",
+)
+
+
+load("@org_pubref_rules_proto//python:compile.bzl", "python_grpc_compile")
+load("@io_bazel_rules_python//python:python.bzl", "py_library")
+load("@pypi_dependencies//:requirements.bzl", "requirement")
+
+python_grpc_compile(
+    name = "protocol_python_src",
+    deps = [
+        "//protocol/session:session-proto",
+        "//protocol/session:answer-proto",
+        "//protocol/session:concept-proto",
+        "//protocol/keyspace:keyspace-proto",
+    ]
+)
+
+py_library(
+    name = "protocol_python",
+    srcs = [":protocol_python_src"],
+    deps = [
+        requirement("protobuf"),
+        requirement("grpcio"),
+        requirement("six"),
+        requirement("enum34")
+    ]
 )

@@ -8,7 +8,7 @@ java_test(
         "//server",
         "//grakn-graql",
         "//client-java",
-        "//protocol:rpc-java",
+        "//protocol:protocol-java",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

@@ -24,7 +24,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
-        "//protocol:rpc-java",
+        "//protocol:protocol-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",

@@ -26,7 +26,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
-        "//protocol:rpc-java",
+        "//protocol:protocol-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
@@ -63,7 +63,7 @@ java_test(
     deps = [
         ":client-java",
         "//grakn-graql:grakn-graql",
-        "//protocol:rpc-java",
+        "//protocol:protocol-java",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-testing",
