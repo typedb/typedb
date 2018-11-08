@@ -45,13 +45,15 @@ describe('Relationships Panel', () => {
 
     await app.client.keys('match $x isa person id V61528; get;');
 
+    await sleep(1000);
+
     await app.client.click('.run-btn');
 
-    await sleep(2000);
+    await sleep(3000);
 
     await app.client.click('#graph-div');
 
-    await sleep(2000);
+    await sleep(4000);
 
     await assert.equal(await app.client.getText('.role-btn-text'), 'child');
     await assert.equal(await app.client.getText('.relationship-item'), 'parentship');
