@@ -49,7 +49,7 @@ describe('Relationships Panel', () => {
 
     await app.client.click('.run-btn');
 
-    await sleep(3000);
+    await sleep(10000);
 
     await app.client.click('#graph-div');
 
