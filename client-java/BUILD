@@ -18,33 +18,21 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
-
-java_grpc_compile(
-    name = "client-java-proto",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ]
-)
 
 java_library(
     name = "client-java",
-    srcs = [":client-java-proto"] + glob(["src/**/*.java"]),
+    srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
+        "//protocol:protocol-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave-instrumentation-grpc",
@@ -74,7 +62,8 @@ java_test(
     test_class = "ai.grakn.client.TransactionTest",
     deps = [
         ":client-java",
-        "//grakn-graql",
+        "//grakn-graql:grakn-graql",
+        "//protocol:protocol-java",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-testing",

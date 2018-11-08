@@ -16,25 +16,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
-
-java_grpc_compile(
-    name = "server-java-proto",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ]
-)
 
 java_library(
     name = "server",
-    srcs = [":server-java-proto"] + glob(["src/**/*.java"]),
+    srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//grakn-graql:grakn-graql",
+        "//protocol:protocol-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
@@ -43,13 +33,11 @@ java_library(
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-io:commons-io", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-sender-urlconnection",
