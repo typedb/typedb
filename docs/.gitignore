@@ -1,9 +1,0 @@
-_site
-.sass_cache/
-.jekyll-metadata
-_pdf
-*.swp
-Gemfile.lock
-*.geany
-node_modules
-.ruby-version
