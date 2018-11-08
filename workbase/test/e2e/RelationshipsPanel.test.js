@@ -43,7 +43,7 @@ describe('Relationships Panel', () => {
   test('click on a node', async () => {
     await app.client.click('.CodeMirror');
 
-    await app.client.keys('match $x isa person; offset 2; limit 1; get;');
+    await app.client.keys('match $x isa person id V61528; get;');
 
     await app.client.click('.run-btn');
 
