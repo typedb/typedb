@@ -103,8 +103,7 @@ public final class Grakn {
                     .supportsJoin(true)
                     .build();
 
-            GrpcTracing.create(tracing);
-
+//            GrpcTracing.create(tracing);
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
                     .intercept(new GrpcClientInterceptor(tracing))
                     .usePlaintext(true).build();

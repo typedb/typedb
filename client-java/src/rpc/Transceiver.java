@@ -22,6 +22,8 @@ package ai.grakn.client.rpc;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
+import brave.ScopedSpan;
+import brave.Span;
 import brave.Tracer;
 import brave.Tracing;
 import brave.propagation.TraceContext;
@@ -59,6 +61,8 @@ public class Transceiver implements AutoCloseable {
     private final StreamObserver<Transaction.Req> requestSender;
     private final ResponseListener responseListener;
 
+    private Span activeSpan = null;
+
     private Transceiver(StreamObserver<Transaction.Req> requestSender, ResponseListener responseListener) {
         this.requestSender = requestSender;
         this.responseListener = responseListener;
@@ -81,7 +85,13 @@ public class Transceiver implements AutoCloseable {
         Tracer tracer = Tracing.currentTracer();
 
         if (tracer != null && tracer.currentSpan() != null) {
+
+//            activeSpan = tracer.newChild(tracer.currentSpan().context());
+//            activeSpan.name("client: " + request.getReqCase().name());
+//            activeSpan.start();
+//            TraceContext context = activeSpan.context();
             TraceContext context = tracer.currentSpan().context();
+
             Transaction.Req.Builder builder = request.toBuilder();
 
             // span ID
@@ -115,6 +125,13 @@ public class Transceiver implements AutoCloseable {
      */
     public Response receive() throws InterruptedException {
         Response response = responseListener.poll();
+
+        if (activeSpan != null) {
+//            activeSpan.annotate("Client recv resp");
+//            activeSpan.tag("receivedMessage", response.toString());
+//            activeSpan.finish();
+//            activeSpan = null;
+        }
         if (response.type() != Response.Type.OK) {
             close();
         }

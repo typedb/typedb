@@ -68,16 +68,20 @@ public class GrpcClientInterceptor implements ClientInterceptor {
          */
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
 
-
             Span currentClientSpan = tracer.nextSpan(); //initialize to pass compilation, then abandon it
             int childMsgNumber = 0;
-
 
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
                 super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
                     @Override
                     public void onMessage(RespT message) {
+                        System.out.println("receive");
+                        try {
+                            throw new RuntimeException();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         if (currentClientSpan != null) {
                             currentClientSpan.annotate("Client recv resp");
                             if (LOG.isDebugEnabled()) {
@@ -101,6 +105,13 @@ public class GrpcClientInterceptor implements ClientInterceptor {
 
             @Override
             public void sendMessage(ReqT message) {
+                System.out.println("HI");
+                System.out.println("bye");
+                try {
+                    throw new RuntimeException();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 if (message instanceof SessionProto.Transaction.Req &&
                         ((SessionProto.Transaction.Req) message).
                                 getMetadataOrDefault("traceIdLow", "").
