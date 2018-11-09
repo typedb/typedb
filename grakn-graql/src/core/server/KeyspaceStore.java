@@ -86,4 +86,6 @@ public interface KeyspaceStore {
     void loadSystemSchema();
 
     void addKeyspace(Keyspace keyspace);
+
+    void closeStore();
 }

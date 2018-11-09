@@ -25,32 +25,32 @@ java_library(
 java_library(
     name = "janusgraph-core",
     exports = [
-        "//external:jar/org/janusgraph/janusgraph-core"
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/com/carrotsearch:hppc",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-ganglia",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-graphite",
-        "//dependencies/maven/artifacts/com/github/stephenc/high-scale-lib:high-scale-lib",
-        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-codec:commons-codec",
-        "//dependencies/maven/artifacts/commons-collections:commons-collections",
-        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
-        "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-text",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-groovy",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/org/glassfish:javax-json",
-        "//dependencies/maven/artifacts/org/locationtech/jts:jts-core",
-        "//dependencies/maven/artifacts/org/locationtech/spatial4j:spatial4j",
-        "//dependencies/maven/artifacts/org/noggit:noggit",
-        "//dependencies/maven/artifacts/org/reflections:reflections"
+        "//dependencies/janusgraph:janusgraph-core"
     ],
     visibility = [
         "//visibility:public"
+    ],
+    runtime_deps = [
+            "//dependencies/maven/artifacts/com/carrotsearch:hppc",
+            "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
+            "//dependencies/maven/artifacts/com/codahale/metrics:metrics-ganglia",
+            "//dependencies/maven/artifacts/com/codahale/metrics:metrics-graphite",
+            "//dependencies/maven/artifacts/com/github/stephenc/high-scale-lib:high-scale-lib",
+            "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+            "//dependencies/maven/artifacts/com/google/guava:guava",
+            "//dependencies/maven/artifacts/commons-codec:commons-codec",
+            "//dependencies/maven/artifacts/commons-collections:commons-collections",
+            "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
+            "//dependencies/maven/artifacts/commons-io:commons-io",
+            "//dependencies/maven/artifacts/org/apache/commons:commons-text",
+            "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+            "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-groovy",
+            "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
+            "//dependencies/maven/artifacts/org/glassfish:javax-json",
+            "//dependencies/maven/artifacts/org/locationtech/jts:jts-core",
+            "//dependencies/maven/artifacts/org/locationtech/spatial4j:spatial4j",
+            "//dependencies/maven/artifacts/org/noggit:noggit",
+            "//dependencies/maven/artifacts/org/reflections:reflections"
     ]
 )
 

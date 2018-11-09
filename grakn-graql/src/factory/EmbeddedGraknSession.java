@@ -26,10 +26,10 @@ import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.core.server.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.janus.GraknTxJanus;
 import ai.grakn.kb.internal.EmbeddedGraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +71,9 @@ public class EmbeddedGraknSession implements GraknSession {
 
     /**
      * Instantiates {@link EmbeddedGraknSession}
-     *  @param keyspace to which keyspace the session should be bound to
-     * @param config   config to be used. If null is supplied, it will be created
+     *
+     * @param keyspace         to which keyspace the session should be bound to
+     * @param config           config to be used. If null is supplied, it will be created
      * @param txFactoryBuilder
      */
     EmbeddedGraknSession(Keyspace keyspace, @Nullable GraknConfig config, TxFactoryBuilder txFactoryBuilder) {
@@ -154,13 +155,15 @@ public class EmbeddedGraknSession implements GraknSession {
 
     @Override
     public void close() throws GraknTxOperationException {
-        int openTransactions = openTransactions(tx) + openTransactions(txBatch);
-        if (openTransactions > 0) {
-            LOG.warn(ErrorMessage.TXS_OPEN.getMessage(this.keyspace, openTransactions));
+        if (tx != null) {
+            tx.closeSession();
+            closeTransactions(tx);
         }
 
-        if (tx != null) tx.closeSession();
-        if (txBatch != null) txBatch.closeSession();
+        if (txBatch != null){
+            txBatch.closeSession();
+            closeTransactions(txBatch);
+        }
     }
 
     @Override
@@ -178,9 +181,8 @@ public class EmbeddedGraknSession implements GraknSession {
     }
 
 
-    private int openTransactions(EmbeddedGraknTx<?> graph) {
-        if (graph == null) return 0;
-        return graph.numOpenTx();
+    private void closeTransactions(EmbeddedGraknTx<?> tx) {
+        ((GraknTxJanus) tx).closeOpenTransactions();
     }
 
 }

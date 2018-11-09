@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.Transaction;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
@@ -69,9 +70,10 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
         return getTinkerPopGraph().isClosed();
     }
 
-    @Override
-    public int numOpenTx() {
-        return ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().size();
+
+    public void closeOpenTransactions(){
+        ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(Transaction::close);
+        getTinkerPopGraph().close();
     }
 
     @Override

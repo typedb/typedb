@@ -1,6 +1,7 @@
 package ai.grakn.test.rule;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.Keyspace;
 import ai.grakn.core.server.GraknConfig;
 import ai.grakn.core.server.KeyspaceStore;
 import ai.grakn.core.server.Server;
@@ -19,9 +20,7 @@ import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.keyspace.KeyspaceStoreImpl;
-import ai.grakn.test.util.GraknTestUtil;
 import ai.grakn.util.SimpleURI;
-import com.codahale.metrics.MetricRegistry;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -37,7 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.UUID;
 
 /**
  * This rule starts Cassandra and Grakn Server and makes sure that both processes bind to random and unused ports.
@@ -48,7 +47,6 @@ public class ConcurrentGraknServer extends ExternalResource {
     private GraknConfig config;
     private Path dataDirTmp;
     private Server graknServer;
-    private spark.Service sparkHttp;
 
     private KeyspaceStore keyspaceStore;
 
@@ -64,7 +62,7 @@ public class ConcurrentGraknServer extends ExternalResource {
 
 
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
 
         try {
             Path ciao = Paths.get("test-integration/resources/cassandra-embedded.yaml");
@@ -82,15 +80,11 @@ public class ConcurrentGraknServer extends ExternalResource {
             String directory = "target/embeddedCassandra";
             org.apache.cassandra.io.util.FileUtils.createDirectory(directory);
             Path copyName = Paths.get(directory, "cassandra-embedded.yaml");
-            System.out.println("CASSANDRA LOGS: "+ Paths.get(directory).toAbsolutePath()+"/cassandra.log");
             Files.copy(pimped, copyName);
-
             File file = copyName.toFile();
 
             System.setProperty("cassandra.config", "file:" + file.getAbsolutePath());
             System.setProperty("cassandra-foreground", "true");
-            System.setProperty("cassandra.native.epoll.enabled", "false"); // JNA doesnt cope with relocated netty
-            System.setProperty("cassandra.unsafesystem", "true"); // disable fsync for a massive speedup on old platters
             GraknCassandra.main(new String[]{});
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -104,13 +98,9 @@ public class ConcurrentGraknServer extends ExternalResource {
         config = createTestConfig(dataDirTmp.toString());
         System.out.println("starting engine...");
 
-        // start engine
-
-        sparkHttp = spark.Service.ignite();
 
         startGraknEngineServer();
 
-        System.out.println("engine started on " + uri());
     }
 
     private static String getConfigStringFromFile(Path configPath) {
@@ -130,9 +120,10 @@ public class ConcurrentGraknServer extends ExternalResource {
 
     @Override
     protected void after() {
+        engineGraknTxFactory.closeSessions();
+        keyspaceStore.closeStore();
         try {
             graknServer.close();
-            sparkHttp.stop();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -142,16 +133,9 @@ public class ConcurrentGraknServer extends ExternalResource {
 
     // GETTERS
 
-    public SimpleURI uri() {
-        return config.uri();
-    }
 
     public SimpleURI grpcUri() {
-        return new SimpleURI(config.uri().getHost(), config.getProperty(GraknConfigKey.GRPC_PORT));
-    }
-
-    public KeyspaceStore systemKeyspace() {
-        return keyspaceStore;
+        return new SimpleURI(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
     }
 
     public EngineGraknTxFactory factory() {
@@ -169,7 +153,6 @@ public class ConcurrentGraknServer extends ExternalResource {
 
         GraknConfig config = GraknConfig.read(TEST_CONFIG_FILE);
         config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
-        config.setConfigProperty(GraknConfigKey.SERVER_PORT, 0);
         //We override the default store.port with the RPC_PORT given that we still use Thrift protocol to talk to Cassandra
         config.setConfigProperty(GraknConfigKey.STORAGE_PORT, rpcPort);
         //Hadoop cluster uses the Astyanax driver for some operations, so need to override the RPC_PORT (Thrift)
@@ -181,14 +164,13 @@ public class ConcurrentGraknServer extends ExternalResource {
     }
 
     public EmbeddedGraknSession sessionWithNewKeyspace() {
-        return EmbeddedGraknSession.createEngineSession(GraknTestUtil.randomKeyspace(), config);
+        Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
+        return EmbeddedGraknSession.createEngineSession(randomKeyspace, config);
     }
 
     private void startGraknEngineServer() {
         EngineID id = EngineID.me();
         ServerStatus status = new ServerStatus();
-
-        MetricRegistry metricRegistry = new MetricRegistry();
 
         // distributed locks
         LockProvider lockProvider = new ProcessWideLockProvider();
@@ -206,11 +188,8 @@ public class ConcurrentGraknServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
         ServerRPC rpcServerRPC = ServerRPC.create(server);
-        GraknTestUtil.allocateSparkPort(config);
 
-        Server graknEngineServer = ServerFactory.createServer(id, config, status,
-                sparkHttp, Collections.emptyList(), rpcServerRPC,
-                engineGraknTxFactory, metricRegistry,
+        Server graknEngineServer = ServerFactory.createServer(id, config, status, rpcServerRPC,
                 lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
 
         try {

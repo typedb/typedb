@@ -39,7 +39,6 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/org/cassandraunit:cassandra-unit",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",],
     data = ["//server:grakn-properties", "//test-integration/resources:cassandra-embedded"],

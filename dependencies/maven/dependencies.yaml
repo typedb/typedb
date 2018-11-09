@@ -452,3 +452,9 @@ dependencies:
       lang: java
       exclude:
       - "commons-io:commons-io"
+
+replacements:
+  org.janusgraph:
+    janusgraph-core:
+      lang: java
+      target: "//dependencies/janusgraph:janusgraph-core"

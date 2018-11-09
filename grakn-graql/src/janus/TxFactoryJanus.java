@@ -140,7 +140,6 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         JanusGraph JanusGraph = configureGraph(batchLoading);
         buildJanusIndexes(JanusGraph);
         JanusGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
-
         if (!strategiesApplied.getAndSet(true)) {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
@@ -177,8 +176,6 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
 
             builder.set(key.toString(), value);
         });
-
-
 
         LOG.debug("Opening graph {}", session().keyspace().getValue());
         return builder.open();

@@ -70,6 +70,10 @@ public class EngineGraknTxFactory {
         return session(keyspace).transaction(type);
     }
 
+    public void closeSessions(){
+        this.openedSessions.values().forEach(EmbeddedGraknSession::close);
+    }
+
     /**
      * Retrieves the {@link GraknSession} needed to open the {@link GraknTx}.
      * This will open a new one {@link GraknSession} if it hasn't been opened before
