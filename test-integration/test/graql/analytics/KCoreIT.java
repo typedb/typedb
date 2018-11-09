@@ -33,6 +33,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.answer.ConceptSet;
 import ai.grakn.test.rule.ConcurrentGraknServer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -69,6 +70,9 @@ public class KCoreIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession() { session.close(); }
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {

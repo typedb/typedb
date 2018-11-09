@@ -67,6 +67,8 @@ public class AttributeDeduplicatorIT {
             List<ConceptMap> conceptMaps = tx.graql().match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get().execute();
             assertThat(conceptMaps, hasSize(1));
         }
+
+        txFactory.closeSessions();
     }
 
     @Test
@@ -113,6 +115,8 @@ public class AttributeDeduplicatorIT {
             assertThat(owned, hasSize(1));
             assertThat(owner, hasSize(3));
         }
+
+        txFactory.closeSessions();
     }
 
     @Test
@@ -164,6 +168,8 @@ public class AttributeDeduplicatorIT {
             assertThat(owned, hasSize(1));
             assertThat(owner, hasSize(2));
         }
+
+        txFactory.closeSessions();
     }
 
     @Test
@@ -210,6 +216,8 @@ public class AttributeDeduplicatorIT {
             assertThat(owned, hasSize(1));
             assertThat(owner, hasSize(5));
         }
+
+        txFactory.closeSessions();
     }
 
     @Test
@@ -257,6 +265,8 @@ public class AttributeDeduplicatorIT {
             assertThat(owned, hasSize(1));
             assertThat(owner, hasSize(3));
         }
+
+        txFactory.closeSessions();
     }
 
     @Test
@@ -311,6 +321,8 @@ public class AttributeDeduplicatorIT {
             assertThat(arp, hasSize(1));
             assertThat(owner, hasSize(3));
         }
+
+        txFactory.closeSessions();
     }
 
     /**

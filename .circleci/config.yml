@@ -78,7 +78,6 @@ jobs:
       - run: bazel test //test-integration/test/client/... --test_output=errors
       - run: bazel test //test-integration/test/graql/internal/... --test_output=errors
 #      - run: bazel test //test-integration/test/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
-      - run: bazel test //test-integration/test/graql/server/... --test_output=errors
       - run: bazel test //test-integration/test/internal/... --test_output=errors
       - run: bazel test //test-integration/test/server/... --test_output=errors
       - run: bazel test //test-integration/test/graql/reasoner/... --test_output=errors

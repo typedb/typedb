@@ -31,6 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graql.answer.Value;
 import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -56,6 +57,9 @@ public class CountIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession() { session.close(); }
 
     @Test
     public void testCountAfterCommit() {

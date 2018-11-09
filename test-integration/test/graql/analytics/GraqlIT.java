@@ -39,6 +39,7 @@ import ai.grakn.graql.answer.Value;
 import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -83,6 +84,9 @@ public class GraqlIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession() { session.close(); }
 
     @Test
     public void testGraqlCount() throws InvalidKBException {

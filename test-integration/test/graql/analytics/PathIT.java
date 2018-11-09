@@ -36,6 +36,7 @@ import ai.grakn.graql.answer.ConceptList;
 import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -73,11 +74,13 @@ public class PathIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession() { session.close(); }
 
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() {
