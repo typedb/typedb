@@ -1,30 +1,29 @@
-// const Application = require('spectron').Application;
-// const assert = require('assert');
-// const electronPath = require('electron'); // Require Electron from the binaries included in node_modules.
-// const path = require('path');
+const Application = require('spectron').Application;
+const assert = require('assert');
+const electronPath = require('electron'); // Require Electron from the binaries included in node_modules.
+const path = require('path');
 
-// const sleep = time => new Promise(r => setTimeout(r, time));
-// jest.setTimeout(30000);
+jest.setTimeout(30000);
 
-// const app = new Application({
-//   path: electronPath,
-//   args: [path.join(__dirname, '../../dist/electron/main.js')],
-// });
+const app = new Application({
+  path: electronPath,
+  args: [path.join(__dirname, '../../dist/electron/main.js')],
+});
 
-// beforeAll(async () => app.start());
+beforeAll(async () => app.start());
 
-// afterAll(async () => {
-//   if (app && app.isRunning()) {
-//     return app.stop();
-//   }
-//   return undefined;
-// });
+afterAll(async () => {
+  if (app && app.isRunning()) {
+    return app.stop();
+  }
+  return undefined;
+});
 
-// describe('Relationships Panel', () => {
-//   test('initialize workbase', async () => {
-//     const count = await app.client.getWindowCount();
-//     assert.equal(count, 1);
-//   });
+describe('Relationships Panel', () => {
+  test('initialize workbase', async () => {
+    const count = await app.client.getWindowCount();
+    assert.equal(count, 1);
+  });
 
 //   test('select keyspace', async () => {
 //     app.client.click('.keyspaces');
@@ -62,4 +61,4 @@
 //     await assert.equal((await app.client.getText('.player-value'))[0], 'person: V61472');
 //     await assert.equal((await app.client.getText('.player-value'))[1], 'person: V123120');
 //   });
-// });
+});
