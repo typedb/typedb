@@ -109,6 +109,10 @@ public class ConcurrentGraknServer extends ExternalResource {
         return EmbeddedGraknSession.createEngineSession(randomKeyspace, serverConfig);
     }
 
+    public EngineGraknTxFactory txFactory(){
+        return engineGraknTxFactory;
+    }
+
 
     //Cassandra Helpers
     private void generateCassandraRandomPorts() throws IOException {
