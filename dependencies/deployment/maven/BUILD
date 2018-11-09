@@ -16,6 +16,4 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-github.repository=grakn
-maven.repository-url.snapshot=http://maven.grakn.ai/nexus/content/repositories/bazel-test-snapshot
-maven.repository-url.release=http://maven.grakn.ai/nexus/content/repositories/bazel-test-release
+exports_files(["pom_template.xml", "deploy.sh"])

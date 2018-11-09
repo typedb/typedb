@@ -36,17 +36,6 @@ references:
       attach_workspace:
         at: ~/grakn
 
-    start_grakn_server: &start_grakn_server
-      run: nohup grakn-dist/target/grakn-core-test/grakn server start
-
-    save_test_results: &save_test_results
-      run:
-        name: Save test results
-        command: |
-          mkdir -p ~/grakn-surefire-reports/
-          find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/grakn-surefire-reports/ \;
-        when: always
-
 jobs:
   build:
     machine: true
@@ -68,57 +57,25 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - checkout
       - *prepare_apt_repositories
       - *install_yarn_and_unzip
       - *install_node
       - *install_bazel
-      - *attach_grakn_workspace
       - run: bazel test //grakn-graql/... --test_output=errors
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
-      - *save_test_results
-      - store_artifacts:
-          path: ~/grakn-surefire-reports/
-      - store_test_results:
-          path: ~/grakn-surefire-reports/
 
-  test-analytics-integration:
+  test-integration:
     machine: true
     working_directory: ~/grakn
     steps:
-    - *prepare_apt_repositories
-    - *install_yarn_and_unzip
-    - *install_node
-    - *install_bazel
-    - *attach_grakn_workspace
-    - run: bazel test //test-integration/test/graql/analytics/... --test_output=errors
-    - run: bazel test //test-integration/test/client/... --test_output=errors
-    - *save_test_results
-    - store_artifacts:
-        path: ~/grakn-surefire-reports/
-    - store_test_results:
-        path: ~/grakn-surefire-reports/
-
-  test-reasoner-integration:
-    machine: true
-    working_directory: ~/grakn
-    parallelism: 4
-    steps:
-    - *prepare_apt_repositories
-    - *install_yarn_and_unzip
-    - *install_node
-    - *install_bazel
-    - *attach_grakn_workspace
-    - run: bazel test //test-integration/test/graql/internal/... --test_output=errors
-    - run: bazel test //test-integration/test/graql/reasoner/... --test_output=errors
-    - run: bazel test //test-integration/test/graql/shell/... --test_output=errors
-    - run: bazel test //test-integration/test/internal/... --test_output=errors
-    - run: bazel test //test-integration/test/server/... --test_output=errors
-    - *save_test_results
-    - store_artifacts:
-        path: ~/grakn-surefire-reports/
-    - store_test_results:
-        path: ~/grakn-surefire-reports/
+      - checkout
+      - *prepare_apt_repositories
+      - *install_yarn_and_unzip
+      - *install_node
+      - *install_bazel
+      - run: bazel test //test-integration/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -128,11 +85,6 @@ jobs:
       - *install_bazel
       - run: bazel build //:distribution --sandbox_debug
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
-      - *save_test_results
-      - store_artifacts:
-          path: ~/grakn-surefire-reports/
-      - store_test_results:
-          path: ~/grakn-surefire-reports/
 
   client-nodejs-e2e:
       machine: true
@@ -268,15 +220,8 @@ workflows:
           filters:
             tags:
               ignore: /.*/
-      - test-unit:
-          requires:
-            - build
-      - test-analytics-integration:
-          requires:
-          - build
-      - test-reasoner-integration:
-          requires:
-          - build
+      - test-unit
+      - test-integration
       - test-end-to-end
       - client-nodejs-e2e
       - client-python-e2e
