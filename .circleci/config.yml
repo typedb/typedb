@@ -130,9 +130,8 @@ jobs:
       steps:
         - checkout
         - *prepare_apt_repositories
-        - *install_yarn_and_unzip
-        - *install_node
         - *install_bazel
+        - run: sudo apt-get -y install zip unzip
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
         - run: bazel build //:distribution --sandbox_debug
