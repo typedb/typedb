@@ -44,7 +44,7 @@ filegroup(
 
 genrule(
     name = "distribution",
-    cmd = "$(location //workbase/wrappers-bazel:npm_run_build.sh) $(location workbase.zip)",
+    cmd = "$(location //workbase/builder:npm-run-build.sh) $(location grakn-workbase.zip)",
     srcs = glob([
         "src/**/*",
         "build/**/*",
@@ -54,14 +54,14 @@ genrule(
         ".babelrc",
         "config.js",
         "jsconfig.json"]) + [":node_modules"],
-    outs = ["workbase.zip"],
-    tools = ["//workbase/wrappers-bazel:npm_run_build.sh", "@nodejs//:bin/npm", "@nodejs//:bin/node"]
+    outs = ["grakn-workbase.zip"],
+    tools = ["//workbase/builder:npm-run-build.sh", "@nodejs//:bin/npm", "@nodejs//:bin/node"]
 )
 
 
 sh_test(
     name = "tests-unit",
-    srcs = ["//workbase/wrappers-bazel:npm_test.sh"],
+    srcs = ["//workbase/builder:npm-test.sh"],
     args = ["test"],
     data = glob([
         "src/**/*",
@@ -78,7 +78,7 @@ sh_test(
 
 sh_test(
     name = "tests-e2e",
-    srcs = ["//workbase/wrappers-bazel:npm_test.sh"],
+    srcs = ["//workbase/builder:npm-test.sh"],
     args = ["run e2e"],
     data = glob([
         "src/**/*",

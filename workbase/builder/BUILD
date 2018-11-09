@@ -17,6 +17,6 @@
 #
 
 exports_files([
-    "npm_run_build.sh",
-    "npm_test.sh"
+    "npm-run-build.sh",
+    "npm-test.sh"
 ])
