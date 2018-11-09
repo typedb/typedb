@@ -141,7 +141,7 @@ jobs:
         - run: bazel run @nodejs//:npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
-        - run: bazel test //workbase:tests-e2e
+        - run: bazel test -s --test_output=streamed //workbase:tests-e2e
 
   build-workbase-linux:
       machine: true

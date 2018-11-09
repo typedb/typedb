@@ -19,6 +19,10 @@
     "pack:main": "./node_modules/cross-env/dist/bin/cross-env.js NODE_ENV=production ./node_modules/webpack/bin/webpack.js --progress --colors --config .electron-vue/webpack.main.config.js",
     "pack:renderer": "./node_modules/cross-env/dist/bin/cross-env.js NODE_ENV=production ./node_modules/webpack/bin/webpack.js --progress --colors --config .electron-vue/webpack.renderer.config.js",
     "postinstall": "npm install grpc --runtime=electron --target=3.0.6",
+    "//": [
+      "For running tests we first copy them over __test_run_root folder, also resolving symlinks",
+      "This is required for being able to run tests with bazel"
+    ],
     "pretest": "rm -rf __test_run_root && cp -RL test __test_run_root",
     "test": "./node_modules/jest/bin/jest.js ./__test_run_root/unit",
     "posttest": "rm -rf __test_run_root",
