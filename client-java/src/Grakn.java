@@ -85,27 +85,15 @@ public final class Grakn {
     private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
     private Keyspace keyspace;
 
-
     public Grakn(SimpleURI uri) {
         // default: no benchmarking
         this(uri, false);
     }
 
     public Grakn(SimpleURI uri, boolean benchmark) {
-
         if (benchmark) {
-            // attach tracing to the client
-            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-
-            Tracing tracing = Tracing.newBuilder()
-                    .localServiceName("query-benchmark-client-java")
-                    .spanReporter(reporter)
-                    .supportsJoin(true)
-                    .build();
-
-//            GrpcTracing.create(tracing);
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
-                    .intercept(new GrpcClientInterceptor(tracing))
+                    .intercept(new GrpcClientInterceptor("query-benchmark-client-java"))
                     .usePlaintext(true).build();
         } else {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())

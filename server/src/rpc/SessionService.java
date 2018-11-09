@@ -121,11 +121,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
         }
 
-
-
         @Override
         public void onNext(Transaction.Req request) {
-            // NOTE this is the gRPC thread
+            // !important: this is the gRPC thread
             try {
                 Tracer tracing = Tracing.currentTracer();
                 if (tracing != null && request.getMetadataOrDefault("traceIdLow", "").length() > 0) {
@@ -164,7 +162,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
             // this variant should only be called IF we have a valid tracer, context etc.
-
             queueSpan.finish(); // queue time has finished!
             // hop the span context across thread boundaries
             Tracer tracer = Tracing.currentTracer();

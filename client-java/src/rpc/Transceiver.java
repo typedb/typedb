@@ -22,11 +22,6 @@ package ai.grakn.client.rpc;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.rpc.proto.SessionProto.Transaction;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
-import brave.ScopedSpan;
-import brave.Span;
-import brave.Tracer;
-import brave.Tracing;
-import brave.propagation.TraceContext;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
@@ -37,7 +32,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static brave.internal.HexCodec.toLowerHex;
 
 
 /**
@@ -61,8 +55,6 @@ public class Transceiver implements AutoCloseable {
     private final StreamObserver<Transaction.Req> requestSender;
     private final ResponseListener responseListener;
 
-    private Span activeSpan = null;
-
     private Transceiver(StreamObserver<Transaction.Req> requestSender, ResponseListener responseListener) {
         this.requestSender = requestSender;
         this.responseListener = responseListener;
@@ -80,40 +72,6 @@ public class Transceiver implements AutoCloseable {
      * This method is non-blocking - it returns immediately.
      */
     public void send(Transaction.Req request) {
-
-        // set the current tracing context into the request
-        Tracer tracer = Tracing.currentTracer();
-
-        if (tracer != null && tracer.currentSpan() != null) {
-
-//            activeSpan = tracer.newChild(tracer.currentSpan().context());
-//            activeSpan.name("client: " + request.getReqCase().name());
-//            activeSpan.start();
-//            TraceContext context = activeSpan.context();
-            TraceContext context = tracer.currentSpan().context();
-
-            Transaction.Req.Builder builder = request.toBuilder();
-
-            // span ID
-            String spanIdStr = toLowerHex(context.spanId());
-            builder.putMetadata("spanId", spanIdStr);
-
-            // parent ID
-            Long parentId = context.parentId();
-            if (parentId == null) {
-                builder.putMetadata("parentId", "");
-            } else {
-                builder.putMetadata("parentId", toLowerHex(parentId));
-            }
-
-            // Trace ID
-            String traceIdLow = toLowerHex(context.traceId());
-            String traceIdHigh = toLowerHex(context.traceIdHigh());
-            builder.putMetadata("traceIdLow", traceIdLow);
-            builder.putMetadata("traceIdHigh", traceIdHigh);
-            request = builder.build(); // update the request
-        }
-
         if (responseListener.terminated.get()) {
             throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
         }
@@ -125,13 +83,6 @@ public class Transceiver implements AutoCloseable {
      */
     public Response receive() throws InterruptedException {
         Response response = responseListener.poll();
-
-        if (activeSpan != null) {
-//            activeSpan.annotate("Client recv resp");
-//            activeSpan.tag("receivedMessage", response.toString());
-//            activeSpan.finish();
-//            activeSpan = null;
-        }
         if (response.type() != Response.Type.OK) {
             close();
         }
