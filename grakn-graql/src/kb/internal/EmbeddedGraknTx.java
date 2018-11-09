@@ -172,10 +172,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         return globalCache;
     }
 
-    /**
-     * @return The number of open transactions currently.
-     */
-    public abstract int numOpenTx();
 
     /**
      * Opens the thread bound transaction

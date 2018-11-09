@@ -49,6 +49,7 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -91,6 +92,11 @@ public class AtomicTypeInferenceIT {
     public static void loadContext(){
         testContextSession = server.sessionWithNewKeyspace();
         loadFromFile("typeInferenceTest.gql", testContextSession);
+    }
+
+    @AfterClass
+    public static void closeSession(){
+        testContextSession.close();
     }
 
     @Test

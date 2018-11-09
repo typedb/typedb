@@ -91,6 +91,11 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     }
 
     @Override
+    public void closeStore() {
+        this.systemKeyspaceSession.close();
+    }
+
+    @Override
     public boolean containsKeyspace(Keyspace keyspace){
         //Check the local cache to see which keyspaces we already have open
         if(existingKeyspaces.contains(keyspace)){

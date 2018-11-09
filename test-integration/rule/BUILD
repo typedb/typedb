@@ -8,7 +8,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/junit:junit"],
-    resources = ["//test-integration/resources:cassandra-embedded",],
+    resources = ["//test-integration/resources:cassandra-embedded"],
     visibility = ["//test-integration:__subpackages__"],
 )
 
@@ -39,9 +39,8 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/org/cassandraunit:cassandra-unit",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",],
-    resources = ["//server:grakn-properties"],
+    data = ["//server:grakn-properties", "//test-integration/resources:cassandra-embedded"],
     visibility = ["//test-integration:__subpackages__"]
 )

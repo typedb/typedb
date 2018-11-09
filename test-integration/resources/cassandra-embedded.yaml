@@ -293,7 +293,7 @@ trickle_fsync: false
 trickle_fsync_interval_in_kb: 10240
 
 # TCP port, for commands and data
-storage_port: 7000
+#storage_port: 7000
 
 # SSL port, for encrypted communication.  Unused unless enabled in
 # encryption_options
@@ -324,8 +324,9 @@ listen_address: localhost
 # same as the rpc_address. The port however is different and specified below.
 start_native_transport: true
 # port for the CQL native transport to listen for clients on
-native_transport_port: 9042
+#native_transport_port: 9042
 # The maximum threads for handling requests when the native transport is used.
+# This is similar to rpc_max_threads though the default differs slightly (and
 # This is similar to rpc_max_threads though the default differs slightly (and
 # there is no native_transport_min_threads, idle threads will always be stopped
 # after 30 seconds).
@@ -349,7 +350,7 @@ start_rpc: true
 # that rely on node auto-discovery.
 rpc_address: localhost
 # port for Thrift to listen for clients on
-rpc_port: 9160
+#rpc_port: 9160
 
 # enable or disable keepalive on rpc connections
 rpc_keepalive: true

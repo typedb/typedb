@@ -4,10 +4,9 @@ java_test(
     srcs = ["AttributeDeduplicatorIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:cassandra-context",
+        "//test-integration/rule:concurrent-grakn-server",
         "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
-    resources = ["//server:grakn-properties"],
     size = "large"
 )
 

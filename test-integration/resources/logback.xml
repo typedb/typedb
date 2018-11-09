@@ -27,7 +27,7 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="ai.grakn" level="DEBUG" additivity="false">
+    <logger name="ai.grakn" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 

@@ -31,6 +31,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.rule.ConcurrentGraknServer;
 import ai.grakn.util.Schema;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -70,6 +71,9 @@ public class AnalyticsIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession() { session.close(); }
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
