@@ -30,6 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.core.server.ServerRPC;
+import ai.grakn.core.server.benchmark.ServerTracingInstrumentation;
 import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.benchmark.GrpcMessageConversion;
 import ai.grakn.graql.Graql;
@@ -125,22 +126,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         public void onNext(Transaction.Req request) {
             // !important: this is the gRPC thread
             try {
-                Tracer tracing = Tracing.currentTracer();
-                if (tracing != null && request.getMetadataOrDefault("traceIdLow", "").length() > 0) {
-                    String traceIdHigh = request.getMetadataOrThrow("traceIdHigh");
-                    String traceIdLow = request.getMetadataOrThrow("traceIdLow");
-                    String spanId = request.getMetadataOrThrow("spanId");
-                    String parentId = request.getMetadataOrDefault("parentId", "");
-
-                    receivedTraceContext = GrpcMessageConversion.stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
-
-                    // hop context across thread boundaries
-                    Span queueSpan = tracing
-                            .newChild(receivedTraceContext) // measure queue time
-                            .name("Server receive queue")
-                            .start();
+                if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
+                    TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
+                    Span queueSpan = ServerTracingInstrumentation.createChildSpan("Server receive queue", receivedTraceContext);
+                    queueSpan.start();
                     queueSpan.tag("childNumber", "0");
 
+                    // hop context & active Span across thread boundaries
                     submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
                 } else {
                     submit(() -> handleRequest(request));
@@ -161,12 +153,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
-            // this variant should only be called IF we have a valid tracer, context etc.
-            queueSpan.finish(); // queue time has finished!
-            // hop the span context across thread boundaries
-            Tracer tracer = Tracing.currentTracer();
-            ScopedSpan s = tracer.startScopedSpanWithParent("Server handle request", context);
-            s.tag("childNumber", "1");
+            /* this method variant is only called if tracing is active */
+
+            // close the Span from gRPC thread
+            queueSpan.finish(); // time spent in queue
+
+            // create a new scoped span
+            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpan("Server handle request", context);
+            span.tag("childNumber", "1");
             handleRequest(request);
         }
 
@@ -359,13 +353,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void onNextResponse(Transaction.Res response) {
-            Tracer tracer = Tracing.currentTracer();
-            if (tracer != null && tracer.currentSpan() != null) {
-                tracer.currentSpan().finish();
+            if (ServerTracingInstrumentation.existsCurrentSpan()) {
+                ServerTracingInstrumentation.currentSpan().finish();
             }
             responseSender.onNext(response);
         }
-
     }
 
     /**

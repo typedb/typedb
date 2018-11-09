@@ -52,20 +52,19 @@ import static brave.internal.HexCodec.toLowerHex;
  * recall that AsyncReporters report traces to Zipkin out of band (ie. async and independently)
  *
  */
-public class GrpcClientInterceptor implements ClientInterceptor {
-    private static final Logger LOG = LoggerFactory.getLogger(GrpcClientInterceptor.class);
+public class TracingInstrumentationClientInterceptor implements ClientInterceptor {
+    private static final Logger LOG = LoggerFactory.getLogger(TracingInstrumentationClientInterceptor.class);
     private Tracer tracer;
 
-    public GrpcClientInterceptor(String tracingServiceName) {
+    public TracingInstrumentationClientInterceptor(String tracingServiceName) {
 
         // create a Zipkin reporter for the client
         AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
 
-        // create a thread-local Tracing instance
+        // create a global Tracing instance with reporting
         Tracing tracing = Tracing.newBuilder()
             .localServiceName(tracingServiceName)
             .spanReporter(reporter)
-            .supportsJoin(true)
             .build();
 
         // save this tracer

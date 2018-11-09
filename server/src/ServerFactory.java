@@ -19,6 +19,7 @@
 package ai.grakn.core.server;
 
 import ai.grakn.GraknConfigKey;
+import ai.grakn.core.server.benchmark.ServerTracingInstrumentation;
 import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.core.server.lock.LockProvider;
@@ -92,16 +93,7 @@ public class ServerFactory {
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         if (benchmark) {
-            // Brave Instrumentation
-            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-
-            // set a new global tracer with reporting
-            Tracing.newBuilder()
-                    .localServiceName("query-benchmark-server")
-                    .supportsJoin(false)
-                    .spanReporter(reporter)
-                    .build();
-
+            ServerTracingInstrumentation.initInstrumentation("server-instrumentation");
         }
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)

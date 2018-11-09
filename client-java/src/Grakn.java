@@ -53,14 +53,10 @@ import ai.grakn.rpc.proto.SessionProto;
 import ai.grakn.rpc.proto.SessionServiceGrpc;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.SimpleURI;
-import brave.Tracing;
-import brave.grpc.GrpcTracing;
 import com.google.common.collect.AbstractIterator;
-import ai.grakn.client.benchmark.GrpcClientInterceptor;
+import ai.grakn.client.benchmark.TracingInstrumentationClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -93,7 +89,7 @@ public final class Grakn {
     public Grakn(SimpleURI uri, boolean benchmark) {
         if (benchmark) {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
-                    .intercept(new GrpcClientInterceptor("query-benchmark-client-java"))
+                    .intercept(new TracingInstrumentationClientInterceptor("client-java-instrumentation"))
                     .usePlaintext(true).build();
         } else {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
