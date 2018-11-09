@@ -655,6 +655,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     public void closeSession() {
         try {
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
+            getTinkerPopGraph().close();
         } catch (Exception e) {
             throw GraknTxOperationException.closingFailed(this, e);
         }

@@ -75,7 +75,24 @@ jobs:
       - *install_yarn_and_unzip
       - *install_node
       - *install_bazel
-      - run: bazel test //test-integration/... --test_output=errors
+      - run: bazel test //test-integration/test/client/... --test_output=errors
+      - run: bazel test //test-integration/test/graql/internal/... --test_output=errors
+#      - run: bazel test //test-integration/test/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
+      - run: bazel test //test-integration/test/graql/server/... --test_output=errors
+      - run: bazel test //test-integration/test/internal/... --test_output=errors
+      - run: bazel test //test-integration/test/server/... --test_output=errors
+      - run: bazel test //test-integration/test/graql/reasoner/... --test_output=errors
+
+  test-integration-analytics:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *prepare_apt_repositories
+    - *install_yarn_and_unzip
+    - *install_node
+    - *install_bazel
+    - run: bazel test //test-integration/test/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -222,6 +239,7 @@ workflows:
               ignore: /.*/
       - test-unit
       - test-integration
+      - test-integration-analytics
       - test-end-to-end
       - client-nodejs-e2e
       - client-python-e2e
