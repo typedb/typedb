@@ -51,13 +51,17 @@ public class SchemaMutationIT {
     private Role husband;
     private Role wife;
     private RelationshipType marriage;
+    private RelationshipType drives;
     private EntityType person;
     private EntityType woman;
     private EntityType man;
     private EntityType car;
+    private EntityType vehicle;
     private Thing alice;
     private Thing bob;
+    private Thing bmw;
     private Role driver;
+    private Role driven;
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
@@ -71,22 +75,25 @@ public class SchemaMutationIT {
     public void setUp(){
         session = server.sessionWithNewKeyspace();
         tx = session.transaction(GraknTxType.WRITE);
-        husband = tx.putRole("Husband");
-        wife = tx.putRole("Wife");
-        driver = tx.putRole("Driver");
-        Role driven = tx.putRole("Driven");
+        husband = tx.putRole("husband");
+        wife = tx.putRole("wife");
+        driver = tx.putRole("driver");
+        driven = tx.putRole("driven");
 
         marriage = tx.putRelationshipType("marriage").relates(husband).relates(wife);
-        tx.putRelationshipType("car being driven by").relates(driven).relates(driver);
+        drives = tx.putRelationshipType("drives").relates(driven).relates(driver);
 
-        person = tx.putEntityType("Person").plays(husband).plays(wife);
-        man = tx.putEntityType("Man").sup(person);
-        woman = tx.putEntityType("Woman").sup(person);
-        car = tx.putEntityType("Car");
+        person = tx.putEntityType("person").plays(husband).plays(wife).plays(driver);
+        man = tx.putEntityType("man").sup(person);
+        woman = tx.putEntityType("woman").sup(person);
+        vehicle = tx.putEntityType("vehicle").plays(driven);
+        car = tx.putEntityType("car").sup(vehicle);
 
         alice = woman.create();
         bob = man.create();
         marriage.create().assign(wife, alice).assign(husband, bob);
+        bmw = car.create();
+        drives.create().assign(driver, alice).assign(driven, bmw);
         tx.commit();
         tx = session.transaction(GraknTxType.WRITE);
     }
@@ -118,9 +125,9 @@ public class SchemaMutationIT {
     @Test
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, car, wife).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(vehicle, person, driven).getMessage());
 
-        man.sup(car);
+        car.sup(person);
     }
 
     @Test
@@ -300,27 +307,27 @@ public class SchemaMutationIT {
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
-        //Create a person and allow person to have a name
-        EntityType person = tx.putEntityType("person").has(name);
+        //Create a animal and allow animal to have a name
+        EntityType animal = tx.putEntityType("animal").has(name);
 
-        //Create a man which is a person and is therefore allowed to have a name
-        EntityType man = tx.putEntityType("man").sup(person);
+        //Create a dog which is a animal and is therefore allowed to have a name
+        EntityType dog = tx.putEntityType("dog").sup(animal);
         RelationshipType has_name = tx.getRelationshipType("@has-name");
 
-        //Create a Man and name him Bob
-        Attribute<String> nameBob = name.create("Bob");
-        man.create().has(nameBob);
+        //Create a dog and name it puppy
+        Attribute<String> puppy = name.create("puppy");
+        dog.create().has(puppy);
 
-        //Get The Relationship which says that our man is name bob
+        //Get The Relationship which says that our dog is name puppy
         Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = tx.getRole("@has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, tx.admin().getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(animal, tx.admin().getMetaEntityType(), hasNameOwner).getMessage());
 
-        //Man is no longer a person and therefore is not allowed to have a name
-        man.sup(tx.admin().getMetaEntityType());
+        //make a dog to not be an animal, and expect exception thrown
+        dog.sup(tx.admin().getMetaEntityType());
     }
 }
