@@ -307,24 +307,27 @@ public class SchemaMutationIT {
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
-        //Allow vehicle to have a name
-        vehicle.has(name);
+        //Create a animal and allow animal to have a name
+        EntityType animal = tx.putEntityType("animal").has(name);
+
+        //Create a dog which is a animal and is therefore allowed to have a name
+        EntityType dog = tx.putEntityType("dog").sup(animal);
         RelationshipType has_name = tx.getRelationshipType("@has-name");
 
-        //Create a Man and name him Bob
-        Attribute<String> carName = name.create("my bmw");
-        car.create().has(carName);
+        //Create a dog and name it puppy
+        Attribute<String> puppy = name.create("puppy");
+        dog.create().has(puppy);
 
-        //Get The Relationship which says that our man is name bob
+        //Get The Relationship which says that our dog is name puppy
         Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = tx.getRole("@has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(vehicle, tx.admin().getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(animal, tx.admin().getMetaEntityType(), hasNameOwner).getMessage());
 
-        //Man is no longer a person and therefore is not allowed to have a name
-        car.sup(tx.admin().getMetaEntityType());
+        //make a dog to not be an animal, and expect exception thrown
+        dog.sup(tx.admin().getMetaEntityType());
     }
 }
