@@ -252,7 +252,7 @@ public class BenchmarkBigIT {
      */
     @Test
     public void testRandomSetLinearTransitivity()  {
-        final int N = 2000;
+        final int N = 200;
         final int limit = 100;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
         loadTransitivityData(N);
