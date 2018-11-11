@@ -15,13 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.kb.internal.structure;
+package grakn.core.kb.internal.structure;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.concept.Concept;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -44,8 +44,8 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  * </p>
  *
  * @param <E> The type of the element. Either {@link VertexElement} of {@link EdgeElement}
- * @param <P> Enum indicating the allowed properties on each type. Either {@link ai.grakn.util.Schema.VertexProperty} or
- *           {@link ai.grakn.util.Schema.EdgeProperty}
+ * @param <P> Enum indicating the allowed properties on each type. Either {@link grakn.core.util.Schema.VertexProperty} or
+ *           {@link grakn.core.util.Schema.EdgeProperty}
  *
  * @author fppt
  *

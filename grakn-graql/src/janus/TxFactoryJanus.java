@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.janus;
+package grakn.core.janus;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.GraknTx;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryAbstract;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.GraknTx;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.factory.TxFactoryAbstract;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;

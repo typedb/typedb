@@ -17,46 +17,46 @@
  * under the License.
  */
 
-package ai.grakn.client;
+package grakn.core.client;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.QueryExecutor;
-import ai.grakn.client.concept.RemoteConcept;
-import ai.grakn.client.executor.RemoteQueryExecutor;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.client.rpc.ResponseReader;
-import ai.grakn.client.rpc.Transceiver;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.query.QueryBuilderImpl;
-import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.SimpleURI;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.QueryExecutor;
+import grakn.core.client.concept.RemoteConcept;
+import grakn.core.client.executor.RemoteQueryExecutor;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.client.rpc.ResponseReader;
+import grakn.core.client.rpc.Transceiver;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.internal.query.QueryBuilderImpl;
+import grakn.core.kb.admin.GraknAdmin;
+import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.rpc.proto.KeyspaceProto;
+import grakn.core.rpc.proto.KeyspaceServiceGrpc;
+import grakn.core.rpc.proto.SessionProto;
+import grakn.core.rpc.proto.SessionServiceGrpc;
+import grakn.core.util.CommonUtil;
+import grakn.core.util.SimpleURI;
 import brave.Tracing;
 import brave.grpc.GrpcTracing;
 import com.google.common.collect.AbstractIterator;
-import ai.grakn.client.benchmark.GrpcClientInterceptor;
+import grakn.core.client.benchmark.GrpcClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import zipkin2.reporter.AsyncReporter;
@@ -69,11 +69,11 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
- * For now, only a subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
+ * For now, only a subset of {@link GraknSession} and {@link grakn.core.GraknTx} features are supported.
  */
 public final class Grakn {
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
@@ -116,7 +116,7 @@ public final class Grakn {
         keyspace = new Keyspace();
     }
 
-    public Grakn.Session session(ai.grakn.Keyspace keyspace) {
+    public Grakn.Session session(grakn.core.Keyspace keyspace) {
         return new Session(keyspace);
     }
 
@@ -132,9 +132,9 @@ public final class Grakn {
      */
     public class Session implements GraknSession {
 
-        private final ai.grakn.Keyspace keyspace;
+        private final grakn.core.Keyspace keyspace;
 
-        private Session(ai.grakn.Keyspace keyspace) {
+        private Session(grakn.core.Keyspace keyspace) {
             this.keyspace = keyspace;
         }
 
@@ -157,7 +157,7 @@ public final class Grakn {
         }
 
         @Override
-        public ai.grakn.Keyspace keyspace() {
+        public grakn.core.Keyspace keyspace() {
             return keyspace;
         }
     }
@@ -168,7 +168,7 @@ public final class Grakn {
 
     public final class Keyspace {
 
-        public void delete(ai.grakn.Keyspace keyspace){
+        public void delete(grakn.core.Keyspace keyspace){
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
             keyspaceBlockingStub.delete(request);
         }

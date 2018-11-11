@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
+package grakn.core.graql.internal.gremlin.spanningtree.datastructure;
 
 import com.google.common.collect.Iterators;
 

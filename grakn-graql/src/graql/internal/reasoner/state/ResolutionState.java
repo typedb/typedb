@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.state;
+package grakn.core.graql.internal.reasoner.state;
 
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptMap;
 
 /**
  *

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.internal.printer.Printer;
+import grakn.core.concept.AttributeType;
+import grakn.core.graql.internal.printer.Printer;
 
 import java.util.Set;
 

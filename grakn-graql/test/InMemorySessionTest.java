@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.GraknTxTinker;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Ignore;
 import org.junit.Test;

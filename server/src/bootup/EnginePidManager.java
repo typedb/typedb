@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
-import ai.grakn.util.ErrorMessage;
+import grakn.core.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.predicate;
+package grakn.core.graql.internal.query.predicate;
 
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.admin.VarPatternAdmin;
 
 /**
  * Factory method for {@link ValuePredicate} implementations.

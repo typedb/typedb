@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.structure.Casting;
+import grakn.core.kb.internal.structure.EdgeElement;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;

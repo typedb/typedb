@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.predicate;
+package grakn.core.graql.internal.query.predicate;
 
-import ai.grakn.concept.AttributeType.DataType;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.util.Schema;
-import ai.grakn.util.StringUtil;
+import grakn.core.concept.AttributeType.DataType;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.util.Schema;
+import grakn.core.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

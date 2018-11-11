@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.graql.Var;
+import grakn.core.graql.Var;
 
 import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.BaseErrorListener;

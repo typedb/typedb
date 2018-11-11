@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.Var;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.AttributeType;
+import grakn.core.graql.Var;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
+import static grakn.core.util.Schema.VertexProperty.DATA_TYPE;
 
 @AutoValue
 abstract class DataTypeFragment extends Fragment {

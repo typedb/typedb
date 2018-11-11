@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
-import ai.grakn.Keyspace;
-import ai.grakn.exception.GraknTxOperationException;
+import grakn.core.Keyspace;
+import grakn.core.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 

@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server;
+package grakn.core.server;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import ai.grakn.core.server.factory.EngineGraknTxFactory;
-import ai.grakn.core.server.lock.LockProvider;
-import ai.grakn.core.server.lock.ProcessWideLockProvider;
-import ai.grakn.core.server.rpc.KeyspaceService;
-import ai.grakn.core.server.rpc.OpenRequest;
-import ai.grakn.core.server.rpc.ServerOpenRequest;
-import ai.grakn.core.server.rpc.SessionService;
-import ai.grakn.core.server.util.EngineID;
-import ai.grakn.core.server.keyspace.KeyspaceStore;
-import ai.grakn.core.server.keyspace.KeyspaceStoreImpl;
-import ai.grakn.util.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.lock.LockProvider;
+import grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.rpc.KeyspaceService;
+import grakn.core.server.rpc.OpenRequest;
+import grakn.core.server.rpc.ServerOpenRequest;
+import grakn.core.server.rpc.SessionService;
+import grakn.core.server.util.EngineID;
+import grakn.core.server.keyspace.KeyspaceStore;
+import grakn.core.server.keyspace.KeyspaceStoreImpl;
+import grakn.core.util.GraknConfig;
 import brave.Tracing;
 import io.grpc.ServerBuilder;
 import zipkin2.reporter.AsyncReporter;

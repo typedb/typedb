@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.graql.VarPattern;
+import grakn.core.graql.VarPattern;
 
 import javax.annotation.CheckReturnValue;
 

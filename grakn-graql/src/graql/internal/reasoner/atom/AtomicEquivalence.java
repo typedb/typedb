@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package grakn.core.graql.internal.reasoner.atom;
 
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.base.Equivalence;
 import java.util.Collection;
 import java.util.SortedSet;
@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * - Alpha-equivalence: two {@link Atomic}s are alpha-equivalent if they are equal up to the choice of free variables.
  *
  * - Structural equivalence:
- * Two atomics are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates {@link ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate}).
+ * Two atomics are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates {@link grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate}).
  * Hence:
  * - any two IdPredicates are structurally equivalent
  * - structural equivalence check on queries is done by looking at {@link Atom}s. As a result:

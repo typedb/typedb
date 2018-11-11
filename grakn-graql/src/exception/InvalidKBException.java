@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.GraknTx;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.GraknTx;
+import grakn.core.util.ErrorMessage;
 
 import java.util.List;
 

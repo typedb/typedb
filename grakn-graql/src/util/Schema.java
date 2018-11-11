@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
-import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
+import static grakn.core.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created

@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Type;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Type;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.Cacheable;
+import grakn.core.kb.internal.structure.Casting;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.CommonUtil;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
@@ -35,11 +35,11 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An {@link ai.grakn.concept.SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationshipType}.
+ *     An {@link grakn.core.concept.SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationshipType}.
  * </p>
  *
  * <p>
- *     This {@link ai.grakn.concept.SchemaConcept} defines the roles which make up a {@link RelationshipType}.
+ *     This {@link grakn.core.concept.SchemaConcept} defines the roles which make up a {@link RelationshipType}.
  *     It has some additional functionality:
  *     1. It cannot play a {@link Role} to itself.
  *     2. It is special in that it is unique to {@link RelationshipType}s.

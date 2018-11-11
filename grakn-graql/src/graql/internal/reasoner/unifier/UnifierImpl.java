@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.unifier;
+package grakn.core.graql.internal.reasoner.unifier;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Unifier;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;

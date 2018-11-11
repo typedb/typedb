@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.utils.conversion;
+package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

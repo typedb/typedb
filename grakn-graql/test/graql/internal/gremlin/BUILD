@@ -1,6 +1,6 @@
 java_test(
     name = "graql-traversal-test",
-    test_class = "ai.grakn.graql.internal.gremlin.GraqlTraversalTest",
+    test_class = "grakn.core.graql.internal.gremlin.GraqlTraversalTest",
     srcs = ["GraqlTraversalTest.java", "GraqlMatchers.java"],
     deps = [
         "//grakn-graql",
@@ -14,7 +14,7 @@ java_test(
 
 java_test(
     name = "conjunction-query-test",
-    test_class = "ai.grakn.graql.internal.gremlin.ConjunctionQueryTest",
+    test_class = "grakn.core.graql.internal.gremlin.ConjunctionQueryTest",
     srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

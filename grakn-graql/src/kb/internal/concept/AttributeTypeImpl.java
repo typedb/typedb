@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  * </p>
  *
  * <p>
- *     This ontological element behaves similarly to {@link ai.grakn.concept.Type} when defining how it relates to other
+ *     This ontological element behaves similarly to {@link grakn.core.concept.Type} when defining how it relates to other
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link AttributeType.DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.

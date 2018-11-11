@@ -16,41 +16,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.rpc;
+package grakn.core.server.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.client.rpc.Transceiver;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
-import ai.grakn.core.server.keyspace.KeyspaceStore;
-import ai.grakn.core.server.ServerRPC;
-import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import ai.grakn.core.server.factory.EngineGraknTxFactory;
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknException;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.AnswerProto;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.SessionProto.Transaction.Open;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.client.rpc.Transceiver;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.Label;
+import grakn.core.concept.Role;
+import grakn.core.server.keyspace.KeyspaceStore;
+import grakn.core.server.ServerRPC;
+import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.exception.GraknBackendException;
+import grakn.core.exception.GraknException;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.rpc.proto.AnswerProto;
+import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.rpc.proto.KeyspaceProto;
+import grakn.core.rpc.proto.KeyspaceServiceGrpc;
+import grakn.core.rpc.proto.SessionProto.Transaction;
+import grakn.core.rpc.proto.SessionProto.Transaction.Open;
+import grakn.core.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.grpc.ManagedChannel;
@@ -76,10 +76,10 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.client.rpc.RequestBuilder.Transaction.commit;
-import static ai.grakn.client.rpc.RequestBuilder.Transaction.iterate;
-import static ai.grakn.client.rpc.RequestBuilder.Transaction.open;
-import static ai.grakn.client.rpc.RequestBuilder.Transaction.query;
+import static grakn.core.client.rpc.RequestBuilder.Transaction.commit;
+import static grakn.core.client.rpc.RequestBuilder.Transaction.iterate;
+import static grakn.core.client.rpc.RequestBuilder.Transaction.open;
+import static grakn.core.client.rpc.RequestBuilder.Transaction.query;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasProperty;
@@ -100,7 +100,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit Tests for {@link ai.grakn.core.server.ServerRPC}
+ * Unit Tests for {@link grakn.core.server.ServerRPC}
  */
 public class ServerRPCTest {
 
@@ -116,7 +116,7 @@ public class ServerRPCTest {
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
     private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
     private final GetQuery query = mock(GetQuery.class);
-    private final ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
+    private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
 
     private ServerRPC rpcServerRPC;

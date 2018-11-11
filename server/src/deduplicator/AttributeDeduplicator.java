@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.deduplicator;
+package grakn.core.server.deduplicator;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.core.server.factory.EngineGraknTxFactory;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTxType;
+import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.Schema;
 import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;

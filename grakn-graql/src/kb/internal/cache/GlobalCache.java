@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.cache;
+package grakn.core.kb.internal.cache;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.util.GraknConfig;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.util.GraknConfig;
+import grakn.core.kb.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;

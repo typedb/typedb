@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package grakn.core.graql.internal.gremlin.sets;
 
-import ai.grakn.concept.Label;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import grakn.core.concept.Label;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -35,7 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 
 /**
  * A query can use a more-efficient attribute index traversal when the following criteria are met:

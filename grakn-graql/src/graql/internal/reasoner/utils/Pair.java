@@ -17,7 +17,7 @@
  */
 
 
-package ai.grakn.graql.internal.reasoner.utils;
+package grakn.core.graql.internal.reasoner.utils;
 
 import java.util.AbstractMap;
 

@@ -16,22 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.unifier;
+package grakn.core.graql.internal.reasoner.unifier;
 
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.areDisjointTypes;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
  *
@@ -47,8 +47,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      *
      * Exact unifier, requires type and id predicate bindings to match.
-     * Used in {@link ai.grakn.graql.internal.reasoner.cache.QueryCache} comparisons.
-     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
+     * Used in {@link grakn.core.graql.internal.reasoner.cache.QueryCache} comparisons.
+     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
      * .
      */
     EXACT {
@@ -90,8 +90,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      *
      * Similar to the exact one with addition to allowing id predicates to differ.
-     * Used in {@link ai.grakn.graql.internal.reasoner.cache.StructuralCache} comparisons.
-     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
+     * Used in {@link grakn.core.graql.internal.reasoner.cache.StructuralCache} comparisons.
+     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
      *
      */
     STRUCTURAL {

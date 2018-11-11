@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 
-import ai.grakn.exception.PropertyNotUniqueException;
+import grakn.core.exception.PropertyNotUniqueException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;

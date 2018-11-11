@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.util.CommonUtil;
+import grakn.core.GraknTx;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.util.CommonUtil;
 
 import java.util.Collection;
 import java.util.stream.Stream;

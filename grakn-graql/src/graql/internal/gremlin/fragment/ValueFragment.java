@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -30,7 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.util.CommonUtil.optionalToStream;
+import static grakn.core.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
 @AutoValue

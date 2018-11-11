@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Var;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.Var;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

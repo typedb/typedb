@@ -35,7 +35,7 @@ java_library(
 
 java_test(
     name = "grakn-config-test",
-    test_class = "ai.grakn.util.GraknConfigTest",
+    test_class = "grakn.core.util.GraknConfigTest",
     srcs = ["test/GraknConfigTest.java"],
     deps = [":util"],
     resources = ["test/resources/inmemory-graph.properties"],

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;

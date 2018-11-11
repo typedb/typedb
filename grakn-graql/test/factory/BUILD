@@ -18,7 +18,7 @@
 
 java_test(
     name = "tx-factory-builder-test",
-    test_class = "ai.grakn.factory.TxFactoryBuilderTest",
+    test_class = "grakn.core.factory.TxFactoryBuilderTest",
     srcs = ["TxFactoryBuilderTest.java"],
     resources = ["inmemory-graph.properties"],
     deps = [
@@ -31,7 +31,7 @@ java_test(
 
 java_test(
     name = "grakn-tx-tinker-factory-test",
-    test_class = "ai.grakn.factory.GraknTxTinkerFactoryTest",
+    test_class = "grakn.core.factory.GraknTxTinkerFactoryTest",
     srcs = ["GraknTxTinkerFactoryTest.java"],
     deps = [
         "//grakn-graql",

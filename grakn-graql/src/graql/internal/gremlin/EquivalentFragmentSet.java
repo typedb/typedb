@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin;
+package grakn.core.graql.internal.gremlin;
 
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

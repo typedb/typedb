@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Autocomplete;
-import ai.grakn.kb.admin.GraknAdmin;
+import grakn.core.GraknSession;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Label;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.Autocomplete;
+import grakn.core.kb.admin.GraknAdmin;
 import com.google.common.collect.ImmutableSet;
 import jline.console.completer.Completer;
 
@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocompleter for Graql.

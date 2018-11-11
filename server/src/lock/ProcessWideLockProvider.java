@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.lock;
+package grakn.core.server.lock;
 
 import com.google.common.util.concurrent.Striped;
 import java.util.concurrent.locks.Lock;

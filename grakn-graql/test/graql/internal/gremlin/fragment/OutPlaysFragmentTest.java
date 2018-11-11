@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.util.Schema;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
-import static ai.grakn.util.Schema.EdgeLabel.SUB;
-import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.util.Schema.EdgeLabel.PLAYS;
+import static grakn.core.util.Schema.EdgeLabel.SUB;
+import static grakn.core.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 

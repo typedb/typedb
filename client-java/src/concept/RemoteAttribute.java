@@ -17,15 +17,15 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.ConceptProto;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Thing;
+import grakn.core.rpc.proto.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 import java.time.Instant;
@@ -34,7 +34,7 @@ import java.time.ZoneId;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Attribute}
+ * Client implementation of {@link grakn.core.concept.Attribute}
  *
  * @param <D> The data type of this attribute
  */

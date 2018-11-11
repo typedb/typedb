@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.lock;
+package grakn.core.server.lock;
 
-import ai.grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.lock.ProcessWideLockProvider;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
-import ai.grakn.util.ErrorMessage;
+import grakn.core.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
 import org.apache.commons.lang.StringUtils;
 

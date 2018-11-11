@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package grakn.core.graql.internal.gremlin.sets;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import grakn.core.concept.AttributeType;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
 /**
- * @see EquivalentFragmentSets#dataType(ai.grakn.graql.admin.VarProperty, Var, AttributeType.DataType)
+ * @see EquivalentFragmentSets#dataType(grakn.core.graql.admin.VarProperty, Var, AttributeType.DataType)
  *
  * @author Felix Chapman
  */

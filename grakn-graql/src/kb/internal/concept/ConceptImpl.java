@@ -16,19 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.CacheOwner;
-import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.kb.internal.structure.Shard;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.Keyspace;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.CacheOwner;
+import grakn.core.kb.internal.cache.Cacheable;
+import grakn.core.kb.internal.structure.EdgeElement;
+import grakn.core.kb.internal.structure.Shard;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

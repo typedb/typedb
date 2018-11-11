@@ -16,23 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.answer;
+package grakn.core.graql.internal.query.answer;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Explanation;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
-import ai.grakn.graql.internal.reasoner.explanation.QueryExplanation;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.concept.Concept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.internal.reasoner.explanation.QueryExplanation;
+import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;

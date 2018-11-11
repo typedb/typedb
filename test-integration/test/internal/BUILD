@@ -1,7 +1,7 @@
 java_test(
      name = "validator-it",
      srcs = ["ValidatorIT.java"],
-     test_class = "ai.grakn.kb.internal.ValidatorIT",
+     test_class = "grakn.core.kb.internal.ValidatorIT",
      deps = [
          "//grakn-graql",
          "//util",
@@ -15,7 +15,7 @@ java_test(
 java_test(
   name = "validate-global-rules-it",
   srcs = ["ValidateGlobalRulesIT.java"],
-  test_class = "ai.grakn.kb.internal.ValidateGlobalRulesIT",
+  test_class = "grakn.core.kb.internal.ValidateGlobalRulesIT",
   deps = [
       "//grakn-graql",
       "//test-integration/rule:concurrent-grakn-server"
@@ -27,7 +27,7 @@ java_test(
 java_test(
   name = "grakn-tx-it",
   srcs = ["GraknTxIT.java"],
-  test_class = "ai.grakn.kb.internal.GraknTxIT",
+  test_class = "grakn.core.kb.internal.GraknTxIT",
   deps = [
       "//grakn-graql",
       "//util",

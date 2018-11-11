@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.query.QueryAnswers;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashSet;
 import java.util.List;

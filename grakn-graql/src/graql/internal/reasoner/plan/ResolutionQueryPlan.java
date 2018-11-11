@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.plan;
+package grakn.core.graql.internal.reasoner.plan;
 
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;

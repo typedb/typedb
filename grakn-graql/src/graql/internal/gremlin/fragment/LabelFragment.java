@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.Label;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.util.StringConverter;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.util.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

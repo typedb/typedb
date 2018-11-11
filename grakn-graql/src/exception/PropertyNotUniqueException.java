@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
-import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
+import static grakn.core.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
+import static grakn.core.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
 
 /**
  * <p>
@@ -36,7 +36,7 @@ import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *
  * <p>
  *     This occurs when attempting to add a globally unique property to a concept.
- *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link RelationshipType} using
+ *     For example when creating a {@link grakn.core.concept.EntityType} and {@link RelationshipType} using
  *     the same {@link Label}
  * </p>
  *

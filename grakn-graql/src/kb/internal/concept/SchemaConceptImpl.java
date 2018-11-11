@@ -16,22 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.Cacheable;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;
@@ -259,7 +259,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      * Checks if changing the super is allowed. This passed if:
-     * 1. The transaction is not of type {@link ai.grakn.GraknTxType#BATCH}
+     * 1. The transaction is not of type {@link grakn.core.GraknTxType#BATCH}
      * 2. The <code>newSuperType</code> is different from the old.
      *
      * @param oldSuperType the old super

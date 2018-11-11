@@ -16,29 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;

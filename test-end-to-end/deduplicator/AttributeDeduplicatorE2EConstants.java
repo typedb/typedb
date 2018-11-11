@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.deduplicator;
+package grakn.core.deduplicator;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.util.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknConfig;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 

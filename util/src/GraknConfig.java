@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;

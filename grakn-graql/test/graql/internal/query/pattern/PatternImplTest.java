@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.pattern;
+package grakn.core.graql.internal.query.pattern;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
+import grakn.core.graql.Graql;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.Disjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 

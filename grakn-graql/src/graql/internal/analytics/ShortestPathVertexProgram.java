@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.util.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.util.Schema;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.distribution;
+package grakn.core.distribution;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -30,11 +30,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static ai.grakn.distribution.DistributionE2EConstants.assertGraknRunning;
-import static ai.grakn.distribution.DistributionE2EConstants.assertGraknStopped;
-import static ai.grakn.distribution.DistributionE2EConstants.assertZipExists;
-import static ai.grakn.distribution.DistributionE2EConstants.unzipGrakn;
-import static ai.grakn.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknStopped;
+import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
+import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
+import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 

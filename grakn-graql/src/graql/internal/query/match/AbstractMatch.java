@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.match;
+package grakn.core.graql.internal.query.match;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Order;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.MatchAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.graql.internal.query.Queries;
-import ai.grakn.graql.internal.util.AdminConverter;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Order;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.property.VarPropertyInternal;
+import grakn.core.graql.internal.query.Queries;
+import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Order.asc;
+import static grakn.core.graql.Order.asc;
 
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatch implements MatchAdmin {

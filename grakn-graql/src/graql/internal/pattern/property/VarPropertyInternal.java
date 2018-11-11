@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.GraknTx;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
 import java.util.stream.Stream;

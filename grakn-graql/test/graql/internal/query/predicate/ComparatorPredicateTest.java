@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.predicate;
+package grakn.core.graql.internal.query.predicate;
 
-import ai.grakn.exception.GraqlQueryException;
+import grakn.core.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.Rule;
@@ -27,7 +27,7 @@ import org.junit.rules.ExpectedException;
 
 import java.time.LocalDate;
 
-import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
+import static grakn.core.util.ErrorMessage.INVALID_VALUE;
 
 public class ComparatorPredicateTest {
 

@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.ComputeExecutor;
-import ai.grakn.GraknTx;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.internal.util.StringConverter;
+import grakn.core.ComputeExecutor;
+import grakn.core.GraknTx;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
@@ -44,37 +44,37 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static ai.grakn.util.GraqlSyntax.Char.COMMA_SPACE;
-import static ai.grakn.util.GraqlSyntax.Char.EQUAL;
-import static ai.grakn.util.GraqlSyntax.Char.QUOTE;
-import static ai.grakn.util.GraqlSyntax.Char.SEMICOLON;
-import static ai.grakn.util.GraqlSyntax.Char.SPACE;
-import static ai.grakn.util.GraqlSyntax.Char.SQUARE_CLOSE;
-import static ai.grakn.util.GraqlSyntax.Char.SQUARE_OPEN;
-import static ai.grakn.util.GraqlSyntax.Command.COMPUTE;
-import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
-import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_DEFAULT;
-import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
-import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_DEFAULT;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument;
-import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
-import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
-import static ai.grakn.util.GraqlSyntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
-import static ai.grakn.util.GraqlSyntax.Compute.Method;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
+import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.GraqlSyntax.Char.COMMA_SPACE;
+import static grakn.core.util.GraqlSyntax.Char.EQUAL;
+import static grakn.core.util.GraqlSyntax.Char.QUOTE;
+import static grakn.core.util.GraqlSyntax.Char.SEMICOLON;
+import static grakn.core.util.GraqlSyntax.Char.SPACE;
+import static grakn.core.util.GraqlSyntax.Char.SQUARE_CLOSE;
+import static grakn.core.util.GraqlSyntax.Char.SQUARE_OPEN;
+import static grakn.core.util.GraqlSyntax.Command.COMPUTE;
+import static grakn.core.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
+import static grakn.core.util.GraqlSyntax.Compute.ALGORITHMS_DEFAULT;
+import static grakn.core.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
+import static grakn.core.util.GraqlSyntax.Compute.ARGUMENTS_DEFAULT;
+import static grakn.core.util.GraqlSyntax.Compute.Algorithm;
+import static grakn.core.util.GraqlSyntax.Compute.Argument;
+import static grakn.core.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
+import static grakn.core.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
+import static grakn.core.util.GraqlSyntax.Compute.Condition;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.FROM;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.IN;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.OF;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.TO;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.USING;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.WHERE;
+import static grakn.core.util.GraqlSyntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
+import static grakn.core.util.GraqlSyntax.Compute.Method;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.CONTAINS;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.K;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.MIN_K;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.SIZE;
 import static java.util.stream.Collectors.joining;
 
 

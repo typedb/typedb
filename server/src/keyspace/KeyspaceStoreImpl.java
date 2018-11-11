@@ -16,23 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.keyspace;
+package grakn.core.server.keyspace;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
-import ai.grakn.util.GraknConfig;
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryBuilder;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.Thing;
+import grakn.core.util.GraknConfig;
+import grakn.core.exception.GraknBackendException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.factory.TxFactoryBuilder;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

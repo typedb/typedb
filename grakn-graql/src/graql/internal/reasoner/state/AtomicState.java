@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.state;
+package grakn.core.graql.internal.reasoner.state;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
-import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.explanation.RuleExplanation;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Set;
 

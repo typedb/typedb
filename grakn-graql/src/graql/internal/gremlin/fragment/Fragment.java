@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
+import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point

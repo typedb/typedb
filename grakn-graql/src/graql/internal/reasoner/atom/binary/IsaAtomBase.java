@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Unifier;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Unifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;

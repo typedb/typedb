@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package grakn.core.graql.internal.reasoner;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

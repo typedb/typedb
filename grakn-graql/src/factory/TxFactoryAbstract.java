@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;

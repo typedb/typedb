@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;

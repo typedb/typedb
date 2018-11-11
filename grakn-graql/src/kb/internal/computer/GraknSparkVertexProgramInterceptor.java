@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.computer;
+package grakn.core.kb.internal.computer;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;

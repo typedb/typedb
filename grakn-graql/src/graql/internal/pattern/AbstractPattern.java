@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern;
+package grakn.core.graql.internal.pattern;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.admin.PatternAdmin;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.admin.PatternAdmin;
 
 /**
  * The abstract implementation of {@link PatternAdmin}.

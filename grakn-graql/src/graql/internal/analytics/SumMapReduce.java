@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
-import ai.grakn.util.Schema;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.LabelId;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 

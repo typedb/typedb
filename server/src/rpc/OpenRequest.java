@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.rpc;
+package grakn.core.server.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 
 /**
  * A request transaction opener for RPC Services

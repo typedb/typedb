@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
+import grakn.core.concept.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;

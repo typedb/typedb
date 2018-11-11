@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template.macro;
+package grakn.core.graql.internal.template.macro;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Query;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Query;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.parse;
+import static grakn.core.graql.Graql.parse;
 import static junit.framework.TestCase.assertEquals;
 
 public class MacroTestUtilities {

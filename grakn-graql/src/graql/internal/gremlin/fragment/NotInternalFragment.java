@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Var;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.graql.Var;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.Schema;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.structure;
+package grakn.core.kb.internal.structure;
 
-import ai.grakn.GraknTx;
+import grakn.core.GraknTx;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;

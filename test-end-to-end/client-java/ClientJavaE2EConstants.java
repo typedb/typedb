@@ -1,7 +1,7 @@
-package ai.grakn.client;
+package grakn.core.client;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.util.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknConfig;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.answer.ConceptSet;
+import grakn.core.GraknTx;
+import grakn.core.graql.admin.DeleteQueryAdmin;
+import grakn.core.graql.answer.ConceptSet;
 
 import javax.annotation.CheckReturnValue;
 

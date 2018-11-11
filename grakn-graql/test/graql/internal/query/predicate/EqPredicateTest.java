@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.predicate;
+package grakn.core.graql.internal.query.predicate;
 
-import ai.grakn.graql.Graql;
+import grakn.core.graql.Graql;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

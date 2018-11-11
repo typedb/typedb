@@ -1,6 +1,6 @@
 java_test(
     name = "match-base-test",
-    test_class = "ai.grakn.graql.internal.query.match.MatchBaseTest",
+    test_class = "grakn.core.graql.internal.query.match.MatchBaseTest",
     srcs = ["MatchBaseTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -10,7 +10,7 @@ java_test(
 
 java_test(
     name = "match-kb-test",
-    test_class = "ai.grakn.graql.internal.query.match.MatchKBTest",
+    test_class = "grakn.core.graql.internal.query.match.MatchKBTest",
     srcs = ["MatchKBTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",

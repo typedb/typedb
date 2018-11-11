@@ -16,42 +16,42 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.QueryExecutor;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.kb.internal.cache.GlobalCache;
-import ai.grakn.kb.internal.cache.TxCache;
-import ai.grakn.kb.internal.cache.TxRuleCache;
-import ai.grakn.kb.internal.concept.ConceptImpl;
-import ai.grakn.kb.internal.concept.ElementFactory;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
-import ai.grakn.kb.internal.concept.TypeImpl;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.kb.log.CommitLog;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.QueryExecutor;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.kb.admin.GraknAdmin;
+import grakn.core.kb.internal.cache.GlobalCache;
+import grakn.core.kb.internal.cache.TxCache;
+import grakn.core.kb.internal.cache.TxRuleCache;
+import grakn.core.kb.internal.concept.ConceptImpl;
+import grakn.core.kb.internal.concept.ElementFactory;
+import grakn.core.kb.internal.concept.SchemaConceptImpl;
+import grakn.core.kb.internal.concept.TypeImpl;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.kb.log.CommitLog;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -78,7 +78,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.ErrorMessage.CANNOT_FIND_CLASS;
+import static grakn.core.util.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -91,8 +91,8 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
-    private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
-    private static final String QUERY_EXECUTOR_CLASS_NAME = "ai.grakn.graql.internal.query.executor.QueryExecutorImpl";
+    private static final String QUERY_BUILDER_CLASS_NAME = "grakn.core.graql.internal.query.QueryBuilderImpl";
+    private static final String QUERY_EXECUTOR_CLASS_NAME = "grakn.core.graql.internal.query.executor.QueryExecutorImpl";
 
     //----------------------------- Shared Variables
     private final EmbeddedGraknSession session;
@@ -415,13 +415,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     /**
      * This is a helper method which will either find or create a {@link SchemaConcept}.
      * When a new {@link SchemaConcept} is created it is added for validation through it's own creation method for
-     * example {@link ai.grakn.kb.internal.concept.RoleImpl#create(VertexElement, Role)}.
+     * example {@link grakn.core.kb.internal.concept.RoleImpl#create(VertexElement, Role)}.
      * <p>
      * When an existing {@link SchemaConcept} is found it is build via it's get method such as
-     * {@link ai.grakn.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
+     * {@link grakn.core.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
      * <p>
      * Once the {@link SchemaConcept} is found or created a few checks for uniqueness and correct
-     * {@link ai.grakn.util.Schema.BaseType} are performed.
+     * {@link grakn.core.util.Schema.BaseType} are performed.
      *
      * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create

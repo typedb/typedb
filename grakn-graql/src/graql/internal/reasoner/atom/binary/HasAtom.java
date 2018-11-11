@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.property.HasAttributeTypeProperty;
 import com.google.auto.value.AutoValue;
 
 /**

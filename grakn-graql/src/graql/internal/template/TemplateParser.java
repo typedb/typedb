@@ -16,25 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template;
+package grakn.core.graql.internal.template;
 
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.grammar.GraqlTemplateLexer;
-import ai.grakn.graql.grammar.GraqlTemplateParser;
-import ai.grakn.graql.internal.parser.GraqlErrorListener;
-import ai.grakn.graql.internal.template.macro.BooleanMacro;
-import ai.grakn.graql.internal.template.macro.ConcatMacro;
-import ai.grakn.graql.internal.template.macro.DateMacro;
-import ai.grakn.graql.internal.template.macro.DoubleMacro;
-import ai.grakn.graql.internal.template.macro.EqualsMacro;
-import ai.grakn.graql.internal.template.macro.IntMacro;
-import ai.grakn.graql.internal.template.macro.LongMacro;
-import ai.grakn.graql.internal.template.macro.LowerMacro;
-import ai.grakn.graql.internal.template.macro.NoescpMacro;
-import ai.grakn.graql.internal.template.macro.SplitMacro;
-import ai.grakn.graql.internal.template.macro.StringMacro;
-import ai.grakn.graql.internal.template.macro.UpperMacro;
-import ai.grakn.graql.macro.Macro;
+import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.graql.grammar.GraqlTemplateLexer;
+import grakn.core.graql.grammar.GraqlTemplateParser;
+import grakn.core.graql.internal.parser.GraqlErrorListener;
+import grakn.core.graql.internal.template.macro.BooleanMacro;
+import grakn.core.graql.internal.template.macro.ConcatMacro;
+import grakn.core.graql.internal.template.macro.DateMacro;
+import grakn.core.graql.internal.template.macro.DoubleMacro;
+import grakn.core.graql.internal.template.macro.EqualsMacro;
+import grakn.core.graql.internal.template.macro.IntMacro;
+import grakn.core.graql.internal.template.macro.LongMacro;
+import grakn.core.graql.internal.template.macro.LowerMacro;
+import grakn.core.graql.internal.template.macro.NoescpMacro;
+import grakn.core.graql.internal.template.macro.SplitMacro;
+import grakn.core.graql.internal.template.macro.StringMacro;
+import grakn.core.graql.internal.template.macro.UpperMacro;
+import grakn.core.graql.macro.Macro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;

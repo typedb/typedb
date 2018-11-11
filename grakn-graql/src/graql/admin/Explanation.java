@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

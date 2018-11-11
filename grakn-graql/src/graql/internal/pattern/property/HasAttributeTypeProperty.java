@@ -16,26 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.reasoner.atom.binary.HasAtom;
-import ai.grakn.util.Schema;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
+import grakn.core.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -44,10 +44,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ImplicitType.KEY;
-import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.graql.Graql.var;
+import static grakn.core.util.Schema.ImplicitType.KEY;
+import static grakn.core.util.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.util.Schema.ImplicitType.KEY_VALUE;
 
 /**
  * Represents the {@code has} and {@code key} properties on a {@link Type}.

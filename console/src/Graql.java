@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.util.GraknVersion;
+import grakn.core.util.GraknVersion;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.base.StandardSystemProperty;

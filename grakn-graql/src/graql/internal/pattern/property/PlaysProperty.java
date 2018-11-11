@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.reasoner.atom.binary.PlaysAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.reasoner.atom.binary.PlaysAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -38,13 +38,13 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.
+ * Reperesents the {@code plays} property on a {@link grakn.core.concept.Type}.
  *
- * This property relates a {@link ai.grakn.concept.Type} and a {@link Role}. It indicates that an
- * {@link Thing} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
+ * This property relates a {@link grakn.core.concept.Type} and a {@link Role}. It indicates that an
+ * {@link Thing} whose type is this {@link grakn.core.concept.Type} is permitted to be a role-player
  * playing the role of the given {@link Role}.
  *
  * @author Felix Chapman

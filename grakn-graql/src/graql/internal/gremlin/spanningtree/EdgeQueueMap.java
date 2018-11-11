@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree;
+package grakn.core.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.datastructure.FibonacciQueue;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.graql.internal.util.Partition;
+import grakn.core.graql.internal.gremlin.spanningtree.datastructure.FibonacciQueue;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

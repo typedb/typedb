@@ -16,37 +16,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.internal;
+package grakn.core.test.graql.internal;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
-import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
-import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
-import ai.grakn.graql.internal.gremlin.fragment.NeqFragment;
-import ai.grakn.graql.internal.gremlin.fragment.OutIsaFragment;
-import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
-import ai.grakn.graql.internal.gremlin.fragment.OutSubFragment;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.internal.gremlin.fragment.InSubFragment;
+import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
+import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
+import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
+import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.and;
+import static grakn.core.graql.Graql.var;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;

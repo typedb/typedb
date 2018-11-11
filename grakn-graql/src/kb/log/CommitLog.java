@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.log;
+package grakn.core.kb.log;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.ConceptId;
+import grakn.core.Keyspace;
+import grakn.core.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
 import java.util.HashMap;
@@ -29,11 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
- *     Stores the commit log of a {@link ai.grakn.GraknTx}.
+ *     Stores the commit log of a {@link grakn.core.GraknTx}.
  * </p>
  *
  * <p>
- *     Stores the commit log of a {@link ai.grakn.GraknTx} which is uploaded to the jserver when the {@link ai.grakn.GraknSession} is closed.
+ *     Stores the commit log of a {@link grakn.core.GraknTx} which is uploaded to the jserver when the {@link grakn.core.GraknSession} is closed.
  *     The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
  * </p>
  *

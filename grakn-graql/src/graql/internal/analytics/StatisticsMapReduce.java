@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The abstract MapReduce program for computing statistics.

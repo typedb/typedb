@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package grakn.core.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.GraknTx;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
 

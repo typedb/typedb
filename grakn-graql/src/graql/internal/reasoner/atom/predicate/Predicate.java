@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.graql.internal.reasoner.atom.predicate;
+package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.concept.Rule;
+import grakn.core.graql.internal.reasoner.atom.AtomicBase;
+import grakn.core.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Set;
 

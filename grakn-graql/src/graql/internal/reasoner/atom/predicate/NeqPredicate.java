@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.predicate;
+package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.NeqProperty;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.property.NeqProperty;
 
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Equivalence;
 import java.util.Set;

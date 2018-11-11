@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.janus.TxFactoryJanus;
-import ai.grakn.janus.TxFactoryJanusHadoop;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.janus.TxFactoryJanus;
+import grakn.core.janus.TxFactoryJanusHadoop;
+import grakn.core.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.deduplicator.queue;
+package grakn.core.server.deduplicator.queue;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.ConceptId;
+import grakn.core.Keyspace;
+import grakn.core.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
 /**

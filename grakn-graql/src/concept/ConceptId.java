@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
-import ai.grakn.GraknTx;
+import grakn.core.GraknTx;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;

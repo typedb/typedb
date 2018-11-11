@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.computer;
+package grakn.core.kb.internal.computer;
 
-import ai.grakn.GraknComputer;
-import ai.grakn.concept.LabelId;
-import ai.grakn.util.Schema;
+import grakn.core.GraknComputer;
+import grakn.core.concept.LabelId;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

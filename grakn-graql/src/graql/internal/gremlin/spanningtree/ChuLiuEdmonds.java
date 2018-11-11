@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree;
+package grakn.core.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.graql.internal.util.Partition;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.util.Partition;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayDeque;
@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
+import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static com.google.common.base.Predicates.and;
 import static com.google.common.base.Predicates.not;
 

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.util.GraknSystemProperty;
-import ai.grakn.util.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknSystemProperty;
+import grakn.core.util.GraknConfig;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
@@ -38,7 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static ai.grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including

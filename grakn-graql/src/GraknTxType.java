@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
 /**
  * An enum that determines the type of Grakn Transaction.

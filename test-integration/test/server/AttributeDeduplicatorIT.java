@@ -1,16 +1,16 @@
-package ai.grakn.test.server.attribute.deduplicator;
+package grakn.core.test.server.attribute.deduplicator;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Label;
-import ai.grakn.core.server.deduplicator.AttributeDeduplicator;
-import ai.grakn.core.server.deduplicator.KeyspaceIndexPair;
-import ai.grakn.core.server.factory.EngineGraknTxFactory;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTxType;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Label;
+import grakn.core.server.deduplicator.AttributeDeduplicator;
+import grakn.core.server.deduplicator.KeyspaceIndexPair;
+import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -20,8 +20,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.label;
+import static grakn.core.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 

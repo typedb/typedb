@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.client;
+package grakn.core.client;
 
-import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
-import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
-import ai.grakn.rpc.proto.SessionServiceGrpc.SessionServiceImplBase;
+import grakn.core.rpc.proto.KeyspaceProto;
+import grakn.core.rpc.proto.KeyspaceServiceGrpc;
+import grakn.core.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
+import grakn.core.rpc.proto.SessionProto;
+import grakn.core.rpc.proto.SessionProto.Transaction;
+import grakn.core.rpc.proto.SessionServiceGrpc;
+import grakn.core.rpc.proto.SessionServiceGrpc.SessionServiceImplBase;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;

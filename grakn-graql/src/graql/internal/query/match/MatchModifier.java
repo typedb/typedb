@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.match;
+package grakn.core.graql.internal.query.match;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
+import grakn.core.GraknTx;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.PatternAdmin;
 
 import java.util.Set;
 

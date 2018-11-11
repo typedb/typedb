@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.cache;
+package grakn.core.kb.internal.cache;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.Schema;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;

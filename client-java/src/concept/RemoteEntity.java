@@ -17,17 +17,17 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
 import com.google.auto.value.AutoValue;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Entity}
+ * Client implementation of {@link grakn.core.concept.Entity}
  */
 @AutoValue
 public abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {

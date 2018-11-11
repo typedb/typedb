@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.internal.printer.Printer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.client.Grakn;
+import grakn.core.concept.AttributeType;
+import grakn.core.graql.Query;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import jline.console.ConsoleReader;
@@ -44,7 +44,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;

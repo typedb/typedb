@@ -16,29 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.rpc;
+package grakn.core.server.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.core.server.ServerRPC;
-import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import ai.grakn.core.server.benchmark.GrpcMessageConversion;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.server.ServerRPC;
+import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.benchmark.GrpcMessageConversion;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.rpc.proto.SessionProto;
+import grakn.core.rpc.proto.SessionProto.Transaction;
+import grakn.core.rpc.proto.SessionServiceGrpc;
 import brave.ScopedSpan;
 import brave.Span;
 import brave.Tracer;

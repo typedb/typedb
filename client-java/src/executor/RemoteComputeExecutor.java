@@ -17,10 +17,10 @@
  * under the License.
  */
 
-package ai.grakn.client.executor;
+package grakn.core.client.executor;
 
-import ai.grakn.ComputeExecutor;
-import ai.grakn.graql.answer.Answer;
+import grakn.core.ComputeExecutor;
+import grakn.core.graql.answer.Answer;
 
 import java.util.stream.Stream;
 

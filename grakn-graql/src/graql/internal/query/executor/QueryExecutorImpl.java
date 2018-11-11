@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.executor;
+package grakn.core.graql.internal.query.executor;
 
-import ai.grakn.ComputeExecutor;
-import ai.grakn.QueryExecutor;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.internal.util.AdminConverter;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.ComputeExecutor;
+import grakn.core.QueryExecutor;
+import grakn.core.concept.Concept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.UndefineQuery;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -44,8 +44,8 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableList;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 

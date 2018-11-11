@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.Schema;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
+import static grakn.core.util.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
 abstract class InPlaysFragment extends Fragment {

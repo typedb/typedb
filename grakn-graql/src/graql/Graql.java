@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.AnswerGroup;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.QueryBuilderImpl;
-import ai.grakn.graql.internal.query.aggregate.Aggregates;
-import ai.grakn.graql.internal.query.predicate.Predicates;
-import ai.grakn.graql.internal.util.AdminConverter;
+import grakn.core.concept.Label;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.query.QueryBuilderImpl;
+import grakn.core.graql.internal.query.aggregate.Aggregates;
+import grakn.core.graql.internal.query.predicate.Predicates;
+import grakn.core.graql.internal.util.AdminConverter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static grakn.core.util.GraqlSyntax.Compute.Method;
 import static java.util.stream.Collectors.toSet;
 
 /**

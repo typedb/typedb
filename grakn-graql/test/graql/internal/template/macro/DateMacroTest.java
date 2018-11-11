@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template.macro;
+package grakn.core.graql.internal.template.macro;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Graql;
 import com.google.common.collect.ImmutableList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,7 +34,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Locale;
 
-import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
+import static grakn.core.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
 
 public class DateMacroTest {

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.explanation;
+package grakn.core.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.admin.Explanation;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;

@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.util.CommonUtil;
+import grakn.core.concept.Attribute;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -92,6 +92,6 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
+        return grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.create(var.var(), this.predicate(), parent);
     }
 }

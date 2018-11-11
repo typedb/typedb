@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.Schema;
 
 /**
  * <p>

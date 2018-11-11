@@ -17,22 +17,22 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.util.CommonUtil;
+import grakn.core.client.Grakn;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
 
 /**
- * Client implementation of {@link ai.grakn.concept.AttributeType}
+ * Client implementation of {@link grakn.core.concept.AttributeType}
  *
  * @param <D> The data type of this attribute type
  */

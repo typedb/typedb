@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Thing;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -44,12 +44,12 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
-import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
+import static grakn.core.graql.Graql.label;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
+import static grakn.core.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -60,7 +60,7 @@ import static java.util.stream.Collectors.joining;
  * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute}, where the
  * {@link Attribute} is of a particular type.
  *
- * When matching, {@link  ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edges are used to speed up the traversal. The type of the {@link Relationship} does not
+ * When matching, {@link  grakn.core.util.Schema.EdgeLabel#ROLE_PLAYER} edges are used to speed up the traversal. The type of the {@link Relationship} does not
  * matter.
  *
  * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute}, using

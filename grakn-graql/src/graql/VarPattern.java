@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.Role;
+import grakn.core.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

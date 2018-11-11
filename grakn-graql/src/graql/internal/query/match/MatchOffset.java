@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.match;
+package grakn.core.graql.internal.query.match;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Match;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 
 import java.util.stream.Stream;
 

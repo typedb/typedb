@@ -16,25 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.analytics;
+package grakn.core.test.graql.analytics;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.Schema;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -48,8 +48,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
+import static grakn.core.graql.internal.analytics.Utility.getResourceEdgeId;
+import static grakn.core.util.GraqlSyntax.Compute.Method.PATH;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

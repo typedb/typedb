@@ -1,6 +1,6 @@
 java_test(
     name = "aggregate-query-impl-test",
-    test_class = "ai.grakn.graql.internal.query.AggregateQueryImplTest",
+    test_class = "grakn.core.graql.internal.query.AggregateQueryImplTest",
     srcs = ["AggregateQueryImplTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -10,7 +10,7 @@ java_test(
 
 java_test(
     name = "concept-map-test",
-    test_class = "ai.grakn.graql.internal.query.ConceptMapTest",
+    test_class = "grakn.core.graql.internal.query.ConceptMapTest",
     srcs = ["ConceptMapTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -21,7 +21,7 @@ java_test(
 
 java_test(
     name = "delete-query-impl-test",
-    test_class = "ai.grakn.graql.internal.query.DeleteQueryImplTest",
+    test_class = "grakn.core.graql.internal.query.DeleteQueryImplTest",
     srcs = ["DeleteQueryImplTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -31,7 +31,7 @@ java_test(
 
 java_test(
     name = "insert-query-impl-test",
-    test_class = "ai.grakn.graql.internal.query.InsertQueryImplTest",
+    test_class = "grakn.core.graql.internal.query.InsertQueryImplTest",
     srcs = ["InsertQueryImplTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",

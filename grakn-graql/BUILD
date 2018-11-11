@@ -26,7 +26,7 @@ antlr4(
     name = "graql-java",
     srcs = glob(["src/graql/grammar/*.g4"]),
     visitor = True,
-    package = "ai.grakn.graql.grammar"
+    package = "grakn.core.graql.grammar"
 )
 
 genrule(
@@ -82,7 +82,7 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
     resources = glob(["src/resources/*"]),
-    tags = ["maven_coordinates=ai.grakn:grakn-graql:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:grakn-graql:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 )
 

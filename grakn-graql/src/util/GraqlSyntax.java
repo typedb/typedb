@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Value;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Value;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -35,29 +35,29 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.FROM;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.IN;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.OF;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.TO;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.USING;
-import static ai.grakn.util.GraqlSyntax.Compute.Condition.WHERE;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.CONTAINS;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.MIN_K;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter.SIZE;
+import static grakn.core.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.util.GraqlSyntax.Compute.Algorithm.DEGREE;
+import static grakn.core.util.GraqlSyntax.Compute.Algorithm.K_CORE;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.FROM;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.IN;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.OF;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.TO;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.USING;
+import static grakn.core.util.GraqlSyntax.Compute.Condition.WHERE;
+import static grakn.core.util.GraqlSyntax.Compute.Method.CENTRALITY;
+import static grakn.core.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
+import static grakn.core.util.GraqlSyntax.Compute.Method.MAX;
+import static grakn.core.util.GraqlSyntax.Compute.Method.MEAN;
+import static grakn.core.util.GraqlSyntax.Compute.Method.MEDIAN;
+import static grakn.core.util.GraqlSyntax.Compute.Method.MIN;
+import static grakn.core.util.GraqlSyntax.Compute.Method.PATH;
+import static grakn.core.util.GraqlSyntax.Compute.Method.STD;
+import static grakn.core.util.GraqlSyntax.Compute.Method.SUM;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.CONTAINS;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.K;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.MIN_K;
+import static grakn.core.util.GraqlSyntax.Compute.Parameter.SIZE;
 
 /**
  * Graql syntax keywords

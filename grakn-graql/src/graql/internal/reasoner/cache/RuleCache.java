@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
+import grakn.core.concept.Rule;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.utils.Pair;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;

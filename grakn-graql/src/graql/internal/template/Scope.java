@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template;
+package grakn.core.graql.internal.template;
 
-import ai.grakn.graql.Var;
+import grakn.core.graql.Var;
 import com.google.common.collect.Sets;
 
 import java.util.HashSet;

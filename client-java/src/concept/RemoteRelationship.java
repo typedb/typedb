@@ -17,17 +17,17 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.rpc.proto.ConceptProto;
+import grakn.core.client.Grakn;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.rpc.proto.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.Arrays;
@@ -39,7 +39,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Relationship}
+ * Client implementation of {@link grakn.core.concept.Relationship}
  */
 @AutoValue
 public abstract class RemoteRelationship extends RemoteThing<Relationship, RelationshipType> implements Relationship {

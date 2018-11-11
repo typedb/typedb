@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
-import ai.grakn.exception.GraknTxOperationException;
+import grakn.core.exception.GraknTxOperationException;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;

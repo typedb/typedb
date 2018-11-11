@@ -16,34 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.client;
+package grakn.core.client;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.concept.RemoteConcept;
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknException;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.rpc.proto.AnswerProto;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.client.concept.RemoteConcept;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.exception.GraknBackendException;
+import grakn.core.exception.GraknException;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.exception.TemporaryWriteException;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.rpc.proto.AnswerProto;
+import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.rpc.proto.KeyspaceServiceGrpc;
+import grakn.core.rpc.proto.SessionProto;
+import grakn.core.rpc.proto.SessionProto.Transaction;
+import grakn.core.rpc.proto.SessionServiceGrpc;
 import com.google.common.collect.ImmutableSet;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -57,8 +57,8 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.match;
+import static grakn.core.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -74,7 +74,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit Tests for {@link ai.grakn.client.Grakn.Transaction}
+ * Unit Tests for {@link grakn.core.client.Grakn.Transaction}
  */
 public class TransactionTest {
 

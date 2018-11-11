@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.unifier;
+package grakn.core.graql.internal.reasoner.unifier;
 
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 
 /**
  * Interface to couple {@link UnifierType} classes with corresponding {@link ReasonerQueryEquivalence}s.

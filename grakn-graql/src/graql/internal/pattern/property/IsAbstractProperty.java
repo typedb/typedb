@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
 /**
- * Represents the {@code is-abstract} property on a {@link ai.grakn.concept.Type}.
+ * Represents the {@code is-abstract} property on a {@link grakn.core.concept.Type}.
  *
  * This property can be matched or inserted.
  *

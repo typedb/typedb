@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package grakn.core.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.GraknTx;
+import grakn.core.concept.Type;
+import grakn.core.concept.Label;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -32,9 +32,9 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isa;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.label;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isa;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.label;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.sub;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

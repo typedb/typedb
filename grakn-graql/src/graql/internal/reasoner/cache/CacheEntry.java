@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 
 /**
  *

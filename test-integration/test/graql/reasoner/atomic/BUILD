@@ -1,7 +1,7 @@
 java_test(
     name = "atomic-type-inference-it",
     srcs = ["AtomicTypeInferenceIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicTypeInferenceIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicTypeInferenceIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",
@@ -16,7 +16,7 @@ java_test(
 java_test(
     name = "atomic-unification-it",
     srcs = ["AtomicUnificationIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicUnificationIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicUnificationIT",
     deps = [
             "//grakn-graql",
                         "//test-integration/rule:concurrent-grakn-server",
@@ -32,7 +32,7 @@ java_test(
 java_test(
     name = "atomic-rule-applicability-it",
     srcs = ["AtomicRuleApplicabilityIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicRuleApplicabilityIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicRuleApplicabilityIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",
@@ -49,7 +49,7 @@ java_test(
 java_test(
     name = "atomic-role-inference-it",
     srcs = ["AtomicRoleInferenceIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicRoleInferenceIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicRoleInferenceIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",
@@ -65,7 +65,7 @@ java_test(
 java_test(
     name = "atomic-equivalence-it",
     srcs = ["AtomicEquivalenceIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicEquivalenceIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicEquivalenceIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",

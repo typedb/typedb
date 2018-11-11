@@ -16,31 +16,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.RelationPlayer;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.executor.QueryOperationExecutor;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.CommonUtil;
+import grakn.core.GraknTx;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.RelationPlayer;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.query.executor.QueryOperationExecutor;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -52,9 +52,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

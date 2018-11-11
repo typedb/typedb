@@ -16,19 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package grakn.core.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.GraknTx;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 

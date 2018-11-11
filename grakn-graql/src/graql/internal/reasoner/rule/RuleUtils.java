@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.rule;
+package grakn.core.graql.internal.reasoner.rule;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.Schema;
 import com.google.common.base.Equivalence;
 
 import java.util.HashSet;

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.util.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collections;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
+import static grakn.core.graql.internal.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
 
 /**
  * The vertex program for computing connected components of a give instance.

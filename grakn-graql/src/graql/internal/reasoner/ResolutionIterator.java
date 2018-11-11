@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package grakn.core.graql.internal.reasoner;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
-import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.state.ResolutionState;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.iterator.ReasonerQueryIterator;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

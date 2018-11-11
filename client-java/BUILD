@@ -48,7 +48,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
     ],
-    tags = ["maven_coordinates=ai.grakn:client-java:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:client-java:{pom_version}"],
 )
 
 deploy_maven_jar(
@@ -60,7 +60,7 @@ deploy_maven_jar(
 java_test(
     name = "transaction-test",
     srcs = glob(["test/**/*.java"]),
-    test_class = "ai.grakn.client.TransactionTest",
+    test_class = "grakn.core.client.TransactionTest",
     deps = [
         ":client-java",
         "//grakn-graql",

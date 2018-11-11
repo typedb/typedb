@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.GraknTx;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**

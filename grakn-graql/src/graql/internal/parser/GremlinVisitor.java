@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
-import ai.grakn.graql.grammar.GremlinBaseVisitor;
-import ai.grakn.graql.grammar.GremlinLexer;
-import ai.grakn.graql.grammar.GremlinParser;
+import grakn.core.graql.grammar.GremlinBaseVisitor;
+import grakn.core.graql.grammar.GremlinLexer;
+import grakn.core.graql.grammar.GremlinParser;
 import com.google.common.base.Strings;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;

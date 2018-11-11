@@ -17,21 +17,21 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Type;
-import ai.grakn.rpc.proto.ConceptProto;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Type;
+import grakn.core.rpc.proto.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Role}
+ * Client implementation of {@link grakn.core.concept.Role}
  */
 @AutoValue
 public abstract class RemoteRole extends RemoteSchemaConcept<Role> implements Role {

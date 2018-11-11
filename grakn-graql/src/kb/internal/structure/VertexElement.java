@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.structure;
+package grakn.core.kb.internal.structure;
 
-import ai.grakn.GraknTx;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -40,7 +40,7 @@ import java.util.stream.StreamSupport;
  *
  * <p>
  *    Wraps a tinkerpop {@link Vertex} constraining it to the Grakn Object Model.
- *    This is used to wrap common functionality between exposed {@link ai.grakn.concept.Concept} and unexposed
+ *    This is used to wrap common functionality between exposed {@link grakn.core.concept.Concept} and unexposed
  *    internal vertices.
  * </p>
  *

@@ -16,19 +16,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.query.executor.ConceptBuilder;
-import ai.grakn.graql.internal.reasoner.atom.binary.SubAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.query.executor.ConceptBuilder;
+import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 
 /**

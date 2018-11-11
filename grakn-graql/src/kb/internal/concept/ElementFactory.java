@@ -16,24 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.structure.AbstractElement;
-import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.kb.internal.structure.Shard;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TemporaryWriteException;
+import grakn.core.graql.Pattern;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.structure.AbstractElement;
+import grakn.core.kb.internal.structure.EdgeElement;
+import grakn.core.kb.internal.structure.Shard;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -43,7 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.util.Schema.BaseType.RELATIONSHIP_TYPE;
 
 /**
  * <p>
@@ -55,8 +55,8 @@ import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
  *     into Grakn {@link Concept} and {@link EdgeElement}.
  *
  *     Construction is only successful if the vertex and edge properties contain the needed information.
- *     A concept must include a label which is a {@link ai.grakn.util.Schema.BaseType}.
- *     An edge must include a label which is a {@link ai.grakn.util.Schema.EdgeLabel}.
+ *     A concept must include a label which is a {@link grakn.core.util.Schema.BaseType}.
+ *     An edge must include a label which is a {@link grakn.core.util.Schema.EdgeLabel}.
  * </p>
  *
  * @author fppt

@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.janus;
+package grakn.core.janus;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryAbstract;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.factory.TxFactoryAbstract;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
@@ -33,7 +33,7 @@ import java.util.Map;
 
 /**
  * <p>
- *     A {@link ai.grakn.GraknTx} on top of {@link HadoopGraph}
+ *     A {@link grakn.core.GraknTx} on top of {@link HadoopGraph}
  * </p>
  *
  * <p>

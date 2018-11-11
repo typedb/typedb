@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.QueryBuilder;
+import grakn.core.GraknTx;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
 
 import java.util.Collection;
 import org.apache.commons.collections.CollectionUtils;

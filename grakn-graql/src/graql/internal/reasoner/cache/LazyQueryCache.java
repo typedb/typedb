@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
-import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.internal.reasoner.iterator.LazyAnswerIterator;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.utils.Pair;
 
 import java.util.stream.Stream;
 

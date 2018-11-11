@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.analytics;
+package grakn.core.test.graql.analytics;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.Schema;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.graql.answer.Value;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.Schema;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
+import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.iterator;
+package grakn.core.graql.internal.reasoner.iterator;
 
 import java.util.ArrayList;
 import java.util.Collections;

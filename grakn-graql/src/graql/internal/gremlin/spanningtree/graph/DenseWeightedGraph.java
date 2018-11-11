@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.graph;
+package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.Lists;

@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.shell;
+package grakn.core.test.graql.shell;
 
-import ai.grakn.core.console.GraqlConsole;
-import ai.grakn.core.console.GraqlShellOptions;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
-import ai.grakn.util.Schema;
+import grakn.core.console.GraqlConsole;
+import grakn.core.console.GraqlShellOptions;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.GraknVersion;
+import grakn.core.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;

@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.property.SubProperty;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Collectors;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.SubProperty} property.
+ * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.SubProperty} property.
  * </p>
  *
  * @author Kasper Piskorski

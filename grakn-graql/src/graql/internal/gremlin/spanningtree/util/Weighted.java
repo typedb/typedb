@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.util;
+package grakn.core.graql.internal.gremlin.spanningtree.util;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;

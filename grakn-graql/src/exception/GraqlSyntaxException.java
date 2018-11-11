@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
 import java.util.Map;
 
-import static ai.grakn.util.ErrorMessage.INVALID_STATEMENT;
-import static ai.grakn.util.ErrorMessage.TEMPLATE_MISSING_KEY;
+import static grakn.core.util.ErrorMessage.INVALID_STATEMENT;
+import static grakn.core.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 
 /**
  * <p>

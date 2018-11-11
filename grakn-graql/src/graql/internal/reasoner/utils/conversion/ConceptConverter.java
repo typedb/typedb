@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.utils.conversion;
+package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.util.CommonUtil;
+import grakn.core.concept.Concept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Pattern;
+import grakn.core.util.CommonUtil;
 
 /**
  * <p>

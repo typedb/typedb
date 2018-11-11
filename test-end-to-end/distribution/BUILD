@@ -1,6 +1,6 @@
 java_test(
     name = "grakn-graql-commands-e2e",
-    test_class = "ai.grakn.distribution.GraknGraqlCommandsE2E",
+    test_class = "grakn.core.distribution.GraknGraqlCommandsE2E",
     srcs = [ "GraknGraqlCommandsE2E.java", "DistributionE2EConstants.java" ],
     deps = [
         "//grakn-graql",
@@ -14,7 +14,7 @@ java_test(
 
 java_test(
     name = "grakn-graql-commands-with-a-running-grakn-e2e",
-    test_class = "ai.grakn.distribution.GraknGraqlCommands_WithARunningGraknE2E",
+    test_class = "grakn.core.distribution.GraknGraqlCommands_WithARunningGraknE2E",
     srcs = [ "GraknGraqlCommands_WithARunningGraknE2E.java", "DistributionE2EConstants.java" ],
     deps = [
         "//grakn-graql",

@@ -16,19 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.util;
+package grakn.core.graql.internal.util;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.grammar.GraqlLexer;
-import ai.grakn.util.StringUtil;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.graql.grammar.GraqlLexer;
+import grakn.core.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for converting Graql strings, used in the parser and for toString methods

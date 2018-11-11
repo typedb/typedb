@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.Schema;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -37,16 +37,16 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.CLOSE_FAILURE;
-import static ai.grakn.util.ErrorMessage.HAS_INVALID;
-import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
-import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
-import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.NO_TYPE;
-import static ai.grakn.util.ErrorMessage.REGEX_NOT_STRING;
-import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
-import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
+import static grakn.core.util.ErrorMessage.CLOSE_FAILURE;
+import static grakn.core.util.ErrorMessage.HAS_INVALID;
+import static grakn.core.util.ErrorMessage.INVALID_DIRECTION;
+import static grakn.core.util.ErrorMessage.INVALID_PROPERTY_USE;
+import static grakn.core.util.ErrorMessage.LABEL_TAKEN;
+import static grakn.core.util.ErrorMessage.META_TYPE_IMMUTABLE;
+import static grakn.core.util.ErrorMessage.NO_TYPE;
+import static grakn.core.util.ErrorMessage.REGEX_NOT_STRING;
+import static grakn.core.util.ErrorMessage.RESERVED_WORD;
+import static grakn.core.util.ErrorMessage.UNKNOWN_CONCEPT;
 
 /**
  * <p>
@@ -82,7 +82,7 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to mutate a {@link ai.grakn.util.Schema.MetaSchema}
+     * Thrown when attempting to mutate a {@link grakn.core.util.Schema.MetaSchema}
      */
     public static GraknTxOperationException metaTypeImmutable(Label metaLabel){
         return create(META_TYPE_IMMUTABLE.getMessage(metaLabel));
@@ -133,7 +133,7 @@ public class GraknTxOperationException extends GraknException{
 
     /**
      * Thrown when casting concepts incorrectly. For example when doing {@link Concept#asEntityType()} on a
-     * {@link ai.grakn.concept.Entity}
+     * {@link grakn.core.concept.Entity}
      */
     public static GraknTxOperationException invalidCasting(Object concept, Class type){
         return create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
@@ -141,7 +141,7 @@ public class GraknTxOperationException extends GraknException{
 
     /**
      * Thrown when creating a {@link Attribute} whose value {@link Object} does not match it's {@link AttributeType}'s
-     * {@link ai.grakn.concept.AttributeType.DataType}
+     * {@link grakn.core.concept.AttributeType.DataType}
      */
     public static GraknTxOperationException invalidAttributeValue(Object object, AttributeType.DataType dataType){
         return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getName()));
@@ -260,7 +260,7 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when creating an invalid {@link ai.grakn.Keyspace}
+     * Thrown when creating an invalid {@link grakn.core.Keyspace}
      */
     public static GraknTxOperationException invalidKeyspace(String keyspace){
         return create("Keyspace [" + keyspace + "] is invalid. " +
@@ -291,7 +291,7 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to create a {@link Thing} via the execution of a {@link ai.grakn.concept.Rule} when
+     * Thrown when attempting to create a {@link Thing} via the execution of a {@link grakn.core.concept.Rule} when
      * the {@link Thing} already exists.
      */
     public static GraknTxOperationException nonInferredThingExists(Thing thing){

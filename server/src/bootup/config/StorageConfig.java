@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup.config;
+package grakn.core.server.bootup.config;
 
-import ai.grakn.util.GraknConfigKey;
-import ai.grakn.util.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;

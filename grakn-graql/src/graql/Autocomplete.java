@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.graql.grammar.GraqlLexer;
+import grakn.core.graql.grammar.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -31,8 +31,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type

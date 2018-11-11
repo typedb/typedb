@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.util;
+package grakn.core.server.util;
 
 import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;

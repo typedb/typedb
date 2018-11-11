@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package grakn.core.graql.internal.reasoner.atom;
 
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.ReasonerQuery;
 
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;

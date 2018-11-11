@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Match;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

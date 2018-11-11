@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**

@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.query.executor.QueryOperationExecutor;
+import grakn.core.concept.Concept;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.query.executor.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
