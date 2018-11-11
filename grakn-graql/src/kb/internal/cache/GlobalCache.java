@@ -18,11 +18,11 @@
 
 package ai.grakn.kb.internal.cache;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

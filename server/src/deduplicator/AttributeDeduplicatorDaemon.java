@@ -18,10 +18,10 @@
 
 package ai.grakn.core.server.deduplicator;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import ai.grakn.core.server.deduplicator.queue.Attribute;
 import ai.grakn.core.server.deduplicator.queue.RocksDbQueue;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;

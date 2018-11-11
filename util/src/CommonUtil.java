@@ -18,7 +18,6 @@
 
 package ai.grakn.util;
 
-import ai.grakn.GraknSystemProperty;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;

@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.janus.TxFactoryJanus;
 import ai.grakn.janus.TxFactoryJanusHadoop;
 import ai.grakn.util.ErrorMessage;

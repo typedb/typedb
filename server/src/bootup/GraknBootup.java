@@ -18,7 +18,7 @@
 
 package ai.grakn.core.server.bootup;
 
-import ai.grakn.GraknSystemProperty;
+import ai.grakn.util.GraknSystemProperty;
 import ai.grakn.core.server.bootup.config.ConfigProcessor;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;

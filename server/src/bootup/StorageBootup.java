@@ -18,9 +18,9 @@
 
 package ai.grakn.core.server.bootup;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfigKey;
+import ai.grakn.util.GraknSystemProperty;
+import ai.grakn.util.GraknConfig;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 

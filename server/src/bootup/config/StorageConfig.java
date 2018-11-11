@@ -18,8 +18,8 @@
 
 package ai.grakn.core.server.bootup.config;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfigKey;
+import ai.grakn.util.GraknConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;

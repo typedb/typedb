@@ -22,7 +22,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import ai.grakn.core.server.keyspace.KeyspaceStore;
 import ai.grakn.core.server.lock.LockProvider;
 import ai.grakn.factory.EmbeddedGraknSession;

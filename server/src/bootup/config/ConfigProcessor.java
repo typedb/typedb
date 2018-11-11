@@ -18,7 +18,7 @@
 
 package ai.grakn.core.server.bootup.config;
 
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

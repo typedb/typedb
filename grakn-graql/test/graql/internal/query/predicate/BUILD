@@ -21,8 +21,10 @@ java_test(
     test_class = "ai.grakn.graql.internal.query.predicate.ComparatorPredicateTest",
     srcs = ["ComparatorPredicateTest.java"],
     deps = [
+        "//grakn-graql",
+        "//util",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//grakn-graql"],
+    ],
     size = "small"
 )

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package ai.grakn.util;
 
 import ai.grakn.util.ErrorMessage;
 import com.google.auto.value.AutoValue;

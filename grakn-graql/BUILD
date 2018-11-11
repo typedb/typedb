@@ -46,6 +46,9 @@ java_library(
         ":graql-java",
     ] + glob(["src/**/*.java"]),
     deps = [
+        # Grakn Core dependencies
+        "//util",
+
         # External dependencies
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",

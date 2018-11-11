@@ -18,7 +18,7 @@
 
 package ai.grakn.core.server.bootup.config;
 
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;

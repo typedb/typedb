@@ -54,6 +54,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.EntityTypeIT",
      deps = [
          "//grakn-graql",
+         "//util",
          "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
@@ -67,6 +68,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.RelationshipIT",
      deps = [
          "//grakn-graql",
+         "//util",
          "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -105,6 +107,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.SchemaConceptIT",
      deps = [
          "//grakn-graql",
+         "//util",
          "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -118,6 +121,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.concept.SchemaMutationIT",
      deps = [
          "//grakn-graql",
+         "//util",
          "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",

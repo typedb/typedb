@@ -16,11 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.config;
+package ai.grakn.util;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.GraknConfig;
-import ai.grakn.util.ErrorMessage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,7 +32,7 @@ import static junit.framework.TestCase.assertNotNull;
  */
 public class GraknConfigTest {
 
-    private final static InputStream TEST_CONFIG_FILE = GraknConfigTest.class.getClassLoader().getResourceAsStream("server/test/resources/inmemory-graph.properties");
+    private final static InputStream TEST_CONFIG_FILE = GraknConfigTest.class.getClassLoader().getResourceAsStream("util/test/resources/inmemory-graph.properties");
     private final static GraknConfig configuration = GraknConfig.read(TEST_CONFIG_FILE);
 
     @Rule

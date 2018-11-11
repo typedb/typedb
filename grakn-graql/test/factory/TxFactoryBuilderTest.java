@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

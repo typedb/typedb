@@ -13,9 +13,11 @@ java_test(
     test_class = "ai.grakn.graql.internal.parser.QueryParserTest",
     srcs = ["QueryParserTest.java"],
     deps = [
+        "//grakn-graql",
+        "//util",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//grakn-graql"],
+    ],
     size = "medium"
 )
 

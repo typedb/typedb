@@ -4,6 +4,7 @@ java_test(
      test_class = "ai.grakn.kb.internal.ValidatorIT",
      deps = [
          "//grakn-graql",
+         "//util",
          "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
@@ -29,6 +30,7 @@ java_test(
   test_class = "ai.grakn.kb.internal.GraknTxIT",
   deps = [
       "//grakn-graql",
+      "//util",
       "//test-integration/rule:concurrent-grakn-server",
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
       "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

@@ -16,29 +16,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-java_test(
-    name = "tx-factory-builder-test",
-    test_class = "ai.grakn.factory.TxFactoryBuilderTest",
-    srcs = ["TxFactoryBuilderTest.java"],
-    resources = ["inmemory-graph.properties"],
+package(default_visibility = ["//visibility:public"])
+
+java_library(
+    name = "util",
+    srcs = glob(["src/**/*.java"]),
     deps = [
-        "//grakn-graql",
-        "//util",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core"
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    size = "small"
+    runtime_deps = [
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+    ],
 )
 
 java_test(
-    name = "grakn-tx-tinker-factory-test",
-    test_class = "ai.grakn.factory.GraknTxTinkerFactoryTest",
-    srcs = ["GraknTxTinkerFactoryTest.java"],
-    deps = [
-        "//grakn-graql",
-        "//util",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin"
-    ],
-    resources = ["inmemory-graph.properties"],
+    name = "grakn-config-test",
+    test_class = "ai.grakn.util.GraknConfigTest",
+    srcs = ["test/GraknConfigTest.java"],
+    deps = [":util"],
+    resources = ["test/resources/inmemory-graph.properties"],
     size = "small"
 )

@@ -25,8 +25,9 @@ java_library(
     srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//grakn-graql:grakn-graql",
+        "//grakn-graql",
         "//protocol:protocol-java",
+        "//util",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
@@ -62,7 +63,7 @@ java_test(
     test_class = "ai.grakn.client.TransactionTest",
     deps = [
         ":client-java",
-        "//grakn-graql:grakn-graql",
+        "//grakn-graql",
         "//protocol:protocol-java",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

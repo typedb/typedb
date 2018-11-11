@@ -18,7 +18,7 @@
 
 package ai.grakn.core.server;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import ai.grakn.core.server.factory.EngineGraknTxFactory;
 import ai.grakn.core.server.lock.LockProvider;
@@ -30,6 +30,7 @@ import ai.grakn.core.server.rpc.SessionService;
 import ai.grakn.core.server.util.EngineID;
 import ai.grakn.core.server.keyspace.KeyspaceStore;
 import ai.grakn.core.server.keyspace.KeyspaceStoreImpl;
+import ai.grakn.util.GraknConfig;
 import brave.Tracing;
 import io.grpc.ServerBuilder;
 import zipkin2.reporter.AsyncReporter;

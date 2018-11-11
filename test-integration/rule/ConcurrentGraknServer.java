@@ -1,8 +1,8 @@
 package ai.grakn.test.rule;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import ai.grakn.core.server.keyspace.KeyspaceStore;
 import ai.grakn.core.server.Server;
 import ai.grakn.core.server.ServerFactory;

@@ -38,8 +38,9 @@ java_library(
     srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//client-java:client-java",
-        "//grakn-graql:grakn-graql",
+        "//client-java",
+        "//grakn-graql",
+        "//util",
 
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

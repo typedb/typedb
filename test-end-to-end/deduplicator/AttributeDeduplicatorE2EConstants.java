@@ -18,8 +18,8 @@
 
 package ai.grakn.deduplicator;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfigKey;
+import ai.grakn.util.GraknConfig;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 

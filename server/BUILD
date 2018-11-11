@@ -23,8 +23,9 @@ java_library(
     srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//grakn-graql:grakn-graql",
+        "//grakn-graql",
         "//protocol:protocol-java",
+        "//util",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
@@ -71,7 +72,7 @@ deploy_maven_jar(
 java_binary(
     name = "server-binary",
     main_class = "ai.grakn.core.server.bootup.GraknBootup",
-    runtime_deps = ["//server:server"],
+    runtime_deps = ["//server"],
     visibility = ["//visibility:public"]
 )
 
@@ -106,15 +107,6 @@ java_test(
     ],
     size = "small",
     flaky = True
-)
-
-java_test(
-    name = "grakn-config-test",
-    test_class = "ai.grakn.core.server.config.GraknConfigTest",
-    srcs = ["test/config/GraknConfigTest.java"],
-    deps = [":server", "//grakn-graql"],
-    resources = ["test/resources/inmemory-graph.properties"],
-    size = "small"
 )
 
 test_suite(

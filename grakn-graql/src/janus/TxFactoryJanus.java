@@ -18,7 +18,7 @@
 
 package ai.grakn.janus;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.factory.EmbeddedGraknSession;
 import ai.grakn.factory.TxFactoryAbstract;

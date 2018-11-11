@@ -19,12 +19,12 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknConfig;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.janus.GraknTxJanus;
 import ai.grakn.kb.internal.EmbeddedGraknTx;

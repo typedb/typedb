@@ -18,8 +18,8 @@
 
 package ai.grakn.core.server.bootup.config;
 
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.GraknConfig;
+import ai.grakn.util.GraknSystemProperty;
+import ai.grakn.util.GraknConfig;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 

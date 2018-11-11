@@ -18,7 +18,7 @@
 
 package ai.grakn.kb.internal;
 
-import ai.grakn.GraknConfigKey;
+import ai.grakn.util.GraknConfigKey;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.QueryExecutor;
