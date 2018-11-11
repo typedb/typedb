@@ -25,7 +25,7 @@ import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.kb.internal.concept.EntityImpl;
 import grakn.core.kb.internal.concept.EntityTypeImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;

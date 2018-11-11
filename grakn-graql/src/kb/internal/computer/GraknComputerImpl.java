@@ -20,7 +20,7 @@ package grakn.core.kb.internal.computer;
 
 import grakn.core.GraknComputer;
 import grakn.core.concept.LabelId;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

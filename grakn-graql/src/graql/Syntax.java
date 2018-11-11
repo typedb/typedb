@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.graql;
 
 import grakn.core.concept.ConceptId;
 import grakn.core.graql.answer.Answer;
@@ -35,36 +35,36 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.DEGREE;
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static grakn.core.util.GraqlSyntax.Compute.Condition.FROM;
-import static grakn.core.util.GraqlSyntax.Compute.Condition.IN;
-import static grakn.core.util.GraqlSyntax.Compute.Condition.OF;
-import static grakn.core.util.GraqlSyntax.Compute.Condition.TO;
-import static grakn.core.util.GraqlSyntax.Compute.Condition.USING;
-import static grakn.core.util.GraqlSyntax.Compute.Condition.WHERE;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
-import static grakn.core.util.GraqlSyntax.Compute.Method.MAX;
-import static grakn.core.util.GraqlSyntax.Compute.Method.MEAN;
-import static grakn.core.util.GraqlSyntax.Compute.Method.MEDIAN;
-import static grakn.core.util.GraqlSyntax.Compute.Method.MIN;
-import static grakn.core.util.GraqlSyntax.Compute.Method.PATH;
-import static grakn.core.util.GraqlSyntax.Compute.Method.STD;
-import static grakn.core.util.GraqlSyntax.Compute.Method.SUM;
-import static grakn.core.util.GraqlSyntax.Compute.Parameter.CONTAINS;
-import static grakn.core.util.GraqlSyntax.Compute.Parameter.K;
-import static grakn.core.util.GraqlSyntax.Compute.Parameter.MIN_K;
-import static grakn.core.util.GraqlSyntax.Compute.Parameter.SIZE;
+import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.Syntax.Compute.Condition.FROM;
+import static grakn.core.graql.Syntax.Compute.Condition.IN;
+import static grakn.core.graql.Syntax.Compute.Condition.OF;
+import static grakn.core.graql.Syntax.Compute.Condition.TO;
+import static grakn.core.graql.Syntax.Compute.Condition.USING;
+import static grakn.core.graql.Syntax.Compute.Condition.WHERE;
+import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Method.MAX;
+import static grakn.core.graql.Syntax.Compute.Method.MEAN;
+import static grakn.core.graql.Syntax.Compute.Method.MEDIAN;
+import static grakn.core.graql.Syntax.Compute.Method.MIN;
+import static grakn.core.graql.Syntax.Compute.Method.PATH;
+import static grakn.core.graql.Syntax.Compute.Method.STD;
+import static grakn.core.graql.Syntax.Compute.Method.SUM;
+import static grakn.core.graql.Syntax.Compute.Parameter.CONTAINS;
+import static grakn.core.graql.Syntax.Compute.Parameter.K;
+import static grakn.core.graql.Syntax.Compute.Parameter.MIN_K;
+import static grakn.core.graql.Syntax.Compute.Parameter.SIZE;
 
 /**
  * Graql syntax keywords
  * TODO: the content of this class (the enums) should be moved to inside Graql class, once we move it to this package.
  *
  */
-public class GraqlSyntax {
+public class Syntax {
 
     /**
      * Graql commands to determine the type of query

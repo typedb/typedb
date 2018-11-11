@@ -27,7 +27,7 @@ import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Type;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -104,10 +104,10 @@ public interface GraknAdmin extends GraknTx{
 
     /**
      * Get all super-concepts of the given {@link SchemaConcept} including itself and including the meta-type
-     * {@link grakn.core.util.Schema.MetaSchema#THING}.
+     * {@link Schema.MetaSchema#THING}.
      *
      * <p>
-     *     If you want a more precise type that will exclude {@link grakn.core.util.Schema.MetaSchema#THING}, use
+     *     If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
      *     {@link SchemaConcept#sups()}.
      * </p>
      */

@@ -33,7 +33,7 @@ import grakn.core.kb.internal.structure.AbstractElement;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.kb.internal.structure.Shard;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -43,7 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static grakn.core.util.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
 
 /**
  * <p>
@@ -55,8 +55,8 @@ import static grakn.core.util.Schema.BaseType.RELATIONSHIP_TYPE;
  *     into Grakn {@link Concept} and {@link EdgeElement}.
  *
  *     Construction is only successful if the vertex and edge properties contain the needed information.
- *     A concept must include a label which is a {@link grakn.core.util.Schema.BaseType}.
- *     An edge must include a label which is a {@link grakn.core.util.Schema.EdgeLabel}.
+ *     A concept must include a label which is a {@link Schema.BaseType}.
+ *     An edge must include a label which is a {@link Schema.EdgeLabel}.
  * </p>
  *
  */

@@ -41,7 +41,7 @@ import grakn.core.kb.internal.concept.TypeImpl;
 import grakn.core.kb.internal.structure.Casting;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 
 import com.google.common.collect.Iterables;
 import java.util.Collection;

@@ -35,7 +35,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.reasoner.atom.binary.HasAtom;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -45,9 +45,9 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.Graql.var;
-import static grakn.core.util.Schema.ImplicitType.KEY;
-import static grakn.core.util.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.util.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.graql.internal.Schema.ImplicitType.KEY;
+import static grakn.core.graql.internal.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.graql.internal.Schema.ImplicitType.KEY_VALUE;
 
 /**
  * Represents the {@code has} and {@code key} properties on a {@link Type}.

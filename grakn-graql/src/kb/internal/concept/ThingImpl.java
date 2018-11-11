@@ -36,7 +36,7 @@ import grakn.core.kb.internal.cache.Cacheable;
 import grakn.core.kb.internal.structure.Casting;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.util.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**

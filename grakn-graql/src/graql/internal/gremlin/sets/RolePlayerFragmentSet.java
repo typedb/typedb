@@ -28,7 +28,7 @@ import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import grakn.core.graql.internal.gremlin.fragment.Fragments;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;

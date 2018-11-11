@@ -34,7 +34,7 @@ import grakn.core.exception.InvalidKBException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -48,11 +48,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.util.GraqlSyntax.Compute.Argument.contains;
-import static grakn.core.util.GraqlSyntax.Compute.Argument.size;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.Syntax.Compute.Argument.contains;
+import static grakn.core.graql.Syntax.Compute.Argument.size;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

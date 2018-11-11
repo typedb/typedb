@@ -26,7 +26,7 @@ import grakn.core.exception.TemporaryWriteException;
 import grakn.core.factory.EmbeddedGraknSession;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;

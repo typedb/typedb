@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
-import static grakn.core.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toSet;
 
 /**

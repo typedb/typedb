@@ -56,7 +56,7 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;

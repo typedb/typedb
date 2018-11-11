@@ -37,15 +37,15 @@ import static grakn.core.graql.Graql.match;
 import static grakn.core.graql.Graql.neq;
 import static grakn.core.graql.Graql.or;
 import static grakn.core.graql.Graql.var;
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.DEGREE;
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static grakn.core.util.GraqlSyntax.Compute.Argument.k;
-import static grakn.core.util.GraqlSyntax.Compute.Argument.min_k;
-import static grakn.core.util.GraqlSyntax.Compute.Argument.size;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.Syntax.Compute.Argument.k;
+import static grakn.core.graql.Syntax.Compute.Argument.min_k;
+import static grakn.core.graql.Syntax.Compute.Argument.size;
+import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {

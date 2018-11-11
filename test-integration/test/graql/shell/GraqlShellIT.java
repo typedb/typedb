@@ -23,7 +23,7 @@ import grakn.core.console.GraqlShellOptions;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.ErrorMessage;
 import grakn.core.util.GraknVersion;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;

@@ -43,9 +43,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static grakn.core.util.GraqlSyntax.Compute.Argument.k;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.Syntax.Compute.Argument.k;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

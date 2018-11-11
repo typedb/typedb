@@ -29,10 +29,10 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm;
-import static grakn.core.util.GraqlSyntax.Compute.Argument;
-import static grakn.core.util.GraqlSyntax.Compute.Method;
-import static grakn.core.util.GraqlSyntax.Compute.Parameter;
+import static grakn.core.graql.Syntax.Compute.Algorithm;
+import static grakn.core.graql.Syntax.Compute.Argument;
+import static grakn.core.graql.Syntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Parameter;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn

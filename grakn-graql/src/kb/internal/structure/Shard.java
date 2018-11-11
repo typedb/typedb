@@ -20,7 +20,7 @@ package grakn.core.kb.internal.structure;
 
 import grakn.core.concept.Thing;
 import grakn.core.kb.internal.concept.ConceptImpl;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

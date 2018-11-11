@@ -21,7 +21,7 @@ import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;

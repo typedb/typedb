@@ -26,7 +26,7 @@ import grakn.core.exception.GraknTxOperationException;
 import grakn.core.kb.internal.structure.Casting;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;

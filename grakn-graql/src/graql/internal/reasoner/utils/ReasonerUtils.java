@@ -36,7 +36,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;

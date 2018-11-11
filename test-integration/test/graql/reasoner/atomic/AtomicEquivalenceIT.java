@@ -13,7 +13,7 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

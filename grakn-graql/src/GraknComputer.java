@@ -19,6 +19,7 @@
 package grakn.core;
 
 import grakn.core.concept.LabelId;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -51,7 +52,7 @@ public interface GraknComputer {
     /**
      * Execute the given vertex program using a graph computer.
      *
-     * @param includesRolePlayerEdges whether the graph computer should include {@link grakn.core.util.Schema.EdgeLabel#ROLE_PLAYER} edges
+     * @param includesRolePlayerEdges whether the graph computer should include {@link Schema.EdgeLabel#ROLE_PLAYER} edges
      * @param types                   instance types in the subgraph
      * @param program                 the vertex program
      * @param mapReduce               a list of mapReduce job

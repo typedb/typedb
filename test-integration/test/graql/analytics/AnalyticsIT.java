@@ -30,7 +30,7 @@ import grakn.core.concept.Role;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -42,9 +42,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm.DEGREE;
-import static grakn.core.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 

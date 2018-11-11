@@ -19,7 +19,7 @@
 package grakn.core.concept;
 
 import grakn.core.kb.admin.GraknAdmin;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

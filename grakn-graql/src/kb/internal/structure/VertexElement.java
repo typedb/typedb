@@ -20,7 +20,7 @@ package grakn.core.kb.internal.structure;
 
 import grakn.core.GraknTx;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;

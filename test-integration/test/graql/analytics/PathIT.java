@@ -34,7 +34,7 @@ import grakn.core.exception.InvalidKBException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -49,7 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.internal.analytics.Utility.getResourceEdgeId;
-import static grakn.core.util.GraqlSyntax.Compute.Method.PATH;
+import static grakn.core.graql.Syntax.Compute.Method.PATH;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

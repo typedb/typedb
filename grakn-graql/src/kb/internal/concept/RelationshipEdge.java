@@ -30,7 +30,7 @@ import grakn.core.kb.internal.cache.CacheOwner;
 import grakn.core.kb.internal.cache.Cacheable;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

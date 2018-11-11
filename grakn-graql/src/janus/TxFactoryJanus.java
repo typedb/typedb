@@ -23,7 +23,7 @@ import grakn.core.GraknTx;
 import grakn.core.factory.EmbeddedGraknSession;
 import grakn.core.factory.TxFactoryAbstract;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;

@@ -36,7 +36,7 @@ import grakn.core.kb.internal.concept.EntityTypeImpl;
 import grakn.core.kb.internal.structure.Shard;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;

@@ -45,7 +45,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.GraqlTestUtil;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;

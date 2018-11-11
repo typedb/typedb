@@ -24,7 +24,7 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.util.Schema.EdgeLabel.PLAYS;
+import static grakn.core.graql.internal.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
 abstract class InPlaysFragment extends Fragment {

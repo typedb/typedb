@@ -23,7 +23,7 @@ import grakn.core.graql.Var;
 import grakn.core.graql.grammar.GraqlTemplateBaseVisitor;
 import grakn.core.graql.grammar.GraqlTemplateParser;
 import grakn.core.graql.macro.Macro;
-import grakn.core.util.StringUtil;
+import grakn.core.graql.internal.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;

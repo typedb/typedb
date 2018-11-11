@@ -51,7 +51,7 @@ import grakn.core.kb.internal.concept.AttributeTypeImpl;
 import grakn.core.kb.internal.concept.EntityImpl;
 import grakn.core.kb.internal.concept.RelationshipImpl;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

@@ -30,7 +30,7 @@ import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Assert;

@@ -28,7 +28,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
-import grakn.core.util.StringUtil;
+import grakn.core.graql.internal.util.StringUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 

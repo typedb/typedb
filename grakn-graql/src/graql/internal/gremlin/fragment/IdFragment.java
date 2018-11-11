@@ -22,7 +22,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.graql.Var;
 import grakn.core.graql.internal.pattern.property.IdProperty;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import java.util.Map;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

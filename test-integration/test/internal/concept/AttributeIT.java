@@ -32,7 +32,7 @@ import grakn.core.concept.Thing;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Iterables;
 import org.junit.After;
 import org.junit.Before;

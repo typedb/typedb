@@ -22,7 +22,7 @@ import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

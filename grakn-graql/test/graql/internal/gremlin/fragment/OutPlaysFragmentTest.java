@@ -20,16 +20,16 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.Graql;
 import grakn.core.graql.Var;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static grakn.core.util.Schema.EdgeLabel.PLAYS;
-import static grakn.core.util.Schema.EdgeLabel.SUB;
-import static grakn.core.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeLabel.PLAYS;
+import static grakn.core.graql.internal.Schema.EdgeLabel.SUB;
+import static grakn.core.graql.internal.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 

@@ -51,7 +51,7 @@ import grakn.core.kb.internal.concept.TypeImpl;
 import grakn.core.kb.internal.structure.VertexElement;
 import grakn.core.kb.log.CommitLog;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -420,7 +420,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      * {@link grakn.core.kb.internal.concept.RoleImpl#get(VertexElement)} and skips validation.
      * <p>
      * Once the {@link SchemaConcept} is found or created a few checks for uniqueness and correct
-     * {@link grakn.core.util.Schema.BaseType} are performed.
+     * {@link Schema.BaseType} are performed.
      *
      * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create

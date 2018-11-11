@@ -1,4 +1,4 @@
-package grakn.core.test.server.attribute.deduplicator;
+package grakn.core.test.server;
 
 import grakn.core.GraknTxType;
 import grakn.core.concept.AttributeType;
@@ -10,7 +10,7 @@ import grakn.core.factory.EmbeddedGraknSession;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

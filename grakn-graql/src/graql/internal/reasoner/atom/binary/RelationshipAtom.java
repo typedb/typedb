@@ -62,7 +62,7 @@ import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.kb.internal.concept.RelationshipTypeImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ArrayListMultimap;

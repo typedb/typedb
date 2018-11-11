@@ -20,7 +20,7 @@ package grakn.core.graql.internal.query.predicate;
 
 import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

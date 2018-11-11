@@ -50,12 +50,12 @@ import static grakn.core.util.ErrorMessage.NEGATIVE_OFFSET;
 import static grakn.core.util.ErrorMessage.NON_POSITIVE_LIMIT;
 import static grakn.core.util.ErrorMessage.UNEXPECTED_RESULT;
 import static grakn.core.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static grakn.core.util.GraqlSyntax.Compute;
-import static grakn.core.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
-import static grakn.core.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
-import static grakn.core.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
-import static grakn.core.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
-import static grakn.core.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute;
+import static grakn.core.graql.Syntax.Compute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute.CONDITIONS_REQUIRED;
+import static grakn.core.graql.Syntax.Compute.METHODS_ACCEPTED;
 
 /**
  * <p>

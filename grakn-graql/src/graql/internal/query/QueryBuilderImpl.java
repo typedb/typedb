@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static grakn.core.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>

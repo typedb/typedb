@@ -21,7 +21,7 @@ package grakn.core.kb.internal;
 import grakn.core.GraknTx;
 import grakn.core.factory.EmbeddedGraknSession;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**

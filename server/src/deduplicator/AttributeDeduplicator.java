@@ -21,7 +21,7 @@ package grakn.core.server.deduplicator;
 import grakn.core.GraknTxType;
 import grakn.core.server.factory.EngineGraknTxFactory;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;

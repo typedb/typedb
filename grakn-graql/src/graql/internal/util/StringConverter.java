@@ -21,7 +21,6 @@ package grakn.core.graql.internal.util;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.graql.grammar.GraqlLexer;
-import grakn.core.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;

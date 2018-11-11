@@ -24,7 +24,7 @@ import grakn.core.graql.answer.Answer;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
-import static grakn.core.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Method;
 
 /**
  * Starting point for creating queries

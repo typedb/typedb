@@ -22,7 +22,7 @@ import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 
 /**
  * <p>

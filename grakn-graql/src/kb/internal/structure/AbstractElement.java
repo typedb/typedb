@@ -21,6 +21,7 @@ import grakn.core.GraknTx;
 import grakn.core.concept.Concept;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.graql.internal.Schema;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -44,8 +45,8 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  * </p>
  *
  * @param <E> The type of the element. Either {@link VertexElement} of {@link EdgeElement}
- * @param <P> Enum indicating the allowed properties on each type. Either {@link grakn.core.util.Schema.VertexProperty} or
- *           {@link grakn.core.util.Schema.EdgeProperty}
+ * @param <P> Enum indicating the allowed properties on each type. Either {@link Schema.VertexProperty} or
+ *           {@link Schema.EdgeProperty}
  *
  *
  */

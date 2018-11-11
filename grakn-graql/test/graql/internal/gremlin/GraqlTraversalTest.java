@@ -34,7 +34,7 @@ import grakn.core.graql.internal.pattern.property.IdProperty;
 import grakn.core.graql.internal.pattern.property.SubProperty;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.util.CommonUtil;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

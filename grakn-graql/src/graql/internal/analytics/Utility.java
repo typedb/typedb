@@ -24,7 +24,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

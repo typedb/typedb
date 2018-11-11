@@ -20,7 +20,7 @@ package grakn.core.concept;
 
 
 import grakn.core.exception.GraknTxOperationException;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;

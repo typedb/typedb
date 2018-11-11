@@ -30,7 +30,7 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.graql.answer.Value;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.GraqlSyntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

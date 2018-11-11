@@ -23,7 +23,7 @@ import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
 import grakn.core.graql.Pattern;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

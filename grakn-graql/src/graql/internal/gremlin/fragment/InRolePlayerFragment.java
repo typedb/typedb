@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.Var;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
@@ -35,14 +35,14 @@ import java.util.Collection;
 
 import static grakn.core.graql.internal.pattern.Patterns.RELATION_DIRECTION;
 import static grakn.core.graql.internal.pattern.Patterns.RELATION_EDGE;
-import static grakn.core.util.Schema.EdgeLabel.ROLE_PLAYER;
-import static grakn.core.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
-import static grakn.core.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
-import static grakn.core.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
-import static grakn.core.util.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeLabel.ROLE_PLAYER;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
- * A fragment representing traversing a {@link grakn.core.util.Schema.EdgeLabel#ROLE_PLAYER} edge from the role-player to
+ * A fragment representing traversing a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from the role-player to
  * the relation.
  * <p>
  * Part of a {@link grakn.core.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link OutRolePlayerFragment}.

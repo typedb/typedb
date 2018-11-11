@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.util.Schema.VertexProperty.DATA_TYPE;
+import static grakn.core.graql.internal.Schema.VertexProperty.DATA_TYPE;
 
 @AutoValue
 abstract class DataTypeFragment extends Fragment {

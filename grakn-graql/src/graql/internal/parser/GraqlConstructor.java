@@ -41,8 +41,8 @@ import grakn.core.graql.VarPattern;
 import grakn.core.graql.grammar.GraqlBaseVisitor;
 import grakn.core.graql.grammar.GraqlParser;
 import grakn.core.util.CommonUtil;
-import grakn.core.util.GraqlSyntax;
-import grakn.core.util.StringUtil;
+import grakn.core.graql.Syntax;
+import grakn.core.graql.internal.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
@@ -63,9 +63,9 @@ import java.util.stream.Stream;
 import static grakn.core.graql.Graql.and;
 import static grakn.core.graql.Graql.eq;
 import static grakn.core.graql.Graql.label;
-import static grakn.core.util.GraqlSyntax.Compute.Algorithm;
-import static grakn.core.util.GraqlSyntax.Compute.Argument;
-import static grakn.core.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Algorithm;
+import static grakn.core.graql.Syntax.Compute.Argument;
+import static grakn.core.graql.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -673,7 +673,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     public List<Argument> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
 
         List<GraqlParser.ComputeArgContext> argContextList = new ArrayList<>();
-        List<GraqlSyntax.Compute.Argument> argList = new ArrayList<>();
+        List<Syntax.Compute.Argument> argList = new ArrayList<>();
 
         if (computeArgs.computeArg() != null) {
             argContextList.add(computeArgs.computeArg());

@@ -26,7 +26,7 @@ import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.util.StringConverter;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -39,9 +39,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import static grakn.core.util.Schema.EdgeLabel.SUB;
-import static grakn.core.util.Schema.VertexProperty.LABEL_ID;
-import static grakn.core.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeLabel.SUB;
+import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.graql.internal.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 
 /**

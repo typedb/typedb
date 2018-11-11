@@ -23,7 +23,7 @@ import grakn.core.concept.AttributeType;
 import grakn.core.concept.Thing;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.kb.internal.structure.VertexElement;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

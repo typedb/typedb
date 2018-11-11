@@ -29,7 +29,7 @@ import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
 import grakn.core.util.ErrorMessage;
-import grakn.core.util.Schema;
+import grakn.core.graql.internal.Schema;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -81,7 +81,7 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to mutate a {@link grakn.core.util.Schema.MetaSchema}
+     * Thrown when attempting to mutate a {@link Schema.MetaSchema}
      */
     public static GraknTxOperationException metaTypeImmutable(Label metaLabel){
         return create(META_TYPE_IMMUTABLE.getMessage(metaLabel));

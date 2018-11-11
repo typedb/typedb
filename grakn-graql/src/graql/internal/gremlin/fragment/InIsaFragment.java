@@ -38,15 +38,15 @@ import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.graql.Graql.var;
-import static grakn.core.util.Schema.BaseType.RELATIONSHIP_TYPE;
-import static grakn.core.util.Schema.EdgeLabel.ATTRIBUTE;
-import static grakn.core.util.Schema.EdgeLabel.ISA;
-import static grakn.core.util.Schema.EdgeLabel.PLAYS;
-import static grakn.core.util.Schema.EdgeLabel.RELATES;
-import static grakn.core.util.Schema.EdgeLabel.SHARD;
-import static grakn.core.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
-import static grakn.core.util.Schema.VertexProperty.IS_IMPLICIT;
-import static grakn.core.util.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.graql.internal.Schema.EdgeLabel.ATTRIBUTE;
+import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;
+import static grakn.core.graql.internal.Schema.EdgeLabel.PLAYS;
+import static grakn.core.graql.internal.Schema.EdgeLabel.RELATES;
+import static grakn.core.graql.internal.Schema.EdgeLabel.SHARD;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.VertexProperty.IS_IMPLICIT;
+import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.
