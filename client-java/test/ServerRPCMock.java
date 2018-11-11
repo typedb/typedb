@@ -18,13 +18,13 @@
 
 package grakn.core.client;
 
-import grakn.core.rpc.proto.KeyspaceProto;
-import grakn.core.rpc.proto.KeyspaceServiceGrpc;
-import grakn.core.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
-import grakn.core.rpc.proto.SessionProto;
-import grakn.core.rpc.proto.SessionProto.Transaction;
-import grakn.core.rpc.proto.SessionServiceGrpc;
-import grakn.core.rpc.proto.SessionServiceGrpc.SessionServiceImplBase;
+import grakn.core.protocol.KeyspaceProto;
+import grakn.core.protocol.KeyspaceServiceGrpc;
+import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
+import grakn.core.protocol.SessionProto;
+import grakn.core.protocol.SessionProto.Transaction;
+import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.protocol.SessionServiceGrpc.SessionServiceImplBase;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;

@@ -57,7 +57,7 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
     ],
-    tags = ["maven_coordinates=grakn.core:core.console:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
 )
 
 deploy_maven_jar(

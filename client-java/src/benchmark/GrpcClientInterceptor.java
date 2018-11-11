@@ -18,7 +18,7 @@
 
 package grakn.core.client.benchmark;
 
-import grakn.core.rpc.proto.SessionProto;
+import grakn.core.protocol.SessionProto;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;

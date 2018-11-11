@@ -27,7 +27,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
-import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.protocol.ConceptProto;
 
 import java.util.Arrays;
 import java.util.stream.Stream;

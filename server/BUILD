@@ -60,7 +60,7 @@ java_library(
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
     visibility = ["//visibility:public"],
-    tags = ["maven_coordinates=grakn.core:core.server:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
 )
 
 deploy_maven_jar(

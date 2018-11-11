@@ -20,8 +20,8 @@
 package grakn.core.client.rpc;
 
 import grakn.core.exception.GraknTxOperationException;
-import grakn.core.rpc.proto.SessionProto.Transaction;
-import grakn.core.rpc.proto.SessionServiceGrpc;
+import grakn.core.protocol.SessionProto.Transaction;
+import grakn.core.protocol.SessionServiceGrpc;
 import brave.Tracer;
 import brave.Tracing;
 import brave.propagation.TraceContext;

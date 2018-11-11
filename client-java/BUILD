@@ -48,7 +48,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
     ],
-    tags = ["maven_coordinates=grakn.core:client-java:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:client:{pom_version}"],
 )
 
 deploy_maven_jar(

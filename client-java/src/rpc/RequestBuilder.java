@@ -25,9 +25,9 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
-import grakn.core.rpc.proto.ConceptProto;
-import grakn.core.rpc.proto.KeyspaceProto;
-import grakn.core.rpc.proto.SessionProto;
+import grakn.core.protocol.ConceptProto;
+import grakn.core.protocol.KeyspaceProto;
+import grakn.core.protocol.SessionProto;
 import grakn.core.util.CommonUtil;
 
 import java.time.LocalDateTime;

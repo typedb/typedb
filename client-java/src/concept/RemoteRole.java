@@ -25,7 +25,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Type;
-import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.protocol.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;

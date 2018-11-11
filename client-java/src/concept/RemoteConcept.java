@@ -24,7 +24,7 @@ import grakn.core.client.Grakn;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.exception.GraknTxOperationException;
-import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.protocol.ConceptProto;
 
 import java.util.function.Function;
 import java.util.stream.Stream;

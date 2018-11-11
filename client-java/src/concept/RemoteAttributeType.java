@@ -25,7 +25,7 @@ import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.protocol.ConceptProto;
 import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 

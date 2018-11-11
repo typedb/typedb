@@ -25,7 +25,7 @@ import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Thing;
-import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.protocol.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 import java.time.Instant;

@@ -24,7 +24,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
-import grakn.core.rpc.proto.ConceptProto;
+import grakn.core.protocol.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 /**

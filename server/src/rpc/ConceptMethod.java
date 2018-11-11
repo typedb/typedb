@@ -24,9 +24,9 @@ import grakn.core.concept.Label;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Pattern;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.rpc.proto.ConceptProto;
-import grakn.core.rpc.proto.SessionProto;
-import grakn.core.rpc.proto.SessionProto.Transaction;
+import grakn.core.protocol.ConceptProto;
+import grakn.core.protocol.SessionProto;
+import grakn.core.protocol.SessionProto.Transaction;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 /**
  * Wrapper for describing methods on {@link grakn.core.concept.Concept}s that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
- * This class maps one-to-one with the gRPC message {@link grakn.core.rpc.proto.ConceptProto.Method.Req}.
+ * This class maps one-to-one with the gRPC message {@link grakn.core.protocol.ConceptProto.Method.Req}.
  */
 public class ConceptMethod {
 
