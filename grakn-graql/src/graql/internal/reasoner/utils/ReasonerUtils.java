@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.utils;
+package grakn.core.graql.internal.reasoner.utils;
 
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.utils.conversion.RoleConverter;
-import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
-import ai.grakn.graql.internal.reasoner.utils.conversion.TypeConverter;
-import ai.grakn.util.Schema;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.property.IdProperty;
+import grakn.core.graql.internal.pattern.property.LabelProperty;
+import grakn.core.graql.internal.pattern.property.ValueProperty;
+import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
+import grakn.core.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
+import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
+import grakn.core.graql.internal.Schema;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -56,7 +56,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
+import static grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -65,7 +65,6 @@ import static java.util.stream.Collectors.toSet;
  * Utiliy class providing useful functionalities.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ReasonerUtils {

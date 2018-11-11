@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -33,8 +33,6 @@ import java.util.Map;
  * It returns a map, the key being the cluster id, the value being the number of vertices the given cluster has.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class ClusterSizeMapReduce extends GraknMapReduce<Long> {

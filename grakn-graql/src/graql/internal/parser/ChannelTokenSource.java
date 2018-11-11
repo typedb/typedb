@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
 import com.google.auto.value.AutoValue;
 import org.antlr.v4.runtime.CharStream;
@@ -33,7 +33,6 @@ import org.antlr.v4.runtime.UnbufferedTokenStream;
  *     that class does not filter out e.g. whitespace and comments.
  * </p>
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class ChannelTokenSource implements TokenSource {

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -29,7 +29,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Admin class for inspecting and manipulating a Pattern
  *
- * @author Felix Chapman
  */
 public interface PatternAdmin extends Pattern {
     /**

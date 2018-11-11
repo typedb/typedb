@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
 import javax.annotation.CheckReturnValue;
 
@@ -26,7 +26,6 @@ import javax.annotation.CheckReturnValue;
  * Each error message contains a single format string, with a method {@link ErrorMessage#getMessage(Object...)} that
  * accepts arguments to be passed to the format string.
  *
- * @author Filipe Teixeira
  */
 public enum ErrorMessage {
     //--------------------------------------------- Bootup Errors -----------------------------------------------

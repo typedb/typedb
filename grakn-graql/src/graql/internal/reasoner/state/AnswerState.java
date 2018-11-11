@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.state;
+package grakn.core.graql.internal.reasoner.state;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 
 /**
  *
@@ -28,7 +28,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
  * Resolution state holding an answer ({@link ConceptMap}) to the parent state.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class AnswerState extends ResolutionState {

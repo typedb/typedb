@@ -1,14 +1,14 @@
-//package ai.grakn.graql.internal.reasoner;
+//package grakn.core.graql.internal.reasoner;
 //
-//import ai.grakn.GraknTx;
-//import ai.grakn.concept.Concept;
-//import ai.grakn.graql.GetQuery;
-//import ai.grakn.graql.QueryBuilder;
-//import ai.grakn.graql.Var;
-//import ai.grakn.graql.admin.Explanation;
-//import ai.grakn.graql.admin.ReasonerQuery;
-//import ai.grakn.graql.answer.ConceptMap;
-//import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
+//import grakn.core.GraknTx;
+//import grakn.core.concept.Concept;
+//import grakn.core.graql.GetQuery;
+//import grakn.core.graql.QueryBuilder;
+//import grakn.core.graql.Var;
+//import grakn.core.graql.admin.Explanation;
+//import grakn.core.graql.admin.ReasonerQuery;
+//import grakn.core.graql.answer.ConceptMap;
+//import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 //import com.google.common.collect.ImmutableList;
 //import com.google.common.collect.ImmutableMap;
 //import com.google.common.collect.Iterables;
@@ -23,7 +23,7 @@
 //import java.util.Set;
 //import java.util.stream.Collectors;
 //
-//import static ai.grakn.graql.Graql.var;
+//import static grakn.core.graql.Graql.var;
 //import static junit.framework.TestCase.assertTrue;
 //import static org.junit.Assert.assertEquals;
 //import static org.junit.Assert.assertFalse;

@@ -16,26 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.analytics;
+package grakn.core.test.graql.analytics;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.Schema;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.answer.Value;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -48,12 +48,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
+import static grakn.core.graql.Syntax.Compute.Method.MAX;
+import static grakn.core.graql.Syntax.Compute.Method.MEAN;
+import static grakn.core.graql.Syntax.Compute.Method.MEDIAN;
+import static grakn.core.graql.Syntax.Compute.Method.MIN;
+import static grakn.core.graql.Syntax.Compute.Method.STD;
+import static grakn.core.graql.Syntax.Compute.Method.SUM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;

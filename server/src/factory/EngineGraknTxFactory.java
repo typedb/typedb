@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.factory;
+package grakn.core.server.factory;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
-import ai.grakn.core.server.KeyspaceStore;
-import ai.grakn.core.server.lock.LockProvider;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryBuilder;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.util.GraknConfig;
+import grakn.core.server.keyspace.KeyspaceStore;
+import grakn.core.server.lock.LockProvider;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.factory.TxFactoryBuilder;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +42,6 @@ import java.util.concurrent.locks.Lock;
  *     This internal factory is used to produce {@link GraknTx}s.
  * </p>
  *
- * @author fppt
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;

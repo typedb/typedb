@@ -16,9 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.client.benchmark;
+package grakn.core.client.benchmark;
 
-import ai.grakn.rpc.proto.SessionProto;
+import grakn.core.protocol.SessionProto;
 import brave.Span;
 import brave.Tracer;
 import brave.Tracing;

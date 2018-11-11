@@ -16,9 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
-import ai.grakn.GraknSystemProperty;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
@@ -46,7 +45,6 @@ import java.util.stream.StreamSupport;
  *
  * Some of these methods are Grakn-specific, others add important "missing" methods to Java/Guava classes.
  *
- * @author Grakn Warriors
  */
 public class CommonUtil {
 

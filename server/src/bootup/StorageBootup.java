@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknSystemProperty;
+import grakn.core.util.GraknConfig;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
@@ -38,7 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static ai.grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including
@@ -47,8 +47,6 @@ import static ai.grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SE
  * The PID file for the Storage component is managed internally by Cassandra and not by this class. This means that
  * you will not find any code which creates or deletes the PID file for the Storage component.
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 public class StorageBootup {
 

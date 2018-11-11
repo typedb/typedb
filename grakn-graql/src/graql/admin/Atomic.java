@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
+import grakn.core.concept.Rule;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
@@ -33,7 +33,6 @@ import java.util.Set;
  * Basic interface for logical atoms used in reasoning.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface Atomic {

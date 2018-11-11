@@ -16,32 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.executor;
+package grakn.core.graql.internal.query.executor;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.graql.internal.pattern.property.ThenProperty;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.graql.internal.pattern.property.WhenProperty;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.property.DataTypeProperty;
+import grakn.core.graql.internal.pattern.property.IdProperty;
+import grakn.core.graql.internal.pattern.property.IsaProperty;
+import grakn.core.graql.internal.pattern.property.LabelProperty;
+import grakn.core.graql.internal.pattern.property.SubProperty;
+import grakn.core.graql.internal.pattern.property.ThenProperty;
+import grakn.core.graql.internal.pattern.property.ValueProperty;
+import grakn.core.graql.internal.pattern.property.WhenProperty;
+import grakn.core.util.CommonUtil;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -57,7 +57,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Class for building a {@link Concept}, by providing properties.
  * <p>
  * <p>
- * A {@link ai.grakn.graql.admin.VarProperty} is responsible for inserting itself into the graph. However,
+ * A {@link grakn.core.graql.admin.VarProperty} is responsible for inserting itself into the graph. However,
  * some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
  * an {@link IsaProperty} and a {@link ValueProperty}.
  * </p>
@@ -77,7 +77,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *     Concept concept = builder.build();
  * </pre>
  *
- * @author Felix Chapman
  */
 public class ConceptBuilder {
 

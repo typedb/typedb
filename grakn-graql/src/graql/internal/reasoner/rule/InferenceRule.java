@@ -16,34 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.rule;
+package grakn.core.graql.internal.reasoner.rule;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
-import ai.grakn.graql.internal.reasoner.state.ResolutionState;
-import ai.grakn.graql.internal.reasoner.state.RuleState;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.state.QueryStateBase;
+import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.state.RuleState;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -60,7 +60,6 @@ import static java.util.stream.Collectors.toSet;
  * Class providing resolution and higher level facilities for {@link Rule} objects.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class InferenceRule {

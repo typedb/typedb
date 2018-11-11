@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
-import ai.grakn.graql.ComputeQuery;
+import grakn.core.graql.ComputeQuery;
 
 import java.util.stream.Stream;
 

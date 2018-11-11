@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.explanation;
+package grakn.core.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Explanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * Explanation class for a join explanation - resulting from merging atoms in a conjunction.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class JoinExplanation extends QueryExplanation {

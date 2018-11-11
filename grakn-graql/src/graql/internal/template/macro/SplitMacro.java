@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template.macro;
+package grakn.core.graql.internal.template.macro;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.macro.Macro;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.macro.Macro;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +34,6 @@ import java.util.List;
  *      {@literal @}split(<value>, "and")
  * </p>
  *
- * @author alexandraorth
  */
 public class SplitMacro implements Macro<List<String>> {
 

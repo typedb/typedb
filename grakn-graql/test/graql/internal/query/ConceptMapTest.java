@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.concept.Concept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 

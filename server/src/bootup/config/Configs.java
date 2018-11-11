@@ -16,17 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup.config;
+package grakn.core.server.bootup.config;
 
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknSystemProperty;
+import grakn.core.util.GraknConfig;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
  * Factory class for configs.
  *
- * @author Kasper Piskorski
  */
 public class Configs {
 

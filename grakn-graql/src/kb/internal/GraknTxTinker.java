@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.GraknTx;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.util.ErrorMessage;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -35,7 +35,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *     1. Transactions do not exists and all threads work on the same graph at the same time.
  * </p>
  *
- * @author fppt
  */
 public class GraknTxTinker extends EmbeddedGraknTx<TinkerGraph> {
     private final TinkerGraph rootGraph;

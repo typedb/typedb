@@ -3,7 +3,7 @@
 java_test(
     name = "server-rpc-test",
     srcs = ["ServerRPCTest.java"],
-    test_class = "ai.grakn.core.server.rpc.ServerRPCTest",
+    test_class = "grakn.core.server.rpc.ServerRPCTest",
     deps = [
         "//server",
         "//grakn-graql",

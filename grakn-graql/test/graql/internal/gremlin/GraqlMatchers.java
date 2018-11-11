@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin;
+package grakn.core.graql.internal.gremlin;
 
 import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;

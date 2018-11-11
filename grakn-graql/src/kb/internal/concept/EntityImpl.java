@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relationship;
-import ai.grakn.kb.internal.structure.VertexElement;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Relationship;
+import grakn.core.kb.internal.structure.VertexElement;
 
 /**
  * <p>
@@ -35,7 +35,6 @@ import ai.grakn.kb.internal.structure.VertexElement;
  *     other entities via {@link Relationship}
  * </p>
  *
- * @author fppt
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
     private EntityImpl(VertexElement vertexElement) {

@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.match;
+package grakn.core.graql.internal.query.match;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.internal.pattern.Patterns;
+import grakn.core.GraknTx;
+import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;

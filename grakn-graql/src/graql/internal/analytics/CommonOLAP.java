@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
+import grakn.core.concept.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -33,8 +33,6 @@ import java.util.Set;
  * Core Grakn implementation of the common methods on the MapReduce and VertexProgram interfaces.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 public abstract class CommonOLAP {
     static final Logger LOGGER = LoggerFactory.getLogger(CommonOLAP.class);

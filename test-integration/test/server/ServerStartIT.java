@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.server;
+package grakn.core.test.server;
 
-import ai.grakn.Keyspace;
-import ai.grakn.test.rule.EmbeddedCassandraContext;
-import ai.grakn.test.rule.ServerContext;
+import grakn.core.Keyspace;
+import grakn.core.test.rule.EmbeddedCassandraContext;
+import grakn.core.test.rule.ServerContext;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

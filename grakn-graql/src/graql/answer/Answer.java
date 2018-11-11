@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.answer;
+package grakn.core.graql.answer;
 
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.admin.Explanation;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.graql.Query;
+import grakn.core.graql.admin.Explanation;
 import com.google.common.collect.Sets;
 
 import javax.annotation.CheckReturnValue;

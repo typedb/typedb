@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTxType;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.structure.EdgeElement;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.ErrorMessage;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Assert;

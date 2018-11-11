@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.Cacheable;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
@@ -38,11 +38,10 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation type defines how {@link ai.grakn.concept.Type} may relate to one another.
+ *     A relation type defines how {@link grakn.core.concept.Type} may relate to one another.
  *     They are used to model and categorise n-ary relationships.
  * </p>
  *
- * @author fppt
  *
  */
 public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {

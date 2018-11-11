@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core.util;
 
-import ai.grakn.util.ErrorMessage;
+import grakn.core.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
 
 import java.nio.file.Path;
@@ -27,7 +27,6 @@ import java.nio.file.Path;
  * Class for keys of properties in the file {@code grakn.properties}.
  *
  * @param <T> the type of the values of the key
- * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GraknConfigKey<T> {

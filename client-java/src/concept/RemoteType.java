@@ -17,21 +17,21 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.proto.ConceptProto;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.protocol.ConceptProto;
 
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Type}
+ * Client implementation of {@link grakn.core.concept.Type}
  *
  * @param <SomeType> The exact type of this class
  * @param <SomeThing> the exact type of instances of this class

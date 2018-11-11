@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.answer;
+package grakn.core.graql.answer;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Explanation;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Role;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -51,7 +51,7 @@ public interface ConceptMap extends Answer<ConceptMap> {
     /**
      * Return the {@link Concept} bound to the given variable name.
      *
-     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
+     * @throws grakn.core.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     Concept get(String var);
@@ -59,7 +59,7 @@ public interface ConceptMap extends Answer<ConceptMap> {
     /**
      * Return the {@link Concept} bound to the given {@link Var}.
      *
-     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
+     * @throws grakn.core.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     Concept get(Var var);

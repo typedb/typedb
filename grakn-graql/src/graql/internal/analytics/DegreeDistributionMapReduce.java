@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.LabelId;
-import ai.grakn.util.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.LabelId;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -30,8 +30,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
-import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.internal.analytics.Utility.reduceSet;
+import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The MapReduce program for collecting the result of a degree query.
@@ -40,8 +40,6 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
  * with the given degree.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class DegreeDistributionMapReduce extends GraknMapReduce<Set<ConceptId>> {

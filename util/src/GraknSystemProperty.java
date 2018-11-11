@@ -16,14 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core.util;
 
 import javax.annotation.Nullable;
 
 /**
  * Enum representing system properties used by Grakn
  *
- * @author Felix Chapman
  */
 public enum GraknSystemProperty {
 

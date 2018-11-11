@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.kb.internal.structure.VertexElement;
+import grakn.core.concept.Concept;
+import grakn.core.kb.internal.structure.VertexElement;
 
 /**
  * <p>
@@ -31,7 +31,6 @@ import ai.grakn.kb.internal.structure.VertexElement;
  *     Either by returning an existing one r going through some reification procedure to return a new one.
  * </p>
  *
- * @author fppt
  *
  */
 public interface ConceptVertex {

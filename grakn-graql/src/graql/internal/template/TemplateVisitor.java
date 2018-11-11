@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template;
+package grakn.core.graql.internal.template;
 
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.grammar.GraqlTemplateBaseVisitor;
-import ai.grakn.graql.grammar.GraqlTemplateParser;
-import ai.grakn.graql.macro.Macro;
-import ai.grakn.util.StringUtil;
+import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.graql.Var;
+import grakn.core.graql.grammar.GraqlTemplateBaseVisitor;
+import grakn.core.graql.grammar.GraqlTemplateParser;
+import grakn.core.graql.macro.Macro;
+import grakn.core.graql.internal.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -37,14 +37,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 /**
  * ANTLR visitor class for parsing a template
  *
- * @author alexandraorth
  */
 public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 

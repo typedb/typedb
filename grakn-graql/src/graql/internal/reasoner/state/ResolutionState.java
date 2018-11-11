@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.state;
+package grakn.core.graql.internal.reasoner.state;
 
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptMap;
 
 /**
  *
@@ -26,7 +26,6 @@ import ai.grakn.graql.answer.ConceptMap;
  * Base abstract class for resolution states.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class ResolutionState {

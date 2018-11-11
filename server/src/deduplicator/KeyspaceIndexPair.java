@@ -16,15 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.deduplicator;
+package grakn.core.server.deduplicator;
 
-import ai.grakn.Keyspace;
+import grakn.core.Keyspace;
 import com.google.auto.value.AutoValue;
 
 /**
  * A class to hold a keyspace and an index together.
  *
- * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
 public abstract class KeyspaceIndexPair {

@@ -28,7 +28,7 @@ genrule(
 
 java_binary(
     name = "console-binary",
-    main_class = "ai.grakn.core.console.Graql",
+    main_class = "grakn.core.console.Graql",
     runtime_deps = [":console"],
     visibility = ["//visibility:public"]
 )
@@ -38,8 +38,9 @@ java_library(
     srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//client-java:client-java",
-        "//grakn-graql:grakn-graql",
+        "//client-java",
+        "//grakn-graql",
+        "//util",
 
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -56,7 +57,7 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
     ],
-    tags = ["maven_coordinates=ai.grakn:core.console:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
 )
 
 deploy_maven_jar(

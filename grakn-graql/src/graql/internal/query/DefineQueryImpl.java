@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.GraknTx;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.Query;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 

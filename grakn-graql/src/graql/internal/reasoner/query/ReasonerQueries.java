@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package grakn.core.graql.internal.reasoner.query;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.Iterables;
 
 import java.util.List;
@@ -35,7 +35,6 @@ import java.util.Set;
  * Factory for reasoner queries.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ReasonerQueries {

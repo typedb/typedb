@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.util;
+package grakn.core.graql.internal.util;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
@@ -28,7 +28,6 @@ import java.util.Locale;
  * Some helper methods in dealing with strings in the context of GRAKN.
  * </p>
  * 
- * @author borislav
  *
  */
 public class StringUtil {

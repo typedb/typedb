@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.janus;
+package grakn.core.janus;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknTx;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.factory.TxFactoryAbstract;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.GraknTx;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.factory.TxFactoryAbstract;
+import grakn.core.util.ErrorMessage;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -68,7 +68,6 @@ import static java.util.Arrays.stream;
  *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
- * @author fppt
  */
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);

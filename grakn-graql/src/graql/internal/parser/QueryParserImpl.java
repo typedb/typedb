@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.grammar.GraqlLexer;
-import ai.grakn.graql.grammar.GraqlParser;
-import ai.grakn.graql.grammar.GraqlParser.PatternContext;
-import ai.grakn.graql.grammar.GraqlParser.PatternsContext;
-import ai.grakn.graql.grammar.GraqlParser.QueryContext;
-import ai.grakn.graql.grammar.GraqlParser.QueryEOFContext;
-import ai.grakn.graql.grammar.GraqlParser.QueryListContext;
-import ai.grakn.graql.internal.query.aggregate.Aggregates;
-import ai.grakn.graql.internal.template.TemplateParser;
+import grakn.core.concept.AttributeType;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.QueryParser;
+import grakn.core.graql.Var;
+import grakn.core.graql.grammar.GraqlLexer;
+import grakn.core.graql.grammar.GraqlParser;
+import grakn.core.graql.grammar.GraqlParser.PatternContext;
+import grakn.core.graql.grammar.GraqlParser.PatternsContext;
+import grakn.core.graql.grammar.GraqlParser.QueryContext;
+import grakn.core.graql.grammar.GraqlParser.QueryEOFContext;
+import grakn.core.graql.grammar.GraqlParser.QueryListContext;
+import grakn.core.graql.internal.query.aggregate.Aggregates;
+import grakn.core.graql.internal.template.TemplateParser;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -65,7 +65,6 @@ import java.util.stream.StreamSupport;
 /**
  * Default implementation of {@link QueryParser}
  *
- * @author Felix Chapman
  */
 public class QueryParserImpl implements QueryParser {
 

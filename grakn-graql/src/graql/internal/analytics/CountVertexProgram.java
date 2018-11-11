@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.util.CommonUtil;
+import grakn.core.util.CommonUtil;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -32,7 +32,6 @@ import java.util.Set;
  * The vertex program for counting concepts.
  * <p>
  *
- * @author Jason Liu
  */
 
 public class CountVertexProgram extends GraknVertexProgram<Long> {

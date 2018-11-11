@@ -16,46 +16,46 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.macro.Macro;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.macro.Macro;
+import grakn.core.util.ErrorMessage;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 
-import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
-import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
-import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_CONDITION;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD;
-import static ai.grakn.util.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
-import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
-import static ai.grakn.util.ErrorMessage.MISSING_COMPUTE_CONDITION;
-import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
-import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
-import static ai.grakn.util.ErrorMessage.UNEXPECTED_RESULT;
-import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static ai.grakn.util.GraqlSyntax.Compute;
-import static ai.grakn.util.GraqlSyntax.Compute.ALGORITHMS_ACCEPTED;
-import static ai.grakn.util.GraqlSyntax.Compute.ARGUMENTS_ACCEPTED;
-import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_ACCEPTED;
-import static ai.grakn.util.GraqlSyntax.Compute.CONDITIONS_REQUIRED;
-import static ai.grakn.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
+import static grakn.core.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
+import static grakn.core.util.ErrorMessage.INSERT_RECURSIVE;
+import static grakn.core.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
+import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
+import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_CONDITION;
+import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_METHOD;
+import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
+import static grakn.core.util.ErrorMessage.INVALID_VALUE;
+import static grakn.core.util.ErrorMessage.MISSING_COMPUTE_CONDITION;
+import static grakn.core.util.ErrorMessage.NEGATIVE_OFFSET;
+import static grakn.core.util.ErrorMessage.NON_POSITIVE_LIMIT;
+import static grakn.core.util.ErrorMessage.UNEXPECTED_RESULT;
+import static grakn.core.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static grakn.core.graql.Syntax.Compute;
+import static grakn.core.graql.Syntax.Compute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.Syntax.Compute.CONDITIONS_REQUIRED;
+import static grakn.core.graql.Syntax.Compute.METHODS_ACCEPTED;
 
 /**
  * <p>
@@ -66,7 +66,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
  * For example limiting the results of a query -1
  * </p>
  *
- * @author fppt
  */
 public class GraqlQueryException extends GraknException {
 

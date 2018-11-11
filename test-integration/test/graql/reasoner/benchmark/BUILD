@@ -1,6 +1,6 @@
 java_test(
     name = "benchmark-big-it",
-    test_class = "ai.grakn.graql.internal.reasoner.BenchmarkBigIT",
+    test_class = "grakn.core.graql.internal.reasoner.BenchmarkBigIT",
     srcs = ["BenchmarkBigIT.java"],
     deps = [
             "//server",
@@ -21,7 +21,7 @@ java_test(
 
 java_test(
     name = "benchmark-small-it",
-    test_class = "ai.grakn.graql.internal.reasoner.BenchmarkSmallIT",
+    test_class = "grakn.core.graql.internal.reasoner.BenchmarkSmallIT",
     srcs = ["BenchmarkSmallIT.java"],
     deps = [
         "//server",

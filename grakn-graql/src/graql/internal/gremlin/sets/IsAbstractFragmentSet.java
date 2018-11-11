@@ -16,23 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.sets;
+package grakn.core.graql.internal.gremlin.sets;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.isAbstract;
+import static grakn.core.graql.internal.gremlin.fragment.Fragments.isAbstract;
 
 /**
  * @see EquivalentFragmentSets#isAbstract(VarProperty, Var)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class IsAbstractFragmentSet extends EquivalentFragmentSet {

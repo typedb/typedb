@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.janus;
+package grakn.core.janus;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -44,7 +44,6 @@ import java.util.Optional;
  * In this instance, the vertex can be looked up directly in Janus, joining the {@code V().filter(..)}
  * steps together.
  *
- * @author Felix Chapman
  */
 public class JanusPreviousPropertyStepStrategy
         extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {

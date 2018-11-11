@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknSystemProperty;
+import grakn.core.util.GraknConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,14 +37,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static ai.grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the Engine process,
  * including starting, stopping, and performing status checks
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 public class EngineBootup {
     private static final String DISPLAY_NAME = "Grakn Core Server";

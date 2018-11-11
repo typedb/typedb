@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.InsertQueryAdmin;
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.GraknTx;
+import grakn.core.graql.admin.InsertQueryAdmin;
+import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 
@@ -34,7 +34,6 @@ import javax.annotation.CheckReturnValue;
  * When built from a {@link Match}, the {@link InsertQuery} will execute for each result of the {@link Match},
  * where variable names in the {@link InsertQuery} are bound to the concept in the result of the {@link Match}.
  *
- * @author Felix Chapman
  */
 public interface InsertQuery extends Query<ConceptMap> {
 

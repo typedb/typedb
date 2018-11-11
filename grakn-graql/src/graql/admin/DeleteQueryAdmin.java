@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * Admin class for inspecting and manipulating a DeleteQuery
  *
- * @author Felix Chapman
  */
 public interface DeleteQueryAdmin extends DeleteQuery {
     /**

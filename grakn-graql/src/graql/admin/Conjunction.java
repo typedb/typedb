@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.GraknTx;
+import grakn.core.GraknTx;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -27,7 +27,6 @@ import java.util.Set;
  *
  * @param <T> the type of patterns in this conjunction
  *
- * @author Felix Chapman
  */
 public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     /**

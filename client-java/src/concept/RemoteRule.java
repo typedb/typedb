@@ -17,24 +17,24 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.util.CommonUtil;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Rule;
+import grakn.core.concept.Type;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.protocol.ConceptProto;
+import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Rule}
+ * Client implementation of {@link grakn.core.concept.Rule}
  */
 @AutoValue
 public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {

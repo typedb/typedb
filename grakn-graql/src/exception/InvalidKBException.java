@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.GraknTx;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.GraknTx;
+import grakn.core.util.ErrorMessage;
 
 import java.util.List;
 
@@ -33,7 +33,6 @@ import java.util.List;
  *     validation rules. For a complete list of these rules please refer to the documentation
  * </p>
  *
- * @author fppt
  */
 public class InvalidKBException extends GraknException{
 

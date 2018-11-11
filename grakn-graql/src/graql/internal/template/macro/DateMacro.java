@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template.macro;
+package grakn.core.graql.internal.template.macro;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.macro.Macro;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.macro.Macro;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,7 +39,6 @@ import java.util.List;
  *      {@literal @}date("01/30/2017", "mm/dd/yyyy")
  * </p>
  *
- * @author alexandraorth
  */
 public class DateMacro implements Macro<Unescaped<String>> {
 

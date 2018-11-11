@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;

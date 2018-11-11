@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.exception.GraqlQueryException;
+import grakn.core.exception.GraqlQueryException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -28,17 +28,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_EXIST;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_LABEL;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.K_CORE_STABLE;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.MESSAGE_COUNT;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.atRelationships;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.filterByDegree;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.relayOrSaveMessages;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.sendMessage;
-import static ai.grakn.graql.internal.analytics.KCoreVertexProgram.updateEntityAndAttribute;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.K;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.K_CORE_EXIST;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.K_CORE_LABEL;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.K_CORE_STABLE;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.MESSAGE_COUNT;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.atRelationships;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.filterByDegree;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.relayOrSaveMessages;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.sendMessage;
+import static grakn.core.graql.internal.analytics.KCoreVertexProgram.updateEntityAndAttribute;
 import static com.google.common.collect.Sets.newHashSet;
 
 /**
@@ -47,7 +47,6 @@ import static com.google.common.collect.Sets.newHashSet;
  * https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores
  * </p>
  *
- * @author Jason Liu
  */
 
 public class CorenessVertexProgram extends GraknVertexProgram<String> {

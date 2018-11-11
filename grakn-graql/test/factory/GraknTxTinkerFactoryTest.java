@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.GraknTxTinker;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.util.GraknConfig;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.InputStream;
 
-import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
+import static grakn.core.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;

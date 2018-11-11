@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom;
+package grakn.core.graql.internal.reasoner.atom;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.concept.Rule;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
@@ -41,7 +41,6 @@ import java.util.stream.Stream;
  * Base {@link Atomic} implementation providing basic functionalities.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class AtomicBase implements Atomic {

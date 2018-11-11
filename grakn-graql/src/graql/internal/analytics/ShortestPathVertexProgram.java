@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.util.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
@@ -45,12 +45,7 @@ import java.util.stream.Collectors;
 
 /**
  * The vertex program for computing the shortest path between two instances.
- *
- @author Ganeshwara Herawan Hananda
- @author Jason Liu
- @author Sheldon Hall
  */
-
 public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVertexProgram.VertexMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(ShortestPathVertexProgram.class);
 

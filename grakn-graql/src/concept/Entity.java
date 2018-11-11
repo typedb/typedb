@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 import javax.annotation.CheckReturnValue;
 
@@ -31,7 +31,6 @@ import javax.annotation.CheckReturnValue;
  *     other entities via {@link Relationship}
  * </p>
  *
- * @author fppt
  */
 public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------

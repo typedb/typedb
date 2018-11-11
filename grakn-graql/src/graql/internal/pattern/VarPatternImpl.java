@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern;
+package grakn.core.graql.internal.pattern;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.property.HasAttributeProperty;
+import grakn.core.graql.internal.pattern.property.LabelProperty;
 import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

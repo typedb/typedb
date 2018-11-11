@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server;
+package grakn.core.server.keyspace;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Label;
+import grakn.core.Keyspace;
+import grakn.core.concept.Label;
 
 import java.util.Set;
 
@@ -48,7 +48,6 @@ import java.util.Set;
  * what's inside the config, which is residing remotely at the engine!
  * </p>
  *
- * @author borislav, fppt
  *
  */
 public interface KeyspaceStore {

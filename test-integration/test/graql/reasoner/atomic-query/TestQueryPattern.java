@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package grakn.core.graql.internal.reasoner;
 
-import ai.grakn.concept.Concept;
+import grakn.core.concept.Concept;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;

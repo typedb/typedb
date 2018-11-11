@@ -16,11 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server;
+package grakn.core.util;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.util.CommonUtil;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
@@ -41,7 +38,6 @@ import java.util.stream.Collectors;
 /**
  * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
  *
- * @author Marco Scoppetta
  */
 public class GraknConfig {
 
@@ -51,15 +47,12 @@ public class GraknConfig {
      * The path to the config file currently in use. Default: ./conf/grakn.properties
      */
     private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "grakn.properties");
+    private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
+    private static GraknConfig defaultConfig = null;
 
     public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
-
-    private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
-
-    protected static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".","services","grakn", "grakn-core-ascii.txt"));
-
-    private static GraknConfig defaultConfig = null;
+    public static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".", "services", "grakn", "grakn-core-ascii.txt"));
 
     public static GraknConfig empty() {
         return GraknConfig.of(new Properties());

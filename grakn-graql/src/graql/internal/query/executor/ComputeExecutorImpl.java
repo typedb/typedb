@@ -16,55 +16,55 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.executor;
+package grakn.core.graql.internal.query.executor;
 
-import ai.grakn.ComputeExecutor;
-import ai.grakn.GraknComputer;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
-import ai.grakn.graql.internal.analytics.ConnectedComponentVertexProgram;
-import ai.grakn.graql.internal.analytics.ConnectedComponentsVertexProgram;
-import ai.grakn.graql.internal.analytics.CorenessVertexProgram;
-import ai.grakn.graql.internal.analytics.CountMapReduceWithAttribute;
-import ai.grakn.graql.internal.analytics.CountVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeDistributionMapReduce;
-import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
-import ai.grakn.graql.internal.analytics.GraknMapReduce;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
-import ai.grakn.graql.internal.analytics.KCoreVertexProgram;
-import ai.grakn.graql.internal.analytics.MaxMapReduce;
-import ai.grakn.graql.internal.analytics.MeanMapReduce;
-import ai.grakn.graql.internal.analytics.MedianVertexProgram;
-import ai.grakn.graql.internal.analytics.MinMapReduce;
-import ai.grakn.graql.internal.analytics.NoResultException;
-import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
-import ai.grakn.graql.internal.analytics.StatisticsMapReduce;
-import ai.grakn.graql.internal.analytics.StdMapReduce;
-import ai.grakn.graql.internal.analytics.SumMapReduce;
-import ai.grakn.graql.internal.analytics.Utility;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.GraqlSyntax;
-import ai.grakn.util.Schema;
+import grakn.core.ComputeExecutor;
+import grakn.core.GraknComputer;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.analytics.ClusterMemberMapReduce;
+import grakn.core.graql.internal.analytics.ConnectedComponentVertexProgram;
+import grakn.core.graql.internal.analytics.ConnectedComponentsVertexProgram;
+import grakn.core.graql.internal.analytics.CorenessVertexProgram;
+import grakn.core.graql.internal.analytics.CountMapReduceWithAttribute;
+import grakn.core.graql.internal.analytics.CountVertexProgram;
+import grakn.core.graql.internal.analytics.DegreeDistributionMapReduce;
+import grakn.core.graql.internal.analytics.DegreeStatisticsVertexProgram;
+import grakn.core.graql.internal.analytics.DegreeVertexProgram;
+import grakn.core.graql.internal.analytics.GraknMapReduce;
+import grakn.core.graql.internal.analytics.GraknVertexProgram;
+import grakn.core.graql.internal.analytics.KCoreVertexProgram;
+import grakn.core.graql.internal.analytics.MaxMapReduce;
+import grakn.core.graql.internal.analytics.MeanMapReduce;
+import grakn.core.graql.internal.analytics.MedianVertexProgram;
+import grakn.core.graql.internal.analytics.MinMapReduce;
+import grakn.core.graql.internal.analytics.NoResultException;
+import grakn.core.graql.internal.analytics.ShortestPathVertexProgram;
+import grakn.core.graql.internal.analytics.StatisticsMapReduce;
+import grakn.core.graql.internal.analytics.StdMapReduce;
+import grakn.core.graql.internal.analytics.SumMapReduce;
+import grakn.core.graql.internal.analytics.Utility;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.util.CommonUtil;
+import grakn.core.graql.Syntax;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -91,24 +91,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
+import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Method.MAX;
+import static grakn.core.graql.Syntax.Compute.Method.MEAN;
+import static grakn.core.graql.Syntax.Compute.Method.MEDIAN;
+import static grakn.core.graql.Syntax.Compute.Method.MIN;
+import static grakn.core.graql.Syntax.Compute.Method.PATH;
+import static grakn.core.graql.Syntax.Compute.Method.STD;
+import static grakn.core.graql.Syntax.Compute.Method.SUM;
 
 /**
  * A Graql Compute query job executed against a {@link GraknComputer}.
  *
- * @author Grakn Warriors
  */
 class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
 
@@ -129,7 +128,7 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
 
     @Override
     public Stream<T> stream() {
-        GraqlSyntax.Compute.Method<?> method = query.method();
+        Syntax.Compute.Method<?> method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return (Stream<T>) runComputeMinMaxMedianOrSum();
         } else if (method.equals(MEAN)) {
@@ -283,7 +282,7 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
      * @return an object which is a subclass of StatisticsMapReduce
      */
     private StatisticsMapReduce<?> initStatisticsMapReduce(Set<LabelId> targetTypes, AttributeType.DataType<?> targetDataType) {
-        GraqlSyntax.Compute.Method<?> method = query.method();
+        Syntax.Compute.Method<?> method = query.method();
         if (method.equals(MIN)) {
             return new MinMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MAX)) {

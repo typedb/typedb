@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
 import jline.console.ConsoleReader;
 
@@ -28,7 +28,6 @@ import java.util.Scanner;
 /**
  * Handles printing the license for {@link GraqlShell}.
  *
- * @author Felix Chapman
  */
 public class License {
 

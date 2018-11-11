@@ -16,24 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.kb.admin.GraknAdmin;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.kb.admin.GraknAdmin;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -49,7 +49,6 @@ import java.util.Collection;
  *     basic look ups to the knowledge base. This also allows the execution of Graql queries.
  * </p>
  *
- * @author fppt
  *
  */
 public interface GraknTx extends AutoCloseable{

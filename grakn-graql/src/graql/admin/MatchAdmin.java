@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
+import grakn.core.GraknTx;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -29,7 +29,6 @@ import java.util.Set;
 /**
  * Admin class for inspecting and manipulating a {@link Match}
  *
- * @author Grakn Warriors
  */
 public interface MatchAdmin extends Match {
 

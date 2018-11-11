@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
@@ -32,7 +32,6 @@ import java.util.Optional;
  * <p>
  * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
  *
- * @author Felix Chapman
  */
 public interface ValuePredicate {
 

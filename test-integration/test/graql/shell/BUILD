@@ -1,7 +1,7 @@
 #java_test(
 #    name = "graql-shell-it",
 #    srcs = ["GraqlShellIT.java"],
-#    test_class = "ai.grakn.test.graql.shell.GraqlShellIT",
+#    test_class = "grakn.core.test.graql.shell.GraqlShellIT",
 #    deps = [
 #        "//grakn-graql",
 #        "//console",

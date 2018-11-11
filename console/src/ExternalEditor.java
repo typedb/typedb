@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -30,7 +30,6 @@ import java.util.Optional;
 /**
  * Represents an external editor that a user can execute from the console for editing queries.
  *
- * @author Felix Chapman
  */
 final class ExternalEditor {
 

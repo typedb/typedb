@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.admin.MatchAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.GraknTx;
+import grakn.core.graql.Graql;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;

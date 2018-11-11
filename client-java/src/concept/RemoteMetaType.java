@@ -17,17 +17,17 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
 import com.google.auto.value.AutoValue;
 
 /**
- * Client implementation of {@link ai.grakn.concept.Type}
+ * Client implementation of {@link grakn.core.concept.Type}
  */
 @AutoValue
 public abstract class RemoteMetaType extends RemoteType<Type, Thing> {

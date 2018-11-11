@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

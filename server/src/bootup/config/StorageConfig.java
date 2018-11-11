@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup.config;
+package grakn.core.server.bootup.config;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -37,7 +37,6 @@ import java.util.Map;
 /**
  * Container class for storing and manipulating storage configuration.
  *
- * @author Kasper Piskorski
  */
 public class StorageConfig extends ProcessConfig<Object> {
     //TODO reimplement without importing many packages from com.fasterxml.jackson

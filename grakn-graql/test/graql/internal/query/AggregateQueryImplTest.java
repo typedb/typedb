@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.admin.MatchAdmin;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.query.aggregate.Aggregates;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.query.aggregate.Aggregates;
 import org.junit.Test;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

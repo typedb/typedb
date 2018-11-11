@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
 import jline.console.completer.Completer;
 
@@ -25,7 +25,6 @@ import java.util.List;
 /**
  * Completer that complete Graql shell commands
  *
- * @author Felix Chapman
  */
 public class ShellCommandCompleter implements Completer {
 

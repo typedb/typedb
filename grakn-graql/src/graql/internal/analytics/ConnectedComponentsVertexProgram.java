@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.util.Schema;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -34,7 +34,6 @@ import java.util.Set;
 /**
  * The vertex program for computing connected components.
  *
- * @author Jason Liu
  */
 
 public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String> {

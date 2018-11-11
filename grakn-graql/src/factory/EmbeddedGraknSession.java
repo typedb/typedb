@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknComputer;
-import ai.grakn.GraknConfigKey;
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.janus.GraknTxJanus;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.GraknTxTinker;
-import ai.grakn.kb.internal.computer.GraknComputerImpl;
+import grakn.core.GraknComputer;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.util.GraknConfig;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.janus.GraknTxJanus;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.GraknTxTinker;
+import grakn.core.kb.internal.computer.GraknComputerImpl;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * It does this by either defaulting to an in memory tx {@link GraknTxTinker} or by retrieving the factory definition from engine.
  * The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  *
- * @author Grakn Warriors
  */
 public class EmbeddedGraknSession implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknSession.class);

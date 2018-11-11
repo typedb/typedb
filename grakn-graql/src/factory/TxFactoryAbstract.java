@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
@@ -39,7 +39,6 @@ import static javax.annotation.meta.When.NEVER;
  *
  * @param <Tx> A {@link GraknTx} extending {@link EmbeddedGraknTx} and wrapping a Tinkerpop Graph
  * @param <G>  A vendor implementation of a Tinkerpop {@link Graph}
- * @author fppt
  */
 public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
     private final EmbeddedGraknSession session;

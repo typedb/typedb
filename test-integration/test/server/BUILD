@@ -1,6 +1,6 @@
 java_test(
     name = "attribute-deduplicator-it",
-    test_class = "ai.grakn.test.server.attribute.deduplicator.AttributeDeduplicatorIT",
+    test_class = "grakn.core.test.server.AttributeDeduplicatorIT",
     srcs = ["AttributeDeduplicatorIT.java"],
     deps = [
         "//server",
@@ -12,7 +12,7 @@ java_test(
 
 java_test(
     name = "server-start-it",
-    test_class = "ai.grakn.test.server.ServerStartIT",
+    test_class = "grakn.core.test.server.ServerStartIT",
     srcs = ["ServerStartIT.java"],
     deps = [
         "//server",
