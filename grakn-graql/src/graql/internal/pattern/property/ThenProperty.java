@@ -35,7 +35,6 @@ import java.util.Collection;
  * The then side describes the right-hand of an implication, stating that when the when side of a rule is
  * true the then side must hold.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class ThenProperty extends RuleProperty {

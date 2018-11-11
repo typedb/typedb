@@ -45,8 +45,6 @@ import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeI
  * The vertex program for computing the median of given resource using quick select algorithm.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class MedianVertexProgram extends GraknVertexProgram<Long> {

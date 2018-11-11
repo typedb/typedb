@@ -33,7 +33,6 @@ import static grakn.core.util.ErrorMessage.LOCKING_EXCEPTION;
  *     When this occurs the transaction should be retried
  * </p>
  *
- * @author fppt
  */
 public class TemporaryWriteException extends GraknBackendException{
     private TemporaryWriteException(String error, Exception e) {

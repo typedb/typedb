@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * Also includes helper methods to operate on a {@link grakn.core.graql.Pattern} or {@link VarPattern}.
  *
- * @author Felix Chapman
  */
 public class Patterns {
 

@@ -35,7 +35,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *     1. Transactions do not exists and all threads work on the same graph at the same time.
  * </p>
  *
- * @author fppt
  */
 public class GraknTxTinker extends EmbeddedGraknTx<TinkerGraph> {
     private final TinkerGraph rootGraph;

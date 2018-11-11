@@ -26,7 +26,6 @@ import java.util.List;
  *
  * @param <T> the type of result after applying this macro
  *
- * @author Alexandra Orth
  */
 public interface Macro<T> {
 

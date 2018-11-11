@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")

@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  *
- * @author Kasper Piskorski
  *
  */
 public class LazyQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<Q, LazyAnswerIterator> {

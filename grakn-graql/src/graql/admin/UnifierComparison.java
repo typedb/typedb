@@ -29,7 +29,6 @@ import java.util.Set;
  * Interface for defining unifier comparisons.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface UnifierComparison {

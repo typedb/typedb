@@ -31,7 +31,6 @@ import javax.annotation.CheckReturnValue;
  *     other entities via {@link Relationship}
  * </p>
  *
- * @author fppt
  */
 public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------

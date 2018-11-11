@@ -39,7 +39,6 @@ import java.util.Set;
  *      type of the concept.
  * </p>
  *
- * @author fppt
  *
  */
 class Validator {

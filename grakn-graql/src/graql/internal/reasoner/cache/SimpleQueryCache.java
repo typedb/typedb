@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
  *
  * @param <Q> the type of query that is being cached
  *
- * @author Kasper Piskorski
  *
  */
 public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<Q, QueryAnswers> {

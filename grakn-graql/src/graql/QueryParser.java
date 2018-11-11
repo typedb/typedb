@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 /**
  * Class for parsing query strings into valid queries
  *
- * @author Felix Chapman
  */
 public interface QueryParser {
 

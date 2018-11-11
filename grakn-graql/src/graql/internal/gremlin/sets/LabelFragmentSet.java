@@ -38,7 +38,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * @see EquivalentFragmentSets#label(VarProperty, Var, ImmutableSet)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class LabelFragmentSet extends EquivalentFragmentSet {

@@ -26,7 +26,6 @@ import java.util.Optional;
 /**
  * A pair of role and role player (where the role may not be present)
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class RelationPlayer {

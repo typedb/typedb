@@ -28,8 +28,6 @@ import java.util.Set;
  * Union-Find Data Structure
  *
  * @param <V> the type of the values stored
- * @author Sam Thomson
- * @author Jason Liu
  */
 public class Partition<V> {
     private final Map<V, V> parents;

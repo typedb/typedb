@@ -29,7 +29,6 @@ import static grakn.core.util.GraqlSyntax.Compute.Method;
 /**
  * Starting point for creating queries
  *
- * @author Felix Chapman
  */
 public interface QueryBuilder {
 

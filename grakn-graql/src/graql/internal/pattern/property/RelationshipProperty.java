@@ -66,7 +66,6 @@ import static java.util.stream.Collectors.toSet;
  * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
  * role-player {@link Thing} and an optional {@link Role}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class RelationshipProperty extends AbstractVarProperty implements UniqueVarProperty {

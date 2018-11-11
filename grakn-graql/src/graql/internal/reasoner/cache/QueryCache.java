@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * @param <Q> the type of query that is being cached
  * @param <S> the type of answer being cached
  *
- * @author Kasper Piskorski
  *
  */
 public interface QueryCache<Q extends ReasonerQueryImpl, S extends Iterable<ConceptMap>>{

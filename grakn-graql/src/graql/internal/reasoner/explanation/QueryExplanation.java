@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
  * Base class for explanation classes.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class QueryExplanation implements Explanation {

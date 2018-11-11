@@ -34,7 +34,6 @@ import java.util.stream.Stream;
  *     They are used to model and categorise n-ary {@link Relationship}s.
  * </p>
  *
- * @author fppt
  *
  */
 public interface RelationshipType extends Type {

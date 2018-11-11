@@ -31,7 +31,6 @@ import java.util.Set;
  *
  * @param <T> the type of the predicate on a concept
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class Predicate<T> extends AtomicBase {

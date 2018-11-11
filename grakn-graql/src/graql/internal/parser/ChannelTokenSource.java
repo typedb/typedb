@@ -33,7 +33,6 @@ import org.antlr.v4.runtime.UnbufferedTokenStream;
  *     that class does not filter out e.g. whitespace and comments.
  * </p>
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class ChannelTokenSource implements TokenSource {

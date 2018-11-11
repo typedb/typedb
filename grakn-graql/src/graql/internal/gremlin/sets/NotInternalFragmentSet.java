@@ -31,7 +31,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#notInternalFragmentSet(VarProperty, Var)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class NotInternalFragmentSet extends EquivalentFragmentSet {

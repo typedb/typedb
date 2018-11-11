@@ -46,7 +46,6 @@ import java.util.stream.Stream;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class AtomicEquivalence extends Equivalence<Atomic> {

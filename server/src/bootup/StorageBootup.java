@@ -47,8 +47,6 @@ import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECON
  * The PID file for the Storage component is managed internally by Cassandra and not by this class. This means that
  * you will not find any code which creates or deletes the PID file for the Storage component.
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 public class StorageBootup {
 

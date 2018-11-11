@@ -22,7 +22,6 @@ import java.util.concurrent.locks.Lock;
 /**
  * Distributed lock interface
  *
- * @author Domenico Corapi
  */
 public interface LockProvider {
     Lock getLock(String lockName);

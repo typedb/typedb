@@ -20,7 +20,6 @@ package grakn.core.server.bootup;
 
 /**
  *
- * @author Michele Orsi
  */
 public class BootupException extends RuntimeException {
     public BootupException() {

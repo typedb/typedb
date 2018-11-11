@@ -21,7 +21,6 @@ package grakn.core.graql.internal.util;
 /**
  * Includes ANSI unicode commands for different colours
  *
- * @author Felix Chapman
  */
 @SuppressWarnings("unused")
 public class ANSI {

@@ -34,8 +34,6 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.labe
 /**
  * @see EquivalentFragmentSets#sub(VarProperty, Var, Var)
  *
- * @author Felix Chapman
- * @author Joshua Send
  */
 @AutoValue
 abstract class SubFragmentSet extends EquivalentFragmentSet {

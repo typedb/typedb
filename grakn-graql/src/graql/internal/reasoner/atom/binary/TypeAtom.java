@@ -39,7 +39,6 @@ import java.util.Set;
  * {@link HasAttributeTypeProperty}
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class TypeAtom extends Binary{

@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
  * Implementation of the {@link Unifier} interface.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class UnifierImpl implements Unifier {

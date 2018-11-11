@@ -37,7 +37,6 @@ import com.google.auto.value.AutoValue;
  * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

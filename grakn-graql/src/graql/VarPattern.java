@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
  * concept must have. In an {@link InsertQuery}, it describes the properties that should be set on the inserted concept.
  * In a {@link DeleteQuery}, it describes the properties that should be deleted.
  *
- * @author Felix Chapman
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface VarPattern extends Pattern {

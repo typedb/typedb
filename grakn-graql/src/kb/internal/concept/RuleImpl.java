@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  *     An ontological element used to define different types of {@link Rule}.
  * </p>
  *
- * @author fppt
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     private RuleImpl(VertexElement vertexElement) {

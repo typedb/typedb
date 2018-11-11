@@ -38,7 +38,6 @@ import java.util.Set;
 /**
  * Internal query factory
  *
- * @author Grakn Warriors
  */
 public class Queries {
 

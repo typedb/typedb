@@ -28,7 +28,6 @@ import grakn.core.graql.VarPattern;
  * <p>
  * Class for conversions from {@link Attribute}s.
  * </p>
- * @author Kasper Piskorski
  */
 class AttributeConverter implements ConceptConverter<Attribute> {
 

@@ -26,7 +26,6 @@ package grakn.core.graql.internal.template.macro;
  *      {@literal @}int(<value>)
  * </p>
  *
- * @author alexandraorth
  */
 public class IntMacro extends AbstractNumericMacro<Integer> {
 

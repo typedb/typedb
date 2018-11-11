@@ -65,7 +65,6 @@ import static org.hamcrest.Matchers.hasSize;
  * The rule is one such that if there is an offspring which is the result of a certain child-bearing act, then
  * that offspring is the child of the male and female partners which are involved in the mating act.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class ClientJavaE2E {
     private static Logger LOG = LoggerFactory.getLogger(ClientJavaE2E.class);

@@ -48,7 +48,6 @@ import java.util.Set;
  * what's inside the config, which is residing remotely at the engine!
  * </p>
  *
- * @author borislav, fppt
  *
  */
 public interface KeyspaceStore {

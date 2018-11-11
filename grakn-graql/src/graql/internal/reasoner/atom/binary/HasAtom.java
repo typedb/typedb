@@ -35,7 +35,6 @@ import com.google.auto.value.AutoValue;
  * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

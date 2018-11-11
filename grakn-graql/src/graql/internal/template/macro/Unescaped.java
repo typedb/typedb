@@ -22,7 +22,6 @@ package grakn.core.graql.internal.template.macro;
  * Class representing a object that should not be escaped by the templator.
  *
  * @param <T> The type of the object that will not be escaped
- * @author alexandraorth
  */
 public class Unescaped<T> {
 

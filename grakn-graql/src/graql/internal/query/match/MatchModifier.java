@@ -34,7 +34,6 @@ import java.util.Set;
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  *
- * @author Grakn Warriors
  */
 abstract class MatchModifier extends AbstractMatch {
 

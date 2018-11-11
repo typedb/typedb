@@ -47,7 +47,6 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  * @param <P> Enum indicating the allowed properties on each type. Either {@link grakn.core.util.Schema.VertexProperty} or
  *           {@link grakn.core.util.Schema.EdgeProperty}
  *
- * @author fppt
  *
  */
 public abstract class AbstractElement<E extends Element, P extends Enum> {

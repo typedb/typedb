@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * </p>
  *
  *
- * @author fppt
  */
 public interface SchemaConcept extends Concept {
     //------------------------------------- Modifiers ----------------------------------

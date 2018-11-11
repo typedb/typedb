@@ -30,7 +30,6 @@ import java.util.Collection;
  *     {@link ConceptMap} containing bindings for all {@link Var}s in the {@link VarPattern}s.
  * </p>
  *
- * @author Felix Chapman
  */
 public interface DefineQuery extends Query<ConceptMap> {
 

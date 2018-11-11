@@ -44,7 +44,6 @@ import java.util.Collection;
  * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
  * </p>
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class IsaProperty extends AbstractIsaProperty {

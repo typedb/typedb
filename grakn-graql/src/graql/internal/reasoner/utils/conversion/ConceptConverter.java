@@ -29,7 +29,6 @@ import grakn.core.util.CommonUtil;
  * </p>
  * @param <T> {@link Concept} type to convert from
  *
- * @author Kasper Piskorski
  */
 public interface ConceptConverter<T extends Concept> {
 

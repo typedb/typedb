@@ -41,7 +41,6 @@ import java.util.stream.Stream;
  * Base {@link Atomic} implementation providing basic functionalities.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class AtomicBase implements Atomic {

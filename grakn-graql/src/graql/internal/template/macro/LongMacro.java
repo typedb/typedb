@@ -26,7 +26,6 @@ package grakn.core.graql.internal.template.macro;
  *      {@literal @}long(<value>)
  * </p>
  *
- * @author alexandraorth
  */
 public class LongMacro extends AbstractNumericMacro<Long> {
 

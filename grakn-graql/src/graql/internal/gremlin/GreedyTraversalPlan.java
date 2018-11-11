@@ -73,7 +73,6 @@ import static grakn.core.util.CommonUtil.toImmutableSet;
 /**
  * Class for generating greedy traversal plans
  *
- * @author Grakn Warriors
  */
 public class GreedyTraversalPlan {
 

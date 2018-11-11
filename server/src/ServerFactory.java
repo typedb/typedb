@@ -39,7 +39,6 @@ import zipkin2.reporter.urlconnection.URLConnectionSender;
 /**
  * This is a factory class which contains methods for instantiating a {@link Server} in different ways.
  *
- * @author Michele Orsi
  */
 public class ServerFactory {
     /**

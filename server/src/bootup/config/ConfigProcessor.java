@@ -27,7 +27,6 @@ import java.nio.file.Path;
 /**
  * Helper class for updating storage config file.
  *
- * @author Kasper Piskorski
  */
 public class ConfigProcessor {
 

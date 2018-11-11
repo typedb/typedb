@@ -33,7 +33,6 @@ import com.google.auto.value.AutoValue;
  * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.PlaysProperty} property.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

@@ -27,7 +27,6 @@ import java.util.Set;
  *
  * @param <T> the type of patterns in this conjunction
  *
- * @author Felix Chapman
  */
 public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     /**

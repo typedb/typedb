@@ -51,7 +51,6 @@ import static grakn.core.util.Schema.VertexProperty.LABEL_ID;
 /**
  * A fragment representing traversing an isa edge from type to instance.
  *
- * @author Felix Chapman
  */
 
 @AutoValue

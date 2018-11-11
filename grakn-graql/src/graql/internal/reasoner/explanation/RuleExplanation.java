@@ -32,7 +32,6 @@ import java.util.List;
  * Explanation class for rule application.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class RuleExplanation extends QueryExplanation {

@@ -36,7 +36,6 @@ import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeI
  * The vertex program for computing the degree in statistics.
  * <p>
  *
- * @author Jason Liu
  */
 
 public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {

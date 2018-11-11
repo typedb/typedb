@@ -37,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 /**
  * This class is responsible for spawning process.
  *
- * @author Michele Orsi
  */
 public class BootupProcessExecutor {
 

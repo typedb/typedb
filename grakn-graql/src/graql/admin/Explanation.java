@@ -30,7 +30,6 @@ import java.util.Set;
  * Base class for explanation classes.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface Explanation {

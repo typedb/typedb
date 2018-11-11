@@ -33,7 +33,6 @@ import java.util.stream.Stream;
  * @param <T> unwrapped collection type
  * @param <W> wrapped collection type
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class QueryCollection<T extends Collection<ReasonerQueryImpl>, W extends Collection<Equivalence.Wrapper<ReasonerQueryImpl>>> extends QueryCollectionBase{

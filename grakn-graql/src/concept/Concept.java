@@ -39,7 +39,6 @@ import javax.annotation.CheckReturnValue;
  *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
  * </p>
  *
- * @author fppt
  *
  */
 public interface Concept {

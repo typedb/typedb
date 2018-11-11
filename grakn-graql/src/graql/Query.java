@@ -35,7 +35,6 @@ import java.util.stream.Stream;
  *
  * @param <T> The result type after executing the query
  *
- * @author Grakn Warriors
  */
 public interface Query<T extends Answer> extends Iterable<T> {
 

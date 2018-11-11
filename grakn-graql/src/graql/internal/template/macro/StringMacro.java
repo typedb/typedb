@@ -30,7 +30,6 @@ import java.util.List;
  * Usage:
  *      {@literal @}string(<value>)
  * </p>
- * @author alexandraorth
  */
 public class StringMacro implements Macro<String> {
 

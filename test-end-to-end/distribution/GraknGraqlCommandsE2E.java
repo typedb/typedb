@@ -45,8 +45,7 @@ import static org.hamcrest.Matchers.equalTo;
 // * - 'grakn server start, stop, and clean'
 // * - 'graql console'
 // * If you are testing functionalities which needs a running Grakn, add it in {@link GraknGraqlCommands_WithARunningGraknE2E} instead.
-// * @author Ganeshwara Herawan Hananda
-// */
+//// */
 
 public class GraknGraqlCommandsE2E {
     private ProcessExecutor commandExecutor = new ProcessExecutor()

@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  *     {@link Relationship} are used to model n-ary relationships between instances.
  * </p>
  *
- * @author fppt
  *
  */
 public interface Relationship extends Thing {

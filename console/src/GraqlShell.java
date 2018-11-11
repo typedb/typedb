@@ -53,7 +53,6 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 /**
  * A Graql REPL shell that can be run from the command line
  *
- * @author Felix Chapman
  */
 public class GraqlShell implements AutoCloseable {
 

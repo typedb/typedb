@@ -33,7 +33,6 @@ import java.util.List;
  *     validation rules. For a complete list of these rules please refer to the documentation
  * </p>
  *
- * @author fppt
  */
 public class InvalidKBException extends GraknException{
 

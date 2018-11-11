@@ -34,7 +34,6 @@ import java.util.stream.Stream;
  * Factory class for creating {@link Atomic} objects.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class AtomicFactory {

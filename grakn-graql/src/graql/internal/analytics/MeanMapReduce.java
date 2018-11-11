@@ -33,8 +33,6 @@ import java.util.Set;
  * The MapReduce program for computing the mean value of given resource.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class MeanMapReduce extends StatisticsMapReduce<Map<String, Double>> {

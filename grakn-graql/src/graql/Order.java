@@ -21,7 +21,6 @@ package grakn.core.graql;
 /**
  * Ordering for {@link Match} results
  *
- * @author Felix Chapman
  */
 public enum Order {
     /**

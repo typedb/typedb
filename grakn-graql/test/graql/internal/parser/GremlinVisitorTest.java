@@ -25,7 +25,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author Felix Chapman
  */
 public class GremlinVisitorTest {
 

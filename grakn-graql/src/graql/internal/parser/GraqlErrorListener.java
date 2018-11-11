@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
  * When a syntax error occurs, it is recorded. Call {@link GraqlErrorListener#hasErrors()} to see if there were errors.
  * View the errors with {@link GraqlErrorListener#toString()}.
  *
- * @author Felix Chapman
  */
 public class GraqlErrorListener extends BaseErrorListener {
 

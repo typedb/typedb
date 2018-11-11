@@ -42,7 +42,6 @@ import java.util.Collection;
  * then
  * `$x sub! entity` only returns `person` but not `man`
  *
- * @author Joshua Send
  */
 @AutoValue
 public abstract class SubExplicitProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {

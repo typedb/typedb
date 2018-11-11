@@ -47,7 +47,6 @@ import static grakn.core.util.Schema.EdgeProperty.ROLE_LABEL_ID;
  * <p>
  * Part of a {@link grakn.core.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link InRolePlayerFragment}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {

@@ -33,7 +33,6 @@ import java.util.List;
  *      {@literal @}equals(<value1>, <value2>, <value3>)
  * </p>
  *
- * @author alexandraorth
  */
 public class EqualsMacro implements Macro<Boolean> {
 

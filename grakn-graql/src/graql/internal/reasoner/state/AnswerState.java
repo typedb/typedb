@@ -28,7 +28,6 @@ import grakn.core.graql.internal.reasoner.rule.InferenceRule;
  * Resolution state holding an answer ({@link ConceptMap}) to the parent state.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class AnswerState extends ResolutionState {

@@ -33,7 +33,6 @@ import static grakn.core.util.ErrorMessage.TEMPLATE_MISSING_KEY;
  *     It means the user has input an invalid graql query which cannot be parsed.
  * </p>
  *
- * @author fppt
  */
 public class GraqlSyntaxException extends GraknException {
 

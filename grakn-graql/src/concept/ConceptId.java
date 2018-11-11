@@ -27,7 +27,6 @@ import java.io.Serializable;
  * A class which represents an id of any {@link Concept} in the {@link GraknTx}.
  * Also contains a static method for producing concept IDs from Strings.
  *
- * @author Grakn Warriors
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
 

@@ -36,7 +36,6 @@ import static grakn.core.graql.internal.analytics.ConnectedComponentsVertexProgr
 /**
  * The vertex program for computing connected components of a give instance.
  *
- * @author Jason Liu
  */
 
 public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean> {

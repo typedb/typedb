@@ -39,7 +39,6 @@ import java.util.stream.Stream;
  * @see RelationshipType
  * @see AttributeType
  *
- * @author fppt
  *
  */
 public interface Type extends SchemaConcept {

@@ -40,7 +40,6 @@ import static grakn.core.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *     the same {@link Label}
  * </p>
  *
- * @author fppt
  */
 public class PropertyNotUniqueException extends GraknTxOperationException {
     private PropertyNotUniqueException(String error) {

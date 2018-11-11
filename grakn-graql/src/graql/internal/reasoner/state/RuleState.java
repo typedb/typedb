@@ -33,7 +33,6 @@ import java.util.Set;
  * Resolution state corresponding to a rule application.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class RuleState extends QueryStateBase{

@@ -32,7 +32,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#value(VarProperty, Var, ValuePredicate)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class ValueFragmentSet extends EquivalentFragmentSet {

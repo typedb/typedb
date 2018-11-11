@@ -33,7 +33,6 @@ import java.util.List;
  *
  * @param <V> the type of the values stored in the heap
  * @param <P> the type of the priorities
- * @author Grakn Warriors
  */
 public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> {
     private final static int MAX_CAPACITY = Integer.MAX_VALUE;

@@ -53,7 +53,6 @@ import java.util.stream.Stream;
  *     They also aid in categorising {@link Thing} to different types.
  * </p>
  *
- * @author fppt
  *
  * @param <T> The leaf interface of the object concept. For example an {@link grakn.core.concept.EntityType} or {@link RelationshipType}
  * @param <V> The instance of this type. For example {@link grakn.core.concept.Entity} or {@link Relationship}

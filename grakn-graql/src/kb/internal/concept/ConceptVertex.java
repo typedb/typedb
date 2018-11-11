@@ -31,7 +31,6 @@ import grakn.core.kb.internal.structure.VertexElement;
  *     Either by returning an existing one r going through some reification procedure to return a new one.
  * </p>
  *
- * @author fppt
  *
  */
 public interface ConceptVertex {

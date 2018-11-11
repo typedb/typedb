@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  * <p>
  * @see ConceptMap
  *
- * @author Felix Chapman
  */
 public interface Match extends Iterable<ConceptMap> {
 

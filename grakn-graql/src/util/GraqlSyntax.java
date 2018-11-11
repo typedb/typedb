@@ -63,7 +63,6 @@ import static grakn.core.util.GraqlSyntax.Compute.Parameter.SIZE;
  * Graql syntax keywords
  * TODO: the content of this class (the enums) should be moved to inside Graql class, once we move it to this package.
  *
- * @author Grakn Warriors
  */
 public class GraqlSyntax {
 

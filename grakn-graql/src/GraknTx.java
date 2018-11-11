@@ -49,7 +49,6 @@ import java.util.Collection;
  *     basic look ups to the knowledge base. This also allows the execution of Graql queries.
  * </p>
  *
- * @author fppt
  *
  */
 public interface GraknTx extends AutoCloseable{

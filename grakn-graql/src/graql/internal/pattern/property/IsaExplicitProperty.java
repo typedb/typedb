@@ -43,8 +43,6 @@ import java.util.Collection;
  * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  * </p>
  *
- * @author Felix Chapman
- * @author Jason Liu
  */
 @AutoValue
 public abstract class IsaExplicitProperty extends AbstractIsaProperty {

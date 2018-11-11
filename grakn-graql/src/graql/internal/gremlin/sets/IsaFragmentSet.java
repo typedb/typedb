@@ -35,7 +35,6 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.labe
 /**
  * @see EquivalentFragmentSets#isa(VarProperty, Var, Var, boolean)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class IsaFragmentSet extends EquivalentFragmentSet {

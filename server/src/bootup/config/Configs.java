@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 /**
  * Factory class for configs.
  *
- * @author Kasper Piskorski
  */
 public class Configs {
 

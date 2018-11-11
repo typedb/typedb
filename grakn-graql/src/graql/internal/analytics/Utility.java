@@ -41,8 +41,6 @@ import static grakn.core.graql.Graql.var;
  * Some helper methods for MapReduce and vertex program.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class Utility {

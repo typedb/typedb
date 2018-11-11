@@ -31,7 +31,6 @@ import com.google.auto.value.AutoValue;
  * Atomic corresponding to {@link grakn.core.graql.internal.pattern.property.IsAbstractProperty}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

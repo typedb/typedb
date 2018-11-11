@@ -39,7 +39,6 @@ import static javax.annotation.meta.When.NEVER;
  *
  * @param <Tx> A {@link GraknTx} extending {@link EmbeddedGraknTx} and wrapping a Tinkerpop Graph
  * @param <G>  A vendor implementation of a Tinkerpop {@link Graph}
- * @author fppt
  */
 public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
     private final EmbeddedGraknSession session;

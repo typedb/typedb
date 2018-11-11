@@ -39,7 +39,6 @@ import java.util.stream.Stream;
  * properties but still be distinct. For example, two instances of a type without any resources are still considered
  * unequal. Similarly, two resources with the same value but of different types are considered unequal.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {

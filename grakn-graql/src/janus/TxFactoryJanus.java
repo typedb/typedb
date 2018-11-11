@@ -68,7 +68,6 @@ import static java.util.Arrays.stream;
  *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
- * @author fppt
  */
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);

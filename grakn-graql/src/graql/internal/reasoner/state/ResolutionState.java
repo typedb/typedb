@@ -26,7 +26,6 @@ import grakn.core.graql.answer.ConceptMap;
  * Base abstract class for resolution states.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class ResolutionState {

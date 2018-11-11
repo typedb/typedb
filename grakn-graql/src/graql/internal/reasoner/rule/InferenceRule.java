@@ -60,7 +60,6 @@ import static java.util.stream.Collectors.toSet;
  * Class providing resolution and higher level facilities for {@link Rule} objects.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class InferenceRule {

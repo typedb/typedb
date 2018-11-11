@@ -35,7 +35,6 @@ import static java.util.stream.Collectors.joining;
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  *
- * @author Grakn Warriors
  */
 @AutoValue
 abstract class DeleteQueryImpl implements DeleteQueryAdmin {

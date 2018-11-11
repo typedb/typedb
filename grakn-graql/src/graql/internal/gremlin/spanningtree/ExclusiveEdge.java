@@ -26,7 +26,6 @@ import java.util.List;
  * An edge, together with a list of edges that can't be in the final answer if 'edge' is.
  *
  * @param <V> nodes
- * @author Jason Liu
  */
 public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
     public final DirectedEdge<V> edge;

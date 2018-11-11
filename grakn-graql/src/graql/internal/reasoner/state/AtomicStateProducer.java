@@ -36,7 +36,6 @@ import java.util.Set;
  * - {@link NeqComplementState} for non-ambiguous {@link ReasonerAtomicQuery} with negation
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class AtomicStateProducer extends QueryStateBase {

@@ -45,7 +45,6 @@ import java.util.Map;
 /**
  * Class for parsing Graql templates and associated data into Graql statements.
  *
- * @author alexandraorth
  */
 public class TemplateParser {
 

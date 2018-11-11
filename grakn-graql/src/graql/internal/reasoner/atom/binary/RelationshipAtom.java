@@ -104,7 +104,6 @@ import static java.util.stream.Collectors.toSet;
  * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relationship players.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

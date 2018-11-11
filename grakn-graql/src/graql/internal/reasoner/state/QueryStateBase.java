@@ -30,7 +30,6 @@ import java.util.Set;
  * Base abstract class for resolution states corresponding to different forms of queries.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class QueryStateBase extends ResolutionState {

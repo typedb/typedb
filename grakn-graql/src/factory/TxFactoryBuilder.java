@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * The factories in this class are cached based on factoryType+keyspace
  *
- * @author Marco Scoppetta
  */
 public class TxFactoryBuilder {
 

@@ -26,7 +26,6 @@ import java.util.Set;
 /**
  * Valid output formats for the Graql shell
  *
- * @author Grakn Warriors
  */
 public abstract class OutputFormat {
 

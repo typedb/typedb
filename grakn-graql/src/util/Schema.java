@@ -41,7 +41,6 @@ import static grakn.core.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
 /**
  * A type enum which restricts the types of links/concepts which can be created
  *
- * @author Filipe Teixeira
  */
 public final class Schema {
     public final static String PREFIX_VERTEX = "V";

@@ -80,7 +80,6 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalen
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

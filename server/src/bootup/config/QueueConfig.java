@@ -38,7 +38,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
  * - Redis allows for multiple value params hence we need a map of lists.
  * - Redis data dir must already exist when starting redis
  *
- * @author Kasper Piskorski
  */
 public class QueueConfig extends ProcessConfig<List<Object>>{
 

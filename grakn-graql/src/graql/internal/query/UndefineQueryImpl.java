@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 /**
  * Implementation for {@link UndefineQuery}
  *
- * @author Grakn Warriors
  */
 @AutoValue
 abstract class UndefineQueryImpl implements UndefineQuery {

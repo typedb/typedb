@@ -33,7 +33,6 @@ import com.google.auto.value.AutoValue;
  * Atomic corresponding to {@link DataTypeProperty}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

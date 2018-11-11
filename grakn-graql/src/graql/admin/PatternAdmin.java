@@ -29,7 +29,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Admin class for inspecting and manipulating a Pattern
  *
- * @author Felix Chapman
  */
 public interface PatternAdmin extends Pattern {
     /**

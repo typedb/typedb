@@ -58,7 +58,6 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier
  * together with its accompanying constraints (predicates and types).
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @SuppressFBWarnings("EQ_DOESNT_OVERRIDE_EQUALS")

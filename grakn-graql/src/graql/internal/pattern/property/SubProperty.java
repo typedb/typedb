@@ -36,7 +36,6 @@ import java.util.Collection;
  * This property relates a {@link grakn.core.concept.Type} and another {@link grakn.core.concept.Type}. It indicates
  * that every instance of the left type is also an instance of the right type.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class SubProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {

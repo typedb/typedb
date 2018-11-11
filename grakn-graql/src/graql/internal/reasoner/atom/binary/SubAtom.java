@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
  * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.SubProperty} property.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

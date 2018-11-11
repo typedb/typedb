@@ -42,7 +42,6 @@ import java.util.concurrent.locks.Lock;
  *     This internal factory is used to produce {@link GraknTx}s.
  * </p>
  *
- * @author fppt
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;

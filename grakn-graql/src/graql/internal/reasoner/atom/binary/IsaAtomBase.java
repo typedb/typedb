@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
  * Base class for isa atoms.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class IsaAtomBase extends TypeAtom{

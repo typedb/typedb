@@ -45,12 +45,7 @@ import java.util.stream.Collectors;
 
 /**
  * The vertex program for computing the shortest path between two instances.
- *
- @author Ganeshwara Herawan Hananda
- @author Jason Liu
- @author Sheldon Hall
  */
-
 public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVertexProgram.VertexMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(ShortestPathVertexProgram.class);
 

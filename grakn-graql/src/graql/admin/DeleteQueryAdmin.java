@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * Admin class for inspecting and manipulating a DeleteQuery
  *
- * @author Felix Chapman
  */
 public interface DeleteQueryAdmin extends DeleteQuery {
     /**

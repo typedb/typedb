@@ -29,7 +29,6 @@ import java.util.List;
  * Explanation class for db lookup.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class LookupExplanation extends QueryExplanation {

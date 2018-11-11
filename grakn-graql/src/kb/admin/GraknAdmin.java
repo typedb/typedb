@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 /**
  * Admin interface for {@link GraknTx}.
  *
- * @author Filipe Teixeira
  */
 public interface GraknAdmin extends GraknTx{
 

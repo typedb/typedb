@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery> {

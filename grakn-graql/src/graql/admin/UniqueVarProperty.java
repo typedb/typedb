@@ -28,7 +28,6 @@ import javax.annotation.CheckReturnValue;
  * This property is unique in that each {@link VarPattern} may have exactly zero or one of each
  * {@link UniqueVarProperty}.
  *
- * @author Felix Chapman
  */
 public interface UniqueVarProperty extends VarProperty {
 

@@ -45,9 +45,6 @@ import java.util.Set;
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  * </p>
  *
- * @author duckofyork
- * @author sheldonkhall
- * @author fppt
  */
 public interface GraknComputer {
 

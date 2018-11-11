@@ -32,7 +32,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#id(VarProperty, Var, ConceptId)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class IdFragmentSet extends EquivalentFragmentSet {

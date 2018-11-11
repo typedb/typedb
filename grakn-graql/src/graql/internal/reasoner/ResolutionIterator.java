@@ -40,7 +40,6 @@ import java.util.Stack;
  * Iterator for query answers maintaining the iterative behaviour of the QSQ scheme.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ResolutionIterator extends ReasonerQueryIterator {

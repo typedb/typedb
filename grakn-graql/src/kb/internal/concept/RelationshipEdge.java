@@ -52,7 +52,6 @@ import java.util.stream.Stream;
  *     This also includes the ability to automatically reify a {@link RelationshipEdge} into a {@link RelationshipReified}.
  * </p>
  *
- * @author fppt
  *
  */
 public class RelationshipEdge implements RelationshipStructure, CacheOwner {

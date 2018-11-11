@@ -32,7 +32,6 @@ import java.util.Optional;
  * <p>
  * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
  *
- * @author Felix Chapman
  */
 public interface ValuePredicate {
 

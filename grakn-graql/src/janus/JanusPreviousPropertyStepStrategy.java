@@ -44,7 +44,6 @@ import java.util.Optional;
  * In this instance, the vertex can be looked up directly in Janus, joining the {@code V().filter(..)}
  * steps together.
  *
- * @author Felix Chapman
  */
 public class JanusPreviousPropertyStepStrategy
         extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {

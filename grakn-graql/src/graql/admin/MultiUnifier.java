@@ -32,7 +32,6 @@ import java.util.stream.Stream;
  * The case of i = 0 corresponds to a case where no unifier exists.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface MultiUnifier extends Iterable<Unifier> {

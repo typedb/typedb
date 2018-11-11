@@ -34,7 +34,6 @@ import javax.annotation.CheckReturnValue;
  * When built from a {@link Match}, the {@link InsertQuery} will execute for each result of the {@link Match},
  * where variable names in the {@link InsertQuery} are bound to the concept in the result of the {@link Match}.
  *
- * @author Felix Chapman
  */
 public interface InsertQuery extends Query<ConceptMap> {
 

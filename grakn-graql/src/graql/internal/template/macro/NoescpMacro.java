@@ -31,7 +31,6 @@ import java.util.List;
  *      {@literal @}noescp(<value>)
  * </p>
  *
- * @author alexandraorth
  */
 public class NoescpMacro implements Macro<Unescaped> {
 

@@ -33,8 +33,6 @@ import java.util.Set;
  * The MapReduce program for computing the standard deviation of the given resource.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {

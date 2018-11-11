@@ -32,7 +32,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * Helper methods for writing tests for Graql
  *
- * @author Felix Chapman
  */
 public class GraqlTestUtil {
 

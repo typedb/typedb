@@ -37,7 +37,6 @@ import java.util.Optional;
  * an incoming edge for yet.
  *
  * @param <V> the type of the nodes stored
- * @author Jason Liu
  */
 
 class EdgeQueueMap<V> {

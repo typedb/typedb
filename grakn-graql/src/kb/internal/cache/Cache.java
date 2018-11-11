@@ -40,7 +40,6 @@ import java.util.function.Supplier;
  *
  * @param <V> The object it is caching
  *
- * @author fppt
  *
  */
 public class Cache<V> {

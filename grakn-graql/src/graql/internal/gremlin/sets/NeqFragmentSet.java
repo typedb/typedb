@@ -31,7 +31,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#neq(VarProperty, Var, Var)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class NeqFragmentSet extends EquivalentFragmentSet {

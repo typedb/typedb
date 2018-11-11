@@ -44,7 +44,6 @@ import static grakn.core.graql.internal.util.StringConverter.typeLabelToString;
 /**
  * Default printer that prints results in Graql syntax
  *
- * @author Grakn Warriors
  */
 class StringPrinter extends Printer<StringBuilder> {
 

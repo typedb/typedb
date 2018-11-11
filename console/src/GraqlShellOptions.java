@@ -44,7 +44,6 @@ import static grakn.core.util.CommonUtil.toImmutableList;
 /**
  * Wrapper for parsing command-line options for Graql shell
  *
- * @author Felix Chapman
  */
 public class GraqlShellOptions {
 

@@ -31,7 +31,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#relates(VarProperty, Var, Var)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class RelatesFragmentSet extends EquivalentFragmentSet {

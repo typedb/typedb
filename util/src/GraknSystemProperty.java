@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 /**
  * Enum representing system properties used by Grakn
  *
- * @author Felix Chapman
  */
 public enum GraknSystemProperty {
 

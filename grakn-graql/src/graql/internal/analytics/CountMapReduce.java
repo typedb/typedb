@@ -28,8 +28,6 @@ import java.util.Iterator;
 /**
  * The MapReduce program for counting the number of instances excluding attributes and implicit relationships
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class CountMapReduce extends GraknMapReduce<Long> {

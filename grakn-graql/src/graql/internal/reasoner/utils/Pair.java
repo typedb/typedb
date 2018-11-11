@@ -30,7 +30,6 @@ import java.util.AbstractMap;
  * @param <K> key type
  * @param <V> value type
  *
- * @author Kasper Piskorski
  *
  */
 public class Pair<K, V> {

@@ -47,7 +47,6 @@ import java.util.stream.Stream;
  *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
  * </p>
  *
- * @author fppt
  *
  */
 public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner{

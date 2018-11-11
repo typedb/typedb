@@ -39,7 +39,6 @@ import java.util.ArrayList;
  *
  * The class containing the actual de-duplication algorithm.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class AttributeDeduplicator {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicator.class);

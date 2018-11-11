@@ -34,7 +34,6 @@ import java.util.Set;
 /**
  * The vertex program for computing connected components.
  *
- * @author Jason Liu
  */
 
 public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String> {

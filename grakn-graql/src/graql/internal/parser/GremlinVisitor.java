@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 /**
  * Parser to make Gremlin queries pretty
  *
- * @author Felix Chapman
  */
 public class GremlinVisitor extends GremlinBaseVisitor<Consumer<GremlinVisitor.PrettyStringBuilder>> {
 

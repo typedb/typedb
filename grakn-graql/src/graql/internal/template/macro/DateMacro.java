@@ -39,7 +39,6 @@ import java.util.List;
  *      {@literal @}date("01/30/2017", "mm/dd/yyyy")
  * </p>
  *
- * @author alexandraorth
  */
 public class DateMacro implements Macro<Unescaped<String>> {
 

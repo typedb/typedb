@@ -29,7 +29,6 @@ import java.util.Set;
 
 /**
  * @param <V> the type of the nodes stored
- * @author Jason Liu
  */
 public class SparseWeightedGraph<V> extends WeightedGraph<V> {
     final private Set<V> nodes;

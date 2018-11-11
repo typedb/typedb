@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * An node in a directed graph.
  *
- * @author Grakn Warriors
  */
 public class Node {
 

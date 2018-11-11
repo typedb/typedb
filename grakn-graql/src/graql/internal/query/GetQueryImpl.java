@@ -33,7 +33,6 @@ import static java.util.stream.Collectors.joining;
 /**
  * Default implementation of {@link GetQuery}
  *
- * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GetQueryImpl implements GetQuery {

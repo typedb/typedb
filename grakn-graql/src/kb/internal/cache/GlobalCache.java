@@ -49,7 +49,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *     <ol/>
  * </p>
  *
- * @author fppt
  *
  */
 public class GlobalCache {

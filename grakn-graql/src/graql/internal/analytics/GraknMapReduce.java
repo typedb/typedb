@@ -37,8 +37,6 @@ import java.util.Set;
  * <p>
  *
  * @param <T> type type of element that is being reduced
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public abstract class GraknMapReduce<T> extends CommonOLAP

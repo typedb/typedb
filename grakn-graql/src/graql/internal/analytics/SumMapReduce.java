@@ -32,8 +32,6 @@ import java.util.Set;
  * The MapReduce program for computing the sum of the given resource.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class SumMapReduce extends StatisticsMapReduce<Number> {

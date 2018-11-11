@@ -66,7 +66,6 @@ import static grakn.core.util.GraqlSyntax.Compute.METHODS_ACCEPTED;
  * For example limiting the results of a query -1
  * </p>
  *
- * @author fppt
  */
 public class GraqlQueryException extends GraknException {
 

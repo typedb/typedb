@@ -29,7 +29,6 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
  * @param <Q> query type the entry corresponds to
  * @param <T> corresponding element to be cached
  *
- * @author Kasper Piskorski
  *
  */
 class CacheEntry<Q extends ReasonerQueryImpl, T> {

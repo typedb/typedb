@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 /**
  * A query that will insert a collection of variables into a graph
  *
- * @author Grakn Warriors
  */
 @AutoValue
 abstract class InsertQueryImpl implements InsertQueryAdmin {

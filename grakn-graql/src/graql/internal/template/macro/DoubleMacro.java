@@ -27,7 +27,6 @@ package grakn.core.graql.internal.template.macro;
  *      {@literal @}boolean("true")
  * </p>
  *
- * @author alexandraorth
  */
 public class DoubleMacro extends AbstractNumericMacro<Double> {
 

@@ -28,7 +28,6 @@ import java.io.IOException;
 /**
  * Represents the history file used in {@link GraqlShell}. Will flush to disk when closed.
  *
- * @author Felix Chapman
  */
 final class HistoryFile implements AutoCloseable {
 

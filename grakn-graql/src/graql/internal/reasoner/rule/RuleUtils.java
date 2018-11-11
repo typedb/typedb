@@ -40,7 +40,6 @@ import java.util.stream.Stream;
  * Convenience class providing methods for operating with the rule graph.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class RuleUtils {

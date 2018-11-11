@@ -65,7 +65,6 @@ import static java.util.stream.Collectors.toSet;
  * Utiliy class providing useful functionalities.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ReasonerUtils {

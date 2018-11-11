@@ -62,7 +62,6 @@ import static grakn.core.util.Schema.ImplicitType.KEY_VALUE;
  * Like {@link HasAttributeProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class HasAttributeTypeProperty extends AbstractVarProperty implements NamedProperty {

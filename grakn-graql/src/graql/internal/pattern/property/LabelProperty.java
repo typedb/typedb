@@ -42,7 +42,6 @@ import java.util.Set;
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
  * label, then that type will be retrieved.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {

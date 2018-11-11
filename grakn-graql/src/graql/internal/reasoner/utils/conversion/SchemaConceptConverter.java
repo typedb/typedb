@@ -31,7 +31,6 @@ import java.util.stream.Stream;
  * </p>
  * @param <T> {@link SchemaConcept} type to convert from
  *
- * @author Kasper Piskorski
  */
 public interface SchemaConceptConverter<T extends SchemaConcept>{
 

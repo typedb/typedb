@@ -50,7 +50,6 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  *
- * @author Kasper Piskorski
  *
  */
 class StructuralCache<Q extends ReasonerQueryImpl>{

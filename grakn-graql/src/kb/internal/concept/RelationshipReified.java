@@ -53,7 +53,6 @@ import java.util.stream.Stream;
  *     has been reified.
  * </p>
  *
- * @author fppt
  *
  */
 public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {

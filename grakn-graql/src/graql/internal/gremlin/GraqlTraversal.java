@@ -52,7 +52,6 @@ import static java.util.stream.Collectors.joining;
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class GraqlTraversal {

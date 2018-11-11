@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * It does this by either defaulting to an in memory tx {@link GraknTxTinker} or by retrieving the factory definition from engine.
  * The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  *
- * @author Grakn Warriors
  */
 public class EmbeddedGraknSession implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknSession.class);

@@ -56,7 +56,6 @@ import java.util.Set;
  *     <ol/>
  * </p>
  *
- * @author fppt
  *
  */
 public class TxCache{

@@ -45,7 +45,6 @@ import java.util.stream.Stream;
  *     {@link VertexElement} or an {@link EdgeElement}
  * </p>
  *
- * @author fppt
  *
  */
 interface RelationshipStructure extends CacheOwner{

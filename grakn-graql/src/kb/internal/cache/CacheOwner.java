@@ -31,7 +31,6 @@ import java.util.Collection;
  *     Wraps up behaviour which needs to be handled whenever a {@link Cache} is used in a class
  * </p>
  *
- * @author fppt
  *
  */
 public interface CacheOwner {

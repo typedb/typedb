@@ -40,7 +40,6 @@ import static grakn.core.console.GraqlShell.loadQuery;
  *  Graql console class that executes actions associated to options, if any option is set
  *  otherwise instantiates a GraqlShell
  *
- * @author marcoscoppetta
  */
 
 public class GraqlConsole {

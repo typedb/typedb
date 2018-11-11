@@ -34,7 +34,6 @@ import grakn.core.util.Schema;
  *     Any instance of a {@link EntityType} is called an {@link Entity}.
  * </p>
  *
- * @author fppt
  *
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{

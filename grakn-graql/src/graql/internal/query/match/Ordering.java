@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 /**
  * A class for handling ordering {@link Match}es.
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class Ordering {

@@ -45,7 +45,6 @@ import java.util.stream.Stream;
  *     2. It is special in that it is unique to {@link RelationshipType}s.
  * </p>
  *
- * @author fppt
  *
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {

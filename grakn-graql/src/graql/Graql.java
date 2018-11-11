@@ -46,7 +46,6 @@ import static java.util.stream.Collectors.toSet;
  *
  * It is recommended you statically import these methods.
  *
- * @author Felix Chapman
  */
 public class Graql {
 

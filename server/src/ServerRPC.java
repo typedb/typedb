@@ -21,7 +21,6 @@ package grakn.core.server;
 import java.io.IOException;
 
 /**
- * @author Felix Chapman
  */
 public class ServerRPC implements AutoCloseable {
 

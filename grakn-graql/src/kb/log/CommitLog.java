@@ -37,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *     The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
 public abstract class CommitLog {

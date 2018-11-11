@@ -33,7 +33,6 @@ import java.util.Locale;
  * Usage:
  *      {@literal @}boolean(<value>)
  * </p>
- * @author alexandraorth
  */
 public class BooleanMacro implements Macro<Boolean> {
 

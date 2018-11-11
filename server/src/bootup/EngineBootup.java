@@ -43,8 +43,6 @@ import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECON
  * A class responsible for managing the Engine process,
  * including starting, stopping, and performing status checks
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 public class EngineBootup {
     private static final String DISPLAY_NAME = "Grakn Core Server";

@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
  *     A class which represents the unique name of a Grakn Knowledge Base
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
 public abstract class Keyspace implements Comparable<Keyspace>, Serializable {

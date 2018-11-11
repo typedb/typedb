@@ -108,7 +108,6 @@ import static grakn.core.util.GraqlSyntax.Compute.Method.SUM;
 /**
  * A Graql Compute query job executed against a {@link GraknComputer}.
  *
- * @author Grakn Warriors
  */
 class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
 

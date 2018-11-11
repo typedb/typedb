@@ -47,7 +47,6 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  * {@link Thing} whose type is this {@link grakn.core.concept.Type} is permitted to be a role-player
  * playing the role of the given {@link Role}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class PlaysProperty extends AbstractVarProperty implements NamedProperty {

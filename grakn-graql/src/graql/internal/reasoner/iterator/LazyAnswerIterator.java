@@ -30,7 +30,6 @@ import java.util.stream.Stream;
  * Specific iterator for iterating over graql answers.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class LazyAnswerIterator extends LazyIterator<ConceptMap> {

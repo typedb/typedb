@@ -33,7 +33,6 @@ import java.util.Set;
  * Basic interface for logical atoms used in reasoning.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface Atomic {

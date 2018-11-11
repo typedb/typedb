@@ -31,7 +31,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#regex(VarProperty, Var, String)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class RegexFragmentSet extends EquivalentFragmentSet {

@@ -36,7 +36,6 @@ import java.util.stream.Stream;
  *     spread across several shards.
  * </p>
  *
- * @author fppt
  */
 public class Shard {
     private final VertexElement vertexElement;

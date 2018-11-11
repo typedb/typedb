@@ -32,7 +32,6 @@ import java.nio.file.Path;
  *
  * A class responsible for managing the PID file of Engine
  *
- * @author Ganeshwara Herawan Hananda
  *
  */
 public class EnginePidManager {

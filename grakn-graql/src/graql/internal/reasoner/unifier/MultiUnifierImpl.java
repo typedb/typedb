@@ -45,7 +45,6 @@ import javax.annotation.Nonnull;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class MultiUnifierImpl implements MultiUnifier{

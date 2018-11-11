@@ -36,7 +36,6 @@ import static java.util.stream.Collectors.joining;
  * A {@code EquivalentFragmentSet} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
  * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
  *
- * @author Felix Chapman
  */
 public abstract class EquivalentFragmentSet implements Iterable<Fragment> {
 

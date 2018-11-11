@@ -83,7 +83,6 @@ import static grakn.core.graql.Graql.var;
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ReasonerQueryImpl implements ReasonerQuery {

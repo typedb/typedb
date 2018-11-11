@@ -48,7 +48,6 @@ import java.util.stream.Stream;
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  * </p>
  *
- * @author fppt
  *
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{

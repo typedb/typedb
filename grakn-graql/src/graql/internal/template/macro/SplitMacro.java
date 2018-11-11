@@ -34,7 +34,6 @@ import java.util.List;
  *      {@literal @}split(<value>, "and")
  * </p>
  *
- * @author alexandraorth
  */
 public class SplitMacro implements Macro<List<String>> {
 

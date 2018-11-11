@@ -30,7 +30,6 @@ import java.util.Optional;
 /**
  * Represents an external editor that a user can execute from the console for editing queries.
  *
- * @author Felix Chapman
  */
 final class ExternalEditor {
 

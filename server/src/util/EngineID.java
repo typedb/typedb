@@ -33,7 +33,6 @@ import java.util.UUID;
  *     Assigns a random ID to the current instance of Engine.
  * </p>
  *
- * @author Denis Lobanov, Felix Chapman
  */
 @AutoValue
 public abstract class EngineID implements Serializable {

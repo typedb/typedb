@@ -52,7 +52,6 @@ import java.util.function.Supplier;
  *     2. Clearing the graph explicitly closes the connection as well.
  * </p>
  *
- * @author fppt
  */
 public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
     public GraknTxJanus(EmbeddedGraknSession session, JanusGraph graph){

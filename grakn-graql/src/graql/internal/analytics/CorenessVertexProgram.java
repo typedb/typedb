@@ -47,7 +47,6 @@ import static com.google.common.collect.Sets.newHashSet;
  * https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)#k-Cores
  * </p>
  *
- * @author Jason Liu
  */
 
 public class CorenessVertexProgram extends GraknVertexProgram<String> {

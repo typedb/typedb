@@ -28,7 +28,6 @@ import java.util.Scanner;
 /**
  * Handles printing the license for {@link GraqlShell}.
  *
- * @author Felix Chapman
  */
 public class License {
 

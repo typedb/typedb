@@ -44,7 +44,6 @@ import java.util.stream.StreamSupport;
  *    internal vertices.
  * </p>
  *
- * @author fppt
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 

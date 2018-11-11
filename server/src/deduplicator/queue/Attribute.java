@@ -24,7 +24,6 @@ import com.google.auto.value.AutoValue;
 
 /**
  *
- * @author Ganeshwara Herawan Hananda
  */
 @AutoValue
 public abstract class Attribute {

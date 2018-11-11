@@ -33,7 +33,6 @@ import java.util.Set;
  * <p>
  * Class for conversions from {@link Relationship}s.
  * </p>
- * @author Kasper Piskorski
  */
 class RelationshipConverter implements ConceptConverter<Relationship> {
 

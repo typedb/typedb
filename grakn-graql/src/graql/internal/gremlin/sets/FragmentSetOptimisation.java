@@ -26,7 +26,6 @@ import java.util.Collection;
 /**
  * Describes an optimisation strategy that can be applied to {@link EquivalentFragmentSet}s.
  *
- * @author Felix Chapman
  */
 @FunctionalInterface
 public interface FragmentSetOptimisation {

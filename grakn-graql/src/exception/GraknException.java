@@ -28,7 +28,6 @@ package grakn.core.exception;
  *     This includes failures server side, failed graph mutations, and failed querying attempts
  * </p>
  *
- * @author fppt
  */
 public abstract class GraknException extends RuntimeException {
 

@@ -40,7 +40,6 @@ import java.util.Set;
  *
  * This property can be queried or inserted.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {

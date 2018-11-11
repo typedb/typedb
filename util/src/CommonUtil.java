@@ -45,7 +45,6 @@ import java.util.stream.StreamSupport;
  *
  * Some of these methods are Grakn-specific, others add important "missing" methods to Java/Guava classes.
  *
- * @author Grakn Warriors
  */
 public class CommonUtil {
 

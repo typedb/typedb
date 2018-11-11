@@ -77,7 +77,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *     Concept concept = builder.build();
  * </pre>
  *
- * @author Felix Chapman
  */
 public class ConceptBuilder {
 

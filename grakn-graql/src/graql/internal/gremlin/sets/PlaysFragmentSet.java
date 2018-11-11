@@ -31,7 +31,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#plays(VarProperty, Var, Var, boolean)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class PlaysFragmentSet extends EquivalentFragmentSet {

@@ -37,7 +37,6 @@ import java.util.Set;
  * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")

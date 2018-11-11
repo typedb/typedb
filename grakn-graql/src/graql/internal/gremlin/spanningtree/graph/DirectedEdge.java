@@ -30,7 +30,6 @@ import java.util.Set;
  * An edge in a directed graph.
  *
  * @param <V> the type of the node
- * @author Jason Liu
  */
 public class DirectedEdge<V> {
     public final V source;

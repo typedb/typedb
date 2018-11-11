@@ -35,8 +35,6 @@ import java.util.Scanner;
 /**
  * The {@link GraknBootup} class is responsible for starting, stopping and cleaning the keyspaces of Grakn
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 public class GraknBootup {
     private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);

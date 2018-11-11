@@ -24,7 +24,6 @@ import grakn.core.graql.admin.VarPatternAdmin;
 /**
  * Factory method for {@link ValuePredicate} implementations.
  *
- * @author Felix Chapman
  */
 public class Predicates {
 

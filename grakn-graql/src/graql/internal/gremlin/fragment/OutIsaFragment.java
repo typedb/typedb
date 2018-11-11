@@ -42,7 +42,6 @@ import static grakn.core.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 /**
  * A fragment representing traversing an isa edge from instance to type.
  *
- * @author Felix Chapman
  */
 
 @AutoValue

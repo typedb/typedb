@@ -63,7 +63,6 @@ import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weigh
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
  *
- * @author Grakn Warriors
  */
 public abstract class Fragment {
 

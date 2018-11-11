@@ -60,8 +60,6 @@ import java.util.Set;
  * We change its behaviour so it can work with our own graph computer.
  * </p>
  *
- * @author Jason Liu
- * @author Marko A. Rodriguez
  */
 public class GraknSparkExecutor {
 

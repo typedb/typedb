@@ -59,7 +59,6 @@ import static org.mockito.Mockito.mock;
  * In order to mock additional responses, use the method {@link #setResponse(Transaction.Req, Transaction.Res...)}.
  * </p>
  *
- * @author Felix Chapman
  */
 public final class ServerRPCMock extends ExternalResource {
 
@@ -192,8 +191,7 @@ public final class ServerRPCMock extends ExternalResource {
      * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      *
-     * @author Felix Chapman
-     */
+         */
     public class ServerIteratorsMock {
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 

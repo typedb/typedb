@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
  *
- * @author Felix Chapman
  */
 public class EquivalentFragmentSets {
 
@@ -69,8 +68,7 @@ public class EquivalentFragmentSets {
      * <p>
      * Can be constrained with information about the possible {@link Role}s or {@link RelationshipType}s.
      *
-     * @author Felix Chapman
-     */
+         */
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {
         return new AutoValue_RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, roleLabels, relTypeLabels);
     }

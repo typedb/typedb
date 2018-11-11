@@ -33,7 +33,6 @@ import java.util.stream.StreamSupport;
  *
  * @param <T> the type of element that this iterator will iterate over
  *
- * @author Kasper Piskorski
  *
  */
 public class LazyIterator<T> implements Iterable<T>{

@@ -32,7 +32,6 @@ import static grakn.core.graql.internal.gremlin.fragment.Fragments.isAbstract;
 /**
  * @see EquivalentFragmentSets#isAbstract(VarProperty, Var)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class IsAbstractFragmentSet extends EquivalentFragmentSet {

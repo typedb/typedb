@@ -56,7 +56,6 @@ import static grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
  * Fault tolerance:
  * The de-duplicator daemon is fault-tolerant and will re-process incoming attributes if Grakn crashes in the middle of a deduplication.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class AttributeDeduplicatorDaemon {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorDaemon.class);

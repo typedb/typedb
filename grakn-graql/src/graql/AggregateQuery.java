@@ -28,7 +28,6 @@ import javax.annotation.Nullable;
  *
  * @param <T> the type of the result of the aggregate query
  *
- * @author Grakn Warriors
  */
 public interface AggregateQuery<T extends Answer> extends Query<T> {
 

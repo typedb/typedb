@@ -30,7 +30,6 @@ import java.util.Collection;
  *     The query will undefine all {@link SchemaConcept}s described in the {@link VarPattern}s provided.
  * </p>
  *
- * @author Felix Chapman
  */
 public interface UndefineQuery extends Query<ConceptMap> {
 

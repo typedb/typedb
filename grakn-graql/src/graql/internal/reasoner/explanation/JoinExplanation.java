@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * Explanation class for a join explanation - resulting from merging atoms in a conjunction.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class JoinExplanation extends QueryExplanation {

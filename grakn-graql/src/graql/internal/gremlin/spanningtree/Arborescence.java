@@ -33,7 +33,6 @@ import java.util.Set;
  * (https://en.wikipedia.org/wiki/Arborescence_(graph_theory))
  *
  * @param <V> the type of the nodes
- * @author Jason Liu
  */
 
 public class Arborescence<V> {

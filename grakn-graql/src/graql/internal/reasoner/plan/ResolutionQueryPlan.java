@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  * The plan is constructed using the {@link ResolutionPlan} working at an atom level.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ResolutionQueryPlan {

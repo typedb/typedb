@@ -32,7 +32,6 @@ import java.util.Locale;
  *      {@literal @}upper(<value)
  * </p>
  * 
- * @author alexandraorth
  */
 public class UpperMacro implements Macro<String> {
 

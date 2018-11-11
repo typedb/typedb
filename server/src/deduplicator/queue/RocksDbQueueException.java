@@ -20,7 +20,6 @@ package grakn.core.server.deduplicator.queue;
 
 /**
  *
- * @author Ganeshwara Herawan Hananda
  */
 class RocksDbQueueException extends RuntimeException {
     RocksDbQueueException(Throwable cause) {

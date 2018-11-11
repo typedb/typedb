@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 /**
  * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
  *
- * @author Marco Scoppetta
  */
 public class GraknConfig {
 

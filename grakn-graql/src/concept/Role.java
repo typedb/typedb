@@ -32,7 +32,6 @@ import java.util.stream.Stream;
  *     It behaves similarly to {@link SchemaConcept} when relating to other types.
  * </p>
  *
- * @author fppt
  *
  */
 public interface Role extends SchemaConcept {

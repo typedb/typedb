@@ -53,7 +53,6 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *     2. You can link them together into a hierarchical structure
  * </p>
  *
- * @author fppt
  *
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationshipType} or {@link Role}

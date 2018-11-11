@@ -87,7 +87,6 @@ import static java.util.stream.Collectors.toSet;
  * It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
- * @author Grakn Warriors
  */
 public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);

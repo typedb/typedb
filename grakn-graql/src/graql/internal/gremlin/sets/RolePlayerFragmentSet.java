@@ -44,7 +44,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * @see EquivalentFragmentSets#rolePlayer(VarProperty, Var, Var, Var, Var)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {

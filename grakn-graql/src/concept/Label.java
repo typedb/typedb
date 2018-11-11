@@ -35,7 +35,6 @@ import java.util.function.Function;
  *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *
- * @author fppt
  */
 @AutoValue
 public abstract class Label implements Comparable<Label>, Serializable {

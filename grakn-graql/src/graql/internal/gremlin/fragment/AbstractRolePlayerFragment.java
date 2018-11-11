@@ -45,7 +45,6 @@ import static java.util.stream.Collectors.toSet;
  * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: {@link InRolePlayerFragment} and
  * {@link OutRolePlayerFragment}.
  *
- * @author Felix Chapman
  */
 public abstract class AbstractRolePlayerFragment extends Fragment {
 

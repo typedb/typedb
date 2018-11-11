@@ -39,7 +39,6 @@ import java.util.stream.Stream;
  * Base class for collections of {@link ReasonerQueryImpl} queries with equality comparison {@link ReasonerQueryEquivalence}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class QueryCollectionBase{

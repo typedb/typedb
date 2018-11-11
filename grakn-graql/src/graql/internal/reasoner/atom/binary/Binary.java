@@ -58,7 +58,6 @@ import java.util.Set;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class Binary extends Atom {

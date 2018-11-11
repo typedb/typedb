@@ -42,7 +42,6 @@ import static org.hamcrest.Matchers.containsString;
 /**
  * Contains tests which must be ran against a running Grakn instance.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class GraknGraqlCommands_WithARunningGraknE2E {
 

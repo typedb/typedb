@@ -46,7 +46,6 @@ import java.util.Map;
  *     {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
  * </p>
  *
- * @author fppt
  */
 public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);

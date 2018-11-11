@@ -34,7 +34,6 @@ import static grakn.core.util.ErrorMessage.INITIALIZATION_EXCEPTION;
  *     - Malformed Requests
  * </p>
  *
- * @author fppt
  */
 public class GraknBackendException extends GraknException {
 

@@ -55,7 +55,6 @@ import java.util.stream.Stream;
  * Wrapper for a query result class {@link ConceptMap}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ConceptMapImpl implements ConceptMap {

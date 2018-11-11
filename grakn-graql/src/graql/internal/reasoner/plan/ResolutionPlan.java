@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
  * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public final class ResolutionPlan {

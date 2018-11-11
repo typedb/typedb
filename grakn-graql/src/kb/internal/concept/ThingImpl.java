@@ -65,7 +65,6 @@ import static java.util.stream.Collectors.toSet;
  *     Instances can relate to one another via {@link Relationship}
  * </p>
  *
- * @author fppt
  *
  * @param <T> The leaf interface of the object concept which extends {@link Thing}.
  *           For example {@link grakn.core.concept.Entity} or {@link Relationship}.

@@ -33,7 +33,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
- * @author fppt
  */
 public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 

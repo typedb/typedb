@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
  * Default implementation of {@link KeyspaceStore} that uses an {@link EmbeddedGraknSession} to access a knowledge
  * base and store keyspace information.
  *
- * @author Felix Chapman
  */
 public class KeyspaceStoreImpl implements KeyspaceStore {
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");

@@ -45,7 +45,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The attribute de-duplicator can read attributes from the queue and only ack after everything has been processed.
  * If the de-duplicator crashes during a deduplication, it can resume operation from the last ack-ed attribute.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class RocksDbQueue implements AutoCloseable {
     private final RocksDB queueDb;

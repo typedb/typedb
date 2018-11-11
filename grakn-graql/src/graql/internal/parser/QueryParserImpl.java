@@ -65,7 +65,6 @@ import java.util.stream.StreamSupport;
 /**
  * Default implementation of {@link QueryParser}
  *
- * @author Felix Chapman
  */
 public class QueryParserImpl implements QueryParser {
 

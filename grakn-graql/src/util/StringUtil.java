@@ -28,7 +28,6 @@ import java.util.Locale;
  * Some helper methods in dealing with strings in the context of GRAKN.
  * </p>
  * 
- * @author borislav
  *
  */
 public class StringUtil {

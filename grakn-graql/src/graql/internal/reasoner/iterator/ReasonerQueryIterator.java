@@ -30,7 +30,6 @@ import java.util.stream.StreamSupport;
  * Convenience base class for reasoner iterators.
  * </p>
   *
- * @author Kasper Piskorski
  *
  */
 public abstract class ReasonerQueryIterator implements Iterator<ConceptMap> {

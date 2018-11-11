@@ -32,7 +32,6 @@ import java.util.Set;
  * This can also be thought of as a block in Graql Temaplates. I.e. any body of text
  * surrounded by {} or the root.
  *
- * @author alexandraorth
  */
 public class Scope {
 

@@ -34,7 +34,6 @@ import java.util.stream.Stream;
  * Interface for conjunctive reasoner queries.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface ReasonerQuery{

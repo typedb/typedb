@@ -39,7 +39,6 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalen
  * Class defining different unifier types.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public enum UnifierType implements UnifierComparison, EquivalenceCoupling {

@@ -44,7 +44,6 @@ import java.util.regex.Pattern;
  *     For example if you have a {@link AttributeType} modelling month throughout the year there can only be one January.
  * </p>
  *
- * @author fppt
  *
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}

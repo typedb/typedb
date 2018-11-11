@@ -33,7 +33,6 @@ import javax.annotation.Nonnull;
  * <p>
  * Wrapper class for a set of {@link ConceptMap} objects providing higher level facilities.
  *
- * @author Kasper Piskorski
  *
  */
 public class QueryAnswers implements Iterable<ConceptMap>{

@@ -27,7 +27,6 @@ import grakn.core.graql.admin.PatternAdmin;
  *
  * All implementations of {@link PatternAdmin} should extend this class to inherit certain default behaviours.
  *
- * @author Felix Chapman
  */
 public abstract class AbstractPattern implements PatternAdmin {
 

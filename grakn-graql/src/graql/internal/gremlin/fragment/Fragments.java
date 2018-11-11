@@ -47,7 +47,6 @@ import static java.util.stream.Collectors.joining;
 /**
  * Factory for creating instances of {@link Fragment}.
  *
- * @author Felix Chapman
  */
 public class Fragments {
 

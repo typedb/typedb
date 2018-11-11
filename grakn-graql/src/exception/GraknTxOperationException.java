@@ -58,7 +58,6 @@ import static grakn.core.util.ErrorMessage.UNKNOWN_CONCEPT;
  *     For example, when attempting to create instances for an abstract type, this exception is thrown.
  * </p>
  *
- * @author fppt
  */
 public class GraknTxOperationException extends GraknException{
 

@@ -62,7 +62,6 @@ import static java.util.stream.Collectors.toSet;
  * {@link AtomicBase} extension defining specialised functionalities.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class Atom extends AtomicBase {

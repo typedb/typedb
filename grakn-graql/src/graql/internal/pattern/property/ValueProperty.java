@@ -42,7 +42,6 @@ import java.util.stream.Stream;
  *
  * This property matches only resources whose value matches the given {@link ValuePredicate}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {

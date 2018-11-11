@@ -35,7 +35,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 /**
  * Main class in charge to start a web server and all the REST controllers.
  *
- * @author Marco Scoppetta
  */
 public class Server implements AutoCloseable {
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";

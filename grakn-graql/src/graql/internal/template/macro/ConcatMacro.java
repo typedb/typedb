@@ -32,7 +32,6 @@ import static java.util.stream.Collectors.joining;
  * Usage:
  *      {@literal @}concat(<value1>, <value2>)
  * </p>
- * @author alexandraorth
  */
 public class ConcatMacro implements Macro<String> {
 

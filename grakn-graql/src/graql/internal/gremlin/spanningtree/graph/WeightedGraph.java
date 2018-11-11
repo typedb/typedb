@@ -27,7 +27,6 @@ import java.util.List;
 
 /**
  * @param <V> the type of the nodes stored
- * @author Jason Liu
  */
 public abstract class WeightedGraph<V> {
     public abstract Collection<V> getNodes();

@@ -31,7 +31,6 @@ import java.util.Set;
 /**
  * @see EquivalentFragmentSets#dataType(grakn.core.graql.admin.VarProperty, Var, AttributeType.DataType)
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class DataTypeFragmentSet extends EquivalentFragmentSet {

@@ -27,7 +27,6 @@ import java.util.concurrent.locks.Lock;
  *     Simple locking meachanism that can be used in case of single engine execution
  * </p>
  *
- * @author alexandraorth
  */
 public class ProcessWideLockProvider implements LockProvider {
 

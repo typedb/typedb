@@ -33,8 +33,6 @@ import java.util.Map;
  * It returns a map, the key being the cluster id, the value being the number of vertices the given cluster has.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class ClusterSizeMapReduce extends GraknMapReduce<Long> {

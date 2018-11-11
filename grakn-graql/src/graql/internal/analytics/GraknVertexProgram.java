@@ -38,8 +38,6 @@ import java.util.Set;
  * <p>
  *
  * @param <T> the type of messages being sent between vertices
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public abstract class GraknVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {

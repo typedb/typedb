@@ -35,7 +35,6 @@ import java.util.Set;
  * Factory for reasoner queries.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ReasonerQueries {

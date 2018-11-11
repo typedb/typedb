@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
  * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class CumulativeState extends QueryStateBase{

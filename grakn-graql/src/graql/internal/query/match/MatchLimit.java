@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 /**
  * "Limit" modifier for {@link Match} that limits the results of a query.
  *
- * @author Grakn Warriors
  */
 class MatchLimit extends MatchModifier {
 

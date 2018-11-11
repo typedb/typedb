@@ -27,7 +27,6 @@ import grakn.core.graql.Var;
  * <p>
  * Class for conversions from {@link Entity}s.
  * </p>
- * @author Kasper Piskorski
  */
 class EntityConverter implements ConceptConverter<Entity>{
 

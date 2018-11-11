@@ -35,7 +35,6 @@ import grakn.core.kb.internal.structure.VertexElement;
  *     other entities via {@link Relationship}
  * </p>
  *
- * @author fppt
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
     private EntityImpl(VertexElement vertexElement) {

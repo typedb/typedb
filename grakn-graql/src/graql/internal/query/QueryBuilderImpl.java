@@ -54,7 +54,6 @@ import static grakn.core.util.GraqlSyntax.Compute.Method;
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  *
- * @author Grakn Warriors
  */
 public class QueryBuilderImpl implements QueryBuilder {
 

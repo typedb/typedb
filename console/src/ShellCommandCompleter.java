@@ -25,7 +25,6 @@ import java.util.List;
 /**
  * Completer that complete Graql shell commands
  *
- * @author Felix Chapman
  */
 public class ShellCommandCompleter implements Completer {
 

@@ -26,7 +26,6 @@ import java.io.Serializable;
 /**
  * The MapReduce program for counting the number of instances
  *
- * @author Jason Liu
  */
 
 public class CountMapReduceWithAttribute extends CountMapReduce {

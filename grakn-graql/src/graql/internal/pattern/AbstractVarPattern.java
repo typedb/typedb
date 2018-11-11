@@ -71,7 +71,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Abstract implementation of {@link VarPatternAdmin}.
  *
- * @author Felix Chapman
  */
 public abstract class AbstractVarPattern extends AbstractPattern implements VarPatternAdmin {
 

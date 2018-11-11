@@ -61,7 +61,6 @@ import static grakn.core.util.CommonUtil.toImmutableList;
  * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.IsaProperty} property.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 /**
  * Admin class for inspecting a {@link VarPattern}
  *
- * @author Felix Chapman
  */
 public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override

@@ -31,8 +31,6 @@ import java.util.Set;
  * The MapReduce program for computing the min value of the given resource.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class MinMapReduce extends StatisticsMapReduce<Number> {

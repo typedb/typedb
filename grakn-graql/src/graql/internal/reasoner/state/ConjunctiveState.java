@@ -35,7 +35,6 @@ import java.util.Set;
  * Query state corresponding to a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {

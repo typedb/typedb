@@ -27,7 +27,6 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.VertexPr
  * Interceptor interface copied from tinkerpop so we can use our own graph computer
  *
  * @param <V> Vertex Program
- * @author Jason Liu
  */
 public interface GraknSparkVertexProgramInterceptor<V extends VertexProgram>
         extends VertexProgramInterceptor<V, JavaPairRDD<Object, VertexWritable>, GraknSparkMemory> {

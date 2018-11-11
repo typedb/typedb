@@ -50,7 +50,6 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  * This property relates a {@link RelationshipType} and a {@link Role}. It indicates that a {@link Relationship} whose
  * type is this {@link RelationshipType} may have a role-player playing the given {@link Role}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class RelatesProperty extends AbstractVarProperty {

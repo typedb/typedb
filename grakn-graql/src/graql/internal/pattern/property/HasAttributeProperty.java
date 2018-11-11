@@ -66,7 +66,6 @@ import static java.util.stream.Collectors.joining;
  * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute}, using
  * type labels derived from the label of the {@link AttributeType}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class HasAttributeProperty extends AbstractVarProperty implements NamedProperty {

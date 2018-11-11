@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  * @see Attribute
  * @see Rule
  *
- * @author fppt
  *
  */
 public interface Thing extends Concept{

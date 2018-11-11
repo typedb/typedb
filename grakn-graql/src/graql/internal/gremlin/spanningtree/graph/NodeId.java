@@ -26,7 +26,6 @@ import java.util.Set;
 /**
  * The unique id of a node.
  *
- * @author Jason Liu
  */
 public class NodeId {
 

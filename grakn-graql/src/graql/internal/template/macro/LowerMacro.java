@@ -32,7 +32,6 @@ import java.util.Locale;
  *      {@literal @}lower(<value>)
  * </p>
  *
- * @author alexandraorth
  */
 public class LowerMacro implements Macro<String> {
 

@@ -42,7 +42,6 @@ import java.util.function.UnaryOperator;
  *     no cache leaks can occur. For example this is needed when caching {@link java.util.Collection}
  * </p>
  *
- * @author fppt
  *
  * @param <V>
  */

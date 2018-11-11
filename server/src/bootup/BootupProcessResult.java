@@ -22,8 +22,6 @@ import com.google.auto.value.AutoValue;
 
 /**
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 
 @AutoValue

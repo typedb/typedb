@@ -36,8 +36,6 @@ import java.util.Set;
 /**
  * Fragment following in sub edges, potentially limited to some number of `sub` edges
  *
- * @author Felix Chapman
- * @author Joshua Send
  */
 
 @AutoValue

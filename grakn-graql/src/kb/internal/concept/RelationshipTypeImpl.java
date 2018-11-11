@@ -42,7 +42,6 @@ import java.util.stream.Stream;
  *     They are used to model and categorise n-ary relationships.
  * </p>
  *
- * @author fppt
  *
  */
 public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {

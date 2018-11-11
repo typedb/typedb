@@ -32,7 +32,6 @@ import javax.annotation.CheckReturnValue;
  *
  * </p>
  *
- * @author fppt
  */
 public interface GraknSession extends AutoCloseable {
 

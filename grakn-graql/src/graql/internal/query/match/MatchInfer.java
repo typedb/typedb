@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
  *
- * @author Grakn Warriors
  */
 class MatchInfer extends MatchModifier {
 

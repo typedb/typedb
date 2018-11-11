@@ -84,7 +84,6 @@ import static grakn.core.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION
  *     8. Unique {@link Relationship} Validation which ensures that no duplicate {@link Relationship} are created.
  * </p>
  *
- * @author fppt
  */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {

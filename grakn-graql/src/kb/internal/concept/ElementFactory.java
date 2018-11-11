@@ -59,7 +59,6 @@ import static grakn.core.util.Schema.BaseType.RELATIONSHIP_TYPE;
  *     An edge must include a label which is a {@link grakn.core.util.Schema.EdgeLabel}.
  * </p>
  *
- * @author fppt
  */
 public final class ElementFactory {
     private final EmbeddedGraknTx tx;

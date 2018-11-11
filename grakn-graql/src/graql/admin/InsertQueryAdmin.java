@@ -30,7 +30,6 @@ import java.util.Set;
 /**
  * Admin class for inspecting and manipulating an InsertQuery
  *
- * @author Grakn Warriors
  */
 public interface InsertQueryAdmin extends InsertQuery {
 

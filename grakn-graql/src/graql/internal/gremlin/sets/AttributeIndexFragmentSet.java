@@ -49,7 +49,6 @@ import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.frag
  * {@link ValueFragmentSet} can be replaced with a {@link AttributeIndexFragmentSet} that will use the attribute index
  * to perform a unique lookup in constant time.
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {

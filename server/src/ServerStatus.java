@@ -21,7 +21,6 @@ package grakn.core.server;
 /**
  * Contains information on the state of an engine.
  *
- * @author Domenico Corapi
  */
 public class ServerStatus {
     private volatile boolean ready = false;

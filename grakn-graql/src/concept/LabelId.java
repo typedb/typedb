@@ -34,7 +34,6 @@ import java.io.Serializable;
  *     Also contains a static method for producing IDs from Integers.
  * </p>
  *
- * @author fppt
  */
 @AutoValue
 public abstract class LabelId implements Comparable<LabelId>, Serializable {

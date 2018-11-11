@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * @author Jason Liu
  */
 
 abstract class AbstractIsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {

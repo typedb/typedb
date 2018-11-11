@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 /**
  * Introduces rule cache that wraps around the atom matching rule retrieval to ensure resolution of fruitless rules is not pursued.
  *
- * @author Kasper Piskorski
  *
  */
 public class RuleCache {

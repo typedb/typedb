@@ -34,7 +34,6 @@ import java.util.stream.Stream;
  *     Any instance of a Entity Type is called an {@link Entity}.
  * </p>
  *
- * @author fppt
  *
  */
 public interface EntityType extends Type{

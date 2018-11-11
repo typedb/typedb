@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 /**
  * "Order" modify that orders the underlying {@link Match}
  *
- * @author Grakn Warriors
  */
 class MatchOrder extends MatchModifier {
 

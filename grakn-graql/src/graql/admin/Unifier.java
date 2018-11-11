@@ -38,7 +38,6 @@ import java.util.Set;
  * For a set of expressions Γ, the unifier θ maps elements from Γ to a single expression φ : Γθ = {φ}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface Unifier{

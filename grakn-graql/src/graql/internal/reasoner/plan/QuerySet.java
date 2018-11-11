@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * Helper class for sets of {@link ReasonerQueryImpl} queries with equality comparison {@link ReasonerQueryEquivalence}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class QuerySet extends QueryCollection<Set<ReasonerQueryImpl>, Set<Equivalence.Wrapper<ReasonerQueryImpl>>> {

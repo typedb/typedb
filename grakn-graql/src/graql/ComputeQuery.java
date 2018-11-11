@@ -185,8 +185,7 @@ public interface ComputeQuery<T extends Answer> extends Query<T> {
     /**
      * Argument inner interface to provide access Compute Query arguments
      *
-     * @author Grakn Warriors
-     */
+         */
     interface Arguments {
 
         @CheckReturnValue

@@ -52,7 +52,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
  *
- * @author Grakn Warriors
  */
 @SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
 public class QueryExecutorImpl implements QueryExecutor {

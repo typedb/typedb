@@ -37,7 +37,6 @@ import java.util.Map;
 /**
  * Container class for storing and manipulating storage configuration.
  *
- * @author Kasper Piskorski
  */
 public class StorageConfig extends ProcessConfig<Object> {
     //TODO reimplement without importing many packages from com.fasterxml.jackson

@@ -40,8 +40,6 @@ import static grakn.core.graql.internal.analytics.Utility.reduceSet;
  * in the given cluster
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class ClusterMemberMapReduce extends GraknMapReduce<Set<ConceptId>> {

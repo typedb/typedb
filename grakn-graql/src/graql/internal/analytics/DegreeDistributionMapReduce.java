@@ -40,8 +40,6 @@ import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeI
  * with the given degree.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class DegreeDistributionMapReduce extends GraknMapReduce<Set<ConceptId>> {

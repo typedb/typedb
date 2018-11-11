@@ -36,7 +36,6 @@ import static com.google.common.collect.Sets.newHashSet;
 /**
  * The vertex program for computing k-core.
  *
- * @author Jason Liu
  */
 
 public class KCoreVertexProgram extends GraknVertexProgram<String> {

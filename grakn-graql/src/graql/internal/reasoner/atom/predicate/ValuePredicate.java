@@ -41,7 +41,6 @@ import java.util.stream.Collectors;
  * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

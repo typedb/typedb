@@ -32,7 +32,6 @@ import com.google.auto.value.AutoValue;
  * Atomic corresponding to {@link RegexProperty}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

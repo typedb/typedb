@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 /**
  * Default implementation of {@link Var}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class VarImpl extends AbstractVarPattern implements Var {

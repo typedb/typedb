@@ -43,7 +43,6 @@ import java.util.Set;
  * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
  * values must conform to the given regular expression.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {

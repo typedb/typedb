@@ -445,8 +445,7 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
     /**
      * Argument inner class to provide access Compute Query arguments
      *
-     * @author Grakn Warriors
-     */
+         */
     public class ArgumentsImpl implements Arguments {
 
         private LinkedHashMap<Parameter, Argument> argumentsOrdered = new LinkedHashMap<>();

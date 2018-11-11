@@ -32,7 +32,6 @@ import java.util.Collection;
 /**
  * A fragment representing a negation.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class NeqFragment extends Fragment {

@@ -34,7 +34,6 @@ import java.util.Arrays;
  *
  * Please keep the class name "Graql" as it is what will be displayed to the user.
  *
- * @author Michele Orsi
  */
 public class Graql {
 

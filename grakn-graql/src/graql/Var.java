@@ -21,7 +21,6 @@ package grakn.core.graql;
 /**
  * A variable in a Graql query
  *
- * @author Felix Chapman
  */
 public interface Var extends VarPattern {
 

@@ -49,7 +49,6 @@ import com.google.common.collect.ImmutableSet;
  *     </pre>
  * </p>
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class PropertyExecutor {

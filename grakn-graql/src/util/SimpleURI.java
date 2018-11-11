@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
  * This Util class just takes care of going from host and port to string and vice-versa
  * The URI class would require a schema
  *
- * @author pluraliseseverythings
  */
 public class SimpleURI {
     private final static String DEFAULT_PROTOCOL_NAME = "http";

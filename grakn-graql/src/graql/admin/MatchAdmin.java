@@ -29,7 +29,6 @@ import java.util.Set;
 /**
  * Admin class for inspecting and manipulating a {@link Match}
  *
- * @author Grakn Warriors
  */
 public interface MatchAdmin extends Match {
 

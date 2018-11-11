@@ -44,7 +44,6 @@ import java.util.Set;
  *    {@link Relationship} and {@link Role}.
  * </p>
  *
- * @author fppt
  */
 public class Casting implements CacheOwner{
     private final Set<Cache> registeredCaches = new HashSet<>();

@@ -37,7 +37,6 @@ import java.util.Set;
  * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue
