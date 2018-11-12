@@ -115,8 +115,8 @@ jobs:
         - run: bazel test //client_python:test_integration --test_output=streamed
 
   workbase-unit-tests:
-docker:	      machine: true
-        - image: circleci/node:8.11.2      working_directory: ~/grakn
+      machine: true
+      working_directory: ~/grakn
       steps:
         - checkout
         - *prepare_apt_repositories
