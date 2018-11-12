@@ -42,7 +42,6 @@ public class TxFactoryBuilder {
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(TxFactoryBuilder.class);
 
-    static final String IN_MEMORY = "in-memory";
     static final String PRODUCTION = "production";
     static final String DISTRIBUTED = "distributed";
 
@@ -71,7 +70,6 @@ public class TxFactoryBuilder {
 
     /**
      * @param facetoryKey The string defining which factory should be used for creating the grakn graph.
-     *                    A valid example includes: in-memory
      * @return A graph factory which produces the relevant expected graph.
      */
     private static TxFactory<?> getFactory(String facetoryKey, EmbeddedGraknSession session) {
@@ -82,9 +80,6 @@ public class TxFactoryBuilder {
     private static TxFactory<?> newFactory(String factoryKey, EmbeddedGraknSession session) {
         TxFactory<?> txFactory;
         switch (factoryKey) {
-            case IN_MEMORY:
-                txFactory = new TxFactoryTinker(session);
-                break;
             case PRODUCTION:
                 txFactory = new TxFactoryJanus(session);
                 break;

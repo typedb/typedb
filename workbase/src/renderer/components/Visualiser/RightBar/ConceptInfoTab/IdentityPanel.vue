@@ -85,7 +85,7 @@
         padding: var(--container-padding);
         display: flex;
         flex-direction: column;
-        max-height: 80px;
+        max-height: 90px;
         justify-content: center;
         border-bottom: var(--container-darkest-border);
     }

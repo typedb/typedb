@@ -46,6 +46,6 @@ java_test(
     test_class = "grakn.core.util.GraknConfigTest",
     srcs = ["test/GraknConfigTest.java"],
     deps = [":util"],
-    resources = ["test/resources/inmemory-graph.properties"],
+    resources = ["//server:conf/grakn.properties"],
     size = "small"
 )
