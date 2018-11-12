@@ -125,8 +125,7 @@ jobs:
         - run: bazel test //workbase:tests-unit
 
   workbase-e2e:
-      docker: 
-        -image: circleci/node:8.11.2
+      machine: true
       working_directory: ~/grakn
       steps:
         - checkout
@@ -145,7 +144,8 @@ jobs:
         - run: bazel test -s --test_output=streamed //workbase:tests-e2e
 
   build-workbase-linux:
-      machine: true
+      docker: 
+        -image: circleci/node:8.11.2
       working_directory: ~/grakn
       steps:
         - *attach_grakn_workspace
