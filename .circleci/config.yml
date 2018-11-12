@@ -125,7 +125,6 @@ jobs:
         - run: bazel test //workbase:tests-unit
 
   workbase-e2e:
-      machine: true
       docker: 
         -image: circleci/node:8.11.2
       working_directory: ~/grakn
