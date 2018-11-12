@@ -9,6 +9,7 @@ import grakn.core.GraknTxType;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
 import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.factory.EmbeddedGraknSession;
@@ -97,19 +98,22 @@ public class AtomicQueryUnificationIT {
         loadFromFile("genericSchema.gql", genericSchemaSession);
         unificationWithTypesSession = server.sessionWithNewKeyspace();
         loadFromFile("unificationWithTypesTest.gql", unificationWithTypesSession);
-        GraknTx tx = genericSchemaSession.transaction(GraknTxType.WRITE);
-        Iterator<Entity> entities = tx.getEntityType("baseRoleEntity").instances().collect(toSet()).iterator();
-        entity = entities.next();
-        anotherEntity = entities.next();
-        anotherBaseEntity = tx.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
-        subEntity = tx.getEntityType("subRoleEntity").instances().findFirst().orElse(null);
-        Iterator<Relationship> relations = tx.getRelationshipType("baseRelation").subs().flatMap(RelationshipType::instances).iterator();
-        relation = relations.next();
-        anotherRelation = relations.next();
-        Iterator<Attribute<Object>> resources = tx.getAttributeType("resource").instances().collect(toSet()).iterator();
-        resource = resources.next();
-        anotherResource = resources.next();
-        tx.commit();
+        try(GraknTx tx = genericSchemaSession.transaction(GraknTxType.WRITE)) {
+            EntityType subRoleEntityType = tx.getEntityType("subRoleEntity");
+            Iterator<Entity> entities = tx.getEntityType("baseRoleEntity").instances()
+                    .filter(et -> !et.type().equals(subRoleEntityType) )
+                    .collect(toSet()).iterator();
+            entity = entities.next();
+            anotherEntity = entities.next();
+            anotherBaseEntity = tx.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
+            subEntity = tx.getEntityType("subRoleEntity").instances().findFirst().orElse(null);
+            Iterator<Relationship> relations = tx.getRelationshipType("baseRelation").subs().flatMap(RelationshipType::instances).iterator();
+            relation = relations.next();
+            anotherRelation = relations.next();
+            Iterator<Attribute<Object>> resources = tx.getAttributeType("resource").instances().collect(toSet()).iterator();
+            resource = resources.next();
+            anotherResource = resources.next();
+        }
     }
 
     @AfterClass
