@@ -33,7 +33,7 @@ import grakn.core.server.keyspace.KeyspaceStoreImpl;
 import grakn.core.util.GraknConfig;
 import io.grpc.ServerBuilder;
 
-import ai.grakn.benchmark.lib.ServerTracingInstrumentation;
+import ai.grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 /**
  * This is a factory class which contains methods for instantiating a {@link Server} in different ways.

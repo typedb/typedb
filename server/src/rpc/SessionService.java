@@ -31,7 +31,6 @@ import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.benchmark.GrpcMessageConversion;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
@@ -41,8 +40,6 @@ import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import brave.ScopedSpan;
 import brave.Span;
-import brave.Tracer;
-import brave.Tracing;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
@@ -52,6 +49,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -59,6 +58,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+import ai.grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 
 /**
@@ -90,7 +92,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final OpenRequest requestOpener;
         private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
         private final Iterators iterators = Iterators.create();
-
 
         private TraceContext receivedTraceContext;
 

@@ -54,13 +54,14 @@ import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.SimpleURI;
 import com.google.common.collect.AbstractIterator;
-import ai.grakn.benchmark.lib.ClientTracingInstrumentationInterceptor;
+import ai.grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -90,7 +91,7 @@ public final class Grakn {
 
         if (benchmark) {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
-                    .intercept(new TracingInstrumentationClientInterceptor("client-java-instrumentation"))
+                    .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
                     .usePlaintext(true).build();
         } else {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
