@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package grakn.core.graql.internal.reasoner.query;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
-import ai.grakn.graql.internal.reasoner.state.AnswerState;
-import ai.grakn.graql.internal.reasoner.state.AtomicStateProducer;
-import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
-import ai.grakn.graql.internal.reasoner.state.ResolutionState;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.state.AnswerState;
+import grakn.core.graql.internal.reasoner.state.AtomicStateProducer;
+import grakn.core.graql.internal.reasoner.state.QueryStateBase;
+import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -49,7 +49,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
 
 /**
  *
@@ -58,7 +58,6 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typeUnifier;
  * together with its accompanying constraints (predicates and types).
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @SuppressFBWarnings("EQ_DOESNT_OVERRIDE_EQUALS")

@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.bootup.config.ConfigProcessor;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
+import grakn.core.util.GraknSystemProperty;
+import grakn.core.server.bootup.config.ConfigProcessor;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +35,6 @@ import java.util.Scanner;
 /**
  * The {@link GraknBootup} class is responsible for starting, stopping and cleaning the keyspaces of Grakn
  *
- * @author Ganeshwara Herawan Hananda
- * @author Michele Orsi
  */
 public class GraknBootup {
     private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);

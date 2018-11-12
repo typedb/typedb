@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template.macro;
+package grakn.core.graql.internal.template.macro;
 
 /**
  * <p>
@@ -26,7 +26,6 @@ package ai.grakn.graql.internal.template.macro;
  *      {@literal @}int(<value>)
  * </p>
  *
- * @author alexandraorth
  */
 public class IntMacro extends AbstractNumericMacro<Integer> {
 

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
-import ai.grakn.util.Schema;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.LabelId;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -36,17 +36,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceOwner;
-import static ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceRelation;
-import static ai.grakn.graql.internal.analytics.DegreeVertexProgram.DEGREE;
-import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.internal.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceOwner;
+import static grakn.core.graql.internal.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceRelation;
+import static grakn.core.graql.internal.analytics.DegreeVertexProgram.DEGREE;
+import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for computing the median of given resource using quick select algorithm.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class MedianVertexProgram extends GraknVertexProgram<Long> {

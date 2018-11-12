@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.match;
+package grakn.core.graql.internal.query.match;
 
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Order;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.graql.Match;
+import grakn.core.graql.Order;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 
 import java.util.Comparator;
@@ -30,7 +30,6 @@ import java.util.stream.Stream;
 /**
  * A class for handling ordering {@link Match}es.
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class Ordering {

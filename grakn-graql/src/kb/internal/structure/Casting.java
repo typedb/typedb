@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.structure;
+package grakn.core.kb.internal.structure;
 
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.CacheOwner;
-import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.util.Schema;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.CacheOwner;
+import grakn.core.kb.internal.cache.Cacheable;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
@@ -44,7 +44,6 @@ import java.util.Set;
  *    {@link Relationship} and {@link Role}.
  * </p>
  *
- * @author fppt
  */
 public class Casting implements CacheOwner{
     private final Set<Cache> registeredCaches = new HashSet<>();

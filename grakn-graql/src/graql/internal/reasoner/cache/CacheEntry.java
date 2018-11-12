@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 
 /**
  *
@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
  * @param <Q> query type the entry corresponds to
  * @param <T> corresponding element to be cached
  *
- * @author Kasper Piskorski
  *
  */
 class CacheEntry<Q extends ReasonerQueryImpl, T> {

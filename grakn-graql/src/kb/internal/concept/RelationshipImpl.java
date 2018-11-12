@@ -16,19 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.CacheOwner;
-import ai.grakn.kb.internal.structure.VertexElement;
+import grakn.core.Keyspace;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.CacheOwner;
+import grakn.core.kb.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
 import java.util.Collection;
@@ -47,7 +47,6 @@ import java.util.stream.Stream;
  *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
  * </p>
  *
- * @author fppt
  *
  */
 public class RelationshipImpl implements Relationship, ConceptVertex, CacheOwner{

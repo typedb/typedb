@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 
-import ai.grakn.exception.PropertyNotUniqueException;
+import grakn.core.exception.PropertyNotUniqueException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;
@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  *     {@link Relationship} are used to model n-ary relationships between instances.
  * </p>
  *
- * @author fppt
  *
  */
 public interface Relationship extends Thing {

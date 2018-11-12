@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  *     Adding new vendor support means implementing this interface.
  * </p>
  *
- * @author fppt
  *
  * @param <T> A vendor implementation of a Tinkerpop {@link Graph}
  */

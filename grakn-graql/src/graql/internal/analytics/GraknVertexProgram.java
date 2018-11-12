@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
+import grakn.core.util.CommonUtil;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -38,8 +38,6 @@ import java.util.Set;
  * <p>
  *
  * @param <T> the type of messages being sent between vertices
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public abstract class GraknVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {

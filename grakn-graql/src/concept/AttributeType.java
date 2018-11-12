@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.util.Schema;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
@@ -37,14 +37,13 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     This ontological element behaves similarly to {@link ai.grakn.concept.Type} when defining how it relates to other
+ *     This ontological element behaves similarly to {@link grakn.core.concept.Type} when defining how it relates to other
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
  *     For example if you have an {@link AttributeType} modelling month throughout the year there can only be one January.
  * </p>
  *
- * @author fppt
  *
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}

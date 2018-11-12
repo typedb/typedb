@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree;
+package grakn.core.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 
 import java.util.List;
 
@@ -26,7 +26,6 @@ import java.util.List;
  * An edge, together with a list of edges that can't be in the final answer if 'edge' is.
  *
  * @param <V> nodes
- * @author Jason Liu
  */
 public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
     public final DirectedEdge<V> edge;

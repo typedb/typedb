@@ -3,11 +3,12 @@
 java_test(
     name = "server-rpc-test",
     srcs = ["ServerRPCTest.java"],
-    test_class = "ai.grakn.core.server.rpc.ServerRPCTest",
+    test_class = "grakn.core.server.rpc.ServerRPCTest",
     deps = [
         "//server",
         "//grakn-graql",
         "//client-java",
+        "//protocol:protocol-java",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

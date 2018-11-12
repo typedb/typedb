@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.util;
+package grakn.core.graql.internal.util;
 
 import java.util.Comparator;
 

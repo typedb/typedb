@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
-import ai.grakn.GraknTx;
+import grakn.core.GraknTx;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
@@ -27,7 +27,6 @@ import java.io.Serializable;
  * A class which represents an id of any {@link Concept} in the {@link GraknTx}.
  * Also contains a static method for producing concept IDs from Strings.
  *
- * @author Grakn Warriors
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
 

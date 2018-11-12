@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
-import ai.grakn.util.SimpleURI;
+import grakn.core.Keyspace;
+import grakn.core.client.Grakn;
+import grakn.core.util.ErrorMessage;
+import grakn.core.util.GraknVersion;
+import grakn.core.util.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;
@@ -33,14 +33,13 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
 
-import static ai.grakn.core.console.GraqlShell.loadQuery;
+import static grakn.core.console.GraqlShell.loadQuery;
 
 /**
  *
  *  Graql console class that executes actions associated to options, if any option is set
  *  otherwise instantiates a GraqlShell
  *
- * @author marcoscoppetta
  */
 
 public class GraqlConsole {

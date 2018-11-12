@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.answer.Answer;
+import grakn.core.GraknTx;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.answer.Answer;
 import com.google.auto.value.AutoValue;
 
 import java.util.stream.Stream;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
  * When a syntax error occurs, it is recorded. Call {@link GraqlErrorListener#hasErrors()} to see if there were errors.
  * View the errors with {@link GraqlErrorListener#toString()}.
  *
- * @author Felix Chapman
  */
 public class GraqlErrorListener extends BaseErrorListener {
 

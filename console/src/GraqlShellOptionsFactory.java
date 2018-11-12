@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
 import org.apache.commons.cli.ParseException;
 
@@ -24,7 +24,6 @@ import org.apache.commons.cli.ParseException;
  * Factory to produce {@link GraqlShellOptions}. Can be extended to produce a {@link GraqlShellOptions} that accepts
  * extra arguments.
  *
- * @author Felix Chapman
  */
 public interface GraqlShellOptionsFactory {
     GraqlShellOptions createGraqlShellOptions(String[] args) throws ParseException;

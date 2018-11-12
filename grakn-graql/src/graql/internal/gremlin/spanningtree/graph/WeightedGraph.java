@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.graph;
+package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 
@@ -27,7 +27,6 @@ import java.util.List;
 
 /**
  * @param <V> the type of the nodes stored
- * @author Jason Liu
  */
 public abstract class WeightedGraph<V> {
     public abstract Collection<V> getNodes();

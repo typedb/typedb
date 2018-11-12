@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.GraknTx;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -33,7 +33,6 @@ import static java.util.stream.Collectors.joining;
 /**
  * Default implementation of {@link GetQuery}
  *
- * @author Grakn Warriors
  */
 @AutoValue
 public abstract class GetQueryImpl implements GetQuery {

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.graph;
+package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -29,7 +29,6 @@ import java.util.Set;
 
 /**
  * @param <V> the type of the nodes stored
- * @author Jason Liu
  */
 public class SparseWeightedGraph<V> extends WeightedGraph<V> {
     final private Set<V> nodes;

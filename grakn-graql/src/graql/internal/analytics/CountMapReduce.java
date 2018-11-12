@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.util.Schema;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -28,8 +28,6 @@ import java.util.Iterator;
 /**
  * The MapReduce program for counting the number of instances excluding attributes and implicit relationships
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class CountMapReduce extends GraknMapReduce<Long> {

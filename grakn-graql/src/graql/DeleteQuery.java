@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.answer.ConceptSet;
+import grakn.core.GraknTx;
+import grakn.core.graql.admin.DeleteQueryAdmin;
+import grakn.core.graql.answer.ConceptSet;
 
 import javax.annotation.CheckReturnValue;
 
@@ -34,7 +34,6 @@ import javax.annotation.CheckReturnValue;
  * are provided, then the delete query will delete the concept bound to each given variable name. If property flags
  * are provided, e.g. {@code var("x").has("name")} then only those properties are deleted.
  *
- * @author Felix Chapman
  */
 public interface DeleteQuery extends Query<ConceptSet> {
 

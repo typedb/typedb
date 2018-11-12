@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 /**
  * A property of a {@link VarPatternAdmin}, such as "isa movie" or "has name 'Jim'"
  *
- * @author Felix Chapman
  */
 public interface VarProperty {
 

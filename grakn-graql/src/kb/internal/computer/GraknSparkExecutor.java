@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.computer;
+package grakn.core.kb.internal.computer;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -60,8 +60,6 @@ import java.util.Set;
  * We change its behaviour so it can work with our own graph computer.
  * </p>
  *
- * @author Jason Liu
- * @author Marko A. Rodriguez
  */
 public class GraknSparkExecutor {
 

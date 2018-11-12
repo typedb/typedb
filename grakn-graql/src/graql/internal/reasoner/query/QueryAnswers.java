@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package grakn.core.graql.internal.reasoner.query;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.Unifier;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -33,7 +33,6 @@ import javax.annotation.Nonnull;
  * <p>
  * Wrapper class for a set of {@link ConceptMap} objects providing higher level facilities.
  *
- * @author Kasper Piskorski
  *
  */
 public class QueryAnswers implements Iterable<ConceptMap>{

@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.printer;
+package grakn.core.graql.internal.printer;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.answer.AnswerGroup;
-import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Value;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Value;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -41,7 +41,6 @@ import java.util.stream.Stream;
  * {@link #complete(Builder)} to just return its argument.
  *
  * @param <Builder> An intermediate builder type that can be changed into a String
- * @author Grakn Warriors
  */
 public abstract class Printer<Builder> {
 

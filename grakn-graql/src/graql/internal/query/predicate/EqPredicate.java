@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.predicate;
+package grakn.core.graql.internal.query.predicate;
 
-import ai.grakn.util.StringUtil;
+import grakn.core.graql.internal.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;

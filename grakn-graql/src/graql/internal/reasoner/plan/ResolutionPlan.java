@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.plan;
+package grakn.core.graql.internal.reasoner.plan;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.AtomicBase;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
 
 import java.util.HashSet;
@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
  * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public final class ResolutionPlan {

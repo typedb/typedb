@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern;
+package grakn.core.graql.internal.pattern;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.Preconditions;
@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 /**
  * Default implementation of {@link Var}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class VarImpl extends AbstractVarPattern implements Var {

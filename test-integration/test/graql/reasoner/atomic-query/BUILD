@@ -1,7 +1,7 @@
 java_test(
     name = "atomic-query-equivalence-it",
     srcs = ["AtomicQueryEquivalenceIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicQueryEquivalenceIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicQueryEquivalenceIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",
@@ -15,7 +15,7 @@ java_test(
 java_test(
     name = "atomic-query-it",
     srcs = ["AtomicQueryIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicQueryIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicQueryIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",
@@ -31,7 +31,7 @@ java_test(
 java_test(
     name = "atomic-query-unification-it",
     srcs = ["AtomicQueryUnificationIT.java", "TestQueryPattern.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.AtomicQueryUnificationIT",
+    test_class = "grakn.core.graql.internal.reasoner.AtomicQueryUnificationIT",
     deps = [
             "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",

@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree;
+package grakn.core.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DenseWeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DenseWeightedGraph;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.WeightedGraph;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -33,8 +33,8 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
+import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 import static org.junit.Assert.assertEquals;
 
 

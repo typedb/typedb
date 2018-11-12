@@ -17,18 +17,18 @@
  * under the License.
  */
 
-package ai.grakn.client.rpc;
+package grakn.core.client.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.util.CommonUtil;
+import grakn.core.GraknTxType;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.protocol.ConceptProto;
+import grakn.core.protocol.KeyspaceProto;
+import grakn.core.protocol.SessionProto;
+import grakn.core.util.CommonUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -46,7 +46,7 @@ public class RequestBuilder {
      */
     public static class Transaction {
 
-        public static SessionProto.Transaction.Req open(ai.grakn.Keyspace keyspace, GraknTxType txType) {
+        public static SessionProto.Transaction.Req open(grakn.core.Keyspace keyspace, GraknTxType txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setKeyspace(keyspace.getValue())
                     .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
@@ -147,14 +147,14 @@ public class RequestBuilder {
      */
     public static class Concept {
 
-        public static ConceptProto.Concept concept(ai.grakn.concept.Concept concept) {
+        public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
             return ConceptProto.Concept.newBuilder()
                     .setId(concept.id().getValue())
                     .setBaseType(getBaseType(concept))
                     .build();
         }
 
-        private static ConceptProto.Concept.BASE_TYPE getBaseType(ai.grakn.concept.Concept concept) {
+        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.concept.Concept concept) {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
             } else if (concept.isRelationshipType()) {
@@ -178,7 +178,7 @@ public class RequestBuilder {
             }
         }
 
-        public static Collection<ConceptProto.Concept> concepts(Collection<ai.grakn.concept.Concept> concepts) {
+        public static Collection<ConceptProto.Concept> concepts(Collection<grakn.core.concept.Concept> concepts) {
             return concepts.stream().map(Concept::concept).collect(toList());
         }
 

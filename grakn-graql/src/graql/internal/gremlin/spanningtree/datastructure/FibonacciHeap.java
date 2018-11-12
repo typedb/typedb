@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
+package grakn.core.graql.internal.gremlin.spanningtree.datastructure;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Ordering;
@@ -33,7 +33,6 @@ import java.util.List;
  *
  * @param <V> the type of the values stored in the heap
  * @param <P> the type of the priorities
- * @author Grakn Warriors
  */
 public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> {
     private final static int MAX_CAPACITY = Integer.MAX_VALUE;

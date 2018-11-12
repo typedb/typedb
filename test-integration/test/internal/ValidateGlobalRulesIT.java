@@ -16,23 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.concept.EntityImpl;
-import ai.grakn.kb.internal.concept.EntityTypeImpl;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RoleImpl;
-import ai.grakn.kb.internal.concept.ThingImpl;
-import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.kb.internal.concept.EntityImpl;
+import grakn.core.kb.internal.concept.EntityTypeImpl;
+import grakn.core.kb.internal.concept.RelationshipImpl;
+import grakn.core.kb.internal.concept.RoleImpl;
+import grakn.core.kb.internal.concept.ThingImpl;
+import grakn.core.kb.internal.structure.Casting;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -16,42 +16,42 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.client;
+package grakn.core.test.client;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.AttributeType.DataType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.answer.AnswerGroup;
-import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.printer.Printer;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.AttributeType.DataType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.printer.Printer;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -78,29 +78,29 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.group;
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.graql.Graql.max;
-import static ai.grakn.graql.Graql.mean;
-import static ai.grakn.graql.Graql.median;
-import static ai.grakn.graql.Graql.min;
-import static ai.grakn.graql.Graql.std;
-import static ai.grakn.graql.Graql.sum;
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.DEGREE;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CENTRALITY;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.COUNT;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MAX;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MEDIAN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.MIN;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.PATH;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.STD;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.SUM;
+import static grakn.core.graql.Graql.count;
+import static grakn.core.graql.Graql.group;
+import static grakn.core.graql.Graql.label;
+import static grakn.core.graql.Graql.max;
+import static grakn.core.graql.Graql.mean;
+import static grakn.core.graql.Graql.median;
+import static grakn.core.graql.Graql.min;
+import static grakn.core.graql.Graql.std;
+import static grakn.core.graql.Graql.sum;
+import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.Syntax.Compute.Method.MAX;
+import static grakn.core.graql.Syntax.Compute.Method.MEAN;
+import static grakn.core.graql.Syntax.Compute.Method.MEDIAN;
+import static grakn.core.graql.Syntax.Compute.Method.MIN;
+import static grakn.core.graql.Syntax.Compute.Method.PATH;
+import static grakn.core.graql.Syntax.Compute.Method.STD;
+import static grakn.core.graql.Syntax.Compute.Method.SUM;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -112,7 +112,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Tests for {@link ai.grakn.core.server.ServerRPC}
+ * Integration Tests for {@link grakn.core.server.ServerRPC}
  */
 @SuppressWarnings("CheckReturnValue")
 public class RemoteQueryIT {
@@ -594,8 +594,8 @@ public class RemoteQueryIT {
              GraknTx localTx = localSession.transaction(GraknTxType.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("expectation-rule")).get();
-            ai.grakn.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
-            ai.grakn.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
+            grakn.core.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
+            grakn.core.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
             assertEquals(localConcept.then(), remoteConcept.then());

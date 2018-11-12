@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.structure.Casting;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.Thing;
+import grakn.core.kb.internal.structure.Casting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +39,6 @@ import java.util.Set;
  *      type of the concept.
  * </p>
  *
- * @author fppt
  *
  */
 class Validator {

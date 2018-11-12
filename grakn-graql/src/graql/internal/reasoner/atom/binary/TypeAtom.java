@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.pattern.property.HasAttributeTypeProperty;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.pattern.property.HasAttributeTypeProperty;
+import grakn.core.graql.internal.pattern.property.IsaProperty;
+import grakn.core.graql.internal.reasoner.atom.Atom;
 
 import java.util.Set;
 
@@ -33,13 +33,12 @@ import java.util.Set;
  *
  * Type atoms correspond to the following respective graql properties:
  * {@link IsaProperty},
- * {@link ai.grakn.graql.internal.pattern.property.SubProperty},
- * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
- * {@link ai.grakn.graql.internal.pattern.property.RelatesProperty}
+ * {@link grakn.core.graql.internal.pattern.property.SubProperty},
+ * {@link grakn.core.graql.internal.pattern.property.PlaysProperty}
+ * {@link grakn.core.graql.internal.pattern.property.RelatesProperty}
  * {@link HasAttributeTypeProperty}
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class TypeAtom extends Binary{

@@ -16,35 +16,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin;
+package grakn.core.graql.internal.gremlin;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import ai.grakn.graql.internal.gremlin.fragment.InIsaFragment;
-import ai.grakn.graql.internal.gremlin.fragment.InSubFragment;
-import ai.grakn.graql.internal.gremlin.fragment.LabelFragment;
-import ai.grakn.graql.internal.gremlin.fragment.OutRolePlayerFragment;
-import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.gremlin.spanningtree.Arborescence;
-import ai.grakn.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.internal.gremlin.fragment.Fragments;
+import grakn.core.graql.internal.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.internal.gremlin.fragment.InSubFragment;
+import grakn.core.graql.internal.gremlin.fragment.LabelFragment;
+import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.internal.gremlin.spanningtree.Arborescence;
+import grakn.core.graql.internal.gremlin.spanningtree.ChuLiuEdmonds;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.internal.pattern.property.IsaProperty;
+import grakn.core.graql.internal.pattern.property.LabelProperty;
+import grakn.core.graql.internal.pattern.property.ValueProperty;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -66,14 +66,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for generating greedy traversal plans
  *
- * @author Grakn Warriors
  */
 public class GreedyTraversalPlan {
 

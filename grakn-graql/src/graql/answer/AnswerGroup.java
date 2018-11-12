@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.answer;
+package grakn.core.graql.answer;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.Explanation;
+import grakn.core.concept.Concept;
+import grakn.core.graql.admin.Explanation;
 
 import javax.annotation.Nullable;
 import java.util.List;

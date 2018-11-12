@@ -16,22 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.plan;
+package grakn.core.graql.internal.reasoner.plan;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
-import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
@@ -52,7 +52,6 @@ import java.util.stream.Stream;
  * Resolution planner using {@link GreedyTraversalPlan} to establish optimal resolution order..
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class GraqlTraversalPlanner {

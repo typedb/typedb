@@ -16,33 +16,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.parser;
+package grakn.core.graql.internal.parser;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Order;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.grammar.GraqlBaseVisitor;
-import ai.grakn.graql.grammar.GraqlParser;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.GraqlSyntax;
-import ai.grakn.util.StringUtil;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Order;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.grammar.GraqlBaseVisitor;
+import grakn.core.graql.grammar.GraqlParser;
+import grakn.core.util.CommonUtil;
+import grakn.core.graql.Syntax;
+import grakn.core.graql.internal.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
@@ -60,19 +60,18 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.eq;
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument;
-import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Graql.and;
+import static grakn.core.graql.Graql.eq;
+import static grakn.core.graql.Graql.label;
+import static grakn.core.graql.Syntax.Compute.Algorithm;
+import static grakn.core.graql.Syntax.Compute.Argument;
+import static grakn.core.graql.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
  *
- * @author Grakn Warriors
  */
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
@@ -674,7 +673,7 @@ class GraqlConstructor extends GraqlBaseVisitor {
     public List<Argument> visitComputeArgs(GraqlParser.ComputeArgsContext computeArgs) {
 
         List<GraqlParser.ComputeArgContext> argContextList = new ArrayList<>();
-        List<GraqlSyntax.Compute.Argument> argList = new ArrayList<>();
+        List<Syntax.Compute.Argument> argList = new ArrayList<>();
 
         if (computeArgs.computeArg() != null) {
             argContextList.add(computeArgs.computeArg());

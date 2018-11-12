@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
+import grakn.core.concept.LabelId;
+import grakn.core.util.CommonUtil;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -30,13 +30,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collections;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for computing the degree in statistics.
  * <p>
  *
- * @author Jason Liu
  */
 
 public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {

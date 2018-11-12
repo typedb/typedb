@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.util;
+package grakn.core.graql.internal.util;
 
 import com.google.common.collect.Maps;
 
@@ -28,8 +28,6 @@ import java.util.Set;
  * Union-Find Data Structure
  *
  * @param <V> the type of the values stored
- * @author Sam Thomson
- * @author Jason Liu
  */
 public class Partition<V> {
     private final Map<V, V> parents;

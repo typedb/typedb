@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -32,7 +32,6 @@ import java.util.stream.Stream;
  *     It behaves similarly to {@link SchemaConcept} when relating to other types.
  * </p>
  *
- * @author fppt
  *
  */
 public interface Role extends SchemaConcept {

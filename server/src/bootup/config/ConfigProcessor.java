@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup.config;
+package grakn.core.server.bootup.config;
 
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknConfig;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,7 +27,6 @@ import java.nio.file.Path;
 /**
  * Helper class for updating storage config file.
  *
- * @author Kasper Piskorski
  */
 public class ConfigProcessor {
 

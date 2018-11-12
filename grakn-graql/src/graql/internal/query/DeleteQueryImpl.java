@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.answer.ConceptSet;
+import grakn.core.GraknTx;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.DeleteQueryAdmin;
+import grakn.core.graql.answer.ConceptSet;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -35,7 +35,6 @@ import static java.util.stream.Collectors.joining;
 /**
  * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  *
- * @author Grakn Warriors
  */
 @AutoValue
 abstract class DeleteQueryImpl implements DeleteQueryAdmin {

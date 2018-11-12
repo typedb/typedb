@@ -16,11 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.deduplicator.queue;
+package grakn.core.server.deduplicator.queue;
 
 /**
  *
- * @author Ganeshwara Herawan Hananda
  */
 class RocksDbQueueException extends RuntimeException {
     RocksDbQueueException(Throwable cause) {

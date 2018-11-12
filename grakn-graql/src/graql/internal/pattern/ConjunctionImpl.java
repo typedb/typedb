@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern;
+package grakn.core.graql.internal.pattern;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.Disjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;

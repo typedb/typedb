@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package grakn.core.graql.internal.reasoner;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -49,7 +49,7 @@ import java.io.InputStreamReader;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.GraqlTestUtil.assertCollectionsEqual;
+import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 

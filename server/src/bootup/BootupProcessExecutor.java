@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
 import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -37,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 /**
  * This class is responsible for spawning process.
  *
- * @author Michele Orsi
  */
 public class BootupProcessExecutor {
 

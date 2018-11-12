@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.unifier;
+package grakn.core.graql.internal.reasoner.unifier;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.Unifier;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -45,7 +45,6 @@ import javax.annotation.Nonnull;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class MultiUnifierImpl implements MultiUnifier{

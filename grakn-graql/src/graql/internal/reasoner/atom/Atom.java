@@ -15,33 +15,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.graql.internal.reasoner.atom;
+package grakn.core.graql.internal.reasoner.atom;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.unifier.MultiUnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.OntologicalAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.util.ErrorMessage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -53,7 +53,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -62,7 +62,6 @@ import static java.util.stream.Collectors.toSet;
  * {@link AtomicBase} extension defining specialised functionalities.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class Atom extends AtomicBase {

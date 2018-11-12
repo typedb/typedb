@@ -16,21 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.janus;
+package grakn.core.janus;
 
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.TemporaryWriteException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.ConceptId;
+import grakn.core.exception.GraknBackendException;
+import grakn.core.exception.TemporaryWriteException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.Transaction;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
@@ -51,7 +52,6 @@ import java.util.function.Supplier;
  *     2. Clearing the graph explicitly closes the connection as well.
  * </p>
  *
- * @author fppt
  */
 public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
     public GraknTxJanus(EmbeddedGraknSession session, JanusGraph graph){
@@ -69,9 +69,10 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
         return getTinkerPopGraph().isClosed();
     }
 
-    @Override
-    public int numOpenTx() {
-        return ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().size();
+
+    public void closeOpenTransactions(){
+        ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(Transaction::close);
+        getTinkerPopGraph().close();
     }
 
     @Override

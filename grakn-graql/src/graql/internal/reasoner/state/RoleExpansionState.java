@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.state;
+package grakn.core.graql.internal.reasoner.state;
 
-import ai.grakn.concept.Role;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.concept.Role;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -32,7 +32,6 @@ import java.util.Set;
  * Query state produced by {@link AtomicState} when an atomic query {@link ReasonerAtomicQuery} contains {@link Role} variables which may require role hierarchy expansion.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 class RoleExpansionState extends ResolutionState {

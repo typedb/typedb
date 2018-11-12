@@ -1,6 +1,6 @@
 java_test(
     name = "template-parser-test",
-    test_class = "ai.grakn.graql.internal.template.TemplateParserTest",
+    test_class = "grakn.core.graql.internal.template.TemplateParserTest",
     srcs = ["TemplateParserTest.java"],
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

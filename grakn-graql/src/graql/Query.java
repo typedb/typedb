@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.QueryExecutor;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.answer.Answer;
+import grakn.core.GraknTx;
+import grakn.core.QueryExecutor;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -35,7 +35,6 @@ import java.util.stream.Stream;
  *
  * @param <T> The result type after executing the query
  *
- * @author Grakn Warriors
  */
 public interface Query<T extends Answer> extends Iterable<T> {
 

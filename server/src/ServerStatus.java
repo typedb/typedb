@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server;
+package grakn.core.server;
 
 /**
  * Contains information on the state of an engine.
  *
- * @author Domenico Corapi
  */
 public class ServerStatus {
     private volatile boolean ready = false;

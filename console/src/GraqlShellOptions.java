@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.Keyspace;
-import ai.grakn.util.SimpleURI;
+import grakn.core.Keyspace;
+import grakn.core.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -39,12 +39,11 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
+import static grakn.core.util.CommonUtil.toImmutableList;
 
 /**
  * Wrapper for parsing command-line options for Graql shell
  *
- * @author Felix Chapman
  */
 public class GraqlShellOptions {
 

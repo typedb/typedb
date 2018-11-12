@@ -16,28 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.QueryParser;
-import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.internal.parser.QueryParserImpl;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.match.MatchBase;
-import ai.grakn.graql.internal.util.AdminConverter;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.QueryParser;
+import grakn.core.graql.UndefineQuery;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.internal.parser.QueryParserImpl;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.query.match.MatchBase;
+import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>
@@ -54,7 +54,6 @@ import static ai.grakn.util.GraqlSyntax.Compute.Method;
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  *
- * @author Grakn Warriors
  */
 public class QueryBuilderImpl implements QueryBuilder {
 

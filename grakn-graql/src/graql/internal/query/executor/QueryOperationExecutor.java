@@ -16,23 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.executor;
+package grakn.core.graql.internal.query.executor;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.util.Partition;
+import grakn.core.GraknTx;
+import grakn.core.concept.Concept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Query;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.pattern.property.PropertyExecutor;
+import grakn.core.graql.internal.pattern.property.VarPropertyInternal;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -58,7 +58,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**

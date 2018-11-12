@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.core.server;
+package grakn.core.server;
 
-import ai.grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import ai.grakn.core.server.lock.LockProvider;
-import ai.grakn.core.server.util.EngineID;
+import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.lock.LockProvider;
+import grakn.core.server.util.EngineID;
+import grakn.core.server.keyspace.KeyspaceStore;
+import grakn.core.util.GraknConfig;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +35,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 /**
  * Main class in charge to start a web server and all the REST controllers.
  *
- * @author Marco Scoppetta
  */
 public class Server implements AutoCloseable {
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";

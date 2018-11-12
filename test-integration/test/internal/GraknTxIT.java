@@ -16,27 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.concept.EntityTypeImpl;
-import ai.grakn.kb.internal.structure.Shard;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.kb.internal.concept.EntityTypeImpl;
+import grakn.core.kb.internal.structure.Shard;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.ErrorMessage;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;

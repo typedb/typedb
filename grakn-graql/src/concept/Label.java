@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
-import ai.grakn.GraknTx;
+import grakn.core.GraknTx;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -35,7 +35,6 @@ import java.util.function.Function;
  *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *
- * @author fppt
  */
 @AutoValue
 public abstract class Label implements Comparable<Label>, Serializable {

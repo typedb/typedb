@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.graph;
+package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * An node in a directed graph.
  *
- * @author Grakn Warriors
  */
 public class Node {
 

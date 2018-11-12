@@ -1,6 +1,6 @@
 java_test(
     name = "analytics-it",
-    test_class = "ai.grakn.test.graql.analytics.AnalyticsIT",
+    test_class = "grakn.core.test.graql.analytics.AnalyticsIT",
     srcs = ["AnalyticsIT.java"],
     deps = [
         "//server",
@@ -13,7 +13,7 @@ java_test(
 
 java_test(
     name = "connected-component-it",
-    test_class = "ai.grakn.test.graql.analytics.ConnectedComponentIT",
+    test_class = "grakn.core.test.graql.analytics.ConnectedComponentIT",
     srcs = ["ConnectedComponentIT.java"],
     deps = [
         "//server",
@@ -27,7 +27,7 @@ java_test(
 
 java_test(
     name = "coreness-it",
-    test_class = "ai.grakn.test.graql.analytics.CorenessIT",
+    test_class = "grakn.core.test.graql.analytics.CorenessIT",
     srcs = ["CorenessIT.java"],
     deps = [
         "//server",
@@ -40,7 +40,7 @@ java_test(
 
 java_test(
     name = "count-it",
-    test_class = "ai.grakn.test.graql.analytics.CountIT",
+    test_class = "grakn.core.test.graql.analytics.CountIT",
     srcs = ["CountIT.java"],
     deps = [
         "//server",
@@ -53,7 +53,7 @@ java_test(
 
 java_test(
     name = "degree-it",
-    test_class = "ai.grakn.test.graql.analytics.DegreeIT",
+    test_class = "grakn.core.test.graql.analytics.DegreeIT",
     srcs = ["DegreeIT.java"],
     deps = [
         "//server",
@@ -67,7 +67,7 @@ java_test(
 
 java_test(
     name = "graql-it",
-    test_class = "ai.grakn.test.graql.analytics.GraqlIT",
+    test_class = "grakn.core.test.graql.analytics.GraqlIT",
     srcs = ["GraqlIT.java"],
     deps = [
         "//server",
@@ -81,7 +81,7 @@ java_test(
 
 java_test(
     name = "kcore-it",
-    test_class = "ai.grakn.test.graql.analytics.KCoreIT",
+    test_class = "grakn.core.test.graql.analytics.KCoreIT",
     srcs = ["KCoreIT.java"],
     deps = [
         "//server",
@@ -94,7 +94,7 @@ java_test(
 
 java_test(
     name = "path-it",
-    test_class = "ai.grakn.test.graql.analytics.PathIT",
+    test_class = "grakn.core.test.graql.analytics.PathIT",
     srcs = ["PathIT.java"],
     deps = [
         "//server",
@@ -108,7 +108,7 @@ java_test(
 
 java_test(
     name = "statistics-it",
-    test_class = "ai.grakn.test.graql.analytics.StatisticsIT",
+    test_class = "grakn.core.test.graql.analytics.StatisticsIT",
     srcs = ["StatisticsIT.java"],
     deps = [
         "//server",

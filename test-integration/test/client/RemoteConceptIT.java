@@ -16,24 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.client;
+package grakn.core.test.client;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.AttributeType.DataType;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.Thing;
-import ai.grakn.graql.Pattern;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.client.Grakn;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.AttributeType.DataType;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.Thing;
+import grakn.core.graql.Pattern;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
@@ -49,7 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
@@ -61,7 +61,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Tests for testing methods of all subclasses of {@link ai.grakn.client.concept.RemoteConcept}.
+ * Integration Tests for testing methods of all subclasses of {@link grakn.core.client.concept.RemoteConcept}.
  */
 public class RemoteConceptIT {
 

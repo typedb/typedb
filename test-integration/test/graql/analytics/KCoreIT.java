@@ -16,23 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.test.graql.analytics;
+package grakn.core.test.graql.analytics;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidKBException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.exception.InvalidKBException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -42,9 +43,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm.K_CORE;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument.k;
-import static ai.grakn.util.GraqlSyntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.Syntax.Compute.Argument.k;
+import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -69,6 +70,9 @@ public class KCoreIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
     }
+
+    @After
+    public void closeSession() { session.close(); }
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {

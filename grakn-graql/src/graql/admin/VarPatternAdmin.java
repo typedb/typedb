@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
+import grakn.core.concept.Label;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 /**
  * Admin class for inspecting a {@link VarPattern}
  *
- * @author Felix Chapman
  */
 public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
-import ai.grakn.graql.VarPattern;
+import grakn.core.graql.VarPattern;
 
 import javax.annotation.CheckReturnValue;
 
@@ -28,7 +28,6 @@ import javax.annotation.CheckReturnValue;
  * This property is unique in that each {@link VarPattern} may have exactly zero or one of each
  * {@link UniqueVarProperty}.
  *
- * @author Felix Chapman
  */
 public interface UniqueVarProperty extends VarProperty {
 

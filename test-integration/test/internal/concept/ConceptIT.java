@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.structure.EdgeElement;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;

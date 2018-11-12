@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package grakn.core.graql.internal.reasoner.query;
 
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import com.google.common.base.Equivalence;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery> {

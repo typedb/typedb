@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptMap;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.List;
@@ -29,7 +29,6 @@ import java.util.stream.Stream;
  * An aggregate operation to perform on a query.
  * @param <T> the type of the result of the aggregate operation
  *
- * @author Felix Chapman
  */
 public interface Aggregate<T extends Answer> {
     /**

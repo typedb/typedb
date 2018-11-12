@@ -16,47 +16,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package grakn.core.graql.internal.reasoner.query;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.ResolutionIterator;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtomBase;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.atom.binary.IsaAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
-import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
-import ai.grakn.graql.internal.reasoner.plan.ResolutionQueryPlan;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtils;
-import ai.grakn.graql.internal.reasoner.state.AnswerState;
-import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
-import ai.grakn.graql.internal.reasoner.state.CumulativeState;
-import ai.grakn.graql.internal.reasoner.state.QueryStateBase;
-import ai.grakn.graql.internal.reasoner.state.ResolutionState;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.ResolutionIterator;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.AtomicBase;
+import grakn.core.graql.internal.reasoner.atom.AtomicFactory;
+import grakn.core.graql.internal.reasoner.atom.binary.IsaAtomBase;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.graql.internal.reasoner.state.AnswerState;
+import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
+import grakn.core.graql.internal.reasoner.state.CumulativeState;
+import grakn.core.graql.internal.reasoner.state.QueryStateBase;
+import grakn.core.graql.internal.reasoner.state.ResolutionState;
+import grakn.core.graql.internal.reasoner.utils.Pair;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -75,7 +75,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 
 /**
  *
@@ -83,7 +83,6 @@ import static ai.grakn.graql.Graql.var;
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class ReasonerQueryImpl implements ReasonerQuery {

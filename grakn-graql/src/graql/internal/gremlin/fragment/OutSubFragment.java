@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -36,8 +36,6 @@ import java.util.Set;
 /**
  * Fragment for following out sub edges, potentially limited to some number of `sub` edges
  *
- * @author Felix Chapman
- * @author Joshua Send
  */
 
 @AutoValue

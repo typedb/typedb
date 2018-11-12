@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.admin;
+package grakn.core.kb.admin;
 
-import ai.grakn.GraknTx;
-import ai.grakn.QueryExecutor;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.QueryExecutor;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 /**
  * Admin interface for {@link GraknTx}.
  *
- * @author Filipe Teixeira
  */
 public interface GraknAdmin extends GraknTx{
 
@@ -105,10 +104,10 @@ public interface GraknAdmin extends GraknTx{
 
     /**
      * Get all super-concepts of the given {@link SchemaConcept} including itself and including the meta-type
-     * {@link ai.grakn.util.Schema.MetaSchema#THING}.
+     * {@link Schema.MetaSchema#THING}.
      *
      * <p>
-     *     If you want a more precise type that will exclude {@link ai.grakn.util.Schema.MetaSchema#THING}, use
+     *     If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
      *     {@link SchemaConcept#sups()}.
      * </p>
      */

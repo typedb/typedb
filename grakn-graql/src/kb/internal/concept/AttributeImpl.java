@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Thing;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -39,7 +39,6 @@ import java.util.stream.Stream;
  *     2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
  * </p>
  *
- * @author fppt
  *
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}

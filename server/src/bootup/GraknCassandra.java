@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public class GraknCassandra {
             CassandraDaemon instance = new CassandraDaemon();
             instance.activate();
             persistPID();
-        }catch (Exception e){
+        } catch (Exception e) {
             LOG.error("Cassandra Exception:", e);
             System.err.println(e.getMessage());
         }
@@ -48,6 +48,10 @@ public class GraknCassandra {
         String pidString = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
         try {
             String pidFile = System.getProperty("cassandra-pidfile");
+            if (pidFile == null) {
+                LOG.warn("Directory for Cassandra PID not provided, the PID will not be persisted.");
+                return;
+            }
             PrintWriter writer = new PrintWriter(pidFile, "UTF-8");
             writer.print(pidString);
             writer.close();

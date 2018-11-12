@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Label;
+import grakn.core.concept.Role;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -38,14 +38,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
+import static grakn.core.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: {@link InRolePlayerFragment} and
  * {@link OutRolePlayerFragment}.
  *
- * @author Felix Chapman
  */
 public abstract class AbstractRolePlayerFragment extends Fragment {
 

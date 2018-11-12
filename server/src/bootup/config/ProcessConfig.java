@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup.config;
+package grakn.core.server.bootup.config;
 
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknConfig;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
@@ -28,7 +28,6 @@ import java.util.Map;
  *
  *  @param <V> config parameter value type
  *
- * @author Kasper Piskorski
  */
 public abstract class ProcessConfig<V> {
 

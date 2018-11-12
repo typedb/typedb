@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.answer;
+package grakn.core.graql.answer;
 
-import ai.grakn.graql.admin.Explanation;
+import grakn.core.graql.admin.Explanation;
 
 /**
  * A type of {@link Answer} object that contains a {@link Number}.

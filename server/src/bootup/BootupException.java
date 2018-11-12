@@ -16,11 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
 /**
  *
- * @author Michele Orsi
  */
 public class BootupException extends RuntimeException {
     public BootupException() {

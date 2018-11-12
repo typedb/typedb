@@ -16,27 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
 /**
- * Represents the {@code sub} property on a {@link ai.grakn.concept.Type}.
+ * Represents the {@code sub} property on a {@link grakn.core.concept.Type}.
  *
  * This property can be queried or inserted.
  *
- * This property relates a {@link ai.grakn.concept.Type} and another {@link ai.grakn.concept.Type}. It indicates
+ * This property relates a {@link grakn.core.concept.Type} and another {@link grakn.core.concept.Type}. It indicates
  * that every instance of the left type is also an instance of the right type.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class SubProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.plan;
+package grakn.core.graql.internal.reasoner.plan;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -39,7 +39,6 @@ import java.util.stream.Stream;
  * Base class for collections of {@link ReasonerQueryImpl} queries with equality comparison {@link ReasonerQueryEquivalence}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class QueryCollectionBase{

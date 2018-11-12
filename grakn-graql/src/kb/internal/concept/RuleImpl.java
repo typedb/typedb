@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Rule;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.graql.Pattern;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -37,7 +37,6 @@ import java.util.stream.Stream;
  *     An ontological element used to define different types of {@link Rule}.
  * </p>
  *
- * @author fppt
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     private RuleImpl(VertexElement vertexElement) {

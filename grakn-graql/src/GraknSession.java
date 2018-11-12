@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
 
 import javax.annotation.CheckReturnValue;
@@ -32,7 +32,6 @@ import javax.annotation.CheckReturnValue;
  *
  * </p>
  *
- * @author fppt
  */
 public interface GraknSession extends AutoCloseable {
 
@@ -57,5 +56,5 @@ public interface GraknSession extends AutoCloseable {
      *
      * @return The {@link Keyspace} of the knowledge base this {@link GraknSession} is interacting with.
      */
-    ai.grakn.Keyspace keyspace();
+    grakn.core.Keyspace keyspace();
 }

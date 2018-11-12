@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.match;
+package grakn.core.graql.internal.query.match;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.GraknTx;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Match;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the graph to execute the {@link Match} with.
  *
- * @author Grakn Warriors
  */
 class MatchTx extends MatchModifier {
 

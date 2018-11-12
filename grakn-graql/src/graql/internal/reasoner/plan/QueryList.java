@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.plan;
+package grakn.core.graql.internal.reasoner.plan;
 
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.base.Equivalence;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
  * Helper class for lists of {@link ReasonerQueryImpl} queries with equality comparison {@link ReasonerQueryEquivalence}.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 class QueryList extends QueryCollection<List<ReasonerQueryImpl>, List<Equivalence.Wrapper<ReasonerQueryImpl>>> {
