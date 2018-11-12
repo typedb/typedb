@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.deduplicator.queue;
+package grakn.core.server.deduplicator.queue;
 
 import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 
-import ai.grakn.Keyspace;
-import ai.grakn.concept.ConceptId;
+import grakn.core.Keyspace;
+import grakn.core.concept.ConceptId;
 import mjson.Json;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -32,9 +32,9 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
-import static ai.grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
-import static ai.grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
-import static ai.grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
+import static grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
+import static grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;
+import static grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseStringUtf8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -45,7 +45,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * The attribute de-duplicator can read attributes from the queue and only ack after everything has been processed.
  * If the de-duplicator crashes during a deduplication, it can resume operation from the last ack-ed attribute.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class RocksDbQueue implements AutoCloseable {
     private final RocksDB queueDb;

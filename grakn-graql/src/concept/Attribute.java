@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
 
 import javax.annotation.CheckReturnValue;
@@ -35,7 +35,6 @@ import java.util.stream.Stream;
  *     2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
  * </p>
  *
- * @author fppt
  *
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}

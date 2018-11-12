@@ -17,11 +17,11 @@
  * under the License.
  */
 
-package ai.grakn.client.rpc;
+package grakn.core.client.rpc;
 
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.protocol.SessionProto.Transaction;
+import grakn.core.protocol.SessionServiceGrpc;
 import brave.Tracer;
 import brave.Tracing;
 import brave.propagation.TraceContext;

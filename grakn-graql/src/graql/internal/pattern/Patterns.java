@@ -16,25 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern;
+package grakn.core.graql.internal.pattern;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.Disjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarProperty;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Factory for instances of {@link ai.grakn.graql.Pattern}.
+ * Factory for instances of {@link grakn.core.graql.Pattern}.
  *
- * Also includes helper methods to operate on a {@link ai.grakn.graql.Pattern} or {@link VarPattern}.
+ * Also includes helper methods to operate on a {@link grakn.core.graql.Pattern} or {@link VarPattern}.
  *
- * @author Felix Chapman
  */
 public class Patterns {
 

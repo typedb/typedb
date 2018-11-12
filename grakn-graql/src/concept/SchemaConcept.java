@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
-import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.util.Schema;
+import grakn.core.kb.admin.GraknAdmin;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * </p>
  *
  *
- * @author fppt
  */
 public interface SchemaConcept extends Concept {
     //------------------------------------- Modifiers ----------------------------------

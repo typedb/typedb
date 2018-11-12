@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup.config;
+package grakn.core.server.bootup.config;
 
-import ai.grakn.GraknConfigKey;
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.util.GraknConfigKey;
+import grakn.core.util.GraknConfig;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +38,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
  * - Redis allows for multiple value params hence we need a map of lists.
  * - Redis data dir must already exist when starting redis
  *
- * @author Kasper Piskorski
  */
 public class QueueConfig extends ProcessConfig<List<Object>>{
 

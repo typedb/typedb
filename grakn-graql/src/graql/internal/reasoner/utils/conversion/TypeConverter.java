@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.utils.conversion;
+package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Type;
+import grakn.core.concept.Role;
+import grakn.core.concept.Type;
 import java.util.stream.Stream;
 
 /**
@@ -27,7 +27,6 @@ import java.util.stream.Stream;
  * Basic {@link SchemaConceptConverter} implementation for conversion between compatible types.
  * </p>
  *
- * @author Kasper Piskorski
  */
 public class TypeConverter implements SchemaConceptConverter<Type> {
 

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.concept;
+package grakn.core.concept;
 
-import ai.grakn.exception.GraknTxOperationException;
+import grakn.core.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -34,7 +34,6 @@ import java.util.stream.Stream;
  *     Any instance of a Entity Type is called an {@link Entity}.
  * </p>
  *
- * @author fppt
  *
  */
 public interface EntityType extends Type{

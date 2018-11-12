@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.factory;
+package grakn.core.factory;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.core.server.GraknConfig;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.util.GraknConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -43,8 +43,6 @@ import java.util.Collection;
  * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
  * </p>
  *
- * @author Felix Chapman
- * @author Jason Liu
  */
 @AutoValue
 public abstract class IsaExplicitProperty extends AbstractIsaProperty {

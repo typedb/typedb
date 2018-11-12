@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
 /**
  * Ordering for {@link Match} results
  *
- * @author Felix Chapman
  */
 public enum Order {
     /**

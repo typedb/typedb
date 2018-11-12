@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
 import java.io.Reader;
 import java.util.List;
@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 /**
  * Class for parsing query strings into valid queries
  *
- * @author Felix Chapman
  */
 public interface QueryParser {
 

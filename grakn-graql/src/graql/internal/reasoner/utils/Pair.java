@@ -17,7 +17,7 @@
  */
 
 
-package ai.grakn.graql.internal.reasoner.utils;
+package grakn.core.graql.internal.reasoner.utils;
 
 import java.util.AbstractMap;
 
@@ -30,7 +30,6 @@ import java.util.AbstractMap;
  * @param <K> key type
  * @param <V> value type
  *
- * @author Kasper Piskorski
  *
  */
 public class Pair<K, V> {

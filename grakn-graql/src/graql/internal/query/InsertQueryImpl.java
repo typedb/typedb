@@ -16,19 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.admin.InsertQueryAdmin;
-import ai.grakn.graql.admin.MatchAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.util.CommonUtil;
+import grakn.core.GraknTx;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.admin.InsertQueryAdmin;
+import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 /**
  * A query that will insert a collection of variables into a graph
  *
- * @author Grakn Warriors
  */
 @AutoValue
 abstract class InsertQueryImpl implements InsertQueryAdmin {

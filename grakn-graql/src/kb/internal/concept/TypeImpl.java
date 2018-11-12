@@ -16,23 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.concept;
+package grakn.core.kb.internal.concept;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.cache.Cache;
-import ai.grakn.kb.internal.cache.Cacheable;
-import ai.grakn.kb.internal.structure.EdgeElement;
-import ai.grakn.kb.internal.structure.Shard;
-import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.util.Schema;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.kb.internal.cache.Cache;
+import grakn.core.kb.internal.cache.Cacheable;
+import grakn.core.kb.internal.structure.EdgeElement;
+import grakn.core.kb.internal.structure.Shard;
+import grakn.core.kb.internal.structure.VertexElement;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;
@@ -53,10 +53,9 @@ import java.util.stream.Stream;
  *     They also aid in categorising {@link Thing} to different types.
  * </p>
  *
- * @author fppt
  *
- * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
- * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link Relationship}
+ * @param <T> The leaf interface of the object concept. For example an {@link grakn.core.concept.EntityType} or {@link RelationshipType}
+ * @param <V> The instance of this type. For example {@link grakn.core.concept.Entity} or {@link Relationship}
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
 
@@ -109,8 +108,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     /**
      * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
-     * This can fail is the {@link ai.grakn.GraknTxType} is read only.
-     * It can also fail when attempting to attach an {@link ai.grakn.concept.Attribute} to a meta type
+     * This can fail is the {@link grakn.core.GraknTxType} is read only.
+     * It can also fail when attempting to attach an {@link grakn.core.concept.Attribute} to a meta type
      */
     private void preCheckForInstanceCreation(){
         vertex().tx().checkMutationAllowed();
@@ -367,12 +366,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     }
     /**
-     * Creates a relation type which allows this type and a {@link ai.grakn.concept.Attribute} type to be linked.
+     * Creates a relation type which allows this type and a {@link grakn.core.concept.Attribute} type to be linked.
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @param has the implicit relation type to build
      * @param hasValue the implicit role type to build for the {@link AttributeType}
      * @param hasOwner the implicit role type to build for the type
-     * @param required Indicates if the {@link ai.grakn.concept.Attribute} is required on the entity
+     * @param required Indicates if the {@link grakn.core.concept.Attribute} is required on the entity
      * @return The {@link Type} itself
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){

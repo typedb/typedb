@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.LabelId;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.LabelId;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -33,8 +33,6 @@ import java.util.Set;
  * The MapReduce program for computing the standard deviation of the given resource.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class StdMapReduce extends StatisticsMapReduce<Map<String, Double>> {

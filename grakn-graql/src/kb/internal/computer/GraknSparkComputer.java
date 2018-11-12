@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.computer;
+package grakn.core.kb.internal.computer;
 
 import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.FileConfiguration;
@@ -92,8 +92,6 @@ import java.util.concurrent.ThreadLocalRandom;
  * We change its behaviour so it can won't destroy the rdd after every job.
  * </p>
  *
- * @author Jason Liu
- * @author Marko A. Rodriguez
  */
 public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
 

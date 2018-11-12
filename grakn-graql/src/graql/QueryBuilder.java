@@ -16,20 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.answer.Answer;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Method;
 
 /**
  * Starting point for creating queries
  *
- * @author Felix Chapman
  */
 public interface QueryBuilder {
 

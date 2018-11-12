@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.computer;
+package grakn.core.kb.internal.computer;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
@@ -27,7 +27,6 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.VertexPr
  * Interceptor interface copied from tinkerpop so we can use our own graph computer
  *
  * @param <V> Vertex Program
- * @author Jason Liu
  */
 public interface GraknSparkVertexProgramInterceptor<V extends VertexProgram>
         extends VertexProgramInterceptor<V, JavaPairRDD<Object, VertexWritable>, GraknSparkMemory> {

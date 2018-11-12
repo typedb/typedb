@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server.bootup;
+package grakn.core.server.bootup;
 
-import ai.grakn.GraknSystemProperty;
-import ai.grakn.core.server.Server;
-import ai.grakn.core.server.ServerFactory;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.util.GraknSystemProperty;
+import grakn.core.server.Server;
+import grakn.core.server.ServerFactory;
+import grakn.core.util.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;

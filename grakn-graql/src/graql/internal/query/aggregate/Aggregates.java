@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query.aggregate;
+package grakn.core.graql.internal.query.aggregate;
 
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.AnswerGroup;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.Value;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.Value;
 
 import java.util.Arrays;
 import java.util.HashSet;

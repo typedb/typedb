@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.structure;
+package grakn.core.kb.internal.structure;
 
-import ai.grakn.GraknTx;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *    Wraps a tinkerpop {@link Edge} constraining it to the Grakn Object Model.
  * </p>
  *
- * @author fppt
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 

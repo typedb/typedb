@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.cache;
+package grakn.core.kb.internal.cache;
 
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.kb.internal.concept.ConceptImpl;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.kb.internal.concept.ConceptImpl;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -34,13 +34,12 @@ import java.util.function.Supplier;
  *
  * <p>
  *     An internal cached object which hits the database only when it needs to.
- *     This is used to cache the components of ontological concepts. i.e. the fields of {@link ai.grakn.concept.Type},
+ *     This is used to cache the components of ontological concepts. i.e. the fields of {@link grakn.core.concept.Type},
  *     {@link RelationshipType}, and {@link Role}.
  * </p>
  *
  * @param <V> The object it is caching
  *
- * @author fppt
  *
  */
 public class Cache<V> {

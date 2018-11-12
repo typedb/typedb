@@ -16,25 +16,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@org_pubref_rules_proto//java:compile.bzl", "java_grpc_compile")
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
-
-java_grpc_compile(
-    name = "server-java-proto",
-    deps = [
-        "//protocol/session:session-proto",
-        "//protocol/session:answer-proto",
-        "//protocol/session:concept-proto",
-        "//protocol/keyspace:keyspace-proto",
-    ]
-)
 
 java_library(
     name = "server",
-    srcs = [":server-java-proto"] + glob(["src/**/*.java"]),
+    srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//grakn-graql:grakn-graql",
+        "//grakn-graql",
+        "//protocol:protocol-java",
+        "//util",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
@@ -43,13 +34,11 @@ java_library(
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-io:commons-io", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-sender-urlconnection",
@@ -71,7 +60,7 @@ java_library(
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
     visibility = ["//visibility:public"],
-    tags = ["maven_coordinates=ai.grakn:core.server:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
 )
 
 deploy_maven_jar(
@@ -82,8 +71,8 @@ deploy_maven_jar(
 
 java_binary(
     name = "server-binary",
-    main_class = "ai.grakn.core.server.bootup.GraknBootup",
-    runtime_deps = ["//server:server"],
+    main_class = "grakn.core.server.bootup.GraknBootup",
+    runtime_deps = ["//server"],
     visibility = ["//visibility:public"]
 )
 
@@ -100,7 +89,7 @@ genrule(
 
 java_test(
     name = "process-wide-lock-provider-test",
-    test_class = "ai.grakn.core.server.lock.ProcessWideLockProviderTest",
+    test_class = "grakn.core.server.lock.ProcessWideLockProviderTest",
     srcs = ["test/lock/ProcessWideLockProviderTest.java"],
     deps = [":server"],
     size = "small"
@@ -108,7 +97,7 @@ java_test(
 
 java_test(
     name = "rocks-db-queue-test",
-    test_class = "ai.grakn.core.server.deduplicator.RocksDbQueueTest",
+    test_class = "grakn.core.server.deduplicator.RocksDbQueueTest",
     srcs = ["test/deduplicator/RocksDbQueueTest.java"],
     deps = [
         ":server",
@@ -118,15 +107,6 @@ java_test(
     ],
     size = "small",
     flaky = True
-)
-
-java_test(
-    name = "grakn-config-test",
-    test_class = "ai.grakn.core.server.config.GraknConfigTest",
-    srcs = ["test/config/GraknConfigTest.java"],
-    deps = [":server", "//grakn-graql"],
-    resources = ["test/resources/inmemory-graph.properties"],
-    size = "small"
 )
 
 test_suite(

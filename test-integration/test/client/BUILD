@@ -1,7 +1,7 @@
 java_test(
     name = "remote-concept-it",
     srcs = ["RemoteConceptIT.java"],
-    test_class = "ai.grakn.test.client.RemoteConceptIT",
+    test_class = "grakn.core.test.client.RemoteConceptIT",
     deps = [
         "//server",
         "//client-java",
@@ -18,7 +18,7 @@ java_test(
 java_test(
     name = "remote-query-it",
     srcs = ["RemoteQueryIT.java"],
-    test_class = "ai.grakn.test.client.RemoteQueryIT",
+    test_class = "grakn.core.test.client.RemoteQueryIT",
     deps = [
         "//server",
         "//client-java",

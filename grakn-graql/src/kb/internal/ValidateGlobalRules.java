@@ -16,32 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal;
+package grakn.core.kb.internal;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
-import ai.grakn.kb.internal.concept.RuleImpl;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
-import ai.grakn.kb.internal.concept.TypeImpl;
-import ai.grakn.kb.internal.structure.Casting;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.Label;
+import grakn.core.concept.Relationship;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Thing;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraknTxOperationException;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.kb.internal.concept.RelationshipTypeImpl;
+import grakn.core.kb.internal.concept.RuleImpl;
+import grakn.core.kb.internal.concept.SchemaConceptImpl;
+import grakn.core.kb.internal.concept.TypeImpl;
+import grakn.core.kb.internal.structure.Casting;
+import grakn.core.util.CommonUtil;
+import grakn.core.util.ErrorMessage;
+import grakn.core.graql.internal.Schema;
 
 import com.google.common.collect.Iterables;
 import java.util.Collection;
@@ -53,13 +53,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
-import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
-import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
-import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static grakn.core.util.ErrorMessage.VALIDATION_CASTING;
+import static grakn.core.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
+import static grakn.core.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
+import static grakn.core.util.ErrorMessage.VALIDATION_RELATION_TYPE;
+import static grakn.core.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
+import static grakn.core.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
+import static grakn.core.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
 
 /**
  * <p>
@@ -84,7 +84,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     8. Unique {@link Relationship} Validation which ensures that no duplicate {@link Relationship} are created.
  * </p>
  *
- * @author fppt
  */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {

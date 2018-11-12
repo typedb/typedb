@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
+import grakn.core.util.ErrorMessage;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -34,7 +34,6 @@ import java.util.Set;
 /**
  * Abstract property for the patterns within rules.
  *
- * @author Felix Chapman
  */
 public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 

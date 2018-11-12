@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.structure;
+package grakn.core.kb.internal.structure;
 
-import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.concept.ConceptImpl;
-import ai.grakn.util.Schema;
+import grakn.core.concept.Thing;
+import grakn.core.kb.internal.concept.ConceptImpl;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -31,12 +31,11 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     Wraps a {@link VertexElement} which is a shard of a {@link ai.grakn.concept.Concept}.
- *     This is used to break supernodes apart. For example the instances of a {@link ai.grakn.concept.Type} are
+ *     Wraps a {@link VertexElement} which is a shard of a {@link grakn.core.concept.Concept}.
+ *     This is used to break supernodes apart. For example the instances of a {@link grakn.core.concept.Type} are
  *     spread across several shards.
  * </p>
  *
- * @author fppt
  */
 public class Shard {
     private final VertexElement vertexElement;

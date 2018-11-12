@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree;
+package grakn.core.graql.internal.gremlin.spanningtree;
 
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -33,7 +33,6 @@ import java.util.Set;
  * (https://en.wikipedia.org/wiki/Arborescence_(graph_theory))
  *
  * @param <V> the type of the nodes
- * @author Jason Liu
  */
 
 public class Arborescence<V> {

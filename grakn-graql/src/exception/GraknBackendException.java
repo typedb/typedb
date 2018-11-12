@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.Keyspace;
+import grakn.core.Keyspace;
 
-import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
+import static grakn.core.util.ErrorMessage.BACKEND_EXCEPTION;
+import static grakn.core.util.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
  * <p>
@@ -34,7 +34,6 @@ import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
  *     - Malformed Requests
  * </p>
  *
- * @author fppt
  */
 public class GraknBackendException extends GraknException {
 

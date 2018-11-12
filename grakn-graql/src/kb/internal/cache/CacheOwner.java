@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.kb.internal.cache;
+package grakn.core.kb.internal.cache;
 
-import ai.grakn.concept.Concept;
+import grakn.core.concept.Concept;
 
 import java.util.Collection;
 
@@ -31,7 +31,6 @@ import java.util.Collection;
  *     Wraps up behaviour which needs to be handled whenever a {@link Cache} is used in a class
  * </p>
  *
- * @author fppt
  *
  */
 public interface CacheOwner {

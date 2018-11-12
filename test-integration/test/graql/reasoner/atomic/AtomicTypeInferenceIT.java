@@ -16,39 +16,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package grakn.core.graql.internal.reasoner;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.factory.EmbeddedGraknSession;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.binary.RelationshipAtom;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.test.rule.ConcurrentGraknServer;
-import ai.grakn.util.GraqlTestUtil;
-import ai.grakn.util.Schema;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.test.rule.ConcurrentGraknServer;
+import grakn.core.util.GraqlTestUtil;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -62,7 +63,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
@@ -91,6 +92,11 @@ public class AtomicTypeInferenceIT {
     public static void loadContext(){
         testContextSession = server.sessionWithNewKeyspace();
         loadFromFile("typeInferenceTest.gql", testContextSession);
+    }
+
+    @AfterClass
+    public static void closeSession(){
+        testContextSession.close();
     }
 
     @Test

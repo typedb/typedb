@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template;
+package grakn.core.graql.internal.template;
 
-import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Query;
+import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static ai.grakn.graql.Graql.parse;
+import static grakn.core.graql.Graql.parse;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertEquals;

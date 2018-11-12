@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.pattern.property.IdProperty;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import java.util.Map;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -33,7 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.internal.util.StringConverter.idToString;
+import static grakn.core.graql.internal.util.StringConverter.idToString;
 
 @AutoValue
 abstract class IdFragment extends Fragment {

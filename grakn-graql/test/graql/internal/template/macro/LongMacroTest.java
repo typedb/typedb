@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.template.macro;
+package grakn.core.graql.internal.template.macro;
 
-import ai.grakn.exception.GraqlQueryException;
+import grakn.core.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 
-import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
+import static grakn.core.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

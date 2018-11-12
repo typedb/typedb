@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
@@ -26,7 +26,6 @@ import java.util.Set;
  *
  * @param <T> the type of patterns in this disjunction
  *
- * @author Felix Chapman
  */
 public interface Disjunction<T extends PatternAdmin> extends PatternAdmin {
     /**

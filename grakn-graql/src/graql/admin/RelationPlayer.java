@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
 import com.google.auto.value.AutoValue;
 
@@ -26,7 +26,6 @@ import java.util.Optional;
 /**
  * A pair of role and role player (where the role may not be present)
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class RelationPlayer {

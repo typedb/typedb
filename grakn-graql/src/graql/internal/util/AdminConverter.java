@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.util;
+package grakn.core.graql.internal.util;
 
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
 
 import java.util.Collection;
 
@@ -30,7 +30,6 @@ import static java.util.stream.Collectors.toList;
 /**
  * Helper methods for converting classes to admin equivalents
  *
- * @author Felix Chapman
  */
 public class AdminConverter {
 

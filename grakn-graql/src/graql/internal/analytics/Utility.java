@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -35,14 +35,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.var;
 
 /**
  * Some helper methods for MapReduce and vertex program.
  * <p>
  *
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public class Utility {

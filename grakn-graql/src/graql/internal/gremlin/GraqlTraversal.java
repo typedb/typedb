@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin;
+package grakn.core.graql.internal.gremlin;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.fragment.Fragment;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -52,7 +52,6 @@ import static java.util.stream.Collectors.joining;
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class GraqlTraversal {

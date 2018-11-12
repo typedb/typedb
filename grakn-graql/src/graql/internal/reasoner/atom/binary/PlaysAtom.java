@@ -16,24 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.PlaysProperty;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.property.PlaysProperty;
 import com.google.auto.value.AutoValue;
 
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.PlaysProperty} property.
+ * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.PlaysProperty} property.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

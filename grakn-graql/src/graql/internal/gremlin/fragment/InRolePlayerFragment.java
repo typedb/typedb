@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Var;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
-import ai.grakn.util.Schema;
+import grakn.core.graql.Var;
+import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
@@ -33,21 +33,20 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.internal.pattern.Patterns.RELATION_DIRECTION;
-import static ai.grakn.graql.internal.pattern.Patterns.RELATION_EDGE;
-import static ai.grakn.util.Schema.EdgeLabel.ROLE_PLAYER;
-import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
-import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
-import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
-import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static grakn.core.graql.internal.pattern.Patterns.RELATION_DIRECTION;
+import static grakn.core.graql.internal.pattern.Patterns.RELATION_EDGE;
+import static grakn.core.graql.internal.Schema.EdgeLabel.ROLE_PLAYER;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
- * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge from the role-player to
+ * A fragment representing traversing a {@link Schema.EdgeLabel#ROLE_PLAYER} edge from the role-player to
  * the relation.
  * <p>
- * Part of a {@link ai.grakn.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link OutRolePlayerFragment}.
+ * Part of a {@link grakn.core.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link OutRolePlayerFragment}.
  *
- * @author Felix Chapman
  */
 @AutoValue
 abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * @param <Q> the type of query that is being cached
  * @param <S> the type of answer being cached
  *
- * @author Kasper Piskorski
  *
  */
 public interface QueryCache<Q extends ReasonerQueryImpl, S extends Iterable<ConceptMap>>{

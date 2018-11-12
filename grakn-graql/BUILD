@@ -26,7 +26,7 @@ antlr4(
     name = "graql-java",
     srcs = glob(["src/graql/grammar/*.g4"]),
     visitor = True,
-    package = "ai.grakn.graql.grammar"
+    package = "grakn.core.graql.grammar"
 )
 
 genrule(
@@ -46,6 +46,9 @@ java_library(
         ":graql-java",
     ] + glob(["src/**/*.java"]),
     deps = [
+        # Grakn Core dependencies
+        "//util",
+
         # External dependencies
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
@@ -79,7 +82,7 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
     resources = glob(["src/resources/*"]),
-    tags = ["maven_coordinates=ai.grakn:grakn-graql:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:grakn-graql:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 )
 

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package grakn.core.graql.internal.pattern.property;
 
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -28,14 +28,13 @@ import java.util.Collection;
 
 
 /**
- * Represents the {@code then} (right-hand side) property on a {@link ai.grakn.concept.Rule}.
+ * Represents the {@code then} (right-hand side) property on a {@link grakn.core.concept.Rule}.
  *
  * This property can be inserted and not queried.
  *
  * The then side describes the right-hand of an implication, stating that when the when side of a rule is
  * true the then side must hold.
  *
- * @author Felix Chapman
  */
 @AutoValue
 public abstract class ThenProperty extends RuleProperty {

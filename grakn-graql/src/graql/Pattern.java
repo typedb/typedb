@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.PatternAdmin;
 
 import javax.annotation.CheckReturnValue;
 
@@ -33,7 +33,6 @@ import javax.annotation.CheckReturnValue;
  * {@code or(var("x").isa("movie"), var("x").isa("tv-show"))}. These can be used to combine other patterns together
  * into larger patterns.
  *
- * @author Felix Chapman
  */
 public interface Pattern {
 

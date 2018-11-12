@@ -17,22 +17,22 @@
  * under the License.
  */
 
-package ai.grakn.client.executor;
+package grakn.core.client.executor;
 
-import ai.grakn.ComputeExecutor;
-import ai.grakn.QueryExecutor;
-import ai.grakn.client.Grakn;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.UndefineQuery;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
+import grakn.core.ComputeExecutor;
+import grakn.core.QueryExecutor;
+import grakn.core.client.Grakn;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Query;
+import grakn.core.graql.UndefineQuery;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
 
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;

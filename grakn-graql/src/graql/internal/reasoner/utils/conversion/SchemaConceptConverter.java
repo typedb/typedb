@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.graql.internal.reasoner.utils.conversion;
+package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Role;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Role;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.stream.Stream;
@@ -31,7 +31,6 @@ import java.util.stream.Stream;
  * </p>
  * @param <T> {@link SchemaConcept} type to convert from
  *
- * @author Kasper Piskorski
  */
 public interface SchemaConceptConverter<T extends SchemaConcept>{
 

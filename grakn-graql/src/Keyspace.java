@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn;
+package grakn.core;
 
-import ai.grakn.exception.GraknTxOperationException;
+import grakn.core.exception.GraknTxOperationException;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
  *     A class which represents the unique name of a Grakn Knowledge Base
  * </p>
  *
- * @author Filipe Peliz Pinto Teixeira
  */
 @AutoValue
 public abstract class Keyspace implements Comparable<Keyspace>, Serializable {

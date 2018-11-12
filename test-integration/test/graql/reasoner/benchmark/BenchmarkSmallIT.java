@@ -16,28 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner;
+package grakn.core.graql.internal.reasoner;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Role;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.internal.reasoner.graph.DiagonalGraph;
-import ai.grakn.graql.internal.reasoner.graph.LinearTransitivityMatrixGraph;
-import ai.grakn.graql.internal.reasoner.graph.PathTreeGraph;
-import ai.grakn.graql.internal.reasoner.graph.TransitivityChainGraph;
-import ai.grakn.graql.internal.reasoner.graph.TransitivityMatrixGraph;
-import ai.grakn.test.rule.ConcurrentGraknServer;
+import grakn.core.GraknSession;
+import grakn.core.GraknTx;
+import grakn.core.GraknTxType;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Entity;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.RelationshipType;
+import grakn.core.concept.Role;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.graph.DiagonalGraph;
+import grakn.core.graql.internal.reasoner.graph.LinearTransitivityMatrixGraph;
+import grakn.core.graql.internal.reasoner.graph.PathTreeGraph;
+import grakn.core.graql.internal.reasoner.graph.TransitivityChainGraph;
+import grakn.core.graql.internal.reasoner.graph.TransitivityMatrixGraph;
+import grakn.core.test.rule.ConcurrentGraknServer;
 import org.junit.ClassRule;
 import org.junit.Test;
 

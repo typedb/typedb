@@ -1,12 +1,12 @@
-package ai.grakn.deduplicator;
+package grakn.core.deduplicator;
 
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.util.SimpleURI;
+import grakn.core.GraknTxType;
+import grakn.core.Keyspace;
+import grakn.core.client.Grakn;
+import grakn.core.concept.AttributeType;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.util.SimpleURI;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,16 +31,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
-import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknRunning;
-import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
-import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
-import static ai.grakn.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
+import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknRunning;
+import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
+import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
+import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.graql.Graql.count;
+import static grakn.core.graql.Graql.label;
+import static grakn.core.graql.Graql.var;
 
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);

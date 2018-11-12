@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.explanation;
+package grakn.core.graql.internal.reasoner.explanation;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Explanation;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,7 +32,6 @@ import java.util.List;
  * Explanation class for rule application.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public class RuleExplanation extends QueryExplanation {

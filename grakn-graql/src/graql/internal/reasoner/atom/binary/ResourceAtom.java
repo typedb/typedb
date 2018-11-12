@@ -15,43 +15,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Attribute;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.UnifierComparison;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.pattern.property.HasAttributeProperty;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.kb.internal.concept.AttributeImpl;
-import ai.grakn.kb.internal.concept.AttributeTypeImpl;
-import ai.grakn.kb.internal.concept.EntityImpl;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import grakn.core.GraknTx;
+import grakn.core.concept.Attribute;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.UnifierComparison;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.pattern.property.HasAttributeProperty;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.kb.internal.concept.AttributeImpl;
+import grakn.core.kb.internal.concept.AttributeTypeImpl;
+import grakn.core.kb.internal.concept.EntityImpl;
+import grakn.core.kb.internal.concept.RelationshipImpl;
+import grakn.core.util.ErrorMessage;
+import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -63,7 +63,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
 /**
  *
@@ -80,7 +80,6 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.isEquivalentC
  *
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

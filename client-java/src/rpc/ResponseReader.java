@@ -17,22 +17,22 @@
  * under the License.
  */
 
-package ai.grakn.client.rpc;
+package grakn.core.client.rpc;
 
-import ai.grakn.client.Grakn;
-import ai.grakn.client.concept.RemoteConcept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.answer.AnswerGroup;
-import ai.grakn.graql.answer.ConceptList;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.answer.ConceptSetMeasure;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.rpc.proto.AnswerProto;
+import grakn.core.client.Grakn;
+import grakn.core.client.concept.RemoteConcept;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Var;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.AnswerGroup;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.protocol.AnswerProto;
 import com.google.common.collect.ImmutableMap;
 
 import java.text.NumberFormat;
@@ -73,7 +73,7 @@ public class ResponseReader {
         );
     }
     static ConceptMap conceptMap(AnswerProto.ConceptMap res, Grakn.Transaction tx) {
-        ImmutableMap.Builder<Var, ai.grakn.concept.Concept> map = ImmutableMap.builder();
+        ImmutableMap.Builder<Var, grakn.core.concept.Concept> map = ImmutableMap.builder();
         res.getMapMap().forEach((resVar, resConcept) -> {
             map.put(Graql.var(resVar), RemoteConcept.of(resConcept, tx));
         });

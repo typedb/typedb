@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.cache;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.gremlin.GraqlTraversal;
-import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.query.match.MatchBase;
-import ai.grakn.graql.internal.reasoner.unifier.UnifierType;
-import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.concept.ConceptId;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.gremlin.GraqlTraversal;
+import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.internal.query.match.MatchBase;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.common.base.Equivalence;
 
 import java.util.HashMap;
@@ -50,7 +50,6 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  *
- * @author Kasper Piskorski
  *
  */
 class StructuralCache<Q extends ReasonerQueryImpl>{

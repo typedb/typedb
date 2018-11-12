@@ -16,17 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.ValuePredicate;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.Schema;
+import grakn.core.concept.AttributeType;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.graql.Graql;
+import grakn.core.graql.ValuePredicate;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.util.StringConverter;
+import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -39,15 +39,14 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.EdgeLabel.SUB;
-import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
-import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.EdgeLabel.SUB;
+import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.graql.internal.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 
 /**
  * Factory for creating instances of {@link Fragment}.
  *
- * @author Felix Chapman
  */
 public class Fragments {
 

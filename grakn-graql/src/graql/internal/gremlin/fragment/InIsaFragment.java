@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package grakn.core.graql.internal.gremlin.fragment;
 
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import ai.grakn.kb.internal.EmbeddedGraknTx;
+import grakn.core.graql.Var;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.internal.EmbeddedGraknTx;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -37,21 +37,20 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
-import static ai.grakn.util.Schema.EdgeLabel.ATTRIBUTE;
-import static ai.grakn.util.Schema.EdgeLabel.ISA;
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
-import static ai.grakn.util.Schema.EdgeLabel.RELATES;
-import static ai.grakn.util.Schema.EdgeLabel.SHARD;
-import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
-import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
-import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.internal.Schema.BaseType.RELATIONSHIP_TYPE;
+import static grakn.core.graql.internal.Schema.EdgeLabel.ATTRIBUTE;
+import static grakn.core.graql.internal.Schema.EdgeLabel.ISA;
+import static grakn.core.graql.internal.Schema.EdgeLabel.PLAYS;
+import static grakn.core.graql.internal.Schema.EdgeLabel.RELATES;
+import static grakn.core.graql.internal.Schema.EdgeLabel.SHARD;
+import static grakn.core.graql.internal.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
+import static grakn.core.graql.internal.Schema.VertexProperty.IS_IMPLICIT;
+import static grakn.core.graql.internal.Schema.VertexProperty.LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.
  *
- * @author Felix Chapman
  */
 
 @AutoValue

@@ -16,23 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql;
+package grakn.core.graql;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Label;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.answer.Answer;
+import grakn.core.GraknTx;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.util.GraqlSyntax.Compute.Algorithm;
-import static ai.grakn.util.GraqlSyntax.Compute.Argument;
-import static ai.grakn.util.GraqlSyntax.Compute.Method;
-import static ai.grakn.util.GraqlSyntax.Compute.Parameter;
+import static grakn.core.graql.Syntax.Compute.Algorithm;
+import static grakn.core.graql.Syntax.Compute.Argument;
+import static grakn.core.graql.Syntax.Compute.Method;
+import static grakn.core.graql.Syntax.Compute.Parameter;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
@@ -185,8 +185,7 @@ public interface ComputeQuery<T extends Answer> extends Query<T> {
     /**
      * Argument inner interface to provide access Compute Query arguments
      *
-     * @author Grakn Warriors
-     */
+         */
     interface Arguments {
 
         @CheckReturnValue

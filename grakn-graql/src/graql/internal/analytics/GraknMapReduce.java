@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.analytics;
+package grakn.core.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.AttributeType;
+import grakn.core.util.CommonUtil;
+import grakn.core.graql.internal.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -37,8 +37,6 @@ import java.util.Set;
  * <p>
  *
  * @param <T> type type of element that is being reduced
- * @author Jason Liu
- * @author Sheldon Hall
  */
 
 public abstract class GraknMapReduce<T> extends CommonOLAP

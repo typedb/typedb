@@ -1,6 +1,6 @@
 java_test(
     name = "isa-explicit-it",
-    test_class = "ai.grakn.test.graql.internal.IsaExplicitIT",
+    test_class = "grakn.core.test.graql.internal.IsaExplicitIT",
     srcs = ["IsaExplicitIT.java"],
     deps = [
         "//test-integration/rule:concurrent-grakn-server",

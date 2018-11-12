@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.graph;
+package grakn.core.graql.internal.gremlin.spanningtree.graph;
 
-import ai.grakn.graql.Var;
+import grakn.core.graql.Var;
 
 import java.util.Collections;
 import java.util.Set;
@@ -26,7 +26,6 @@ import java.util.Set;
 /**
  * The unique id of a node.
  *
- * @author Jason Liu
  */
 public class NodeId {
 

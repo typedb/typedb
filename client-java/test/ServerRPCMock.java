@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.client;
+package grakn.core.client;
 
-import ai.grakn.rpc.proto.KeyspaceProto;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc;
-import ai.grakn.rpc.proto.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
-import ai.grakn.rpc.proto.SessionProto;
-import ai.grakn.rpc.proto.SessionProto.Transaction;
-import ai.grakn.rpc.proto.SessionServiceGrpc;
-import ai.grakn.rpc.proto.SessionServiceGrpc.SessionServiceImplBase;
+import grakn.core.protocol.KeyspaceProto;
+import grakn.core.protocol.KeyspaceServiceGrpc;
+import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceImplBase;
+import grakn.core.protocol.SessionProto;
+import grakn.core.protocol.SessionProto.Transaction;
+import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.protocol.SessionServiceGrpc.SessionServiceImplBase;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -59,7 +59,6 @@ import static org.mockito.Mockito.mock;
  * In order to mock additional responses, use the method {@link #setResponse(Transaction.Req, Transaction.Res...)}.
  * </p>
  *
- * @author Felix Chapman
  */
 public final class ServerRPCMock extends ExternalResource {
 
@@ -192,8 +191,7 @@ public final class ServerRPCMock extends ExternalResource {
      * Contains a mutable map of iterators of {@link Transaction.Res}s for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      *
-     * @author Felix Chapman
-     */
+         */
     public class ServerIteratorsMock {
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 

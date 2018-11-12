@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.ErrorMessage.LOCKING_EXCEPTION;
+import static grakn.core.util.ErrorMessage.LOCKING_EXCEPTION;
 
 /**
  * <p>
@@ -33,7 +33,6 @@ import static ai.grakn.util.ErrorMessage.LOCKING_EXCEPTION;
  *     When this occurs the transaction should be retried
  * </p>
  *
- * @author fppt
  */
 public class TemporaryWriteException extends GraknBackendException{
     private TemporaryWriteException(String error, Exception e) {

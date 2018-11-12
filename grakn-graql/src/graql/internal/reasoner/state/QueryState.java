@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.state;
+package grakn.core.graql.internal.reasoner.state;
 
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.MultiUnifier;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.cache.SimpleQueryCache;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -36,7 +36,6 @@ import java.util.function.Supplier;
  *
  * @param <Q> the type of query that this state is corresponding to
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{

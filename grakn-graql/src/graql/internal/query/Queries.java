@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.query;
+package grakn.core.graql.internal.query;
 
-import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Aggregate;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Match;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.admin.InsertQueryAdmin;
-import ai.grakn.graql.admin.MatchAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.answer.Answer;
+import grakn.core.GraknTx;
+import grakn.core.exception.GraqlQueryException;
+import grakn.core.graql.Aggregate;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Match;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.DeleteQueryAdmin;
+import grakn.core.graql.admin.InsertQueryAdmin;
+import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.Answer;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -38,7 +38,6 @@ import java.util.Set;
 /**
  * Internal query factory
  *
- * @author Grakn Warriors
  */
 public class Queries {
 

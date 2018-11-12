@@ -16,29 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Type;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.IsaExplicitProperty;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.EntityType;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.concept.Type;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Var;
+import grakn.core.graql.VarPattern;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.internal.pattern.property.IsaProperty;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import ai.grakn.kb.internal.concept.EntityTypeImpl;
+import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.internal.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
@@ -53,15 +53,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
+import static grakn.core.util.CommonUtil.toImmutableList;
 
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link ai.grakn.graql.internal.pattern.property.IsaProperty} property.
+ * TypeAtom corresponding to graql a {@link grakn.core.graql.internal.pattern.property.IsaProperty} property.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 @AutoValue

@@ -1,7 +1,7 @@
 java_test(
     name = "query-validity-it",
     srcs = ["QueryValidityIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.QueryValidityIT",
+    test_class = "grakn.core.graql.internal.reasoner.QueryValidityIT",
     deps = [
                 "//grakn-graql",
                 "//test-integration/rule:concurrent-grakn-server",
@@ -14,7 +14,7 @@ java_test(
 java_test(
     name = "resolution-plan-it",
     srcs = ["ResolutionPlanIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.ResolutionPlanIT",
+    test_class = "grakn.core.graql.internal.reasoner.ResolutionPlanIT",
     deps = [
                 "//grakn-graql",
                 "//test-integration/rule:concurrent-grakn-server",
@@ -28,7 +28,7 @@ java_test(
 java_test(
     name = "query-it",
     srcs = ["QueryIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.QueryIT",
+    test_class = "grakn.core.graql.internal.reasoner.QueryIT",
     deps = [
                 "//grakn-graql",
                 "//test-integration/rule:concurrent-grakn-server",
@@ -40,7 +40,7 @@ java_test(
 java_test(
     name = "ontological-query-it",
     srcs = ["OntologicalQueryIT.java"],
-    test_class = "ai.grakn.graql.internal.reasoner.OntologicalQueryIT",
+    test_class = "grakn.core.graql.internal.reasoner.OntologicalQueryIT",
     deps = [
                 "//grakn-graql",
                 "//test-integration/rule:concurrent-grakn-server",

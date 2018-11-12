@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
+package grakn.core.graql.internal.gremlin.spanningtree.datastructure;
 
 import com.google.common.collect.Iterators;
 
@@ -29,7 +29,6 @@ import java.util.function.Function;
  * A PriorityQueue built on top of a FibonacciHeap
  *
  * @param <E> the type of the values stored
- * @author Grakn Warriors
  */
 public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final FibonacciHeap<E, E> heap;

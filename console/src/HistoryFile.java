@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jline.console.ConsoleReader;
@@ -28,7 +28,6 @@ import java.io.IOException;
 /**
  * Represents the history file used in {@link GraqlShell}. Will flush to disk when closed.
  *
- * @author Felix Chapman
  */
 final class HistoryFile implements AutoCloseable {
 

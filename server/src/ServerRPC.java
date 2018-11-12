@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.server;
+package grakn.core.server;
 
 import java.io.IOException;
 
 /**
- * @author Felix Chapman
  */
 public class ServerRPC implements AutoCloseable {
 

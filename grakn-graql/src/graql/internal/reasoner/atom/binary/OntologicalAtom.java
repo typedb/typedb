@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.internal.reasoner.atom.binary;
+package grakn.core.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Rule;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.util.ErrorMessage;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Rule;
+import grakn.core.graql.Var;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.atom.Atom;
+import grakn.core.graql.internal.reasoner.rule.InferenceRule;
+import grakn.core.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +39,6 @@ import java.util.stream.Stream;
  * Base class for defining ontological {@link Atom} - ones referring to ontological elements.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public abstract class OntologicalAtom extends TypeAtom {

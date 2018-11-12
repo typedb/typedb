@@ -17,22 +17,22 @@
  * under the License.
  */
 
-package ai.grakn.client.concept;
+package grakn.core.client.concept;
 
-import ai.grakn.client.rpc.RequestBuilder;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.rpc.proto.ConceptProto;
-import ai.grakn.util.CommonUtil;
+import grakn.core.client.rpc.RequestBuilder;
+import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
+import grakn.core.concept.Rule;
+import grakn.core.concept.SchemaConcept;
+import grakn.core.protocol.ConceptProto;
+import grakn.core.util.CommonUtil;
 
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link ai.grakn.concept.SchemaConcept}
+ * Client implementation of {@link grakn.core.concept.SchemaConcept}
  *
  * @param <SomeSchemaConcept> The exact type of this class
  */

@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.exception;
+package grakn.core.exception;
 
-import ai.grakn.concept.AttributeType.DataType;
+import grakn.core.concept.AttributeType.DataType;
 import org.junit.Test;
 
 import java.time.LocalDateTime;

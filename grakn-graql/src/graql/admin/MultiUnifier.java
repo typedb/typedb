@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.graql.admin;
+package grakn.core.graql.admin;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -32,7 +32,6 @@ import java.util.stream.Stream;
  * The case of i = 0 corresponds to a case where no unifier exists.
  * </p>
  *
- * @author Kasper Piskorski
  *
  */
 public interface MultiUnifier extends Iterable<Unifier> {
