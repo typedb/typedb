@@ -126,6 +126,8 @@ jobs:
 
   workbase-e2e:
       machine: true
+      docker: 
+        -image: circleci/node:8.11.2
       working_directory: ~/grakn
       steps:
         - checkout
