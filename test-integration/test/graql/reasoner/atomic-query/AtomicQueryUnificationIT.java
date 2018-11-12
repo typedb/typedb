@@ -3,6 +3,10 @@
 
 package grakn.core.graql.internal.reasoner;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import grakn.core.GraknSession;
 import grakn.core.GraknTx;
 import grakn.core.GraknTxType;
@@ -30,11 +34,6 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
