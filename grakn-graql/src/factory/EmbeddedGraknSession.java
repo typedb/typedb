@@ -19,31 +19,25 @@
 package grakn.core.factory;
 
 import grakn.core.GraknComputer;
-import grakn.core.util.GraknConfigKey;
 import grakn.core.GraknSession;
 import grakn.core.GraknTx;
 import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
-import grakn.core.util.GraknConfig;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.janus.GraknTxJanus;
 import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.kb.internal.GraknTxTinker;
 import grakn.core.kb.internal.computer.GraknComputerImpl;
+import grakn.core.util.GraknConfig;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Builds a {@link TxFactory}. This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
- * It does this by either defaulting to an in memory tx {@link GraknTxTinker} or by retrieving the factory definition from engine.
- * The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  *
  */
 public class EmbeddedGraknSession implements GraknSession {
@@ -58,15 +52,6 @@ public class EmbeddedGraknSession implements GraknSession {
     //References so we don't have to open a tx just to check the count of the transactions
     private EmbeddedGraknTx<?> tx = null;
     private EmbeddedGraknTx<?> txBatch = null;
-
-    //This map is needed to store in memory session - we need to cache them because in Tinker there i not concept of session o Tx
-    // everything is a graph, if we don't save the session/tx->graph somwhere, other threads won't be able to access the content in memory.
-    //Example:
-    // Thread A opens in memory session and loads data on keyspace K
-    // Thread B opens in memory session and expects to find data in keyspace K
-    // If the above is not true - some tests that are using Tinker profile will fail
-    private static final Map<String, EmbeddedGraknSession> inMemorySessions = new ConcurrentHashMap<>();
-
 
     /**
      * Instantiates {@link EmbeddedGraknSession}
@@ -98,30 +83,6 @@ public class EmbeddedGraknSession implements GraknSession {
 
     public static EmbeddedGraknSession createEngineSession(Keyspace keyspace) {
         return new EmbeddedGraknSession(keyspace, GraknConfig.create(), TxFactoryBuilder.getInstance());
-    }
-
-    public static EmbeddedGraknSession inMemory(Keyspace keyspace) {
-        return inMemorySessions.computeIfAbsent(keyspace.getValue(), k -> createEngineSession(keyspace, getTxInMemoryConfig()));
-    }
-
-    public static EmbeddedGraknSession inMemory(String keyspace) {
-        return inMemory(Keyspace.of(keyspace));
-    }
-
-
-    /**
-     * Gets properties which let you build a toy in-memory {@link GraknTx}.
-     * This does not contact engine in any way and it can be run in an isolated manner
-     *
-     * @return the properties needed to build an in-memory {@link GraknTx}
-     */
-    private static GraknConfig getTxInMemoryConfig() {
-        GraknConfig config = GraknConfig.empty();
-        config.setConfigProperty(GraknConfigKey.SHARDING_THRESHOLD, 100_000L);
-        config.setConfigProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS, 30_000);
-        config.setConfigProperty(GraknConfigKey.KB_MODE, TxFactoryBuilder.IN_MEMORY);
-        config.setConfigProperty(GraknConfigKey.KB_ANALYTICS, TxFactoryBuilder.IN_MEMORY);
-        return config;
     }
 
 
