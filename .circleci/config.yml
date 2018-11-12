@@ -115,8 +115,8 @@ jobs:
         - run: bazel test //client_python:test_integration --test_output=streamed
 
   workbase-unit-tests:
-      machine: true
-      working_directory: ~/grakn
+docker:	      machine: true
+        - image: circleci/node:8.11.2      working_directory: ~/grakn
       steps:
         - checkout
         - *prepare_apt_repositories
@@ -144,8 +144,7 @@ jobs:
         - run: bazel test -s --test_output=streamed //workbase:tests-e2e
 
   build-workbase-linux:
-      docker: 
-        -image: circleci/node:8.11.2
+      machine: true
       working_directory: ~/grakn
       steps:
         - *attach_grakn_workspace
