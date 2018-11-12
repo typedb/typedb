@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,15 +111,19 @@ public class RocksDbQueueTest {
 
             // operation a: wait for 300ms and insert 'added-after-300ms' into the list
             try { Thread.sleep(300); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            queue.insert(Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")));
-            verifyOrderOfOperation.add("added-after-300ms");
+            synchronized(this) {
+                queue.insert(Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")));
+                verifyOrderOfOperation.add("added-after-300ms");
+            }
 
             return null;
         });
 
         // operation b: insert 'added-after-read' after queue.read(x)
-        queue.read(5);
-        verifyOrderOfOperation.add("added-after-read");
+        synchronized(this) {
+            queue.read(5);
+            verifyOrderOfOperation.add("added-after-read");
+        }
 
         // the element 'added-after-read' must appear AFTER 'added-after-300ms'
         assertThat(verifyOrderOfOperation, equalTo(Arrays.asList("added-after-300ms", "added-after-read")));
