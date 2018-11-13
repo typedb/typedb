@@ -4,8 +4,6 @@ references:
       run:
         name: Prepare apt repositories
         command: |
-          curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
           sudo apt-get install apt-transport-https
           sudo apt-get update
 
@@ -39,7 +37,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - *prepare_apt_repositories
       - *install_bazel
       - run: bazel build //:distribution --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/dist/* dist/
@@ -53,7 +50,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - *prepare_apt_repositories
       - *install_bazel
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
@@ -63,7 +59,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - *prepare_apt_repositories
       - *install_bazel
       - run: bazel test //test-integration/client/... --test_output=errors
       - run: bazel test //test-integration/server/... --test_output=errors
@@ -75,7 +70,6 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - *prepare_apt_repositories
     - *install_bazel
     - run: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
@@ -84,7 +78,6 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - *prepare_apt_repositories
     - *install_bazel
     - run: bazel test //test-integration/graql/analytics/... --test_output=errors
 
@@ -102,8 +95,6 @@ jobs:
       working_directory: ~/grakn
       steps:
         - checkout
-        - *prepare_apt_repositories
-        - *install_node
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
@@ -116,7 +107,6 @@ jobs:
       working_directory: ~/grakn
       steps:
         - checkout
-        - *prepare_apt_repositories
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
@@ -138,9 +128,7 @@ jobs:
       working_directory: ~/grakn
       steps:
         - checkout
-        - *prepare_apt_repositories
         - *install_bazel
-        - run: sudo apt-get -y install zip unzip
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
         - run: bazel build //:distribution --sandbox_debug
