@@ -28,7 +28,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.graql.internal.Schema;
@@ -149,8 +149,8 @@ public class AttributeIT {
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -160,8 +160,8 @@ public class AttributeIT {
     public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw(){
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -174,7 +174,7 @@ public class AttributeIT {
         try {
             longAttributeType.create("Invalid Thing");
             fail("Expected to throw");
-        } catch (GraknTxOperationException e) {
+        } catch (TransactionException e) {
             // expected failure
         }
 

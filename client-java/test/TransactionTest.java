@@ -27,7 +27,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.exception.GraknBackendException;
 import grakn.core.exception.GraknException;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.exception.GraqlSyntaxException;
 import grakn.core.exception.InvalidKBException;
@@ -267,8 +267,8 @@ public class TransactionTest {
                 assertTrue(e.getMessage().contains(expectedException.getName()));
             }
 
-            exception.expect(GraknTxOperationException.class);
-            exception.expectMessage(GraknTxOperationException.transactionClosed(null, "The gRPC connection closed").getMessage());
+            exception.expect(TransactionException.class);
+            exception.expectMessage(TransactionException.transactionClosed(null, "The gRPC connection closed").getMessage());
             tx.getMetaConcept();
         }
     }
@@ -497,7 +497,7 @@ public class TransactionTest {
             exception = error(Status.INTERNAL, e);
         } else if (e instanceof PropertyNotUniqueException) {
             exception = error(Status.ALREADY_EXISTS, e);
-        } else if (e instanceof GraknTxOperationException || e instanceof GraqlQueryException || e instanceof GraqlSyntaxException || e instanceof InvalidKBException) {
+        } else if (e instanceof TransactionException || e instanceof GraqlQueryException || e instanceof GraqlSyntaxException || e instanceof InvalidKBException) {
             exception = error(Status.INVALID_ARGUMENT, e);
         } else {
             exception = error(Status.UNKNOWN, e);

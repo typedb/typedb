@@ -21,7 +21,7 @@ package grakn.core.kb.internal.concept;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -91,7 +91,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
                 return dataType.getPersistenceValue(value);
             }
         } catch (ClassCastException e) {
-            throw GraknTxOperationException.invalidAttributeValue(value, dataType);
+            throw TransactionException.invalidAttributeValue(value, dataType);
         }
     }
 

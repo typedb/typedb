@@ -28,7 +28,7 @@ import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
@@ -381,7 +381,7 @@ class ValidateGlobalRules {
                                 RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                             }
                         } else {
-                            throw GraknTxOperationException.invalidPropertyUse(rule, side);
+                            throw TransactionException.invalidPropertyUse(rule, side);
                         }
                     }
                 });

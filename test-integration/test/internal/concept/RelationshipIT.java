@@ -30,7 +30,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.session.SessionImpl;
 import grakn.core.graql.internal.Schema;
@@ -262,8 +262,8 @@ public class RelationshipIT {
         EntityType entityType = tx.putEntityType("yay").has(attributeType);
         Relationship implicitRelationship = Iterables.getOnlyElement(entityType.create().has(attribute).relationships().collect(Collectors.toSet()));
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.hasNotAllowed(implicitRelationship, attribute).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.hasNotAllowed(implicitRelationship, attribute).getMessage());
 
         implicitRelationship.has(attribute);
     }

@@ -27,7 +27,7 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.kb.internal.cache.Cache;
 import grakn.core.kb.internal.cache.Cacheable;
@@ -83,7 +83,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             return getThis();
         } catch (PropertyNotUniqueException exception){
             vertex().tx().txCache().cacheConcept(this);
-            throw GraknTxOperationException.labelTaken(label);
+            throw TransactionException.labelTaken(label);
         }
     }
 
@@ -160,7 +160,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //Clear internal caching
             txCacheClear();
         } else {
-            throw GraknTxOperationException.cannotBeDeleted(this);
+            throw TransactionException.cannotBeDeleted(this);
         }
     }
 
@@ -206,7 +206,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     void checkSchemaMutationAllowed(){
         vertex().tx().checkSchemaMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(label())){
-            throw GraknTxOperationException.metaTypeImmutable(label());
+            throw TransactionException.metaTypeImmutable(label());
         }
     }
 
@@ -233,7 +233,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //Note the check before the actual construction
             if(superLoops()){
                 cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
-                throw GraknTxOperationException.loopCreated(this, newSuperType);
+                throw TransactionException.loopCreated(this, newSuperType);
             }
 
             //Modify the graph once we have checked no loop occurs

@@ -39,7 +39,7 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
@@ -147,7 +147,7 @@ public final class Grakn {
         }
 
         @Override
-        public void close() throws GraknTxOperationException {
+        public void close() throws TransactionException {
             channel.shutdown();
         }
 

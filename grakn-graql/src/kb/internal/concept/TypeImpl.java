@@ -26,7 +26,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.cache.Cache;
 import grakn.core.kb.internal.cache.Cacheable;
 import grakn.core.kb.internal.structure.EdgeElement;
@@ -94,7 +94,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred){
         preCheckForInstanceCreation();
 
-        if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
+        if(isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
 
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(label())) {
@@ -115,7 +115,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
         vertex().tx().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(label())){
-            throw GraknTxOperationException.metaTypeImmutable(label());
+            throw TransactionException.metaTypeImmutable(label());
         }
     }
 
@@ -264,7 +264,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
             //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
             //So we assume the role is in sure and throw if that is the case
             if(!superPlays.isEmpty() && instancesDirect().findAny().isPresent()){
-                throw GraknTxOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
+                throw TransactionException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
             }
 
             return true;
@@ -323,7 +323,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
      */
     public T isAbstract(Boolean isAbstract) {
         if(!Schema.MetaSchema.isMetaLabel(label()) && isAbstract && instancesDirect().findAny().isPresent()){
-            throw GraknTxOperationException.addingInstancesToAbstractType(this);
+            throw TransactionException.addingInstancesToAbstractType(this);
         }
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
@@ -414,7 +414,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
     private void checkIfHasTargetMeta(AttributeType attributeType){
         //Check if attribute type is the meta
         if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.label())){
-            throw GraknTxOperationException.metaTypeImmutable(attributeType.label());
+            throw TransactionException.metaTypeImmutable(attributeType.label());
         }
     }
 
@@ -424,11 +424,11 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
      * @param implicitType The implicit relation to check against.
      * @param attributeType The {@link AttributeType} which should not be in that implicit relation
      *
-     * @throws GraknTxOperationException when the {@link AttributeType} is already used in another implicit relation
+     * @throws TransactionException when the {@link AttributeType} is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType){
         if(attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
-            throw GraknTxOperationException.duplicateHas(this, attributeType);
+            throw TransactionException.duplicateHas(this, attributeType);
         }
     }
 

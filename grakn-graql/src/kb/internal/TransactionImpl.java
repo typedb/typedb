@@ -31,7 +31,7 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.session.SessionImpl;
@@ -358,11 +358,11 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     public void checkSchemaMutationAllowed() {
         checkMutationAllowed();
-        if (isBatchTx()) throw GraknTxOperationException.schemaMutation();
+        if (isBatchTx()) throw TransactionException.schemaMutation();
     }
 
     public void checkMutationAllowed() {
-        if (Type.READ.equals(txType())) throw GraknTxOperationException.transactionReadOnly(this);
+        if (Type.READ.equals(txType())) throw TransactionException.transactionReadOnly(this);
     }
 
 
@@ -390,10 +390,10 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      *
      * @param supplier The operation to be performed on the graph
      * @return The result of the operation on the graph.
-     * @throws GraknTxOperationException if the graph is closed.
+     * @throws TransactionException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (isClosed()) throw GraknTxOperationException.transactionClosed(this, txCache().getClosedReason());
+        if (isClosed()) throw TransactionException.transactionClosed(this, txCache().getClosedReason());
         return supplier.get();
     }
 
@@ -428,7 +428,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
             if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-                throw GraknTxOperationException.invalidLabelStart(label);
+                throw TransactionException.invalidLabelStart(label);
             }
 
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
@@ -450,9 +450,9 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     /**
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
-    private GraknTxOperationException labelTaken(SchemaConcept schemaConcept) {
+    private TransactionException labelTaken(SchemaConcept schemaConcept) {
         if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
-            return GraknTxOperationException.reservedLabel(schemaConcept.label());
+            return TransactionException.reservedLabel(schemaConcept.label());
         }
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
@@ -512,9 +512,9 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
-            throw GraknTxOperationException.metaTypeImmutable(label);
+            throw TransactionException.metaTypeImmutable(label);
         } else if (!dataType.equals(attributeType.dataType())) {
-            throw GraknTxOperationException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return attributeType;
@@ -581,7 +581,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
         //Make sure you trying to retrieve supported data type
         if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
-            throw GraknTxOperationException.unsupportedDataType(value);
+            throw TransactionException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
@@ -648,7 +648,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
-            throw GraknTxOperationException.closingFailed(this, e);
+            throw TransactionException.closingFailed(this, e);
         }
     }
 

@@ -27,7 +27,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.TransactionImpl;
@@ -124,8 +124,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(vehicle, person, driven).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.changingSuperWillDisconnectRole(vehicle, person, driven).getMessage());
 
         car.sup(person);
     }
@@ -134,7 +134,7 @@ public class SchemaMutationIT {
     public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidKBException {
         man.create();
 
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(man.label()));
 
         man.isAbstract(true);
@@ -142,8 +142,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenAddingEntityTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         tx.close();
         TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
@@ -152,8 +152,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenAddingRoleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
         tx.close();
         TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         graknGraphBatch.putRole("This Will Fail");
@@ -161,8 +161,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenAddingResourceTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         tx.close();
         TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
@@ -171,8 +171,8 @@ public class SchemaMutationIT {
 
     @Test
     public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
 
         tx.close();
@@ -190,8 +190,8 @@ public class SchemaMutationIT {
         Role role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         relationshipType.relates(role);
     }
@@ -207,8 +207,8 @@ public class SchemaMutationIT {
         Role role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         entityType.plays(role);
     }
@@ -226,8 +226,8 @@ public class SchemaMutationIT {
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         entityType1.sup(entityType2);
     }
@@ -246,8 +246,8 @@ public class SchemaMutationIT {
         role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         entityType.unplay(role);
     }
@@ -264,8 +264,8 @@ public class SchemaMutationIT {
         role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.schemaMutation().getMessage());
 
         relationshipType.unrelate(role);
     }
@@ -324,8 +324,8 @@ public class SchemaMutationIT {
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), hasNameOwner).getMessage());
 
         //make a dog to not be an animal, and expect exception thrown
         dog.sup(tx.getMetaEntityType());

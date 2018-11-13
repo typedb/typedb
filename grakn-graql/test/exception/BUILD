@@ -1,7 +1,7 @@
 java_test(
      name = "grakn-tx-operation-exception-test",
-     srcs = ["TransactionOperationExceptionTest.java"],
-     test_class = "grakn.core.exception.GraknTxOperationExceptionTest",
+     srcs = ["TransactionExceptionTest.java"],
+     test_class = "grakn.core.exception.TransactionExceptionTest",
      deps = [
          "//grakn-graql",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

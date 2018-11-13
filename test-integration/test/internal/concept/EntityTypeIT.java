@@ -26,7 +26,7 @@ import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.session.SessionImpl;
 import grakn.core.graql.internal.Schema;
@@ -98,13 +98,13 @@ public class EntityTypeIT {
     }
 
     @Test
-    public void whenDeletingEntityTypeWithSubTypes_Throw() throws GraknTxOperationException {
+    public void whenDeletingEntityTypeWithSubTypes_Throw() throws TransactionException {
         EntityType c1 = tx.putEntityType("C1");
         EntityType c2 = tx.putEntityType("C2");
         c1.sup(c2);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(c2).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotBeDeleted(c2).getMessage());
 
         c2.delete();
     }
@@ -231,8 +231,8 @@ public class EntityTypeIT {
     @Test
     public void settingTheSuperTypeToItself_Throw(){
         EntityType entityType = tx.putEntityType("Entity");
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.loopCreated(entityType, entityType).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.loopCreated(entityType, entityType).getMessage());
         entityType.sup(entityType);
     }
 
@@ -244,8 +244,8 @@ public class EntityTypeIT {
         entityType1.sup(entityType2);
         entityType2.sup(entityType3);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.loopCreated(entityType3, entityType1).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.loopCreated(entityType3, entityType1).getMessage());
 
         entityType3.sup(entityType1);
     }
@@ -254,8 +254,8 @@ public class EntityTypeIT {
     public void whenSettingMetaTypeToAbstract_Throw(){
         grakn.core.concept.Type meta = tx.getMetaEntityType();
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.label()).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.metaTypeImmutable(meta.label()).getMessage());
 
         meta.isAbstract(true);
     }
@@ -265,8 +265,8 @@ public class EntityTypeIT {
         grakn.core.concept.Type meta = tx.getMetaEntityType();
         Role role = tx.putRole("A Role");
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.label()).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.metaTypeImmutable(meta.label()).getMessage());
 
         meta.plays(role);
     }
@@ -364,8 +364,8 @@ public class EntityTypeIT {
         entityTypeA.delete();
         assertNull(tx.getEntityType("entityTypeA"));
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(entityTypeB).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotBeDeleted(entityTypeB).getMessage());
 
         entityTypeB.delete();
     }
@@ -470,7 +470,7 @@ public class EntityTypeIT {
 
         entityType.has(attributeType);
 
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
         entityType.key(attributeType);
@@ -483,7 +483,7 @@ public class EntityTypeIT {
 
         entityType.key(attributeType);
 
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_ATTRIBUTE.getMessage(entityType.label(), attributeType.label()));
 
         entityType.has(attributeType);
@@ -510,7 +510,7 @@ public class EntityTypeIT {
     public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
         String reservedWord = Schema.MetaSchema.THING.getLabel().getValue();
 
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));
 
         tx.putEntityType(reservedWord);
@@ -551,8 +551,8 @@ public class EntityTypeIT {
     public void whenCreatingAnEntityTypeWithLabelStartingWithReservedCharachter_Throw(){
         String label = "@what-a-dumb-label-name";
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidLabelStart(Label.of(label)).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.invalidLabelStart(Label.of(label)).getMessage());
 
         tx.putEntityType(label);
     }

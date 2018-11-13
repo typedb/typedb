@@ -22,7 +22,7 @@ import grakn.core.Session;
 import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -89,8 +89,8 @@ public class AttributeTypeIT {
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw() {
         AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotSetRegex(thing).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotSetRegex(thing).getMessage());
         thing.regex("blab");
     }
 
@@ -98,7 +98,7 @@ public class AttributeTypeIT {
     public void whenAddingResourceWhichDoesNotMatchRegex_Throw() {
         attributeType.regex("[abc]");
         attributeType.create("a");
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.label().getValue())));
         attributeType.create("1");
     }
@@ -106,8 +106,8 @@ public class AttributeTypeIT {
     @Test
     public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw() {
         attributeType.create("1");
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.regexFailure(attributeType, "1", "[abc]").getMessage());
         attributeType.regex("[abc]");
     }
 
@@ -135,7 +135,7 @@ public class AttributeTypeIT {
         Attribute<String> attribute = t2.create("b");
 
         //Invalid Attribute
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().label().getValue())));
         t2.create("a");
     }
@@ -148,8 +148,8 @@ public class AttributeTypeIT {
         //Future Invalid
         t2.create("a");
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.regexFailure(t2, "a", "[b]").getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.regexFailure(t2, "a", "[b]").getMessage());
         t2.sup(t1);
     }
 
@@ -159,8 +159,8 @@ public class AttributeTypeIT {
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
         t2.create("a");
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.regexFailure(t1, "a", "[b]").getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.regexFailure(t1, "a", "[b]").getMessage());
         t1.regex("[b]");
     }
 

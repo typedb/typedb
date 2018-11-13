@@ -18,7 +18,7 @@
 
 package grakn.core.concept;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -61,8 +61,8 @@ public interface EntityType extends Type{
      * @param type The supertype of this EntityType
      * @return The EntityType itself
      *
-     * @throws GraknTxOperationException if this is a meta type
-     * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
+     * @throws TransactionException if this is a meta type
+     * @throws TransactionException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
 
@@ -108,7 +108,7 @@ public interface EntityType extends Type{
      *
      * @return a new empty entity.
      *
-     * @throws GraknTxOperationException if this is a meta type
+     * @throws TransactionException if this is a meta type
      */
     Entity create();
 

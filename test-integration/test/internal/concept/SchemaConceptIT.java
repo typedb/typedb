@@ -24,7 +24,7 @@ import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.structure.EdgeElement;
@@ -132,7 +132,7 @@ public class SchemaConceptIT {
         EntityType e1 = tx.putEntityType("Entity1");
         tx.putEntityType(label);
 
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));
 
         e1.label(label);

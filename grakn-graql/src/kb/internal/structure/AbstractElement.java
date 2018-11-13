@@ -19,7 +19,7 @@ package grakn.core.kb.internal.structure;
 
 import grakn.core.Transaction;
 import grakn.core.concept.Concept;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.graql.internal.Schema;
 import grakn.core.kb.internal.TransactionImpl;
@@ -173,7 +173,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){
-                throw GraknTxOperationException.immutableProperty(foundValue, newValue, property);
+                throw TransactionException.immutableProperty(foundValue, newValue, property);
             }
         } else {
             property(property, converter.apply(newValue));

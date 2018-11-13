@@ -22,7 +22,7 @@ import grakn.core.GraknComputer;
 import grakn.core.Session;
 import grakn.core.Transaction;
 import grakn.core.Keyspace;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.computer.GraknComputerImpl;
 import grakn.core.util.GraknConfig;
@@ -95,7 +95,7 @@ public class SessionImpl implements Session {
                 txBatch = transactionOLTPFactory.open(transactionType);
                 return txBatch;
             default:
-                throw GraknTxOperationException.transactionInvalid(transactionType);
+                throw TransactionException.transactionInvalid(transactionType);
         }
     }
 
@@ -112,7 +112,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public void close() throws GraknTxOperationException {
+    public void close() throws TransactionException {
         if (tx != null) {
             tx.closeSession();
             closeTransactions(tx);

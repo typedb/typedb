@@ -25,7 +25,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.stream.Stream;
@@ -56,7 +56,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType isAbstract(Boolean isAbstract) throws GraknTxOperationException {
+    public final SomeType isAbstract(Boolean isAbstract) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeSetAbstractReq(ConceptProto.Type.SetAbstract.Req.newBuilder()
                         .setAbstract(isAbstract)).build();
@@ -93,7 +93,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType key(AttributeType attributeType) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeKeyReq(ConceptProto.Type.Key.Req.newBuilder()
                         .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
@@ -103,7 +103,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType has(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType has(AttributeType attributeType) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeHasReq(ConceptProto.Type.Has.Req.newBuilder()
                         .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
@@ -113,7 +113,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType plays(Role role) throws GraknTxOperationException {
+    public final SomeType plays(Role role) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypePlaysReq(ConceptProto.Type.Plays.Req.newBuilder()
                         .setRole(RequestBuilder.Concept.concept(role))).build();

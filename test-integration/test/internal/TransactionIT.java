@@ -28,7 +28,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.concept.EntityTypeImpl;
@@ -196,8 +196,8 @@ public class TransactionIT {
     public void whenPassingTxToAnotherThreadWithoutOpening_Throw() throws ExecutionException, InterruptedException {
         ExecutorService pool = Executors.newSingleThreadExecutor();
 
-        expectedException.expectCause(IsInstanceOf.instanceOf(GraknTxOperationException.class));
-        expectedException.expectMessage(GraknTxOperationException.transactionClosed(tx, null).getMessage());
+        expectedException.expectCause(IsInstanceOf.instanceOf(TransactionException.class));
+        expectedException.expectMessage(TransactionException.transactionClosed(tx, null).getMessage());
 
         Future future = pool.submit(() -> {
             tx.putEntityType("A Thing");
@@ -212,7 +212,7 @@ public class TransactionIT {
         boolean errorThrown = false;
         try{
             tx.putEntityType("A Thing");
-        } catch (GraknTxOperationException e){
+        } catch (TransactionException e){
             if(e.getMessage().equals(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", tx.keyspace()))){
                 errorThrown = true;
             }
@@ -325,7 +325,7 @@ public class TransactionIT {
         }
 
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
-        assertThat(caughtException, instanceOf(GraknTxOperationException.class));
+        assertThat(caughtException, instanceOf(TransactionException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.keyspace()));
         assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.getTinkerTraversal().V().toList().size());
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.getTinkerTraversal().E().toList().size());
@@ -349,11 +349,11 @@ public class TransactionIT {
         try{
             //noinspection ResultOfMethodCallIgnored
             session.transaction(txType);
-        } catch (GraknTxOperationException e){
+        } catch (TransactionException e){
             exception = e;
         }
         assertNotNull(exception);
-        assertThat(exception, instanceOf(GraknTxOperationException.class));
+        assertThat(exception, instanceOf(TransactionException.class));
         assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));
     }
 

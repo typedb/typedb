@@ -41,7 +41,7 @@ import static grakn.core.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  * </p>
  *
  */
-public class PropertyNotUniqueException extends GraknTxOperationException {
+public class PropertyNotUniqueException extends TransactionException {
     private PropertyNotUniqueException(String error) {
         super(error);
     }

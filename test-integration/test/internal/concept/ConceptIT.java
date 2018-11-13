@@ -23,7 +23,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.structure.EdgeElement;
@@ -133,8 +133,8 @@ public class ConceptIT {
         EntityType thingType = tx.putEntityType("thing type");
         Entity thing = thingType.create();
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidCasting(thing, grakn.core.concept.Type.class).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.invalidCasting(thing, grakn.core.concept.Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

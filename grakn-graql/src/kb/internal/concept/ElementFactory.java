@@ -25,7 +25,7 @@ import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.TemporaryWriteException;
 import grakn.core.graql.Pattern;
 import grakn.core.kb.internal.TransactionImpl;
@@ -186,7 +186,7 @@ public final class ElementFactory {
                     concept = RuleImpl.get(vertexElement);
                     break;
                 default:
-                    throw GraknTxOperationException.unknownConcept(type.name());
+                    throw TransactionException.unknownConcept(type.name());
             }
             tx.txCache().cacheConcept(concept);
         }
@@ -215,7 +215,7 @@ public final class ElementFactory {
                     concept = RelationshipImpl.create(RelationshipEdge.get(edgeElement));
                     break;
                 default:
-                    throw GraknTxOperationException.unknownConcept(label.name());
+                    throw TransactionException.unknownConcept(label.name());
             }
             tx.txCache().cacheConcept(concept);
         }
@@ -277,7 +277,7 @@ public final class ElementFactory {
     public VertexElement buildVertexElement(Vertex vertex){
         if(!tx.isValidElement(vertex)){
             Objects.requireNonNull(vertex);
-            throw GraknTxOperationException.invalidElement(vertex);
+            throw TransactionException.invalidElement(vertex);
         }
         return new VertexElement(tx, vertex);
     }

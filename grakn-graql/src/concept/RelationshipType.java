@@ -18,7 +18,7 @@
 
 package grakn.core.concept;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -51,7 +51,7 @@ public interface RelationshipType extends Type {
      *
      * @return a new empty relation.
      *
-     * @throws GraknTxOperationException if this is a meta type
+     * @throws TransactionException if this is a meta type
      */
     Relationship create();
 

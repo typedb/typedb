@@ -29,7 +29,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.TransactionImpl;
@@ -85,7 +85,7 @@ public class EntityIT {
     }
 
     @Test
-    public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraknTxOperationException {
+    public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws TransactionException {
         //Schema
         EntityType type = tx.putEntityType("Concept Type");
         RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
@@ -123,7 +123,7 @@ public class EntityIT {
     }
 
     @Test
-    public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraknTxOperationException {
+    public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws TransactionException {
         EntityType type = tx.putEntityType("Concept Type");
         RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
         Role role1 = tx.putRole("role1");
@@ -163,8 +163,8 @@ public class EntityIT {
         Entity entity = entityType.create();
         Attribute attribute = attributeType.create("A attribute thing");
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.hasNotAllowed(entity, attribute).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.hasNotAllowed(entity, attribute).getMessage());
 
         entity.has(attribute);
     }

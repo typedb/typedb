@@ -19,7 +19,7 @@
 package grakn.core.session;
 
 import grakn.core.Transaction;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -106,7 +106,7 @@ public abstract class TransactionFactoryAbstract<Tx extends TransactionImpl<G>, 
 
         private void initialiseGraknTx() {
             // If transaction is already open throw exception
-            if (graknTx != null && !graknTx.isClosed()) throw GraknTxOperationException.transactionOpen(graknTx);
+            if (graknTx != null && !graknTx.isClosed()) throw TransactionException.transactionOpen(graknTx);
 
             // Create new transaction from a Tinker graph if tx is null or s closed
             if (graknTx == null || graknTx.isTinkerPopGraphClosed()) {
@@ -124,7 +124,7 @@ public abstract class TransactionFactoryAbstract<Tx extends TransactionImpl<G>, 
         }
 
         public void checkTxIsOpen() {
-            if (graknTx != null && !graknTx.isClosed()) throw GraknTxOperationException.transactionOpen(graknTx);
+            if (graknTx != null && !graknTx.isClosed()) throw TransactionException.transactionOpen(graknTx);
         }
 
     }

@@ -23,7 +23,7 @@ import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.TransactionImpl;
@@ -94,8 +94,8 @@ public class RoleIT {
         Role role = tx.putRole("New Role Type");
         tx.putEntityType("Entity Type").plays(role);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(role).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotBeDeleted(role).getMessage());
 
         role.delete();
     }
@@ -105,8 +105,8 @@ public class RoleIT {
         Role role2 = tx.putRole("New Role Type");
         tx.putRelationshipType("Thing").relates(role2).relates(role);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(role2).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotBeDeleted(role2).getMessage());
 
         role2.delete();
     }
@@ -123,8 +123,8 @@ public class RoleIT {
 
         relationshipType.create().assign(roleA, a).assign(roleB, b);
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(roleA).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotBeDeleted(roleA).getMessage());
 
         roleA.delete();
     }

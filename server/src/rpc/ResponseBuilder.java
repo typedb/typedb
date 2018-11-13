@@ -22,7 +22,7 @@ import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.exception.GraknBackendException;
 import grakn.core.exception.GraknException;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.exception.GraqlSyntaxException;
 import grakn.core.exception.InvalidKBException;
@@ -388,7 +388,7 @@ public class ResponseBuilder {
                 return exception(Status.INTERNAL, message);
             } else if (e instanceof PropertyNotUniqueException) {
                 return exception(Status.ALREADY_EXISTS, message);
-            } else if (e instanceof GraknTxOperationException | e instanceof GraqlQueryException |
+            } else if (e instanceof TransactionException | e instanceof GraqlQueryException |
                     e instanceof GraqlSyntaxException | e instanceof InvalidKBException) {
                 return exception(Status.INVALID_ARGUMENT, message);
             }
