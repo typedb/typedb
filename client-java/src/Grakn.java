@@ -19,10 +19,14 @@
 
 package grakn.core.client;
 
+import brave.Tracing;
+import brave.grpc.GrpcTracing;
+import com.google.common.collect.AbstractIterator;
 import grakn.core.GraknSession;
 import grakn.core.GraknTx;
 import grakn.core.GraknTxType;
 import grakn.core.QueryExecutor;
+import grakn.core.client.benchmark.GrpcClientInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
@@ -45,7 +49,6 @@ import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.internal.query.QueryBuilderImpl;
-import grakn.core.kb.admin.GraknAdmin;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -53,10 +56,6 @@ import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.SimpleURI;
-import brave.Tracing;
-import brave.grpc.GrpcTracing;
-import com.google.common.collect.AbstractIterator;
-import grakn.core.client.benchmark.GrpcClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import zipkin2.reporter.AsyncReporter;
@@ -175,9 +174,9 @@ public final class Grakn {
     }
 
     /**
-     * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
+     * Remote implementation of {@link GraknTx} that communicates with a Grakn server using gRPC.
      */
-    public static final class Transaction implements GraknTx, GraknAdmin {
+    public static final class Transaction implements GraknTx {
 
         private final Session session;
         private final GraknTxType type;
@@ -192,7 +191,7 @@ public final class Grakn {
         }
 
         @Override
-        public GraknAdmin admin() {
+        public GraknTx admin() {
             return this;
         }
 

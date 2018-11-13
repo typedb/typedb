@@ -18,7 +18,6 @@
 
 package grakn.core.concept;
 
-import grakn.core.kb.admin.GraknAdmin;
 import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
@@ -78,7 +77,7 @@ public interface SchemaConcept extends Concept {
      * {@link Schema.MetaSchema#THING}.
      *
      * <p>
-     *     If you want to include {@link Schema.MetaSchema#THING}, use {@link GraknAdmin#sups(SchemaConcept)}.
+     *     If you want to include {@link Schema.MetaSchema#THING}, use {@link grakn.core.GraknTx#sups(SchemaConcept)}.
      * </p>
      *
      * @see Schema.MetaSchema#THING

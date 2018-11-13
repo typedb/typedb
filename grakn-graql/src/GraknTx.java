@@ -33,11 +33,12 @@ import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
-import grakn.core.kb.admin.GraknAdmin;
+import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -52,6 +53,84 @@ import java.util.Collection;
  *
  */
 public interface GraknTx extends AutoCloseable{
+
+    //------------------------------------- Meta Types ----------------------------------
+    /**
+     * Get the root of all Types.
+     *
+     * @return The meta type -> type.
+     */
+    @CheckReturnValue
+    default Type getMetaConcept(){
+        return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
+    }
+
+    /**
+     * Get the root of all {@link RelationshipType}.
+     *
+     * @return The meta relation type -> relation-type.
+     */
+    @CheckReturnValue
+    default RelationshipType getMetaRelationType(){
+        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getLabel());
+    }
+
+    /**
+     * Get the root of all the {@link Role}.
+     *
+     * @return The meta role type -> role-type.
+     */
+    @CheckReturnValue
+    default Role getMetaRole(){
+        return getSchemaConcept(Schema.MetaSchema.ROLE.getLabel());
+    }
+
+    /**
+     * Get the root of all the {@link AttributeType}.
+     *
+     * @return The meta resource type -> resource-type.
+     */
+    @CheckReturnValue
+    default AttributeType getMetaAttributeType(){
+        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getLabel());
+    }
+
+    /**
+     * Get the root of all the Entity Types.
+     *
+     * @return The meta entity type -> entity-type.
+     */
+    @CheckReturnValue
+    default EntityType getMetaEntityType(){
+        return getSchemaConcept(Schema.MetaSchema.ENTITY.getLabel());
+    }
+
+    /**
+     * Get the root of all {@link Rule}s;
+     *
+     * @return The meta {@link Rule}
+     */
+    @CheckReturnValue
+    default Rule getMetaRule(){
+        return getSchemaConcept(Schema.MetaSchema.RULE.getLabel());
+    }
+
+    //------------------------------------- Admin Specific Operations ----------------------------------
+
+    /**
+     * Get all super-concepts of the given {@link SchemaConcept} including itself and including the meta-type
+     * {@link Schema.MetaSchema#THING}.
+     *
+     * <p>
+     *     If you want a more precise type that will exclude {@link Schema.MetaSchema#THING}, use
+     *     {@link SchemaConcept#sups()}.
+     * </p>
+     */
+    @CheckReturnValue
+    Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
+
+
+    QueryExecutor queryExecutor();
 
     //------------------------------------- Concept Construction ----------------------------------
     /**
@@ -313,13 +392,10 @@ public interface GraknTx extends AutoCloseable{
 
     //------------------------------------- Utilities ----------------------------------
     /**
-     * Returns access to the low-level details of the graph via GraknAdmin
-     * @see GraknAdmin
-     *
      * @return The admin interface which allows you to access more low level details of the graph.
      */
     @CheckReturnValue
-    GraknAdmin admin();
+    GraknTx admin();
 
     /**
      * Utility function used to check if the current transaction on the graph is a read only transaction

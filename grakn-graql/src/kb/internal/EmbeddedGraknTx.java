@@ -18,7 +18,6 @@
 
 package grakn.core.kb.internal;
 
-import grakn.core.util.GraknConfigKey;
 import grakn.core.GraknTx;
 import grakn.core.GraknTxType;
 import grakn.core.QueryExecutor;
@@ -40,7 +39,7 @@ import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.factory.EmbeddedGraknSession;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
-import grakn.core.kb.admin.GraknAdmin;
+import grakn.core.graql.internal.Schema;
 import grakn.core.kb.internal.cache.GlobalCache;
 import grakn.core.kb.internal.cache.TxCache;
 import grakn.core.kb.internal.cache.TxRuleCache;
@@ -51,7 +50,7 @@ import grakn.core.kb.internal.concept.TypeImpl;
 import grakn.core.kb.internal.structure.VertexElement;
 import grakn.core.kb.log.CommitLog;
 import grakn.core.util.ErrorMessage;
-import grakn.core.graql.internal.Schema;
+import grakn.core.util.GraknConfigKey;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -88,7 +87,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */
-public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
+public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx {
     final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "grakn.core.graql.internal.query.QueryBuilderImpl";
     private static final String QUERY_EXECUTOR_CLASS_NAME = "grakn.core.graql.internal.query.executor.QueryExecutorImpl";
@@ -215,7 +214,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     @Override
-    public GraknAdmin admin() {
+    public GraknTx admin() {
         return this;
     }
 
