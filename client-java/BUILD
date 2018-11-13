@@ -25,7 +25,7 @@ java_library(
     srcs = glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//grakn-graql",
+        "//server",
         "//protocol:protocol-java",
         "//util",
 
@@ -63,7 +63,7 @@ java_test(
     test_class = "grakn.core.client.TransactionTest",
     deps = [
         ":client-java",
-        "//grakn-graql",
+        "//server",
         "//protocol:protocol-java",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

@@ -4,7 +4,6 @@ java_test(
     srcs = ["AnalyticsIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
@@ -17,7 +16,6 @@ java_test(
     srcs = ["ConnectedComponentIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
@@ -31,7 +29,6 @@ java_test(
     srcs = ["CorenessIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
@@ -44,7 +41,6 @@ java_test(
     srcs = ["CountIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
@@ -57,7 +53,6 @@ java_test(
     srcs = ["DegreeIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
@@ -71,7 +66,6 @@ java_test(
     srcs = ["GraqlIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
@@ -85,7 +79,6 @@ java_test(
     srcs = ["KCoreIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
     ],
     size = "large",
@@ -98,7 +91,6 @@ java_test(
     srcs = ["PathIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
@@ -112,7 +104,6 @@ java_test(
     srcs = ["StatisticsIT.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],

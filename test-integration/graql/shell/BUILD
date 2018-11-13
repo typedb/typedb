@@ -3,7 +3,7 @@ java_test(
     srcs = ["GraqlShellIT.java"],
     test_class = "grakn.core.graql.shell.GraqlShellIT",
     deps = [
-        "//grakn-graql",
+        "//server",
         "//console",
         "//util",
         "//test-integration/rule:concurrent-grakn-server",

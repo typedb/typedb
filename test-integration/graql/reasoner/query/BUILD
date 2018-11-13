@@ -3,7 +3,7 @@ java_test(
     srcs = ["AtomicQueryEquivalenceIT.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryEquivalenceIT",
     deps = [
-            "//grakn-graql",
+            "//server",
             "//test-integration/rule:concurrent-grakn-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava"
@@ -17,7 +17,7 @@ java_test(
     srcs = ["AtomicQueryIT.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryIT",
     deps = [
-            "//grakn-graql",
+            "//server",
             "//test-integration/rule:concurrent-grakn-server",
             "//test-integration/graql/reasoner/graph:geo-graph",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -33,7 +33,7 @@ java_test(
     srcs = ["AtomicQueryUnificationIT.java", "TestQueryPattern.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
-            "//grakn-graql",
+            "//server",
             "//test-integration/rule:concurrent-grakn-server",
             "//test-integration/graql/reasoner/graph:geo-graph",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

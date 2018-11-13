@@ -3,7 +3,7 @@ java_test(
     srcs = ["QueryValidityIT.java"],
     test_class = "grakn.core.graql.reasoner.QueryValidityIT",
     deps = [
-                "//grakn-graql",
+                "//server",
                 "//test-integration/rule:concurrent-grakn-server",
                 "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
             ],
@@ -16,7 +16,7 @@ java_test(
     srcs = ["ResolutionPlanIT.java"],
     test_class = "grakn.core.graql.reasoner.ResolutionPlanIT",
     deps = [
-                "//grakn-graql",
+                "//server",
                 "//test-integration/rule:concurrent-grakn-server",
                 "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
@@ -30,7 +30,7 @@ java_test(
     srcs = ["QueryIT.java"],
     test_class = "grakn.core.graql.reasoner.QueryIT",
     deps = [
-                "//grakn-graql",
+                "//server",
                 "//test-integration/rule:concurrent-grakn-server",
                 "//test-integration/graql/reasoner/graph:geo-graph"
             ],
@@ -42,7 +42,7 @@ java_test(
     srcs = ["OntologicalQueryIT.java"],
     test_class = "grakn.core.graql.reasoner.OntologicalQueryIT",
     deps = [
-                "//grakn-graql",
+                "//server",
                 "//test-integration/rule:concurrent-grakn-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava",
                 "//test-integration/util:graql-test-util"

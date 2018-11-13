@@ -17,7 +17,6 @@ java_library(
     srcs = ["ServerContext.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//util",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -34,7 +33,6 @@ java_library(
     srcs = ["ConcurrentGraknServer.java"],
     deps = [
         "//server",
-        "//grakn-graql",
         "//util",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",

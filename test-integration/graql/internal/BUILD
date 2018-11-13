@@ -6,7 +6,7 @@ java_test(
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//grakn-graql"],
+        "//server"],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

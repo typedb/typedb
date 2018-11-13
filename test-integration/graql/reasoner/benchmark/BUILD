@@ -5,7 +5,6 @@ java_test(
     deps = [
             "//server",
             "//client-java",
-            "//grakn-graql",
             "//test-integration/rule:concurrent-grakn-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -26,7 +25,6 @@ java_test(
     deps = [
         "//server",
         "//client-java",
-        "//grakn-graql",
         "//test-integration/rule:concurrent-grakn-server",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",

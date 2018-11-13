@@ -3,7 +3,7 @@ java_test(
      srcs = ["ValidatorIT.java"],
      test_class = "grakn.core.server.kb.internal.ValidatorIT",
      deps = [
-         "//grakn-graql",
+         "//server",
          "//util",
          "//test-integration/rule:concurrent-grakn-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
@@ -17,7 +17,7 @@ java_test(
   srcs = ["ValidateGlobalRulesIT.java"],
   test_class = "grakn.core.server.kb.internal.ValidateGlobalRulesIT",
   deps = [
-      "//grakn-graql",
+      "//server",
       "//test-integration/rule:concurrent-grakn-server"
   ],
   size = "medium",
@@ -29,7 +29,7 @@ java_test(
   srcs = ["TransactionIT.java"],
   test_class = "grakn.core.server.kb.internal.TransactionIT",
   deps = [
-      "//grakn-graql",
+      "//server",
       "//util",
       "//test-integration/rule:concurrent-grakn-server",
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",

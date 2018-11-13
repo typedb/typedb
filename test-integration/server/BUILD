@@ -5,7 +5,6 @@ java_test(
     deps = [
         "//server",
         "//test-integration/rule:concurrent-grakn-server",
-        "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     size = "large"
 )
@@ -18,7 +17,6 @@ java_test(
         "//server",
         "//test-integration/rule:cassandra-context",
         "//test-integration/rule:server-context",
-        "//grakn-graql",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     size = "large"
 )

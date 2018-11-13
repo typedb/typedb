@@ -3,7 +3,7 @@ java_test(
   srcs = ["CastingIT.java"],
   test_class = "grakn.core.server.kb.internal.structure.CastingIT",
   deps = [
-      "//grakn-graql",
+      "//server",
       "//test-integration/rule:concurrent-grakn-server",
       "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
   ],
@@ -16,7 +16,7 @@ java_test(
   srcs = ["EdgeIT.java"],
   test_class = "grakn.core.server.kb.internal.structure.EdgeIT",
   deps = [
-      "//grakn-graql",
+      "//server",
       "//test-integration/rule:concurrent-grakn-server",
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
   ],
