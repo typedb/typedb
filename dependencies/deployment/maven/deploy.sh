@@ -18,6 +18,7 @@
 
 #!/usr/bin/env bash
 
+set -ex
 
 ARTIFACT="$ARTIFACT"
 COORDINATES="$COORDINATES"
@@ -77,13 +78,13 @@ jar -fu lib-with-maven-metadata.jar META-INF/
 
 $MD5_BINARY pom.xml | awk '{print $1}' > pom.md5
 $MD5_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.md5
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5
+curl -v -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5
+curl -v -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5
 
 $SHA1_BINARY pom.xml | awk '{print $1}' > pom.sha1
 $SHA1_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.sha1
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1
+curl -v -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1
+curl -v -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1
 
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar
+curl -v -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom
+curl -v -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar
