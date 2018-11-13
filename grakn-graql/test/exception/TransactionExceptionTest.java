@@ -26,11 +26,11 @@ import java.time.LocalDateTime;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class GraknTxOperationExceptionTest {
+public class TransactionExceptionTest {
 
     @Test
     public void whenGettingErrorMessageForInvalidAttributeValue_MessageIncludesExpectedClass() {
-        String message = GraknTxOperationException.invalidAttributeValue("bob", DataType.DATE).getMessage();
+        String message = TransactionException.invalidAttributeValue("bob", DataType.DATE).getMessage();
         assertThat(message, containsString(LocalDateTime.class.getName()));
     }
 

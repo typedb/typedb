@@ -177,7 +177,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
         return !types.isEmpty()?
                 ImmutableList.copyOf(ReasonerUtils.top(types)) :
-                tx().admin().getMetaConcept().subs().collect(toImmutableList());
+                tx().getMetaConcept().subs().collect(toImmutableList());
     }
 
     @Override

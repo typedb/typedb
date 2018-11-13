@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.admin.InsertQueryAdmin;
 import grakn.core.graql.answer.ConceptMap;
 
@@ -42,7 +42,7 @@ public interface InsertQuery extends Query<ConceptMap> {
      * @return a new InsertQuery with the graph set
      */
     @Override
-    InsertQuery withTx(GraknTx tx);
+    InsertQuery withTx(Transaction tx);
 
     /**
      * @return admin instance for inspecting and manipulating this query

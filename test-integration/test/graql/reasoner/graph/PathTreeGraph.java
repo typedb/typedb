@@ -1,8 +1,7 @@
 package grakn.core.graql.internal.reasoner.graph;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.EntityType;
@@ -27,9 +26,9 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeGraph {
     private final static Label key = Label.of("index");
-    private final GraknSession session;
+    private final Session session;
 
-    public PathTreeGraph(GraknSession session) {
+    public PathTreeGraph(Session session) {
         this.session = session;
     }
 
@@ -42,7 +41,7 @@ public class PathTreeGraph {
         try {
             InputStream inputStream = PathTreeGraph.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/pathTest.gql");
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e) {
@@ -52,7 +51,7 @@ public class PathTreeGraph {
     }
 
     private void buildExtensionalDB(int n, int children){
-        GraknTx tx = session.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         Role fromRole = tx.getRole("arc-from");
         Role toRole = tx.getRole("arc-to");
         long startTime = System.currentTimeMillis();
@@ -101,7 +100,7 @@ public class PathTreeGraph {
     }
 
 
-    private static Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
+    private static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;
@@ -112,7 +111,7 @@ public class PathTreeGraph {
         thing.has(attributeInstance);
     }
 
-    private static Thing getInstance(GraknTx tx, String id){
+    private static Thing getInstance(Transaction tx, String id){
         Set<Thing> things = tx.getAttributesByValue(id)
                 .stream().flatMap(Attribute::owners).collect(toSet());
         if (things.size() != 1) {

@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
@@ -161,7 +161,7 @@ public interface Match extends Iterable<ConceptMap> {
      * @param tx the graph to execute the query on
      * @return a new {@link Match} with the graph set
      */
-    Match withTx(GraknTx tx);
+    Match withTx(Transaction tx);
 
     /**
      * @param limit the maximum number of results the query should return

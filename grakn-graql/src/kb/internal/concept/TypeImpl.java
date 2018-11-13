@@ -18,6 +18,7 @@
 
 package grakn.core.kb.internal.concept;
 
+import grakn.core.Transaction;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
@@ -25,8 +26,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.cache.Cache;
 import grakn.core.kb.internal.cache.Cacheable;
 import grakn.core.kb.internal.structure.EdgeElement;
@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept. For example an {@link grakn.core.concept.EntityType} or {@link RelationshipType}
  * @param <V> The instance of this type. For example {@link grakn.core.concept.Entity} or {@link Relationship}
  */
-public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
+public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extends SchemaConceptImpl<T> implements grakn.core.concept.Type {
 
     private final Cache<Boolean> cachedIsAbstract = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
@@ -94,7 +94,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred){
         preCheckForInstanceCreation();
 
-        if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
+        if(isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
 
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(label())) {
@@ -107,15 +107,15 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
-     * This can fail is the {@link grakn.core.GraknTxType} is read only.
+     * Checks if an {@link Thing} is allowed to be created and linked to this {@link grakn.core.concept.Type}.
+     * This can fail is the {@link Transaction.Type} is read only.
      * It can also fail when attempting to attach an {@link grakn.core.concept.Attribute} to a meta type
      */
     private void preCheckForInstanceCreation(){
         vertex().tx().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(label())){
-            throw GraknTxOperationException.metaTypeImmutable(label());
+            throw TransactionException.metaTypeImmutable(label());
         }
     }
 
@@ -242,7 +242,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     /**
      * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationshipType}s from their
      * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationshipType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationshipType}.
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link grakn.core.concept.Type} and the implicit {@link RelationshipType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
@@ -264,7 +264,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
             //So we assume the role is in sure and throw if that is the case
             if(!superPlays.isEmpty() && instancesDirect().findAny().isPresent()){
-                throw GraknTxOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
+                throw TransactionException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
             }
 
             return true;
@@ -296,14 +296,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
 
     /**
-     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
+     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link grakn.core.concept.Type}.
      * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
      * <code>attributeTypes</code>
      *
      * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
      * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
      * @param attributeToRemove the {@link AttributeType} to remove
-     * @return the {@link Type} itself
+     * @return the {@link grakn.core.concept.Type} itself
      */
     private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
         if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
@@ -323,7 +323,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     public T isAbstract(Boolean isAbstract) {
         if(!Schema.MetaSchema.isMetaLabel(label()) && isAbstract && instancesDirect().findAny().isPresent()){
-            throw GraknTxOperationException.addingInstancesToAbstractType(this);
+            throw TransactionException.addingInstancesToAbstractType(this);
         }
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
@@ -372,7 +372,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param hasValue the implicit role type to build for the {@link AttributeType}
      * @param hasOwner the implicit role type to build for the type
      * @param required Indicates if the {@link grakn.core.concept.Attribute} is required on the entity
-     * @return The {@link Type} itself
+     * @return The {@link grakn.core.concept.Type} itself
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         Label attributeLabel = attributeType.label();
@@ -414,7 +414,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     private void checkIfHasTargetMeta(AttributeType attributeType){
         //Check if attribute type is the meta
         if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.label())){
-            throw GraknTxOperationException.metaTypeImmutable(attributeType.label());
+            throw TransactionException.metaTypeImmutable(attributeType.label());
         }
     }
 
@@ -424,15 +424,15 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param implicitType The implicit relation to check against.
      * @param attributeType The {@link AttributeType} which should not be in that implicit relation
      *
-     * @throws GraknTxOperationException when the {@link AttributeType} is already used in another implicit relation
+     * @throws TransactionException when the {@link AttributeType} is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType){
         if(attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
-            throw GraknTxOperationException.duplicateHas(this, attributeType);
+            throw TransactionException.duplicateHas(this, attributeType);
         }
     }
 
-    public static <X extends Type, Y extends Thing> TypeImpl<X,Y> from(Type type){
+    public static <X extends grakn.core.concept.Type, Y extends Thing> TypeImpl<X,Y> from(grakn.core.concept.Type type){
         //noinspection unchecked
         return (TypeImpl<X, Y>) type;
     }

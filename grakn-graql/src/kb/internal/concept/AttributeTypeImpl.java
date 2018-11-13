@@ -20,7 +20,7 @@ package grakn.core.kb.internal.concept;
 
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
 
@@ -83,7 +83,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public AttributeType<D> regex(String regex) {
         if(dataType() == null || !dataType().equals(DataType.STRING)) {
-            throw GraknTxOperationException.cannotSetRegex(this);
+            throw TransactionException.cannotSetRegex(this);
         }
 
         checkInstancesMatchRegex(regex);
@@ -94,7 +94,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     /**
      * Checks that existing instances match the provided regex.
      *
-     * @throws GraknTxOperationException when an instance does not match the provided regex
+     * @throws TransactionException when an instance does not match the provided regex
      * @param regex The regex to check against
      */
     private void checkInstancesMatchRegex(@Nullable String regex){
@@ -104,7 +104,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
                 String value = (String) resource.value();
                 Matcher matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw GraknTxOperationException.regexFailure(this, value, regex);
+                    throw TransactionException.regexFailure(this, value, regex);
                 }
             });
         }
@@ -145,7 +145,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             instance = addInstance(instanceBaseType, producer, isInferred);
         } else {
             if(isInferred && !instance.isInferred()){
-                throw GraknTxOperationException.nonInferredThingExists(instance);
+                throw TransactionException.nonInferredThingExists(instance);
             }
         }
         return instance;
@@ -156,7 +156,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     /**
      * Checks if all the regex's of the types of this resource conforms to the value provided.
      *
-     * @throws GraknTxOperationException when the value does not conform to the regex of its types
+     * @throws TransactionException when the value does not conform to the regex of its types
      * @param value The value to check the regexes against.
      */
     private void checkConformsToRegexes(D value){
@@ -164,7 +164,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         this.sups().forEach(sup -> {
             String regex = sup.regex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw GraknTxOperationException.regexFailure(this, (String) value, regex);
+                throw TransactionException.regexFailure(this, (String) value, regex);
             }
         });
     }

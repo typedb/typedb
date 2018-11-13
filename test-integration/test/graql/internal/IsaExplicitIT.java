@@ -18,7 +18,7 @@
 
 package grakn.core.test.graql.internal;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
@@ -37,7 +37,7 @@ import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
@@ -58,11 +58,11 @@ public class IsaExplicitIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private EmbeddedGraknTx<?> tx;
+    private TransactionImpl<?> tx;
 
     @Before
     public void loadSimpleData() {
-        tx = server.sessionWithNewKeyspace().transaction(GraknTxType.WRITE);
+        tx = server.sessionWithNewKeyspace().transaction(Transaction.Type.WRITE);
         EntityType entityType0 = tx.putEntityType("entityType0");
         EntityType entityType1 = tx.putEntityType("entityType1");
         EntityType entityType2 = tx.putEntityType("entityType2");

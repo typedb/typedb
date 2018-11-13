@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
@@ -134,7 +134,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
+    void checkValidProperty(Transaction graph, VarPatternAdmin var) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(type());
         if (schemaConcept == null) {
             throw GraqlQueryException.labelNotFound(type());

@@ -19,7 +19,7 @@
 package grakn.core.concept;
 
 import grakn.core.Keyspace;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
@@ -66,7 +66,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default SchemaConcept asSchemaConcept(){
-        throw GraknTxOperationException.invalidCasting(this, SchemaConcept.class);
+        throw TransactionException.invalidCasting(this, SchemaConcept.class);
     }
 
     /**
@@ -76,7 +76,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Type asType(){
-        throw GraknTxOperationException.invalidCasting(this, Type.class);
+        throw TransactionException.invalidCasting(this, Type.class);
     }
 
     /**
@@ -86,7 +86,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Thing asThing(){
-        throw GraknTxOperationException.invalidCasting(this, Thing.class);
+        throw TransactionException.invalidCasting(this, Thing.class);
     }
 
     /**
@@ -96,7 +96,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default EntityType asEntityType(){
-        throw GraknTxOperationException.invalidCasting(this, EntityType.class);
+        throw TransactionException.invalidCasting(this, EntityType.class);
     }
 
     /**
@@ -106,7 +106,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Role asRole(){
-        throw GraknTxOperationException.invalidCasting(this, Role.class);
+        throw TransactionException.invalidCasting(this, Role.class);
     }
 
     /**
@@ -116,7 +116,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default RelationshipType asRelationshipType(){
-        throw GraknTxOperationException.invalidCasting(this, RelationshipType.class);
+        throw TransactionException.invalidCasting(this, RelationshipType.class);
     }
 
     /**
@@ -126,7 +126,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType(){
-        throw GraknTxOperationException.invalidCasting(this, AttributeType.class);
+        throw TransactionException.invalidCasting(this, AttributeType.class);
     }
 
     /**
@@ -136,7 +136,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Rule asRule(){
-        throw GraknTxOperationException.invalidCasting(this, Rule.class);
+        throw TransactionException.invalidCasting(this, Rule.class);
     }
 
     /**
@@ -145,7 +145,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Entity asEntity(){
-        throw GraknTxOperationException.invalidCasting(this, Entity.class);
+        throw TransactionException.invalidCasting(this, Entity.class);
     }
 
     /**
@@ -155,7 +155,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default Relationship asRelationship(){
-        throw GraknTxOperationException.invalidCasting(this, Relationship.class);
+        throw TransactionException.invalidCasting(this, Relationship.class);
     }
 
     /**
@@ -165,7 +165,7 @@ public interface Concept {
      */
     @CheckReturnValue
     default <D> Attribute<D> asAttribute(){
-        throw GraknTxOperationException.invalidCasting(this, Attribute.class);
+        throw TransactionException.invalidCasting(this, Attribute.class);
     }
 
     /**
@@ -281,9 +281,9 @@ public interface Concept {
     /**
      * Delete the Concept.
      *
-     * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.
+     * @throws TransactionException Throws an exception if this is a type with incoming concepts.
      */
-    void delete() throws GraknTxOperationException;
+    void delete() throws TransactionException;
 
     /**
      * Return whether the concept has been deleted.

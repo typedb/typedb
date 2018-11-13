@@ -61,7 +61,7 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.graql.Syntax;
 import grakn.core.graql.internal.Schema;
@@ -114,9 +114,9 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
     private final ComputeQuery<T> query;
 
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutorImpl.class);
-    private final EmbeddedGraknTx<?> tx;
+    private final TransactionImpl<?> tx;
 
-    public ComputeExecutorImpl(EmbeddedGraknTx<?> tx, ComputeQuery query) {
+    public ComputeExecutorImpl(TransactionImpl<?> tx, ComputeQuery query) {
         this.tx = tx;
         this.query = query;
     }
@@ -738,10 +738,10 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
             if (scopeIncludesAttributes()) {
-                tx.admin().getMetaConcept().subs().forEach(typeBuilder::add);
+                tx.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
-                tx.admin().getMetaEntityType().subs().forEach(typeBuilder::add);
-                tx.admin().getMetaRelationType().subs()
+                tx.getMetaEntityType().subs().forEach(typeBuilder::add);
+                tx.getMetaRelationType().subs()
                         .filter(relationshipType -> !relationshipType.isImplicit()).forEach(typeBuilder::add);
             }
 

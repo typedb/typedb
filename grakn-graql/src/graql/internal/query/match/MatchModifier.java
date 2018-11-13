@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
@@ -44,7 +44,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public final Set<SchemaConcept> getSchemaConcepts(GraknTx tx) {
+    public final Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
         return inner.getSchemaConcepts(tx);
     }
 
@@ -54,7 +54,7 @@ abstract class MatchModifier extends AbstractMatch {
     }
 
     @Override
-    public GraknTx tx() {
+    public Transaction tx() {
         return inner.tx();
     }
 

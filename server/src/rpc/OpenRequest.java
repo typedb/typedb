@@ -18,16 +18,16 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.Transaction;
+import grakn.core.kb.internal.TransactionImpl;
 
 /**
  * A request transaction opener for RPC Services
  */
 public interface OpenRequest {
 
-    EmbeddedGraknTx<?> open(OpenRequest.Arguments arguments);
+    TransactionImpl<?> open(OpenRequest.Arguments arguments);
 
     /**
      * An argument object for request transaction opener for RPC Services
@@ -36,7 +36,7 @@ public interface OpenRequest {
 
         Keyspace getKeyspace();
 
-        GraknTxType getTxType();
+        Transaction.Type getTxType();
 
     }
 }

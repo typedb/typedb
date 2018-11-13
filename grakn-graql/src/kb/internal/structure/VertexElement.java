@@ -18,8 +18,8 @@
 
 package grakn.core.kb.internal.structure;
 
-import grakn.core.GraknTx;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.Transaction;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -35,7 +35,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * <p>
- *     Represent a {@link Vertex} in a {@link GraknTx}
+ *     Represent a {@link Vertex} in a {@link Transaction}
  * </p>
  *
  * <p>
@@ -47,7 +47,7 @@ import java.util.stream.StreamSupport;
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
-    public VertexElement(EmbeddedGraknTx graknTx, Vertex element) {
+    public VertexElement(TransactionImpl graknTx, Vertex element) {
         super(graknTx, element, Schema.PREFIX_VERTEX);
     }
 

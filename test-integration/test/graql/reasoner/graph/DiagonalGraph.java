@@ -1,8 +1,7 @@
 package grakn.core.graql.internal.reasoner.graph;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
@@ -21,9 +20,9 @@ import java.util.stream.Collectors;
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph {
     private final static Label key = Label.of("name");
-    private final GraknSession session;
+    private final Session session;
 
-    public DiagonalGraph(GraknSession session) {
+    public DiagonalGraph(Session session) {
         this.session = session;
     }
 
@@ -36,7 +35,7 @@ public class DiagonalGraph {
         try {
             InputStream inputStream = DiagonalGraph.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/diagonalTest.gql");
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e) {
@@ -46,7 +45,7 @@ public class DiagonalGraph {
     }
 
     private void buildExtensionalDB(int n, int m) {
-        GraknTx tx = session.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         Role relFrom = tx.getRole("rel-from");
         Role relTo = tx.getRole("rel-to");
 
@@ -86,7 +85,7 @@ public class DiagonalGraph {
     }
 
 
-    private static Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
+    private static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

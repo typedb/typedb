@@ -18,12 +18,11 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -51,13 +50,13 @@ public class AttributeTypeIT {
     public final ExpectedException expectedException = ExpectedException.none();
 
 
-    private GraknTx tx;
-    private GraknSession session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
@@ -90,8 +89,8 @@ public class AttributeTypeIT {
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw() {
         AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.cannotSetRegex(thing).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.cannotSetRegex(thing).getMessage());
         thing.regex("blab");
     }
 
@@ -99,7 +98,7 @@ public class AttributeTypeIT {
     public void whenAddingResourceWhichDoesNotMatchRegex_Throw() {
         attributeType.regex("[abc]");
         attributeType.create("a");
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.label().getValue())));
         attributeType.create("1");
     }
@@ -107,8 +106,8 @@ public class AttributeTypeIT {
     @Test
     public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw() {
         attributeType.create("1");
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.regexFailure(attributeType, "1", "[abc]").getMessage());
         attributeType.regex("[abc]");
     }
 
@@ -136,7 +135,7 @@ public class AttributeTypeIT {
         Attribute<String> attribute = t2.create("b");
 
         //Invalid Attribute
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().label().getValue())));
         t2.create("a");
     }
@@ -149,8 +148,8 @@ public class AttributeTypeIT {
         //Future Invalid
         t2.create("a");
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.regexFailure(t2, "a", "[b]").getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.regexFailure(t2, "a", "[b]").getMessage());
         t2.sup(t1);
     }
 
@@ -160,8 +159,8 @@ public class AttributeTypeIT {
         AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).regex("[abc]").sup(t1);
         t2.create("a");
 
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.regexFailure(t1, "a", "[b]").getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.regexFailure(t1, "a", "[b]").getMessage());
         t1.regex("[b]");
     }
 
@@ -173,8 +172,8 @@ public class AttributeTypeIT {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (GraknSession session = server.sessionWithNewKeyspace()) {
-            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+        try (Session session = server.sessionWithNewKeyspace()) {
+            try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
                 graph.commit();
@@ -182,7 +181,7 @@ public class AttributeTypeIT {
             // offset the time to GMT where the colleague is working
             TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             // the colleague extracts the LocalTime which should be the same
-            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();
 

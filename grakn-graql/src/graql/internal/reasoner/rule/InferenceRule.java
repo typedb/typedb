@@ -43,7 +43,7 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.state.RuleState;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InferenceRule {
 
-    private final EmbeddedGraknTx<?> tx;
+    private final TransactionImpl<?> tx;
     private final Rule rule;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
@@ -72,7 +72,7 @@ public class InferenceRule {
     private long priority = Long.MAX_VALUE;
     private Boolean requiresMaterialisation = null;
 
-    public InferenceRule(Rule rule, EmbeddedGraknTx<?> tx){
+    public InferenceRule(Rule rule, TransactionImpl<?> tx){
         this.tx = tx;
         this.rule = rule;
         //TODO simplify once changes propagated to rule objects
@@ -80,7 +80,7 @@ public class InferenceRule {
         this.head = ReasonerQueries.atomic(conjunction(rule.then().admin()), tx);
     }
 
-    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, EmbeddedGraknTx<?> tx){
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, Rule rule, TransactionImpl<?> tx){
         this.tx = tx;
         this.rule = rule;
         this.head = head;

@@ -18,10 +18,10 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
+import grakn.core.Transaction;
 import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
@@ -36,9 +36,9 @@ public class ServerOpenRequest implements OpenRequest {
     }
 
     @Override
-    public EmbeddedGraknTx<?> open(OpenRequest.Arguments args) {
+    public TransactionImpl<?> open(OpenRequest.Arguments args) {
         Keyspace keyspace = args.getKeyspace();
-        GraknTxType txType = args.getTxType();
+        Transaction.Type txType = args.getTxType();
         return txFactory.tx(keyspace, txType);
     }
 
@@ -48,9 +48,9 @@ public class ServerOpenRequest implements OpenRequest {
     static class Arguments implements OpenRequest.Arguments {
 
         Keyspace keyspace;
-        GraknTxType txType;
+        Transaction.Type txType;
 
-        Arguments(Keyspace keyspace, GraknTxType txType) {
+        Arguments(Keyspace keyspace, Transaction.Type txType) {
             this.keyspace = keyspace;
             this.txType = txType;
         }
@@ -59,7 +59,7 @@ public class ServerOpenRequest implements OpenRequest {
             return keyspace;
         }
 
-        public GraknTxType getTxType() {
+        public Transaction.Type getTxType() {
             return txType;
         }
     }

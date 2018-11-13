@@ -22,28 +22,20 @@ package grakn.core;
 import javax.annotation.CheckReturnValue;
 
 /**
- * <p>
- *     Builds a {@link GraknSession}
- * </p>
- *
- * <p>
- *     This class facilitates the construction of Grakn Graphs by determining which session should be built.
- *     The graphs produced by a session are singletons bound to a specific keyspace.
- *
- * </p>
- *
+ * This class facilitates the construction of Grakn Graphs by determining which session should be built.
+ * The graphs produced by a session are singletons bound to a specific keyspace.
  */
-public interface GraknSession extends AutoCloseable {
+public interface Session extends AutoCloseable {
 
     /**
      * Gets a new transaction bound to the keyspace of this Session.
      *
-     * @param transactionType The type of transaction to open see {@link GraknTxType} for more details
+     * @param transactionType The type of transaction to open see {@link Transaction.Type} for more details
      * @return A new Grakn graph transaction
-     * @see GraknTx
+     * @see Transaction
      */
     @CheckReturnValue
-    GraknTx transaction(GraknTxType transactionType);
+    Transaction transaction(Transaction.Type transactionType);
 
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
@@ -52,9 +44,9 @@ public interface GraknSession extends AutoCloseable {
     void close();
 
     /**
-     * Use to determine which {@link Keyspace} this {@link GraknSession} is interacting with.
+     * Use to determine which {@link Keyspace} this {@link Session} is interacting with.
      *
-     * @return The {@link Keyspace} of the knowledge base this {@link GraknSession} is interacting with.
+     * @return The {@link Keyspace} of the knowledge base this {@link Session} is interacting with.
      */
     grakn.core.Keyspace keyspace();
 }

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.UndefineQuery;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
@@ -37,12 +37,12 @@ import java.util.stream.Stream;
 @AutoValue
 abstract class UndefineQueryImpl implements UndefineQuery {
 
-    static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
+    static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
         return new AutoValue_UndefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
-    public UndefineQuery withTx(GraknTx tx) {
+    public UndefineQuery withTx(Transaction tx) {
         return of(varPatterns(), tx);
     }
 

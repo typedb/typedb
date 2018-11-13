@@ -18,9 +18,9 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Lists;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -51,7 +51,7 @@ public class AttributeDeduplicator {
      * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
     public static void deduplicate(EngineGraknTxFactory txFactory, KeyspaceIndexPair keyspaceIndexPair) {
-        try (EmbeddedGraknTx tx = txFactory.tx(keyspaceIndexPair.keyspace(), GraknTxType.WRITE)) {
+        try (TransactionImpl tx = txFactory.tx(keyspaceIndexPair.keyspace(), Transaction.Type.WRITE)) {
             GraphTraversalSource tinker = tx.getTinkerTraversal();
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
             Vertex mergeTargetV = duplicates.next();

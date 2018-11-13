@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Label;
 import grakn.core.concept.Role;
 import grakn.core.concept.SchemaConcept;
@@ -42,11 +42,11 @@ import static org.mockito.Mockito.when;
 public class RolePlayerFragmentSetTest {
 
     private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
-    private GraknTx tx;
+    private Transaction tx;
 
     @Before
     public void setUp(){
-        tx = mock(GraknTx.class);
+        tx = mock(Transaction.class);
     }
 
     @Test

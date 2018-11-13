@@ -18,18 +18,17 @@
 
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.Sets;
 import org.junit.After;
@@ -62,13 +61,13 @@ public class OntologicalQueryIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession genericSchemaSession;
+    private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, GraknSession session) {
+    private static void loadFromFile(String fileName, Session session) {
         try {
             InputStream inputStream = new FileInputStream("test-integration/test/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e) {
@@ -77,7 +76,7 @@ public class OntologicalQueryIT {
         }
     }
 
-    private static EmbeddedGraknTx tx;
+    private static TransactionImpl tx;
 
     @BeforeClass
     public static void loadContext() {
@@ -92,7 +91,7 @@ public class OntologicalQueryIT {
 
     @Before
     public void setUp() {
-        tx = genericSchemaSession.transaction(GraknTxType.WRITE);
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -107,7 +106,7 @@ public class OntologicalQueryIT {
 //    @Ignore
 //    @Test
 //    public void instancePairsRelatedToSameTypeOfEntity(){
-//        GraknTx tx = matchingTypesContext.tx();
+//        Transaction tx = matchingTypesContext.tx();
 //        String basePattern = "$x isa service;" +
 //                "$y isa service;" +
 //                "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
@@ -323,7 +322,7 @@ public class OntologicalQueryIT {
     @Test
     public void allInstancesOfMetaEntity() {
         QueryBuilder qb = tx.graql().infer(true);
-        long noOfEntities = tx.admin().getMetaEntityType().instances().count();
+        long noOfEntities = tx.getMetaEntityType().instances().count();
         String queryString = "match $x isa entity;get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();

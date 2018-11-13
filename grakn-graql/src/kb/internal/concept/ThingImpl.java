@@ -30,7 +30,7 @@ import grakn.core.concept.Role;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.cache.Cache;
 import grakn.core.kb.internal.cache.Cacheable;
 import grakn.core.kb.internal.structure.Casting;
@@ -75,7 +75,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Optional<Type> type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
-        return type.orElseThrow(() -> GraknTxOperationException.missingType(id())).label();
+        return type.orElseThrow(() -> TransactionException.missingType(id())).label();
     });
 
     private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
@@ -86,7 +86,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(concept -> vertex().tx().factory().<V>buildConcept(concept)).
                 findAny();
 
-        return type.orElseThrow(() -> GraknTxOperationException.noType(this));
+        return type.orElseThrow(() -> TransactionException.noType(this));
     });
 
     ThingImpl(VertexElement vertexElement) {
@@ -331,7 +331,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role hasAttributeValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
 
         if(hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().playing().noneMatch(play -> play.equals(hasAttributeOwner))){
-            throw GraknTxOperationException.hasNotAllowed(this, attribute);
+            throw TransactionException.hasNotAllowed(this, attribute);
         }
 
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);

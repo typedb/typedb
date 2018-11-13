@@ -18,10 +18,10 @@
 
 package grakn.core.kb.internal.structure;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Entity;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.concept.EntityImpl;
 import grakn.core.kb.internal.concept.EntityTypeImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
@@ -40,8 +40,8 @@ public class EdgeIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
     private EntityTypeImpl entityType;
     private EntityImpl entity;
     private EdgeElement edge;
@@ -49,7 +49,7 @@ public class EdgeIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         // Create Edge
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
         entity = (EntityImpl) entityType.create();

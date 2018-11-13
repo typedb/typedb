@@ -1,9 +1,8 @@
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.Session;
+import grakn.core.Transaction;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.Query;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
@@ -11,7 +10,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.graql.internal.Schema;
 import org.junit.After;
@@ -36,13 +35,13 @@ public class AtomicEquivalenceIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession genericSchemaSession;
+    private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, GraknSession session){
+    private static void loadFromFile(String fileName, Session session){
         try {
             InputStream inputStream = AtomicEquivalenceIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e){
@@ -51,7 +50,7 @@ public class AtomicEquivalenceIT {
         }
     }
 
-    private EmbeddedGraknTx tx;
+    private TransactionImpl tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -66,7 +65,7 @@ public class AtomicEquivalenceIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(GraknTxType.WRITE);
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -129,7 +128,7 @@ public class AtomicEquivalenceIT {
         atomicEquality(pattern, pattern8, false, tx);
     }
 
-    private void testEquality_DifferentTypeVariants(EmbeddedGraknTx<?> tx, String keyword, String label, String label2){
+    private void testEquality_DifferentTypeVariants(TransactionImpl<?> tx, String keyword, String label, String label2){
         String variantAString = "{$x " + keyword + " " + label + ";}";
         String variantAString2 = "{$y " + keyword + " " + label + ";}";
         String variantAString3 = "{$y " + keyword + " " + label2 + ";}";
@@ -156,7 +155,7 @@ public class AtomicEquivalenceIT {
         atomicEquality(variantBString, variantCString, false, tx);
     }
 
-    private void atomicEquality(String patternA, String patternB, boolean expectation, EmbeddedGraknTx<?> tx){
+    private void atomicEquality(String patternA, String patternB, boolean expectation, TransactionImpl<?> tx){
         Atom atomA = ReasonerQueries.atomic(conjunction(patternA, tx), tx).getAtom();
         Atom atomB = ReasonerQueries.atomic(conjunction(patternB, tx), tx).getAtom();
         atomicEquality(atomA, atomA, true);
@@ -174,7 +173,7 @@ public class AtomicEquivalenceIT {
         }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> tx){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
         Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

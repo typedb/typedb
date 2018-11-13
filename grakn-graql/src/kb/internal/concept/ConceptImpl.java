@@ -21,7 +21,7 @@ package grakn.core.kb.internal.concept;
 import grakn.core.Keyspace;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.cache.Cache;
 import grakn.core.kb.internal.cache.CacheOwner;
 import grakn.core.kb.internal.cache.Cacheable;
@@ -78,10 +78,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
 
     /**
      * Deletes the concept.
-     * @throws GraknTxOperationException Throws an exception if the node has any edges attached to it.
+     * @throws TransactionException Throws an exception if the node has any edges attached to it.
      */
     @Override
-    public void delete() throws GraknTxOperationException {
+    public void delete() throws TransactionException {
         deleteNode();
     }
 
@@ -127,7 +127,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner{
             case OUT:
                 return  vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.target()));
             default:
-                throw GraknTxOperationException.invalidDirection(direction);
+                throw TransactionException.invalidDirection(direction);
         }
     }
 

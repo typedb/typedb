@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.factory;
+package grakn.core.session;
 
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
-import grakn.core.exception.GraknTxOperationException;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.Transaction;
+import grakn.core.exception.TransactionException;
+import grakn.core.kb.internal.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
@@ -31,22 +30,22 @@ import static javax.annotation.meta.When.NEVER;
 
 /**
  * <p>
- * Defines the abstract construction of {@link GraknTx}s on top of Tinkerpop Graphs.
+ * Defines the abstract construction of {@link Transaction}s on top of Tinkerpop Graphs.
  * For this factory to function a vendor specific implementation of a graph extending
- * {@link EmbeddedGraknTx} must be provided. This must be provided with a matching TinkerPop {@link Graph}
- * which is wrapped within the {@link GraknTx}
+ * {@link TransactionImpl} must be provided. This must be provided with a matching TinkerPop {@link Graph}
+ * which is wrapped within the {@link Transaction}
  * </p>
  *
- * @param <Tx> A {@link GraknTx} extending {@link EmbeddedGraknTx} and wrapping a Tinkerpop Graph
+ * @param <Tx> A {@link Transaction} extending {@link TransactionImpl} and wrapping a Tinkerpop Graph
  * @param <G>  A vendor implementation of a Tinkerpop {@link Graph}
  */
-public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends Graph> implements TxFactory<G> {
-    private final EmbeddedGraknSession session;
+public abstract class TransactionFactoryAbstract<Tx extends TransactionImpl<G>, G extends Graph> implements TransactionFactory<G> {
+    private final SessionImpl session;
 
     protected final GraphWithTx batchTinkerPopGraphWithTx = new GraphWithTx(true);
     protected final GraphWithTx tinkerPopGraphWithTx = new GraphWithTx(false);
 
-    protected TxFactoryAbstract(EmbeddedGraknSession session) {
+    protected TransactionFactoryAbstract(SessionImpl session) {
         this.session = session;
     }
 
@@ -55,8 +54,8 @@ public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends
     protected abstract G buildTinkerPopGraph(boolean batchLoading);
 
     @Override
-    final public synchronized Tx open(GraknTxType txType) {
-        if (GraknTxType.BATCH.equals(txType)) {
+    final public synchronized Tx open(Transaction.Type txType) {
+        if (Transaction.Type.BATCH.equals(txType)) {
             tinkerPopGraphWithTx.checkTxIsOpen();
             return batchTinkerPopGraphWithTx.openTx(txType);
         } else {
@@ -80,7 +79,7 @@ public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends
     @CheckReturnValue(when = NEVER)
     protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
 
-    final public EmbeddedGraknSession session() {
+    final public SessionImpl session() {
         return session;
     }
 
@@ -99,7 +98,7 @@ public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends
             this.batchLoading = batchLoading;
         }
 
-        public Tx openTx(GraknTxType txType) {
+        public Tx openTx(Transaction.Type txType) {
             initialiseGraknTx();
             graknTx.openTransaction(txType);
             return graknTx;
@@ -107,7 +106,7 @@ public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends
 
         private void initialiseGraknTx() {
             // If transaction is already open throw exception
-            if (graknTx != null && !graknTx.isClosed()) throw GraknTxOperationException.transactionOpen(graknTx);
+            if (graknTx != null && !graknTx.isClosed()) throw TransactionException.transactionOpen(graknTx);
 
             // Create new transaction from a Tinker graph if tx is null or s closed
             if (graknTx == null || graknTx.isTinkerPopGraphClosed()) {
@@ -125,7 +124,7 @@ public abstract class TxFactoryAbstract<Tx extends EmbeddedGraknTx<G>, G extends
         }
 
         public void checkTxIsOpen() {
-            if (graknTx != null && !graknTx.isClosed()) throw GraknTxOperationException.transactionOpen(graknTx);
+            if (graknTx != null && !graknTx.isClosed()) throw TransactionException.transactionOpen(graknTx);
         }
 
     }

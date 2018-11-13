@@ -26,7 +26,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -113,11 +113,11 @@ public abstract class AtomicBase implements Atomic {
     public Atomic inferTypes(ConceptMap sub){ return this; }
 
     /**
-     * @return GraknTx this atomic is defined in
+     * @return Transaction this atomic is defined in
      */
-    protected EmbeddedGraknTx<?> tx(){
-        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeddedGraknTx
-        return (EmbeddedGraknTx<?>) getParentQuery().tx();
+    protected TransactionImpl<?> tx(){
+        // TODO: This cast is unsafe - ReasonerQuery should return an TransactionImpl
+        return (TransactionImpl<?>) getParentQuery().tx();
     }
 
     @Override
