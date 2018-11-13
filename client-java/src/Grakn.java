@@ -54,7 +54,6 @@ import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.SimpleURI;
 import com.google.common.collect.AbstractIterator;
-import ai.grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -65,6 +64,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**

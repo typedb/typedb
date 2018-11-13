@@ -24,7 +24,7 @@ options:
     type: default
     url: https://repo.maven.apache.org/maven2/
   - id: mavengraknai
-    url: http://maven.grakn.ai/nexus/content/repositories/bazel-test-snapshot/
+    url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
   strictVisibility: true
   transitivity: runtime_deps
   versionConflictPolicy: highest
@@ -33,9 +33,9 @@ options:
 
 dependencies:
 
-  ai.grakn:
-    benchmark.lib:
-      version: "1.5.0-6ed81fa149a6f915032ac3a0546be050c258051c-SNAPSHOT"
+  grakn.benchmark:
+    lib:
+      version: "1.5.0-837e62dabf6198ac09b7b9f35c2cd793bac2deb4-SNAPSHOT"
       lang: java
 
   ch.qos.logback:

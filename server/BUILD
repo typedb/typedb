@@ -28,7 +28,7 @@ java_library(
         "//util",
 
         # External dependencies
-        "//dependencies/maven/artifacts/ai/grakn:benchmark-lib",
+        "//dependencies/maven/artifacts/grakn/benchmark:lib",
 
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",

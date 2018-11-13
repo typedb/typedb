@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import ai.grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 
 /**
@@ -125,7 +125,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             try {
                 if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
                     TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
-                    Span queueSpan = ServerTracingInstrumentation.createChildSpan("Server receive queue", receivedTraceContext);
+                    Span queueSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
                     queueSpan.start();
                     queueSpan.tag("childNumber", "0");
 
@@ -156,7 +156,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             queueSpan.finish(); // time spent in queue
 
             // create a new scoped span
-            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpan("Server handle request", context);
+            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpanWithParentContext("Server handle request", context);
             span.tag("childNumber", "1");
             handleRequest(request);
         }
@@ -350,7 +350,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void onNextResponse(Transaction.Res response) {
-            if (ServerTracingInstrumentation.existsCurrentSpan()) {
+            if (ServerTracingInstrumentation.tracingActive()) {
                 ServerTracingInstrumentation.currentSpan().finish();
             }
             responseSender.onNext(response);
