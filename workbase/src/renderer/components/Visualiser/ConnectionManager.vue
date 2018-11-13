@@ -1,9 +1,5 @@
 <template>
     <div class="panel-container noselect">
-        <div @click="toggleContent" class="panel-header">
-            <vue-icon :icon="(showConnectionSettings) ?  'chevron-down' : 'chevron-right'" iconSize="14" className="vue-icon"></vue-icon>
-            <h1>Connection Settings</h1>
-        </div>
         <div v-show="showConnectionSettings">
             <div class="panel-content">
                 <div class="panel-content-item">
@@ -20,11 +16,11 @@
 </template>
 
 <script>
-  import Settings from '../../../EngineSettings';
+  import Settings from '../EngineSettings';
 
   export default {
 
-    name: 'ConnectionSettings',
+    name: 'ConnectionManager',
     data() {
       return {
         showConnectionSettings: true,
@@ -69,10 +65,11 @@
         flex-direction: row;
         align-items: center;
         height: var(--line-height);
+        justify-content: center;
     }
 
     .panel-label {
-        width: 90px;
+        width: 40px;
     }
 
     .panel-value {

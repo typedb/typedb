@@ -15,8 +15,9 @@ export const createKeyspace = (context, name) => context.state.grakn.session(nam
   .transaction(Grakn.txType.WRITE)
   .then(() => { context.dispatch('loadKeyspaces'); });
 
-export const deleteKeyspace = (context, name) => context.state.grakn.keyspace.delete(name)
+export const deleteKeyspace = async (context, name) => context.state.grakn.keyspaces().delete(name)
   .then(() => { context.dispatch('loadKeyspaces'); });
+
 
 // TODO: for now if we import in a keyspace that is currently selected in some other page the user
 // will need to manually refresh to see imported data
