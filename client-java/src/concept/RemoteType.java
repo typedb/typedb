@@ -20,18 +20,18 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
-import grakn.core.exception.TransactionException;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link grakn.core.concept.Type}
+ * Client implementation of {@link Type}
  *
  * @param <SomeType> The exact type of this class
  * @param <SomeThing> the exact type of instances of this class

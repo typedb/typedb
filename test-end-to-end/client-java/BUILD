@@ -4,7 +4,7 @@ java_test(
     srcs = ["ClientJavaE2E.java", "ClientJavaE2EConstants.java"],
     deps = [
         "//client-java",
-        "//grakn-graql",
+        "//server",
         "//util",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

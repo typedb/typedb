@@ -1,7 +1,7 @@
-package grakn.core.test.rule;
+package grakn.core.rule;
 
 import grakn.core.util.GraknConfigKey;
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.Server;
@@ -18,7 +18,7 @@ import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.EngineID;
-import grakn.core.session.SessionImpl;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.keyspace.KeyspaceStoreImpl;
 import grakn.core.util.SimpleURI;
 import io.grpc.ServerBuilder;

@@ -4,13 +4,8 @@ references:
       run:
         name: Prepare apt repositories
         command: |
-          curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
           sudo apt-get install apt-transport-https
           sudo apt-get update
-
-    install_yarn_and_unzip: &install_yarn_and_unzip
-      run: sudo apt-get -y install yarn zip unzip
 
     install_node: &install_node
       run:
@@ -42,9 +37,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
       - *install_bazel
       - run: bazel build //:distribution --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/dist/* dist/
@@ -58,11 +50,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
       - *install_bazel
-      - run: bazel test //grakn-graql/... --test_output=errors
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
 
@@ -71,27 +59,27 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
       - *install_bazel
-      - run: bazel test //test-integration/test/client/... --test_output=errors
-      - run: bazel test //test-integration/test/graql/internal/... --test_output=errors
-#      - run: bazel test //test-integration/test/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
-      - run: bazel test //test-integration/test/internal/... --test_output=errors
-      - run: bazel test //test-integration/test/server/... --test_output=errors
-      - run: bazel test //test-integration/test/graql/reasoner/... --test_output=errors
+      - run: bazel test //test-integration/client/... --test_output=errors
+      - run: bazel test //test-integration/server/... --test_output=errors
+      - run: bazel test //test-integration/graql/internal/... --test_output=errors
+    # - run: bazel test //test-integration/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
+
+  test-integration-reasoner:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
     working_directory: ~/grakn
     steps:
     - checkout
-    - *prepare_apt_repositories
-    - *install_yarn_and_unzip
-    - *install_node
     - *install_bazel
-    - run: bazel test //test-integration/test/graql/analytics/... --test_output=errors
+    - run: bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -107,9 +95,6 @@ jobs:
       working_directory: ~/grakn
       steps:
         - checkout
-        - *prepare_apt_repositories
-        - *install_yarn_and_unzip
-        - *install_node
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
@@ -122,8 +107,6 @@ jobs:
       working_directory: ~/grakn
       steps:
         - checkout
-        - *prepare_apt_repositories
-        - *install_yarn_and_unzip
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
@@ -131,22 +114,20 @@ jobs:
         - run: bazel test //client_python:test_integration --test_output=streamed
 
   workbase-unit-tests:
-      docker:
-        - image: circleci/node:8.11.2
+      machine: true
       working_directory: ~/grakn
       steps:
         - checkout
-        - run: cd workbase && npm install
-        - run: cd workbase && npm test
+        - *prepare_apt_repositories
+        - *install_bazel
+        - run: bazel run @nodejs//:npm install
+        - run: bazel test //workbase:tests-unit
 
   workbase-e2e:
       machine: true
       working_directory: ~/grakn
       steps:
         - checkout
-        - *prepare_apt_repositories
-        - *install_yarn_and_unzip
-        - *install_node
         - *install_bazel
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
         - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
@@ -154,21 +135,20 @@ jobs:
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
         - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
         - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-        - run: cd workbase && npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
-        - run: cd workbase && npm run e2e
+        - run: bazel test -s --test_output=streamed //workbase:tests-e2e
 
   build-workbase-linux:
-      docker:
-        - image: circleci/node:8.11.2
+      machine: true
       working_directory: ~/grakn
       steps:
         - *attach_grakn_workspace
-        - run: cd workbase && npm install
-        - run: cd workbase && npm run build
+        - run: bazel run @nodejs//:npm install
+        - run: bazel build //workbase:distribution
         - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
-        - run: mv ./workbase/build/grakn-workbase-${GRAKN_VERSION}-linux.tar.gz ~/grakn/artifacts
+        # FIXME: make a separate rule for building on Linux / use another naming scheme
+        - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-linux.tar.gz
         - persist_to_workspace:
             root: ~/grakn
             paths:
@@ -184,10 +164,10 @@ jobs:
         - run: unzip artifacts/grakn-core-${GRAKN_VERSION}.zip
         - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
         - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
-        - run: cd workbase && npm install
-        - run: cd workbase && npm run e2e
-        - run: cd workbase && npm run build
-        - run: mv ./workbase/build/grakn-workbase-${GRAKN_VERSION}-mac.zip ~/grakn/artifacts
+        - run: bazel run @nodejs//:npm install
+        - run: bazel test //workbase:tests-e2e
+        - run: bazel build //workbase:distribution
+        - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-mac.zip
         - persist_to_workspace:
             root: ~/grakn
             paths:
@@ -211,7 +191,6 @@ jobs:
     steps:
       - checkout
       - *prepare_apt_repositories
-      - *install_yarn_and_unzip
       - *install_node
       - *install_bazel
       - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released
@@ -238,6 +217,7 @@ workflows:
               ignore: /.*/
       - test-unit
       - test-integration
+      - test-integration-reasoner
       - test-integration-analytics
       - test-end-to-end
       - client-nodejs-e2e

@@ -3,7 +3,7 @@ java_test(
     test_class = "grakn.core.deduplicator.AttributeDeduplicatorE2E",
     srcs = ["AttributeDeduplicatorE2E.java", "AttributeDeduplicatorE2EConstants.java"],
     deps = [
-        "//grakn-graql",
+        "//server",
         "//client-java",
         "//util",
         "//dependencies/maven/artifacts/commons-io:commons-io",

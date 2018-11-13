@@ -19,10 +19,10 @@
 package grakn.core.console;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.Session;
-import grakn.core.Transaction;
-import grakn.core.concept.Label;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.Autocomplete;
 import jline.console.completer.Completer;
 

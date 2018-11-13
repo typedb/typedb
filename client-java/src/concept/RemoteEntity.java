@@ -20,14 +20,14 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.Grakn;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
 import com.google.auto.value.AutoValue;
 
 /**
- * Client implementation of {@link grakn.core.concept.Entity}
+ * Client implementation of {@link Entity}
  */
 @AutoValue
 public abstract class RemoteEntity extends RemoteThing<Entity, EntityType> implements Entity {

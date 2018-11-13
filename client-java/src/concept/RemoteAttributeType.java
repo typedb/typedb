@@ -21,10 +21,10 @@ package grakn.core.client.concept;
 
 import grakn.core.client.Grakn;
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.util.CommonUtil;
 import com.google.auto.value.AutoValue;
@@ -32,7 +32,7 @@ import com.google.auto.value.AutoValue;
 import javax.annotation.Nullable;
 
 /**
- * Client implementation of {@link grakn.core.concept.AttributeType}
+ * Client implementation of {@link AttributeType}
  *
  * @param <D> The data type of this attribute type
  */
