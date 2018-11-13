@@ -46,7 +46,15 @@ export function buildExplanationQuery(answer, queryPattern) {
   let attributeQuery = null;
   Array.from(answer.map().entries()).forEach(([graqlVar, concept]) => {
     if (concept.isAttribute()) {
-      attributeQuery = `has ${queryPattern.match(/(?:has )(\w+)/)[1]} $${graqlVar};`;
+      const attributeRegex = queryPattern.match(/(?:has )(\w+)/);
+      if (attributeRegex) {
+        attributeQuery = `has ${queryPattern.match(/(?:has )(\w+)/)[1]} $${graqlVar};`;
+      } else {
+        let attributeType = queryPattern.match(/\(([^)]+)\)/)[0].split(',').filter(y => y.includes(graqlVar));
+        attributeType = attributeType[0].slice(1, attributeType[0].indexOf(':'));
+        attributeQuery = `has ${attributeType} $${graqlVar};`;
+      }
+      // attributeQuery = `has ${queryPattern.match(/(?:has )(\w+)/)[1]} $${graqlVar};`;
     } else if (concept.isEntity()) {
       query += `$${graqlVar} id ${concept.id}; `;
     }
