@@ -10,11 +10,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -91,42 +92,44 @@ public class RocksDbQueueTest {
     }
 
     /**
-     * this test might not be immediately obvious hence warrants an explanation.
-     *
      * the read() method implements the 'guarded block' pattern using wait() and notifyAll(), and we want to
-     * test if it properly waits until the queue becomes non-empty.
+     * test if it properly blocks until the queue becomes non-empty.
      *
-     * the correct behavior is for read() to wait until insert() has been invoked, and this is verified
-     * if the element 'added-after-read' appears AFTER 'added-after-300ms'.
-     *
+     * @throws IOException
+     * @throws ExecutionException
      * @throws InterruptedException
+     * @throws TimeoutException
      */
     @Test
-    public void theReadMethodMustWaitUntilTheQueueBecomesNonEmpty() throws InterruptedException, IOException {
+    public void theReadMethodMustBlockUntilTheQueueBecomesNonEmpty() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
-        List<String> verifyOrderOfOperation = new ArrayList<>();
         RocksDbQueue queue = new RocksDbQueue(queuePath);
 
-        CompletableFuture.supplyAsync(() -> {
+        Attribute input = Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1"));
+        List<Attribute> expectedOutput = Arrays.asList(input);
 
-            // operation a: wait for 300ms and insert 'added-after-300ms' into the list
-            try { Thread.sleep(300); } catch (InterruptedException e) { throw new RuntimeException(e); }
-            synchronized(this) {
-                queue.insert(Attribute.create(Keyspace.of("k1"), "v1", ConceptId.of("c1")));
-                verifyOrderOfOperation.add("added-after-300ms");
+        // perform a read() on the currently empty queue asynchronously.
+        CompletableFuture<List<Attribute>> readMustBlock_untilQueueNonEmpty = CompletableFuture.supplyAsync(() -> {
+            try {
+                return queue.read(1);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-
-            return null;
         });
 
-        // operation b: insert 'added-after-read' after queue.read(x)
-        synchronized(this) {
-            queue.read(5);
-            verifyOrderOfOperation.add("added-after-read");
+        // verify if read() indeed blocks, in which case a TimeoutException is thrown
+        try {
+            readMustBlock_untilQueueNonEmpty.get(500L, TimeUnit.MILLISECONDS);
+            throw new RuntimeException("The expected TimeoutException isn't thrown");
+        } catch (TimeoutException e) {
+            // The expected TimeoutException is thrown
         }
 
-        // the element 'added-after-read' must appear AFTER 'added-after-300ms'
-        assertThat(verifyOrderOfOperation, equalTo(Arrays.asList("added-after-300ms", "added-after-read")));
-        FileUtils.deleteDirectory(queuePath.toFile());
+        // now that we've verified that a TimeoutException is thrown, let's insert some data into the queue
+        queue.insert(input);
+
+        // by this time, that read() operation should return the result
+        List<Attribute> actualOutput = readMustBlock_untilQueueNonEmpty.get(500L, TimeUnit.MILLISECONDS);
+        assertThat(actualOutput, equalTo(expectedOutput));
     }
 }
