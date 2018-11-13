@@ -6,7 +6,6 @@
         </div>
 
         <div class="center">
-            <graql-editor :tabId="tabId" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
         </div>
 
         <div class="right">
@@ -74,12 +73,10 @@
 </style>
 
 <script>
-    import KeyspacesHandler from '../shared/KeyspacesHandler.vue';
-    import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
+    import KeyspacesHandler from './KeyspacesHandler.vue';
 
     export default {
-      components: { KeyspacesHandler, GraqlEditor },
-      props: ['tabId'],
+      components: { KeyspacesHandler },
       data() {
         return {
           showKeyspaceToolTip: false,

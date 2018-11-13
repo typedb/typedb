@@ -45,12 +45,10 @@
 
 <script>
 import AppBar from './Appbar.vue';
-import EpicsBar from './EpicsBar.vue';
-
 
 export default {
   name: 'MainTemplate',
-  components: { AppBar, EpicsBar },
+  components: { AppBar },
   computed: {
     showAppBar() {
       return (process.platform === 'darwin');

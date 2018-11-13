@@ -1,7 +1,13 @@
 <template>
   <transition name="slide-fade" appear>
     <div class="design-wrapper">
-        <menu-bar
+      <top-bar></top-bar>
+      <graph-canvas></graph-canvas>
+
+
+
+
+        <!-- <menu-bar
             :localStore="localStore"
             @toggle-new-type-panel="toggleNewTypePanel"
             @toggle-attributes-panel="toggleAttributesPanel"
@@ -25,7 +31,7 @@
                 <graph-canvas :localStore="localStore"></graph-canvas>
                 <right-side-bar :localStore="localStore"></right-side-bar>
                 <Spinner className="spinner-schema" :localStore="localStore"></Spinner>
-        </div>
+        </div> -->
     </div>
   </transition>
 </template>
@@ -66,32 +72,32 @@
 </style>
 
 <script>
-import Spinner from '@/components/UIElements/Spinner.vue';
-import RightSideBar from '../RightSideBar/RightSidebar.vue';
-import MenuBar from './MenuBar.vue';
-import NewTypePanel from '../NewTypePanel/NewTypePanel.vue';
-import ManageSchemaConcepts from '../ManageSchemaConcepts';
-import ContextMenu from './ContextMenu.vue';
-import GraphCanvas from '../../shared/GraphCanvas.vue';
+// import Spinner from '@/components/UIElements/Spinner.vue';
+// import RightSideBar from '../RightSideBar/RightSidebar.vue';
+// import MenuBar from './MenuBar.vue';
+// import NewTypePanel from '../NewTypePanel/NewTypePanel.vue';
+// import ManageSchemaConcepts from '../ManageSchemaConcepts';
+// import ContextMenu from './ContextMenu.vue';
+import GraphCanvas from '../shared/GraphCanvas.vue';
+import TopBar from './TopBar';
 
-import localStore from '../SchemaDesignStore';
-import { DELETE_SCHEMA_CONCEPT } from '../../shared/StoresActions';
+// import localStore from '../SchemaDesignStore';
+import { DELETE_SCHEMA_CONCEPT } from '../shared/StoresActions';
 
 export default {
   name: 'SchemaDesignContent',
   components: {
-    RightSideBar, MenuBar, NewTypePanel, ContextMenu, GraphCanvas, ManageSchemaConcepts, Spinner,
+    GraphCanvas, TopBar,
   },
   data() {
     return {
-      localStore,
       showNewTypePanel: false,
       showAttributesPanel: false,
       showRolesPanel: false,
     };
   },
   created() {
-    this.localStore.registerCanvasEventHandler('click', this.closePanels);
+    // this.localStore.registerCanvasEventHandler('click', this.closePanels);
   },
   methods: {
     deleteSchemaConcept(label) { this.localStore.dispatch(DELETE_SCHEMA_CONCEPT, label); },
