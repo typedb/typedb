@@ -22,7 +22,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -70,7 +70,7 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(EmbeddedGraknTx<?> tx, Set<Var> vars) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionImpl<?> tx, Set<Var> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
@@ -111,7 +111,7 @@ public abstract class GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            EmbeddedGraknTx<?> tx, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars,
+            TransactionImpl<?> tx, GraphTraversal<Vertex, Vertex> traversal, Set<Var> vars,
             ImmutableList<Fragment> fragmentList
     ) {
         GraphTraversal<Vertex, ? extends Element> newTraversal = traversal;
@@ -125,7 +125,7 @@ public abstract class GraqlTraversal {
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            EmbeddedGraknTx<?> tx, Set<Var> vars, ImmutableList<Fragment> fragmentList,
+            TransactionImpl<?> tx, Set<Var> vars, ImmutableList<Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal
     ) {
         Set<Var> foundVars = new HashSet<>();

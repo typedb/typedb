@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Type;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
@@ -46,10 +46,10 @@ public interface ReasonerQuery{
     ReasonerQuery conjunction(ReasonerQuery q);
 
     /**
-     * @return {@link GraknTx} associated with this reasoner query
+     * @return {@link Transaction} associated with this reasoner query
      */
     @CheckReturnValue
-    GraknTx tx();
+    Transaction tx();
 
 
     /**

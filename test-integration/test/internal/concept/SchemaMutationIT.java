@@ -18,7 +18,8 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknTxType;
+import com.google.common.collect.Iterables;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.EntityType;
@@ -28,11 +29,10 @@ import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.InvalidKBException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.ErrorMessage;
-import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -68,13 +68,13 @@ public class SchemaMutationIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         husband = tx.putRole("husband");
         wife = tx.putRole("wife");
         driver = tx.putRole("driver");
@@ -95,7 +95,7 @@ public class SchemaMutationIT {
         bmw = car.create();
         drives.create().assign(driver, alice).assign(driven, bmw);
         tx.commit();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -146,7 +146,7 @@ public class SchemaMutationIT {
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         tx.close();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         graknGraphBatch.putEntityType("This Will Fail");
     }
 
@@ -155,7 +155,7 @@ public class SchemaMutationIT {
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
         tx.close();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         graknGraphBatch.putRole("This Will Fail");
     }
 
@@ -165,7 +165,7 @@ public class SchemaMutationIT {
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         tx.close();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
     }
 
@@ -176,7 +176,7 @@ public class SchemaMutationIT {
 
 
         tx.close();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         graknGraphBatch.putRelationshipType("This Will Fail");
     }
 
@@ -186,7 +186,7 @@ public class SchemaMutationIT {
         String relationTypeId = "relationtype";
         tx.putRelationshipType(relationTypeId).relates(tx.putRole(roleTypeId));
         tx.commit();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         Role role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -203,7 +203,7 @@ public class SchemaMutationIT {
         tx.putEntityType(entityTypeId);
         tx.putRelationshipType("reltype").relates(tx.putRole(roleTypeId));
         tx.commit();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         Role role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -222,7 +222,7 @@ public class SchemaMutationIT {
         tx.putEntityType(entityTypeId2);
 
         tx.commit();
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
@@ -242,7 +242,7 @@ public class SchemaMutationIT {
         tx.putEntityType(entityTypeId).plays(role);
         tx.commit();
 
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -260,7 +260,7 @@ public class SchemaMutationIT {
         tx.putRelationshipType(relationTypeId).relates(role);
         tx.commit();
 
-        EmbeddedGraknTx<?> graknGraphBatch = session.transaction(GraknTxType.BATCH);
+        TransactionImpl<?> graknGraphBatch = session.transaction(Transaction.Type.BATCH);
         role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -281,7 +281,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         animal.has(name);
         tx.commit();
     }
@@ -294,7 +294,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now delete the relation
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidKBException.class);

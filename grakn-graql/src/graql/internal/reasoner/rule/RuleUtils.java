@@ -18,15 +18,15 @@
 
 package grakn.core.graql.internal.reasoner.rule;
 
-import grakn.core.GraknTx;
+import com.google.common.base.Equivalence;
+import grakn.core.Transaction;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
-import grakn.core.graql.internal.Schema;
-import com.google.common.base.Equivalence;
+import grakn.core.kb.internal.TransactionImpl;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,15 +48,15 @@ public class RuleUtils {
      * @param graph of interest
      * @return set of inference rule contained in the graph
      */
-    public static Stream<Rule> getRules(GraknTx graph) {
-        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRules();
+    public static Stream<Rule> getRules(Transaction graph) {
+        return ((TransactionImpl<?>) graph).ruleCache().getRules();
     }
 
     /**
      * @param graph of interest
      * @return true if at least one inference rule is present in the graph
      */
-    public static boolean hasRules(GraknTx graph) {
+    public static boolean hasRules(Transaction graph) {
         return graph.getMetaRule().subs().anyMatch(rule -> !rule.label().equals(Schema.MetaSchema.RULE.getLabel()));
     }
 
@@ -65,8 +65,8 @@ public class RuleUtils {
      * @param graph of interest
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, GraknTx graph){
-        return ((EmbeddedGraknTx<?>) graph).ruleCache().getRulesWithType(type, direct);
+    public static Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct, Transaction graph){
+        return ((TransactionImpl<?>) graph).ruleCache().getRulesWithType(type, direct);
     }
 
     /**

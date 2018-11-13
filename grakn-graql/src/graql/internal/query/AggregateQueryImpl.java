@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.Aggregate;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.Match;
@@ -39,7 +39,7 @@ abstract class AggregateQueryImpl<T extends Answer> implements AggregateQuery<T>
     }
 
     @Override
-    public final AggregateQuery<T> withTx(GraknTx tx) {
+    public final AggregateQuery<T> withTx(Transaction tx) {
         return Queries.aggregate(match().withTx(tx).admin(), aggregate());
     }
 
@@ -55,7 +55,7 @@ abstract class AggregateQueryImpl<T extends Answer> implements AggregateQuery<T>
     }
 
     @Override
-    public final GraknTx tx() {
+    public final Transaction tx() {
         return match().admin().tx();
     }
 

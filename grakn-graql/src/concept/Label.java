@@ -18,7 +18,7 @@
 
 package grakn.core.concept;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -31,7 +31,7 @@ import java.util.function.Function;
  * </p>
  *
  * <p>
- *     A class which represents the unique label of any {@link SchemaConcept} in the {@link GraknTx}.
+ *     A class which represents the unique label of any {@link SchemaConcept} in the {@link Transaction}.
  *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *

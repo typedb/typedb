@@ -23,7 +23,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.Iterables;
 
 import java.util.List;
@@ -45,7 +45,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query constructed from provided conjunctive pattern
      */
-    public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
+    public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, tx).inferTypes();
         return query.isAtomic()?
                 new ReasonerAtomicQuery(query.getAtoms(), tx) :
@@ -58,7 +58,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query defined by the provided set of atomics
      */
-    public static ReasonerQueryImpl create(Set<Atomic> as, EmbeddedGraknTx<?> tx){
+    public static ReasonerQueryImpl create(Set<Atomic> as, TransactionImpl<?> tx){
         boolean isAtomic = as.stream().filter(Atomic::isSelectable).count() == 1;
         return isAtomic?
                 new ReasonerAtomicQuery(as, tx).inferTypes() :
@@ -72,7 +72,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return reasoner query defined by the provided list of atoms together with their constraints (types and predicates, if any)
      */
-    public static ReasonerQueryImpl create(List<Atom> as, EmbeddedGraknTx<?> tx){
+    public static ReasonerQueryImpl create(List<Atom> as, TransactionImpl<?> tx){
         boolean isAtomic = as.size() == 1;
         return isAtomic?
                 new ReasonerAtomicQuery(Iterables.getOnlyElement(as)).inferTypes() :
@@ -94,7 +94,7 @@ public class ReasonerQueries {
      * @param tx corresponding transaction
      * @return atomic query defined by the provided pattern with inferred types
      */
-    public static ReasonerAtomicQuery atomic(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx){
+    public static ReasonerAtomicQuery atomic(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx){
         return new ReasonerAtomicQuery(pattern, tx).inferTypes();
     }
 

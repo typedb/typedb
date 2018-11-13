@@ -26,7 +26,7 @@ java_test(
 
 java_test(
   name = "grakn-tx-it",
-  srcs = ["GraknTxIT.java"],
+  srcs = ["TransactionIT.java"],
   test_class = "grakn.core.kb.internal.GraknTxIT",
   deps = [
       "//grakn-graql",

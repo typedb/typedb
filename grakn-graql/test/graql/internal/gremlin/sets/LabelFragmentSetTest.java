@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Type;
 import grakn.core.concept.Label;
 import grakn.core.graql.Graql;
@@ -47,11 +47,11 @@ public class LabelFragmentSetTest {
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
-    private GraknTx tx;
+    private Transaction tx;
 
     @Before
     public void setUp() {
-        tx = mock(GraknTx.class);
+        tx = mock(Transaction.class);
 
         when(tx.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
         when(tx.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);

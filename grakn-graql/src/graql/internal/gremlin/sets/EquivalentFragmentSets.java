@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -172,7 +172,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknTx tx) {
+            Collection<EquivalentFragmentSet> fragmentSets, Transaction tx) {
 
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;

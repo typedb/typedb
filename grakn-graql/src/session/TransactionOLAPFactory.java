@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.janus;
+package grakn.core.session;
 
+import grakn.core.Transaction;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.util.GraknConfigKey;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.factory.TxFactoryAbstract;
-import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
@@ -33,12 +32,12 @@ import java.util.Map;
 
 /**
  * <p>
- *     A {@link grakn.core.GraknTx} on top of {@link HadoopGraph}
+ *     A {@link Transaction} on top of {@link HadoopGraph}
  * </p>
  *
  * <p>
  *     This produces a graph on top of {@link HadoopGraph}.
- *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TransactionFactoryAbstract} ensures the graph factories are singletons.
  *     With this vendor some exceptions are in places:
  *     1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
  *     {@link HadoopGraph}.
@@ -47,15 +46,15 @@ import java.util.Map;
  * </p>
  *
  */
-public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<HadoopGraph>, HadoopGraph> {
-    private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
+public class TransactionOLAPFactory extends TransactionFactoryAbstract<TransactionImpl<HadoopGraph>, HadoopGraph> {
+    private final Logger LOG = LoggerFactory.getLogger(TransactionOLAPFactory.class);
 
     /**
      * This map is used to override hidden config files.
      * The key of the map refers to the Janus configuration to be overridden
      * The value of the map specifies the value that will be injected
      */
-    private static Map<String, String> overrideMap(EmbeddedGraknSession session) {
+    private static Map<String, String> overrideMap(SessionImpl session) {
         // Janus configurations
         String mrPrefixConf = "janusmr.ioformat.conf.";
         String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
@@ -77,14 +76,14 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
         );
     }
 
-    public TxFactoryJanusHadoop(EmbeddedGraknSession session) {
+    public TransactionOLAPFactory(SessionImpl session) {
         super(session);
 
         overrideMap(session()).forEach((k, v) -> session().config().properties().setProperty(k, v));
     }
 
     @Override
-    protected EmbeddedGraknTx<HadoopGraph> buildGraknTxFromTinkerGraph(HadoopGraph graph) {
+    protected TransactionImpl<HadoopGraph> buildGraknTxFromTinkerGraph(HadoopGraph graph) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_TX.getMessage(HadoopGraph.class.getName()));
     }
 
@@ -93,7 +92,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<EmbeddedGraknTx<Hado
         LOG.warn("Hadoop graph ignores parameter address.");
 
         //Load Defaults
-        TxFactoryJanus.getDefaultProperties().forEach((key, value) -> {
+        TransactionOLTPFactory.getDefaultProperties().forEach((key, value) -> {
             if(!session().config().properties().containsKey(key)){
                 session().config().properties().put(key, value);
             }

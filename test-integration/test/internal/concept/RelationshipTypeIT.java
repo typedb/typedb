@@ -18,7 +18,7 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Entity;
@@ -26,8 +26,8 @@ import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.exception.GraknTxOperationException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.graql.internal.Schema;
 import org.junit.After;
@@ -51,13 +51,13 @@ public class RelationshipTypeIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After

@@ -18,16 +18,15 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
-import grakn.core.concept.Type;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.InvalidKBException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.Before;
@@ -52,13 +51,13 @@ public class RoleIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         role = tx.putRole("My Role");
         relationshipType = tx.putRelationshipType("RelationshipType");
     }
@@ -78,10 +77,10 @@ public class RoleIT {
 
     @Test
     public void whenGettingTypeEntityTypesAllowedToPlayARole_ReturnTheEntityTypes(){
-        Type type1 = tx.putEntityType("CT1").plays(role);
-        Type type2 = tx.putEntityType("CT2").plays(role);
-        Type type3 = tx.putEntityType("CT3").plays(role);
-        Type type4 = tx.putEntityType("CT4").plays(role);
+        grakn.core.concept.Type type1 = tx.putEntityType("CT1").plays(role);
+        grakn.core.concept.Type type2 = tx.putEntityType("CT2").plays(role);
+        grakn.core.concept.Type type3 = tx.putEntityType("CT3").plays(role);
+        grakn.core.concept.Type type4 = tx.putEntityType("CT4").plays(role);
         assertThat(role.players().collect(toSet()), containsInAnyOrder(type1, type2, type3, type4));
     }
 

@@ -26,7 +26,7 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -162,7 +162,7 @@ public abstract class Fragment {
      * @param tx     the graph to execute the traversal on
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx,
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx,
             Collection<Var> vars, @Nullable Var currentVar) {
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
@@ -205,11 +205,11 @@ public abstract class Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param tx     the {@link EmbeddedGraknTx} to execute the traversal on
+     * @param tx     the {@link TransactionImpl} to execute the traversal on
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx, Collection<Var> vars);
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx, Collection<Var> vars);
 
 
     /**
@@ -252,7 +252,7 @@ public abstract class Fragment {
         return this;
     }
 
-    public Long getShardCount(EmbeddedGraknTx<?> tx) {
+    public Long getShardCount(TransactionImpl<?> tx) {
         return 0L;
     }
 

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.DefineQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.VarPattern;
@@ -37,12 +37,12 @@ import java.util.stream.Stream;
 @AutoValue
 abstract class DefineQueryImpl implements DefineQuery {
 
-    static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable GraknTx tx) {
+    static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
         return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
-    public Query<ConceptMap> withTx(GraknTx tx) {
+    public Query<ConceptMap> withTx(Transaction tx) {
         return DefineQueryImpl.of(varPatterns(), tx);
     }
 

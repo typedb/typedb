@@ -17,12 +17,12 @@
  */
 package grakn.core.kb.internal.structure;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -36,7 +36,7 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
  * <p>
- *     {@link GraknTx} AbstractElement
+ *     {@link Transaction} AbstractElement
  * </p>
  *
  * <p>
@@ -53,9 +53,9 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 public abstract class AbstractElement<E extends Element, P extends Enum> {
     private final String prefix;
     private final E element;
-    private final EmbeddedGraknTx tx;
+    private final TransactionImpl tx;
 
-    AbstractElement(EmbeddedGraknTx tx, E element, String prefix){
+    AbstractElement(TransactionImpl tx, E element, String prefix){
         this.tx = tx;
         this.element = element;
         this.prefix = prefix;
@@ -115,7 +115,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      *
      * @return The grakn graph this concept is bound to.
      */
-    public EmbeddedGraknTx<?> tx() {
+    public TransactionImpl<?> tx() {
         return tx;
     }
 

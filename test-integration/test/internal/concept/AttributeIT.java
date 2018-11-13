@@ -18,9 +18,8 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Entity;
@@ -64,13 +63,13 @@ public class AttributeIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private GraknTx tx;
-    private GraknSession session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After

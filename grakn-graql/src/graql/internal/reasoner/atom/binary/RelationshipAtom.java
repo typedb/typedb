@@ -17,7 +17,7 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.EntityType;
@@ -531,7 +531,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
     private Stream<Role> getExplicitRoles() {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        GraknTx graph = parent.tx();
+        Transaction graph = parent.tx();
 
         return getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
@@ -733,7 +733,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
-        GraknTx graph = getParentQuery().tx();
+        Transaction graph = getParentQuery().tx();
         Role metaRole = graph.getMetaRole();
         List<RelationPlayer> allocatedRelationPlayers = new ArrayList<>();
         RelationshipType relType = getSchemaConcept() != null? getSchemaConcept().asRelationshipType() : null;
@@ -815,7 +815,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public Multimap<Role, Var> getRoleVarMap() {
         ImmutableMultimap.Builder<Role, Var> builder = ImmutableMultimap.builder();
 
-        GraknTx graph = getParentQuery().tx();
+        Transaction graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
             Var varName = c.getRolePlayer().var();
             VarPatternAdmin rolePattern = c.getRole().orElse(null);

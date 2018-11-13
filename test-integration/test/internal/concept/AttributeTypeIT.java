@@ -18,9 +18,8 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.exception.GraknTxOperationException;
@@ -51,13 +50,13 @@ public class AttributeTypeIT {
     public final ExpectedException expectedException = ExpectedException.none();
 
 
-    private GraknTx tx;
-    private GraknSession session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
@@ -173,8 +172,8 @@ public class AttributeTypeIT {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (GraknSession session = server.sessionWithNewKeyspace()) {
-            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+        try (Session session = server.sessionWithNewKeyspace()) {
+            try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
                 graph.commit();
@@ -182,7 +181,7 @@ public class AttributeTypeIT {
             // offset the time to GMT where the colleague is working
             TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             // the colleague extracts the LocalTime which should be the same
-            try (GraknTx graph = session.transaction(GraknTxType.WRITE)) {
+            try (Transaction graph = session.transaction(Transaction.Type.WRITE)) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();
 

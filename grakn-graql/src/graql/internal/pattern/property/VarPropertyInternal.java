@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
@@ -38,7 +38,7 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a {@link Match}
      */
-    void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException;
+    void checkValid(Transaction graph, VarPatternAdmin var) throws GraqlQueryException;
 
     /**
      * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph

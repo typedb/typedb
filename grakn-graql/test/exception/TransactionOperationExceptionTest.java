@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class GraknTxOperationExceptionTest {
+public class TransactionOperationExceptionTest {
 
     @Test
     public void whenGettingErrorMessageForInvalidAttributeValue_MessageIncludesExpectedClass() {

@@ -18,7 +18,6 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
@@ -29,13 +28,13 @@ import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.benchmark.GrpcMessageConversion;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
-import grakn.core.kb.internal.EmbeddedGraknTx;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
@@ -98,7 +97,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private TraceContext receivedTraceContext;
 
         @Nullable
-        private EmbeddedGraknTx<?> tx = null;
+        private TransactionImpl<?> tx = null;
 
         private TransactionListener(StreamObserver<Transaction.Res> responseSender, ExecutorService threadExecutor, OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
             this.responseSender = responseSender;
@@ -258,7 +257,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
                     Keyspace.of(request.getKeyspace()),
-                    GraknTxType.of(request.getType().getNumber())
+                    grakn.core.Transaction.Type.of(request.getType().getNumber())
             );
 
             tx = requestOpener.open(args);
@@ -344,7 +343,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private EmbeddedGraknTx<?> tx() {
+        private TransactionImpl<?> tx() {
             return nonNull(tx);
         }
 

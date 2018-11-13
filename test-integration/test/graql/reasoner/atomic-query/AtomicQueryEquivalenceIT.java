@@ -1,10 +1,9 @@
 package grakn.core.graql.internal.reasoner;
 
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.Session;
+import grakn.core.Transaction;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Query;
 import grakn.core.graql.admin.Atomic;
@@ -15,7 +14,7 @@ import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Lists;
@@ -46,13 +45,13 @@ public class AtomicQueryEquivalenceIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession genericSchemaSession;
+    private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, GraknSession session){
+    private static void loadFromFile(String fileName, Session session){
         try {
             InputStream inputStream = AtomicQueryEquivalenceIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e){
@@ -61,7 +60,7 @@ public class AtomicQueryEquivalenceIT {
         }
     }
 
-    private EmbeddedGraknTx tx;
+    private TransactionImpl tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -76,7 +75,7 @@ public class AtomicQueryEquivalenceIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(GraknTxType.WRITE);
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -150,7 +149,7 @@ public class AtomicQueryEquivalenceIT {
         equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
-    private void testEquivalence_DifferentTypeVariants(EmbeddedGraknTx<?> tx, String keyword, String label, String label2){
+    private void testEquivalence_DifferentTypeVariants(TransactionImpl<?> tx, String keyword, String label, String label2){
         String query = "{$x " + keyword + " " + label + ";}";
         String query2 = "{$y " + keyword + " $type;$type label " + label +";}";
         String query3 = "{$z " + keyword + " $t;$t label " + label +";}";
@@ -407,11 +406,11 @@ public class AtomicQueryEquivalenceIT {
         equivalence(query5, queries, Collections.singletonList(query5b), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
-    private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, EmbeddedGraknTx tx){
+    private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, TransactionImpl tx){
         queries.forEach(q -> equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), equiv, tx));
     }
 
-    private void equivalence(String patternA, String patternB, boolean expectation, ReasonerQueryEquivalence equiv, EmbeddedGraknTx tx){
+    private void equivalence(String patternA, String patternB, boolean expectation, ReasonerQueryEquivalence equiv, TransactionImpl tx){
         ReasonerAtomicQuery a = ReasonerQueries.atomic(conjunction(patternA), tx);
         ReasonerAtomicQuery b = ReasonerQueries.atomic(conjunction(patternB), tx);
         queryEquivalence(a, b, expectation, equiv);

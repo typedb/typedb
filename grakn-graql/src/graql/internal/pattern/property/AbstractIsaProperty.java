@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Type;
@@ -73,7 +73,7 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public final void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
+    public final void checkValidProperty(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
         type().getTypeLabel().ifPresent(typeLabel -> {
             SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
             if (theSchemaConcept != null && !theSchemaConcept.isType()) {

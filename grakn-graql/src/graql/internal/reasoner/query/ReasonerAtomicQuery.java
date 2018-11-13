@@ -36,7 +36,7 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -65,7 +65,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
         super(pattern, tx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
@@ -80,7 +80,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
+    ReasonerAtomicQuery(Set<Atomic> atoms, TransactionImpl<?> tx){
         super(atoms, tx);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }

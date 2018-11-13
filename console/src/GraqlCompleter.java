@@ -19,9 +19,8 @@
 package grakn.core.console;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Label;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.graql.Autocomplete;
@@ -46,9 +45,9 @@ public class GraqlCompleter implements Completer {
         this.labels = labels;
     }
 
-    public static GraqlCompleter create(GraknSession session) {
+    public static GraqlCompleter create(Session session) {
         ImmutableSet<Label> labels;
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
             Stream<SchemaConcept> metaConcepts =
                     Stream.of(tx.getMetaConcept(), tx.getMetaRole(), tx.getMetaRule()).flatMap(SchemaConcept::subs);

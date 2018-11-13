@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
+    public final void checkValid(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
         innerVarPatterns().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
@@ -40,7 +40,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
         });
     }
 
-    void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
+    void checkValidProperty(Transaction graph, VarPatternAdmin var) {
 
     }
 

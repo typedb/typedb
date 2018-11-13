@@ -18,7 +18,7 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Entity;
@@ -26,14 +26,13 @@ import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
-import grakn.core.concept.Type;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.PropertyNotUniqueException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.graql.internal.Schema;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.structure.Shard;
 import grakn.core.test.rule.ConcurrentGraknServer;
-import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -65,13 +64,13 @@ public class EntityTypeIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         EntityType top = tx.putEntityType("top");
         EntityType middle1 = tx.putEntityType("mid1");
         EntityType middle2 = tx.putEntityType("mid2");
@@ -112,7 +111,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenGettingTheLabelOfType_TheTypeLabelIsReturned(){
-        Type test = tx.putEntityType("test");
+        grakn.core.concept.Type test = tx.putEntityType("test");
         assertEquals(Label.of("test"), test.label());
     }
 
@@ -137,10 +136,10 @@ public class EntityTypeIT {
         EntityType c3 = tx.putEntityType("c3").sup(c2);
         EntityType c4 = tx.putEntityType("c4").sup(c1);
 
-        Set<Type> c1SuperTypes = EntityTypeImpl.from(c1).sups().collect(toSet());
-        Set<Type> c2SuperTypes = EntityTypeImpl.from(c2).sups().collect(toSet());
-        Set<Type> c3SuperTypes = EntityTypeImpl.from(c3).sups().collect(toSet());
-        Set<Type> c4SuperTypes = EntityTypeImpl.from(c4).sups().collect(toSet());
+        Set<grakn.core.concept.Type> c1SuperTypes = EntityTypeImpl.from(c1).sups().collect(toSet());
+        Set<grakn.core.concept.Type> c2SuperTypes = EntityTypeImpl.from(c2).sups().collect(toSet());
+        Set<grakn.core.concept.Type> c3SuperTypes = EntityTypeImpl.from(c3).sups().collect(toSet());
+        Set<grakn.core.concept.Type> c4SuperTypes = EntityTypeImpl.from(c4).sups().collect(toSet());
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
@@ -155,7 +154,7 @@ public class EntityTypeIT {
         EntityType p2 = tx.putEntityType("p2").sup(p3);
         EntityType child = tx.putEntityType("child").sup(p2);
         EntityType entity = tx.getMetaEntityType();
-        Type thing = tx.getMetaConcept();
+        grakn.core.concept.Type thing = tx.getMetaConcept();
 
         assertThat(child.sups().collect(toSet()), containsInAnyOrder(child, p2, p3, p4, entity));
         assertThat(p2.sups().collect(toSet()), containsInAnyOrder(p2,p3, p4, entity));
@@ -253,7 +252,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenSettingMetaTypeToAbstract_Throw(){
-        Type meta = tx.getMetaEntityType();
+        grakn.core.concept.Type meta = tx.getMetaEntityType();
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.label()).getMessage());
@@ -263,7 +262,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingRoleToMetaType_Throw(){
-        Type meta = tx.getMetaEntityType();
+        grakn.core.concept.Type meta = tx.getMetaEntityType();
         Role role = tx.putRole("A Role");
 
         expectedException.expect(GraknTxOperationException.class);

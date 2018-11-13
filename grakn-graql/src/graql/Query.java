@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.QueryExecutor;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.answer.Answer;
@@ -43,7 +43,7 @@ public interface Query<T extends Answer> extends Iterable<T> {
      * @return a new query with the graph set
      */
     @CheckReturnValue
-    Query<T> withTx(GraknTx tx);
+    Query<T> withTx(Transaction tx);
 
     /**
      * @return a {@link Stream} of T, where T is a special type of {@link Answer}
@@ -84,10 +84,10 @@ public interface Query<T extends Answer> extends Iterable<T> {
     boolean isReadOnly();
 
     /**
-     * @return the transaction {@link GraknTx} associated with this query
+     * @return the transaction {@link Transaction} associated with this query
      */
     @Nullable
-    GraknTx tx();
+    Transaction tx();
 
     /**
      * @return boolean that indicates whether this query will perform rule-based inference during execution

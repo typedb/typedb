@@ -36,7 +36,7 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.internal.util.AdminConverter;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -53,16 +53,16 @@ import static java.util.stream.Collectors.toSet;
  * A {@link QueryExecutor} that runs queries using a Tinkerpop graph.
  *
  */
-@SuppressWarnings("unused") // accessed via reflection in EmbeddedGraknTx
+@SuppressWarnings("unused") // accessed via reflection in TransactionImpl
 public class QueryExecutorImpl implements QueryExecutor {
 
-    private final EmbeddedGraknTx<?> tx;
+    private final TransactionImpl<?> tx;
 
-    private QueryExecutorImpl(EmbeddedGraknTx<?> tx) {
+    private QueryExecutorImpl(TransactionImpl<?> tx) {
         this.tx = tx;
     }
 
-    public static QueryExecutorImpl create(EmbeddedGraknTx<?> tx) {
+    public static QueryExecutorImpl create(TransactionImpl<?> tx) {
         return new QueryExecutorImpl(tx);
     }
 

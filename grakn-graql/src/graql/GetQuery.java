@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
@@ -36,7 +36,7 @@ public interface GetQuery extends Query<ConceptMap> {
      * @return a new {@link GetQuery} with the transaction set
      */
     @Override
-    GetQuery withTx(GraknTx tx);
+    GetQuery withTx(Transaction tx);
 
     /**
      * Get the {@link Match} this {@link GetQuery} contains

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Label;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.graql.Var;
@@ -56,7 +56,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
      * Returns null if there is not exactly one label any of the {@link Label}s mentioned are not in the knowledge base.
      */
     @Nullable
-    LabelFragmentSet tryExpandSubs(Var typeVar, GraknTx tx) {
+    LabelFragmentSet tryExpandSubs(Var typeVar, Transaction tx) {
         if (labels().size() != 1) return null;
 
         Label oldLabel = Iterables.getOnlyElement(labels());

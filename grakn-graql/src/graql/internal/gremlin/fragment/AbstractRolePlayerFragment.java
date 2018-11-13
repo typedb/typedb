@@ -26,7 +26,7 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -83,7 +83,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
 
     static void applyLabelsToTraversal(
             GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
-            @Nullable Set<Label> typeLabels, EmbeddedGraknTx<?> tx) {
+            @Nullable Set<Label> typeLabels, TransactionImpl<?> tx) {
 
         if (typeLabels != null) {
             Set<Integer> typeIds =

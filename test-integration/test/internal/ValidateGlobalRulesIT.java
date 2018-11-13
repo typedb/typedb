@@ -18,9 +18,8 @@
 
 package grakn.core.kb.internal;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
@@ -48,13 +47,13 @@ public class ValidateGlobalRulesIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private GraknTx tx;
-    private GraknSession session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After

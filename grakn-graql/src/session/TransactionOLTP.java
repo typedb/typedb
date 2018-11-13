@@ -16,22 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.janus;
+package grakn.core.session;
 
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import grakn.core.exception.GraknBackendException;
 import grakn.core.exception.TemporaryWriteException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.Transaction;
 import org.janusgraph.core.util.JanusGraphCleanup;
 import org.janusgraph.diskstorage.BackendException;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
@@ -42,24 +40,24 @@ import java.util.function.Supplier;
 
 /**
  * <p>
- *     A {@link GraknTx} using {@link JanusGraph} as a vendor backend.
+ *     A {@link Transaction} using {@link JanusGraph} as a vendor backend.
  * </p>
  *
  * <p>
- *     Wraps up a {@link JanusGraph} as a method of storing the {@link GraknTx} object Model.
+ *     Wraps up a {@link JanusGraph} as a method of storing the {@link Transaction} object Model.
  *     With this vendor some issues to be aware of:
  *     1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
  *     2. Clearing the graph explicitly closes the connection as well.
  * </p>
  *
  */
-public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
-    public GraknTxJanus(EmbeddedGraknSession session, JanusGraph graph){
+public class TransactionOLTP extends TransactionImpl<JanusGraph> {
+    public TransactionOLTP(SessionImpl session, JanusGraph graph){
         super(session, graph);
     }
 
     @Override
-    public void openTransaction(GraknTxType txType){
+    public void openTransaction(Type txType){
         super.openTransaction(txType);
         if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
     }
@@ -71,7 +69,7 @@ public class GraknTxJanus extends EmbeddedGraknTx<JanusGraph> {
 
 
     public void closeOpenTransactions(){
-        ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(Transaction::close);
+        ((StandardJanusGraph) getTinkerPopGraph()).getOpenTransactions().forEach(org.janusgraph.core.Transaction::close);
         getTinkerPopGraph().close();
     }
 

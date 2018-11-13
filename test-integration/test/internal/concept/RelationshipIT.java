@@ -18,7 +18,8 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknTxType;
+import com.google.common.collect.Iterables;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
@@ -31,12 +32,11 @@ import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.InvalidKBException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.graql.internal.Schema;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.ErrorMessage;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -75,13 +75,13 @@ public class RelationshipIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         role1 = (RoleImpl) tx.putRole("Role 1");
         role2 = (RoleImpl) tx.putRole("Role 2");
         role3 = (RoleImpl) tx.putRole("Role 3");
@@ -167,7 +167,7 @@ public class RelationshipIT {
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followRolePlayerEdgesToNeighbours(EmbeddedGraknTx<?> tx, Thing thing) {
+    private Set<Concept> followRolePlayerEdgesToNeighbours(TransactionImpl<?> tx, Thing thing) {
         List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.id().getValue()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
@@ -291,7 +291,7 @@ public class RelationshipIT {
         rel2.has(r2);
 
         tx.commit();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
 
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));

@@ -18,6 +18,7 @@
 
 package grakn.core.kb.internal.concept;
 
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
@@ -258,7 +259,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      * Checks if changing the super is allowed. This passed if:
-     * 1. The transaction is not of type {@link grakn.core.GraknTxType#BATCH}
+     * 1. The transaction is not of type {@link Transaction.Type#BATCH}
      * 2. The <code>newSuperType</code> is different from the old.
      *
      * @param oldSuperType the old super

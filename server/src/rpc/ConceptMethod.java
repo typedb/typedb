@@ -23,7 +23,7 @@ import grakn.core.concept.Entity;
 import grakn.core.concept.Label;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Pattern;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 public class ConceptMethod {
 
     public static Transaction.Res run(grakn.core.concept.Concept concept, ConceptProto.Method.Req req,
-                                 SessionService.Iterators iterators, EmbeddedGraknTx tx) {
+                                 SessionService.Iterators iterators, TransactionImpl tx) {
         ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {
             // Concept methods
@@ -174,10 +174,10 @@ public class ConceptMethod {
     public static class ConceptHolder {
 
         private grakn.core.concept.Concept concept;
-        private EmbeddedGraknTx tx;
+        private TransactionImpl tx;
         private SessionService.Iterators iterators;
 
-        ConceptHolder(grakn.core.concept.Concept concept, EmbeddedGraknTx tx, SessionService.Iterators iterators) {
+        ConceptHolder(grakn.core.concept.Concept concept, TransactionImpl tx, SessionService.Iterators iterators) {
             this.concept = concept;
             this.tx = tx;
             this.iterators = iterators;

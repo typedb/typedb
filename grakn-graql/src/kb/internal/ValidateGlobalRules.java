@@ -18,7 +18,7 @@
 
 package grakn.core.kb.internal;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.Label;
 import grakn.core.concept.Relationship;
@@ -275,7 +275,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidHornClause(GraknTx graph, Rule rule){
+    static Set<String> validateRuleIsValidHornClause(Transaction graph, Rule rule){
         Set<String> errors = new HashSet<>();
         if (rule.when().admin().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
@@ -286,7 +286,7 @@ class ValidateGlobalRules {
         return errors;
     }
 
-    private static ReasonerQuery combinedRuleQuery(GraknTx graph, Rule rule){
+    private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule){
         ReasonerQuery bodyQuery = rule.when().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
         ReasonerQuery headQuery =  rule.then().admin().getDisjunctiveNormalForm().getPatterns().iterator().next().toReasonerQuery(graph);
         return headQuery.conjunction(bodyQuery);
@@ -298,7 +298,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    static Set<String> validateRuleOntologically(GraknTx graph, Rule rule) {
+    static Set<String> validateRuleOntologically(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
@@ -314,7 +314,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> validateRuleHead(GraknTx graph, Rule rule) {
+    private static Set<String> validateRuleHead(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> headPatterns = rule.then().admin().getDisjunctiveNormalForm().getPatterns();
 
@@ -347,7 +347,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleSchemaConceptExist(GraknTx graph, Rule rule){
+    static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule){
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
@@ -362,7 +362,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(GraknTx graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().varPatterns().stream()

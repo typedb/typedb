@@ -28,7 +28,6 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.PropertyNotUniqueException;
 import grakn.core.graql.Pattern;
@@ -42,7 +41,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     A {@link GraknTx} holding a database transaction
+ *     A {@link Transaction} holding a database transaction
  * </p>
  *
  * <p>
@@ -52,7 +51,45 @@ import java.util.stream.Stream;
  *
  *
  */
-public interface GraknTx extends AutoCloseable{
+public interface Transaction extends AutoCloseable{
+
+    /**
+     * An enum that determines the type of Grakn Transaction.
+     *
+     * This class is used to describe how a transaction on {@link Transaction} should behave.
+     * When producing a graph using a {@link Session} one of the following enums must be provided:
+     * READ - A read only transaction. If you attempt to mutate the graph with such a transaction an exception will be thrown.
+     * WRITE - A transaction which allows you to mutate the graph.
+     * BATCH - A transaction which allows mutations to be performed more quickly but disables some consistency checks.
+     *
+     */
+    enum Type {
+        READ(0),  //Read only transaction where mutations to the graph are prohibited
+        WRITE(1), //Write transaction where the graph can be mutated
+        BATCH(2); //Batch transaction which enables faster writes by switching off some consistency checks
+
+        private final int type;
+
+        Type(int type) {
+            this.type = type;
+        }
+
+        public int getId() {
+            return type;
+        }
+
+        @Override
+        public String toString() {
+            return this.name();
+        }
+
+        public static Type of(int value) {
+            for (Type t : Type.values()) {
+                if (t.type == value) return t;
+            }
+            return null;
+        }
+    }
 
     //------------------------------------- Meta Types ----------------------------------
     /**
@@ -61,7 +98,7 @@ public interface GraknTx extends AutoCloseable{
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    default Type getMetaConcept(){
+    default grakn.core.concept.Type getMetaConcept(){
         return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
     }
 
@@ -305,17 +342,17 @@ public interface GraknTx extends AutoCloseable{
     <T extends SchemaConcept> T getSchemaConcept(Label label);
 
     /**
-     * Get the {@link Type} with the label provided, if it exists.
+     * Get the {@link grakn.core.concept.Type} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link Type} in the graph.
-     * @return The {@link Type} with the provided label or null if no such {@link Type} exists.
+     * @param label A unique label which identifies the {@link grakn.core.concept.Type} in the graph.
+     * @return The {@link grakn.core.concept.Type} with the provided label or null if no such {@link grakn.core.concept.Type} exists.
      *
      * @throws GraknTxOperationException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
-    <T extends Type> T getType(Label label);
+    <T extends grakn.core.concept.Type> T getType(Label label);
 
     /**
      * Get all {@link Attribute} holding the value provided, if they exist.
@@ -396,13 +433,13 @@ public interface GraknTx extends AutoCloseable{
      * @return true if the current transaction is read only
      */
     @CheckReturnValue
-    GraknTxType txType();
+    Type txType();
 
     /**
-     * Returns the {@link GraknSession} which was used to create this {@link GraknTx}
-     * @return the owner {@link GraknSession}
+     * Returns the {@link Session} which was used to create this {@link Transaction}
+     * @return the owner {@link Session}
      */
-    GraknSession session();
+    Session session();
 
     /**
      * Utility function to get {@link Keyspace} of the knowledge base.
@@ -433,13 +470,13 @@ public interface GraknTx extends AutoCloseable{
     QueryBuilder graql();
 
     /**
-     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
+     * Closes the current transaction. Rendering this graph unusable. You must use the {@link Session} to
      * get a new open transaction.
      */
     void close();
 
     /**
-     * Reverts any changes done to the graph and closes the transaction. You must use the {@link GraknSession} to
+     * Reverts any changes done to the graph and closes the transaction. You must use the {@link Session} to
      * get a new open transaction.
      */
     default void abort(){
@@ -447,7 +484,7 @@ public interface GraknTx extends AutoCloseable{
     }
 
     /**
-     * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
+     * Commits any changes to the graph and closes the transaction. You must use the {@link Session} to
      * get a new open transaction.
      *
      */

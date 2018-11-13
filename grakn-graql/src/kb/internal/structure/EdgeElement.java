@@ -18,14 +18,14 @@
 
 package grakn.core.kb.internal.structure;
 
-import grakn.core.GraknTx;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.Transaction;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
  * <p>
- *     Represent an {@link Edge} in a {@link GraknTx}
+ *     Represent an {@link Edge} in a {@link Transaction}
  * </p>
  *
  * <p>
@@ -35,7 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(EmbeddedGraknTx graknGraph, Edge e){
+    public EdgeElement(TransactionImpl graknGraph, Edge e){
         super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 

@@ -18,7 +18,7 @@
 
 package grakn.core.kb.internal.structure;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
@@ -29,7 +29,7 @@ import java.io.Serializable;
  * </p>
  *
  * <p>
- *     A class which represents an id of any {@link AbstractElement} in the {@link GraknTx}.
+ *     A class which represents an id of any {@link AbstractElement} in the {@link Transaction}.
  *     Also contains a static method for producing {@link AbstractElement} IDs from Strings.
  * </p>
  *

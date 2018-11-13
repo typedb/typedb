@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.exception.GraqlQueryException;
@@ -30,7 +30,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -70,7 +70,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(TransactionImpl<?> tx) {
         if (tx == null) throw GraqlQueryException.noTx();
 
         validatePattern(tx);
@@ -86,7 +86,7 @@ public class MatchBase extends AbstractMatch {
      * @return resulting answer stream
      */
     public static Stream<ConceptMap> streamWithTraversal(
-            Set<Var> commonVars, EmbeddedGraknTx<?> tx, GraqlTraversal graqlTraversal
+            Set<Var> commonVars, TransactionImpl<?> tx, GraqlTraversal graqlTraversal
     ) {
         Set<Var> vars = Sets.filter(commonVars, Var::isUserDefinedName);
 
@@ -106,7 +106,7 @@ public class MatchBase extends AbstractMatch {
      * @return a map of concepts where the key is the variable name
      */
     private static Map<Var, Concept> makeResults(
-            Set<Var> vars, EmbeddedGraknTx<?> tx, Map<String, Element> elements) {
+            Set<Var> vars, TransactionImpl<?> tx, Map<String, Element> elements) {
 
         Map<Var, Concept> map = new HashMap<>();
         for (Var var : vars) {
@@ -122,7 +122,7 @@ public class MatchBase extends AbstractMatch {
         return map;
     }
 
-    private static Concept buildConcept(EmbeddedGraknTx<?> tx, Element element) {
+    private static Concept buildConcept(TransactionImpl<?> tx, Element element) {
         if (element instanceof Vertex) {
             return tx.buildConcept((Vertex) element);
         } else {
@@ -131,7 +131,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public Set<SchemaConcept> getSchemaConcepts(GraknTx tx) {
+    public Set<SchemaConcept> getSchemaConcepts(Transaction tx) {
         return pattern.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
@@ -151,7 +151,7 @@ public class MatchBase extends AbstractMatch {
     }
 
     @Override
-    public GraknTx tx() {
+    public Transaction tx() {
         return null;
     }
 

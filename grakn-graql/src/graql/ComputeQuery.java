@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.exception.GraqlQueryException;
@@ -45,7 +45,7 @@ public interface ComputeQuery<T extends Answer> extends Query<T> {
      * @return a ComputeQuery with the graph set
      */
     @Override
-    ComputeQuery<T> withTx(GraknTx tx);
+    ComputeQuery<T> withTx(Transaction tx);
 
     /**
      * @param fromID is the Concept ID of in which compute path query will start from

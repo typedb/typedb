@@ -18,7 +18,8 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -39,5 +40,5 @@ public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
      * @return the corresponding reasoner query
      */
     @CheckReturnValue
-    ReasonerQuery toReasonerQuery(GraknTx tx);
+    ReasonerQuery toReasonerQuery(Transaction tx);
 }

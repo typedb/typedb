@@ -21,7 +21,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -40,7 +40,7 @@ abstract class ValueFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
 
         return predicate().applyPredicate(traversal);
     }

@@ -1,6 +1,6 @@
 //package grakn.core.graql.internal.reasoner;
 //
-//import grakn.core.GraknTx;
+//import grakn.core.Transaction;
 //import grakn.core.concept.Concept;
 //import grakn.core.graql.GetQuery;
 //import grakn.core.graql.QueryBuilder;
@@ -54,7 +54,7 @@
 //
 //    @BeforeClass
 //    public static void onStartup() throws Exception {
-//        GraknTx tx = geoKB.tx();
+//        Transaction tx = geoKB.tx();
 //        iqb = tx.graql().infer(true);
 //        polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
 //        uw = getConcept(tx, "name", "University-of-Warsaw");
@@ -195,7 +195,7 @@
 //
 //    @Test
 //    public void testExplainingQueryContainingContradiction2(){
-//        GraknTx expGraph = explanationKB.tx();
+//        Transaction expGraph = explanationKB.tx();
 //        QueryBuilder eiqb = expGraph.graql().infer(true);
 //
 //        Concept a1 = getConcept(expGraph, "name", "a1");
@@ -212,7 +212,7 @@
 //
 //    @Test
 //    public void testExplainingConjunctions(){
-//        GraknTx expGraph = explanationKB.tx();
+//        Transaction expGraph = explanationKB.tx();
 //        QueryBuilder eiqb = expGraph.graql().infer(true);
 //
 //        String queryString = "match " +
@@ -227,7 +227,7 @@
 //
 //    @Test
 //    public void testExplainingMixedAtomicQueries(){
-//        GraknTx expGraph = explanationKB2.tx();
+//        Transaction expGraph = explanationKB2.tx();
 //        QueryBuilder eiqb = expGraph.graql().infer(true);
 //
 //        String queryString = "match " +
@@ -249,7 +249,7 @@
 //
 //    @Test
 //    public void testExplainingEquivalentPartialQueries(){
-//        GraknTx expGraph = explanationKB3.tx();
+//        Transaction expGraph = explanationKB3.tx();
 //        QueryBuilder eiqb = expGraph.graql().infer(true);
 //
 //        String queryString = "match $x isa same-tag-column-link; get;";
@@ -268,7 +268,7 @@
 //
 //    @Test
 //    public void testExplanationConsistency(){
-//        GraknTx genealogyGraph = genealogyKB.tx();
+//        Transaction genealogyGraph = genealogyKB.tx();
 //        final long limit = 3;
 //        QueryBuilder iqb = genealogyGraph.graql().infer(true);
 //        String queryString = "match " +
@@ -331,7 +331,7 @@
 //        answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
 //    }
 //
-//    private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
+//    private static Concept getConcept(Transaction graph, String typeLabel, Object val){
 //        return graph.graql().match(var("x").has(typeLabel, val)).get("x")
 //                .stream().map(ans -> ans.get("x")).findAny().orElse(null);
 //    }

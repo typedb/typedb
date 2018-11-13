@@ -35,7 +35,7 @@ import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.EngineID;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.server.keyspace.KeyspaceStoreImpl;
 import grakn.core.util.SimpleURI;
 import io.grpc.ServerBuilder;
@@ -157,9 +157,9 @@ public class ServerContext extends ExternalResource {
         return config;
     }
 
-    public EmbeddedGraknSession sessionWithNewKeyspace(){
+    public SessionImpl sessionWithNewKeyspace(){
         Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
-        return EmbeddedGraknSession.createEngineSession(randomKeyspace, config);
+        return SessionImpl.createEngineSession(randomKeyspace, config);
     }
 
     private Server startGraknEngineServer() throws IOException {

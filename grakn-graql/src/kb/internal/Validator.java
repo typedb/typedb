@@ -42,10 +42,10 @@ import java.util.Set;
  *
  */
 class Validator {
-    private final EmbeddedGraknTx<?> graknGraph;
+    private final TransactionImpl<?> graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(EmbeddedGraknTx graknGraph){
+    public Validator(TransactionImpl graknGraph){
         this.graknGraph = graknGraph;
     }
 
@@ -89,7 +89,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(EmbeddedGraknTx<?> graph, Rule rule){
+    private void validateRule(TransactionImpl<?> graph, Rule rule){
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {

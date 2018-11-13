@@ -18,9 +18,8 @@
 
 package grakn.core.test.graql.analytics;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
@@ -61,7 +60,7 @@ public class KCoreIT {
     private ConceptId entityId3;
     private ConceptId entityId4;
 
-    public GraknSession session;
+    public Session session;
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
@@ -76,14 +75,14 @@ public class KCoreIT {
 
     @Test(expected = GraqlQueryException.class)
     public void testKSmallerThan2_ThrowsException() {
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(CLUSTER).using(K_CORE).where(k(1L)).execute();
         }
     }
 
     @Test
     public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSet> result = tx.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertTrue(result.isEmpty());
         }
@@ -91,7 +90,7 @@ public class KCoreIT {
 
     @Test
     public void testOnGraphWithoutRelationships_ReturnsEmptyMap() {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType(thing).create();
             tx.putEntityType(anotherThing).create();
             List<ConceptSet> result = tx.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
@@ -101,7 +100,7 @@ public class KCoreIT {
 
     @Test
     public void testOnGraphWithTwoEntitiesAndTwoRelationships() {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType = tx.putEntityType(thing);
             Entity entity1 = entityType.create();
             Entity entity2 = entityType.create();
@@ -133,7 +132,7 @@ public class KCoreIT {
     public void testOnGraphWithFourEntitiesAndSixRelationships() {
         addSchemaAndEntities();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSet> result1 = tx.graql().compute(CLUSTER).using(K_CORE).where(k(2L)).execute();
             assertEquals(1, result1.size());
             assertEquals(4, result1.iterator().next().set().size());
@@ -153,7 +152,7 @@ public class KCoreIT {
     public void testImplicitTypeShouldBeExcluded() {
         addSchemaAndEntities();
 
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -166,7 +165,7 @@ public class KCoreIT {
         }
 
         List<ConceptSet> result;
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             result = tx.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(2L)).execute();
             assertEquals(1, result.size());
             assertEquals(5, result.iterator().next().set().size());
@@ -181,7 +180,7 @@ public class KCoreIT {
     public void testImplicitTypeShouldBeIncluded() {
         addSchemaAndEntities();
 
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             String aResourceTypeLabel = "aResourceTypeLabel";
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
@@ -202,7 +201,7 @@ public class KCoreIT {
         }
 
         List<ConceptSet> result;
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             result = tx.graql().compute(CLUSTER).using(K_CORE).includeAttributes(true).where(k(4L)).execute();
             System.out.println("result = " + result);
             assertEquals(1, result.size());
@@ -217,7 +216,7 @@ public class KCoreIT {
 
     @Test
     public void testDisconnectedCores() {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 
@@ -293,7 +292,7 @@ public class KCoreIT {
         }
 
         List<ConceptSet> result;
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             result = tx.graql().compute(CLUSTER).using(K_CORE).where(k(3L)).execute();
             assertEquals(2, result.size());
             assertEquals(4, result.iterator().next().set().size());
@@ -316,7 +315,7 @@ public class KCoreIT {
         }
 
         Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
-            try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 return Graql.compute(CLUSTER).withTx(tx).using(K_CORE).where(k(3L)).execute();
             }
         }).collect(Collectors.toSet());
@@ -327,7 +326,7 @@ public class KCoreIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 

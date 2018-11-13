@@ -18,7 +18,7 @@
 
 package grakn.core.exception;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
@@ -171,7 +171,7 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static GraknTxOperationException transactionOpen(GraknTx tx){
+    public static GraknTxOperationException transactionOpen(Transaction tx){
         return create(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
     }
 
@@ -185,7 +185,7 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static GraknTxOperationException transactionReadOnly(GraknTx tx){
+    public static GraknTxOperationException transactionReadOnly(Transaction tx){
         return create(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
     }
 
@@ -199,7 +199,7 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static GraknTxOperationException transactionClosed(@Nullable GraknTx tx, @Nullable String reason){
+    public static GraknTxOperationException transactionClosed(@Nullable Transaction tx, @Nullable String reason){
         if(reason == null){
             Preconditions.checkNotNull(tx);
             return create(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));
@@ -211,7 +211,7 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static GraknTxOperationException closingFailed(GraknTx tx, Exception e){
+    public static GraknTxOperationException closingFailed(Transaction tx, Exception e){
         return new GraknTxOperationException(CLOSE_FAILURE.getMessage(tx.keyspace()), e);
     }
 

@@ -18,8 +18,8 @@
 
 package grakn.core.test.client;
 
-import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
+import grakn.core.Transaction;
 import grakn.core.client.Grakn;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
@@ -148,7 +148,7 @@ public class RemoteConceptIT {
         Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
         session = new Grakn(server.grpcUri()).session(randomKeyspace);
 
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
 
         // Attribute Types
         email = tx.putAttributeType(EMAIL, DataType.STRING).regex(EMAIL_REGEX);

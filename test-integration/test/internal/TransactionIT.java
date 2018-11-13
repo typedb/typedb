@@ -18,9 +18,8 @@
 
 package grakn.core.kb.internal;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Entity;
@@ -31,7 +30,7 @@ import grakn.core.concept.Role;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.exception.GraknTxOperationException;
 import grakn.core.exception.InvalidKBException;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.kb.internal.concept.EntityTypeImpl;
 import grakn.core.kb.internal.structure.Shard;
 import grakn.core.test.rule.ConcurrentGraknServer;
@@ -65,20 +64,20 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
-public class GraknTxIT {
+public class TransactionIT {
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -169,7 +168,7 @@ public class GraknTxIT {
         tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        tx = session.transaction(GraknTxType.READ);
+        tx = session.transaction(Transaction.Type.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(toSet()));
@@ -220,7 +219,7 @@ public class GraknTxIT {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         tx.putEntityType("A Thing");
     }
 
@@ -236,7 +235,7 @@ public class GraknTxIT {
 
         //Purge the above concepts into the main cache
         tx.commit();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
 
         //Check cache is in good order
         Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
@@ -250,7 +249,7 @@ public class GraknTxIT {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Schema in a separate thread
         pool.submit(() -> {
-            GraknTx innerGraph = session.transaction(GraknTxType.WRITE);
+            Transaction innerGraph = session.transaction(Transaction.Type.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             Role role = innerGraph.getRole("r1");
             entityType.unplay(role);
@@ -288,14 +287,14 @@ public class GraknTxIT {
         String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
-        tx = session.transaction(GraknTxType.READ);
+        tx = session.transaction(Transaction.Type.READ);
         failMutation(tx, () -> tx.putEntityType(entityType));
         failMutation(tx, () -> tx.putRole(roleType1));
         failMutation(tx, () -> tx.putRelationshipType(relationType1));
 
         //Pass some mutations
         tx.close();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         EntityType entityT = tx.putEntityType(entityType);
         entityT.create();
         Role roleT1 = tx.putRole(roleType1);
@@ -306,7 +305,7 @@ public class GraknTxIT {
         tx.commit();
 
         //Fail some mutations again
-        tx = session.transaction(GraknTxType.READ);
+        tx = session.transaction(Transaction.Type.READ);
         failMutation(tx, entityT::create);
         failMutation(tx, () -> resourceT.create("A resource"));
         failMutation(tx, () -> tx.putEntityType(entityType));
@@ -314,7 +313,7 @@ public class GraknTxIT {
         failMutation(tx, () -> relationT1.relates(roleT2));
         failMutation(tx, () -> relationT2.relates(roleT1));
     }
-    private void failMutation(EmbeddedGraknTx<?> graph, Runnable mutator){
+    private void failMutation(TransactionImpl<?> graph, Runnable mutator){
         int vertexCount = graph.getTinkerTraversal().V().toList().size();
         int eddgeCount = graph.getTinkerTraversal().E().toList().size();
 
@@ -335,17 +334,17 @@ public class GraknTxIT {
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
         String keyspace = tx.keyspace().getValue();
-        failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
-        failAtOpeningTx(session, GraknTxType.BATCH, keyspace);
+        failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
+        failAtOpeningTx(session, Transaction.Type.BATCH, keyspace);
         tx.close();
 
         //noinspection ResultOfMethodCallIgnored
-        session.transaction(GraknTxType.BATCH);
-        failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
-        failAtOpeningTx(session, GraknTxType.READ, keyspace);
+        session.transaction(Transaction.Type.BATCH);
+        failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
+        failAtOpeningTx(session, Transaction.Type.READ, keyspace);
     }
 
-    private void failAtOpeningTx(GraknSession session, GraknTxType txType, String keyspace){
+    private void failAtOpeningTx(Session session, Transaction.Type txType, String keyspace){
         Exception exception = null;
         try{
             //noinspection ResultOfMethodCallIgnored
@@ -396,13 +395,13 @@ public class GraknTxIT {
 
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
-        GraknSession localSession = server.sessionWithNewKeyspace();
+        Session localSession = server.sessionWithNewKeyspace();
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
             //Resources
-            try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
+            try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -413,7 +412,7 @@ public class GraknTxIT {
         }).get();
 
         //Relationship Which Has Resources
-        try (GraknTx tx = localSession.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }
