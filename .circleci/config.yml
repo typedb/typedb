@@ -55,7 +55,6 @@ jobs:
       - checkout
       - *prepare_apt_repositories
       - *install_bazel
-      - run: bazel test //grakn-graql/... --test_output=errors
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
 
@@ -69,7 +68,6 @@ jobs:
       - run: bazel test //test-integration/client/... --test_output=errors
       - run: bazel test //test-integration/server/... --test_output=errors
       - run: bazel test //test-integration/graql/internal/... --test_output=errors
-      - run: bazel test //test-integration/graql/reasoner/... --test_output=errors
     # - run: bazel test //test-integration/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
 
   test-integration-reasoner:
@@ -231,6 +229,7 @@ workflows:
               ignore: /.*/
       - test-unit
       - test-integration
+      - test-integration-reasoner
       - test-integration-analytics
       - test-end-to-end
       - client-nodejs-e2e
