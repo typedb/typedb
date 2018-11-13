@@ -138,7 +138,7 @@ jobs:
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
         - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
         - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-        - run: bazel run @nodejs//:npm install
+        # - run: bazel run @nodejs//:npm install
         - run: Xvfb :99 &
         - run: export DISPLAY=:99
         - run: bazel test -s --test_output=streamed //workbase:tests-e2e
