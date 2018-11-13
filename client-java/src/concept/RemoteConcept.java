@@ -19,11 +19,11 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.client.Grakn;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.exception.TransactionException;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.function.Function;
@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Client implementation of {@link grakn.core.concept.Concept}
+ * Client implementation of {@link Concept}
  *
  * @param <SomeConcept> represents the actual class of object to downcast to
  */

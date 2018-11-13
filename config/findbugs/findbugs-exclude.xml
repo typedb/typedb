@@ -40,10 +40,10 @@
     <!-- Exclude classes that implement `compareTo`, but use `@AutoValue` to implement `equals` and `hashCode` -->
     <Match>
         <Or>
-            <Class name="grakn.core.concept.ConceptId"/>
-            <Class name="grakn.core.concept.Label"/>
-            <Class name="grakn.core.concept.LabelId"/>
-            <Class name="grakn.core.Keyspace"/>
+            <Class name="grakn.core.graql.concept.ConceptId"/>
+            <Class name="grakn.core.graql.concept.Label"/>
+            <Class name="grakn.core.graql.concept.LabelId"/>
+            <Class name="grakn.core.server.Keyspace"/>
             <Class name="grakn.core.client.concept.RemoteConcept"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>

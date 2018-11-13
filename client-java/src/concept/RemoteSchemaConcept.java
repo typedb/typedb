@@ -20,11 +20,11 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.LabelId;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.util.CommonUtil;
 
@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link grakn.core.concept.SchemaConcept}
+ * Client implementation of {@link SchemaConcept}
  *
  * @param <SomeSchemaConcept> The exact type of this class
  */

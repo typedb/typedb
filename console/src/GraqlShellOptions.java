@@ -18,7 +18,7 @@
 
 package grakn.core.console;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;

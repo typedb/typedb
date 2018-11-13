@@ -18,7 +18,7 @@
 
 package grakn.core.console;
 
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.printer.Printer;
 
 import java.util.Set;

@@ -18,7 +18,7 @@
 
 package grakn.core.console;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.client.Grakn;
 import grakn.core.util.ErrorMessage;
 import grakn.core.util.GraknVersion;

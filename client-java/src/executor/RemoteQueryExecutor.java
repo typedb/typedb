@@ -19,8 +19,8 @@
 
 package grakn.core.client.executor;
 
-import grakn.core.ComputeExecutor;
-import grakn.core.QueryExecutor;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.QueryExecutor;
 import grakn.core.client.Grakn;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
