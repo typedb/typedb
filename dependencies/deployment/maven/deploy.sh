@@ -78,30 +78,30 @@ jar -fu lib-with-maven-metadata.jar META-INF/
 
 $MD5_BINARY pom.xml | awk '{print $1}' > pom.md5
 $MD5_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.md5
-status=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5)
-if [[ ${status} -ne 201 ]]; then
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     exit 1
 fi
-status=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5)
-if [[ ${status} -ne 201 ]]; then
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     exit 1
 fi
 
 $SHA1_BINARY pom.xml | awk '{print $1}' > pom.sha1
 $SHA1_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.sha1
-status=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1)
-if [[ ${status} -ne 201 ]]; then
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     exit 1
 fi
-status=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1)
-if [[ ${status} -ne 201 ]]; then
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     exit 1
 fi
-status=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom)
-if [[ ${status} -ne 201 ]]; then
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     exit 1
 fi
-status=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar)
-if [[ ${status} -ne 201 ]]; then
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     exit 1
 fi
