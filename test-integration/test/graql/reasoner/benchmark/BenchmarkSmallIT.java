@@ -18,9 +18,8 @@
 
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
@@ -64,10 +63,10 @@ public class BenchmarkSmallIT {
     public void nonRecursiveChainOfRules() {
         final int N = 200;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        GraknSession graknSession = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-        try(GraknTx tx = graknSession.transaction(GraknTxType.WRITE)) {
+        try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
@@ -117,7 +116,7 @@ public class BenchmarkSmallIT {
             tx.commit();
         }
 
-        try( GraknTx tx = graknSession.transaction(GraknTxType.READ)) {
+        try( Transaction tx = session.transaction(Transaction.Type.READ)) {
             final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
@@ -129,7 +128,7 @@ public class BenchmarkSmallIT {
             assertEquals(executeQuery(queryString, tx, "full").size(), limit);
             assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), limit);
         }
-        graknSession.close();
+        session.close();
     }
 
     /**
@@ -160,8 +159,8 @@ public class BenchmarkSmallIT {
     public void testTransitiveMatrixLinear()  {
         int N = 10;
         int limit = 100;
-        GraknSession graknSession = server.sessionWithNewKeyspace();
-        LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(graknSession);
+        Session session = server.sessionWithNewKeyspace();
+        LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(session);
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
@@ -173,11 +172,11 @@ public class BenchmarkSmallIT {
         linearGraph.load(N, N);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-        GraknTx tx = graknSession.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         executeQuery(queryString, tx, "full");
         executeQuery(tx.graql().<GetQuery>parse(queryString).match().limit(limit).get(), "limit " + limit);
         tx.close();
-        graknSession.close();
+        session.close();
     }
 
     /**
@@ -200,11 +199,11 @@ public class BenchmarkSmallIT {
         int N = 100;
         int limit = 10;
         int answers = (N+1)*N/2;
-        GraknSession graknSession = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(graknSession);
+        TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(session);
         transitivityChainGraph.load(N);
-        GraknTx tx = graknSession.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         QueryBuilder iqb = tx.graql().infer(true);
 
@@ -220,7 +219,7 @@ public class BenchmarkSmallIT {
         executeQuery(query.match().limit(limit).get(), "limit " + limit);
         executeQuery(query2.match().limit(limit).get(), "limit " + limit);
         tx.close();
-        graknSession.close();
+        session.close();
     }
 
     /**
@@ -249,8 +248,8 @@ public class BenchmarkSmallIT {
         int N = 10;
         int limit = 100;
 
-        GraknSession graknSession = server.sessionWithNewKeyspace();
-        TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph(graknSession);
+        Session session = server.sessionWithNewKeyspace();
+        TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph(session);
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
         //results @N = 20 44100     ?       ?     12s     4 s
@@ -258,7 +257,7 @@ public class BenchmarkSmallIT {
         //results @N = 30 216225    ?       ?      ?     30 s
         //results @N = 35 396900   ?        ?      ?     76 s
         transitivityMatrixGraph.load(N, N);
-        GraknTx tx = graknSession.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         QueryBuilder iqb = tx.graql().infer(true);
 
         //full result
@@ -279,7 +278,7 @@ public class BenchmarkSmallIT {
         executeQuery(query3, "Single argument bound");
         executeQuery(query.match().limit(limit).get(), "limit " + limit);
         tx.close();
-        graknSession.close();
+        session.close();
     }
 
     /**
@@ -312,13 +311,13 @@ public class BenchmarkSmallIT {
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
-        GraknSession graknSession = server.sessionWithNewKeyspace();
-        DiagonalGraph diagonalGraph = new DiagonalGraph(graknSession);
+        Session session = server.sessionWithNewKeyspace();
+        DiagonalGraph diagonalGraph = new DiagonalGraph(session);
         diagonalGraph.load(N, N);
         //results @N = 40  1444  3.5s
         //results @N = 50  2304    8s    / 1s
         //results @N = 100 9604  loading takes ages
-        GraknTx tx = graknSession.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         QueryBuilder iqb = tx.graql().infer(true);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
@@ -326,7 +325,7 @@ public class BenchmarkSmallIT {
         executeQuery(query, "full");
         executeQuery(query.match().limit(limit).get(), "limit " + limit);
         tx.close();
-        graknSession.close();
+        session.close();
     }
 
     /**
@@ -369,13 +368,13 @@ public class BenchmarkSmallIT {
         int N = 5;
         int linksPerEntity = 4;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        GraknSession graknSession = server.sessionWithNewKeyspace();
-        PathTreeGraph pathTreeGraph = new PathTreeGraph(graknSession);
+        Session session = server.sessionWithNewKeyspace();
+        PathTreeGraph pathTreeGraph = new PathTreeGraph(session);
         pathTreeGraph.load(N, linksPerEntity);
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
 
-        GraknTx tx = graknSession.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +
                 "$x has index 'a0';" +
@@ -384,10 +383,10 @@ public class BenchmarkSmallIT {
 
         assertEquals(executeQuery(queryString, tx, "tree").size(), answers);
         tx.close();
-        graknSession.close();
+        session.close();
     }
 
-    private List<ConceptMap> executeQuery(String queryString, GraknTx graph, String msg){
+    private List<ConceptMap> executeQuery(String queryString, Transaction graph, String msg){
         return executeQuery(graph.graql().infer(true).parse(queryString), msg);
     }
 

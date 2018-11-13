@@ -18,7 +18,7 @@
 
 package grakn.core.concept;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -56,18 +56,18 @@ public interface Type extends SchemaConcept {
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      *
-     * @throws GraknTxOperationException if this is a meta-type
+     * @throws TransactionException if this is a meta-type
      */
-    Type isAbstract(Boolean isAbstract) throws GraknTxOperationException;
+    Type isAbstract(Boolean isAbstract) throws TransactionException;
 
     /**
      *
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
-     * @throws GraknTxOperationException if this is a meta-type
+     * @throws TransactionException if this is a meta-type
      */
-    Type plays(Role role) throws GraknTxOperationException;
+    Type plays(Role role) throws TransactionException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
@@ -75,9 +75,9 @@ public interface Type extends SchemaConcept {
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraknTxOperationException if this is a meta-type
+     * @throws TransactionException if this is a meta-type
      */
-    Type key(AttributeType attributeType) throws GraknTxOperationException;
+    Type key(AttributeType attributeType) throws TransactionException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
@@ -85,9 +85,9 @@ public interface Type extends SchemaConcept {
      * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraknTxOperationException if this is a meta-type
+     * @throws TransactionException if this is a meta-type
      */
-     Type has(AttributeType attributeType) throws GraknTxOperationException;
+     Type has(AttributeType attributeType) throws TransactionException;
 
     //------------------------------------- Accessors ---------------------------------
 

@@ -32,7 +32,7 @@ import grakn.core.graql.internal.gremlin.fragment.Fragments;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.pattern.property.IdProperty;
 import grakn.core.graql.internal.pattern.property.SubProperty;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableList;
@@ -88,12 +88,12 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x, true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static EmbeddedGraknTx<?> tx;
+    private static TransactionImpl<?> tx;
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
     @Before
     public void setUp() {
-        tx = mock(EmbeddedGraknTx.class);
+        tx = mock(TransactionImpl.class);
         Role wife = mock(Role.class);
         when(wife.label()).thenReturn(Label.of("wife"));
         when(wife.isRole()).thenReturn(true);

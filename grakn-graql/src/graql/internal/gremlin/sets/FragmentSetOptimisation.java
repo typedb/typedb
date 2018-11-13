@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
@@ -31,7 +31,7 @@ import java.util.Collection;
 public interface FragmentSetOptimisation {
 
     /**
-     * Apply the optimisation to the given {@link EquivalentFragmentSet}s using the given {@link GraknTx}.
+     * Apply the optimisation to the given {@link EquivalentFragmentSet}s using the given {@link Transaction}.
      *
      * <p>
      *     The strategy may modify the collection. If it does, it will return {@code true}, otherwise it will return
@@ -39,8 +39,8 @@ public interface FragmentSetOptimisation {
      * </p>
      *
      * @param fragmentSets a mutable collection of {@link EquivalentFragmentSet}s
-     * @param tx the {@link GraknTx} that these {@link EquivalentFragmentSet}s are going to operate against
+     * @param tx the {@link Transaction} that these {@link EquivalentFragmentSet}s are going to operate against
      * @return whether {@code fragmentSets} was modified
      */
-    boolean apply(Collection<EquivalentFragmentSet> fragmentSets, GraknTx tx);
+    boolean apply(Collection<EquivalentFragmentSet> fragmentSets, Transaction tx);
 }

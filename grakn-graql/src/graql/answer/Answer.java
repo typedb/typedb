@@ -18,7 +18,7 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.graql.Query;
 import grakn.core.graql.admin.Explanation;
 import com.google.common.collect.Sets;
@@ -34,27 +34,27 @@ import java.util.Set;
 public interface Answer<T> {
 
     default AnswerGroup asAnswerGroup() {
-        throw GraknTxOperationException.invalidCasting(this, AnswerGroup.class);
+        throw TransactionException.invalidCasting(this, AnswerGroup.class);
     }
 
     default ConceptList asConceptList() {
-        throw GraknTxOperationException.invalidCasting(this, ConceptList.class);
+        throw TransactionException.invalidCasting(this, ConceptList.class);
     }
 
     default ConceptMap asConceptMap() {
-        throw GraknTxOperationException.invalidCasting(this, ConceptMap.class);
+        throw TransactionException.invalidCasting(this, ConceptMap.class);
     }
 
     default ConceptSet asConceptSet() {
-        throw GraknTxOperationException.invalidCasting(this, ConceptSet.class);
+        throw TransactionException.invalidCasting(this, ConceptSet.class);
     }
 
     default ConceptSetMeasure asConceptSetMeasure() {
-        throw GraknTxOperationException.invalidCasting(this, ConceptSetMeasure.class);
+        throw TransactionException.invalidCasting(this, ConceptSetMeasure.class);
     }
 
     default Value asValue() {
-        throw GraknTxOperationException.invalidCasting(this, Value.class);
+        throw TransactionException.invalidCasting(this, Value.class);
     }
 
     /**

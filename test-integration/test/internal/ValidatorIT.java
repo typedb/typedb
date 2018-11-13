@@ -18,9 +18,8 @@
 
 package grakn.core.kb.internal;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
@@ -58,13 +57,13 @@ public class ValidatorIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private GraknTx tx;
-    private GraknSession session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -206,7 +205,7 @@ public class ValidatorIT {
         }
 
         tx.commit();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -220,7 +219,7 @@ public class ValidatorIT {
         godfather.delete();
 
         tx.commit();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 

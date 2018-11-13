@@ -1,11 +1,10 @@
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Role;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.Var;
@@ -22,7 +21,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -57,13 +56,13 @@ public class AtomicUnificationIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession genericSchemaSession;
+    private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, GraknSession session){
+    private static void loadFromFile(String fileName, Session session){
         try {
             InputStream inputStream = AtomicUnificationIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e){
@@ -72,7 +71,7 @@ public class AtomicUnificationIT {
         }
     }
 
-    private EmbeddedGraknTx tx;
+    private TransactionImpl tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -87,7 +86,7 @@ public class AtomicUnificationIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(GraknTxType.WRITE);
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -432,7 +431,7 @@ public class AtomicUnificationIT {
         exactUnification(baseQuery, childQuery, true, true);
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Var> expectedRoleMAp, EmbeddedGraknTx<?> tx){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Var> expectedRoleMAp, TransactionImpl<?> tx){
         RelationshipAtom atom = (RelationshipAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
         Multimap<Role, Var> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
@@ -450,7 +449,7 @@ public class AtomicUnificationIT {
         assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
-    private void nonExistentUnifier(String parentPatternString, String childPatternString, EmbeddedGraknTx<?> tx){
+    private void nonExistentUnifier(String parentPatternString, String childPatternString, TransactionImpl<?> tx){
         nonExistentUnifier(
                 ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
                 ReasonerQueries.atomic(conjunction(childPatternString, tx), tx)
@@ -497,7 +496,7 @@ public class AtomicUnificationIT {
         }
     }
 
-    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, EmbeddedGraknTx<?> tx){
+    private void exactUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, TransactionImpl<?> tx){
         exactUnification(
                 ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
                 ReasonerQueries.atomic(conjunction(childPatternString, tx), tx),
@@ -511,7 +510,7 @@ public class AtomicUnificationIT {
         return roleMap;
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> tx){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
         Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

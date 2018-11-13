@@ -18,13 +18,11 @@
 
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
-import grakn.core.concept.Type;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.Query;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Conjunction;
@@ -37,7 +35,7 @@ import grakn.core.graql.internal.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.internal.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -86,13 +84,13 @@ public class ResolutionPlanIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession genericSchemaSession;
+    private static SessionImpl genericSchemaSession;
 
-    private static void loadFromFile(String fileName, GraknSession session){
+    private static void loadFromFile(String fileName, Session session){
         try {
             InputStream inputStream = ResolutionPlanIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e){
@@ -101,7 +99,7 @@ public class ResolutionPlanIT {
         }
     }
 
-    private EmbeddedGraknTx tx;
+    private TransactionImpl tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -116,7 +114,7 @@ public class ResolutionPlanIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction(GraknTxType.WRITE);
+        tx = genericSchemaSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -654,8 +652,8 @@ public class ResolutionPlanIT {
         return query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
-    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, GraknTx tx){
-        Type type = tx.getType(Label.of(typeString));
+    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
+        grakn.core.concept.Type type = tx.getType(Label.of(typeString));
         return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }
 
@@ -719,7 +717,7 @@ public class ResolutionPlanIT {
         assertEquals(query.selectAtoms().collect(toSet()), plan.queries().stream().flatMap(ReasonerQueryImpl::selectAtoms).collect(toSet()));
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction graph){
         Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

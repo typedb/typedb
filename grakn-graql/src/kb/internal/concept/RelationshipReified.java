@@ -22,7 +22,7 @@ import grakn.core.concept.Relationship;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Thing;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.kb.internal.structure.Casting;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.kb.internal.structure.VertexElement;
@@ -105,7 +105,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
 
-        if(Schema.MetaSchema.isMetaLabel(role.label())) throw GraknTxOperationException.metaTypeImmutable(role.label());
+        if(Schema.MetaSchema.isMetaLabel(role.label())) throw TransactionException.metaTypeImmutable(role.label());
 
         //Do the actual put of the role and role player
         putRolePlayerEdge(role, thing);

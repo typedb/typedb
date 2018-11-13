@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.DefineQuery;
 import grakn.core.graql.InsertQuery;
@@ -37,7 +37,7 @@ import grakn.core.graql.internal.parser.QueryParserImpl;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.query.match.MatchBase;
 import grakn.core.graql.internal.util.AdminConverter;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -49,7 +49,7 @@ import static grakn.core.graql.Syntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>
- * A {@code QueryBuiler} is constructed with a {@code GraknTx}. All operations are performed using this
+ * A {@code QueryBuiler} is constructed with a {@code Transaction}. All operations are performed using this
  * transaction. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
@@ -58,7 +58,7 @@ import static grakn.core.graql.Syntax.Compute.Method;
 public class QueryBuilderImpl implements QueryBuilder {
 
     @Nullable
-    private final GraknTx tx;
+    private final Transaction tx;
     private final QueryParser queryParser = QueryParserImpl.create(this);
     private boolean infer = true;
 
@@ -66,8 +66,8 @@ public class QueryBuilderImpl implements QueryBuilder {
         this.tx = null;
     }
 
-    @SuppressWarnings("unused") /** used by {@link EmbeddedGraknTx#graql()}*/
-    public QueryBuilderImpl(GraknTx tx) {
+    @SuppressWarnings("unused") /** used by {@link TransactionImpl#graql()}*/
+    public QueryBuilderImpl(Transaction tx) {
         this.tx = tx;
     }
 

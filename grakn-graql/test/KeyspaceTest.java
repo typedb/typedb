@@ -18,7 +18,7 @@
 
 package grakn.core;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -49,8 +49,8 @@ public class KeyspaceTest {
     }
 
     private void invalidKeyspace(String keyspace) {
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.invalidKeyspace(keyspace).getMessage());
+        expectedException.expect(TransactionException.class);
+        expectedException.expectMessage(TransactionException.invalidKeyspace(keyspace).getMessage());
         Keyspace.of(keyspace);
     }
 

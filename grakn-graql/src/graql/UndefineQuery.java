@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.graql.answer.ConceptMap;
 
@@ -34,7 +34,7 @@ import java.util.Collection;
 public interface UndefineQuery extends Query<ConceptMap> {
 
     @Override
-    UndefineQuery withTx(GraknTx tx);
+    UndefineQuery withTx(Transaction tx);
 
     /**
      * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.

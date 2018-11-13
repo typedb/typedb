@@ -18,6 +18,7 @@
 
 #!/usr/bin/env bash
 
+set -ex
 
 ARTIFACT="$ARTIFACT"
 COORDINATES="$COORDINATES"
@@ -77,13 +78,37 @@ jar -fu lib-with-maven-metadata.jar META-INF/
 
 $MD5_BINARY pom.xml | awk '{print $1}' > pom.md5
 $MD5_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.md5
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.md5)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
+    echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
+    exit 1
+fi
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.md5 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.md5)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
+    echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
+    exit 1
+fi
 
 $SHA1_BINARY pom.xml | awk '{print $1}' > pom.sha1
 $SHA1_BINARY lib-with-maven-metadata.jar | awk '{print $1}' > lib.jar.sha1
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1
-
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom
-curl -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom.sha1)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
+    echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
+    exit 1
+fi
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib.jar.sha1 $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar.sha1)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
+    echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
+    exit 1
+fi
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file pom.xml $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.pom)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
+    echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
+    exit 1
+fi
+http_status_code_from_upload=$(curl --silent --output /dev/stderr --write-out "%{http_code}" -X PUT -u $MAVEN_USERNAME:$MAVEN_PASSWORD --upload-file lib-with-maven-metadata.jar $MAVEN_URL/$COORDINATES/$VERSION/$ARTIFACT-$VERSION.jar)
+if [[ ${http_status_code_from_upload} -ne 201 ]]; then
+    echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
+    exit 1
+fi
+echo "Deployment completed"

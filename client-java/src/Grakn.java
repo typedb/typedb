@@ -19,10 +19,11 @@
 
 package grakn.core.client;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import brave.Tracing;
+import brave.grpc.GrpcTracing;
+import com.google.common.collect.AbstractIterator;
 import grakn.core.QueryExecutor;
+import grakn.core.client.benchmark.GrpcClientInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
@@ -38,14 +39,12 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.internal.query.QueryBuilderImpl;
-import grakn.core.kb.admin.GraknAdmin;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -53,10 +52,6 @@ import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.SimpleURI;
-import brave.Tracing;
-import brave.grpc.GrpcTracing;
-import com.google.common.collect.AbstractIterator;
-import grakn.core.client.benchmark.GrpcClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import zipkin2.reporter.AsyncReporter;
@@ -73,7 +68,7 @@ import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
- * For now, only a subset of {@link GraknSession} and {@link grakn.core.GraknTx} features are supported.
+ * For now, only a subset of {@link grakn.core.Session} and {@link grakn.core.Transaction} features are supported.
  */
 public final class Grakn {
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
@@ -116,7 +111,7 @@ public final class Grakn {
         keyspace = new Keyspace();
     }
 
-    public Grakn.Session session(grakn.core.Keyspace keyspace) {
+    public Session session(grakn.core.Keyspace keyspace) {
         return new Session(keyspace);
     }
 
@@ -125,12 +120,12 @@ public final class Grakn {
     }
 
     /**
-     * Remote implementation of {@link GraknSession} that communicates with a Grakn server using gRPC.
+     * Remote implementation of {@link grakn.core.Session} that communicates with a Grakn server using gRPC.
      *
      * @see Transaction
      * @see Grakn
      */
-    public class Session implements GraknSession {
+    public class Session implements grakn.core.Session {
 
         private final grakn.core.Keyspace keyspace;
 
@@ -147,12 +142,12 @@ public final class Grakn {
         }
 
         @Override
-        public Grakn.Transaction transaction(GraknTxType type) {
+        public Transaction transaction(grakn.core.Transaction.Type type) {
             return new Transaction(this, type);
         }
 
         @Override
-        public void close() throws GraknTxOperationException {
+        public void close() throws TransactionException {
             channel.shutdown();
         }
 
@@ -175,15 +170,15 @@ public final class Grakn {
     }
 
     /**
-     * Remote implementation of {@link GraknTx} and {@link GraknAdmin} that communicates with a Grakn server using gRPC.
+     * Remote implementation of {@link grakn.core.Transaction} that communicates with a Grakn server using gRPC.
      */
-    public static final class Transaction implements GraknTx, GraknAdmin {
+    public static final class Transaction implements grakn.core.Transaction {
 
         private final Session session;
-        private final GraknTxType type;
+        private final Type type;
         private final Transceiver transceiver;
 
-        private Transaction(Session session, GraknTxType type) {
+        private Transaction(Session session, Type type) {
             this.session = session;
             this.type = type;
             this.transceiver = Transceiver.create(session.sessionStub());
@@ -192,17 +187,12 @@ public final class Grakn {
         }
 
         @Override
-        public GraknAdmin admin() {
-            return this;
-        }
-
-        @Override
-        public GraknTxType txType() {
+        public Type txType() {
             return type;
         }
 
         @Override
-        public GraknSession session() {
+        public grakn.core.Session session() {
             return session;
         }
 
@@ -270,7 +260,7 @@ public final class Grakn {
 
         @Nullable
         @Override
-        public <T extends Type> T getType(Label label) {
+        public <T extends grakn.core.concept.Type> T getType(Label label) {
             SchemaConcept concept = getSchemaConcept(label);
             if (concept == null || !concept.isType()) return null;
             return (T) concept.asType();

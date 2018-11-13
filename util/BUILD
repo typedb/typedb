@@ -17,6 +17,7 @@
 #
 
 package(default_visibility = ["//visibility:public"])
+load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "util",
@@ -31,6 +32,13 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
+    tags = ["maven_coordinates=grakn.core:util:{pom_version}"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":util"],
+    version_file = "//:VERSION",
 )
 
 java_test(
@@ -38,6 +46,6 @@ java_test(
     test_class = "grakn.core.util.GraknConfigTest",
     srcs = ["test/GraknConfigTest.java"],
     deps = [":util"],
-    resources = ["test/resources/inmemory-graph.properties"],
+    resources = ["//server:conf/grakn.properties"],
     size = "small"
 )

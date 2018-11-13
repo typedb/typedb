@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.answer.Answer;
 
 import javax.annotation.Nullable;
@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 public interface AggregateQuery<T extends Answer> extends Query<T> {
 
     @Override
-    AggregateQuery<T> withTx(GraknTx tx);
+    AggregateQuery<T> withTx(Transaction tx);
 
     /**
      * Get the {@link Match} that this {@link AggregateQuery} will operate on.

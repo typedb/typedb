@@ -1,8 +1,8 @@
 package grakn.core.deduplicator;
 
 
-import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
+import grakn.core.Transaction;
 import grakn.core.client.Grakn;
 import grakn.core.concept.AttributeType;
 import grakn.core.graql.answer.ConceptMap;
@@ -99,7 +99,7 @@ public class AttributeDeduplicatorE2E {
     }
 
     private void defineParentChildSchema(Grakn.Session session) {
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             List<ConceptMap> answer = tx.graql().define(
                     label("name").sub("attribute").datatype(AttributeType.DataType.STRING),
                     label("parent").sub("role"),
@@ -127,7 +127,7 @@ public class AttributeDeduplicatorE2E {
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         for (String name: duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                try (Grakn.Transaction tx = session.transaction(GraknTxType.WRITE)) {
+                try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                     List<ConceptMap> answer = tx.graql().insert(var().isa("name").val(name)).execute();
                     tx.commit();
                 }
@@ -174,7 +174,7 @@ public class AttributeDeduplicatorE2E {
     }
 
     private int countTotalNames(Grakn.Session session) {
-        try (Grakn.Transaction tx = session.transaction(GraknTxType.READ)) {
+        try (Grakn.Transaction tx = session.transaction(Transaction.Type.READ)) {
             return tx.graql().match(var("x").isa("name")).aggregate(count()).execute().get(0).number().intValue();
         }
     }

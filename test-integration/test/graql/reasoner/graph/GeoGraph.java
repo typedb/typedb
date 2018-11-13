@@ -1,8 +1,7 @@
 package grakn.core.graql.internal.reasoner.graph;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.EntityType;
@@ -14,8 +13,8 @@ import grakn.core.graql.Pattern;
 
 public class GeoGraph {
 
-    private GraknTx tx;
-    private final GraknSession session;
+    private Transaction tx;
+    private final Session session;
     private AttributeType<String> key;
 
     private EntityType university, city, region, country, continent, geographicalObject;
@@ -32,12 +31,12 @@ public class GeoGraph {
     private Thing Imperial;
     private Thing UCL;
 
-    public GeoGraph(GraknSession session){
+    public GeoGraph(Session session){
         this.session = session;
     }
 
     public void load(){
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         buildSchema();
         buildInstances();
         buildRelations();
@@ -195,7 +194,7 @@ public class GeoGraph {
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 
-    private Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
+    private Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

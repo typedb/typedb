@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.admin.DeleteQueryAdmin;
 import grakn.core.graql.answer.ConceptSet;
 
@@ -42,7 +42,7 @@ public interface DeleteQuery extends Query<ConceptSet> {
      * @return a new DeleteQuery with the graph set
      */
     @Override
-    DeleteQuery withTx(GraknTx tx);
+    DeleteQuery withTx(Transaction tx);
 
     /**
      * @return admin instance for inspecting and manipulating this query

@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.factory;
+package grakn.core.session;
 
-import grakn.core.GraknTxType;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.Transaction;
+import grakn.core.kb.internal.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
@@ -35,13 +35,13 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  *
  * @param <T> A vendor implementation of a Tinkerpop {@link Graph}
  */
-public interface TxFactory<T extends Graph> {
+public interface TransactionFactory<T extends Graph> {
     /**
      *
      * @param txType The type of transaction to open on the graph
      * @return An instance of Grakn graph
      */
-    EmbeddedGraknTx<T> open(GraknTxType txType);
+    TransactionImpl<T> open(Transaction.Type txType);
 
     /**
      *

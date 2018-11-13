@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.janus;
+package grakn.core.session;
 
+import grakn.core.janus.JanusPreviousPropertyStepStrategy;
 import grakn.core.util.GraknConfigKey;
-import grakn.core.GraknTx;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.factory.TxFactoryAbstract;
+import grakn.core.Transaction;
 import grakn.core.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
@@ -30,7 +29,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.LazyBarrierStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.EdgeLabel;
 import org.janusgraph.core.JanusGraph;
@@ -60,17 +58,17 @@ import static java.util.Arrays.stream;
 
 /**
  * <p>
- *     A {@link GraknTx} on top of {@link JanusGraph}
+ *     A {@link Transaction} on top of {@link JanusGraph}
  * </p>
  *
  * <p>
  *     This produces a grakn graph on top of {@link JanusGraph}.
- *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TransactionFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
  */
-final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
-    private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
+final public class TransactionOLTPFactory extends TransactionFactoryAbstract<TransactionOLTP, JanusGraph> {
+    private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTPFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
     private static final String STORAGE_BACKEND = "storage.backend";
@@ -85,7 +83,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     static {
         String DEFAULT_CONFIG = "resources/default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = TxFactoryJanus.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
+        try (InputStream in = TransactionOLTPFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
             in.close();
         } catch (IOException e) {
@@ -111,7 +109,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
-    public TxFactoryJanus(EmbeddedGraknSession session) {
+    public TransactionOLTPFactory(SessionImpl session) {
         super(session);
     }
 
@@ -126,8 +124,8 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     @Override
-    protected GraknTxJanus buildGraknTxFromTinkerGraph(JanusGraph graph) {
-        return new GraknTxJanus(session(), graph);
+    protected TransactionOLTP buildGraknTxFromTinkerGraph(JanusGraph graph) {
+        return new TransactionOLTP(session(), graph);
     }
 
     @Override
@@ -138,7 +136,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     private synchronized JanusGraph newJanusGraph(boolean batchLoading){
         JanusGraph JanusGraph = configureGraph(batchLoading);
         buildJanusIndexes(JanusGraph);
-        JanusGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+        JanusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());

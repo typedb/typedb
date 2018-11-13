@@ -21,9 +21,10 @@ package grakn.core.graql.internal.reasoner.plan;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -66,7 +67,7 @@ public class ResolutionQueryPlan {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
 
         ImmutableList<Atom> plan = resolutionPlan.plan();
-        EmbeddedGraknTx<?> tx = query.tx();
+        TransactionImpl<?> tx = query.tx();
         LinkedList<Atom> atoms = new LinkedList<>(plan);
         List<ReasonerQueryImpl> queries = new LinkedList<>();
 

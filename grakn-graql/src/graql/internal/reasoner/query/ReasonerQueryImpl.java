@@ -55,7 +55,7 @@ import grakn.core.graql.internal.reasoner.state.CumulativeState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -87,26 +87,26 @@ import static grakn.core.graql.Graql.var;
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final EmbeddedGraknTx<?> tx;
+    private final TransactionImpl<?> tx;
     private final ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableMap<Var, Type> varTypeMap = null;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, EmbeddedGraknTx<?> tx) {
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, TransactionImpl<?> tx) {
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(Set<Atomic> atoms, EmbeddedGraknTx<?> tx){
+    ReasonerQueryImpl(Set<Atomic> atoms, TransactionImpl<?> tx){
         this.tx = tx;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream().map(at -> at.copy(this)).iterator())
                 .build();
     }
 
-    ReasonerQueryImpl(List<Atom> atoms, EmbeddedGraknTx<?> tx){
+    ReasonerQueryImpl(List<Atom> atoms, TransactionImpl<?> tx){
         this.tx = tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream()
@@ -117,7 +117,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Atom atom) {
         // TODO: This cast is unsafe - ReasonerQuery should return an EmbeeddedGraknTx
-        this(Collections.singletonList(atom), (EmbeddedGraknTx<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
+        this(Collections.singletonList(atom), (TransactionImpl<?>) /*TODO anything but this*/ atom.getParentQuery().tx());
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
@@ -205,7 +205,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public EmbeddedGraknTx<?> tx() {
+    public TransactionImpl<?> tx() {
         return tx;
     }
 

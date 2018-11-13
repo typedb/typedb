@@ -18,16 +18,15 @@
 
 package grakn.core.server.factory;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.Keyspace;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.lock.LockProvider;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.factory.TxFactoryBuilder;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.session.TransactionFactoryBuilder;
+import grakn.core.kb.internal.TransactionImpl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,18 +34,18 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * <p>
- * Engine's internal {@link GraknTx} Factory
+ * Engine's internal {@link Transaction} Factory
  * </p>
  * <p>
  * <p>
- *     This internal factory is used to produce {@link GraknTx}s.
+ *     This internal factory is used to produce {@link Transaction}s.
  * </p>
  *
  */
 public class EngineGraknTxFactory {
     private final GraknConfig engineConfig;
     private final KeyspaceStore keyspaceStore;
-    private final Map<Keyspace, EmbeddedGraknSession> openedSessions;
+    private final Map<Keyspace, SessionImpl> openedSessions;
     private final LockProvider lockProvider;
 
     public static EngineGraknTxFactory create(LockProvider lockProvider, GraknConfig engineConfig, KeyspaceStore keyspaceStore) {
@@ -61,7 +60,7 @@ public class EngineGraknTxFactory {
     }
 
 
-    public EmbeddedGraknTx<?> tx(Keyspace keyspace, GraknTxType type) {
+    public TransactionImpl<?> tx(Keyspace keyspace, Transaction.Type type) {
         if (!keyspaceStore.containsKeyspace(keyspace)) {
             initialiseNewKeyspace(keyspace);
         }
@@ -70,19 +69,19 @@ public class EngineGraknTxFactory {
     }
 
     public void closeSessions(){
-        this.openedSessions.values().forEach(EmbeddedGraknSession::close);
+        this.openedSessions.values().forEach(SessionImpl::close);
     }
 
     /**
-     * Retrieves the {@link GraknSession} needed to open the {@link GraknTx}.
-     * This will open a new one {@link GraknSession} if it hasn't been opened before
+     * Retrieves the {@link Session} needed to open the {@link Transaction}.
+     * This will open a new one {@link Session} if it hasn't been opened before
      *
-     * @param keyspace The {@link Keyspace} of the {@link GraknSession} to retrieve
-     * @return a new or existing {@link GraknSession} connecting to the provided {@link Keyspace}
+     * @param keyspace The {@link Keyspace} of the {@link Session} to retrieve
+     * @return a new or existing {@link Session} connecting to the provided {@link Keyspace}
      */
-    private EmbeddedGraknSession session(Keyspace keyspace){
+    private SessionImpl session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, EmbeddedGraknSession.createEngineSession(keyspace, engineConfig, TxFactoryBuilder.getInstance()));
+            openedSessions.put(keyspace, SessionImpl.createEngineSession(keyspace, engineConfig, TransactionFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
@@ -98,7 +97,7 @@ public class EngineGraknTxFactory {
         lock.lock();
         try {
             // Create new empty keyspace in db
-            session(keyspace).transaction(GraknTxType.WRITE).close();
+            session(keyspace).transaction(Transaction.Type.WRITE).close();
             // Add current keyspace to list of available Grakn keyspaces
             keyspaceStore.addKeyspace(keyspace);
         } finally {

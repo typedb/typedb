@@ -1,7 +1,7 @@
 package grakn.core.client;
 
-import grakn.core.GraknTxType;
 import grakn.core.Keyspace;
+import grakn.core.Transaction;
 import grakn.core.concept.AttributeType;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
@@ -266,7 +266,7 @@ public class ClientJavaE2E {
         Keyspace keyspace = Keyspace.of("grakn");
 
         try (Grakn.Session session = new Grakn(graknHost).session(keyspace)) {
-            try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
+            try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 fn.accept(transaction);
             }
         }

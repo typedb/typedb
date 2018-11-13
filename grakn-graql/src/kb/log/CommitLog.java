@@ -19,6 +19,8 @@
 package grakn.core.kb.log;
 
 import grakn.core.Keyspace;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
@@ -29,11 +31,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
- *     Stores the commit log of a {@link grakn.core.GraknTx}.
+ *     Stores the commit log of a {@link Transaction}.
  * </p>
  *
  * <p>
- *     Stores the commit log of a {@link grakn.core.GraknTx} which is uploaded to the jserver when the {@link grakn.core.GraknSession} is closed.
+ *     Stores the commit log of a {@link Transaction} which is uploaded to the jserver when the {@link Session} is closed.
  *     The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
  * </p>
  *

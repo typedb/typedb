@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Conjunction;
@@ -62,7 +62,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknTx tx) {
+    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, Transaction tx) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {

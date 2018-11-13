@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.Graql;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.VarPatternAdmin;
@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.graph.GeoGraph;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -49,9 +49,9 @@ import static org.junit.Assert.assertEquals;
 public class QueryIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
-    private EmbeddedGraknTx tx;
+    private TransactionImpl tx;
 
-    private static EmbeddedGraknSession geoGraphSession;
+    private static SessionImpl geoGraphSession;
 
     @BeforeClass
     public static void loadContext(){
@@ -67,7 +67,7 @@ public class QueryIT {
 
     @Before
     public void setUp(){
-        tx = geoGraphSession.transaction(GraknTxType.WRITE);
+        tx = geoGraphSession.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -85,7 +85,7 @@ public class QueryIT {
 //
 //    @Test
 //    public void testQueryReiterationCondition_AcyclicalRuleGraph(){
-//        EmbeddedGraknTx<?> tx = snbGraph.tx();
+//        TransactionImpl<?> tx = snbGraph.tx();
 //        String patternString = "{($x, $y) isa recommendation;}";
 //        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
 //        assertFalse(query.requiresReiteration());
@@ -93,7 +93,7 @@ public class QueryIT {
 //
 //    @Test
 //    public void testQueryReiterationCondition_AnotherCyclicalRuleGraph(){
-//        EmbeddedGraknTx<?> tx = snbGraph.tx();
+//        TransactionImpl<?> tx = snbGraph.tx();
 //        String patternString = "{($x, $y);}";
 //        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
 //        assertTrue(query.requiresReiteration());
@@ -250,7 +250,7 @@ public class QueryIT {
     //Bug #11150 Relations with resources as single VarPatternAdmin
 //    @Test //tests whether directly and indirectly reified relations are equivalent
 //    public void testAlphaEquivalence_reifiedRelation(){
-//        EmbeddedGraknTx<?> tx = genealogySchema.tx();
+//        TransactionImpl<?> tx = genealogySchema.tx();
 //        String patternString = "{$rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';}";
 //        String patternString2 = "{$rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent';}";
 //
@@ -283,14 +283,14 @@ public class QueryIT {
         }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> tx){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
         Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
     }
 
-    private static Concept getConcept(EmbeddedGraknTx<?> tx, String typeLabel, Object val){
+    private static Concept getConcept(TransactionImpl<?> tx, String typeLabel, Object val){
         return tx.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().get();
     }

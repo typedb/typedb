@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -35,7 +35,7 @@ public class MatchKBTest {
 
     @Test
     public void matchesContainingTheSameGraphAndMatchBaseAreEqual() {
-        GraknTx graph = mock(GraknTx.class);
+        Transaction graph = mock(Transaction.class);
 
         MatchTx query1 = new MatchTx(graph, query);
         MatchTx query2 = new MatchTx(graph, query);
@@ -46,8 +46,8 @@ public class MatchKBTest {
 
     @Test
     public void matchesContainingDifferentGraphsAreNotEqual() {
-        GraknTx graph1 = mock(GraknTx.class);
-        GraknTx graph2 = mock(GraknTx.class);
+        Transaction graph1 = mock(Transaction.class);
+        Transaction graph2 = mock(Transaction.class);
 
         MatchTx query1 = new MatchTx(graph1, query);
         MatchTx query2 = new MatchTx(graph2, query);

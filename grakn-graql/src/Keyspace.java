@@ -18,7 +18,7 @@
 
 package grakn.core;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
@@ -56,7 +56,7 @@ public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
     @CheckReturnValue
     public static Keyspace of(String value){
         if(!Pattern.matches("[a-z_][a-z_0-9]*", value) || value.length() > MAX_LENGTH) {
-            throw GraknTxOperationException.invalidKeyspace(value);
+            throw TransactionException.invalidKeyspace(value);
         }
         return new AutoValue_Keyspace(value);
     }

@@ -18,12 +18,12 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Match;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -34,24 +34,24 @@ import java.util.stream.Stream;
  */
 class MatchTx extends MatchModifier {
 
-    private final GraknTx tx;
+    private final Transaction tx;
 
-    MatchTx(GraknTx tx, AbstractMatch inner) {
+    MatchTx(Transaction tx, AbstractMatch inner) {
         super(inner);
         this.tx = tx;
     }
 
     @Override
-    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(TransactionImpl<?> tx) {
         // TODO: This is dodgy. We need to refactor the code to remove this behavior
         if (tx != null) throw GraqlQueryException.multipleTxs();
 
         // TODO: This cast is unsafe - this is fixed if queries don't contain transactions
-        return inner.stream((EmbeddedGraknTx<?>) this.tx);
+        return inner.stream((TransactionImpl<?>) this.tx);
     }
 
     @Override
-    public GraknTx tx() {
+    public Transaction tx() {
         return tx;
     }
 

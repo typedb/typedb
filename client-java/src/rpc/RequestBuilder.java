@@ -19,7 +19,6 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.GraknTxType;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -46,7 +45,7 @@ public class RequestBuilder {
      */
     public static class Transaction {
 
-        public static SessionProto.Transaction.Req open(grakn.core.Keyspace keyspace, GraknTxType txType) {
+        public static SessionProto.Transaction.Req open(grakn.core.Keyspace keyspace, grakn.core.Transaction.Type txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setKeyspace(keyspace.getValue())
                     .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))

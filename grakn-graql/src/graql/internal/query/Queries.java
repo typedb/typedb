@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.Aggregate;
 import grakn.core.graql.AggregateQuery;
@@ -49,7 +49,7 @@ public class Queries {
         return GetQueryImpl.of(match, vars);
     }
 
-    public static InsertQueryAdmin insert(GraknTx tx, Collection<VarPatternAdmin> vars) {
+    public static InsertQueryAdmin insert(Transaction tx, Collection<VarPatternAdmin> vars) {
         return InsertQueryImpl.create(tx, null, vars);
     }
 

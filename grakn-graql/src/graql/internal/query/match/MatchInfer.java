@@ -26,7 +26,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -42,16 +42,16 @@ class MatchInfer extends MatchModifier {
     }
 
     @Override
-    public Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx) {
+    public Stream<ConceptMap> stream(TransactionImpl<?> tx) {
         // If the tx is not embedded, treat it like there is no transaction
         // TODO: this is dodgy - when queries don't contain transactions this can be fixed
 
-        EmbeddedGraknTx<?> embeddedTx;
+        TransactionImpl<?> embeddedTx;
 
         if (tx != null) {
             embeddedTx = tx;
-        } else if (inner.tx() instanceof EmbeddedGraknTx) {
-            embeddedTx = (EmbeddedGraknTx) inner.tx();
+        } else if (inner.tx() instanceof TransactionImpl) {
+            embeddedTx = (TransactionImpl) inner.tx();
         } else {
             throw GraqlQueryException.noTx();
         }

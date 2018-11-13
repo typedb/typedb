@@ -18,7 +18,8 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.GraknTxType;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import grakn.core.Keyspace;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.Transceiver;
@@ -27,10 +28,6 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Entity;
 import grakn.core.concept.Label;
 import grakn.core.concept.Role;
-import grakn.core.server.keyspace.KeyspaceStore;
-import grakn.core.server.ServerRPC;
-import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.factory.EngineGraknTxFactory;
 import grakn.core.exception.GraknBackendException;
 import grakn.core.exception.GraknException;
 import grakn.core.exception.GraqlQueryException;
@@ -43,7 +40,7 @@ import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -51,8 +48,10 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import grakn.core.server.ServerRPC;
+import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.keyspace.KeyspaceStore;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.ServerBuilder;
@@ -114,7 +113,7 @@ public class ServerRPCTest {
     private static final String V456 = "V456";
 
     private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
-    private final EmbeddedGraknTx tx = mock(EmbeddedGraknTx.class);
+    private final TransactionImpl tx = mock(TransactionImpl.class);
     private final GetQuery query = mock(GetQuery.class);
     private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
@@ -140,7 +139,6 @@ public class ServerRPCTest {
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
-        when(tx.admin()).thenReturn(tx);
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
@@ -160,34 +158,34 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningAReadTransactionRemotely_AReadTransactionIsOpened() {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
         }
 
-        verify(txFactory).tx(MYKS, GraknTxType.READ);
+        verify(txFactory).tx(MYKS, grakn.core.Transaction.Type.READ);
     }
 
     @Test
     public void whenOpeningAWriteTransactionRemotely_AWriteTransactionIsOpened() {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
         }
 
-        verify(txFactory).tx(MYKS, GraknTxType.WRITE);
+        verify(txFactory).tx(MYKS, grakn.core.Transaction.Type.WRITE);
     }
 
     @Test
     public void whenOpeningABatchTransactionRemotely_ABatchTransactionIsOpened() {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.BATCH));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.BATCH));
         }
 
-        verify(txFactory).tx(MYKS, GraknTxType.BATCH);
+        verify(txFactory).tx(MYKS, grakn.core.Transaction.Type.BATCH);
     }
 
     @Test
     public void whenOpeningATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             Transaction.Res response = tx.receive().ok();
 
             assertEquals(ResponseBuilder.Transaction.open(), response);
@@ -197,7 +195,7 @@ public class ServerRPCTest {
     @Test
     public void whenCommittingATransactionRemotely_TheTransactionIsCommitted() {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.send(commit());
         }
 
@@ -207,7 +205,7 @@ public class ServerRPCTest {
     @Test
     public void whenCommittingATransactionRemotely_ReceiveADoneMessage() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(commit());
@@ -221,7 +219,7 @@ public class ServerRPCTest {
     public void whenOpeningTwoTransactions_TransactionsAreOpenedInDifferentThreads() throws InterruptedException {
         List<Thread> threads = new ArrayList<>();
 
-        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenAnswer(invocation -> {
+        when(txFactory.tx(MYKS, grakn.core.Transaction.Type.WRITE)).thenAnswer(invocation -> {
             threads.add(Thread.currentThread());
             return tx;
         });
@@ -230,8 +228,8 @@ public class ServerRPCTest {
                 Transceiver tx1 = Transceiver.create(stub);
                 Transceiver tx2 = Transceiver.create(stub)
         ) {
-            tx1.send(open(MYKS, GraknTxType.WRITE));
-            tx2.send(open(MYKS, GraknTxType.WRITE));
+            tx1.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
+            tx2.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
 
             tx1.receive();
             tx2.receive();
@@ -245,7 +243,7 @@ public class ServerRPCTest {
         String keyspace = "not!@akeyspace";
         Open.Req openRequest = Open.Req.newBuilder()
                 .setKeyspace(keyspace)
-                .setType(Transaction.Type.valueOf(GraknTxType.WRITE.getId()))
+                .setType(Transaction.Type.valueOf(grakn.core.Transaction.Type.WRITE.getId()))
                 .build();
 
         try (Transceiver tx = Transceiver.create(stub)) {
@@ -260,7 +258,7 @@ public class ServerRPCTest {
         final Thread[] threadOpenedWith = new Thread[1];
         final Thread[] threadClosedWith = new Thread[1];
 
-        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenAnswer(invocation -> {
+        when(txFactory.tx(MYKS, grakn.core.Transaction.Type.WRITE)).thenAnswer(invocation -> {
             threadOpenedWith[0] = Thread.currentThread();
             return tx;
         });
@@ -271,7 +269,7 @@ public class ServerRPCTest {
         }).when(tx).close();
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
         }
 
         verify(tx).close();
@@ -281,7 +279,7 @@ public class ServerRPCTest {
     @Test
     public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.send(query(QUERY, false));
         }
 
@@ -309,7 +307,7 @@ public class ServerRPCTest {
         when(query.stream()).thenAnswer(params -> answers.stream());
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(query(QUERY, false));
@@ -370,7 +368,7 @@ public class ServerRPCTest {
         when(query.stream()).thenAnswer(params -> Stream.generate(answers::stream).flatMap(Function.identity()));
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(query(QUERY, false));
@@ -394,7 +392,7 @@ public class ServerRPCTest {
         when(countQuery.execute()).thenReturn(Collections.singletonList(new Value(100)));
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(query(COUNT_QUERY, false));
@@ -419,7 +417,7 @@ public class ServerRPCTest {
         when(deleteQuery.execute()).thenReturn(Collections.emptyList());
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(query(DELETE_QUERY, false));
@@ -434,7 +432,7 @@ public class ServerRPCTest {
     @Test
     public void whenExecutingQueryWithInferenceOff_InferenceIsTurnedOff() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.send(query(QUERY, false));
             int iterator = tx.receive().ok().getQueryIter().getId();
 
@@ -447,7 +445,7 @@ public class ServerRPCTest {
     @Test @Ignore // TODO: re-enable this test after investigating the possibility of a race condition
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.send(query(QUERY, true));
             int iterator = tx.receive().ok().getQueryIter().getId();
 
@@ -468,7 +466,7 @@ public class ServerRPCTest {
         when(concept.asSchemaConcept().label()).thenReturn(label);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.label));
@@ -487,7 +485,7 @@ public class ServerRPCTest {
         when(concept.asSchemaConcept().isImplicit()).thenReturn(true);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.isImplicit));
@@ -506,7 +504,7 @@ public class ServerRPCTest {
         when(concept.asThing().isInferred()).thenReturn(false);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.isInferred));
@@ -540,7 +538,7 @@ public class ServerRPCTest {
         when(player.id()).thenReturn(playerId);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             //ConceptMethod<Void> conceptMethod = ConceptMethod.unassign(RolePlayer.create(role, player));
@@ -558,7 +556,7 @@ public class ServerRPCTest {
         when(tx.getConcept(id)).thenReturn(null);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.label));
@@ -579,7 +577,7 @@ public class ServerRPCTest {
         when(concept.asSchemaConcept()).thenThrow(EXCEPTION);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             //tx.send(RequestBuilder.runConceptMethod(id, ConceptMethod.label));
@@ -601,7 +599,7 @@ public class ServerRPCTest {
         when(tx.getConcept(id)).thenReturn(concept);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
@@ -620,7 +618,7 @@ public class ServerRPCTest {
         when(tx.getConcept(id)).thenReturn(null);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.READ));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.READ));
             tx.receive().ok();
 
             tx.send(RequestBuilder.Transaction.getConcept(id));
@@ -654,10 +652,10 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningTxTwice_Throw() throws Throwable {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
 
             exception.expect(hasStatus(Status.FAILED_PRECONDITION));
 
@@ -670,10 +668,10 @@ public class ServerRPCTest {
         String message = "the backend went wrong";
         GraknException error = GraknBackendException.create(message);
 
-        when(txFactory.tx(MYKS, GraknTxType.WRITE)).thenThrow(error);
+        when(txFactory.tx(MYKS, grakn.core.Transaction.Type.WRITE)).thenThrow(error);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             exception.expect(hasStatus(Status.INTERNAL));
             throw tx.receive().error();
         }
@@ -684,7 +682,7 @@ public class ServerRPCTest {
         doThrow(EXCEPTION).when(tx).commitAndGetLogs();
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(commit());
@@ -703,7 +701,7 @@ public class ServerRPCTest {
         when(tx.graql().parse(QUERY)).thenThrow(error);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
             tx.send(query(QUERY, false));
 
@@ -720,7 +718,7 @@ public class ServerRPCTest {
         when(query.stream()).thenThrow(expectedException);
 
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
             tx.send(query(QUERY, false));
 
@@ -732,7 +730,7 @@ public class ServerRPCTest {
     @Test
     public void whenSendingNextBeforeQuery_Throw() throws Throwable {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(iterate(0));
@@ -746,7 +744,7 @@ public class ServerRPCTest {
     @Test
     public void whenSendingAnotherQueryDuringQueryExecution_ReturnResultsForBothQueries() throws Throwable {
         try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, GraknTxType.WRITE));
+            tx.send(open(MYKS, grakn.core.Transaction.Type.WRITE));
             tx.receive();
 
             tx.send(query(QUERY, false));

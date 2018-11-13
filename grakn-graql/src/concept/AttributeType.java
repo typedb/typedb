@@ -19,7 +19,7 @@
 package grakn.core.concept;
 
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 
@@ -276,7 +276,7 @@ public interface AttributeType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw GraknTxOperationException.invalidAttributeValue(o, LONG);
+                        throw TransactionException.invalidAttributeValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

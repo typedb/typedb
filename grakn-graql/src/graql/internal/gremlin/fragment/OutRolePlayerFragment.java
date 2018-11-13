@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.Var;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -53,7 +53,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 reifiedRelationTraversal(graph, vars),
@@ -62,7 +62,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         ));
     }
 
-    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(EmbeddedGraknTx<?> tx, Collection<Var> vars) {
+    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(TransactionImpl<?> tx, Collection<Var> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
         GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().name());
@@ -77,7 +77,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
-            EmbeddedGraknTx<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
+            TransactionImpl<?> tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
         GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
 
         // Filter by any provided type labels

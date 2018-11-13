@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
@@ -45,12 +45,12 @@ public abstract class GetQueryImpl implements GetQuery {
     }
 
     @Override
-    public GetQuery withTx(GraknTx tx) {
+    public GetQuery withTx(Transaction tx) {
         return Queries.get(match().withTx(tx).admin(), vars());
     }
 
     @Override
-    public final GraknTx tx() {
+    public final Transaction tx() {
         return match().admin().tx();
     }
 

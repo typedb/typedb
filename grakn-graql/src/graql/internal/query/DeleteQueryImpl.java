@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.DeleteQuery;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
@@ -58,12 +58,12 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public final GraknTx tx() {
+    public final Transaction tx() {
         return match().admin().tx();
     }
 
     @Override
-    public DeleteQuery withTx(GraknTx tx) {
+    public DeleteQuery withTx(Transaction tx) {
         return Queries.delete(match().withTx(tx).admin(), vars());
     }
 
