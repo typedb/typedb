@@ -18,7 +18,9 @@
 
 package grakn.core.server.kb.internal.structure;
 
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.kb.internal.concept.ConceptImpl;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -31,8 +33,8 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     Wraps a {@link VertexElement} which is a shard of a {@link grakn.core.concept.Concept}.
- *     This is used to break supernodes apart. For example the instances of a {@link grakn.core.concept.Type} are
+ *     Wraps a {@link VertexElement} which is a shard of a {@link Concept}.
+ *     This is used to break supernodes apart. For example the instances of a {@link Type} are
  *     spread across several shards.
  * </p>
  *

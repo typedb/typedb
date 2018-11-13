@@ -18,19 +18,19 @@
 
 package grakn.core.graql.internal;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.LabelId;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;

@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.query.executor;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.DefineQuery;
 import grakn.core.graql.InsertQuery;

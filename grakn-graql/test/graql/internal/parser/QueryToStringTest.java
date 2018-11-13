@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.parser;
 
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.InsertQuery;

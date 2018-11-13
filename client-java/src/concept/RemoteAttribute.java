@@ -20,11 +20,11 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.Grakn;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Thing;
 import grakn.core.protocol.ConceptProto;
 import com.google.auto.value.AutoValue;
 
@@ -34,7 +34,7 @@ import java.time.ZoneId;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link grakn.core.concept.Attribute}
+ * Client implementation of {@link Attribute}
  *
  * @param <D> The data type of this attribute
  */

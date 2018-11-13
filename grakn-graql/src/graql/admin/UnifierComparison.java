@@ -18,8 +18,8 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.Var;
 import java.util.Set;
 

@@ -19,7 +19,7 @@
 package grakn.core.graql.admin;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
 

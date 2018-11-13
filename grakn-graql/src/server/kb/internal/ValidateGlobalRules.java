@@ -19,15 +19,15 @@
 package grakn.core.server.kb.internal;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.Label;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.admin.Atomic;

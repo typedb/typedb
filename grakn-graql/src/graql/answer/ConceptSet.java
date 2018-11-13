@@ -18,7 +18,7 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.admin.Explanation;
 import com.google.common.collect.ImmutableSet;
 

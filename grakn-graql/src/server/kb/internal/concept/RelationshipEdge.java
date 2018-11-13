@@ -19,12 +19,12 @@
 package grakn.core.server.kb.internal.concept;
 
 import grakn.core.server.Keyspace;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.LabelId;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.LabelId;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
 import grakn.core.server.kb.internal.cache.Cache;
 import grakn.core.server.kb.internal.cache.CacheOwner;
 import grakn.core.server.kb.internal.cache.Cacheable;

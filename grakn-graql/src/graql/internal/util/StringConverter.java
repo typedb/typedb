@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.util;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.grammar.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 

@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;

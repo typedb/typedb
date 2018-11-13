@@ -18,9 +18,9 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.kb.internal.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
 

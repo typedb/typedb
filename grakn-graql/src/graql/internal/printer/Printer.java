@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.printer;
 
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptMap;

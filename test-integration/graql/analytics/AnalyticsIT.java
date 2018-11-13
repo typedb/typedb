@@ -20,12 +20,12 @@ package grakn.core.graql.analytics;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.rule.ConcurrentGraknServer;

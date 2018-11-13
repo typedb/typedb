@@ -18,18 +18,20 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.LabelId;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.internal.cache.Cache;
 import grakn.core.server.kb.internal.cache.Cacheable;
@@ -67,9 +69,9 @@ import static java.util.stream.Collectors.toSet;
  *
  *
  * @param <T> The leaf interface of the object concept which extends {@link Thing}.
- *           For example {@link grakn.core.concept.Entity} or {@link Relationship}.
+ *           For example {@link Entity} or {@link Relationship}.
  * @param <V> The type of the concept which extends {@link Type} of the concept.
- *           For example {@link grakn.core.concept.EntityType} or {@link RelationshipType}
+ *           For example {@link EntityType} or {@link RelationshipType}
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {

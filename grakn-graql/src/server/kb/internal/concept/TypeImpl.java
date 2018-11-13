@@ -18,14 +18,18 @@
 
 package grakn.core.server.kb.internal.concept;
 
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.Transaction;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.internal.cache.Cache;
 import grakn.core.server.kb.internal.cache.Cacheable;
@@ -54,10 +58,10 @@ import java.util.stream.Stream;
  * </p>
  *
  *
- * @param <T> The leaf interface of the object concept. For example an {@link grakn.core.concept.EntityType} or {@link RelationshipType}
- * @param <V> The instance of this type. For example {@link grakn.core.concept.Entity} or {@link Relationship}
+ * @param <T> The leaf interface of the object concept. For example an {@link EntityType} or {@link RelationshipType}
+ * @param <V> The instance of this type. For example {@link Entity} or {@link Relationship}
  */
-public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extends SchemaConceptImpl<T> implements grakn.core.concept.Type {
+public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
     private final Cache<Boolean> cachedIsAbstract = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
@@ -107,9 +111,9 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
     }
 
     /**
-     * Checks if an {@link Thing} is allowed to be created and linked to this {@link grakn.core.concept.Type}.
+     * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
      * This can fail is the {@link Transaction.Type} is read only.
-     * It can also fail when attempting to attach an {@link grakn.core.concept.Attribute} to a meta type
+     * It can also fail when attempting to attach an {@link Attribute} to a meta type
      */
     private void preCheckForInstanceCreation(){
         vertex().tx().checkMutationAllowed();
@@ -242,7 +246,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
     /**
      * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationshipType}s from their
      * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationshipType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link grakn.core.concept.Type} and the implicit {@link RelationshipType}.
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationshipType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
@@ -296,14 +300,14 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
 
 
     /**
-     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link grakn.core.concept.Type}.
+     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
      * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
      * <code>attributeTypes</code>
      *
      * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
      * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
      * @param attributeToRemove the {@link AttributeType} to remove
-     * @return the {@link grakn.core.concept.Type} itself
+     * @return the {@link Type} itself
      */
     private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
         if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
@@ -366,13 +370,13 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
 
     }
     /**
-     * Creates a relation type which allows this type and a {@link grakn.core.concept.Attribute} type to be linked.
+     * Creates a relation type which allows this type and a {@link Attribute} type to be linked.
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @param has the implicit relation type to build
      * @param hasValue the implicit role type to build for the {@link AttributeType}
      * @param hasOwner the implicit role type to build for the type
-     * @param required Indicates if the {@link grakn.core.concept.Attribute} is required on the entity
-     * @return The {@link grakn.core.concept.Type} itself
+     * @param required Indicates if the {@link Attribute} is required on the entity
+     * @return The {@link Type} itself
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         Label attributeLabel = attributeType.label();
@@ -432,7 +436,7 @@ public class TypeImpl<T extends grakn.core.concept.Type, V extends Thing> extend
         }
     }
 
-    public static <X extends grakn.core.concept.Type, Y extends Thing> TypeImpl<X,Y> from(grakn.core.concept.Type type){
+    public static <X extends Type, Y extends Thing> TypeImpl<X,Y> from(Type type){
         //noinspection unchecked
         return (TypeImpl<X, Y>) type;
     }

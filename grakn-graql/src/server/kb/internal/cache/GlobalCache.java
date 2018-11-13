@@ -19,9 +19,9 @@
 package grakn.core.server.kb.internal.cache;
 
 import grakn.core.util.GraknConfigKey;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.LabelId;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.kb.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;

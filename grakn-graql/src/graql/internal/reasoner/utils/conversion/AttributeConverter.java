@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import grakn.core.concept.Attribute;
+import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;

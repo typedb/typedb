@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.concept.Rule;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;

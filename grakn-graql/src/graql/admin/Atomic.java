@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.concept.Rule;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;

@@ -1,8 +1,7 @@
 package grakn.core.server;
 
-import grakn.core.server.Transaction;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Label;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;

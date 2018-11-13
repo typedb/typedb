@@ -19,14 +19,12 @@
 package grakn.core.server.kb.internal.concept;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.internal.concept.AttributeTypeImpl;
-import grakn.core.server.kb.internal.concept.EntityTypeImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.server.kb.internal.structure.EdgeElement;

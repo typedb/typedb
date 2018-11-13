@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb.internal;
 
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.Thing;
 import grakn.core.server.kb.internal.structure.Casting;
 
 import java.util.ArrayList;

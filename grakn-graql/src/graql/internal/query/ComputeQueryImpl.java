@@ -20,8 +20,8 @@ package grakn.core.graql.internal.query;
 
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.Transaction;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.answer.Answer;

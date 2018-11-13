@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.answer;
 
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Var;

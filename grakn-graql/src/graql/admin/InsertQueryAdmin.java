@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.InsertQuery;
 import grakn.core.graql.Match;
 

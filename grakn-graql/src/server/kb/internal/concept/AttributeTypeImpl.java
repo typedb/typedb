@@ -18,8 +18,9 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.internal.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
@@ -37,7 +38,7 @@ import java.util.regex.Pattern;
  * </p>
  *
  * <p>
- *     This ontological element behaves similarly to {@link grakn.core.concept.Type} when defining how it relates to other
+ *     This ontological element behaves similarly to {@link Type} when defining how it relates to other
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link AttributeType.DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.

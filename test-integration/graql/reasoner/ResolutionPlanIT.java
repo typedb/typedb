@@ -18,10 +18,11 @@
 
 package grakn.core.graql.reasoner;
 
+import grakn.core.graql.concept.Type;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Label;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.Query;
 import grakn.core.graql.Var;
@@ -653,7 +654,7 @@ public class ResolutionPlanIT {
     }
 
     private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
-        grakn.core.concept.Type type = tx.getType(Label.of(typeString));
+        Type type = tx.getType(Label.of(typeString));
         return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }
 

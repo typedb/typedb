@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.Var;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;

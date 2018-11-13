@@ -20,8 +20,8 @@ package grakn.core.server.kb.internal.concept;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.rule.ConcurrentGraknServer;
 import org.hamcrest.CoreMatchers;

@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
@@ -41,10 +41,10 @@ import java.util.stream.Stream;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Reperesents the {@code plays} property on a {@link grakn.core.concept.Type}.
+ * Reperesents the {@code plays} property on a {@link Type}.
  *
- * This property relates a {@link grakn.core.concept.Type} and a {@link Role}. It indicates that an
- * {@link Thing} whose type is this {@link grakn.core.concept.Type} is permitted to be a role-player
+ * This property relates a {@link Type} and a {@link Role}. It indicates that an
+ * {@link Thing} whose type is this {@link Type} is permitted to be a role-player
  * playing the role of the given {@link Role}.
  *
  */

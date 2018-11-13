@@ -21,7 +21,7 @@ package grakn.core.server.kb.log;
 import grakn.core.server.Keyspace;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import com.google.auto.value.AutoValue;
 
 import java.util.HashMap;

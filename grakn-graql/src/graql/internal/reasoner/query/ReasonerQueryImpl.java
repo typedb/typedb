@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Var;

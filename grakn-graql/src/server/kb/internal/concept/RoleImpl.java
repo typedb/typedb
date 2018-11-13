@@ -18,9 +18,10 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.kb.internal.cache.Cache;
 import grakn.core.server.kb.internal.cache.Cacheable;
 import grakn.core.server.kb.internal.structure.Casting;
@@ -35,11 +36,11 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An {@link grakn.core.concept.SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationshipType}.
+ *     An {@link SchemaConcept} which defines a {@link Role} which can be played in a {@link RelationshipType}.
  * </p>
  *
  * <p>
- *     This {@link grakn.core.concept.SchemaConcept} defines the roles which make up a {@link RelationshipType}.
+ *     This {@link SchemaConcept} defines the roles which make up a {@link RelationshipType}.
  *     It has some additional functionality:
  *     1. It cannot play a {@link Role} to itself.
  *     2. It is special in that it is unique to {@link RelationshipType}s.

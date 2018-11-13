@@ -19,8 +19,8 @@
 package grakn.core.server.kb.internal.concept;
 
 import grakn.core.server.Keyspace;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.internal.cache.Cache;
 import grakn.core.server.kb.internal.cache.CacheOwner;

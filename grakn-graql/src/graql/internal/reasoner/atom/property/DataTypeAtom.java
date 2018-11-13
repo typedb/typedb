@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.property;
 
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.admin.Atomic;

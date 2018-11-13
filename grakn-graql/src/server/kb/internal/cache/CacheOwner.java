@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.internal.cache;
 
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 
 import java.util.Collection;
 

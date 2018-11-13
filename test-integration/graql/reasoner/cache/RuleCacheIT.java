@@ -2,10 +2,10 @@ package grakn.core.graql.reasoner.cache;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Entity;
-import grakn.core.concept.Label;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;

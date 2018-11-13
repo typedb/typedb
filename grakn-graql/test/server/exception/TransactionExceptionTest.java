@@ -18,8 +18,7 @@
 
 package grakn.core.server.exception;
 
-import grakn.core.concept.AttributeType.DataType;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.graql.concept.AttributeType.DataType;
 import org.junit.Test;
 
 import java.time.LocalDateTime;

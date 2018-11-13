@@ -19,7 +19,7 @@
 package grakn.core.server.keyspace;
 
 import grakn.core.server.Keyspace;
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.Label;
 
 import java.util.Set;
 

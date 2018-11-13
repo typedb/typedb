@@ -18,8 +18,8 @@
 
 package grakn.core.graql;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;

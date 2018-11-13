@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;

@@ -18,7 +18,8 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
@@ -36,7 +37,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code id} property on a {@link grakn.core.concept.Concept}.
+ * Represents the {@code id} property on a {@link Concept}.
  *
  * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
  * with the given ID will be retrieved.

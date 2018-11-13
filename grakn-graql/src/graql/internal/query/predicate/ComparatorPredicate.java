@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.predicate;
 
-import grakn.core.concept.AttributeType.DataType;
+import grakn.core.graql.concept.AttributeType.DataType;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.Var;

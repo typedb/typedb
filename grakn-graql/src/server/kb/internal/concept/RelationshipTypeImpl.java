@@ -18,10 +18,11 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.kb.internal.cache.Cache;
 import grakn.core.server.kb.internal.cache.Cacheable;
 import grakn.core.server.kb.internal.structure.VertexElement;
@@ -38,7 +39,7 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation type defines how {@link grakn.core.concept.Type} may relate to one another.
+ *     A relation type defines how {@link Type} may relate to one another.
  *     They are used to model and categorise n-ary relationships.
  * </p>
  *

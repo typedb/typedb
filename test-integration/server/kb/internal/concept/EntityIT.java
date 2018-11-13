@@ -18,16 +18,16 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
 import grakn.core.graql.internal.Schema;
 import grakn.core.rule.ConcurrentGraknServer;
 import grakn.core.server.Transaction;

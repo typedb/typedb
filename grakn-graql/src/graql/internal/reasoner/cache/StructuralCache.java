@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;

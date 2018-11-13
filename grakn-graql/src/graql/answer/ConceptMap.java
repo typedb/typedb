@@ -18,8 +18,8 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Explanation;

@@ -18,13 +18,13 @@
 
 package grakn.core.server.kb.internal.concept;
 
+import grakn.core.graql.concept.Type;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Thing;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.internal.concept.EntityTypeImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.server.kb.internal.structure.EdgeElement;
@@ -135,7 +135,7 @@ public class ConceptIT {
         Entity thing = thingType.create();
 
         expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidCasting(thing, grakn.core.concept.Type.class).getMessage());
+        expectedException.expectMessage(TransactionException.invalidCasting(thing, Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

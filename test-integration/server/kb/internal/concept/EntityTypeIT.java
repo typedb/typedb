@@ -18,17 +18,17 @@
 
 package grakn.core.server.kb.internal.concept;
 
+import grakn.core.graql.concept.Type;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.PropertyNotUniqueException;
-import grakn.core.server.kb.internal.concept.EntityTypeImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.kb.internal.TransactionImpl;
@@ -112,7 +112,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenGettingTheLabelOfType_TheTypeLabelIsReturned(){
-        grakn.core.concept.Type test = tx.putEntityType("test");
+        Type test = tx.putEntityType("test");
         assertEquals(Label.of("test"), test.label());
     }
 
@@ -137,10 +137,10 @@ public class EntityTypeIT {
         EntityType c3 = tx.putEntityType("c3").sup(c2);
         EntityType c4 = tx.putEntityType("c4").sup(c1);
 
-        Set<grakn.core.concept.Type> c1SuperTypes = EntityTypeImpl.from(c1).sups().collect(toSet());
-        Set<grakn.core.concept.Type> c2SuperTypes = EntityTypeImpl.from(c2).sups().collect(toSet());
-        Set<grakn.core.concept.Type> c3SuperTypes = EntityTypeImpl.from(c3).sups().collect(toSet());
-        Set<grakn.core.concept.Type> c4SuperTypes = EntityTypeImpl.from(c4).sups().collect(toSet());
+        Set<Type> c1SuperTypes = EntityTypeImpl.from(c1).sups().collect(toSet());
+        Set<Type> c2SuperTypes = EntityTypeImpl.from(c2).sups().collect(toSet());
+        Set<Type> c3SuperTypes = EntityTypeImpl.from(c3).sups().collect(toSet());
+        Set<Type> c4SuperTypes = EntityTypeImpl.from(c4).sups().collect(toSet());
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
@@ -155,7 +155,7 @@ public class EntityTypeIT {
         EntityType p2 = tx.putEntityType("p2").sup(p3);
         EntityType child = tx.putEntityType("child").sup(p2);
         EntityType entity = tx.getMetaEntityType();
-        grakn.core.concept.Type thing = tx.getMetaConcept();
+        Type thing = tx.getMetaConcept();
 
         assertThat(child.sups().collect(toSet()), containsInAnyOrder(child, p2, p3, p4, entity));
         assertThat(p2.sups().collect(toSet()), containsInAnyOrder(p2,p3, p4, entity));
@@ -253,7 +253,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenSettingMetaTypeToAbstract_Throw(){
-        grakn.core.concept.Type meta = tx.getMetaEntityType();
+        Type meta = tx.getMetaEntityType();
 
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.metaTypeImmutable(meta.label()).getMessage());
@@ -263,7 +263,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenAddingRoleToMetaType_Throw(){
-        grakn.core.concept.Type meta = tx.getMetaEntityType();
+        Type meta = tx.getMetaEntityType();
         Role role = tx.putRole("A Role");
 
         expectedException.expect(TransactionException.class);

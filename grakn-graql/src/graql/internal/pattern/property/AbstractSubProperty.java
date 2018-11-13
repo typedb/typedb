@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;

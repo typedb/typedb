@@ -19,12 +19,12 @@
 package grakn.core.graql.internal.gremlin.sets;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarProperty;

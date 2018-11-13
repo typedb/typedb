@@ -20,12 +20,11 @@ package grakn.core.server.kb.internal;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
-import grakn.core.server.kb.internal.ValidateGlobalRules;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
 import grakn.core.server.kb.internal.concept.EntityImpl;
 import grakn.core.server.kb.internal.concept.EntityTypeImpl;
 import grakn.core.server.kb.internal.concept.RelationshipImpl;

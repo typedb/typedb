@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.admin.Atomic;

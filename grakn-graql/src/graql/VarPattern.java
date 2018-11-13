@@ -18,12 +18,12 @@
 
 package grakn.core.graql;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.admin.VarPatternAdmin;
 
 import javax.annotation.CheckReturnValue;

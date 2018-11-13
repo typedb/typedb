@@ -18,8 +18,9 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
@@ -37,7 +38,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code label} property on a {@link grakn.core.concept.Type}.
+ * Represents the {@code label} property on a {@link Type}.
  *
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
  * label, then that type will be retrieved.

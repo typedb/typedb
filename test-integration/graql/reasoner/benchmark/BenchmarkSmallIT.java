@@ -18,11 +18,11 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Graql;
 import grakn.core.graql.QueryBuilder;

@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.kb.internal.structure.VertexElement;
 
 /**

@@ -18,8 +18,9 @@
 
 package grakn.core.server.kb.internal.cache;
 
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.kb.internal.concept.ConceptImpl;
 
 import javax.annotation.Nullable;
@@ -34,7 +35,7 @@ import java.util.function.Supplier;
  *
  * <p>
  *     An internal cached object which hits the database only when it needs to.
- *     This is used to cache the components of ontological concepts. i.e. the fields of {@link grakn.core.concept.Type},
+ *     This is used to cache the components of ontological concepts. i.e. the fields of {@link Type},
  *     {@link RelationshipType}, and {@link Role}.
  * </p>
  *

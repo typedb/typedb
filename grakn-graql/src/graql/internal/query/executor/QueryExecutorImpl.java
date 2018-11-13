@@ -20,7 +20,7 @@ package grakn.core.graql.internal.query.executor;
 
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;

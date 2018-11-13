@@ -21,6 +21,7 @@ package grakn.core.graql.internal.pattern.property;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
@@ -29,11 +30,11 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 
 /**
- * Represents the {@code sub} property on a {@link grakn.core.concept.Type}.
+ * Represents the {@code sub} property on a {@link Type}.
  *
  * This property can be queried or inserted.
  *
- * This property relates a {@link grakn.core.concept.Type} and another {@link grakn.core.concept.Type}. It indicates
+ * This property relates a {@link Type} and another {@link Type}. It indicates
  * that every instance of the left type is also an instance of the right type.
  *
  */

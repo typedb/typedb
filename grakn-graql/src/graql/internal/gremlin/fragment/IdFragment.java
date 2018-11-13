@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.Var;
 import grakn.core.graql.internal.pattern.property.IdProperty;
 import grakn.core.server.kb.internal.TransactionImpl;

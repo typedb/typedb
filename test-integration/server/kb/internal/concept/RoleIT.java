@@ -18,11 +18,12 @@
 
 package grakn.core.server.kb.internal.concept;
 
+import grakn.core.graql.concept.Type;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
@@ -77,10 +78,10 @@ public class RoleIT {
 
     @Test
     public void whenGettingTypeEntityTypesAllowedToPlayARole_ReturnTheEntityTypes(){
-        grakn.core.concept.Type type1 = tx.putEntityType("CT1").plays(role);
-        grakn.core.concept.Type type2 = tx.putEntityType("CT2").plays(role);
-        grakn.core.concept.Type type3 = tx.putEntityType("CT3").plays(role);
-        grakn.core.concept.Type type4 = tx.putEntityType("CT4").plays(role);
+        Type type1 = tx.putEntityType("CT1").plays(role);
+        Type type2 = tx.putEntityType("CT2").plays(role);
+        Type type3 = tx.putEntityType("CT3").plays(role);
+        Type type4 = tx.putEntityType("CT4").plays(role);
         assertThat(role.players().collect(toSet()), containsInAnyOrder(type1, type2, type3, type4));
     }
 

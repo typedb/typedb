@@ -18,13 +18,13 @@
 package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;

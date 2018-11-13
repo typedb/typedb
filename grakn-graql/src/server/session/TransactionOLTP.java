@@ -19,7 +19,7 @@
 package grakn.core.server.session;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.exception.GraknBackendException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.kb.internal.TransactionImpl;

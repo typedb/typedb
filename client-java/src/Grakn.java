@@ -29,16 +29,16 @@ import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.ResponseReader;
 import grakn.core.client.rpc.Transceiver;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.Pattern;
@@ -260,7 +260,7 @@ public final class Grakn {
 
         @Nullable
         @Override
-        public <T extends grakn.core.concept.Type> T getType(Label label) {
+        public <T extends grakn.core.graql.concept.Type> T getType(Label label) {
             SchemaConcept concept = getSchemaConcept(label);
             if (concept == null || !concept.isType()) return null;
             return (T) concept.asType();

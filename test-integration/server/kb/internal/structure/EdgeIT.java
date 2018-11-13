@@ -19,8 +19,7 @@
 package grakn.core.server.kb.internal.structure;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Entity;
-import grakn.core.server.kb.internal.structure.EdgeElement;
+import grakn.core.graql.concept.Entity;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.server.kb.internal.concept.EntityImpl;

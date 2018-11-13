@@ -18,7 +18,7 @@
 package grakn.core.server.kb.internal.structure;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.graql.internal.Schema;

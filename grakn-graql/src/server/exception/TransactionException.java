@@ -18,17 +18,19 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.Rule;
 import grakn.core.server.Keyspace;
 import grakn.core.server.Transaction;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.Role;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
 import grakn.core.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.base.Preconditions;
@@ -133,7 +135,7 @@ public class TransactionException extends GraknException{
 
     /**
      * Thrown when casting concepts incorrectly. For example when doing {@link Concept#asEntityType()} on a
-     * {@link grakn.core.concept.Entity}
+     * {@link Entity}
      */
     public static TransactionException invalidCasting(Object concept, Class type){
         return create(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
@@ -141,7 +143,7 @@ public class TransactionException extends GraknException{
 
     /**
      * Thrown when creating a {@link Attribute} whose value {@link Object} does not match it's {@link AttributeType}'s
-     * {@link grakn.core.concept.AttributeType.DataType}
+     * {@link AttributeType.DataType}
      */
     public static TransactionException invalidAttributeValue(Object object, AttributeType.DataType dataType){
         return create(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getName()));
@@ -291,7 +293,7 @@ public class TransactionException extends GraknException{
     }
 
     /**
-     * Thrown when attempting to create a {@link Thing} via the execution of a {@link grakn.core.concept.Rule} when
+     * Thrown when attempting to create a {@link Thing} via the execution of a {@link Rule} when
      * the {@link Thing} already exists.
      */
     public static TransactionException nonInferredThingExists(Thing thing){

@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
@@ -36,7 +36,7 @@ import java.util.Set;
 import static grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
 /**
- * Represents the {@code is-abstract} property on a {@link grakn.core.concept.Type}.
+ * Represents the {@code is-abstract} property on a {@link Type}.
  *
  * This property can be matched or inserted.
  *

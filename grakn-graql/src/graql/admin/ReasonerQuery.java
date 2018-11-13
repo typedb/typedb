@@ -19,7 +19,7 @@
 package grakn.core.graql.admin;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;

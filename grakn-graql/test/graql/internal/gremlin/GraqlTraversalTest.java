@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;

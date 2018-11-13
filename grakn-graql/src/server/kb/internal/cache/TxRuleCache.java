@@ -18,8 +18,8 @@
 
 package grakn.core.server.kb.internal.cache;
 
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.admin.Explanation;
 
 import javax.annotation.Nullable;

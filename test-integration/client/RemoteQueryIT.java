@@ -18,23 +18,23 @@
 
 package grakn.core.client;
 
+import grakn.core.graql.concept.Type;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.Keyspace;
-import grakn.core.client.Grakn;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.AttributeType.DataType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.Relationship;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType.DataType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Thing;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.DeleteQuery;
 import grakn.core.graql.GetQuery;
@@ -540,14 +540,14 @@ public class RemoteQueryIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("person")).get();
-            grakn.core.concept.Type remoteConcept = query.stream().findAny().get().get("x").asType();
-            grakn.core.concept.Type localConcept = localTx.getConcept(remoteConcept.id()).asType();
+            Type remoteConcept = query.stream().findAny().get().get("x").asType();
+            Type localConcept = localTx.getConcept(remoteConcept.id()).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
-            assertEqualConcepts(localConcept, remoteConcept, grakn.core.concept.Type::playing);
-            assertEqualConcepts(localConcept, remoteConcept, grakn.core.concept.Type::instances);
-            assertEqualConcepts(localConcept, remoteConcept, grakn.core.concept.Type::attributes);
-            assertEqualConcepts(localConcept, remoteConcept, grakn.core.concept.Type::keys);
+            assertEqualConcepts(localConcept, remoteConcept, Type::playing);
+            assertEqualConcepts(localConcept, remoteConcept, Type::instances);
+            assertEqualConcepts(localConcept, remoteConcept, Type::attributes);
+            assertEqualConcepts(localConcept, remoteConcept, Type::keys);
         }
     }
 
@@ -592,8 +592,8 @@ public class RemoteQueryIT {
              Transaction localTx = localSession.transaction(Transaction.Type.READ)
         ) {
             GetQuery query = remoteTx.graql().match(var("x").label("expectation-rule")).get();
-            grakn.core.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
-            grakn.core.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
+            grakn.core.graql.concept.Rule remoteConcept = query.stream().findAny().get().get("x").asRule();
+            grakn.core.graql.concept.Rule localConcept = localTx.getConcept(remoteConcept.id()).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
             assertEquals(localConcept.then(), remoteConcept.then());

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.plan;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;

@@ -18,11 +18,11 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;

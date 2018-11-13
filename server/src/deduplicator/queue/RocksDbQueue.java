@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import grakn.core.server.Keyspace;
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import mjson.Json;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;

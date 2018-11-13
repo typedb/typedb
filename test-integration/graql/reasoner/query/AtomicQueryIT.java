@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.Concept;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Query;

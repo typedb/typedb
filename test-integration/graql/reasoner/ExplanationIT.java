@@ -1,7 +1,7 @@
 //package grakn.core.graql.internal.reasoner;
 //
 //import grakn.core.server.Transaction;
-//import grakn.core.concept.Concept;
+//import Concept;
 //import grakn.core.graql.GetQuery;
 //import grakn.core.graql.QueryBuilder;
 //import grakn.core.graql.Var;

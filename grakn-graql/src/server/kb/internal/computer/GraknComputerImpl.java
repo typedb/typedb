@@ -19,7 +19,7 @@
 package grakn.core.server.kb.internal.computer;
 
 import grakn.core.server.GraknComputer;
-import grakn.core.concept.LabelId;
+import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

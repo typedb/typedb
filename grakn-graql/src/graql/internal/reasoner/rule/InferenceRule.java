@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.rule;
 
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;

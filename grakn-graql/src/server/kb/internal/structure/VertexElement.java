@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.internal.structure;
 
+import grakn.core.graql.concept.Concept;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
@@ -40,7 +41,7 @@ import java.util.stream.StreamSupport;
  *
  * <p>
  *    Wraps a tinkerpop {@link Vertex} constraining it to the Grakn Object Model.
- *    This is used to wrap common functionality between exposed {@link grakn.core.concept.Concept} and unexposed
+ *    This is used to wrap common functionality between exposed {@link Concept} and unexposed
  *    internal vertices.
  * </p>
  *

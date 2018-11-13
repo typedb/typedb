@@ -21,7 +21,7 @@ package grakn.core.client.rpc;
 
 import grakn.core.client.Grakn;
 import grakn.core.client.concept.RemoteConcept;
-import grakn.core.concept.ConceptId;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.Answer;
@@ -31,6 +31,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import grakn.core.protocol.AnswerProto;
 import com.google.common.collect.ImmutableMap;
@@ -73,7 +74,7 @@ public class ResponseReader {
         );
     }
     static ConceptMap conceptMap(AnswerProto.ConceptMap res, Grakn.Transaction tx) {
-        ImmutableMap.Builder<Var, grakn.core.concept.Concept> map = ImmutableMap.builder();
+        ImmutableMap.Builder<Var, Concept> map = ImmutableMap.builder();
         res.getMapMap().forEach((resVar, resConcept) -> {
             map.put(Graql.var(resVar), RemoteConcept.of(resConcept, tx));
         });

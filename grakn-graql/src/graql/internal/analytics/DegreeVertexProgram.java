@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.concept.LabelId;
+import grakn.core.graql.concept.LabelId;
 import grakn.core.util.CommonUtil;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;

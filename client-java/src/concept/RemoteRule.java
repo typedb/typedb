@@ -20,10 +20,10 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.Grakn;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Rule;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.protocol.ConceptProto;
@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link grakn.core.concept.Rule}
+ * Client implementation of {@link Rule}
  */
 @AutoValue
 public abstract class RemoteRule extends RemoteSchemaConcept<Rule> implements Rule {

@@ -18,11 +18,11 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;

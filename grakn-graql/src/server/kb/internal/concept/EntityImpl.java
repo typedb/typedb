@@ -18,10 +18,10 @@
 
 package grakn.core.server.kb.internal.concept;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Relationship;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Relationship;
 import grakn.core.server.kb.internal.structure.VertexElement;
 
 /**

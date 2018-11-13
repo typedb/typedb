@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
+import grakn.core.graql.concept.Rule;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
@@ -28,7 +29,7 @@ import java.util.Collection;
 
 
 /**
- * Represents the {@code then} (right-hand side) property on a {@link grakn.core.concept.Rule}.
+ * Represents the {@code then} (right-hand side) property on a {@link Rule}.
  *
  * This property can be inserted and not queried.
  *

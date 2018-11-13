@@ -4,7 +4,7 @@ package grakn.core.deduplicator;
 import grakn.core.server.Keyspace;
 import grakn.core.server.Transaction;
 import grakn.core.client.Grakn;
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.util.SimpleURI;
 import org.apache.commons.io.FileUtils;

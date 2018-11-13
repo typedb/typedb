@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.reasoner.utils.conversion;
 
-import grakn.core.concept.Relationship;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;

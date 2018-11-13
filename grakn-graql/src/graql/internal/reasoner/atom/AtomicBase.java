@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom;
 
-import grakn.core.concept.Rule;
+import grakn.core.graql.concept.Rule;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;

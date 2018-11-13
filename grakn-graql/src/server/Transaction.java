@@ -18,16 +18,16 @@
 
 package grakn.core.server;
 
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.graql.Pattern;
@@ -98,7 +98,7 @@ public interface Transaction extends AutoCloseable{
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    default grakn.core.concept.Type getMetaConcept(){
+    default grakn.core.graql.concept.Type getMetaConcept(){
         return getSchemaConcept(Schema.MetaSchema.THING.getLabel());
     }
 
@@ -342,17 +342,17 @@ public interface Transaction extends AutoCloseable{
     <T extends SchemaConcept> T getSchemaConcept(Label label);
 
     /**
-     * Get the {@link grakn.core.concept.Type} with the label provided, if it exists.
+     * Get the {@link grakn.core.graql.concept.Type} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link grakn.core.concept.Type} in the graph.
-     * @return The {@link grakn.core.concept.Type} with the provided label or null if no such {@link grakn.core.concept.Type} exists.
+     * @param label A unique label which identifies the {@link grakn.core.graql.concept.Type} in the graph.
+     * @return The {@link grakn.core.graql.concept.Type} with the provided label or null if no such {@link grakn.core.graql.concept.Type} exists.
      *
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
-    <T extends grakn.core.concept.Type> T getType(Label label);
+    <T extends grakn.core.graql.concept.Type> T getType(Label label);
 
     /**
      * Get all {@link Attribute} holding the value provided, if they exist.

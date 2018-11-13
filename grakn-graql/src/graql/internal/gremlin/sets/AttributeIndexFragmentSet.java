@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarProperty;

@@ -19,10 +19,10 @@
 package grakn.core.graql.internal;
 
 import grakn.core.server.Transaction;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;

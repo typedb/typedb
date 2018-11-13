@@ -20,9 +20,9 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
