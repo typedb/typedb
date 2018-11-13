@@ -93,15 +93,43 @@ public class RocksDbQueueTest {
 
     /**
      * the read() method implements the 'guarded block' pattern using wait() and notifyAll(), and we want to
-     * test if it properly blocks until the queue becomes non-empty.
+     * test if it properly blocks.
      *
      * @throws IOException
      * @throws ExecutionException
      * @throws InterruptedException
      * @throws TimeoutException
      */
+    @Test(expected = TimeoutException.class)
+    public void theReadMethodMustBlockIfTheQueueIsEmpty() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
+        RocksDbQueue queue = new RocksDbQueue(queuePath);
+
+        // perform a read() on the currently empty queue asynchronously.
+        CompletableFuture<List<Attribute>> readMustBlock = CompletableFuture.supplyAsync(() -> {
+            try {
+                return queue.read(1);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // verify if read() indeed blocks, in which case a TimeoutException is thrown
+        readMustBlock.get(500L, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     *
+     * the read() method implements the 'guarded block' pattern using wait() and notifyAll(), and we want to
+     * test if it properly returns after blocking only once the queue is non-empty.
+     *
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws TimeoutException
+     */
     @Test
-    public void theReadMethodMustBlockUntilTheQueueBecomesNonEmpty() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    public void theReadMethodMustReturnOnceTheQueueIsNonEmpty() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         Path queuePath = Files.createTempDirectory("rocksdb-test-dir");
         RocksDbQueue queue = new RocksDbQueue(queuePath);
 
@@ -117,19 +145,11 @@ public class RocksDbQueueTest {
             }
         });
 
-        // verify if read() indeed blocks, in which case a TimeoutException is thrown
-        try {
-            readMustBlock_untilQueueNonEmpty.get(500L, TimeUnit.MILLISECONDS);
-            throw new RuntimeException("The expected TimeoutException isn't thrown");
-        } catch (TimeoutException e) {
-            // The expected TimeoutException is thrown
-        }
-
-        // now that we've verified that a TimeoutException is thrown, let's insert some data into the queue
+        Thread.sleep(300L); // wait 300ms to simulate insert() being called after read()
         queue.insert(input);
 
         // by this time, that read() operation should return the result
-        List<Attribute> actualOutput = readMustBlock_untilQueueNonEmpty.get(500L, TimeUnit.MILLISECONDS);
+        List<Attribute> actualOutput = readMustBlock_untilQueueNonEmpty.get(1000L, TimeUnit.MILLISECONDS);
         assertThat(actualOutput, equalTo(expectedOutput));
     }
 }
