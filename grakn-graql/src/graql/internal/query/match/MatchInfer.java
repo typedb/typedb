@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Match;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Conjunction;
@@ -26,7 +26,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 
 import java.util.Iterator;
 import java.util.stream.Stream;

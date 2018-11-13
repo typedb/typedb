@@ -18,7 +18,7 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.concept.Label;
 
 import java.util.Set;

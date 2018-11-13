@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.Transaction;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Aggregate;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.GetQuery;

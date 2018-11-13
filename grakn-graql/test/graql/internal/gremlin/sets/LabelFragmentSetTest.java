@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.concept.Type;
 import grakn.core.concept.Label;
 import grakn.core.graql.Graql;

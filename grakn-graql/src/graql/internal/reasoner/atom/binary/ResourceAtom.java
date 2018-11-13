@@ -17,7 +17,7 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
@@ -25,7 +25,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
@@ -46,10 +46,10 @@ import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.kb.internal.concept.AttributeImpl;
-import grakn.core.kb.internal.concept.AttributeTypeImpl;
-import grakn.core.kb.internal.concept.EntityImpl;
-import grakn.core.kb.internal.concept.RelationshipImpl;
+import grakn.core.server.kb.internal.concept.AttributeImpl;
+import grakn.core.server.kb.internal.concept.AttributeTypeImpl;
+import grakn.core.server.kb.internal.concept.EntityImpl;
+import grakn.core.server.kb.internal.concept.RelationshipImpl;
 import grakn.core.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;

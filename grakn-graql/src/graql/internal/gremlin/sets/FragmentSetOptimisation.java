@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;

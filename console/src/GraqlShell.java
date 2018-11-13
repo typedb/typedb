@@ -18,9 +18,9 @@
 
 package grakn.core.console;
 
-import grakn.core.Session;
-import grakn.core.Transaction;
-import grakn.core.Keyspace;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.Keyspace;
 import grakn.core.client.Grakn;
 import grakn.core.concept.AttributeType;
 import grakn.core.graql.Query;

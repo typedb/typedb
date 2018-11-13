@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.admin.Atomic;

@@ -38,7 +38,7 @@ import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.kb.internal.concept.EntityTypeImpl;
+import grakn.core.server.kb.internal.concept.EntityTypeImpl;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;

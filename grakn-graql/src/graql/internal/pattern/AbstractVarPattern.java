@@ -21,7 +21,7 @@ package grakn.core.graql.internal.pattern;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.ValuePredicate;

@@ -18,10 +18,10 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.Keyspace;
-import grakn.core.Transaction;
+import grakn.core.server.Keyspace;
+import grakn.core.server.Transaction;
 import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object

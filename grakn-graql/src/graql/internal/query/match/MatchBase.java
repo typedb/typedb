@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
@@ -30,7 +30,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;

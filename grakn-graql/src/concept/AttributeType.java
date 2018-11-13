@@ -19,7 +19,7 @@
 package grakn.core.concept;
 
 
-import grakn.core.exception.TransactionException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 

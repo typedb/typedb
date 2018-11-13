@@ -17,7 +17,7 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.EntityType;
@@ -28,7 +28,7 @@ import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
@@ -59,7 +59,7 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
-import grakn.core.kb.internal.concept.RelationshipTypeImpl;
+import grakn.core.server.kb.internal.concept.RelationshipTypeImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;

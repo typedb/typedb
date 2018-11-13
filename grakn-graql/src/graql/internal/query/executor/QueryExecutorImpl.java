@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.query.executor;
 
-import grakn.core.ComputeExecutor;
-import grakn.core.QueryExecutor;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.QueryExecutor;
 import grakn.core.concept.Concept;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.DefineQuery;
@@ -36,7 +36,7 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.internal.util.AdminConverter;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 

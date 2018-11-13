@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.DefineQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.VarPattern;

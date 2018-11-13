@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.analytics;
 
 import grakn.core.concept.ConceptId;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;

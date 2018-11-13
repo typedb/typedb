@@ -44,7 +44,7 @@ import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
 import grakn.core.graql.internal.pattern.property.LabelProperty;
 import grakn.core.graql.internal.pattern.property.ValueProperty;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;

@@ -18,21 +18,21 @@
 
 package grakn.core.client;
 
-import grakn.core.Transaction;
-import grakn.core.Keyspace;
+import grakn.core.server.Transaction;
+import grakn.core.server.Keyspace;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.exception.GraknBackendException;
-import grakn.core.exception.GraknException;
-import grakn.core.exception.TransactionException;
-import grakn.core.exception.GraqlQueryException;
-import grakn.core.exception.GraqlSyntaxException;
-import grakn.core.exception.InvalidKBException;
-import grakn.core.exception.PropertyNotUniqueException;
-import grakn.core.exception.TemporaryWriteException;
+import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraknException;
+import grakn.core.server.exception.TransactionException;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;

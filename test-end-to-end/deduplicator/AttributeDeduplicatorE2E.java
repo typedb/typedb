@@ -1,8 +1,8 @@
 package grakn.core.deduplicator;
 
 
-import grakn.core.Keyspace;
-import grakn.core.Transaction;
+import grakn.core.server.Keyspace;
+import grakn.core.server.Transaction;
 import grakn.core.client.Grakn;
 import grakn.core.concept.AttributeType;
 import grakn.core.graql.answer.ConceptMap;

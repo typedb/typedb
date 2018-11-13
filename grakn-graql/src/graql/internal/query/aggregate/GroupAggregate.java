@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.query.aggregate;
 
 import grakn.core.concept.Concept;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Aggregate;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;

@@ -19,7 +19,7 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.exception.TransactionException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import brave.Tracer;

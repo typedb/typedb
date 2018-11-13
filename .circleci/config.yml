@@ -9,9 +9,6 @@ references:
           sudo apt-get install apt-transport-https
           sudo apt-get update
 
-    install_yarn_and_unzip: &install_yarn_and_unzip
-      run: sudo apt-get -y install yarn zip unzip
-
     install_node: &install_node
       run:
         name: Install nvm and node
@@ -43,8 +40,6 @@ jobs:
     steps:
       - checkout
       - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
       - *install_bazel
       - run: bazel build //:distribution --sandbox_debug
       - run: mkdir dist/ && mv bazel-genfiles/dist/* dist/
@@ -59,8 +54,6 @@ jobs:
     steps:
       - checkout
       - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
       - *install_bazel
       - run: bazel test //grakn-graql/... --test_output=errors
       - run: bazel test //server/... --test_output=errors
@@ -72,15 +65,21 @@ jobs:
     steps:
       - checkout
       - *prepare_apt_repositories
-      - *install_yarn_and_unzip
-      - *install_node
       - *install_bazel
-      - run: bazel test //test-integration/test/client/... --test_output=errors
-      - run: bazel test //test-integration/test/graql/internal/... --test_output=errors
-#      - run: bazel test //test-integration/test/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
-      - run: bazel test //test-integration/test/internal/... --test_output=errors
-      - run: bazel test //test-integration/test/server/... --test_output=errors
-      - run: bazel test //test-integration/test/graql/reasoner/... --test_output=errors
+      - run: bazel test //test-integration/client/... --test_output=errors
+      - run: bazel test //test-integration/server/... --test_output=errors
+      - run: bazel test //test-integration/graql/internal/... --test_output=errors
+      - run: bazel test //test-integration/graql/reasoner/... --test_output=errors
+    # - run: bazel test //test-integration/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
+
+  test-integration-reasoner:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *prepare_apt_repositories
+    - *install_bazel
+    - run: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -88,10 +87,8 @@ jobs:
     steps:
     - checkout
     - *prepare_apt_repositories
-    - *install_yarn_and_unzip
-    - *install_node
     - *install_bazel
-    - run: bazel test //test-integration/test/graql/analytics/... --test_output=errors
+    - run: bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -108,7 +105,6 @@ jobs:
       steps:
         - checkout
         - *prepare_apt_repositories
-        - *install_yarn_and_unzip
         - *install_node
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
@@ -123,7 +119,6 @@ jobs:
       steps:
         - checkout
         - *prepare_apt_repositories
-        - *install_yarn_and_unzip
         - *install_bazel
         - run: bazel build //:distribution --sandbox_debug
         - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
@@ -145,7 +140,6 @@ jobs:
       steps:
         - checkout
         - *prepare_apt_repositories
-        - *install_yarn_and_unzip
         - *install_node
         - *install_bazel
         - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
@@ -211,7 +205,6 @@ jobs:
     steps:
       - checkout
       - *prepare_apt_repositories
-      - *install_yarn_and_unzip
       - *install_node
       - *install_bazel
       - run: echo 'export GRAKN_VERSION=$(echo ${CIRCLE_TAG} | cut -c 2-)' >> $BASH_ENV #remove 'v' from tag name and use it as Grakn Version to be released

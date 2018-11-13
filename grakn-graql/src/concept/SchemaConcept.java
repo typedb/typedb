@@ -18,7 +18,7 @@
 
 package grakn.core.concept;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.internal.Schema;
 
 import javax.annotation.CheckReturnValue;

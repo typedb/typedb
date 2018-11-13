@@ -22,7 +22,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;

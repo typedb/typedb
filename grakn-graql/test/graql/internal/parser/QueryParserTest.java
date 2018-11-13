@@ -20,8 +20,8 @@ package grakn.core.graql.internal.parser;
 
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
-import grakn.core.exception.GraqlQueryException;
-import grakn.core.exception.GraqlSyntaxException;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlSyntaxException;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.DefineQuery;

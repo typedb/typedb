@@ -43,7 +43,7 @@ import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.state.RuleState;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;

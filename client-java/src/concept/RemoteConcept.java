@@ -19,11 +19,11 @@
 
 package grakn.core.client.concept;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.client.Grakn;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.exception.TransactionException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.function.Function;

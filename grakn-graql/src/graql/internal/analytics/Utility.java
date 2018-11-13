@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;

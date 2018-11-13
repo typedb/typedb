@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.query.executor;
 
-import grakn.core.ComputeExecutor;
-import grakn.core.GraknComputer;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.GraknComputer;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
@@ -30,7 +30,7 @@ import grakn.core.concept.Role;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Thing;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
@@ -61,7 +61,7 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.graql.Syntax;
 import grakn.core.graql.internal.Schema;

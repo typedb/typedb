@@ -18,7 +18,7 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Concept;
@@ -28,7 +28,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.benchmark.GrpcMessageConversion;
@@ -257,7 +257,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
                     Keyspace.of(request.getKeyspace()),
-                    grakn.core.Transaction.Type.of(request.getType().getNumber())
+                    grakn.core.server.Transaction.Type.of(request.getType().getNumber())
             );
 
             tx = requestOpener.open(args);

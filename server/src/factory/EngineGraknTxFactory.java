@@ -18,15 +18,15 @@
 
 package grakn.core.server.factory;
 
-import grakn.core.Session;
-import grakn.core.Transaction;
-import grakn.core.Keyspace;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.Keyspace;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.lock.LockProvider;
-import grakn.core.session.SessionImpl;
-import grakn.core.session.TransactionFactoryBuilder;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionFactoryBuilder;
+import grakn.core.server.kb.internal.TransactionImpl;
 
 import java.util.HashMap;
 import java.util.Map;

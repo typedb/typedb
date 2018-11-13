@@ -18,8 +18,8 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.Keyspace;
-import grakn.core.Transaction;
+import grakn.core.server.Keyspace;
+import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;

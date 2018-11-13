@@ -18,7 +18,7 @@
 
 package grakn.core.graql;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.admin.InsertQueryAdmin;
 import grakn.core.graql.answer.ConceptMap;
 

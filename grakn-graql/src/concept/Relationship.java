@@ -19,7 +19,7 @@
 package grakn.core.concept;
 
 
-import grakn.core.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.PropertyNotUniqueException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Map;

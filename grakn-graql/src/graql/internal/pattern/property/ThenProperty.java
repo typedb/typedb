@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
 import com.google.auto.value.AutoValue;

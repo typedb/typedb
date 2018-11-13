@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Disjunction;
@@ -26,7 +26,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;

@@ -19,13 +19,13 @@
 package grakn.core.server.deduplicator;
 
 import grakn.core.util.GraknConfigKey;
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.concept.ConceptId;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
 import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

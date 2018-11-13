@@ -18,7 +18,7 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import com.google.auto.value.AutoValue;
 
 /**

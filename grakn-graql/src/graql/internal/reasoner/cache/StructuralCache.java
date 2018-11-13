@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 import com.google.common.base.Equivalence;
 
 import java.util.HashMap;

@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 
-import grakn.core.Keyspace;
+import grakn.core.server.Keyspace;
 import grakn.core.concept.ConceptId;
 import mjson.Json;
 import org.rocksdb.Options;

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;

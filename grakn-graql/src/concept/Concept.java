@@ -18,8 +18,8 @@
 
 package grakn.core.concept;
 
-import grakn.core.Keyspace;
-import grakn.core.exception.TransactionException;
+import grakn.core.server.Keyspace;
+import grakn.core.server.exception.TransactionException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 

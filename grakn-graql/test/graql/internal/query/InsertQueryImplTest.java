@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.Graql;
 import grakn.core.graql.InsertQuery;
 import grakn.core.graql.admin.MatchAdmin;

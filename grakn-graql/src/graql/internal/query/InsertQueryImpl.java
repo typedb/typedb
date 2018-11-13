@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Type;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.InsertQuery;
 import grakn.core.graql.Match;
 import grakn.core.graql.admin.InsertQueryAdmin;

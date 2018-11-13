@@ -18,7 +18,7 @@
 
 package grakn.core.concept;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;

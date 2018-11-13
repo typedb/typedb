@@ -18,9 +18,9 @@
 
 package grakn.core.graql;
 
-import grakn.core.Transaction;
-import grakn.core.QueryExecutor;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.Transaction;
+import grakn.core.server.QueryExecutor;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;

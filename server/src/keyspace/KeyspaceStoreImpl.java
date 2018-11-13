@@ -18,19 +18,19 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.Transaction;
-import grakn.core.Keyspace;
+import grakn.core.server.Transaction;
+import grakn.core.server.Keyspace;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.Thing;
 import grakn.core.util.GraknConfig;
-import grakn.core.exception.GraknBackendException;
-import grakn.core.exception.InvalidKBException;
-import grakn.core.session.SessionImpl;
-import grakn.core.session.TransactionFactoryBuilder;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionFactoryBuilder;
+import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;

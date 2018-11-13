@@ -26,6 +26,7 @@ import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.server.exception.GraqlQueryException;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -51,7 +52,7 @@ public interface ConceptMap extends Answer<ConceptMap> {
     /**
      * Return the {@link Concept} bound to the given variable name.
      *
-     * @throws grakn.core.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
+     * @throws GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     Concept get(String var);
@@ -59,7 +60,7 @@ public interface ConceptMap extends Answer<ConceptMap> {
     /**
      * Return the {@link Concept} bound to the given {@link Var}.
      *
-     * @throws grakn.core.exception.GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
+     * @throws GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
     @CheckReturnValue
     Concept get(Var var);

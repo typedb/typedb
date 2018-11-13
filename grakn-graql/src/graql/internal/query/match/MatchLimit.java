@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Match;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.kb.internal.TransactionImpl;
+import grakn.core.server.kb.internal.TransactionImpl;
 
 import java.util.stream.Stream;
 

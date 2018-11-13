@@ -18,7 +18,7 @@
 
 package grakn.core.graql.answer;
 
-import grakn.core.exception.TransactionException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.graql.Query;
 import grakn.core.graql.admin.Explanation;
 import com.google.common.collect.Sets;

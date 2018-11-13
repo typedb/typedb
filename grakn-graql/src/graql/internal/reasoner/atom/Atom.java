@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.atom;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;

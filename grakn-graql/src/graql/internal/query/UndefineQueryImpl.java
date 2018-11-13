@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.UndefineQuery;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.answer.ConceptMap;

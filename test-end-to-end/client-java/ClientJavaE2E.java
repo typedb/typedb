@@ -1,7 +1,7 @@
 package grakn.core.client;
 
-import grakn.core.Keyspace;
-import grakn.core.Transaction;
+import grakn.core.server.Keyspace;
+import grakn.core.server.Transaction;
 import grakn.core.concept.AttributeType;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
