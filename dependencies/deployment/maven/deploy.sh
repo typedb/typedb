@@ -111,4 +111,4 @@ if [[ ${http_status_code_from_upload} -ne 201 ]]; then
     echo "Error: The upload failed, got HTTP status code $http_status_code_from_upload"
     exit 1
 fi
-echo "Deployment complete"
+echo "Deployment completed"
