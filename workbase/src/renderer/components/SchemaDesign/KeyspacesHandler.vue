@@ -91,7 +91,7 @@
 </style>
 
 <script>
-import { createNamespacedHelpers, mapGetters } from 'vuex';
+import { mapGetters } from 'vuex';
 
 import storage from '@/components/shared/PersistentStorage';
 
@@ -100,7 +100,6 @@ import ToolTip from '../UIElements/ToolTip';
 
 export default {
   name: 'KeyspacesList',
-  props: ['showKeyspaceTooltip'],
   components: { ToolTip },
   data() {
     return {
@@ -109,21 +108,6 @@ export default {
       clickEvent: () => {
         this.showKeyspaceList = false;
       },
-    };
-  },
-  beforeCreate() {
-    const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
-
-    // computed
-    this.$options.computed = {
-      ...(this.$options.computed || {}),
-      ...mapGetters(['currentKeyspace']),
-    };
-
-    // methods
-    this.$options.methods = {
-      ...(this.$options.methods || {}),
-      ...mapActions([CURRENT_KEYSPACE_CHANGED]),
     };
   },
   computed: {

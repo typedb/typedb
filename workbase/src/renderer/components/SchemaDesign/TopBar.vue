@@ -1,7 +1,7 @@
 <template>
     <div class="top-bar-container">
         <div class="left">
-            <router-link to="/design/schema"><button class="btn"><vue-icon icon="diagram-tree" className="vue-icon"></vue-icon></button></router-link>
+            <router-link to="/develop/data"><button class="btn"><vue-icon icon="eye-open" className="vue-icon"></vue-icon></button></router-link>
             <img src="static/img/logo-text.png" class="grakn-icon">
         </div>
 
@@ -9,7 +9,7 @@
         </div>
 
         <div class="right">
-            <keyspaces-handler :tabId="tabId" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
+            <keyspaces-handler></keyspaces-handler>
         </div>
     </div>
 </template>
