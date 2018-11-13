@@ -74,7 +74,7 @@ public interface Query<T extends Answer> extends Iterable<T> {
      */
     default QueryExecutor executor() {
         if (tx() == null) throw GraqlQueryException.noTx();
-        return tx().admin().queryExecutor();
+        return tx().queryExecutor();
     }
 
     /**

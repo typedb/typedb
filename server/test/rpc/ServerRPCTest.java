@@ -140,7 +140,6 @@ public class ServerRPCTest {
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
-        when(tx.admin()).thenReturn(tx);
         when(txFactory.tx(eq(MYKS), any())).thenReturn(tx);
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);

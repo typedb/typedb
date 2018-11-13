@@ -390,13 +390,6 @@ public interface GraknTx extends AutoCloseable{
     @Nullable
     Rule getRule(String label);
 
-    //------------------------------------- Utilities ----------------------------------
-    /**
-     * @return The admin interface which allows you to access more low level details of the graph.
-     */
-    @CheckReturnValue
-    GraknTx admin();
-
     /**
      * Utility function used to check if the current transaction on the graph is a read only transaction
      *

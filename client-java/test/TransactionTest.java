@@ -271,7 +271,7 @@ public class TransactionTest {
 
             exception.expect(GraknTxOperationException.class);
             exception.expectMessage(GraknTxOperationException.transactionClosed(null, "The gRPC connection closed").getMessage());
-            tx.admin().getMetaConcept();
+            tx.getMetaConcept();
         }
     }
 

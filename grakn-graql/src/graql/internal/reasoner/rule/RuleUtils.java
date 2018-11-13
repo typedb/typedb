@@ -57,7 +57,7 @@ public class RuleUtils {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
-        return graph.admin().getMetaRule().subs().anyMatch(rule -> !rule.label().equals(Schema.MetaSchema.RULE.getLabel()));
+        return graph.getMetaRule().subs().anyMatch(rule -> !rule.label().equals(Schema.MetaSchema.RULE.getLabel()));
     }
 
     /**

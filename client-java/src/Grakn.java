@@ -191,11 +191,6 @@ public final class Grakn {
         }
 
         @Override
-        public GraknTx admin() {
-            return this;
-        }
-
-        @Override
         public GraknTxType txType() {
             return type;
         }

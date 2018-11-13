@@ -579,7 +579,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).map(varTypeMap::get).collect(toSet());
 
         if (roles.isEmpty() && types.isEmpty()){
-            RelationshipType metaRelationType = tx().admin().getMetaRelationType();
+            RelationshipType metaRelationType = tx().getMetaRelationType();
             Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
             metaRelationType.subs()
                     .filter(rt -> !rt.equals(metaRelationType))
@@ -734,7 +734,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
         GraknTx graph = getParentQuery().tx();
-        Role metaRole = graph.admin().getMetaRole();
+        Role metaRole = graph.getMetaRole();
         List<RelationPlayer> allocatedRelationPlayers = new ArrayList<>();
         RelationshipType relType = getSchemaConcept() != null? getSchemaConcept().asRelationshipType() : null;
 

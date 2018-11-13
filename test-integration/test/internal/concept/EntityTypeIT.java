@@ -131,7 +131,7 @@ public class EntityTypeIT {
 
     @Test
     public void whenGettingTheSuperSet_ReturnAllOfItsSuperTypes() throws Exception{
-        EntityType entityType = tx.admin().getMetaEntityType();
+        EntityType entityType = tx.getMetaEntityType();
         EntityType c1 = tx.putEntityType("c1");
         EntityType c2 = tx.putEntityType("c2").sup(c1);
         EntityType c3 = tx.putEntityType("c3").sup(c2);
@@ -185,7 +185,7 @@ public class EntityTypeIT {
         EntityType c2 = tx.putEntityType("c2").sup(c1);
         EntityType c3 = tx.putEntityType("c3").sup(c2);
 
-        assertEquals(tx.admin().getMetaEntityType(), c1.sup());
+        assertEquals(tx.getMetaEntityType(), c1.sup());
         assertEquals(c1, c2.sup());
         assertEquals(c2, c3.sup());
     }

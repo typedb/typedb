@@ -325,9 +325,9 @@ public class SchemaMutationIT {
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(animal, tx.admin().getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), hasNameOwner).getMessage());
 
         //make a dog to not be an animal, and expect exception thrown
-        dog.sup(tx.admin().getMetaEntityType());
+        dog.sup(tx.getMetaEntityType());
     }
 }

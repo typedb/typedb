@@ -48,7 +48,7 @@ public class GraqlCompleter implements Completer {
 
     public static GraqlCompleter create(GraknSession session) {
         ImmutableSet<Label> labels;
-        try (GraknTx tx = session.transaction(GraknTxType.READ).admin()) {
+        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
 
             Stream<SchemaConcept> metaConcepts =
                     Stream.of(tx.getMetaConcept(), tx.getMetaRole(), tx.getMetaRule()).flatMap(SchemaConcept::subs);

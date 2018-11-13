@@ -213,11 +213,6 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx {
         return txCache().txType();
     }
 
-    @Override
-    public GraknTx admin() {
-        return this;
-    }
-
     /**
      * @param <T>    The type of the concept being built
      * @param vertex A vertex which contains properties necessary to build a concept from.
@@ -536,7 +531,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknTx {
         if (rule.then() != null){
             rule.then().admin().varPatterns().stream()
                     .flatMap(v -> v.getTypeLabels().stream())
-                    .map(vl -> this.admin().<SchemaConcept>getSchemaConcept(vl))
+                    .map(vl -> this.<SchemaConcept>getSchemaConcept(vl))
                     .filter(Objects::nonNull)
                     .filter(Concept::isType)
                     .forEach(type -> ruleCache.updateRules(type, rule));

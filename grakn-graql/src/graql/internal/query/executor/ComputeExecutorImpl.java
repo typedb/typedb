@@ -738,10 +738,10 @@ class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
             if (scopeIncludesAttributes()) {
-                tx.admin().getMetaConcept().subs().forEach(typeBuilder::add);
+                tx.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
-                tx.admin().getMetaEntityType().subs().forEach(typeBuilder::add);
-                tx.admin().getMetaRelationType().subs()
+                tx.getMetaEntityType().subs().forEach(typeBuilder::add);
+                tx.getMetaRelationType().subs()
                         .filter(relationshipType -> !relationshipType.isImplicit()).forEach(typeBuilder::add);
             }
 

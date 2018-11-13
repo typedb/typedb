@@ -323,7 +323,7 @@ public class OntologicalQueryIT {
     @Test
     public void allInstancesOfMetaEntity() {
         QueryBuilder qb = tx.graql().infer(true);
-        long noOfEntities = tx.admin().getMetaEntityType().instances().count();
+        long noOfEntities = tx.getMetaEntityType().instances().count();
         String queryString = "match $x isa entity;get;";
 
         List<ConceptMap> answers = qb.<GetQuery>parse(queryString).execute();

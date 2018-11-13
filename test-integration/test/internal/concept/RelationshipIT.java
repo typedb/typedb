@@ -293,8 +293,8 @@ public class RelationshipIT {
         tx.commit();
         tx = session.transaction(GraknTxType.WRITE);
 
-        assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
-        assertThat(tx.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
+        assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
+        assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
     }
 
     @Test
