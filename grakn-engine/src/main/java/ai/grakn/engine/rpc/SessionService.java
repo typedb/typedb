@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -213,12 +211,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(
-                    Keyspace.of(request.getKeyspace()),
-                    GraknTxType.of(request.getType().getNumber())
-            );
-
-            tx = requestOpener.open(args);
+            tx = requestOpener.open(request);
             responseSender.onNext(ResponseBuilder.Transaction.open());
         }
 
