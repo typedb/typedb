@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -111,7 +111,7 @@ public class Utility {
     /**
      * Check whether it is possible that there is a resource edge between the two given concepts.
      */
-    private static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+    private static boolean mayHaveResourceEdge(Transaction graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
         Concept concept1 = graknGraph.getConcept(conceptId1);
         Concept concept2 = graknGraph.getConcept(conceptId2);
         return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
@@ -120,7 +120,7 @@ public class Utility {
     /**
      * Get the resource edge id if there is one. Return null if not.
      */
-    public static ConceptId getResourceEdgeId(GraknTx graph, ConceptId conceptId1, ConceptId conceptId2) {
+    public static ConceptId getResourceEdgeId(Transaction graph, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
             Optional<Concept> firstConcept = graph.graql().match(
                     var("x").id(conceptId1),

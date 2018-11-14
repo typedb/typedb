@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.Graql;
 import grakn.core.graql.InsertQuery;
 import grakn.core.graql.admin.MatchAdmin;
@@ -51,7 +51,7 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
-        GraknTx graph = mock(GraknTx.class);
+        Transaction graph = mock(Transaction.class);
 
         InsertQuery query1 = InsertQueryImpl.create(graph, null, vars1);
         InsertQuery query2 = InsertQueryImpl.create(graph, null, vars1);
@@ -70,8 +70,8 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithDifferentGraphsAreDifferent() {
-        GraknTx graph1 = mock(GraknTx.class);
-        GraknTx graph2 = mock(GraknTx.class);
+        Transaction graph1 = mock(Transaction.class);
+        Transaction graph2 = mock(Transaction.class);
 
         InsertQuery query1 = InsertQueryImpl.create(graph1, null, vars1);
         InsertQuery query2 = InsertQueryImpl.create(graph2, null, vars2);

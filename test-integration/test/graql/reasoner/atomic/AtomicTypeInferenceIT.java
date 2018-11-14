@@ -18,15 +18,14 @@
 
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
@@ -42,7 +41,7 @@ import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.GraqlTestUtil;
 import grakn.core.graql.internal.Schema;
@@ -73,13 +72,13 @@ public class AtomicTypeInferenceIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession testContextSession;
+    private static SessionImpl testContextSession;
 
-    private static void loadFromFile(String fileName, GraknSession session){
+    private static void loadFromFile(String fileName, Session session){
         try {
             InputStream inputStream = AtomicTypeInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e){
@@ -101,7 +100,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleGuard() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //parent of all roles so all relations possible
         String patternString = "{$x isa noRoleEntity; ($x, $y);}";
@@ -129,7 +128,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_doubleGuard() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString = "{$x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity;}";
@@ -164,7 +163,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleRole() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
         String patternString = "{(role1: $x, $y);}";
         String patternString2 = "{(role2: $x, $y);}";
         String patternString3 = "{(role3: $x, $y);}";
@@ -183,7 +182,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleRole_subType() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
         String patternString = "{(subRole2: $x, $y);}";
         typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, tx);
         tx.close();
@@ -191,7 +190,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleRole_singleGuard() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString = "{(role2: $x, $y); $y isa singleRoleEntity;}";
@@ -219,7 +218,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleRole_singleGuard_bothConceptsAreSubConcepts() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //{rel3} ^ {rel2, rel3}
         String patternString = "{(subRole2: $x, $y); $y isa twoRoleEntity;}";
@@ -237,7 +236,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleRole_singleGuard_typeContradiction() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //{rel1} ^ {rel2}
         String patternString = "{(role1: $x, $y); $y isa singleRoleEntity;}";
@@ -254,7 +253,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_singleRole_doubleGuard() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
         //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity;}";
         String subbedPatternString = "{(role2: $x, $y);" +
@@ -271,7 +270,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity;}";
@@ -297,7 +296,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_doubleRole_doubleGuard_contradiction() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
 
         //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{$x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity;}";
@@ -318,7 +317,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_metaGuards() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y);$x isa entity; $y isa entity;}";
         typeInference(allRelations(tx), patternString, tx);
         tx.close();
@@ -326,7 +325,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_genericRelation() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
         String patternString = "{($x, $y);}";
         typeInference(allRelations(tx), patternString, tx);
         tx.close();
@@ -340,7 +339,7 @@ public class AtomicTypeInferenceIT {
 
     @Test
     public void testTypeInference_conjunctiveQuery() {
-        EmbeddedGraknTx<?> tx = testContextSession.transaction(GraknTxType.WRITE);
+        TransactionImpl<?> tx = testContextSession.transaction(Transaction.Type.WRITE);
         String patternString = "{" +
                 "($x, $y); $x isa anotherSingleRoleEntity;" +
                 "($y, $z); $y isa anotherTwoRoleEntity;" +
@@ -375,7 +374,7 @@ public class AtomicTypeInferenceIT {
         tx.close();
     }
 
-    private void typeInference(List<SchemaConcept> possibleTypes, String pattern, EmbeddedGraknTx<?> tx){
+    private void typeInference(List<SchemaConcept> possibleTypes, String pattern, TransactionImpl<?> tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         Atom atom = query.getAtom();
         List<SchemaConcept> relationshipTypes = atom.getPossibleTypes();
@@ -391,7 +390,7 @@ public class AtomicTypeInferenceIT {
         typeInferenceQueries(possibleTypes, pattern, tx);
     }
 
-    private void typeInference(List<SchemaConcept> possibleTypes, String pattern, String subbedPattern, EmbeddedGraknTx<?> tx){
+    private void typeInference(List<SchemaConcept> possibleTypes, String pattern, String subbedPattern, TransactionImpl<?> tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern, tx), tx);
         Atom atom = query.getAtom();
@@ -416,7 +415,7 @@ public class AtomicTypeInferenceIT {
         typeInferenceQueries(possibleTypes, subbedPattern, tx);
     }
 
-    private void typeInferenceQueries(List<SchemaConcept> possibleTypes, String pattern, EmbeddedGraknTx<?> tx) {
+    private void typeInferenceQueries(List<SchemaConcept> possibleTypes, String pattern, TransactionImpl<?> tx) {
         QueryBuilder qb = tx.graql();
         List<ConceptMap> typedAnswers = typedAnswers(possibleTypes, pattern, tx);
         List<ConceptMap> unTypedAnswers = qb.match(qb.parser().parsePattern(pattern)).get().execute();
@@ -424,7 +423,7 @@ public class AtomicTypeInferenceIT {
         GraqlTestUtil.assertCollectionsEqual(typedAnswers, unTypedAnswers);
     }
 
-    private List<ConceptMap> typedAnswers(List<SchemaConcept> possibleTypes, String pattern, EmbeddedGraknTx<?> tx){
+    private List<ConceptMap> typedAnswers(List<SchemaConcept> possibleTypes, String pattern, TransactionImpl<?> tx){
         List<ConceptMap> answers = new ArrayList<>();
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern, tx), tx);
         for(SchemaConcept type : possibleTypes){
@@ -434,16 +433,16 @@ public class AtomicTypeInferenceIT {
         return answers;
     }
 
-    private List<SchemaConcept> allRelations(EmbeddedGraknTx<?> tx){
+    private List<SchemaConcept> allRelations(TransactionImpl<?> tx){
         RelationshipType metaType = tx.getRelationshipType(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue());
         return metaType.subs().filter(t -> !t.equals(metaType)).collect(Collectors.toList());
     }
 
-    private ConceptId conceptId(EmbeddedGraknTx<?> tx, String type){
+    private ConceptId conceptId(TransactionImpl<?> tx, String type){
         return tx.getEntityType(type).instances().map(Concept::id).findFirst().orElse(null);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, EmbeddedGraknTx<?> tx){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, TransactionImpl<?> tx){
         Set<VarPatternAdmin> vars = tx.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

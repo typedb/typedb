@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.Var;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -36,7 +36,7 @@ abstract class AttributeIndexFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
 
         return traversal.has(INDEX.name(), attributeIndex());
     }

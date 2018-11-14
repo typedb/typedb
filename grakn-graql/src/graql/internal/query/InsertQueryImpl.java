@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Type;
 import grakn.core.exception.GraqlQueryException;
@@ -51,7 +51,7 @@ abstract class InsertQueryImpl implements InsertQueryAdmin {
      * @param match the {@link Match} to insert for each result
      * @param vars a collection of Vars to insert
      */
-    static InsertQueryImpl create(GraknTx tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
+    static InsertQueryImpl create(Transaction tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
@@ -62,7 +62,7 @@ abstract class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public final InsertQuery withTx(GraknTx tx) {
+    public final InsertQuery withTx(Transaction tx) {
         if (match() != null) {
             return Queries.insert(match().withTx(tx).admin(), varPatterns());
         } else {
@@ -88,7 +88,7 @@ abstract class InsertQueryImpl implements InsertQueryAdmin {
     @Override
     public Set<SchemaConcept> getSchemaConcepts() {
         if (getTx() == null) throw GraqlQueryException.noTx();
-        GraknTx theGraph = getTx();
+        Transaction theGraph = getTx();
 
         Set<SchemaConcept> types = allVarPatterns()
                 .map(VarPatternAdmin::getTypeLabel)
@@ -105,7 +105,7 @@ abstract class InsertQueryImpl implements InsertQueryAdmin {
         return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
     }
 
-    private GraknTx getTx() {
+    private Transaction getTx() {
         if (match() != null && match().admin().tx() != null) return match().admin().tx();
         else return tx();
     }

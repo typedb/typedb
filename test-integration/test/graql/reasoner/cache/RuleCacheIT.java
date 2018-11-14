@@ -1,13 +1,12 @@
 package grakn.core.graql.internal.reasoner;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Entity;
 import grakn.core.concept.Label;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.graql.admin.Conjunction;
@@ -19,7 +18,7 @@ import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.cache.TxRuleCache;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableMap;
@@ -49,13 +48,13 @@ public class RuleCacheIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private static EmbeddedGraknSession ruleApplicabilitySession;
+    private static SessionImpl ruleApplicabilitySession;
 
-    private static void loadFromFile(String fileName, GraknSession session) {
+    private static void loadFromFile(String fileName, Session session) {
         try {
             InputStream inputStream = RuleCacheIT.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e) {
@@ -81,12 +80,12 @@ public class RuleCacheIT {
     private static ConceptMap singleAnswer;
     private static Unifier retrieveToRecordUnifier;
     private static Unifier recordToRetrieveUnifier;
-    private EmbeddedGraknTx tx;
+    private TransactionImpl tx;
 
 
     @Before
     public void onStartup(){
-        tx = ruleApplicabilitySession.transaction(GraknTxType.WRITE);
+        tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
         String recordPatternString = "{(someRole: $x, subRole: $y) isa reifiable-relation;}";
         String retrievePatternString = "{(someRole: $p1, subRole: $p2) isa reifiable-relation;}";
         Conjunction<VarPatternAdmin> recordPattern = conjunction(recordPatternString, tx);
@@ -144,7 +143,7 @@ public class RuleCacheIT {
     @Test
     public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
         tx.close();
-        tx = ruleApplicabilitySession.transaction(GraknTxType.WRITE);
+        tx = ruleApplicabilitySession.transaction(Transaction.Type.WRITE);
 
         Pattern when = tx.graql().parser().parsePattern("{$x isa entity;$y isa entity;}");
         Pattern then = tx.graql().parser().parsePattern("{(someRole: $x, subRole: $y) isa binary;}");
@@ -169,7 +168,7 @@ public class RuleCacheIT {
     }
 
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, Transaction graph){
         Set<VarPatternAdmin> vars = graph.graql().parser().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

@@ -18,13 +18,13 @@
 
 package grakn.core.concept;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
- * A class which represents an id of any {@link Concept} in the {@link GraknTx}.
+ * A class which represents an id of any {@link Concept} in the {@link Transaction}.
  * Also contains a static method for producing concept IDs from Strings.
  *
  */

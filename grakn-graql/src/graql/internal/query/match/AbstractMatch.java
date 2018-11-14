@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.match;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.Aggregate;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.DeleteQuery;
@@ -36,7 +36,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.pattern.property.VarPropertyInternal;
 import grakn.core.graql.internal.query.Queries;
 import grakn.core.graql.internal.util.AdminConverter;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
@@ -62,7 +62,7 @@ abstract class AbstractMatch implements MatchAdmin {
      * @param tx the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<ConceptMap> stream(EmbeddedGraknTx<?> tx);
+    public abstract Stream<ConceptMap> stream(TransactionImpl<?> tx);
 
     @Override
     public final Stream<ConceptMap> stream() {
@@ -70,15 +70,15 @@ abstract class AbstractMatch implements MatchAdmin {
     }
 
     /**
-     * @param tx the {@link GraknTx} against which the pattern should be validated
+     * @param tx the {@link Transaction} against which the pattern should be validated
      */
-    void validatePattern(GraknTx tx){
+    void validatePattern(Transaction tx){
         for (VarPatternAdmin var : getPattern().varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(tx, var));}
     }
 
     @Override
-    public final Match withTx(GraknTx tx) {
+    public final Match withTx(Transaction tx) {
         return new MatchTx(tx, this);
     }
 

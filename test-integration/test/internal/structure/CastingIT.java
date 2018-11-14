@@ -18,9 +18,8 @@
 
 package grakn.core.kb.internal.structure;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.RelationshipType;
@@ -45,8 +44,8 @@ public class CastingIT {
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
 
-    private GraknTx tx;
-    private GraknSession session;
+    private Transaction tx;
+    private Session session;
 
     private RelationshipType relationshipType;
     private EntityType entityType;
@@ -57,7 +56,7 @@ public class CastingIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
         role1 = tx.putRole("role1");
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");

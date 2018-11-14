@@ -18,15 +18,15 @@
 
 package grakn.core.kb.internal.concept;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.EntityType;
 import grakn.core.concept.Label;
 import grakn.core.concept.RelationshipType;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.GraknTxOperationException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.exception.TransactionException;
+import grakn.core.session.SessionImpl;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.kb.internal.structure.EdgeElement;
 import grakn.core.test.rule.ConcurrentGraknServer;
 import grakn.core.util.ErrorMessage;
@@ -57,13 +57,13 @@ public class SchemaConceptIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private EmbeddedGraknTx tx;
-    private EmbeddedGraknSession session;
+    private TransactionImpl tx;
+    private SessionImpl session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -132,7 +132,7 @@ public class SchemaConceptIT {
         EntityType e1 = tx.putEntityType("Entity1");
         tx.putEntityType(label);
 
-        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expect(TransactionException.class);
         expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));
 
         e1.label(label);

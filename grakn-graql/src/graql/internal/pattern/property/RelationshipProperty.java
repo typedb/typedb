@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -150,7 +150,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
+    public void checkValidProperty(Transaction graph, VarPatternAdmin var) throws GraqlQueryException {
 
         Set<Label> roleTypes = relationPlayers().stream()
                 .map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream)

@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.query;
 
 import grakn.core.ComputeExecutor;
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.exception.GraqlQueryException;
@@ -84,7 +84,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
-    private GraknTx tx;
+    private Transaction tx;
     private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
 
     private Method method;
@@ -100,11 +100,11 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQueryImpl(GraknTx tx, Method<T> method) {
+    public ComputeQueryImpl(Transaction tx, Method<T> method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public ComputeQueryImpl(GraknTx tx, Method method, boolean includeAttributes) {
+    public ComputeQueryImpl(Transaction tx, Method method, boolean includeAttributes) {
         this.method = method;
         this.tx = tx;
         this.includeAttributes = includeAttributes;
@@ -145,13 +145,13 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
     }
 
     @Override
-    public final ComputeQuery<T> withTx(GraknTx tx) {
+    public final ComputeQuery<T> withTx(Transaction tx) {
         this.tx = tx;
         return this;
     }
 
     @Override
-    public final GraknTx tx() {
+    public final Transaction tx() {
         return tx;
     }
 

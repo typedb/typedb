@@ -25,7 +25,7 @@ import grakn.core.util.GraknConfig;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
 import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ import static grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
  * This class is responsible for de-duplicating attributes. It is done to ensure that every attribute in Grakn stays unique.
  *
  * Marking an attribute for deduplication:
- * When the {@link EmbeddedGraknTx#commit()} is invoked, it will trigger the {@link #markForDeduplication(Keyspace, String, ConceptId)}
+ * When the {@link TransactionImpl#commit()} is invoked, it will trigger the {@link #markForDeduplication(Keyspace, String, ConceptId)}
  * which inserts the attribute to an internal queue for deduplication.
  *
  * De-duplicating attributes in the de-duplicator daemon:

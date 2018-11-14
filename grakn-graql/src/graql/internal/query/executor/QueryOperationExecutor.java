@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.query.executor;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.exception.GraqlQueryException;
 import grakn.core.graql.DefineQuery;
@@ -69,7 +69,7 @@ public class QueryOperationExecutor {
 
     protected final Logger LOG = LoggerFactory.getLogger(QueryOperationExecutor.class);
 
-    private final GraknTx tx;
+    private final Transaction tx;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Var, Concept> concepts = new HashMap<>();
@@ -86,7 +86,7 @@ public class QueryOperationExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private QueryOperationExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
+    private QueryOperationExecutor(Transaction tx, ImmutableSet<VarAndProperty> properties,
                                    Partition<Var> equivalentVars,
                                    ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
         this.tx = tx;
@@ -98,7 +98,7 @@ public class QueryOperationExecutor {
     /**
      * Insert all the Vars
      */
-    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, Transaction graph) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(new ConceptMapImpl());
     }
 
@@ -106,20 +106,20 @@ public class QueryOperationExecutor {
      * Insert all the Vars
      * @param results the result after inserting
      */
-    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, ConceptMap results) {
+    static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, Transaction graph, ConceptMap results) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
     }
 
-    static ConceptMap defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+    static ConceptMap defineAll(Collection<VarPatternAdmin> patterns, Transaction graph) {
         return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMapImpl());
     }
 
-    static ConceptMap undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
+    static ConceptMap undefineAll(ImmutableList<VarPatternAdmin> patterns, Transaction tx) {
         return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMapImpl());
     }
 
     private static QueryOperationExecutor create(
-            Collection<VarPatternAdmin> patterns, GraknTx graph, ExecutionType executionType
+            Collection<VarPatternAdmin> patterns, Transaction graph, ExecutionType executionType
     ) {
         ImmutableSet<VarAndProperty> properties = patterns.stream()
                 .flatMap(pattern -> VarAndProperty.fromPattern(pattern, executionType))
@@ -425,7 +425,7 @@ public class QueryOperationExecutor {
         return Patterns.varPattern(var, propertiesOfVar.build());
     }
 
-    GraknTx tx() {
+    Transaction tx() {
         return tx;
     }
 

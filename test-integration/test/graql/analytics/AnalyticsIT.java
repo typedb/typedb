@@ -18,9 +18,8 @@
 
 package grakn.core.test.graql.analytics;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.Entity;
 import grakn.core.concept.EntityType;
@@ -62,7 +61,7 @@ public class AnalyticsIT {
     private String relationId12;
     private String relationId24;
 
-    public GraknSession session;
+    public Session session;
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
@@ -80,7 +79,7 @@ public class AnalyticsIT {
 
     @Test
     public void testNullResourceDoesNotBreakAnalytics() throws InvalidKBException {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = tx.putEntityType("thingy");
@@ -102,7 +101,7 @@ public class AnalyticsIT {
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(CENTRALITY).using(DEGREE).execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -114,7 +113,7 @@ public class AnalyticsIT {
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(COUNT).in("rule", "thing").execute();
         }
     }
@@ -123,7 +122,7 @@ public class AnalyticsIT {
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlQueryException.class);
         expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(COUNT).in("role").execute();
         }
     }
@@ -141,7 +140,7 @@ public class AnalyticsIT {
         queryList.add("compute path from \"" + entityId1 + "\", to \"" + entityId4 + "\";");
 
         List<?> result = queryList.parallelStream().map(query -> {
-            try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 return tx.graql().parse(query).execute().toString();
             }
         }).collect(Collectors.toList());
@@ -149,7 +148,7 @@ public class AnalyticsIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             EntityType entityType1 = tx.putEntityType(thingy);
             EntityType entityType2 = tx.putEntityType(anotherThing);
 

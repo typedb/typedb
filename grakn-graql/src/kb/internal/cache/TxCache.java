@@ -18,7 +18,7 @@
 
 package grakn.core.kb.internal.cache;
 
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -29,7 +29,6 @@ import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
 import grakn.core.kb.internal.concept.AttributeImpl;
 import grakn.core.kb.internal.structure.Casting;
 import com.google.common.collect.ArrayListMultimap;
@@ -89,7 +88,7 @@ public class TxCache{
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
     private boolean writeOccurred = false;
-    private GraknTxType txType;
+    private Transaction.Type txType;
     private String closedReason = null;
 
     public TxCache(GlobalCache globalCache) {
@@ -154,7 +153,7 @@ public class TxCache{
         modifiedCastings.add(casting);
     }
 
-    public void removeFromValidation(Type type){
+    public void removeFromValidation(grakn.core.concept.Type type){
         if (type.isRelationshipType()) {
             modifiedRelationshipTypes.remove(type.asRelationshipType());
         }
@@ -375,7 +374,7 @@ public class TxCache{
         schemaConceptCache.clear();
         labelCache.clear();
     }
-    public void openTx(GraknTxType txType){
+    public void openTx(Transaction.Type txType){
         isTxOpen = true;
         this.txType = txType;
         closedReason = null;
@@ -384,7 +383,7 @@ public class TxCache{
         return isTxOpen;
     }
 
-    public GraknTxType txType(){
+    public Transaction.Type txType(){
         return txType;
     }
 

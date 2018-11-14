@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -71,7 +71,7 @@ public abstract class IdPredicate extends Predicate<ConceptId>{
         return varName.id(typeId);
     }
 
-    private static VarPattern createIdVar(Var varName, Label label, GraknTx graph){
+    private static VarPattern createIdVar(Var varName, Label label, Transaction graph){
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
         return varName.id(schemaConcept.id());

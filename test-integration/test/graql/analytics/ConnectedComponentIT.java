@@ -18,9 +18,8 @@
 
 package grakn.core.test.graql.analytics;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
@@ -76,7 +75,7 @@ public class ConnectedComponentIT {
     private ConceptId entityId4;
     private ConceptId aDisconnectedAttribute;
 
-    public GraknSession session;
+    public Session session;
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
@@ -91,12 +90,12 @@ public class ConnectedComponentIT {
 
     @Test
     public void testNullSourceIdIsIgnored() {
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).where(contains(null)).execute();
         }
 
         addSchemaAndEntities();
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(null)).execute();
         }
     }
@@ -104,14 +103,14 @@ public class ConnectedComponentIT {
     @Test(expected = GraqlQueryException.class)
     public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).in(thing).where(contains(entityId4)).execute();
         }
     }
 
     @Test
     public void testConnectedComponentOnEmptyGraph() {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             // test on an empty rule.tx()
             List<ConceptSet> clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
             assertTrue(clusterList.isEmpty());
@@ -127,7 +126,7 @@ public class ConnectedComponentIT {
 
         addSchemaAndEntities();
 
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L)).execute();
             assertEquals(0, clusterList.size());
 
@@ -137,7 +136,7 @@ public class ConnectedComponentIT {
 
         addResourceRelations();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).where(size(1L)).execute();
             assertEquals(5, clusterList.size());
 
@@ -159,7 +158,7 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
             tx.getEntityType(thing).has(attributeType);
@@ -170,7 +169,7 @@ public class ConnectedComponentIT {
             tx.commit();
         }
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSet> clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue()).execute();
             assertEquals(1, clusterList.size());
@@ -194,7 +193,7 @@ public class ConnectedComponentIT {
 
         addSchemaAndEntities();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             clusterList = Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size()); // 4 entities, 3 assertions
@@ -215,7 +214,7 @@ public class ConnectedComponentIT {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             clusterList = tx.graql().compute(CLUSTER).using(CONNECTED_COMPONENT).includeAttributes(true).execute();
             Map<Integer, Integer> populationCount00 = new HashMap<>();
             clusterList.forEach(cluster -> populationCount00.put(cluster.set().size(),
@@ -255,7 +254,7 @@ public class ConnectedComponentIT {
         }
 
         Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
-            try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 return Graql.compute(CLUSTER).withTx(tx).using(CONNECTED_COMPONENT).execute();
             }
         }).collect(Collectors.toSet());
@@ -266,7 +265,7 @@ public class ConnectedComponentIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
@@ -315,7 +314,7 @@ public class ConnectedComponentIT {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (GraknTx tx = session.transaction(GraknTxType.WRITE)) {
+        try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
             Entity entity1 = tx.getConcept(entityId1);
             Entity entity2 = tx.getConcept(entityId2);

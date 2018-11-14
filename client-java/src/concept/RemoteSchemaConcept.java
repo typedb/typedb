@@ -95,7 +95,7 @@ abstract class RemoteSchemaConcept<SomeSchemaConcept extends SchemaConcept> exte
 
     @Override
     public final Stream<SomeSchemaConcept> sups() {
-        return tx().admin().sups(this).filter(this::equalsCurrentBaseType).map(this::asCurrentBaseType);
+        return tx().sups(this).filter(this::equalsCurrentBaseType).map(this::asCurrentBaseType);
     }
 
     @Override

@@ -19,7 +19,7 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import com.google.auto.value.AutoValue;
@@ -73,7 +73,7 @@ public class Transceiver implements AutoCloseable {
      */
     public void send(Transaction.Req request) {
         if (responseListener.terminated.get()) {
-            throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+            throw TransactionException.transactionClosed(null, "The gRPC connection closed");
         }
         requestSender.onNext(request);
     }
@@ -146,7 +146,7 @@ public class Transceiver implements AutoCloseable {
             // Only after checking for existing messages, we check if the connection was already terminated, so we don't
             // block for a response forever
             if (terminated.get()) {
-                throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+                throw TransactionException.transactionClosed(null, "The gRPC connection closed");
             }
 
             // Block for a response (because we are confident there are no responses and the connection has not closed)

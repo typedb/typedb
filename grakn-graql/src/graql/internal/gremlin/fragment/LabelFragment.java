@@ -22,7 +22,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.graql.Var;
 import grakn.core.graql.internal.util.StringConverter;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -51,7 +51,7 @@ public abstract class LabelFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> tx, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> tx, Collection<Var> vars) {
 
         Set<Integer> labelIds =
                 labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
@@ -80,7 +80,7 @@ public abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public Long getShardCount(EmbeddedGraknTx<?> tx) {
+    public Long getShardCount(TransactionImpl<?> tx) {
         return labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())

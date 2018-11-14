@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Disjunction;
@@ -26,7 +26,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -81,10 +81,10 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public ReasonerQuery toReasonerQuery(GraknTx tx){
+    public ReasonerQuery toReasonerQuery(Transaction tx){
         Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
-        // TODO: This cast is unsafe - this method should accept an `EmbeddedGraknTx`
-        return ReasonerQueries.create(pattern, (EmbeddedGraknTx<?>) tx);
+        // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
+        return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
     }
 
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {

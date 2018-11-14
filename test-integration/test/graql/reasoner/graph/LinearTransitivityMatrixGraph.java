@@ -1,8 +1,7 @@
 package grakn.core.graql.internal.reasoner.graph;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
@@ -22,9 +21,9 @@ import java.util.stream.Collectors;
 public class LinearTransitivityMatrixGraph {
 
     private final static Label key = Label.of("index");
-    private final GraknSession session;
+    private final Session session;
 
-    public LinearTransitivityMatrixGraph(GraknSession session) {
+    public LinearTransitivityMatrixGraph(Session session) {
         this.session = session;
     }
 
@@ -37,7 +36,7 @@ public class LinearTransitivityMatrixGraph {
         try {
             InputStream inputStream = LinearTransitivityMatrixGraph.class.getClassLoader().getResourceAsStream("test-integration/test/graql/reasoner/resources/linearTransitivity.gql");
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            GraknTx tx = session.transaction(GraknTxType.WRITE);
+            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
             tx.commit();
         } catch (Exception e) {
@@ -47,7 +46,7 @@ public class LinearTransitivityMatrixGraph {
     }
 
     private void buildExtensionalDB(int n, int m){
-        GraknTx tx = session.transaction(GraknTxType.WRITE);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
         Role Qfrom = tx.getRole("Q-from");
         Role Qto = tx.getRole("Q-to");
 
@@ -83,7 +82,7 @@ public class LinearTransitivityMatrixGraph {
     }
 
 
-    private static Thing putEntityWithResource(GraknTx tx, String id, EntityType type, Label key) {
+    private static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

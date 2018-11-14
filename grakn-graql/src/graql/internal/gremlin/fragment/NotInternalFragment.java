@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.Var;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,7 +34,7 @@ abstract class NotInternalFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, EmbeddedGraknTx<?> graph, Collection<Var> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionImpl<?> graph, Collection<Var> vars) {
         return traversal.not(__.hasLabel(Schema.BaseType.SHARD.name()));
     }
 

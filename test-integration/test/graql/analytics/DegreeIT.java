@@ -18,9 +18,8 @@
 
 package grakn.core.test.graql.analytics;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Session;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
 import grakn.core.concept.ConceptId;
@@ -56,8 +55,8 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class DegreeIT {
 
-    public GraknSession session;
-    private GraknTx tx;
+    public Session session;
+    private Transaction tx;
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
@@ -65,7 +64,7 @@ public class DegreeIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     @After
@@ -100,7 +99,7 @@ public class DegreeIT {
                 .assign(role2, tx.getConcept(entity4));
         tx.commit();
 
-        tx = session.transaction(GraknTxType.READ);
+        tx = session.transaction(Transaction.Type.READ);
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -117,7 +116,7 @@ public class DegreeIT {
         tx.close();
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
-            try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+            try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 return tx.graql().compute(CENTRALITY).using(DEGREE).execute();
             }
         }).collect(Collectors.toSet());
@@ -131,7 +130,7 @@ public class DegreeIT {
                 }
         ));
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSetMeasure> degrees1 = tx.graql().compute(CENTRALITY).using(DEGREE).of("thingy").execute();
 
             assertEquals(2, degrees1.size());
@@ -182,7 +181,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             // set subgraph, use animal instead of dog
             Set<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
@@ -231,7 +230,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
             // create a subgraph excluding attributes and their relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
@@ -273,7 +272,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSetMeasure> degrees = tx.graql().compute(CENTRALITY).using(DEGREE).execute();
             assertTrue(referenceDegrees.containsAll(degrees));
         }
@@ -312,7 +311,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSetMeasure> degrees = tx.graql().compute(CENTRALITY).using(DEGREE).execute();
             assertTrue(referenceDegrees.containsAll(degrees));
         }
@@ -347,7 +346,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSetMeasure> degrees = tx.graql().compute(CENTRALITY).using(DEGREE).execute();
             assertTrue(referenceDegrees.containsAll(degrees));
         }
@@ -379,7 +378,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (GraknTx tx = session.transaction(GraknTxType.READ)) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
             List<ConceptSetMeasure> degrees = tx.graql().compute(CENTRALITY).using(DEGREE).execute();
             assertTrue(referenceDegrees.containsAll(degrees));
         }

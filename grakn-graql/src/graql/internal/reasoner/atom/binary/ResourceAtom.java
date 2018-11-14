@@ -17,7 +17,7 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
@@ -108,7 +108,7 @@ public abstract class ResourceAtom extends Binary{
     public RelationshipAtom toRelationshipAtom(){
         SchemaConcept type = getSchemaConcept();
         if (type == null) throw GraqlQueryException.illegalAtomConversion(this, RelationshipAtom.class);
-        GraknTx tx = getParentQuery().tx();
+        Transaction tx = getParentQuery().tx();
         Label typeLabel = Schema.ImplicitType.HAS.getLabel(type.label());
         return RelationshipAtom.create(
                 Graql.var()

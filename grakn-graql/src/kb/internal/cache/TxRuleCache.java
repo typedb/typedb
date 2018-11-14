@@ -20,7 +20,7 @@ package grakn.core.kb.internal.cache;
 
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
@@ -40,9 +40,9 @@ public class TxRuleCache {
 
     private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
     private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
-    private final EmbeddedGraknTx tx;
+    private final TransactionImpl tx;
 
-    public TxRuleCache(EmbeddedGraknTx tx){
+    public TxRuleCache(TransactionImpl tx){
         this.tx = tx;
     }
 

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.SchemaConcept;
 import grakn.core.graql.Match;
 import grakn.core.graql.Var;
@@ -33,11 +33,11 @@ import java.util.Set;
 public interface MatchAdmin extends Match {
 
     /**
-     * @param tx the {@link GraknTx} to use to get types from
+     * @param tx the {@link Transaction} to use to get types from
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<SchemaConcept> getSchemaConcepts(GraknTx tx);
+    Set<SchemaConcept> getSchemaConcepts(Transaction tx);
 
     /**
      * @return all concept types referred to explicitly in the query
@@ -55,7 +55,7 @@ public interface MatchAdmin extends Match {
      * @return the graph the query operates on, if one was provided
      */
     @CheckReturnValue
-    GraknTx tx();
+    Transaction tx();
 
     /**
      * @return all selected variable names in the query

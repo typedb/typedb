@@ -18,9 +18,7 @@
 
 package grakn.core.kb.internal;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.QueryExecutor;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
@@ -33,14 +31,13 @@ import grakn.core.concept.RelationshipType;
 import grakn.core.concept.Role;
 import grakn.core.concept.Rule;
 import grakn.core.concept.SchemaConcept;
-import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.exception.TransactionException;
 import grakn.core.exception.InvalidKBException;
 import grakn.core.exception.PropertyNotUniqueException;
-import grakn.core.factory.EmbeddedGraknSession;
+import grakn.core.session.SessionImpl;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
-import grakn.core.kb.admin.GraknAdmin;
+import grakn.core.graql.internal.Schema;
 import grakn.core.kb.internal.cache.GlobalCache;
 import grakn.core.kb.internal.cache.TxCache;
 import grakn.core.kb.internal.cache.TxRuleCache;
@@ -51,7 +48,7 @@ import grakn.core.kb.internal.concept.TypeImpl;
 import grakn.core.kb.internal.structure.VertexElement;
 import grakn.core.kb.log.CommitLog;
 import grakn.core.util.ErrorMessage;
-import grakn.core.graql.internal.Schema;
+import grakn.core.util.GraknConfigKey;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -82,19 +79,19 @@ import static grakn.core.util.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * The {@link GraknTx} Base Implementation.
+ * The {@link Transaction} Base Implementation.
  * This defines how a grakn graph sits on top of a Tinkerpop {@link Graph}.
  * It mostly act as a construction object which ensure the resulting graph conforms to the Grakn Object model.
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */
-public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
-    final Logger LOG = LoggerFactory.getLogger(EmbeddedGraknTx.class);
+public abstract class TransactionImpl<G extends Graph> implements Transaction {
+    final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "grakn.core.graql.internal.query.QueryBuilderImpl";
     private static final String QUERY_EXECUTOR_CLASS_NAME = "grakn.core.graql.internal.query.executor.QueryExecutorImpl";
 
     //----------------------------- Shared Variables
-    private final EmbeddedGraknSession session;
+    private final SessionImpl session;
     private final G graph;
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
@@ -110,7 +107,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private @Nullable GraphTraversalSource graphTraversalSource = null;
     private final TxRuleCache ruleCache;
 
-    public EmbeddedGraknTx(EmbeddedGraknSession session, G graph) {
+    public TransactionImpl(SessionImpl session, G graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
@@ -120,13 +117,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         globalCache = new GlobalCache(session.config());
 
         //Initialise Graph
-        txCache().openTx(GraknTxType.WRITE);
+        txCache().openTx(Type.WRITE);
 
         if (initialiseMetaConcepts()) commit();
     }
 
     @Override
-    public EmbeddedGraknSession session() {
+    public SessionImpl session() {
         return session;
     }
 
@@ -175,15 +172,15 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     /**
      * Opens the thread bound transaction
      */
-    public void openTransaction(GraknTxType txType) {
+    public void openTransaction(Type txType) {
         txCache().openTx(txType);
     }
 
     /**
-     * Gets the config option which determines the number of instances a {@link Type} must have before the {@link Type}
+     * Gets the config option which determines the number of instances a {@link grakn.core.concept.Type} must have before the {@link grakn.core.concept.Type}
      * if automatically sharded.
      *
-     * @return the number of instances a {@link Type} must have before it is shareded
+     * @return the number of instances a {@link grakn.core.concept.Type} must have before it is shareded
      */
     public long shardingThreshold() {
         return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
@@ -210,13 +207,8 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     public abstract boolean isTinkerPopGraphClosed();
 
     @Override
-    public GraknTxType txType() {
+    public Type txType() {
         return txCache().txType();
-    }
-
-    @Override
-    public GraknAdmin admin() {
-        return this;
     }
 
     /**
@@ -243,7 +235,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      * @return true if batch loading is enabled
      */
     public boolean isBatchTx() {
-        return GraknTxType.BATCH.equals(txCache().txType());
+        return Type.BATCH.equals(txCache().txType());
     }
 
     @SuppressWarnings("unchecked")
@@ -366,11 +358,11 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
     public void checkSchemaMutationAllowed() {
         checkMutationAllowed();
-        if (isBatchTx()) throw GraknTxOperationException.schemaMutation();
+        if (isBatchTx()) throw TransactionException.schemaMutation();
     }
 
     public void checkMutationAllowed() {
-        if (GraknTxType.READ.equals(txType())) throw GraknTxOperationException.transactionReadOnly(this);
+        if (Type.READ.equals(txType())) throw TransactionException.transactionReadOnly(this);
     }
 
 
@@ -398,10 +390,10 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      *
      * @param supplier The operation to be performed on the graph
      * @return The result of the operation on the graph.
-     * @throws GraknTxOperationException if the graph is closed.
+     * @throws TransactionException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (isClosed()) throw GraknTxOperationException.transactionClosed(this, txCache().getClosedReason());
+        if (isClosed()) throw TransactionException.transactionClosed(this, txCache().getClosedReason());
         return supplier.get();
     }
 
@@ -424,7 +416,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
      *
      * @param label             The {@link Label} of the {@link SchemaConcept} to find or create
      * @param baseType          The {@link Schema.BaseType} of the {@link SchemaConcept} to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link Type} or not
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit {@link grakn.core.concept.Type} or not
      * @param newConceptFactory the factory to be using when creating a new {@link SchemaConcept}
      * @param <T>               The type of {@link SchemaConcept} to return
      * @return a new or existing {@link SchemaConcept}
@@ -436,7 +428,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
         if (schemaConcept == null) {
             if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-                throw GraknTxOperationException.invalidLabelStart(label);
+                throw TransactionException.invalidLabelStart(label);
             }
 
             VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
@@ -458,9 +450,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     /**
      * Throws an exception when adding a {@link SchemaConcept} using a {@link Label} which is already taken
      */
-    private GraknTxOperationException labelTaken(SchemaConcept schemaConcept) {
+    private TransactionException labelTaken(SchemaConcept schemaConcept) {
         if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
-            return GraknTxOperationException.reservedLabel(schemaConcept.label());
+            return TransactionException.reservedLabel(schemaConcept.label());
         }
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
@@ -520,9 +512,9 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
-            throw GraknTxOperationException.metaTypeImmutable(label);
+            throw TransactionException.metaTypeImmutable(label);
         } else if (!dataType.equals(attributeType.dataType())) {
-            throw GraknTxOperationException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return attributeType;
@@ -537,7 +529,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
         if (rule.then() != null){
             rule.then().admin().varPatterns().stream()
                     .flatMap(v -> v.getTypeLabels().stream())
-                    .map(vl -> this.admin().<SchemaConcept>getSchemaConcept(vl))
+                    .map(vl -> this.<SchemaConcept>getSchemaConcept(vl))
                     .filter(Objects::nonNull)
                     .filter(Concept::isType)
                     .forEach(type -> ruleCache.updateRules(type, rule));
@@ -589,7 +581,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
 
         //Make sure you trying to retrieve supported data type
         if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
-            throw GraknTxOperationException.unsupportedDataType(value);
+            throw TransactionException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
@@ -614,7 +606,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     @Override
-    public <T extends Type> T getType(Label label) {
+    public <T extends grakn.core.concept.Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
 
@@ -656,7 +648,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
-            throw GraknTxOperationException.closingFailed(this, e);
+            throw TransactionException.closingFailed(this, e);
         }
     }
 
@@ -669,7 +661,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
             return;
         }
         try {
-            txCache().writeToGraphCache(txType().equals(GraknTxType.READ));
+            txCache().writeToGraphCache(txType().equals(Type.READ));
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", keyspace());
             closeTransaction(closeMessage);
@@ -806,13 +798,13 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     }
 
     /**
-     * Returns the current number of shards the provided {@link Type} has. This is used in creating more
+     * Returns the current number of shards the provided {@link grakn.core.concept.Type} has. This is used in creating more
      * efficient query plans.
      *
-     * @param concept The {@link Type} which may contain some shards.
-     * @return the number of Shards the {@link Type} currently has.
+     * @param concept The {@link grakn.core.concept.Type} which may contain some shards.
+     * @return the number of Shards the {@link grakn.core.concept.Type} currently has.
      */
-    public long getShardCount(Type concept) {
+    public long getShardCount(grakn.core.concept.Type concept) {
         return TypeImpl.from(concept).shardCount();
     }
 
@@ -831,7 +823,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private static @Nullable
     Constructor<?> getQueryBuilderConstructor() {
         try {
-            return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
+            return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(Transaction.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             return null;
         }
@@ -840,7 +832,7 @@ public abstract class EmbeddedGraknTx<G extends Graph> implements GraknAdmin {
     private static @Nullable
     Method getQueryExecutorFactory() {
         try {
-            return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", EmbeddedGraknTx.class);
+            return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", TransactionImpl.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             return null;
         }

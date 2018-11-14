@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.GraknTx;
+import grakn.core.Transaction;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.Type;
@@ -55,14 +55,14 @@ public class ConjunctionQueryTest {
     private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
     private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
-    private GraknTx tx;
+    private Transaction tx;
     private Var x = Graql.var("x");
     private Var y = Graql.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
     public void setUp() {
-        tx = mock(GraknTx.class);
+        tx = mock(Transaction.class);
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();

@@ -1,11 +1,12 @@
 <template>
     <div class="visualiser-wrapper">
-            <top-bar :tabId="tabId"></top-bar>
+            <top-bar :tabId="tabId" v-on:toggle-preferences="showPreferences = !showPreferences"></top-bar>
             <div class="vis-row">
                 <div class="vis-column">
                     <context-menu :tabId="tabId"></context-menu>
                     <graph-canvas :tabId="tabId"></graph-canvas>
                     <visualiser-footer :tabId="tabId"></visualiser-footer>
+                    <preferences v-show="showPreferences" v-on:close-preferences="showPreferences = false"></preferences>
                     <!-- <bottom-bar></bottom-bar> -->
                 </div>
                 <right-bar :tabId="tabId"></right-bar>
@@ -51,6 +52,7 @@ import TopBar from './TopBar.vue';
 import LeftBar from './LeftBar.vue';
 import RightBar from './RightBar.vue';
 import BottomBar from './BottomBar.vue';
+import Preferences from './Preferences.vue';
 
 import GraphCanvas from '../shared/GraphCanvas.vue';
 import ContextMenu from './ContextMenu';
@@ -60,9 +62,14 @@ import TabState from './store/tabState';
 export default {
   name: 'VisTab',
   components: {
-    TopBar, RightBar, LeftBar, BottomBar, GraphCanvas, ContextMenu, VisualiserFooter,
+    TopBar, RightBar, LeftBar, BottomBar, GraphCanvas, ContextMenu, VisualiserFooter, Preferences,
   },
   props: ['tabId'],
+  data() {
+    return {
+      showPreferences: false,
+    };
+  },
   beforeCreate() {
     const namespace = `tab-${this.$options.propsData.tabId}`;
     this.$store.registerModule(namespace, { namespaced: true, getters, state: TabState.create(), mutations, actions });

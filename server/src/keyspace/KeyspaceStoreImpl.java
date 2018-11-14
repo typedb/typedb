@@ -18,8 +18,7 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
+import grakn.core.Transaction;
 import grakn.core.Keyspace;
 import grakn.core.concept.Attribute;
 import grakn.core.concept.AttributeType;
@@ -29,9 +28,9 @@ import grakn.core.concept.Thing;
 import grakn.core.util.GraknConfig;
 import grakn.core.exception.GraknBackendException;
 import grakn.core.exception.InvalidKBException;
-import grakn.core.factory.EmbeddedGraknSession;
-import grakn.core.factory.TxFactoryBuilder;
-import grakn.core.kb.internal.EmbeddedGraknTx;
+import grakn.core.session.SessionImpl;
+import grakn.core.session.TransactionFactoryBuilder;
+import grakn.core.kb.internal.TransactionImpl;
 import grakn.core.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -42,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Default implementation of {@link KeyspaceStore} that uses an {@link EmbeddedGraknSession} to access a knowledge
+ * Default implementation of {@link KeyspaceStore} that uses an {@link SessionImpl} to access a knowledge
  * base and store keyspace information.
  *
  */
@@ -52,12 +51,12 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceStore.class);
     private final Set<Keyspace> existingKeyspaces;
-    private final EmbeddedGraknSession systemKeyspaceSession;
+    private final SessionImpl systemKeyspaceSession;
     private final GraknConfig config;
 
     public KeyspaceStoreImpl(GraknConfig config){
         this.config = config;
-        this.systemKeyspaceSession = EmbeddedGraknSession.createEngineSession(SYSTEM_KB_KEYSPACE, config, TxFactoryBuilder.getInstance());
+        this.systemKeyspaceSession = SessionImpl.createEngineSession(SYSTEM_KB_KEYSPACE, config, TransactionFactoryBuilder.getInstance());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -70,7 +69,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     public void addKeyspace(Keyspace keyspace){
         if(containsKeyspace(keyspace)) return;
 
-        try (EmbeddedGraknTx<?> tx = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
+        try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
@@ -100,7 +99,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
             return true;
         }
 
-        try (GraknTx tx = systemKeyspaceSession.transaction(GraknTxType.READ)) {
+        try (Transaction tx = systemKeyspaceSession.transaction(Transaction.Type.READ)) {
             boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
             if(keyspaceExists) existingKeyspaces.add(keyspace);
             return keyspaceExists;
@@ -113,9 +112,9 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
            return false;
         }
 
-        EmbeddedGraknSession session = EmbeddedGraknSession.createEngineSession(keyspace, config);
+        SessionImpl session = SessionImpl.createEngineSession(keyspace, config);
         session.close();
-        try(EmbeddedGraknTx tx = session.transaction(GraknTxType.WRITE)){
+        try(TransactionImpl tx = session.transaction(Transaction.Type.WRITE)){
             tx.closeSession();
             tx.clearGraph();
             tx.txCache().closeTx(ErrorMessage.CLOSED_CLEAR.getMessage());
@@ -125,7 +124,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     }
 
     private boolean deleteReferenceInSystemKeyspace(Keyspace keyspace){
-        try (EmbeddedGraknTx<?> tx = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
+        try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.attribute(keyspace.getValue());
 
@@ -143,7 +142,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
 
     @Override
     public Set<Keyspace> keyspaces() {
-        try (GraknTx graph = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
+        try (Transaction graph = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
 
             return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
@@ -157,7 +156,7 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     @Override
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (EmbeddedGraknTx<?> tx = systemKeyspaceSession.transaction(GraknTxType.WRITE)) {
+        try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 return;
             }
@@ -172,11 +171,11 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
     }
 
     /**
-     * Loads the system schema inside the provided {@link GraknTx}.
+     * Loads the system schema inside the provided {@link Transaction}.
      *
      * @param tx The tx to contain the system schema
      */
-    private void loadSystemSchema(GraknTx tx){
+    private void loadSystemSchema(Transaction tx){
         //Keyspace data
         AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         tx.putEntityType("keyspace").key(keyspaceName);
