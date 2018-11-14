@@ -43,9 +43,9 @@ import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.internal.Schema;
-import grakn.core.server.kb.cache.GlobalCache;
-import grakn.core.server.kb.cache.TxCache;
-import grakn.core.server.kb.cache.TxRuleCache;
+import grakn.core.server.session.cache.GlobalCache;
+import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
@@ -106,15 +106,15 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     Method queryExecutorFactory = getQueryExecutorFactory();
 
     //----------------------------- Transaction Specific
-    private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
+    private final ThreadLocal<TransactionCache> localConceptLog = new ThreadLocal<>();
     private @Nullable GraphTraversalSource graphTraversalSource = null;
-    private final TxRuleCache ruleCache;
+    private final RuleCache ruleCache;
 
     public TransactionImpl(SessionImpl session, G graph) {
         this.session = session;
         this.graph = graph;
         this.elementFactory = new ElementFactory(this);
-        this.ruleCache = new TxRuleCache(this);
+        this.ruleCache = new RuleCache(this);
 
         //Initialise Graph Caches
         globalCache = new GlobalCache(session.config());
@@ -130,7 +130,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return session;
     }
 
-    public TxRuleCache ruleCache(){ return ruleCache;}
+    public RuleCache ruleCache(){ return ruleCache;}
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -189,17 +189,17 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
         return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
     }
 
-    public TxCache txCache() {
-        TxCache txCache = localConceptLog.get();
-        if (txCache == null) {
-            localConceptLog.set(txCache = new TxCache(getGlobalCache()));
+    public TransactionCache txCache() {
+        TransactionCache transactionCache = localConceptLog.get();
+        if (transactionCache == null) {
+            localConceptLog.set(transactionCache = new TransactionCache(getGlobalCache()));
         }
 
-        if (txCache.isTxOpen() && txCache.schemaNotCached()) {
-            txCache.refreshSchemaCache();
+        if (transactionCache.isTxOpen() && transactionCache.schemaNotCached()) {
+            transactionCache.refreshSchemaCache();
         }
 
-        return txCache;
+        return transactionCache;
     }
 
     @Override
@@ -275,10 +275,10 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
 
     /**
-     * Copies the {@link SchemaConcept} and it's subs into the {@link TxCache}.
+     * Copies the {@link SchemaConcept} and it's subs into the {@link TransactionCache}.
      * This is important as lookups for {@link SchemaConcept}s based on {@link Label} depend on this caching.
      *
-     * @param schemaConcept the {@link SchemaConcept} to be copied into the {@link TxCache}
+     * @param schemaConcept the {@link SchemaConcept} to be copied into the {@link TransactionCache}
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {

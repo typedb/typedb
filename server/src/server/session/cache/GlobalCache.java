@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb.cache;
+package grakn.core.server.session.cache;
 
 import grakn.core.util.GraknConfigKey;
 import grakn.core.graql.concept.Label;
@@ -68,20 +68,20 @@ public class GlobalCache {
                 .build();
     }
 
-    void populateSchemaTxCache(TxCache txCache){
+    void populateSchemaTxCache(TransactionCache transactionCache){
         try {
             lock.writeLock().lock();
 
             Map<Label, SchemaConcept> cachedSchemaSnapshot = getCachedTypes();
             Map<Label, LabelId> cachedLabelsSnapshot = getCachedLabels();
 
-            //Read central cache into txCache cloning only base concepts. Sets clones later
+            //Read central cache into transactionCache cloning only base concepts. Sets clones later
             for (SchemaConcept type : cachedSchemaSnapshot.values()) {
-                txCache.cacheConcept(type);
+                transactionCache.cacheConcept(type);
             }
 
             //Load Labels Separately. We do this because the TypeCache may have expired.
-            cachedLabelsSnapshot.forEach(txCache::cacheLabel);
+            cachedLabelsSnapshot.forEach(transactionCache::cacheLabel);
         } finally {
             lock.writeLock().unlock();
         }
@@ -113,11 +113,11 @@ public class GlobalCache {
      * into the graph cache. This usually happens when a commit occurs and allows us to track schema
      * mutations without having to read the graph.
      *
-     * @param txCache The transaction cache
+     * @param transactionCache The transaction cache
      */
-    void readTxCache(TxCache txCache) {
+    void readTxCache(TransactionCache transactionCache) {
         //Check if the ontology has been changed and should be flushed into this cache
-        if(!cachedLabels.equals(txCache.getLabelCache())) {
+        if(!cachedLabels.equals(transactionCache.getLabelCache())) {
             try {
                 lock.readLock().lock();
 
@@ -126,15 +126,15 @@ public class GlobalCache {
                 cachedTypes.invalidateAll();
 
                 //Add a new one
-                cachedLabels.putAll(txCache.getLabelCache());
-                cachedTypes.putAll(txCache.getSchemaConceptCache());
+                cachedLabels.putAll(transactionCache.getLabelCache());
+                cachedTypes.putAll(transactionCache.getSchemaConceptCache());
             } finally {
                 lock.readLock().unlock();
             }
         }
 
         //Flush All The Internal Transaction Caches
-        txCache.getSchemaConceptCache().values().forEach(schemaConcept
+        transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
                 -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }
 

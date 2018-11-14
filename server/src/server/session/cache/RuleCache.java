@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb.cache;
+package grakn.core.server.session.cache;
 
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
@@ -35,15 +35,14 @@ import java.util.stream.Stream;
 /**
  * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing is expensive when large number of rules present).
  * NB: non-committed rules are alse cached.
- *
  */
-public class TxRuleCache {
+public class RuleCache {
 
     private final Map<SchemaConcept, Set<Rule>> ruleMap = new HashMap<>();
     private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
     private final TransactionImpl tx;
 
-    public TxRuleCache(TransactionImpl tx){
+    public RuleCache(TransactionImpl tx) {
         this.tx = tx;
     }
 
@@ -60,9 +59,9 @@ public class TxRuleCache {
      * @param rule to be appended
      * @return updated entry vlue
      */
-    public Set<Rule> updateRules(SchemaConcept type, Rule rule){
+    public Set<Rule> updateRules(SchemaConcept type, Rule rule) {
         Set<Rule> match = ruleMap.get(type);
-        if (match == null){
+        if (match == null) {
             Set<Rule> rules = Sets.newHashSet(rule);
             getTypes(type, false).stream()
                     .flatMap(SchemaConcept::thenRules)
@@ -78,23 +77,23 @@ public class TxRuleCache {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
-    public Stream<Rule> getRulesWithType(SchemaConcept type){
+    public Stream<Rule> getRulesWithType(SchemaConcept type) {
         return getRulesWithType(type, false);
     }
 
     private Set<SchemaConcept> getTypes(SchemaConcept type, boolean direct) {
         Set<SchemaConcept> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
-        return type.isImplicit()?
-                types.stream().flatMap(t -> Stream.of(t, tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(t.label())))).collect(Collectors.toSet()):
+        return type.isImplicit() ?
+                types.stream().flatMap(t -> Stream.of(t, tx.getSchemaConcept(Schema.ImplicitType.explicitLabel(t.label())))).collect(Collectors.toSet()) :
                 types;
     }
 
     /**
-     * @param type for which rules containing it in the head are sought
+     * @param type   for which rules containing it in the head are sought
      * @param direct way of assessing isa edges
      * @return rules containing specified type in the head
      */
-    public Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct){
+    public Stream<Rule> getRulesWithType(SchemaConcept type, boolean direct) {
         if (type == null) return getRules();
 
         Set<Rule> match = ruleMap.get(type);
@@ -108,13 +107,12 @@ public class TxRuleCache {
     }
 
     /**
-     *
-     * @param rule for which the parsed rule should be retrieved
+     * @param rule      for which the parsed rule should be retrieved
      * @param converter rule converter
-     * @param <T> type of object converter converts to
+     * @param <T>       type of object converter converts to
      * @return parsed rule object
      */
-    public <T> T getRule(Rule rule, Supplier<T> converter){
+    public <T> T getRule(Rule rule, Supplier<T> converter) {
         T match = (T) ruleConversionMap.get(rule);
         if (match != null) return match;
 
@@ -126,7 +124,7 @@ public class TxRuleCache {
     /**
      * cleans cache contents
      */
-    public void closeTx(){
+    public void closeTx() {
         ruleMap.clear();
         ruleConversionMap.clear();
     }

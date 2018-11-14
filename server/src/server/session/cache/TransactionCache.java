@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb.cache;
+package grakn.core.server.session.cache;
 
 import grakn.core.graql.concept.Type;
 import grakn.core.server.Transaction;
@@ -30,6 +30,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
+import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
 import com.google.common.collect.ArrayListMultimap;
@@ -41,24 +42,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>
- *     Tracks Transaction Specific Variables
- * </p>
- *
- * <p>
- *     Caches Transaction specific data this includes:
- *     <ol>
- *         <li>Validation Concepts - Concepts which need to undergo validation.</li>
- *         <li>Built Concepts -  Prevents rebuilding when the same vertex is encountered</li>
- *         <li>The Schema - Optimises validation checks by preventing db read. </li>
- *         <li> {@link Label} - Allows mapping type labels to type Ids</li>
- *         <li>Transaction meta Data - Allows transactions to function in different ways</li>
- *     <ol/>
- * </p>
- *
- *
+ * Caches Transaction specific data this includes:
+ * Validation Concepts - Concepts which need to undergo validation.
+ * Built Concepts -  Prevents rebuilding when the same vertex is encountered
+ * The Schema - Optimises validation checks by preventing db read.
+ * {@link Label} - Allows mapping type labels to type Ids
+ * Transaction meta Data - Allows transactions to function in different ways
  */
-public class TxCache{
+public class TransactionCache {
     //Cache which is shared across multiple transactions
     private final GlobalCache globalCache;
 
@@ -92,7 +83,7 @@ public class TxCache{
     private Transaction.Type txType;
     private String closedReason = null;
 
-    public TxCache(GlobalCache globalCache) {
+    public TransactionCache(GlobalCache globalCache) {
         this.globalCache = globalCache;
     }
 
@@ -101,10 +92,10 @@ public class TxCache{
      *
      * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    public void writeToGraphCache(boolean isSafe){
+    public void writeToGraphCache(boolean isSafe) {
         //When a commit has occurred or a transaction is read only all types can be overridden this is because we know they are valid.
         //When it is not safe to simply flush we have to check that no mutations were made
-        if(isSafe || ! writeOccurred){
+        if (isSafe || !writeOccurred) {
             globalCache.readTxCache(this);
         }
     }
@@ -113,15 +104,14 @@ public class TxCache{
      * Notifies the cache that a write has occurred.
      * This is later used to determine if it is safe to flush the transaction cache to the session cache or not.
      */
-    public void writeOccurred(){
+    public void writeOccurred() {
         writeOccurred = true;
     }
 
     /**
-     *
      * @return true if ths schema labels have been cached. The graph cannot operate if this is false.
      */
-    public boolean schemaNotCached(){
+    public boolean schemaNotCached() {
         return labelCache.isEmpty();
     }
 
@@ -129,14 +119,12 @@ public class TxCache{
      * Refreshes the transaction schema cache by reading the central schema cache is read into this transaction cache.
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
      * do not accidentally break the central schema cache.
-     *
      */
-    public void refreshSchemaCache(){
+    public void refreshSchemaCache() {
         globalCache.populateSchemaTxCache(this);
     }
 
     /**
-     *
      * @param concept The element to be later validated
      */
     public void trackForValidation(Concept concept) {
@@ -146,46 +134,43 @@ public class TxCache{
             modifiedRoles.add(concept.asRole());
         } else if (concept.isRelationshipType()) {
             modifiedRelationshipTypes.add(concept.asRelationshipType());
-        } else if (concept.isRule()){
+        } else if (concept.isRule()) {
             modifiedRules.add(concept.asRule());
         }
     }
+
     public void trackForValidation(Casting casting) {
         modifiedCastings.add(casting);
     }
 
-    public void removeFromValidation(Type type){
+    public void removeFromValidation(Type type) {
         if (type.isRelationshipType()) {
             modifiedRelationshipTypes.remove(type.asRelationshipType());
         }
     }
 
     /**
-     *
      * @return All the types that have gained or lost instances and by how much
      */
-    public Map<ConceptId, Long> getShardingCount(){
+    public Map<ConceptId, Long> getShardingCount() {
         return shardingCount;
     }
 
     /**
-     *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, SchemaConcept> getSchemaConceptCache(){
+    Map<Label, SchemaConcept> getSchemaConceptCache() {
         return schemaConceptCache;
     }
 
     /**
-     *
      * @return All the types labels currently cached in the transaction.
      */
-    Map<Label, LabelId> getLabelCache(){
+    Map<Label, LabelId> getLabelCache() {
         return labelCache;
     }
 
     /**
-     *
      * @return All the concepts which have been accessed in this transaction
      */
     Map<ConceptId, Concept> getConceptCache() {
@@ -193,21 +178,20 @@ public class TxCache{
     }
 
     /**
-     *
      * @param concept The concept to no longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    public void remove(Concept concept){
+    public void remove(Concept concept) {
         modifiedThings.remove(concept);
         modifiedRoles.remove(concept);
         modifiedRelationshipTypes.remove(concept);
         modifiedRules.remove(concept);
 
-        if(concept.isAttribute()) {
+        if (concept.isAttribute()) {
             newAttributes.removeAll(AttributeImpl.from(concept.asAttribute()).getIndex());
         }
 
-        if(concept.isRelationship()){
+        if (concept.isRelationship()) {
             newRelationships.remove(concept.asRelationship());
         }
 
@@ -219,7 +203,7 @@ public class TxCache{
         }
     }
 
-    public void remove(Casting casting){
+    public void remove(Casting casting) {
         modifiedCastings.remove(casting);
     }
 
@@ -228,9 +212,9 @@ public class TxCache{
      *
      * @param concept The concept to be cached.
      */
-    public void cacheConcept(Concept concept){
+    public void cacheConcept(Concept concept) {
         conceptCache.put(concept.id(), concept);
-        if(concept.isSchemaConcept()){
+        if (concept.isSchemaConcept()) {
             SchemaConcept schemaConcept = concept.asSchemaConcept();
             schemaConceptCache.put(schemaConcept.label(), schemaConcept);
             labelCache.put(schemaConcept.label(), schemaConcept.labelId());
@@ -242,9 +226,9 @@ public class TxCache{
      * Caches the mapping of a type label to a type id. This is necessary in order for ANY types to be looked up.
      *
      * @param label The type label to cache
-     * @param id Its equivalent id which can be looked up quickly in the graph
+     * @param id    Its equivalent id which can be looked up quickly in the graph
      */
-    void cacheLabel(Label label, LabelId id){
+    void cacheLabel(Label label, LabelId id) {
         labelCache.put(label, id);
     }
 
@@ -254,36 +238,34 @@ public class TxCache{
      * @param id The id of the concept
      * @return true if the concept is cached
      */
-    public boolean isConceptCached(ConceptId id){
+    public boolean isConceptCached(ConceptId id) {
         return conceptCache.containsKey(id);
     }
 
     /**
-     *
      * @param label The label of the type to cache
      * @return true if the concept is cached
      */
-    public boolean isTypeCached(Label label){
+    public boolean isTypeCached(Label label) {
         return schemaConceptCache.containsKey(label);
     }
 
     /**
-     *
      * @param label the type label which may be in the cache
      * @return true if the label is cached and has a valid mapping to a id
      */
-    public boolean isLabelCached(Label label){
+    public boolean isLabelCached(Label label) {
         return labelCache.containsKey(label);
     }
 
     /**
      * Returns a previously built concept
      *
-     * @param id The id of the concept
+     * @param id  The id of the concept
      * @param <X> The type of the concept
      * @return The cached concept
      */
-    public <X extends Concept> X getCachedConcept(ConceptId id){
+    public <X extends Concept> X getCachedConcept(ConceptId id) {
         //noinspection unchecked
         return (X) conceptCache.get(id);
     }
@@ -292,34 +274,37 @@ public class TxCache{
      * Returns a previously built type
      *
      * @param label The label of the type
-     * @param <X> The type of the type
+     * @param <X>   The type of the type
      * @return The cached type
      */
-    public <X extends SchemaConcept> X getCachedSchemaConcept(Label label){
+    public <X extends SchemaConcept> X getCachedSchemaConcept(Label label) {
         //noinspection unchecked
         return (X) schemaConceptCache.get(label);
     }
 
-    public LabelId convertLabelToId(Label label){
+    public LabelId convertLabelToId(Label label) {
         return labelCache.get(label);
     }
 
-    public void addedInstance(ConceptId conceptId){
+    public void addedInstance(ConceptId conceptId) {
         shardingCount.compute(conceptId, (key, value) -> value == null ? 1 : value + 1);
         cleanupShardingCount(conceptId);
     }
-    public void removedInstance(ConceptId conceptId){
+
+    public void removedInstance(ConceptId conceptId) {
         shardingCount.compute(conceptId, (key, value) -> value == null ? -1 : value - 1);
         cleanupShardingCount(conceptId);
     }
-    private void cleanupShardingCount(ConceptId conceptId){
-        if(shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
+
+    private void cleanupShardingCount(ConceptId conceptId) {
+        if (shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
     }
 
 
-    public void addNewAttribute(String index, ConceptId conceptId){
+    public void addNewAttribute(String index, ConceptId conceptId) {
         newAttributes.put(index, conceptId);
     }
+
     public Map<String, Set<ConceptId>> getNewAttributes() {
         Map<String, Set<ConceptId>> map = new HashMap<>();
         newAttributes.asMap().forEach((attrValue, conceptIds) -> map.put(attrValue, new HashSet<>(conceptIds)));
@@ -347,15 +332,16 @@ public class TxCache{
         return modifiedCastings;
     }
 
-    public void addNewRelationship(Relationship relationship){
+    public void addNewRelationship(Relationship relationship) {
         newRelationships.add(relationship);
     }
+
     public Set<Relationship> getNewRelationships() {
         return newRelationships;
     }
 
     //--------------------------------------- Transaction Specific Meta Data -------------------------------------------
-    public void closeTx(String closedReason){
+    public void closeTx(String closedReason) {
         isTxOpen = false;
         this.closedReason = closedReason;
 
@@ -375,20 +361,22 @@ public class TxCache{
         schemaConceptCache.clear();
         labelCache.clear();
     }
-    public void openTx(Transaction.Type txType){
+
+    public void openTx(Transaction.Type txType) {
         isTxOpen = true;
         this.txType = txType;
         closedReason = null;
     }
-    public boolean isTxOpen(){
+
+    public boolean isTxOpen() {
         return isTxOpen;
     }
 
-    public Transaction.Type txType(){
+    public Transaction.Type txType() {
         return txType;
     }
 
-    public String getClosedReason(){
+    public String getClosedReason() {
         return closedReason;
     }
 

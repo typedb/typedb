@@ -29,19 +29,11 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * <p>
- *     An internal cached element
- * </p>
- *
- * <p>
- *     An internal cached object which hits the database only when it needs to.
- *     This is used to cache the components of ontological concepts. i.e. the fields of {@link Type},
- *     {@link RelationshipType}, and {@link Role}.
- * </p>
+ * An internal cached object which hits the database only when it needs to.
+ * This is used to cache the components of ontological concepts. i.e. the fields of {@link Type},
+ * {@link RelationshipType}, and {@link Role}.
  *
  * @param <V> The object it is caching
- *
- *
  */
 public class Cache<V> {
     //If no cache can produce the data then the database is read
