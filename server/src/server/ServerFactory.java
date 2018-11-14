@@ -21,8 +21,8 @@ package grakn.core.server;
 import grakn.core.util.GraknConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.lock.LockProvider;
-import grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerLockManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
@@ -52,12 +52,12 @@ public class ServerFactory {
         ServerStatus status = new ServerStatus();
 
         // distributed locks
-        LockProvider lockProvider = new ProcessWideLockProvider();
+        LockManager lockManager = new ServerLockManager();
 
         KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
-        SessionStore sessionStore = SessionStore.create(lockProvider, config, keyspaceStore);
+        SessionStore sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
 
 
         // post-processing
@@ -66,7 +66,7 @@ public class ServerFactory {
         // http services: gRPC server
         ServerRPC rpcServerRPC = configureServerRPC(config, sessionStore, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
-        return createServer(engineId, config, status, rpcServerRPC, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+        return createServer(engineId, config, status, rpcServerRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
@@ -76,9 +76,9 @@ public class ServerFactory {
 
     public static Server createServer(
             EngineID engineId, GraknConfig config, ServerStatus serverStatus, ServerRPC rpcServer,
-            LockProvider lockProvider, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+            LockManager lockManager, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
 
-        Server server = new Server(engineId, config, serverStatus, lockProvider, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);

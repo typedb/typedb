@@ -28,8 +28,8 @@ import grakn.core.server.ServerRPC;
 import grakn.core.server.ServerStatus;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.lock.LockProvider;
-import grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerLockManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
@@ -167,12 +167,12 @@ public class ServerContext extends ExternalResource {
         ServerStatus status = new ServerStatus();
 
         // distributed locks
-        LockProvider lockProvider = new ProcessWideLockProvider();
+        LockManager lockManager = new ServerLockManager();
 
         keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
-        sessionStore = SessionStore.create(lockProvider, config, keyspaceStore);
+        sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
 
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
         OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
@@ -184,7 +184,7 @@ public class ServerContext extends ExternalResource {
         ServerRPC rpcServerRPC = ServerRPC.create(server);
 
         Server graknEngineServer = ServerFactory.createServer(id, config, status, rpcServerRPC,
-                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+                                                              lockManager, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();
 

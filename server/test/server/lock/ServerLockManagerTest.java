@@ -18,7 +18,7 @@
 
 package grakn.core.server.lock;
 
-import grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.util.ServerLockManager;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 
-public class ProcessWideLockProviderTest {
+public class ServerLockManagerTest {
 
     private final String LOCK_NAME = "lock";
 
@@ -39,12 +39,12 @@ public class ProcessWideLockProviderTest {
 
     @Test
     public void whenGivenLock_ReturnsLockWithSameClass() {
-        assertThat(new ProcessWideLockProvider().getLock(LOCK_NAME).getClass(), equalTo(ReentrantLock.class));
+        assertThat(new ServerLockManager().getLock(LOCK_NAME).getClass(), equalTo(ReentrantLock.class));
     }
 
     @Test
     public void whenUsingSameString_LocksAreTheSame() {
-        ProcessWideLockProvider l = new ProcessWideLockProvider();
+        ServerLockManager l = new ServerLockManager();
 
         Lock lock1 = l.getLock(LOCK_NAME);
         Lock lock2 = l.getLock(LOCK_NAME);
