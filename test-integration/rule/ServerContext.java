@@ -18,24 +18,22 @@
 
 package grakn.core.rule;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.util.GraknConfig;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
-import grakn.core.server.ServerRPC;
-import grakn.core.server.ServerStatus;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.session.SessionStore;
-import grakn.core.server.util.LockManager;
-import grakn.core.server.util.ServerLockManager;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
-import grakn.core.server.util.EngineID;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.session.SessionStore;
+import grakn.core.server.util.EngineID;
+import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerLockManager;
+import grakn.core.util.GraknConfig;
+import grakn.core.util.GraknConfigKey;
 import grakn.core.util.SimpleURI;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
@@ -163,7 +161,6 @@ public class ServerContext extends ExternalResource {
 
     private Server startGraknEngineServer() throws IOException {
         EngineID id = EngineID.me();
-        ServerStatus status = new ServerStatus();
 
         // distributed locks
         LockManager lockManager = new ServerLockManager();
@@ -176,19 +173,18 @@ public class ServerContext extends ExternalResource {
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
         OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
 
-        io.grpc.Server server = ServerBuilder.forPort(0)
+        io.grpc.Server serverRPC = ServerBuilder.forPort(0)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(keyspaceStore))
                 .build();
-        ServerRPC rpcServerRPC = ServerRPC.create(server);
 
-        Server graknEngineServer = ServerFactory.createServer(id, config, status, rpcServerRPC,
+        Server graknEngineServer = ServerFactory.createServer(id, config, serverRPC,
                                                               lockManager, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();
 
         // Read the automatically allocated ports and write them back into the config
-        config.setConfigProperty(GraknConfigKey.GRPC_PORT, server.getPort());
+        config.setConfigProperty(GraknConfigKey.GRPC_PORT, serverRPC.getPort());
 
         return graknEngineServer;
     }

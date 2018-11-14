@@ -29,7 +29,6 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
@@ -80,7 +79,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
 
     /**
-     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link ServerRPC}.
+     * A {@link StreamObserver} that implements the transaction-handling behaviour for {@link io.grpc.Server}.
      * Receives a stream of {@link Transaction.Req}s and returning a stream of {@link Transaction.Res}s.
      */
     static class TransactionListener implements StreamObserver<Transaction.Req> {
