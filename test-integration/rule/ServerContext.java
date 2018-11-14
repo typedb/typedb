@@ -27,7 +27,7 @@ import grakn.core.server.ServerFactory;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.ServerStatus;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.session.SessionStore;
 import grakn.core.server.lock.LockProvider;
 import grakn.core.server.lock.ProcessWideLockProvider;
 import grakn.core.server.rpc.KeyspaceService;
@@ -84,11 +84,11 @@ public class ServerContext extends ExternalResource {
 
     private KeyspaceStore keyspaceStore;
 
-    public EngineGraknTxFactory factory() {
-        return engineGraknTxFactory;
+    public SessionStore factory() {
+        return sessionStore;
     }
 
-    private EngineGraknTxFactory engineGraknTxFactory;
+    private SessionStore sessionStore;
 
 
     public Server server() {
@@ -172,10 +172,10 @@ public class ServerContext extends ExternalResource {
         keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
-        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
+        sessionStore = SessionStore.create(lockProvider, config, keyspaceStore);
 
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
-        OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
+        OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
 
         io.grpc.Server server = ServerBuilder.forPort(0)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))

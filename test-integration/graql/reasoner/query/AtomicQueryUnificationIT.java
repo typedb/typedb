@@ -30,7 +30,7 @@ import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.rule.ConcurrentGraknServer;
 import org.junit.AfterClass;

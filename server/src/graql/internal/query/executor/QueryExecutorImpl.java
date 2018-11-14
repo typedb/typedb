@@ -36,7 +36,7 @@ import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.internal.util.AdminConverter;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 

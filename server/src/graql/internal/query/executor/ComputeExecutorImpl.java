@@ -18,8 +18,20 @@
 
 package grakn.core.graql.internal.query.executor;
 
-import grakn.core.server.ComputeExecutor;
-import grakn.core.server.GraknComputer;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.Graql;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Syntax;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptList;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.ConceptSetMeasure;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -30,15 +42,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptSet;
-import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.graql.answer.Value;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.analytics.ClusterMemberMapReduce;
 import grakn.core.graql.internal.analytics.ConnectedComponentVertexProgram;
 import grakn.core.graql.internal.analytics.ConnectedComponentsVertexProgram;
@@ -61,15 +65,11 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.olap.TransactionOLAP;
 import grakn.core.util.CommonUtil;
-import grakn.core.graql.Syntax;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -106,7 +106,7 @@ import static grakn.core.graql.Syntax.Compute.Method.STD;
 import static grakn.core.graql.Syntax.Compute.Method.SUM;
 
 /**
- * A Graql Compute query job executed against a {@link GraknComputer}.
+ * A Graql Compute query job executed against a {@link TransactionOLAP}.
  *
  */
 class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {

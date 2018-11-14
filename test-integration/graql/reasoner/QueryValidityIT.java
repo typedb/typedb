@@ -25,7 +25,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.ConcurrentGraknServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

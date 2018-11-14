@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 
 import grakn.core.server.Keyspace;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 
 /**
  * A request transaction opener for RPC Services

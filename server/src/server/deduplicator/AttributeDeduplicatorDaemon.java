@@ -24,8 +24,8 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
-import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.TransactionImpl;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +64,7 @@ public class AttributeDeduplicatorDaemon {
 
     private ExecutorService executorServiceForDaemon = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
 
-    private EngineGraknTxFactory txFactory;
+    private SessionStore txFactory;
     private RocksDbQueue queue;
 
     private boolean stopDaemon = false;
@@ -72,9 +72,9 @@ public class AttributeDeduplicatorDaemon {
     /**
      * Instantiates {@link AttributeDeduplicatorDaemon}
      * @param config a reference to an instance of {@link GraknConfig} which is initialised from a grakn.properties.
-     * @param txFactory an {@link EngineGraknTxFactory} instance which provides access to write into the database
+     * @param txFactory an {@link SessionStore} instance which provides access to write into the database
      */
-    public AttributeDeduplicatorDaemon(GraknConfig config, EngineGraknTxFactory txFactory) {
+    public AttributeDeduplicatorDaemon(GraknConfig config, SessionStore txFactory) {
         Path dataDir = Paths.get(config.getProperty(GraknConfigKey.DATA_DIR));
         Path queueDataDir = dataDir.resolve(queueDataDirRelative);
         this.queue = new RocksDbQueue(queueDataDir);
@@ -98,7 +98,7 @@ public class AttributeDeduplicatorDaemon {
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
      * The thread listens to the {@link RocksDbQueue} queue for incoming attributes and applies
-     * the {@link AttributeDeduplicator#deduplicate(EngineGraknTxFactory, KeyspaceIndexPair)} algorithm.
+     * the {@link AttributeDeduplicator#deduplicate(SessionStore, KeyspaceIndexPair)} algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {

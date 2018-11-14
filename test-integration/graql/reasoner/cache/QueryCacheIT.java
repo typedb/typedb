@@ -15,7 +15,7 @@ import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.query.QueryAnswers;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableMap;
 import org.junit.After;

@@ -26,7 +26,7 @@ import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 
 import java.util.HashSet;
 import java.util.Iterator;

@@ -40,7 +40,7 @@ import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -50,7 +50,7 @@ import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.session.SessionStore;
 import grakn.core.server.keyspace.KeyspaceStore;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -112,7 +112,7 @@ public class ServerRPCTest {
     private static final String V123 = "V123";
     private static final String V456 = "V456";
 
-    private final EngineGraknTxFactory txFactory = mock(EngineGraknTxFactory.class);
+    private final SessionStore txFactory = mock(SessionStore.class);
     private final TransactionImpl tx = mock(TransactionImpl.class);
     private final GetQuery query = mock(GetQuery.class);
     private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);

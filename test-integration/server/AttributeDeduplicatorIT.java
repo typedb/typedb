@@ -2,10 +2,10 @@ package grakn.core.server;
 
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Label;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;
-import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.session.SessionStore;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.rule.ConcurrentGraknServer;
@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.hasSize;
 @SuppressWarnings("CheckReturnValue")
 public class AttributeDeduplicatorIT {
     private SessionImpl session;
-    private EngineGraknTxFactory txFactory;
+    private SessionStore txFactory;
 
     @ClassRule
     public static final ConcurrentGraknServer server = new ConcurrentGraknServer();

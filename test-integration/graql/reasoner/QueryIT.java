@@ -28,7 +28,7 @@ import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.Transaction;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.ConcurrentGraknServer;

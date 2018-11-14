@@ -20,7 +20,7 @@ package grakn.core.server;
 
 import grakn.core.util.GraknConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.session.SessionStore;
 import grakn.core.server.lock.LockProvider;
 import grakn.core.server.lock.ProcessWideLockProvider;
 import grakn.core.server.rpc.KeyspaceService;
@@ -57,14 +57,14 @@ public class ServerFactory {
         KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
 
         // tx-factory
-        EngineGraknTxFactory engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, config, keyspaceStore);
+        SessionStore sessionStore = SessionStore.create(lockProvider, config, keyspaceStore);
 
 
         // post-processing
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, engineGraknTxFactory);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
 
         // http services: gRPC server
-        ServerRPC rpcServerRPC = configureServerRPC(config, engineGraknTxFactory, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
+        ServerRPC rpcServerRPC = configureServerRPC(config, sessionStore, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
         return createServer(engineId, config, status, rpcServerRPC, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
     }
@@ -86,9 +86,9 @@ public class ServerFactory {
         return server;
     }
 
-    private static ServerRPC configureServerRPC(GraknConfig config, EngineGraknTxFactory engineGraknTxFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore, boolean benchmark){
+    private static ServerRPC configureServerRPC(GraknConfig config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore, boolean benchmark){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
-        OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
+        OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
 
         if (benchmark) {
             ServerTracingInstrumentation.initInstrumentation("server-instrumentation");

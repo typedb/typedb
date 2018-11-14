@@ -18,8 +18,8 @@ import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.server.kb.internal.TransactionImpl;
-import grakn.core.server.kb.internal.cache.TxRuleCache;
+import grakn.core.server.session.TransactionImpl;
+import grakn.core.server.session.cache.RuleCache;
 import grakn.core.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -111,7 +111,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
-        TxRuleCache ruleCache = tx.ruleCache();
+        RuleCache ruleCache = tx.ruleCache();
 
         SchemaConcept reifyingRelation = tx.getSchemaConcept(Label.of("reifying-relation"));
         SchemaConcept ternary = tx.getSchemaConcept(Label.of("ternary"));
