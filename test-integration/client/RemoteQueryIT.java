@@ -110,7 +110,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Integration Tests for {@link grakn.core.server.ServerRPC}
+ * Integration Tests for {@link grakn.core.server.Server} RPC
  */
 @SuppressWarnings("CheckReturnValue")
 public class RemoteQueryIT {

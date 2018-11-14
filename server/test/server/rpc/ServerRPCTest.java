@@ -20,18 +20,8 @@ package grakn.core.server.rpc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.Transceiver;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Role;
-import grakn.core.server.exception.GraknBackendException;
-import grakn.core.server.exception.GraknException;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.GraqlSyntaxException;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.DeleteQuery;
 import grakn.core.graql.GetQuery;
@@ -39,9 +29,12 @@ import grakn.core.graql.Graql;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Role;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
-import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.server.session.TransactionImpl;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -49,9 +42,15 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraknException;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.TransactionImpl;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.ServerBuilder;
@@ -99,7 +98,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit Tests for {@link grakn.core.server.ServerRPC}
+ * Unit Tests for {@link grakn.core.server.rpc}
  */
 public class ServerRPCTest {
 
@@ -118,7 +117,7 @@ public class ServerRPCTest {
     private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceManager mockedKeyspaceStore = mock(KeyspaceManager.class);
 
-    private ServerRPC rpcServerRPC;
+    private io.grpc.Server serverRPC;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -130,12 +129,11 @@ public class ServerRPCTest {
     @Before
     public void setUp() throws IOException {
         OpenRequest requestOpener = new ServerOpenRequest(txFactory);
-        io.grpc.Server server = ServerBuilder.forPort(PORT)
+        this.serverRPC = ServerBuilder.forPort(PORT)
                 .addService(new SessionService(requestOpener, mockedAttributeDeduplicatorDaemon))
                 .addService(new KeyspaceService(mockedKeyspaceStore))
                 .build();
-        rpcServerRPC = ServerRPC.create(server);
-        rpcServerRPC.start();
+        this.serverRPC.start();
 
         QueryBuilder qb = mock(QueryBuilder.class);
 
@@ -152,7 +150,8 @@ public class ServerRPCTest {
 
     @After
     public void tearDown() throws InterruptedException {
-        rpcServerRPC.close();
+        serverRPC.shutdown();
+        serverRPC.awaitTermination();
     }
 
     @Test

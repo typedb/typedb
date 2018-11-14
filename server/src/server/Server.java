@@ -42,21 +42,19 @@ public class Server implements AutoCloseable {
 
     private final EngineID engineId;
     private final GraknConfig config;
-    private final ServerStatus serverStatus;
     private final LockManager lockManager;
-    private final ServerRPC rpcServer;
+    private final io.grpc.Server serverRPC;
     private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     private final KeyspaceManager keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockManager lockManager, ServerRPC rpcServer, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
         this.config = config;
-        this.serverStatus = serverStatus;
         // Redis connection pool
         // Lock provider
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
-        this.rpcServer = rpcServer;
+        this.serverRPC = serverRPC;
         this.engineId = engineId;
         this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
     }
@@ -66,10 +64,9 @@ public class Server implements AutoCloseable {
         printGraknASCII();
         synchronized (this){
             lockAndInitializeSystemSchema();
-            rpcServer.start();
+            serverRPC.start();
         }
         attributeDeduplicatorDaemon.startDeduplicationDaemon();
-        serverStatus.setReady(true);
         LOG.info("Grakn started in {}", timer.stop());
     }
 
@@ -77,7 +74,8 @@ public class Server implements AutoCloseable {
     public void close() {
         synchronized (this) {
             try {
-                rpcServer.close();
+                serverRPC.shutdown();
+                serverRPC.awaitTermination();
             } catch (InterruptedException e){
                 LOG.error(getFullStackTrace(e)); //TODO: remove commons-lang dependency
                 Thread.currentThread().interrupt();
