@@ -20,7 +20,6 @@
 package grakn.core.client;
 
 import com.google.common.collect.AbstractIterator;
-import grakn.core.QueryExecutor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
@@ -36,6 +35,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.QueryExecutor;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.Pattern;
