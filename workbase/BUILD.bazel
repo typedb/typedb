@@ -42,21 +42,21 @@ filegroup(
 )
 
 
-genrule(
-    name = "distribution",
-    cmd = "$(location //workbase/builder:npm-run-build.sh) $(location grakn-workbase.zip)",
-    srcs = glob([
-        "src/**/*",
-        "build/**/*",
-        "static/**/*",
-        ".electron-vue/**/*",
-        "package.json",
-        ".babelrc",
-        "config.js",
-        "jsconfig.json"]) + [":node_modules"],
-    outs = ["grakn-workbase.zip"],
-    tools = ["//workbase/builder:npm-run-build.sh", "@nodejs//:bin/npm", "@nodejs//:bin/node"]
-)
+#genrule(
+#    name = "distribution",
+#    cmd = "$(location //workbase/builder:npm-run-build.sh) $(location grakn-workbase.zip)",
+#    srcs = glob([
+#        "src/**/*",
+#        "build/**/*",
+#        "static/**/*",
+#        ".electron-vue/**/*",
+#        "package.json",
+#        ".babelrc",
+#        "config.js",
+#        "jsconfig.json"]) + [":node_modules"],
+#    outs = ["grakn-workbase.zip"],
+#    tools = ["//workbase/builder:npm-run-build.sh", "@nodejs//:bin/npm", "@nodejs//:bin/node"]
+#)
 
 
 sh_test(
