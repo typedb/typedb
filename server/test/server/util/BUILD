@@ -17,9 +17,9 @@
 #
 
 java_test(
-    name = "process-wide-lock-provider-test",
-    test_class = "grakn.core.server.lock.ProcessWideLockProviderTest",
-    srcs = ["ProcessWideLockProviderTest.java"],
+    name = "server-lock-manager-test",
+    test_class = "grakn.core.server.util.ServerLockManagerTest",
+    srcs = ["ServerLockManagerTest.java"],
     deps = [
         "//server",
     ],

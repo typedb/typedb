@@ -19,24 +19,23 @@
 package grakn.core.rule;
 
 import grakn.core.util.GraknConfigKey;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.util.GraknConfig;
-import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.ServerStatus;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.lock.LockProvider;
-import grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerLockManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.EngineID;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.keyspace.KeyspaceStoreImpl;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.util.SimpleURI;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
@@ -78,11 +77,11 @@ public class ServerContext extends ExternalResource {
     private Server server;
     private GraknConfig config;
 
-    public KeyspaceStore systemKeyspace() {
+    public KeyspaceManager systemKeyspace() {
         return keyspaceStore;
     }
 
-    private KeyspaceStore keyspaceStore;
+    private KeyspaceManager keyspaceStore;
 
     public SessionStore factory() {
         return sessionStore;
@@ -167,12 +166,12 @@ public class ServerContext extends ExternalResource {
         ServerStatus status = new ServerStatus();
 
         // distributed locks
-        LockProvider lockProvider = new ProcessWideLockProvider();
+        LockManager lockManager = new ServerLockManager();
 
-        keyspaceStore = new KeyspaceStoreImpl(config);
+        keyspaceStore = new KeyspaceManager(config);
 
         // tx-factory
-        sessionStore = SessionStore.create(lockProvider, config, keyspaceStore);
+        sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
 
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(config, sessionStore);
         OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
@@ -184,7 +183,7 @@ public class ServerContext extends ExternalResource {
         ServerRPC rpcServerRPC = ServerRPC.create(server);
 
         Server graknEngineServer = ServerFactory.createServer(id, config, status, rpcServerRPC,
-                lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+                                                              lockManager, attributeDeduplicatorDaemon, keyspaceStore);
 
         graknEngineServer.start();
 

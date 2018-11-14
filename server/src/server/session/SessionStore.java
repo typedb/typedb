@@ -20,10 +20,10 @@ package grakn.core.server.session;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.util.GraknConfig;
-import grakn.core.server.keyspace.KeyspaceStore;
-import grakn.core.server.lock.LockProvider;
+import grakn.core.server.util.LockManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,18 +35,18 @@ import java.util.concurrent.locks.Lock;
  */
 public class SessionStore {
     private final GraknConfig engineConfig;
-    private final KeyspaceStore keyspaceStore;
+    private final KeyspaceManager keyspaceStore;
     private final Map<Keyspace, SessionImpl> openedSessions;
-    private final LockProvider lockProvider;
+    private final LockManager lockManager;
 
-    public static SessionStore create(LockProvider lockProvider, GraknConfig engineConfig, KeyspaceStore keyspaceStore) {
-        return new SessionStore(engineConfig, lockProvider, keyspaceStore);
+    public static SessionStore create(LockManager lockManager, GraknConfig engineConfig, KeyspaceManager keyspaceStore) {
+        return new SessionStore(engineConfig, lockManager, keyspaceStore);
     }
 
-    private SessionStore(GraknConfig engineConfig, LockProvider lockProvider, KeyspaceStore keyspaceStore) {
+    private SessionStore(GraknConfig engineConfig, LockManager lockManager, KeyspaceManager keyspaceStore) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
-        this.lockProvider = lockProvider;
+        this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
     }
 
@@ -84,7 +84,7 @@ public class SessionStore {
      */
     private void initialiseNewKeyspace(Keyspace keyspace) {
         //If the keyspace does not exist lock and create it
-        Lock lock = lockProvider.getLock(getLockingKey(keyspace));
+        Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
         try {
             // Create new empty keyspace in db
@@ -104,7 +104,7 @@ public class SessionStore {
         return engineConfig;
     }
 
-    public KeyspaceStore keyspaceStore() {
+    public KeyspaceManager keyspaceStore() {
         return keyspaceStore;
     }
 

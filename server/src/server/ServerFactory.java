@@ -21,15 +21,14 @@ package grakn.core.server;
 import grakn.core.util.GraknConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.lock.LockProvider;
-import grakn.core.server.lock.ProcessWideLockProvider;
+import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerLockManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.EngineID;
-import grakn.core.server.keyspace.KeyspaceStore;
-import grakn.core.server.keyspace.KeyspaceStoreImpl;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.util.GraknConfig;
 import io.grpc.ServerBuilder;
 
@@ -52,12 +51,12 @@ public class ServerFactory {
         ServerStatus status = new ServerStatus();
 
         // distributed locks
-        LockProvider lockProvider = new ProcessWideLockProvider();
+        LockManager lockManager = new ServerLockManager();
 
-        KeyspaceStore keyspaceStore = new KeyspaceStoreImpl(config);
+        KeyspaceManager keyspaceStore = new KeyspaceManager(config);
 
         // tx-factory
-        SessionStore sessionStore = SessionStore.create(lockProvider, config, keyspaceStore);
+        SessionStore sessionStore = SessionStore.create(lockManager, config, keyspaceStore);
 
 
         // post-processing
@@ -66,7 +65,7 @@ public class ServerFactory {
         // http services: gRPC server
         ServerRPC rpcServerRPC = configureServerRPC(config, sessionStore, attributeDeduplicatorDaemon, keyspaceStore, benchmark);
 
-        return createServer(engineId, config, status, rpcServerRPC, lockProvider, attributeDeduplicatorDaemon, keyspaceStore);
+        return createServer(engineId, config, status, rpcServerRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 
     /**
@@ -76,9 +75,9 @@ public class ServerFactory {
 
     public static Server createServer(
             EngineID engineId, GraknConfig config, ServerStatus serverStatus, ServerRPC rpcServer,
-            LockProvider lockProvider, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+            LockManager lockManager, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
 
-        Server server = new Server(engineId, config, serverStatus, lockProvider, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
+        Server server = new Server(engineId, config, serverStatus, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
 
         Thread thread = new Thread(server::close, "grakn-server-shutdown");
         Runtime.getRuntime().addShutdownHook(thread);
@@ -86,7 +85,7 @@ public class ServerFactory {
         return server;
     }
 
-    private static ServerRPC configureServerRPC(GraknConfig config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore, boolean benchmark){
+    private static ServerRPC configureServerRPC(GraknConfig config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
         int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
 

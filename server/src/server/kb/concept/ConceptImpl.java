@@ -18,7 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.exception.TransactionException;

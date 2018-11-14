@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.Transceiver;
 import grakn.core.graql.concept.Concept;
@@ -40,6 +40,7 @@ import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
@@ -51,7 +52,6 @@ import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.keyspace.KeyspaceStore;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.ServerBuilder;
@@ -116,7 +116,7 @@ public class ServerRPCTest {
     private final TransactionImpl tx = mock(TransactionImpl.class);
     private final GetQuery query = mock(GetQuery.class);
     private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
-    private final KeyspaceStore mockedKeyspaceStore = mock(KeyspaceStore.class);
+    private final KeyspaceManager mockedKeyspaceStore = mock(KeyspaceManager.class);
 
     private ServerRPC rpcServerRPC;
 

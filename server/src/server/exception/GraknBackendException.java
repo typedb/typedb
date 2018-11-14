@@ -18,7 +18,7 @@
 
 package grakn.core.server.exception;
 
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 
 import static grakn.core.util.ErrorMessage.BACKEND_EXCEPTION;
 import static grakn.core.util.ErrorMessage.INITIALIZATION_EXCEPTION;

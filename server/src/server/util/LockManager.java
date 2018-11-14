@@ -15,14 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package grakn.core.server.lock;
+package grakn.core.server.util;
 
 import java.util.concurrent.locks.Lock;
 
 /**
  * Distributed lock interface
- *
  */
-public interface LockProvider {
+public interface LockManager {
     Lock getLock(String lockName);
 }

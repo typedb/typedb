@@ -96,7 +96,7 @@ public final class Grakn {
         keyspace = new Keyspace();
     }
 
-    public Session session(grakn.core.server.Keyspace keyspace) {
+    public Session session(grakn.core.server.keyspace.Keyspace keyspace) {
         return new Session(keyspace);
     }
 
@@ -112,9 +112,9 @@ public final class Grakn {
      */
     public class Session implements grakn.core.server.Session {
 
-        private final grakn.core.server.Keyspace keyspace;
+        private final grakn.core.server.keyspace.Keyspace keyspace;
 
-        private Session(grakn.core.server.Keyspace keyspace) {
+        private Session(grakn.core.server.keyspace.Keyspace keyspace) {
             this.keyspace = keyspace;
         }
 
@@ -137,7 +137,7 @@ public final class Grakn {
         }
 
         @Override
-        public grakn.core.server.Keyspace keyspace() {
+        public grakn.core.server.keyspace.Keyspace keyspace() {
             return keyspace;
         }
     }
@@ -148,7 +148,7 @@ public final class Grakn {
 
     public final class Keyspace {
 
-        public void delete(grakn.core.server.Keyspace keyspace){
+        public void delete(grakn.core.server.keyspace.Keyspace keyspace){
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
             keyspaceBlockingStub.delete(request);
         }

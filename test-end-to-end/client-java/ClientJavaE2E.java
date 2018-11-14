@@ -1,6 +1,6 @@
 package grakn.core.client;
 
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.AggregateQuery;

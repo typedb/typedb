@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server;
+package grakn.core.server.keyspace;
 
 import grakn.core.server.exception.TransactionException;
 import com.google.auto.value.AutoValue;

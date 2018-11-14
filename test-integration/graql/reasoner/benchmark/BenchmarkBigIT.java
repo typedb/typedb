@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Transaction;
 import grakn.core.client.Grakn;
 import grakn.core.graql.concept.AttributeType;

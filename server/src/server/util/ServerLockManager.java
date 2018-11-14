@@ -16,26 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.lock;
+package grakn.core.server.util;
 
 import com.google.common.util.concurrent.Striped;
+
 import java.util.concurrent.locks.Lock;
 
 /**
- *
- * <p>
- *     Simple locking meachanism that can be used in case of single engine execution
- * </p>
- *
+ * Simple locking mechanism that can be used in case of single engine execution
  */
-public class ProcessWideLockProvider implements LockProvider {
+public class ServerLockManager implements LockManager {
 
     private Striped<Lock> locks = Striped.lazyWeakLock(128);
 
-    public ProcessWideLockProvider(){
+    public ServerLockManager() {
     }
 
-    public Lock getLock(String lockToObtain){
+    public Lock getLock(String lockToObtain) {
         return locks.get(lockToObtain);
     }
 }

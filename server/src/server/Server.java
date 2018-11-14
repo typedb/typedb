@@ -18,9 +18,9 @@
 package grakn.core.server;
 
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.lock.LockProvider;
+import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.util.LockManager;
 import grakn.core.server.util.EngineID;
-import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.util.GraknConfig;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -43,18 +43,18 @@ public class Server implements AutoCloseable {
     private final EngineID engineId;
     private final GraknConfig config;
     private final ServerStatus serverStatus;
-    private final LockProvider lockProvider;
+    private final LockManager lockManager;
     private final ServerRPC rpcServer;
     private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
-    private final KeyspaceStore keyspaceStore;
+    private final KeyspaceManager keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockProvider lockProvider, ServerRPC rpcServer, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockManager lockManager, ServerRPC rpcServer, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool
         // Lock provider
-        this.lockProvider = lockProvider;
+        this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
         this.rpcServer = rpcServer;
         this.engineId = engineId;
@@ -88,7 +88,7 @@ public class Server implements AutoCloseable {
 
     private void lockAndInitializeSystemSchema() {
         try {
-            Lock lock = lockProvider.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
+            Lock lock = lockManager.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 try {
                     LOG.info("{} is checking the system schema", this.engineId);

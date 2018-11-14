@@ -19,7 +19,7 @@
 package grakn.core.server.session;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.QueryExecutor;
