@@ -80,12 +80,29 @@ public final class Grakn {
     private ManagedChannel channel;
     private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
     private Keyspace keyspace;
+    private final OpenRequestBuilder openRequestBuilder;
+
+    /**
+     * Build an RPC Open request.
+     * The Open request might need to be built in a different fashion (e.g. add authentication)
+     */
+    interface OpenRequestBuilder {
+        SessionProto.Transaction.Req build(GraknTxType type, ai.grakn.Keyspace keyspace);
+    }
 
 
     public Grakn(SimpleURI uri) {
         channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort()).usePlaintext(true).build();
         keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         keyspace = new Keyspace();
+        openRequestBuilder = (type, keyspace) -> RequestBuilder.Transaction.open(keyspace, type);
+    }
+
+    Grakn (ManagedChannel channel, OpenRequestBuilder openRequestBuilder){
+        this.channel = channel;
+        keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        keyspace = new Keyspace();
+        this.openRequestBuilder = openRequestBuilder;
     }
 
     public Grakn.Session session(ai.grakn.Keyspace keyspace) {
@@ -120,7 +137,7 @@ public final class Grakn {
 
         @Override
         public Grakn.Transaction transaction(GraknTxType type) {
-            return new Transaction(this, type);
+            return new Transaction(this, type, openRequestBuilder.build(type, keyspace));
         }
 
         @Override
@@ -155,11 +172,11 @@ public final class Grakn {
         private final GraknTxType type;
         private final Transceiver transceiver;
 
-        private Transaction(Session session, GraknTxType type) {
+        private Transaction(Session session,  GraknTxType type, SessionProto.Transaction.Req openRequest) {
             this.session = session;
             this.type = type;
             this.transceiver = Transceiver.create(session.sessionStub());
-            transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
+            transceiver.send(openRequest);
             responseOrThrow();
         }
 

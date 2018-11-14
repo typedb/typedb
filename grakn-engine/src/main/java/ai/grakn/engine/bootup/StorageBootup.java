@@ -125,7 +125,7 @@ public class StorageBootup {
      *
      * @throws BootupException
      */
-    private void start() {
+    public void start() {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
