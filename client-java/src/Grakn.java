@@ -26,18 +26,18 @@ import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.ResponseReader;
 import grakn.core.client.rpc.Transceiver;
-import grakn.core.concept.Attribute;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.EntityType;
-import grakn.core.concept.Label;
-import grakn.core.concept.RelationshipType;
-import grakn.core.concept.Role;
-import grakn.core.concept.Rule;
-import grakn.core.concept.SchemaConcept;
-import grakn.core.exception.TransactionException;
-import grakn.core.exception.InvalidKBException;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.exception.TransactionException;
+import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
@@ -64,7 +64,7 @@ import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
- * For now, only a subset of {@link grakn.core.Session} and {@link grakn.core.Transaction} features are supported.
+ * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
  */
 public final class Grakn {
     public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
@@ -96,7 +96,7 @@ public final class Grakn {
         keyspace = new Keyspace();
     }
 
-    public Session session(grakn.core.Keyspace keyspace) {
+    public Session session(grakn.core.server.Keyspace keyspace) {
         return new Session(keyspace);
     }
 
@@ -105,16 +105,16 @@ public final class Grakn {
     }
 
     /**
-     * Remote implementation of {@link grakn.core.Session} that communicates with a Grakn server using gRPC.
+     * Remote implementation of {@link grakn.core.server.Session} that communicates with a Grakn server using gRPC.
      *
      * @see Transaction
      * @see Grakn
      */
-    public class Session implements grakn.core.Session {
+    public class Session implements grakn.core.server.Session {
 
-        private final grakn.core.Keyspace keyspace;
+        private final grakn.core.server.Keyspace keyspace;
 
-        private Session(grakn.core.Keyspace keyspace) {
+        private Session(grakn.core.server.Keyspace keyspace) {
             this.keyspace = keyspace;
         }
 
@@ -127,7 +127,7 @@ public final class Grakn {
         }
 
         @Override
-        public Transaction transaction(grakn.core.Transaction.Type type) {
+        public Transaction transaction(grakn.core.server.Transaction.Type type) {
             return new Transaction(this, type);
         }
 
@@ -137,7 +137,7 @@ public final class Grakn {
         }
 
         @Override
-        public grakn.core.Keyspace keyspace() {
+        public grakn.core.server.Keyspace keyspace() {
             return keyspace;
         }
     }
@@ -148,16 +148,16 @@ public final class Grakn {
 
     public final class Keyspace {
 
-        public void delete(grakn.core.Keyspace keyspace){
+        public void delete(grakn.core.server.Keyspace keyspace){
             KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
             keyspaceBlockingStub.delete(request);
         }
     }
 
     /**
-     * Remote implementation of {@link grakn.core.Transaction} that communicates with a Grakn server using gRPC.
+     * Remote implementation of {@link grakn.core.server.Transaction} that communicates with a Grakn server using gRPC.
      */
-    public static final class Transaction implements grakn.core.Transaction {
+    public static final class Transaction implements grakn.core.server.Transaction {
 
         private final Session session;
         private final Type type;
@@ -177,7 +177,7 @@ public final class Grakn {
         }
 
         @Override
-        public grakn.core.Session session() {
+        public grakn.core.server.Session session() {
             return session;
         }
 
@@ -245,7 +245,7 @@ public final class Grakn {
 
         @Nullable
         @Override
-        public <T extends grakn.core.concept.Type> T getType(Label label) {
+        public <T extends grakn.core.graql.concept.Type> T getType(Label label) {
             SchemaConcept concept = getSchemaConcept(label);
             if (concept == null || !concept.isType()) return null;
             return (T) concept.asType();

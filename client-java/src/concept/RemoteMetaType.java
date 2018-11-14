@@ -20,14 +20,14 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.Grakn;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
 import com.google.auto.value.AutoValue;
 
 /**
- * Client implementation of {@link grakn.core.concept.Type}
+ * Client implementation of {@link Type}
  */
 @AutoValue
 public abstract class RemoteMetaType extends RemoteType<Type, Thing> {

@@ -18,7 +18,7 @@
 
 package grakn.core.util;
 
-import grakn.core.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;

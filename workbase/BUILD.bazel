@@ -1,0 +1,94 @@
+#
+# GRAKN.AI - THE KNOWLEDGE GRAPH
+# Copyright (C) 2018 Grakn Labs Ltd
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+exports_files([
+    "package.json",
+    "package-lock.json",
+])
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "node_modules",
+    srcs = glob(
+        include = ["node_modules/**/*", "node_modules/.bin/*"],
+        exclude = [
+          # Files under test & docs may contain file names that
+          # are not legal Bazel labels (e.g.,
+          # node_modules/ecstatic/test/public/中文/檔案.html)
+          "node_modules/test/**",
+          "node_modules/docs/**",
+          # Files with spaces are not allowed in Bazel runfiles
+          # See https://github.com/bazelbuild/bazel/issues/4327
+          "node_modules/**/* */**",
+          "node_modules/**/* *",
+        ],
+    ),
+)
+
+
+genrule(
+    name = "distribution",
+    cmd = "$(location //workbase/builder:npm-run-build.sh) $(location grakn-workbase.zip)",
+    srcs = glob([
+        "src/**/*",
+        "build/**/*",
+        "static/**/*",
+        ".electron-vue/**/*",
+        "package.json",
+        ".babelrc",
+        "config.js",
+        "jsconfig.json"]) + [":node_modules"],
+    outs = ["grakn-workbase.zip"],
+    tools = ["//workbase/builder:npm-run-build.sh", "@nodejs//:bin/npm", "@nodejs//:bin/node"]
+)
+
+
+sh_test(
+    name = "tests-unit",
+    srcs = ["//workbase/builder:npm-test.sh"],
+    args = ["test"],
+    data = glob([
+        "src/**/*",
+        "test/**/*",
+        "build/**/*",
+        "static/**/*",
+        ".electron-vue/**/*",
+        "package.json",
+        ".babelrc",
+        "config.js",
+        "jsconfig.json",
+        ]) + [":node_modules", "@nodejs//:bin/npm", "@nodejs//:bin/node"],
+)
+
+sh_test(
+    name = "tests-e2e",
+    srcs = ["//workbase/builder:npm-test.sh"],
+    args = ["run e2e"],
+    data = glob([
+        "src/**/*",
+        "test/**/*",
+        "build/**/*",
+        "static/**/*",
+        ".electron-vue/**/*",
+        "package.json",
+        ".babelrc",
+        "config.js",
+        "jsconfig.json",
+    ]) + [":node_modules", "@nodejs//:bin/npm", "@nodejs//:bin/node"],
+)
