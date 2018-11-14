@@ -1,7 +1,7 @@
 java_test(
   name = "casting-it",
   srcs = ["CastingIT.java"],
-  test_class = "grakn.core.server.kb.internal.structure.CastingIT",
+  test_class = "grakn.core.server.kb.structure.CastingIT",
   deps = [
       "//server",
       "//test-integration/rule:concurrent-grakn-server",
@@ -14,7 +14,7 @@ java_test(
 java_test(
   name = "edge-it",
   srcs = ["EdgeIT.java"],
-  test_class = "grakn.core.server.kb.internal.structure.EdgeIT",
+  test_class = "grakn.core.server.kb.structure.EdgeIT",
   deps = [
       "//server",
       "//test-integration/rule:concurrent-grakn-server",

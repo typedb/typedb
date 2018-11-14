@@ -1,7 +1,7 @@
 java_test(
      name = "attribute-it",
      srcs = ["AttributeIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.AttributeIT",
+     test_class = "grakn.core.server.kb.concept.AttributeIT",
      deps = [
          "//server",
          "//test-integration/rule:concurrent-grakn-server",
@@ -14,7 +14,7 @@ java_test(
 java_test(
      name = "attribute-type-it",
      srcs = ["AttributeTypeIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.AttributeTypeIT",
+     test_class = "grakn.core.server.kb.concept.AttributeTypeIT",
      deps = [
          "//server",
          "//test-integration/rule:concurrent-grakn-server",
@@ -26,7 +26,7 @@ java_test(
 java_test(
      name = "concept-it",
      srcs = ["ConceptIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.ConceptIT",
+     test_class = "grakn.core.server.kb.concept.ConceptIT",
      deps = [
          "//server",
          "//test-integration/rule:concurrent-grakn-server",
@@ -39,7 +39,7 @@ java_test(
 java_test(
      name = "entity-it",
      srcs = ["EntityIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.EntityIT",
+     test_class = "grakn.core.server.kb.concept.EntityIT",
      deps = [
          "//server",
          "//test-integration/rule:concurrent-grakn-server",
@@ -51,7 +51,7 @@ java_test(
 java_test(
      name = "entity-type-it",
      srcs = ["EntityTypeIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.EntityTypeIT",
+     test_class = "grakn.core.server.kb.concept.EntityTypeIT",
      deps = [
          "//server",
          "//util",
@@ -65,7 +65,7 @@ java_test(
 java_test(
      name = "relationship-it",
      srcs = ["RelationshipIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.RelationshipIT",
+     test_class = "grakn.core.server.kb.concept.RelationshipIT",
      deps = [
          "//server",
          "//util",
@@ -80,7 +80,7 @@ java_test(
 java_test(
      name = "relationship-type-it",
      srcs = ["RelationshipTypeIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.RelationshipTypeIT",
+     test_class = "grakn.core.server.kb.concept.RelationshipTypeIT",
      deps = [
          "//server",
          "//test-integration/rule:concurrent-grakn-server",
@@ -92,7 +92,7 @@ java_test(
 java_test(
      name = "role-it",
      srcs = ["RoleIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.RoleIT",
+     test_class = "grakn.core.server.kb.concept.RoleIT",
      deps = [
          "//server",
          "//test-integration/rule:concurrent-grakn-server",
@@ -104,7 +104,7 @@ java_test(
 java_test(
      name = "schema-concept-it",
      srcs = ["SchemaConceptIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.SchemaConceptIT",
+     test_class = "grakn.core.server.kb.concept.SchemaConceptIT",
      deps = [
          "//server",
          "//util",
@@ -118,7 +118,7 @@ java_test(
 java_test(
      name = "schema-mutation-it",
      srcs = ["SchemaMutationIT.java"],
-     test_class = "grakn.core.server.kb.internal.concept.SchemaMutationIT",
+     test_class = "grakn.core.server.kb.concept.SchemaMutationIT",
      deps = [
          "//server",
          "//util",
