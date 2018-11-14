@@ -18,7 +18,7 @@
 
 package grakn.core.server;
 
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.rule.EmbeddedCassandraContext;
 import grakn.core.rule.ServerContext;
 import org.junit.ClassRule;

@@ -43,7 +43,7 @@
             <Class name="grakn.core.graql.concept.ConceptId"/>
             <Class name="grakn.core.graql.concept.Label"/>
             <Class name="grakn.core.graql.concept.LabelId"/>
-            <Class name="grakn.core.server.Keyspace"/>
+            <Class name="grakn.core.server.keyspace.Keyspace"/>
             <Class name="grakn.core.client.concept.RemoteConcept"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>

@@ -20,9 +20,9 @@ package grakn.core.server.session;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.util.GraknConfig;
-import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.util.LockManager;
 
 import java.util.HashMap;
@@ -35,15 +35,15 @@ import java.util.concurrent.locks.Lock;
  */
 public class SessionStore {
     private final GraknConfig engineConfig;
-    private final KeyspaceStore keyspaceStore;
+    private final KeyspaceManager keyspaceStore;
     private final Map<Keyspace, SessionImpl> openedSessions;
     private final LockManager lockManager;
 
-    public static SessionStore create(LockManager lockManager, GraknConfig engineConfig, KeyspaceStore keyspaceStore) {
+    public static SessionStore create(LockManager lockManager, GraknConfig engineConfig, KeyspaceManager keyspaceStore) {
         return new SessionStore(engineConfig, lockManager, keyspaceStore);
     }
 
-    private SessionStore(GraknConfig engineConfig, LockManager lockManager, KeyspaceStore keyspaceStore) {
+    private SessionStore(GraknConfig engineConfig, LockManager lockManager, KeyspaceManager keyspaceStore) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
         this.lockManager = lockManager;
@@ -104,7 +104,7 @@ public class SessionStore {
         return engineConfig;
     }
 
-    public KeyspaceStore keyspaceStore() {
+    public KeyspaceManager keyspaceStore() {
         return keyspaceStore;
     }
 

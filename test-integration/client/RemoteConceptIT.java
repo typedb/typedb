@@ -33,7 +33,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.Pattern;
 import grakn.core.rule.ConcurrentGraknServer;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Transaction;
 import org.junit.After;
 import org.junit.AfterClass;

@@ -33,6 +33,7 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.internal.Schema;
+import grakn.core.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

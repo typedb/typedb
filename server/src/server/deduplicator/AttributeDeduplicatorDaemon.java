@@ -19,7 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import grakn.core.util.GraknConfigKey;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.util.GraknConfig;
 import grakn.core.server.deduplicator.queue.Attribute;

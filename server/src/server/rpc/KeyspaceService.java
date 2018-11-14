@@ -18,11 +18,11 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
+import grakn.core.server.keyspace.KeyspaceManager;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -34,9 +34,9 @@ import java.util.stream.Collectors;
  */
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
 
-    private final KeyspaceStore keyspaceStore;
+    private final KeyspaceManager keyspaceStore;
 
-    public KeyspaceService(KeyspaceStore keyspaceStore) {
+    public KeyspaceService(KeyspaceManager keyspaceStore) {
         this.keyspaceStore = keyspaceStore;
     }
 

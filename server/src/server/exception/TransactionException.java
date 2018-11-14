@@ -20,7 +20,7 @@ package grakn.core.server.exception;
 
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Rule;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;

@@ -19,6 +19,8 @@
 package grakn.core.server;
 
 
+import grakn.core.server.keyspace.Keyspace;
+
 import javax.annotation.CheckReturnValue;
 
 /**

@@ -1,9 +1,8 @@
 package grakn.core.rule;
 
 import grakn.core.util.GraknConfigKey;
-import grakn.core.server.Keyspace;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.util.GraknConfig;
-import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
 import grakn.core.server.ServerRPC;
@@ -19,7 +18,7 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.EngineID;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.keyspace.KeyspaceStoreImpl;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.util.SimpleURI;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
@@ -49,7 +48,7 @@ public class ConcurrentGraknServer extends ExternalResource {
     private GraknConfig serverConfig;
     private Path dataDirTmp;
     private Server graknServer;
-    private KeyspaceStore keyspaceStore;
+    private KeyspaceManager keyspaceStore;
 
     private int storagePort;
     private int rpcPort;
@@ -169,7 +168,7 @@ public class ConcurrentGraknServer extends ExternalResource {
         // distributed locks
         LockManager lockManager = new ServerLockManager();
 
-        keyspaceStore = new KeyspaceStoreImpl(serverConfig);
+        keyspaceStore = new KeyspaceManager(serverConfig);
 
         // tx-factory
         sessionStore = SessionStore.create(lockManager, serverConfig, keyspaceStore);

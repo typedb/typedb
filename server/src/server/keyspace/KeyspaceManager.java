@@ -19,7 +19,6 @@
 package grakn.core.server.keyspace;
 
 import grakn.core.server.Transaction;
-import grakn.core.server.Keyspace;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
@@ -41,31 +40,34 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Default implementation of {@link KeyspaceStore} that uses an {@link SessionImpl} to access a knowledge
+ * Default implementation of {@link KeyspaceManager} that uses an {@link SessionImpl} to access a knowledge
  * base and store keyspace information.
  *
  */
-public class KeyspaceStoreImpl implements KeyspaceStore {
+public class KeyspaceManager {
+    // This will eventually be configurable and obtained the same way the factory is obtained
+    // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
+    // If there is a more natural home for this constant, feel free to put it there!
+    private static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
     private final static Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
 
-    private static final Logger LOG = LoggerFactory.getLogger(KeyspaceStore.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
     private final Set<Keyspace> existingKeyspaces;
     private final SessionImpl systemKeyspaceSession;
     private final GraknConfig config;
 
-    public KeyspaceStoreImpl(GraknConfig config){
+    public KeyspaceManager(GraknConfig config){
         this.config = config;
         this.systemKeyspaceSession = SessionImpl.createEngineSession(SYSTEM_KB_KEYSPACE, config, TransactionFactoryBuilder.getInstance());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
     /**
-     * Logs a new {@link Keyspace} to the {@link KeyspaceStore}.
+     * Logs a new {@link Keyspace} to the {@link KeyspaceManager}.
      *
      * @param keyspace The new {@link Keyspace} we have just created
      */
-    @Override
     public void addKeyspace(Keyspace keyspace){
         if(containsKeyspace(keyspace)) return;
 
@@ -87,12 +89,10 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
         }
     }
 
-    @Override
     public void closeStore() {
         this.systemKeyspaceSession.close();
     }
 
-    @Override
     public boolean containsKeyspace(Keyspace keyspace){
         //Check the local cache to see which keyspaces we already have open
         if(existingKeyspaces.contains(keyspace)){
@@ -106,7 +106,6 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
         }
     }
 
-    @Override
     public boolean deleteKeyspace(Keyspace keyspace){
         if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
@@ -140,7 +139,6 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
         return true;
     }
 
-    @Override
     public Set<Keyspace> keyspaces() {
         try (Transaction graph = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
@@ -153,7 +151,6 @@ public class KeyspaceStoreImpl implements KeyspaceStore {
         }
     }
 
-    @Override
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
         try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {

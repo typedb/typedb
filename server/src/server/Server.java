@@ -18,9 +18,9 @@
 package grakn.core.server;
 
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.EngineID;
-import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.util.GraknConfig;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
@@ -47,9 +47,9 @@ public class Server implements AutoCloseable {
     private final ServerRPC rpcServer;
     private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
-    private final KeyspaceStore keyspaceStore;
+    private final KeyspaceManager keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockManager lockManager, ServerRPC rpcServer, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceStore keyspaceStore) {
+    public Server(EngineID engineId, GraknConfig config, ServerStatus serverStatus, LockManager lockManager, ServerRPC rpcServer, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
         this.config = config;
         this.serverStatus = serverStatus;
         // Redis connection pool

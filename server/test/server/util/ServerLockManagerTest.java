@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.lock;
+package grakn.core.server.util;
 
 import grakn.core.server.util.ServerLockManager;
 import org.junit.Rule;
