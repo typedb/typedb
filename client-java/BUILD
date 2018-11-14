@@ -30,6 +30,8 @@ java_library(
         "//util",
 
         # External dependencies
+        "//dependencies/maven/artifacts/grakn/benchmark:lib",
+
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",

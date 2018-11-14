@@ -19,11 +19,7 @@
 
 package grakn.core.client;
 
-import brave.Tracing;
-import brave.grpc.GrpcTracing;
 import com.google.common.collect.AbstractIterator;
-import grakn.core.server.QueryExecutor;
-import grakn.core.client.benchmark.GrpcClientInterceptor;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
@@ -39,6 +35,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.QueryExecutor;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.Pattern;
@@ -54,8 +51,6 @@ import grakn.core.util.CommonUtil;
 import grakn.core.util.SimpleURI;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.urlconnection.URLConnectionSender;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -64,6 +59,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import static grakn.core.util.CommonUtil.toImmutableSet;
 
 /**
@@ -89,19 +85,8 @@ public final class Grakn {
     public Grakn(SimpleURI uri, boolean benchmark) {
 
         if (benchmark) {
-            // attach tracing to the client
-            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-
-            Tracing tracing = Tracing.newBuilder()
-                    .localServiceName("query-benchmark-client-java")
-                    .spanReporter(reporter)
-                    .supportsJoin(true)
-                    .build();
-
-            GrpcTracing.create(tracing);
-
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
-                    .intercept(new GrpcClientInterceptor(tracing))
+                    .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
                     .usePlaintext(true).build();
         } else {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())

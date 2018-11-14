@@ -31,10 +31,9 @@ import grakn.core.server.util.EngineID;
 import grakn.core.server.keyspace.KeyspaceStore;
 import grakn.core.server.keyspace.KeyspaceStoreImpl;
 import grakn.core.util.GraknConfig;
-import brave.Tracing;
 import io.grpc.ServerBuilder;
-import zipkin2.reporter.AsyncReporter;
-import zipkin2.reporter.urlconnection.URLConnectionSender;
+
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 /**
  * This is a factory class which contains methods for instantiating a {@link Server} in different ways.
@@ -92,16 +91,7 @@ public class ServerFactory {
         OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
 
         if (benchmark) {
-            // Brave Instrumentation
-            AsyncReporter<zipkin2.Span> reporter = AsyncReporter.create(URLConnectionSender.create("http://localhost:9411/api/v2/spans"));
-
-            // set a new global tracer with reporting
-            Tracing.newBuilder()
-                    .localServiceName("query-benchmark-server")
-                    .supportsJoin(false)
-                    .spanReporter(reporter)
-                    .build();
-
+            ServerTracingInstrumentation.initInstrumentation("server-instrumentation");
         }
 
         io.grpc.Server grpcServer = ServerBuilder.forPort(grpcPort)

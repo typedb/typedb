@@ -31,7 +31,6 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.server.kb.internal.TransactionImpl;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.benchmark.GrpcMessageConversion;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
@@ -40,8 +39,6 @@ import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
 import brave.ScopedSpan;
 import brave.Span;
-import brave.Tracer;
-import brave.Tracing;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.Status;
@@ -61,6 +58,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 
 
 /**
@@ -93,7 +92,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
         private final Iterators iterators = Iterators.create();
 
-
         private TraceContext receivedTraceContext;
 
         @Nullable
@@ -120,28 +118,17 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
         }
 
-
-
         @Override
         public void onNext(Transaction.Req request) {
-            // NOTE this is the gRPC thread
+            // !important: this is the gRPC thread
             try {
-                Tracer tracing = Tracing.currentTracer();
-                if (tracing != null && request.getMetadataOrDefault("traceIdLow", "").length() > 0) {
-                    String traceIdHigh = request.getMetadataOrThrow("traceIdHigh");
-                    String traceIdLow = request.getMetadataOrThrow("traceIdLow");
-                    String spanId = request.getMetadataOrThrow("spanId");
-                    String parentId = request.getMetadataOrDefault("parentId", "");
-
-                    receivedTraceContext = GrpcMessageConversion.stringsToContext(traceIdHigh, traceIdLow, spanId, parentId);
-
-                    // hop context across thread boundaries
-                    Span queueSpan = tracing
-                            .newChild(receivedTraceContext) // measure queue time
-                            .name("Server receive queue")
-                            .start();
+                if (ServerTracingInstrumentation.tracingEnabledFromMessage(request)) {
+                    TraceContext receivedTraceContext = ServerTracingInstrumentation.extractTraceContext(request);
+                    Span queueSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
+                    queueSpan.start();
                     queueSpan.tag("childNumber", "0");
 
+                    // hop context & active Span across thread boundaries
                     submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
                 } else {
                     submit(() -> handleRequest(request));
@@ -162,13 +149,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
-            // this variant should only be called IF we have a valid tracer, context etc.
+            /* this method variant is only called if tracing is active */
 
-            queueSpan.finish(); // queue time has finished!
-            // hop the span context across thread boundaries
-            Tracer tracer = Tracing.currentTracer();
-            ScopedSpan s = tracer.startScopedSpanWithParent("Server handle request", context);
-            s.tag("childNumber", "1");
+            // close the Span from gRPC thread
+            queueSpan.finish(); // time spent in queue
+
+            // create a new scoped span
+            ScopedSpan span = ServerTracingInstrumentation.startScopedChildSpanWithParentContext("Server handle request", context);
+            span.tag("childNumber", "1");
             handleRequest(request);
         }
 
@@ -361,13 +349,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void onNextResponse(Transaction.Res response) {
-            Tracer tracer = Tracing.currentTracer();
-            if (tracer != null && tracer.currentSpan() != null) {
-                tracer.currentSpan().finish();
+            if (ServerTracingInstrumentation.tracingActive()) {
+                ServerTracingInstrumentation.currentSpan().finish();
             }
             responseSender.onNext(response);
         }
-
     }
 
     /**
