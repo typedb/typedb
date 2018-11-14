@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.rpc;
 
-import ai.grakn.GraknTxType;
 import ai.grakn.Keyspace;
 import ai.grakn.engine.KeyspaceStore;
 import ai.grakn.rpc.proto.KeyspaceProto;
@@ -60,8 +59,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
-            ServerOpenRequest.Arguments args = new ServerOpenRequest.Arguments(Keyspace.of(request.getName()), GraknTxType.WRITE);
-            keyspaceStore.deleteKeyspace(args.getKeyspace());
+            keyspaceStore.deleteKeyspace(Keyspace.of(request.getName()));
 
             response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
             response.onCompleted();
