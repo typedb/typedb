@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  */
-public class TransactionOLAP implements grakn.core.server.TransactionOLAP {
+public class TransactionOLAP {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputerClass;
     private GraphComputer graphComputer = null;
@@ -65,7 +65,7 @@ public class TransactionOLAP implements grakn.core.server.TransactionOLAP {
         }
     }
 
-    @Override
+    @javax.annotation.CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
         try {
@@ -85,13 +85,12 @@ public class TransactionOLAP implements grakn.core.server.TransactionOLAP {
         }
     }
 
-    @Override
+    @javax.annotation.CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types) {
         return compute(program, mapReduce, types, true);
     }
 
-    @Override
     public void killJobs() {
         if (graphComputer != null && graphComputerClass.equals(GraknSparkComputer.class)) {
             ((GraknSparkComputer) graphComputer).cancelJobs();
