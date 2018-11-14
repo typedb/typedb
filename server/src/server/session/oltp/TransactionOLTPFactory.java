@@ -19,7 +19,7 @@
 package grakn.core.server.session.oltp;
 
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionFactoryAbstract;
+import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.oltp.optimisation.JanusPreviousPropertyStepStrategy;
 import grakn.core.util.GraknConfigKey;
 import grakn.core.server.Transaction;
@@ -65,11 +65,11 @@ import static java.util.Arrays.stream;
  *
  * <p>
  *     This produces a grakn graph on top of {@link JanusGraph}.
- *     The base construction process defined by {@link TransactionFactoryAbstract} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TransactionFactory} ensures the graph factories are singletons.
  * </p>
  *
  */
-final public class TransactionOLTPFactory extends TransactionFactoryAbstract<TransactionOLTP, JanusGraph> {
+final public class TransactionOLTPFactory extends TransactionFactory<TransactionOLTP, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTPFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";

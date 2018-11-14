@@ -41,8 +41,8 @@ public class SessionImpl implements Session {
     private final Keyspace keyspace;
     private final GraknConfig config;
 
-    private final TransactionFactory<?> transactionOLTPFactory;
-    private final TransactionFactory<?> transactionOLAPFactory;
+    private final TransactionFactory<?, ?> transactionOLTPFactory;
+    private final TransactionFactory<?, ?> transactionOLAPFactory;
 
 
     //References so we don't have to open a tx just to check the count of the transactions

@@ -19,33 +19,108 @@
 package grakn.core.server.session;
 
 import grakn.core.server.Transaction;
+import grakn.core.server.exception.TransactionException;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+
+import static javax.annotation.meta.When.NEVER;
+
 /**
- * <p>
- *     Transaction Building Interface
- * </p>
+ * Defines the abstract construction of {@link Transaction}s on top of Tinkerpop Graphs.
+ * For this factory to function a vendor specific implementation of a graph extending
+ * {@link TransactionImpl} must be provided. This must be provided with a matching TinkerPop {@link Graph}
+ * which is wrapped within the {@link Transaction}
  *
- * <p>
- *     The interface used to build new graphs from different vendors.
- *     Adding new vendor support means implementing this interface.
- * </p>
- *
- *
- * @param <T> A vendor implementation of a Tinkerpop {@link Graph}
+ * @param <Tx> A {@link Transaction} extending {@link TransactionImpl} and wrapping a Tinkerpop Graph
+ * @param <G>  A vendor implementation of a Tinkerpop {@link Graph}
  */
-public interface TransactionFactory<T extends Graph> {
-    /**
-     *
-     * @param txType The type of transaction to open on the graph
-     * @return An instance of Grakn graph
-     */
-    TransactionImpl<T> open(Transaction.Type txType);
+public abstract class TransactionFactory<Tx extends TransactionImpl<G>, G extends Graph> {
+    private final SessionImpl session;
+
+    protected final GraphWithTx batchTinkerPopGraphWithTx = new GraphWithTx(true);
+    protected final GraphWithTx tinkerPopGraphWithTx = new GraphWithTx(false);
+
+    protected TransactionFactory(SessionImpl session) {
+        this.session = session;
+    }
+
+    protected abstract Tx buildGraknTxFromTinkerGraph(G graph);
+
+    protected abstract G buildTinkerPopGraph(boolean batchLoading);
+
+    final public synchronized Tx open(Transaction.Type txType) {
+        if (Transaction.Type.BATCH.equals(txType)) {
+            tinkerPopGraphWithTx.checkTxIsOpen();
+            return batchTinkerPopGraphWithTx.openTx(txType);
+        } else {
+            // Check there is no batch loading Tx open
+            batchTinkerPopGraphWithTx.checkTxIsOpen();
+            return tinkerPopGraphWithTx.openTx(txType);
+        }
+    }
+
+
+    final public synchronized G getTinkerPopGraph(boolean batchLoading) {
+        if (batchLoading) {
+            return batchTinkerPopGraphWithTx.getTinkerPopGraph();
+        } else {
+            return tinkerPopGraphWithTx.getTinkerPopGraph();
+        }
+    }
+
+
+    @CheckReturnValue(when = NEVER)
+    protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
+
+    final public SessionImpl session() {
+        return session;
+    }
+
 
     /**
-     *
-     * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
-     * @return An instance of a tinker graph
+     * Helper class representing a TinkerPop graph that can be open with batchLoading enabled or disabled
      */
-    T getTinkerPopGraph(boolean batchLoading);
+
+    class GraphWithTx {
+        @Nullable
+        private Tx graknTx = null;
+        private G graph = null;
+        private final boolean batchLoading;
+
+        public GraphWithTx(boolean batchLoading) {
+            this.batchLoading = batchLoading;
+        }
+
+        public Tx openTx(Transaction.Type txType) {
+            initialiseGraknTx();
+            graknTx.openTransaction(txType);
+            return graknTx;
+        }
+
+        private void initialiseGraknTx() {
+            // If transaction is already open throw exception
+            if (graknTx != null && !graknTx.isClosed()) throw TransactionException.transactionOpen(graknTx);
+
+            // Create new transaction from a Tinker graph if tx is null or s closed
+            if (graknTx == null || graknTx.isTinkerPopGraphClosed()) {
+                graknTx = buildGraknTxFromTinkerGraph(getTinkerPopGraph());
+            }
+        }
+
+        protected G getTinkerPopGraph() {
+            if (graph == null) {
+                graph = buildTinkerPopGraph(batchLoading);
+            } else {
+                graph = getGraphWithNewTransaction(graph, batchLoading);
+            }
+            return graph;
+        }
+
+        public void checkTxIsOpen() {
+            if (graknTx != null && !graknTx.isClosed()) throw TransactionException.transactionOpen(graknTx);
+        }
+
+    }
 }

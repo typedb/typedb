@@ -22,6 +22,7 @@ import grakn.core.server.session.olap.TransactionOLAPFactory;
 import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import grakn.core.util.GraknConfigKey;
 import grakn.core.util.ErrorMessage;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,16 +31,13 @@ import java.util.MissingResourceException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
-*
  * A Transaction factory builder implementation used in Grakn Core.
- *
  * The factories in this class are cached based on factoryType+keyspace
- *
  */
 public class TransactionFactoryBuilder {
 
     private static TransactionFactoryBuilder instance = null;
-    private static final Map<String, TransactionFactory<?>> openFactories = new ConcurrentHashMap<>();
+    private static final Map<String, TransactionFactory<?, ?>> openFactories = new ConcurrentHashMap<>();
     private static final Logger LOG = LoggerFactory.getLogger(TransactionFactoryBuilder.class);
 
     static final String PRODUCTION = "production";
@@ -55,7 +53,7 @@ public class TransactionFactoryBuilder {
         return instance;
     }
 
-    public TransactionFactory<?> getFactory(SessionImpl session, boolean isComputerFactory) {
+    public TransactionFactory<?, ?> getFactory(SessionImpl session, boolean isComputerFactory) {
         try {
             String factoryKey = session.config().getProperty(GraknConfigKey.KB_MODE);
             if (isComputerFactory) {
@@ -72,13 +70,13 @@ public class TransactionFactoryBuilder {
      * @param facetoryKey The string defining which factory should be used for creating the grakn graph.
      * @return A graph factory which produces the relevant expected graph.
      */
-    private static TransactionFactory<?> getFactory(String facetoryKey, SessionImpl session) {
+    private static TransactionFactory<?, ?> getFactory(String facetoryKey, SessionImpl session) {
         String key = facetoryKey + session.keyspace();
         return openFactories.computeIfAbsent(key, (k) -> newFactory(facetoryKey, session));
     }
 
-    private static TransactionFactory<?> newFactory(String factoryKey, SessionImpl session) {
-        TransactionFactory<?> transactionFactory;
+    private static TransactionFactory<?, ?> newFactory(String factoryKey, SessionImpl session) {
+        TransactionFactory<?, ?> transactionFactory;
         switch (factoryKey) {
             case PRODUCTION:
                 transactionFactory = new TransactionOLTPFactory(session);

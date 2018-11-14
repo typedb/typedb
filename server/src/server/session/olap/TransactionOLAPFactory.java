@@ -20,7 +20,7 @@ package grakn.core.server.session.olap;
 
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionFactoryAbstract;
+import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import grakn.core.util.GraknConfigKey;
@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * <p>
  *     This produces a graph on top of {@link HadoopGraph}.
- *     The base construction process defined by {@link TransactionFactoryAbstract} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TransactionFactory} ensures the graph factories are singletons.
  *     With this vendor some exceptions are in places:
  *     1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
  *     {@link HadoopGraph}.
@@ -49,7 +49,7 @@ import java.util.Map;
  * </p>
  *
  */
-public class TransactionOLAPFactory extends TransactionFactoryAbstract<TransactionImpl<HadoopGraph>, HadoopGraph> {
+public class TransactionOLAPFactory extends TransactionFactory<TransactionImpl<HadoopGraph>, HadoopGraph> {
     private final Logger LOG = LoggerFactory.getLogger(TransactionOLAPFactory.class);
 
     /**
