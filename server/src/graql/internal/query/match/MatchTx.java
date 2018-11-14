@@ -23,7 +23,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Match;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 
 import java.util.Set;
 import java.util.stream.Stream;

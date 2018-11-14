@@ -11,7 +11,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.ConcurrentGraknServer;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.HashMultimap;

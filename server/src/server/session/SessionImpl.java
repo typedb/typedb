@@ -18,13 +18,12 @@
 
 package grakn.core.server.session;
 
-import grakn.core.server.GraknComputer;
+import grakn.core.server.TransactionOLAP;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.Keyspace;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.internal.TransactionImpl;
-import grakn.core.server.kb.internal.computer.GraknComputerImpl;
+import grakn.core.server.session.oltp.TransactionOLTP;
 import grakn.core.util.GraknConfig;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -36,7 +35,6 @@ import java.util.Objects;
 
 /**
  * Builds a {@link TransactionFactory}. This class facilitates the construction of {@link Transaction} by determining which factory should be built.
- *
  */
 public class SessionImpl implements Session {
     private static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
@@ -100,15 +98,15 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Get a new or existing GraknComputer.
+     * Get a new or existing TransactionOLAP.
      *
      * @return A new or existing Grakn graph computer
-     * @see GraknComputer
+     * @see TransactionOLAP
      */
     @CheckReturnValue
-    public GraknComputer getGraphComputer() {
+    public TransactionOLAP getGraphComputer() {
         Graph graph = transactionOLAPFactory.getTinkerPopGraph(false);
-        return new GraknComputerImpl(graph);
+        return new grakn.core.server.session.olap.TransactionOLAP(graph);
     }
 
     @Override

@@ -20,7 +20,6 @@ package grakn.core.server.session;
 
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.internal.TransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;

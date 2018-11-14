@@ -30,7 +30,7 @@ import grakn.core.server.exception.GraknBackendException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionFactoryBuilder;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;

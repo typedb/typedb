@@ -23,7 +23,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.atom.Atom;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.Iterables;
 
 import java.util.List;

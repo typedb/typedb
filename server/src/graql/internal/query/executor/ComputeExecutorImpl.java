@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.query.executor;
 
 import grakn.core.server.ComputeExecutor;
-import grakn.core.server.GraknComputer;
+import grakn.core.server.TransactionOLAP;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -61,7 +61,7 @@ import grakn.core.graql.internal.analytics.StatisticsMapReduce;
 import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.graql.Syntax;
 import grakn.core.graql.internal.Schema;
@@ -106,7 +106,7 @@ import static grakn.core.graql.Syntax.Compute.Method.STD;
 import static grakn.core.graql.Syntax.Compute.Method.SUM;
 
 /**
- * A Graql Compute query job executed against a {@link GraknComputer}.
+ * A Graql Compute query job executed against a {@link TransactionOLAP}.
  *
  */
 class ComputeExecutorImpl<T extends Answer> implements ComputeExecutor<T> {

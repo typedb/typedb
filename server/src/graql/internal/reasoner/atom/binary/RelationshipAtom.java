@@ -59,7 +59,7 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
-import grakn.core.server.kb.internal.concept.RelationshipTypeImpl;
+import grakn.core.server.kb.concept.RelationshipTypeImpl;
 import grakn.core.util.CommonUtil;
 import grakn.core.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;

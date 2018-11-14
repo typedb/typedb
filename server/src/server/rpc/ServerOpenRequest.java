@@ -20,8 +20,8 @@ package grakn.core.server.rpc;
 
 import grakn.core.server.Keyspace;
 import grakn.core.server.Transaction;
-import grakn.core.server.factory.EngineGraknTxFactory;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.SessionStore;
+import grakn.core.server.session.TransactionImpl;
 
 /**
  * A request transaction opener for RPC Services. It requires the keyspace and transaction type from the argument object
@@ -29,9 +29,9 @@ import grakn.core.server.kb.internal.TransactionImpl;
  */
 public class ServerOpenRequest implements OpenRequest {
 
-    private final EngineGraknTxFactory txFactory;
+    private final SessionStore txFactory;
 
-    public ServerOpenRequest(EngineGraknTxFactory txFactory) {
+    public ServerOpenRequest(SessionStore txFactory) {
         this.txFactory = txFactory;
     }
 

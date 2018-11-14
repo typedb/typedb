@@ -10,7 +10,7 @@ import grakn.core.server.ServerRPC;
 import grakn.core.server.ServerStatus;
 import grakn.core.server.bootup.GraknCassandra;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.factory.EngineGraknTxFactory;
+import grakn.core.server.session.SessionStore;
 import grakn.core.server.lock.LockProvider;
 import grakn.core.server.lock.ProcessWideLockProvider;
 import grakn.core.server.rpc.KeyspaceService;
@@ -56,7 +56,7 @@ public class ConcurrentGraknServer extends ExternalResource {
     private int nativeTransportPort;
     private int grpcPort;
 
-    private EngineGraknTxFactory engineGraknTxFactory;
+    private SessionStore sessionStore;
 
     public ConcurrentGraknServer() {
         System.setProperty("java.security.manager", "nottodaypotato");
@@ -89,7 +89,7 @@ public class ConcurrentGraknServer extends ExternalResource {
     @Override
     protected void after() {
         try {
-            engineGraknTxFactory.closeSessions();
+            sessionStore.closeSessions();
             keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
@@ -109,8 +109,8 @@ public class ConcurrentGraknServer extends ExternalResource {
         return SessionImpl.createEngineSession(randomKeyspace, serverConfig);
     }
 
-    public EngineGraknTxFactory txFactory(){
-        return engineGraknTxFactory;
+    public SessionStore txFactory(){
+        return sessionStore;
     }
 
 
@@ -172,10 +172,10 @@ public class ConcurrentGraknServer extends ExternalResource {
         keyspaceStore = new KeyspaceStoreImpl(serverConfig);
 
         // tx-factory
-        engineGraknTxFactory = EngineGraknTxFactory.create(lockProvider, serverConfig, keyspaceStore);
+        sessionStore = SessionStore.create(lockProvider, serverConfig, keyspaceStore);
 
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(serverConfig, engineGraknTxFactory);
-        OpenRequest requestOpener = new ServerOpenRequest(engineGraknTxFactory);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(serverConfig, sessionStore);
+        OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
 
         io.grpc.Server server = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))

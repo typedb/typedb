@@ -21,7 +21,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 import grakn.core.graql.ValuePredicate;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;

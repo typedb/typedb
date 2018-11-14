@@ -37,7 +37,7 @@ import grakn.core.graql.internal.gremlin.fragment.NeqFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.ConcurrentGraknServer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;

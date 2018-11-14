@@ -28,7 +28,7 @@ import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.ConcurrentGraknServer;
 import com.google.common.collect.Sets;
 import org.junit.After;

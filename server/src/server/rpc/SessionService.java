@@ -28,7 +28,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
-import grakn.core.server.kb.internal.TransactionImpl;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.ServerRPC;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.graql.Graql;
