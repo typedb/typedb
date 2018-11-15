@@ -31,7 +31,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.reasoner.graph.GeoGraph;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("CheckReturnValue")
 public class QueryIT {
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
     private TransactionImpl tx;
 
     private static SessionImpl geoGraphSession;

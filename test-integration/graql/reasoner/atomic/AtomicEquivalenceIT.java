@@ -11,7 +11,7 @@ import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class AtomicEquivalenceIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
 

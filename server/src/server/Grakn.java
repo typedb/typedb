@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server;
 
+import grakn.core.server.bootup.EnginePidManager;
+import grakn.core.server.bootup.GraknBootup;
 import grakn.core.util.GraknSystemProperty;
-import grakn.core.server.Server;
-import grakn.core.server.ServerFactory;
 import grakn.core.util.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;

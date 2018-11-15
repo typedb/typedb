@@ -24,7 +24,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertNotEquals;
 public class EdgeIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private TransactionImpl tx;
     private SessionImpl session;

@@ -18,6 +18,7 @@
 
 package grakn.core.server.bootup;
 
+import grakn.core.server.Grakn;
 import grakn.core.util.GraknConfigKey;
 import grakn.core.util.GraknSystemProperty;
 import grakn.core.util.GraknConfig;

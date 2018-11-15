@@ -28,7 +28,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.kb.structure.EdgeElement;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertTrue;
 public class SchemaConceptIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

@@ -26,7 +26,7 @@ import grakn.core.graql.GetQuery;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 public class QueryValidityIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
 

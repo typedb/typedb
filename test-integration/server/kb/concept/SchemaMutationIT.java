@@ -31,7 +31,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.util.ErrorMessage;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -64,7 +64,7 @@ public class SchemaMutationIT {
     private Role driven;
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

@@ -36,10 +36,11 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
- * This rule starts Cassandra and Grakn Server and makes sure that both processes bind to random and unused ports.
- * This rule allows all the integration tests to run concurrently on the same machine.
+ * This rule starts Cassandra and Grakn Server concurrently.
+ * It makes sure that both processes bind to random and unused ports.
+ * It allows all the integration tests to run concurrently on the same machine.
  */
-public class ConcurrentGraknServer extends ExternalResource {
+public class GraknTestServer extends ExternalResource {
 
     private final static String SERVER_CONFIG_PATH = "server/conf/grakn.properties";
     private final static Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
@@ -55,7 +56,7 @@ public class ConcurrentGraknServer extends ExternalResource {
 
     private SessionStore sessionStore;
 
-    public ConcurrentGraknServer() {
+    public GraknTestServer() {
         System.setProperty("java.security.manager", "nottodaypotato");
     }
 

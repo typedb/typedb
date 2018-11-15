@@ -38,7 +38,7 @@ import grakn.core.graql.internal.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.internal.gremlin.fragment.OutSubFragment;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Before;
@@ -56,7 +56,7 @@ import static org.junit.Assert.assertThat;
 public class IsaExplicitIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private TransactionImpl<?> tx;
 

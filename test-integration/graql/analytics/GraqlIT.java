@@ -35,7 +35,7 @@ import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -77,7 +77,7 @@ public class GraqlIT {
     public Session session;
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Before
     public void setUp() {
