@@ -22,7 +22,7 @@ function getNeighboursQuery(node, neighboursLimit) {
 }
 
 export function limitQuery(query) {
-  const getRegex = /^((.|\n)*;)\s*(get\s*.\w*;)/;
+  const getRegex = /^((.|\n)*;)\s*(get;|get\s*.\w*;)/;
   let limitedQuery = query;
 
   // If there is no `get` the user mistyped the query
