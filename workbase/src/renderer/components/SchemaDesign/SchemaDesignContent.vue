@@ -78,8 +78,12 @@
 // import NewTypePanel from '../NewTypePanel/NewTypePanel.vue';
 // import ManageSchemaConcepts from '../ManageSchemaConcepts';
 // import ContextMenu from './ContextMenu.vue';
-import GraphCanvas from '../shared/GraphCanvas.vue';
+import GraphCanvas from './GraphCanvas.vue';
 import TopBar from './TopBar';
+import actions from './store/actions';
+import mutations from './store/mutations';
+import getters from './store/getters';
+import state from './store/state';
 
 // import localStore from '../SchemaDesignStore';
 import { DELETE_SCHEMA_CONCEPT } from '../shared/StoresActions';
@@ -95,6 +99,9 @@ export default {
       showAttributesPanel: false,
       showRolesPanel: false,
     };
+  },
+  beforeCreate() {
+    this.$store.registerModule('schema-design', { namespaced: true, getters, state, mutations, actions });
   },
   created() {
     // this.localStore.registerCanvasEventHandler('click', this.closePanels);

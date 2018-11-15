@@ -7,4 +7,5 @@ export default {
   canvasData: state => state.canvasData,
   isActive: state => (state.currentKeyspace !== null),
   contextMenu: state => state.contextMenu,
+  loadingSchema: state => state.loadingSchema,
 };

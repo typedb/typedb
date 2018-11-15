@@ -6,7 +6,7 @@
         <vue-icon icon="database" className="vue-icon database-icon"></vue-icon>
     </button>
 
-    <tool-tip class="keyspace-tooltip" msg="Please select a keyspace" :isOpen="showKeyspaceTooltip" arrowPosition="right"></tool-tip>
+    <tool-tip class="keyspace-tooltip" msg="Please select a keyspace" arrowPosition="right"></tool-tip>
 
 
         <ul id="keyspaces-list" class="keyspaces-list arrow_box z-depth-1" v-if="showKeyspaceList">
@@ -91,7 +91,7 @@
 </style>
 
 <script>
-import { mapGetters } from 'vuex';
+import { createNamespacedHelpers, mapGetters } from 'vuex';
 
 import storage from '@/components/shared/PersistentStorage';
 
@@ -108,6 +108,21 @@ export default {
       clickEvent: () => {
         this.showKeyspaceList = false;
       },
+    };
+  },
+  beforeCreate() {
+    const { mapGetters, mapActions } = createNamespacedHelpers('schema-design');
+
+    // computed
+    this.$options.computed = {
+      ...(this.$options.computed || {}),
+      ...mapGetters(['currentKeyspace']),
+    };
+
+    // methods
+    this.$options.methods = {
+      ...(this.$options.methods || {}),
+      ...mapActions([CURRENT_KEYSPACE_CHANGED]),
     };
   },
   computed: {

@@ -8,7 +8,7 @@ export async function computeSubConcepts(nodes) {
   await Promise.all(nodes.map(async (concept) => {
     const sup = await concept.sup();
     if (sup) {
-      const supLabel = await sup.getLabel();
+      const supLabel = await sup.label();
       if (!META_CONCEPTS.has(supLabel)) {
         edges.push({ from: concept.id, to: sup.id, label: 'isa' });
         subConcepts.push(concept);
@@ -22,9 +22,9 @@ export async function relationshipTypesOutboundEdges(nodes) {
   const edges = [];
   const promises = nodes.filter(x => x.isRelationshipType())
     .map(async rel =>
-      Promise.all((await rel.relates()).map(async (role) => {
-        const types = await role.playedByTypes();
-        const label = await role.getLabel();
+      Promise.all(((await (await rel.roles()).collect())).map(async (role) => {
+        const types = await (await role.players()).collect();
+        const label = await role.label();
         return types.forEach((type) => { edges.push({ from: rel.id, to: type.id, label }); });
       })),
     );

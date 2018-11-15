@@ -2,8 +2,8 @@ export default {
   currentKeyspace(state, keyspace) {
     state.currentKeyspace = keyspace;
   },
-  loadingScehma(state, isRunning) {
-    state.loadingScehma = isRunning;
+  loadingSchema(state, isRunning) {
+    state.loadingSchema = isRunning;
   },
   graknSession(state, session) {
     state.graknSession = session;
