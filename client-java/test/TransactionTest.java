@@ -92,8 +92,8 @@ public class TransactionTest {
     @Rule
     public final ServerRPCMock server = new ServerRPCMock(sessionService, keyspaceService);
 
+    private SessionServiceStub sessionStub;
     private final Grakn.Session session = mock(Grakn.Session.class);
-    private final SessionServiceStub sessionStub = SessionServiceGrpc.newStub(serverRule.getChannel());
 
     private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
     private static final String V123 = "V123";
@@ -106,7 +106,7 @@ public class TransactionTest {
         when(session.keyspace()).thenReturn(KEYSPACE);
         when(session.transaction(any())).thenCallRealMethod();
         
-        
+        sessionStub = SessionServiceGrpc.newStub(serverRule.getChannel());
     }
 
     @Test
