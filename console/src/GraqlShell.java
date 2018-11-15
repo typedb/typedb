@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.commons.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;

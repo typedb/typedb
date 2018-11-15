@@ -18,11 +18,11 @@
 
 package grakn.core.server.session.cache;
 
-import grakn.core.util.GraknConfigKey;
+import grakn.core.commons.config.ConfigKey;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -58,10 +58,10 @@ public class GlobalCache {
     private final Cache<Label, SchemaConcept> cachedTypes;
     private final Map<Label, LabelId> cachedLabels;
 
-    public GlobalCache(GraknConfig config) {
+    public GlobalCache(Config config) {
         cachedLabels = new ConcurrentHashMap<>();
 
-        int cacheTimeout = config.getProperty(GraknConfigKey.SESSION_CACHE_TIMEOUT_MS);
+        int cacheTimeout = config.getProperty(ConfigKey.SESSION_CACHE_TIMEOUT_MS);
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)

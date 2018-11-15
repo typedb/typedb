@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;

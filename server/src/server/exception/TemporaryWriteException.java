@@ -20,7 +20,7 @@ package grakn.core.server.exception;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static grakn.core.util.ErrorMessage.LOCKING_EXCEPTION;
+import static grakn.core.commons.util.ErrorMessage.LOCKING_EXCEPTION;
 
 /**
  * <p>

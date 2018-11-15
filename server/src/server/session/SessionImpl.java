@@ -24,7 +24,7 @@ import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.olap.TransactionOLAP;
 import grakn.core.server.session.oltp.TransactionOLTP;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import java.util.Objects;
 public class SessionImpl implements Session {
     private static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
     private final Keyspace keyspace;
-    private final GraknConfig config;
+    private final Config config;
 
     private final TransactionFactory<?, ?> transactionOLTPFactory;
     private final TransactionFactory<?, ?> transactionOLAPFactory;
@@ -56,7 +56,7 @@ public class SessionImpl implements Session {
      * @param config           config to be used. If null is supplied, it will be created
      * @param transactionFactoryBuilder
      */
-    SessionImpl(Keyspace keyspace, @Nullable GraknConfig config, TransactionFactoryBuilder transactionFactoryBuilder) {
+    SessionImpl(Keyspace keyspace, @Nullable Config config, TransactionFactoryBuilder transactionFactoryBuilder) {
         Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace;
@@ -69,16 +69,16 @@ public class SessionImpl implements Session {
      * Creates a {@link SessionImpl} specific for internal use (within Engine),
      * using provided Grakn configuration
      */
-    public static SessionImpl createEngineSession(Keyspace keyspace, GraknConfig config, TransactionFactoryBuilder transactionFactoryBuilder) {
+    public static SessionImpl createEngineSession(Keyspace keyspace, Config config, TransactionFactoryBuilder transactionFactoryBuilder) {
         return new SessionImpl(keyspace, config, transactionFactoryBuilder);
     }
 
-    public static SessionImpl createEngineSession(Keyspace keyspace, GraknConfig config) {
+    public static SessionImpl createEngineSession(Keyspace keyspace, Config config) {
         return new SessionImpl(keyspace, config, TransactionFactoryBuilder.getInstance());
     }
 
     public static SessionImpl createEngineSession(Keyspace keyspace) {
-        return new SessionImpl(keyspace, GraknConfig.create(), TransactionFactoryBuilder.getInstance());
+        return new SessionImpl(keyspace, Config.create(), TransactionFactoryBuilder.getInstance());
     }
 
 
@@ -132,7 +132,7 @@ public class SessionImpl implements Session {
      *
      * @return The config options of this {@link Session}
      */
-    public GraknConfig config() {
+    public Config config() {
         return config;
     }
 

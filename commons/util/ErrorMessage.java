@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.util;
 
 import javax.annotation.CheckReturnValue;
 

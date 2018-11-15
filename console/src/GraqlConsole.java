@@ -20,9 +20,9 @@ package grakn.core.console;
 
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.Grakn;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 import grakn.core.util.GraknVersion;
-import grakn.core.util.SimpleURI;
+import grakn.core.commons.http.SimpleURI;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;

@@ -24,13 +24,13 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import grakn.core.server.exception.GraknBackendException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionFactoryBuilder;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +55,9 @@ public class KeyspaceManager {
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
     private final Set<Keyspace> existingKeyspaces;
     private final SessionImpl systemKeyspaceSession;
-    private final GraknConfig config;
+    private final Config config;
 
-    public KeyspaceManager(GraknConfig config){
+    public KeyspaceManager(Config config){
         this.config = config;
         this.systemKeyspaceSession = SessionImpl.createEngineSession(SYSTEM_KB_KEYSPACE, config, TransactionFactoryBuilder.getInstance());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();

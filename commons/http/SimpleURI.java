@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.http;
 
 import com.google.common.base.Preconditions;
 

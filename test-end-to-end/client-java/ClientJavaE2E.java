@@ -13,7 +13,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.Syntax;
-import grakn.core.util.SimpleURI;
+import grakn.core.commons.http.SimpleURI;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

@@ -25,7 +25,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 
 import javax.annotation.Nullable;
 import java.util.Collection;

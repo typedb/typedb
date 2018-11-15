@@ -27,7 +27,7 @@ import grakn.core.graql.Query;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.SessionProto;
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

@@ -29,7 +29,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;

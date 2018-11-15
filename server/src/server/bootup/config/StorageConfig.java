@@ -18,8 +18,8 @@
 
 package grakn.core.server.bootup.config;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.config.Config;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -87,8 +87,8 @@ public class StorageConfig extends ProcessConfig<Object> {
         }
     }
 
-    private StorageConfig updateDirs(GraknConfig config) {
-        String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
+    private StorageConfig updateDirs(Config config) {
+        String dbDir = config.getProperty(ConfigKey.DATA_DIR);
 
         ImmutableMap<String, Object> dirParams = ImmutableMap.of(
                 DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_SUBDIR),
@@ -99,7 +99,7 @@ public class StorageConfig extends ProcessConfig<Object> {
     }
 
     @Override
-    Map<String, Object> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, GraknConfig config) {
+    Map<String, Object> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, Config config) {
         //overwrite params with params from grakn config
         Map<String, Object> updatedParams = Maps.newHashMap(params());
         config.properties()
@@ -116,12 +116,12 @@ public class StorageConfig extends ProcessConfig<Object> {
     }
 
     @Override
-    public StorageConfig updateGenericParams(GraknConfig config) {
+    public StorageConfig updateGenericParams(Config config) {
         return new StorageConfig(this.updateParamsFromConfig(CONFIG_PARAM_PREFIX, config));
     }
 
     @Override
-    public StorageConfig updateFromConfig(GraknConfig config){
+    public StorageConfig updateFromConfig(Config config){
         return this
                 .updateGenericParams(config)
                 .updateDirs(config);

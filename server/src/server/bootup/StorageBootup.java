@@ -18,9 +18,9 @@
 
 package grakn.core.server.bootup;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.GraknSystemProperty;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.config.SystemProperty;
+import grakn.core.commons.config.Config;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
@@ -55,16 +55,16 @@ public class StorageBootup {
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
-    private static final String JAVA_OPTS = GraknSystemProperty.STORAGE_JAVAOPTS.value();
+    private static final String JAVA_OPTS = SystemProperty.STORAGE_JAVAOPTS.value();
 
 
     private BootupProcessExecutor bootupProcessExecutor;
     private final Path graknHome;
-    private final GraknConfig graknProperties;
+    private final Config graknProperties;
 
     public StorageBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
-        this.graknProperties = GraknConfig.read(graknPropertiesPath);
+        this.graknProperties = Config.read(graknPropertiesPath);
         this.bootupProcessExecutor = bootupProcessExecutor;
     }
 
@@ -203,7 +203,7 @@ public class StorageBootup {
     }
 
     private Path getStorageLogPathFromGraknProperties() {
-        Path logPath = Paths.get(graknProperties.getProperty(GraknConfigKey.LOG_DIR));
+        Path logPath = Paths.get(graknProperties.getProperty(ConfigKey.LOG_DIR));
         return logPath.isAbsolute() ? logPath : graknHome.resolve(logPath);
     }
 

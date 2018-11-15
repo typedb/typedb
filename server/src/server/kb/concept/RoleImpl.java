@@ -26,7 +26,7 @@ import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 

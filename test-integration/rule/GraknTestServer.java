@@ -15,9 +15,9 @@ import grakn.core.server.session.SessionStore;
 import grakn.core.server.util.EngineID;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerLockManager;
-import grakn.core.util.GraknConfig;
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.SimpleURI;
+import grakn.core.commons.config.Config;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.http.SimpleURI;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -44,7 +44,7 @@ public class GraknTestServer extends ExternalResource {
 
     private final static String SERVER_CONFIG_PATH = "server/conf/grakn.properties";
     private final static Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
-    private GraknConfig serverConfig;
+    private Config serverConfig;
     private Path dataDirTmp;
     private Server graknServer;
     private KeyspaceManager keyspaceStore;
@@ -99,7 +99,7 @@ public class GraknTestServer extends ExternalResource {
 
     // Getters
     public SimpleURI grpcUri() {
-        return new SimpleURI(serverConfig.getProperty(GraknConfigKey.SERVER_HOST_NAME), serverConfig.getProperty(GraknConfigKey.GRPC_PORT));
+        return new SimpleURI(serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME), serverConfig.getProperty(ConfigKey.GRPC_PORT));
     }
 
     public SessionImpl sessionWithNewKeyspace() {
@@ -143,19 +143,19 @@ public class GraknTestServer extends ExternalResource {
     }
 
     //Server helpers
-    private GraknConfig createTestConfig(String dataDir) throws FileNotFoundException {
+    private Config createTestConfig(String dataDir) throws FileNotFoundException {
         InputStream testConfig = new FileInputStream(SERVER_CONFIG_PATH);
 
-        GraknConfig config = GraknConfig.read(testConfig);
-        config.setConfigProperty(GraknConfigKey.DATA_DIR, dataDir);
+        Config config = Config.read(testConfig);
+        config.setConfigProperty(ConfigKey.DATA_DIR, dataDir);
         //Override gRPC port with a random free port
-        config.setConfigProperty(GraknConfigKey.GRPC_PORT, grpcPort);
+        config.setConfigProperty(ConfigKey.GRPC_PORT, grpcPort);
         //Override the default store.port with the RPC_PORT given that we still use Thrift protocol to talk to Cassandra
-        config.setConfigProperty(GraknConfigKey.STORAGE_PORT, rpcPort);
+        config.setConfigProperty(ConfigKey.STORAGE_PORT, rpcPort);
         //Hadoop cluster uses the Astyanax driver for some operations, so need to override the RPC_PORT (Thrift)
-        config.setConfigProperty(GraknConfigKey.HADOOP_STORAGE_PORT, rpcPort);
+        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, rpcPort);
         //Hadoop cluster uses the CQL driver for some operations, so we need to instruct it to use the newly generate native transport port (CQL)
-        config.setConfigProperty(GraknConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
+        config.setConfigProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
 
         return config;
     }

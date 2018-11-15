@@ -18,8 +18,8 @@
 
 package grakn.core.server.bootup.config;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.config.Config;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,16 +85,16 @@ public class QueueConfig extends ProcessConfig<List<Object>>{
                 .collect(Collectors.joining(RECORD_SEPARATOR));
     }
 
-    private Path getAbsoluteLogPath(GraknConfig config){
+    private Path getAbsoluteLogPath(Config config){
         //NB redis gets confused with relative log paths
-        Path projectPath = GraknConfig.PROJECT_PATH;
-        String logPathString = config.getProperty(GraknConfigKey.LOG_DIR) + LOG_FILE;
+        Path projectPath = Config.PROJECT_PATH;
+        String logPathString = config.getProperty(ConfigKey.LOG_DIR) + LOG_FILE;
         Path logPath = Paths.get(logPathString);
         return logPath.isAbsolute() ? logPath : Paths.get(projectPath.toString(), logPathString);
     }
 
-    private QueueConfig updateDirs(GraknConfig config) {
-        String dbDir = config.getProperty(GraknConfigKey.DATA_DIR);
+    private QueueConfig updateDirs(Config config) {
+        String dbDir = config.getProperty(ConfigKey.DATA_DIR);
 
         ImmutableMap<String, List<Object>> dirParams = ImmutableMap.of(
                 DB_DIR_CONFIG_KEY, Collections.singletonList("\"" + dbDir + DATA_SUBDIR + "\""),
@@ -104,12 +104,12 @@ public class QueueConfig extends ProcessConfig<List<Object>>{
     }
 
     @Override
-    public QueueConfig updateGenericParams(GraknConfig config) {
+    public QueueConfig updateGenericParams(Config config) {
         return new QueueConfig(this.updateParamsFromConfig(CONFIG_PARAM_PREFIX, config));
     }
 
     @Override
-    public QueueConfig updateFromConfig(GraknConfig config) {
+    public QueueConfig updateFromConfig(Config config) {
         return this
                 .updateGenericParams(config)
                 .updateDirs(config);

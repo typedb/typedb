@@ -19,7 +19,7 @@
 package grakn.core.server.exception;
 
 import grakn.core.server.Transaction;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 
 import java.util.List;
 

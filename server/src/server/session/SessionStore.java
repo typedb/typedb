@@ -22,7 +22,7 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import grakn.core.server.util.LockManager;
 
 import java.util.HashMap;
@@ -34,16 +34,16 @@ import java.util.concurrent.locks.Lock;
  * This internal factory is used to produce {@link Transaction}s.
  */
 public class SessionStore {
-    private final GraknConfig engineConfig;
+    private final Config engineConfig;
     private final KeyspaceManager keyspaceStore;
     private final Map<Keyspace, SessionImpl> openedSessions;
     private final LockManager lockManager;
 
-    public static SessionStore create(LockManager lockManager, GraknConfig engineConfig, KeyspaceManager keyspaceStore) {
+    public static SessionStore create(LockManager lockManager, Config engineConfig, KeyspaceManager keyspaceStore) {
         return new SessionStore(engineConfig, lockManager, keyspaceStore);
     }
 
-    private SessionStore(GraknConfig engineConfig, LockManager lockManager, KeyspaceManager keyspaceStore) {
+    private SessionStore(Config engineConfig, LockManager lockManager, KeyspaceManager keyspaceStore) {
         this.openedSessions = new HashMap<>();
         this.engineConfig = engineConfig;
         this.lockManager = lockManager;
@@ -100,7 +100,7 @@ public class SessionStore {
         return "/creating-new-keyspace-lock/" + keyspace.getValue();
     }
 
-    public GraknConfig config() {
+    public Config config() {
         return engineConfig;
     }
 

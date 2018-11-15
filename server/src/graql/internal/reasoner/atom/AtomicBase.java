@@ -27,7 +27,7 @@ import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;

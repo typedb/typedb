@@ -19,7 +19,7 @@
 package grakn.core.console;
 
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.util.SimpleURI;
+import grakn.core.commons.http.SimpleURI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -39,7 +39,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static grakn.core.util.CommonUtil.toImmutableList;
+import static grakn.core.commons.util.CommonUtil.toImmutableList;
 
 /**
  * Wrapper for parsing command-line options for Graql shell

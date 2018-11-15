@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.config;
 
-import grakn.core.util.ErrorMessage;
 import com.google.auto.value.AutoValue;
+import grakn.core.commons.util.ErrorMessage;
 
 import java.nio.file.Path;
 
@@ -29,10 +29,10 @@ import java.nio.file.Path;
  * @param <T> the type of the values of the key
  */
 @AutoValue
-public abstract class GraknConfigKey<T> {
+public abstract class ConfigKey<T> {
 
     /**
-     * Parser for a {@link GraknConfigKey}.
+     * Parser for a {@link ConfigKey}.
      * Describes how to {@link #read(String)} and {@link #write(Object)} properties.
      *
      * @param <T> The type of the property value
@@ -51,24 +51,24 @@ public abstract class GraknConfigKey<T> {
     public static final KeyParser<Integer> INT = Integer::parseInt;
     public static final KeyParser<Long> LONG = Long::parseLong;
 
-    public static final GraknConfigKey<String> SERVER_HOST_NAME = key("server.host");
-    public static final GraknConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
+    public static final ConfigKey<String> SERVER_HOST_NAME = key("server.host");
+    public static final ConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
-    public static final GraknConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
-    public static final GraknConfigKey<Integer> STORAGE_PORT = key("storage.port", INT);
-    public static final GraknConfigKey<Integer> HADOOP_STORAGE_PORT = key("janusgraphmr.ioformat.conf.storage.port", INT);
-    public static final GraknConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
-    public static final GraknConfigKey<String> STORAGE_BATCH_LOADING = key("storage.batch-loading", STRING);
-    public static final GraknConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
-    public static final GraknConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
+    public static final ConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
+    public static final ConfigKey<Integer> STORAGE_PORT = key("storage.port", INT);
+    public static final ConfigKey<Integer> HADOOP_STORAGE_PORT = key("janusgraphmr.ioformat.conf.storage.port", INT);
+    public static final ConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
+    public static final ConfigKey<String> STORAGE_BATCH_LOADING = key("storage.batch-loading", STRING);
+    public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
+    public static final ConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
 
-    public static final GraknConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
+    public static final ConfigKey<Integer> SESSION_CACHE_TIMEOUT_MS = key("knowledge-base.schema-cache-timeout-ms", INT);
 
-    public static final GraknConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
-    public static final GraknConfigKey<String> KB_MODE = key("knowledge-base.mode");
-    public static final GraknConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
-    public static final GraknConfigKey<String> DATA_DIR = key("data-dir");
-    public static final GraknConfigKey<String> LOG_DIR = key("log.dirs");
+    public static final ConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
+    public static final ConfigKey<String> KB_MODE = key("knowledge-base.mode");
+    public static final ConfigKey<String> KB_ANALYTICS = key("knowledge-base.analytics");
+    public static final ConfigKey<String> DATA_DIR = key("data-dir");
+    public static final ConfigKey<String> LOG_DIR = key("log.dirs");
 
     /**
      * The name of the key, how it looks in the properties file
@@ -109,15 +109,15 @@ public abstract class GraknConfigKey<T> {
     /**
      * Create a key for a string property
      */
-    public static GraknConfigKey<String> key(String value) {
+    public static ConfigKey<String> key(String value) {
         return key(value, STRING);
     }
 
     /**
      * Create a key with the given parser
      */
-    public static <T> GraknConfigKey<T> key(String value, KeyParser<T> parser) {
-        return new AutoValue_GraknConfigKey<>(value, parser);
+    public static <T> ConfigKey<T> key(String value, KeyParser<T> parser) {
+        return new AutoValue_ConfigKey<>(value, parser);
     }
 
 }

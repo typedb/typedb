@@ -20,8 +20,8 @@ package grakn.core.server;
 
 import grakn.core.server.bootup.EnginePidManager;
 import grakn.core.server.bootup.GraknBootup;
-import grakn.core.util.GraknSystemProperty;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.config.SystemProperty;
+import grakn.core.commons.util.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -86,7 +86,7 @@ public class Grakn {
                 LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(t.getName()), e));
 
         try {
-            String graknPidFileProperty = Optional.ofNullable(GraknSystemProperty.GRAKN_PID_FILE.value())
+            String graknPidFileProperty = Optional.ofNullable(SystemProperty.GRAKN_PID_FILE.value())
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
 
             Path pidfile = Paths.get(graknPidFileProperty);

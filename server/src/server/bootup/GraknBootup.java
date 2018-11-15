@@ -18,9 +18,9 @@
 
 package grakn.core.server.bootup;
 
-import grakn.core.util.GraknSystemProperty;
+import grakn.core.commons.config.SystemProperty;
 import grakn.core.server.bootup.config.ConfigProcessor;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +53,8 @@ public class GraknBootup {
      */
     public static void main(String[] args) {
         try {
-            Path graknHome = Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
-            Path graknProperties = Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
+            Path graknHome = Paths.get(SystemProperty.CURRENT_DIRECTORY.value());
+            Path graknProperties = Paths.get(SystemProperty.CONFIGURATION_FILE.value());
 
             assertEnvironment(graknHome, graknProperties);
 

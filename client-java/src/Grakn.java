@@ -47,8 +47,8 @@ import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.util.CommonUtil;
-import grakn.core.util.SimpleURI;
+import grakn.core.commons.util.CommonUtil;
+import grakn.core.commons.http.SimpleURI;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -60,7 +60,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.commons.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.

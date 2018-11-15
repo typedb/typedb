@@ -27,8 +27,8 @@ import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static grakn.core.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
-import static grakn.core.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
+import static grakn.core.commons.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
+import static grakn.core.commons.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
 
 /**
  * <p>

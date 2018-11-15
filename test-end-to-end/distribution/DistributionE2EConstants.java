@@ -18,8 +18,8 @@
 
 package grakn.core.distribution;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.config.Config;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -38,14 +38,14 @@ public class DistributionE2EConstants {
     public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution test", "grakn-core-all");
 
     public static void assertGraknRunning() {
-        GraknConfig config = GraknConfig.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
-        boolean engineReady = isEngineReady(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        boolean engineReady = isEngineReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", engineReady, equalTo(true));
     }
 
     public static void assertGraknStopped() {
-        GraknConfig config = GraknConfig.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
-        boolean engineReady = isEngineReady(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        boolean engineReady = isEngineReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", engineReady, equalTo(false));
     }
 

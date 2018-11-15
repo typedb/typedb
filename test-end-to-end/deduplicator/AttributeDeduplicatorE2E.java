@@ -6,7 +6,7 @@ import grakn.core.server.Transaction;
 import grakn.core.client.Grakn;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.util.SimpleURI;
+import grakn.core.commons.http.SimpleURI;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

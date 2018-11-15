@@ -20,8 +20,11 @@ package(default_visibility = ["//visibility:public"])
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
-    name = "util",
-    srcs = glob(["src/**/*.java"]),
+    name = "commons",
+    srcs = glob(
+        ["**/*.java"],
+        exclude = ["**/test/*.java"]
+    ),
     deps = [
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
@@ -32,20 +35,21 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
-    tags = ["maven_coordinates=grakn.core:util:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:commons:{pom_version}"],
 )
+
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":util"],
+    targets = [":commons"],
     version_file = "//:VERSION",
 )
 
 java_test(
     name = "grakn-config-test",
-    test_class = "grakn.core.util.GraknConfigTest",
-    srcs = ["test/GraknConfigTest.java"],
-    deps = [":util"],
+    test_class = "grakn.core.commons.config.test.ConfigTest",
+    srcs = ["config/test/ConfigTest.java"],
+    deps = [":commons"],
     resources = ["//server:conf/grakn.properties"],
     size = "small"
 )

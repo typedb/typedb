@@ -18,7 +18,7 @@
 
 package grakn.core.server;
 
-import grakn.core.util.GraknConfigKey;
+import grakn.core.commons.config.ConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
 import grakn.core.server.util.LockManager;
@@ -29,7 +29,7 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.EngineID;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import io.grpc.ServerBuilder;
 
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
@@ -47,7 +47,7 @@ public class ServerFactory {
     public static Server createServer(boolean benchmark) {
         // grakn engine configuration
         EngineID engineId = EngineID.me();
-        GraknConfig config = GraknConfig.create();
+        Config config = Config.create();
 
         // distributed locks
         LockManager lockManager = new ServerLockManager();
@@ -73,7 +73,7 @@ public class ServerFactory {
      */
 
     public static Server createServer(
-            EngineID engineId, GraknConfig config, io.grpc.Server rpcServer,
+            EngineID engineId, Config config, io.grpc.Server rpcServer,
             LockManager lockManager, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
 
         Server server = new Server(engineId, config, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
@@ -84,8 +84,8 @@ public class ServerFactory {
         return server;
     }
 
-    private static io.grpc.Server createServerRPC(GraknConfig config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
-        int grpcPort = config.getProperty(GraknConfigKey.GRPC_PORT);
+    private static io.grpc.Server createServerRPC(Config config, SessionStore sessionStore, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, boolean benchmark){
+        int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionStore);
 
         if (benchmark) {

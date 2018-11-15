@@ -22,7 +22,7 @@ import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 
 import java.util.Collection;
 import java.util.stream.Stream;

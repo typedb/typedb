@@ -44,8 +44,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Set;
 
-import static grakn.core.util.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
-import static grakn.core.util.ErrorMessage.RESERVED_WORD;
+import static grakn.core.commons.util.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
+import static grakn.core.commons.util.ErrorMessage.RESERVED_WORD;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;

@@ -21,9 +21,9 @@ package grakn.core.server.session.oltp;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.oltp.optimisation.JanusPreviousPropertyStepStrategy;
-import grakn.core.util.GraknConfigKey;
+import grakn.core.commons.config.ConfigKey;
 import grakn.core.server.Transaction;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.util.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -74,10 +74,10 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
     private static final String STORAGE_BACKEND = "storage.backend";
-    private static final String STORAGE_HOSTNAME = GraknConfigKey.STORAGE_HOSTNAME.name();
-    private static final String STORAGE_KEYSPACE = GraknConfigKey.STORAGE_KEYSPACE.name();
-    private static final String STORAGE_BATCH_LOADING = GraknConfigKey.STORAGE_BATCH_LOADING.name();
-    private static final String STORAGE_REPLICATION_FACTOR = GraknConfigKey.STORAGE_REPLICATION_FACTOR.name();
+    private static final String STORAGE_HOSTNAME = ConfigKey.STORAGE_HOSTNAME.name();
+    private static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
+    private static final String STORAGE_BATCH_LOADING = ConfigKey.STORAGE_BATCH_LOADING.name();
+    private static final String STORAGE_REPLICATION_FACTOR = ConfigKey.STORAGE_REPLICATION_FACTOR.name();
 
 
     //These properties are loaded in by default and can optionally be overwritten
@@ -153,7 +153,7 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
 
     private JanusGraph configureGraph(boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
-                set(STORAGE_HOSTNAME, session().config().getProperty(GraknConfigKey.STORAGE_HOSTNAME)).
+                set(STORAGE_HOSTNAME, session().config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
                 set(STORAGE_KEYSPACE, session().keyspace().getValue()).
                 set(STORAGE_BATCH_LOADING, batchLoading);
 

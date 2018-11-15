@@ -16,12 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.util;
 
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.commons.config.SystemProperty;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -55,10 +56,10 @@ public class CommonUtil {
      * user.dir folder.
      */
     public static Path getProjectPath() {
-        if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
-            GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
+        if (SystemProperty.CURRENT_DIRECTORY.value() == null) {
+            SystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
-        return Paths.get(GraknSystemProperty.CURRENT_DIRECTORY.value());
+        return Paths.get(SystemProperty.CURRENT_DIRECTORY.value());
     }
 
     /**

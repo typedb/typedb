@@ -48,7 +48,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//protocol:protocol-java",
-        "//util",
+        "//commons",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",

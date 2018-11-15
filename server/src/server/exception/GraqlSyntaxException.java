@@ -20,8 +20,8 @@ package grakn.core.server.exception;
 
 import java.util.Map;
 
-import static grakn.core.util.ErrorMessage.INVALID_STATEMENT;
-import static grakn.core.util.ErrorMessage.TEMPLATE_MISSING_KEY;
+import static grakn.core.commons.util.ErrorMessage.INVALID_STATEMENT;
+import static grakn.core.commons.util.ErrorMessage.TEMPLATE_MISSING_KEY;
 
 /**
  * <p>
