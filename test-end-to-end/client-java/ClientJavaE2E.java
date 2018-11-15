@@ -261,10 +261,10 @@ public class ClientJavaE2E {
     }
 
     private void localhostGraknTx(Consumer<Grakn.Transaction> fn) {
-        SimpleURI graknHost = new SimpleURI("localhost", 48555);
+        String host = "localhost:48555";
         String keyspace = "grakn";
 
-        try (Grakn.Session session = new Grakn(graknHost).session(keyspace)) {
+        try (Grakn.Session session = new Grakn(host).session(keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 fn.accept(transaction);
             }

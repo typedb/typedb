@@ -34,19 +34,18 @@ public class SimpleURI {
     private final String host;
 
     public SimpleURI(String uri) {
-        String[] uriSplit = uri.split(":");
+        String[] tokens = uri.split(":");
         Preconditions.checkArgument(
-                uriSplit.length == 2 || (uriSplit.length == 3 && uriSplit[1].contains("//")),
+                tokens.length == 2 || (tokens.length == 3 && tokens[1].contains("//")),
                 "Malformed URI " + uri);
         // if it has the schema, we start parsing from after
-        int bias = uriSplit.length == 3 ? 1 : 0;
-        this.host = uriSplit[bias].replace("/", "").trim();
-        this.port = Integer.parseInt(uriSplit[1 + bias].trim());
+        int hostTokenIndex = tokens.length == 3 ? 1 : 0;
+        this.host = tokens[hostTokenIndex].replace("/", "").trim();
+        this.port = Integer.parseInt(tokens[hostTokenIndex + 1].trim());
     }
 
     public SimpleURI(String host, int port) {
-        this.port = port;
-        this.host = host;
+        this(host + ":" + port);
     }
 
     public int getPort() {

@@ -69,7 +69,7 @@ public class GraqlShellOptions {
         options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
         options.addOption(EXECUTE, "execute", true, "query to execute");
         options.addOption(FILE, "file", true, "graql file path to execute");
-        options.addOption(URI, "uri", true, "uri to factory to engine");
+        options.addOption(URI, "address", true, "Grakn Server address");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
         options.addOption(VERSION, "version", false, "print version");
@@ -111,9 +111,8 @@ public class GraqlShellOptions {
     }
 
     @Nullable
-    public SimpleURI getUri() {
-        String uri = cmd.getOptionValue(URI);
-        return uri != null ? new SimpleURI(uri) : null;
+    public String getUri() {
+        return cmd.getOptionValue(URI);
     }
 
     public boolean displayVersion() {

@@ -88,12 +88,12 @@ public class GraqlConsole {
 
         boolean infer = options.shouldInfer();
         ConsoleReader console = new ConsoleReader(System.in, sout);
-        SimpleURI defaultGrpcUri = Grakn.DEFAULT_URI;
-        SimpleURI location = options.getUri();
+        String defaultURI = Grakn.DEFAULT_URI;
+        String userURI = options.getUri();
 
-        SimpleURI uri = location != null ? location : defaultGrpcUri;
+        String serverURI = userURI != null ? userURI : defaultURI;
         String keyspace = options.getKeyspace();
-        Grakn client = new Grakn(uri);
+        Grakn client = new Grakn(serverURI);
 
         try (GraqlShell shell = new GraqlShell(historyFile, client, keyspace, console, serr, outputFormat, infer)) {
             List<Path> filePaths = options.getFiles();

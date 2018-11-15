@@ -70,23 +70,24 @@ import static grakn.core.commons.util.CommonUtil.toImmutableSet;
  * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
  */
 public final class Grakn {
-    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
+
+    public static final String DEFAULT_URI = "localhost:48555";
 
     private ManagedChannel channel;
     private Keyspaces keyspaces;
 
-    public Grakn(SimpleURI uri) {
-        // default: no benchmarking
-        this(uri, false);
+    public Grakn(String address) {
+        this(address, false);
     }
 
-    public Grakn(SimpleURI uri, boolean benchmark) {
+    public Grakn(String address, boolean benchmark) {
+        SimpleURI parsedURI = new SimpleURI(address);
         if (benchmark) {
-            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+            channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
                     .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
                     .usePlaintext(true).build();
         } else {
-            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+            channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
                     .usePlaintext(true).build();
         }
         keyspaces = new Keyspaces(channel);

@@ -126,7 +126,7 @@ public class RemoteQueryIT {
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        remoteSession = new Grakn(server.grpcUri()).session(localSession.keyspace().getName());
+        remoteSession = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName());
     }
 
     @After
@@ -136,21 +136,21 @@ public class RemoteQueryIT {
 
     @Test
     public void testOpeningASession_ReturnARemoteGraknSession() {
-        try (Session session = new Grakn(server.grpcUri()).session(localSession.keyspace().getName())) {
+        try (Session session = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
             assertTrue(Grakn.Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void testOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (Session session = new Grakn(server.grpcUri()).session(localSession.keyspace().getName())) {
+        try (Session session = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
             assertEquals(localSession.keyspace(), session.keyspace());
         }
     }
 
     @Test
     public void testOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (Session session = new Grakn(server.grpcUri()).session(localSession.keyspace().getName())) {
+        try (Session session = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(localSession.keyspace(), tx.keyspace());
@@ -252,7 +252,7 @@ public class RemoteQueryIT {
             tx.commit();
         }
 
-        Grakn.Session reasonerRemoteSession = new Grakn(server.grpcUri()).session(reasonerLocalSession.keyspace().getName());
+        Grakn.Session reasonerRemoteSession = new Grakn(server.grpcUri().toString()).session(reasonerLocalSession.keyspace().getName());
 
         List<ConceptMap> remoteAnswers;
         List<ConceptMap> localAnswers;
@@ -966,7 +966,7 @@ public class RemoteQueryIT {
 
     @Test
     public void testDeletingAKeyspace_TheKeyspaceIsDeleted() {
-        Grakn client = new Grakn(server.grpcUri());
+        Grakn client = new Grakn(server.grpcUri().toString());
         Session localSession = server.sessionWithNewKeyspace();
         String keyspace = localSession.keyspace().getName();
         Grakn.Session remoteSession = client.session(keyspace);

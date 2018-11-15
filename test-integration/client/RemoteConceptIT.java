@@ -144,7 +144,7 @@ public class RemoteConceptIT {
     public void setUp() {
         // move session construction to setupClass
         String randomKeyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-        session = new Grakn(server.grpcUri()).session(randomKeyspace);
+        session = new Grakn(server.grpcUri().toString()).session(randomKeyspace);
 
         tx = session.transaction(Transaction.Type.WRITE);
 

@@ -2,7 +2,6 @@ package grakn.core.deduplicator;
 
 
 import grakn.core.client.Grakn;
-import grakn.core.commons.http.SimpleURI;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.server.Transaction;
@@ -43,7 +42,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
-    private Grakn localhostGrakn = new Grakn(new SimpleURI("localhost:48555"));
+    private Grakn localhostGrakn = new Grakn("localhost:48555");
     private Path queuePath = GRAKN_UNZIPPED_DIRECTORY.resolve("db").resolve("queue");
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
