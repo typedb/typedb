@@ -33,9 +33,9 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
@@ -68,7 +68,7 @@ import static org.junit.Assert.assertTrue;
 public class TransactionIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -334,7 +334,7 @@ public class TransactionIT {
 
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
-        String keyspace = tx.keyspace().getValue();
+        String keyspace = tx.keyspace().getName();
         failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
         failAtOpeningTx(session, Transaction.Type.BATCH, keyspace);
         tx.close();

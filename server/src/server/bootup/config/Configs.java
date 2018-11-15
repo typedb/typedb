@@ -18,8 +18,8 @@
 
 package grakn.core.server.bootup.config;
 
-import grakn.core.util.GraknSystemProperty;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.SystemProperty;
+import grakn.core.commons.config.Config;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -32,8 +32,8 @@ public class Configs {
     private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
-    public static GraknConfig graknConfig(){
-        return GraknConfig.read(graknConfigPath());
+    public static Config graknConfig(){
+        return Config.read(graknConfigPath());
     }
 
     public static StorageConfig storageConfig(){
@@ -41,7 +41,7 @@ public class Configs {
     }
 
     public static Path graknConfigPath(){
-        return Paths.get(GraknSystemProperty.CONFIGURATION_FILE.value());
+        return Paths.get(SystemProperty.CONFIGURATION_FILE.value());
     }
 
     /** paths relative to dist dir **/

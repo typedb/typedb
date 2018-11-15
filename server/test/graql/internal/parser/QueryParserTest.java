@@ -42,7 +42,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.internal.pattern.property.DataTypeProperty;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;

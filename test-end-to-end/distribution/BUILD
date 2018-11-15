@@ -4,7 +4,7 @@ java_test(
     srcs = [ "GraknGraqlCommandsE2E.java", "DistributionE2EConstants.java" ],
     deps = [
         "//server",
-        "//util",
+        "//commons",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -18,7 +18,7 @@ java_test(
     srcs = [ "GraknGraqlCommands_WithARunningGraknE2E.java", "DistributionE2EConstants.java" ],
     deps = [
         "//server",
-        "//util",
+        "//commons",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"

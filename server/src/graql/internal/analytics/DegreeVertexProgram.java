@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.analytics;
 
 import grakn.core.graql.concept.LabelId;
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;

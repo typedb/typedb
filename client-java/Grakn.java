@@ -20,11 +20,19 @@
 package grakn.core.client;
 
 import com.google.common.collect.AbstractIterator;
+import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
 import grakn.core.client.concept.RemoteConcept;
+import grakn.core.client.exception.GraknClientException;
 import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.ResponseReader;
 import grakn.core.client.rpc.Transceiver;
+import grakn.core.commons.exception.Validator;
+import grakn.core.commons.http.SimpleURI;
+import grakn.core.commons.util.CommonUtil;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.Query;
+import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -35,20 +43,16 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.QueryExecutor;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Query;
-import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.internal.query.QueryBuilderImpl;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
+import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.util.CommonUtil;
-import grakn.core.util.SimpleURI;
+import grakn.core.server.QueryExecutor;
+import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.exception.TransactionException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -59,49 +63,47 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import grakn.benchmark.lib.clientinstrumentation.ClientTracingInstrumentationInterceptor;
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.commons.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.
  * For now, only a subset of {@link grakn.core.server.Session} and {@link grakn.core.server.Transaction} features are supported.
  */
 public final class Grakn {
-    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
 
-    @Deprecated
-    public static final SimpleURI DEFAULT_HTTP_URI = new SimpleURI("localhost:4567");
+    public static final String DEFAULT_URI = "localhost:48555";
 
     private ManagedChannel channel;
-    private KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub;
-    private Keyspace keyspace;
+    private Keyspaces keyspaces;
 
-
-    public Grakn(SimpleURI uri) {
-        // default: no benchmarking
-        this(uri, false);
+    public Grakn(String address) {
+        this(address, false);
     }
 
-    public Grakn(SimpleURI uri, boolean benchmark) {
-
+    public Grakn(String address, boolean benchmark) {
+        SimpleURI parsedURI = new SimpleURI(address);
         if (benchmark) {
-            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+            channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
                     .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
                     .usePlaintext(true).build();
         } else {
-            channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
+            channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
                     .usePlaintext(true).build();
         }
-        keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
-        keyspace = new Keyspace();
+        keyspaces = new Keyspaces();
     }
 
-    public Session session(grakn.core.server.keyspace.Keyspace keyspace) {
+    public Grakn(ManagedChannel channel) {
+        this.channel = channel;
+        keyspaces = new Keyspaces();
+    }
+
+    public Session session(String keyspace) {
         return new Session(keyspace);
     }
 
-    public Grakn.Keyspace keyspaces(){
-        return keyspace;
+    public Keyspaces keyspaces() {
+        return keyspaces;
     }
 
     /**
@@ -112,18 +114,13 @@ public final class Grakn {
      */
     public class Session implements grakn.core.server.Session {
 
-        private final grakn.core.server.keyspace.Keyspace keyspace;
+        private final String keyspace;
 
-        private Session(grakn.core.server.keyspace.Keyspace keyspace) {
+        private Session(String keyspace) {
+            if (!Validator.isValidKeyspaceName(keyspace)) {
+                throw GraknClientException.invalidKeyspaceName(keyspace);
+            }
             this.keyspace = keyspace;
-        }
-
-        SessionServiceGrpc.SessionServiceStub sessionStub() {
-            return SessionServiceGrpc.newStub(channel);
-        }
-
-        KeyspaceServiceGrpc.KeyspaceServiceBlockingStub keyspaceBlockingStub() {
-            return KeyspaceServiceGrpc.newBlockingStub(channel);
         }
 
         @Override
@@ -136,9 +133,9 @@ public final class Grakn {
             channel.shutdown();
         }
 
-        @Override
+        @Override // TODO: remove this method once we no longer implement grakn.core.server.Session
         public grakn.core.server.keyspace.Keyspace keyspace() {
-            return keyspace;
+            return grakn.core.server.keyspace.Keyspace.of(keyspace);
         }
     }
 
@@ -146,10 +143,19 @@ public final class Grakn {
      * Internal class used to handle keyspace related operations
      */
 
-    public final class Keyspace {
+    public final class Keyspaces {
 
-        public void delete(grakn.core.server.keyspace.Keyspace keyspace){
-            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(keyspace.getValue());
+        private KeyspaceServiceBlockingStub keyspaceBlockingStub;
+
+        private Keyspaces() {
+            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        }
+
+        public void delete(String name) {
+            if (!Validator.isValidKeyspaceName(name)) {
+                throw GraknClientException.invalidKeyspaceName(name);
+            }
+            KeyspaceProto.Keyspace.Delete.Req request = RequestBuilder.Keyspace.delete(name);
             keyspaceBlockingStub.delete(request);
         }
     }
@@ -157,7 +163,7 @@ public final class Grakn {
     /**
      * Remote implementation of {@link grakn.core.server.Transaction} that communicates with a Grakn server using gRPC.
      */
-    public static final class Transaction implements grakn.core.server.Transaction {
+    public final class Transaction implements grakn.core.server.Transaction {
 
         private final Session session;
         private final Type type;
@@ -166,7 +172,7 @@ public final class Grakn {
         private Transaction(Session session, Type type) {
             this.session = session;
             this.type = type;
-            this.transceiver = Transceiver.create(session.sessionStub());
+            this.transceiver = Transceiver.create(SessionServiceGrpc.newStub(channel));
             transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
             responseOrThrow();
         }
@@ -388,18 +394,22 @@ public final class Grakn {
             return responseOrThrow().getIterateRes();
         }
 
+        public <T> Iterator<T> iterator(int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
+            return new Iterator<>(this, iteratorId, responseReader);
+        }
+
         /**
          * A client-side iterator over gRPC messages. Will send {@link SessionProto.Transaction.Iter.Req} messages until
          * {@link SessionProto.Transaction.Iter.Res} returns done as a message.
          *
          * @param <T> class type of objects being iterated
          */
-        public static class Iterator<T> extends AbstractIterator<T> {
+        public class Iterator<T> extends AbstractIterator<T> {
             private final int iteratorId;
             private Transaction tx;
             private Function<SessionProto.Transaction.Iter.Res, T> responseReader;
 
-            public Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
+            private Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
                 this.tx = tx;
                 this.iteratorId = iteratorId;
                 this.responseReader = responseReader;

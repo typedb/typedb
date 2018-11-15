@@ -18,7 +18,7 @@
 
 package grakn.core.server.bootup.config;
 
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -48,9 +48,9 @@ public class ConfigProcessor {
     }
 
     public static void updateStorageConfig(){
-        GraknConfig graknConfig = Configs.graknConfig();
+        Config config = Configs.graknConfig();
         String updatedStorageConfigString = Configs.storageConfig()
-                .updateFromConfig(graknConfig)
+                .updateFromConfig(config)
                 .toConfigString();
         saveConfigStringToFile(updatedStorageConfigString, Configs.storageConfigPath());
     }

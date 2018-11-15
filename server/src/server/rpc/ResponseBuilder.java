@@ -21,7 +21,7 @@ package grakn.core.server.rpc;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.exception.GraknBackendException;
-import grakn.core.server.exception.GraknException;
+import grakn.core.commons.exception.GraknException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.GraqlSyntaxException;
@@ -38,7 +38,7 @@ import grakn.core.graql.answer.Value;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 

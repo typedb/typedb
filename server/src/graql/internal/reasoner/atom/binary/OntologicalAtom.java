@@ -25,7 +25,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;

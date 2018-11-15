@@ -18,23 +18,13 @@
 
 package grakn.core.client;
 
-import grakn.core.graql.concept.Type;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.AttributeType.DataType;
-import grakn.core.graql.concept.Concept;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Entity;
-import grakn.core.graql.concept.EntityType;
-import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
-import grakn.core.graql.concept.RelationshipType;
-import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.concept.Thing;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.DeleteQuery;
 import grakn.core.graql.GetQuery;
@@ -48,15 +38,24 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType.DataType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Relationship;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.printer.Printer;
-import grakn.core.rule.ConcurrentGraknServer;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -116,7 +115,7 @@ import static org.junit.Assert.assertTrue;
 public class RemoteQueryIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static Session localSession;
     private static Grakn.Session remoteSession;
@@ -127,7 +126,7 @@ public class RemoteQueryIT {
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        remoteSession = new Grakn(server.grpcUri()).session(localSession.keyspace());
+        remoteSession = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName());
     }
 
     @After
@@ -137,21 +136,21 @@ public class RemoteQueryIT {
 
     @Test
     public void testOpeningASession_ReturnARemoteGraknSession() {
-        try (Session session = new Grakn(server.grpcUri()).session(localSession.keyspace())) {
+        try (Session session = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
             assertTrue(Grakn.Session.class.isAssignableFrom(session.getClass()));
         }
     }
 
     @Test
     public void testOpeningASessionWithAGivenUriAndKeyspace_TheUriAndKeyspaceAreSet() {
-        try (Session session = new Grakn(server.grpcUri()).session(localSession.keyspace())) {
+        try (Session session = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
             assertEquals(localSession.keyspace(), session.keyspace());
         }
     }
 
     @Test
     public void testOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
-        try (Session session = new Grakn(server.grpcUri()).session(localSession.keyspace())) {
+        try (Session session = new Grakn(server.grpcUri().toString()).session(localSession.keyspace().getName())) {
             try (Transaction tx = session.transaction(Transaction.Type.READ)) {
                 assertEquals(session, tx.session());
                 assertEquals(localSession.keyspace(), tx.keyspace());
@@ -253,7 +252,7 @@ public class RemoteQueryIT {
             tx.commit();
         }
 
-        Grakn.Session reasonerRemoteSession = new Grakn(server.grpcUri()).session(reasonerLocalSession.keyspace());
+        Grakn.Session reasonerRemoteSession = new Grakn(server.grpcUri().toString()).session(reasonerLocalSession.keyspace().getName());
 
         List<ConceptMap> remoteAnswers;
         List<ConceptMap> localAnswers;
@@ -967,10 +966,10 @@ public class RemoteQueryIT {
 
     @Test
     public void testDeletingAKeyspace_TheKeyspaceIsDeleted() {
-        Grakn client = new Grakn(server.grpcUri());
+        Grakn client = new Grakn(server.grpcUri().toString());
         Session localSession = server.sessionWithNewKeyspace();
-        Keyspace ks = localSession.keyspace();
-        Grakn.Session remoteSession = client.session(ks);
+        String keyspace = localSession.keyspace().getName();
+        Grakn.Session remoteSession = client.session(keyspace);
 
         try (Transaction tx = localSession.transaction(Transaction.Type.WRITE)) {
             tx.putEntityType("easter");
@@ -980,7 +979,7 @@ public class RemoteQueryIT {
         try (Grakn.Transaction tx = remoteSession.transaction(Transaction.Type.WRITE)) {
             assertNotNull(tx.getEntityType("easter"));
 
-            client.keyspaces().delete(tx.keyspace());
+            client.keyspaces().delete(tx.keyspace().getName());
 
             //TODO fix in the following PR
 //            assertTrue(tx.isClosed());

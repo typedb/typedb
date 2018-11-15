@@ -18,7 +18,7 @@
 
 package grakn.core.server.bootup.config;
 
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import java.util.Map;
@@ -45,7 +45,7 @@ public abstract class ProcessConfig<V> {
         return updatedParams;
     }
 
-    Map<String, V> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, GraknConfig config) {
+    Map<String, V> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, Config config) {
         //overwrite params with params from grakn config
         Map<String, V> updatedParams = Maps.newHashMap(params());
         config.properties()
@@ -66,7 +66,7 @@ public abstract class ProcessConfig<V> {
 
     public abstract String toConfigString();
 
-    public abstract ProcessConfig updateGenericParams(GraknConfig config);
+    public abstract ProcessConfig updateGenericParams(Config config);
 
-    public abstract ProcessConfig updateFromConfig(GraknConfig config);
+    public abstract ProcessConfig updateFromConfig(Config config);
 }

@@ -18,8 +18,9 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.commons.exception.GraknException;
 import grakn.core.server.Transaction;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ import java.util.List;
  * </p>
  *
  */
-public class InvalidKBException extends GraknException{
+public class InvalidKBException extends GraknException {
 
     private final String NAME = "InvalidKBException";
 

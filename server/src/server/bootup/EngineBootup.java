@@ -18,9 +18,10 @@
 
 package grakn.core.server.bootup;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.GraknSystemProperty;
-import grakn.core.util.GraknConfig;
+import grakn.core.server.Grakn;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.config.SystemProperty;
+import grakn.core.commons.config.Config;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,11 +49,11 @@ public class EngineBootup {
     private static final String DISPLAY_NAME = "Grakn Core Server";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
     private static final Path ENGINE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
-    private static final String JAVA_OPTS = GraknSystemProperty.ENGINE_JAVAOPTS.value();
+    private static final String JAVA_OPTS = SystemProperty.ENGINE_JAVAOPTS.value();
 
     protected final Path graknHome;
     protected final Path graknPropertiesPath;
-    private final GraknConfig graknProperties;
+    private final Config graknProperties;
 
     private BootupProcessExecutor bootupProcessExecutor;
 
@@ -60,7 +61,7 @@ public class EngineBootup {
         this.bootupProcessExecutor = bootupProcessExecutor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
-        this.graknProperties = GraknConfig.read(graknPropertiesPath);
+        this.graknProperties = Config.read(graknPropertiesPath);
     }
 
     /**
@@ -123,8 +124,8 @@ public class EngineBootup {
             System.out.print(".");
             System.out.flush();
 
-            String host = graknProperties.getProperty(GraknConfigKey.SERVER_HOST_NAME);
-            int port = graknProperties.getProperty(GraknConfigKey.GRPC_PORT);
+            String host = graknProperties.getProperty(ConfigKey.SERVER_HOST_NAME);
+            int port = graknProperties.getProperty(ConfigKey.GRPC_PORT);
 
             if (bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host, port)) {
                 System.out.println("SUCCESS");

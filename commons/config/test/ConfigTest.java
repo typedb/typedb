@@ -16,10 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.config.test;
 
+import grakn.core.commons.config.Config;
+import grakn.core.commons.config.ConfigKey;
+import grakn.core.commons.exception.ErrorMessage;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.InputStream;
@@ -27,31 +29,31 @@ import java.io.InputStream;
 import static junit.framework.TestCase.assertNotNull;
 
 /**
- * Testing the {@link GraknConfig} class
+ * Testing the {@link Config} class
  *
  */
-public class GraknConfigTest {
+public class ConfigTest {
 
-    private final static InputStream TEST_CONFIG_FILE = GraknConfigTest.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
-    private final static GraknConfig configuration = GraknConfig.read(TEST_CONFIG_FILE);
+    private final static InputStream TEST_CONFIG_FILE = ConfigTest.class.getClassLoader().getResourceAsStream("server/conf/grakn.properties");
+    private final static Config configuration = Config.read(TEST_CONFIG_FILE);
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @Test
+    @org.junit.Test
     public void whenGettingPropertyAndPropertyIsUndefinedInConfigurationFile_ExceptionIsThrown() {
-        GraknConfigKey<String> key = GraknConfigKey.key("undefined");
+        ConfigKey<String> key = ConfigKey.key("undefined");
 
         exception.expect(RuntimeException.class);
         exception.expectMessage(
-                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), GraknConfig.CONFIG_FILE_PATH)
+                ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), Config.CONFIG_FILE_PATH)
         );
 
         configuration.getProperty(key);
     }
 
-    @Test
+    @org.junit.Test
     public void whenGettingExistingProperty_PropertyIsReturned(){
-        assertNotNull(configuration.getProperty(GraknConfigKey.SERVER_HOST_NAME));
+        assertNotNull(configuration.getProperty(ConfigKey.SERVER_HOST_NAME));
     }
 }

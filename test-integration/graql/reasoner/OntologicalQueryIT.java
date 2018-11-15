@@ -29,7 +29,7 @@ import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -59,7 +59,7 @@ public class OntologicalQueryIT {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
 

@@ -16,10 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.config;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import grakn.core.commons.util.CommonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
  * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
  *
  */
-public class GraknConfig {
+public class Config {
 
     private final Properties prop;
 
@@ -47,25 +48,25 @@ public class GraknConfig {
      * The path to the config file currently in use. Default: ./conf/grakn.properties
      */
     private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "grakn.properties");
-    private static final Logger LOG = LoggerFactory.getLogger(GraknConfig.class);
-    private static GraknConfig defaultConfig = null;
+    private static final Logger LOG = LoggerFactory.getLogger(Config.class);
+    private static Config defaultConfig = null;
 
     public static final Path PROJECT_PATH = CommonUtil.getProjectPath();
     public static final Path CONFIG_FILE_PATH = getConfigFilePath(PROJECT_PATH);
     public static final String GRAKN_ASCII = loadGraknAsciiFile(PROJECT_PATH, Paths.get(".", "services", "grakn", "grakn-core-ascii.txt"));
 
-    public static GraknConfig empty() {
-        return GraknConfig.of(new Properties());
+    public static Config empty() {
+        return Config.of(new Properties());
     }
 
-    public static GraknConfig create() {
+    public static Config create() {
         if(defaultConfig == null){
-            defaultConfig = GraknConfig.read(CONFIG_FILE_PATH);
+            defaultConfig = Config.read(CONFIG_FILE_PATH);
         }
         return defaultConfig;
     }
 
-    public static GraknConfig read(Path path) {
+    public static Config read(Path path) {
         InputStream inputStream = null;
         try {
             inputStream = new FileInputStream(path.toString());
@@ -75,21 +76,21 @@ public class GraknConfig {
         return read(inputStream);
     }
 
-    public static GraknConfig read(InputStream inputStream){
+    public static Config read(InputStream inputStream){
         Properties prop = new Properties();
         try {
             prop.load(inputStream);
         } catch (IOException e) {
             LOG.error("Could not load engine properties from input stream provided", e);
         }
-        return GraknConfig.of(prop);
+        return Config.of(prop);
     }
 
-    public static GraknConfig of(Properties properties) {
-        return new GraknConfig(properties);
+    public static Config of(Properties properties) {
+        return new Config(properties);
     }
 
-    private GraknConfig(Properties prop) {
+    private Config(Properties prop) {
         this.prop = prop;
     }
 
@@ -99,7 +100,7 @@ public class GraknConfig {
         }
     }
 
-    public <T> void setConfigProperty(GraknConfigKey<T> key, T value) {
+    public <T> void setConfigProperty(ConfigKey<T> key, T value) {
         prop.setProperty(key.name(), key.valueToString(value));
     }
 
@@ -108,7 +109,7 @@ public class GraknConfig {
      * If it is not set, it sets it to the default one.
      */
     private static Path getConfigFilePath(Path projectPath) {
-        String pathString = GraknSystemProperty.CONFIGURATION_FILE.value();
+        String pathString = SystemProperty.CONFIGURATION_FILE.value();
         Path path;
         if (pathString == null) {
             path = DEFAULT_CONFIG_FILE;
@@ -123,7 +124,7 @@ public class GraknConfig {
      * @return The requested string as a full path. If it is specified as a relative path,
      * this method will return the path prepended with the project path.
      */
-    public Path getPath(GraknConfigKey<Path> pathKey) {
+    public Path getPath(ConfigKey<Path> pathKey) {
         return PROJECT_PATH.resolve(getProperty(pathKey));
     }
 
@@ -131,7 +132,7 @@ public class GraknConfig {
         return prop;
     }
 
-    public <T> T getProperty(GraknConfigKey<T> key) {
+    public <T> T getProperty(ConfigKey<T> key) {
         return key.parse(prop.getProperty(key.name()), CONFIG_FILE_PATH);
     }
 

@@ -8,7 +8,7 @@ import grakn.core.server.deduplicator.KeyspaceIndexPair;
 import grakn.core.server.session.SessionStore;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +30,7 @@ public class AttributeDeduplicatorIT {
     private SessionStore txFactory;
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Before
     public void setUp() {

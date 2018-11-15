@@ -18,6 +18,7 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.commons.exception.GraknException;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Rule;
 import grakn.core.server.keyspace.Keyspace;
@@ -31,7 +32,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -40,16 +41,16 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 
-import static grakn.core.util.ErrorMessage.CLOSE_FAILURE;
-import static grakn.core.util.ErrorMessage.HAS_INVALID;
-import static grakn.core.util.ErrorMessage.INVALID_DIRECTION;
-import static grakn.core.util.ErrorMessage.INVALID_PROPERTY_USE;
-import static grakn.core.util.ErrorMessage.LABEL_TAKEN;
-import static grakn.core.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static grakn.core.util.ErrorMessage.NO_TYPE;
-import static grakn.core.util.ErrorMessage.REGEX_NOT_STRING;
-import static grakn.core.util.ErrorMessage.RESERVED_WORD;
-import static grakn.core.util.ErrorMessage.UNKNOWN_CONCEPT;
+import static grakn.core.commons.exception.ErrorMessage.CLOSE_FAILURE;
+import static grakn.core.commons.exception.ErrorMessage.HAS_INVALID;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_DIRECTION;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_PROPERTY_USE;
+import static grakn.core.commons.exception.ErrorMessage.LABEL_TAKEN;
+import static grakn.core.commons.exception.ErrorMessage.META_TYPE_IMMUTABLE;
+import static grakn.core.commons.exception.ErrorMessage.NO_TYPE;
+import static grakn.core.commons.exception.ErrorMessage.REGEX_NOT_STRING;
+import static grakn.core.commons.exception.ErrorMessage.RESERVED_WORD;
+import static grakn.core.commons.exception.ErrorMessage.UNKNOWN_CONCEPT;
 
 /**
  * <p>
@@ -62,7 +63,7 @@ import static grakn.core.util.ErrorMessage.UNKNOWN_CONCEPT;
  * </p>
  *
  */
-public class TransactionException extends GraknException{
+public class TransactionException extends GraknException {
 
     private final String NAME = "TransactionException";
 
@@ -264,10 +265,8 @@ public class TransactionException extends GraknException{
     /**
      * Thrown when creating an invalid {@link Keyspace}
      */
-    public static TransactionException invalidKeyspace(String keyspace){
-        return create("Keyspace [" + keyspace + "] is invalid. " +
-                "Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters." +
-                "Grakn Keyspaces can also not be longer than 48 characters");
+    public static TransactionException invalidKeyspaceName(String keyspace){
+        return create(ErrorMessage.INVALID_KEYSPACE_NAME.getMessage(keyspace));
     }
 
     /**

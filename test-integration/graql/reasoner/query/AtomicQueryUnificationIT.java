@@ -48,7 +48,7 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -78,7 +78,7 @@ import static org.junit.Assert.assertTrue;
 public class AtomicQueryUnificationIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
     private static SessionImpl unificationWithTypesSession;

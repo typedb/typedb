@@ -1,19 +1,18 @@
 package grakn.core.client;
 
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.AttributeType;
+import grakn.core.commons.http.SimpleURI;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.DefineQuery;
 import grakn.core.graql.DeleteQuery;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Syntax;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.Syntax;
-import grakn.core.util.SimpleURI;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -262,10 +261,10 @@ public class ClientJavaE2E {
     }
 
     private void localhostGraknTx(Consumer<Grakn.Transaction> fn) {
-        SimpleURI graknHost = new SimpleURI("localhost", 48555);
-        Keyspace keyspace = Keyspace.of("grakn");
+        String host = "localhost:48555";
+        String keyspace = "grakn";
 
-        try (Grakn.Session session = new Grakn(graknHost).session(keyspace)) {
+        try (Grakn.Session session = new Grakn(host).session(keyspace)) {
             try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 fn.accept(transaction);
             }

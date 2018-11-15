@@ -161,7 +161,7 @@ public class RocksDbQueue implements AutoCloseable {
         //TODO: figure out if we could not use/depend on Json, which brings in mjson.Json
         static byte[] serialiseAttributeUtf8(Attribute attribute) {
             Json json = Json.object(
-                    "attribute-keyspace", attribute.keyspace().getValue(),
+                    "attribute-keyspace", attribute.keyspace().getName(),
                     "attribute-index", attribute.index(),
                     "attribute-concept-id", attribute.conceptId().getValue()
             );

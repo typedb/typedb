@@ -22,12 +22,12 @@ load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "client-java",
-    srcs = glob(["src/**/*.java"]),
+    srcs = glob(["**/*.java"], exclude = ["**/test/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//server",
         "//protocol:protocol-java",
-        "//util",
+        "//commons",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
@@ -62,9 +62,10 @@ deploy_maven_jar(
 java_test(
     name = "transaction-test",
     srcs = glob(["test/**/*.java"]),
-    test_class = "grakn.core.client.TransactionTest",
+    test_class = "grakn.core.client.test.TransactionTest",
     deps = [
         ":client-java",
+        "//commons",
         "//server",
         "//protocol:protocol-java",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

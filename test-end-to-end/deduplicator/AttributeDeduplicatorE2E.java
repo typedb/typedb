@@ -1,12 +1,10 @@
 package grakn.core.deduplicator;
 
 
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.Transaction;
 import grakn.core.client.Grakn;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.util.SimpleURI;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,15 +34,15 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGr
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static grakn.core.graql.Graql.count;
 import static grakn.core.graql.Graql.label;
 import static grakn.core.graql.Graql.var;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
-    private Grakn localhostGrakn = new Grakn(new SimpleURI("localhost:48555"));
+    private Grakn localhostGrakn = new Grakn("localhost:48555");
     private Path queuePath = GRAKN_UNZIPPED_DIRECTORY.resolve("db").resolve("queue");
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
@@ -76,7 +74,7 @@ public class AttributeDeduplicatorE2E {
         ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
 
         LOG.info("initiating the shouldDeduplicate10AttributesWithDuplicates test...");
-        try (Grakn.Session session = localhostGrakn.session(Keyspace.of("attribute_deduplicator_e2e"))) {
+        try (Grakn.Session session = localhostGrakn.session("attribute_deduplicator_e2e")) {
             // insert 10 attributes, each with 100 duplicates
             LOG.info("defining the schema...");
             defineParentChildSchema(session);

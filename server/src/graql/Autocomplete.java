@@ -32,7 +32,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.commons.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type

@@ -16,33 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.client;
+package grakn.core.client.test;
 
-import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
+import com.google.common.collect.ImmutableSet;
+import grakn.core.client.Grakn;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Label;
-import grakn.core.server.exception.GraknBackendException;
-import grakn.core.server.exception.GraknException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.GraqlSyntaxException;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.PropertyNotUniqueException;
-import grakn.core.server.exception.TemporaryWriteException;
+import grakn.core.commons.exception.GraknException;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.server.exception.InvalidKBException;
+import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TemporaryWriteException;
+import grakn.core.server.exception.TransactionException;
+import grakn.core.server.keyspace.Keyspace;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.testing.GrpcServerRule;
@@ -69,7 +70,6 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit Tests for {@link grakn.core.client.Grakn.Transaction}
@@ -86,24 +86,19 @@ public class TransactionTest {
     @Rule
     public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
 
-
     @Rule
     public final ServerRPCMock server = new ServerRPCMock(sessionService, keyspaceService);
 
-    private final Grakn.Session session = mock(Grakn.Session.class);
-
-    private static final Keyspace KEYSPACE = Keyspace.of("blahblah");
+    private static final Keyspace KEYSPACE = Keyspace.of("grakn");
     private static final String V123 = "V123";
     private static final int ITERATOR = 100;
+    private Grakn.Session session;
 
     @Before
     public void setUp() {
         serverRule.getServiceRegistry().addService(sessionService);
         serverRule.getServiceRegistry().addService(keyspaceService);
-        when(session.sessionStub()).thenReturn(SessionServiceGrpc.newStub(serverRule.getChannel()));
-        when(session.keyspaceBlockingStub()).thenReturn(KeyspaceServiceGrpc.newBlockingStub(serverRule.getChannel()));
-        when(session.keyspace()).thenReturn(KEYSPACE);
-        when(session.transaction(any())).thenCallRealMethod();
+        session = new Grakn(serverRule.getChannel()).session(KEYSPACE.getName());
     }
 
     @Test
@@ -116,14 +111,7 @@ public class TransactionTest {
     @Test
     public void whenCreatingAGraknRemoteTx_SendAnOpenMessageToGrpc() {
         try (Transaction ignored = session.transaction(Transaction.Type.WRITE)) {
-            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getValue()), Transaction.Type.WRITE));
-        }
-    }
-
-    @Test
-    public void whenCreatingABatchGraknRemoteTx_SendAnOpenMessageWithBatchSpecifiedToGrpc() {
-        try (Transaction ignored = session.transaction(Transaction.Type.BATCH)) {
-            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getValue()), Transaction.Type.BATCH));
+            verify(server.requestListener()).onNext(RequestBuilder.Transaction.open(Keyspace.of(KEYSPACE.getName()), Transaction.Type.WRITE));
         }
     }
 
@@ -139,14 +127,14 @@ public class TransactionTest {
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetKeyspaceOnTx() {
         try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
-            assertEquals(session, tx.session());
+            assertEquals(session.keyspace(), tx.session().keyspace());
         }
     }
 
     @Test
     public void whenCreatingAGraknRemoteTxWithSession_SetTxTypeOnTx() {
-        try (Grakn.Transaction tx = session.transaction(Transaction.Type.BATCH)) {
-            assertEquals(Transaction.Type.BATCH, tx.txType());
+        try (Grakn.Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+            assertEquals(Transaction.Type.WRITE, tx.txType());
         }
     }
 

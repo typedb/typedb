@@ -21,7 +21,7 @@ import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.EngineID;
-import grakn.core.util.GraknConfig;
+import grakn.core.commons.config.Config;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,14 +41,14 @@ public class Server implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     private final EngineID engineId;
-    private final GraknConfig config;
+    private final Config config;
     private final LockManager lockManager;
     private final io.grpc.Server serverRPC;
     private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     private final KeyspaceManager keyspaceStore;
 
-    public Server(EngineID engineId, GraknConfig config, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
+    public Server(EngineID engineId, Config config, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
         this.config = config;
         // Redis connection pool
         // Lock provider
@@ -106,7 +106,7 @@ public class Server implements AutoCloseable {
 
     private void printGraknASCII() {
         LOG.info("\n==================================================");
-        LOG.info("\n" + GraknConfig.GRAKN_ASCII);
+        LOG.info("\n" + Config.GRAKN_ASCII);
         LOG.info("\n==================================================");
     }
 }

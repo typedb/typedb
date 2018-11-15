@@ -54,8 +54,8 @@ public abstract class RemoteRelationship extends RemoteThing<Relationship, Relat
                 .setRelationRolePlayersMapReq(ConceptProto.Relation.RolePlayersMap.Req.getDefaultInstance()).build();
 
         int iteratorId = runMethod(method).getRelationRolePlayersMapIter().getId();
-        Iterable<ConceptProto.Relation.RolePlayersMap.Iter.Res> rolePlayers = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> res.getConceptMethodIterRes().getRelationRolePlayersMapIterRes()
+        Iterable<ConceptProto.Relation.RolePlayersMap.Iter.Res> rolePlayers = () -> tx().iterator(
+                iteratorId, res -> res.getConceptMethodIterRes().getRelationRolePlayersMapIterRes()
         );
 
         Map<Role, Set<Thing>> rolePlayerMap = new HashMap<>();

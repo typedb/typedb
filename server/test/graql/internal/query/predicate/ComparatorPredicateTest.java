@@ -27,7 +27,7 @@ import org.junit.rules.ExpectedException;
 
 import java.time.LocalDate;
 
-import static grakn.core.util.ErrorMessage.INVALID_VALUE;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_VALUE;
 
 public class ComparatorPredicateTest {
 

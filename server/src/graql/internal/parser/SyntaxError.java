@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.parser;
 
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import com.google.auto.value.AutoValue;
 import org.apache.commons.lang.StringUtils;
 

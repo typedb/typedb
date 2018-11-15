@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.util;
+package grakn.core.commons.config;
 
 import javax.annotation.Nullable;
 
@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
  * Enum representing system properties used by Grakn
  *
  */
-public enum GraknSystemProperty {
+public enum SystemProperty {
 
     // TODO: clean and document how these behave and interact
     // what's the difference between grakn.dir and main.basedir? how do they relate to grakn.conf? etc.
@@ -38,7 +38,7 @@ public enum GraknSystemProperty {
 
     private String key;
 
-    GraknSystemProperty(String key) {
+    SystemProperty(String key) {
         this.key = key;
     }
 

@@ -18,6 +18,7 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.commons.exception.GraknException;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -31,25 +32,25 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.macro.Macro;
-import grakn.core.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
 
-import static grakn.core.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
-import static grakn.core.util.ErrorMessage.INSERT_RECURSIVE;
-import static grakn.core.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
-import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_CONDITION;
-import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_METHOD;
-import static grakn.core.util.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
-import static grakn.core.util.ErrorMessage.INVALID_VALUE;
-import static grakn.core.util.ErrorMessage.MISSING_COMPUTE_CONDITION;
-import static grakn.core.util.ErrorMessage.NEGATIVE_OFFSET;
-import static grakn.core.util.ErrorMessage.NON_POSITIVE_LIMIT;
-import static grakn.core.util.ErrorMessage.UNEXPECTED_RESULT;
-import static grakn.core.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static grakn.core.commons.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
+import static grakn.core.commons.exception.ErrorMessage.INSERT_RECURSIVE;
+import static grakn.core.commons.exception.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_COMPUTE_ARGUMENT;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_COMPUTE_CONDITION;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_COMPUTE_METHOD;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_COMPUTE_METHOD_ALGORITHM;
+import static grakn.core.commons.exception.ErrorMessage.INVALID_VALUE;
+import static grakn.core.commons.exception.ErrorMessage.MISSING_COMPUTE_CONDITION;
+import static grakn.core.commons.exception.ErrorMessage.NEGATIVE_OFFSET;
+import static grakn.core.commons.exception.ErrorMessage.NON_POSITIVE_LIMIT;
+import static grakn.core.commons.exception.ErrorMessage.UNEXPECTED_RESULT;
+import static grakn.core.commons.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static grakn.core.graql.Syntax.Compute;
 import static grakn.core.graql.Syntax.Compute.ALGORITHMS_ACCEPTED;
 import static grakn.core.graql.Syntax.Compute.ARGUMENTS_ACCEPTED;

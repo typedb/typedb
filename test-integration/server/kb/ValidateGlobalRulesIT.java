@@ -25,14 +25,13 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import grakn.core.server.kb.ValidateGlobalRules;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.concept.RelationshipImpl;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.ThingImpl;
 import grakn.core.server.kb.structure.Casting;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 public class ValidateGlobalRulesIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private Transaction tx;
     private Session session;

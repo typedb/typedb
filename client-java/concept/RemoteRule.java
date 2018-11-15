@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Type;
 import grakn.core.graql.Graql;
 import grakn.core.graql.Pattern;
 import grakn.core.protocol.ConceptProto;
-import grakn.core.util.CommonUtil;
+import grakn.core.commons.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 
 import javax.annotation.Nullable;

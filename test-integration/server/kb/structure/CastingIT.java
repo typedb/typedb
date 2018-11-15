@@ -23,7 +23,7 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.kb.concept.RelationshipImpl;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThat;
 public class CastingIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private Transaction tx;
     private Session session;

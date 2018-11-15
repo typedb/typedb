@@ -43,7 +43,7 @@ import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.reasoner.graph.GeoGraph;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -68,7 +68,7 @@ import static org.junit.Assert.assertTrue;
 public class AtomicQueryIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl materialisationTestSession;
     private static SessionImpl geoGraphSession;
