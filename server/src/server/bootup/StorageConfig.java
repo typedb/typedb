@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup.config;
+package grakn.core.server.bootup;
 
 import grakn.core.commons.config.ConfigKey;
 import grakn.core.commons.config.Config;
@@ -26,19 +26,20 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import grakn.core.commons.config.SystemProperty;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.AbstractMap;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
 /**
  * Container class for storing and manipulating storage configuration.
- *
  */
-public class StorageConfig extends ProcessConfig<Object> {
+public class StorageConfig {
     //TODO reimplement without importing many packages from com.fasterxml.jackson
 
     private static final String EMPTY_VALUE = "";
@@ -50,58 +51,54 @@ public class StorageConfig extends ProcessConfig<Object> {
     private static final String DATA_FILE_DIR_CONFIG_KEY = "data_file_directories";
     private static final String SAVED_CACHES_DIR_CONFIG_KEY = "saved_caches_directory";
     private static final String COMMITLOG_DIR_CONFIG_KEY = "commitlog_directory";
+    private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
+    private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
+    private final ImmutableMap<String, Object> params;
 
-    private StorageConfig(Map<String, Object> yamlParams){ super(yamlParams); }
-
-    public static StorageConfig of(String yaml) { return new StorageConfig(StorageConfig.parseStringToMap(yaml)); }
-    public static StorageConfig from(Path configPath){
-        String configString = ConfigProcessor.getConfigStringFromFile(configPath);
-        return of(configString);
+    private StorageConfig(Map<String, Object> yamlParams) {
+        this.params = ImmutableMap.copyOf(yamlParams);
     }
 
-    private static Map<String, Object> parseStringToMap(String yaml){
+    static void updateStorageConfig() {
+        Config config = Config.read(Paths.get(SystemProperty.CONFIGURATION_FILE.value()));
+        String result;
+        try {
+            byte[] bytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
+            result = new String(bytes, StandardCharsets.UTF_8);
+        } catch (IOException e1) {
+            throw new RuntimeException(e1);
+        }
+        String configString = result;
+        Map<String, Object> result1;
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
         try {
-            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>(){};
-            Map<String, Object> yamlParams = mapper.readValue(yaml, reference);
-            return Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
+            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
+            Map<String, Object> yamlParams = mapper.readValue(configString, reference);
+            result1 = Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
+        } catch (IOException e1) {
+            throw new RuntimeException(e1);
+        }
+        String updatedStorageConfigString = new StorageConfig(result1)
+                .updateFromConfig(config)
+                .toConfigString();
+        try {
+            Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), updatedStorageConfigString.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @Override
-    Map.Entry<String, Object> propToEntry(String key, String value) {
-        return new AbstractMap.SimpleImmutableEntry<>(key, value);
-    }
-
-    @Override
-    public String toConfigString() {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-        try {
-            ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
-            mapper.writeValue(outputstream, params());
-            return outputstream.toString(StandardCharsets.UTF_8.name());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private StorageConfig updateDirs(Config config) {
-        String dbDir = config.getProperty(ConfigKey.DATA_DIR);
+    private StorageConfig updateFromConfig(Config config) {
+        String dataDir = config.getProperty(ConfigKey.DATA_DIR);
 
         ImmutableMap<String, Object> dirParams = ImmutableMap.of(
-                DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dbDir + DATA_SUBDIR),
-                SAVED_CACHES_DIR_CONFIG_KEY, dbDir + SAVED_CACHES_SUBDIR,
-                COMMITLOG_DIR_CONFIG_KEY, dbDir + COMMITLOG_SUBDIR
+                DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dataDir + DATA_SUBDIR),
+                SAVED_CACHES_DIR_CONFIG_KEY, dataDir + SAVED_CACHES_SUBDIR,
+                COMMITLOG_DIR_CONFIG_KEY, dataDir + COMMITLOG_SUBDIR
         );
-        return new StorageConfig(this.updateParamsFromMap(dirParams));
-    }
 
-    @Override
-    Map<String, Object> updateParamsFromConfig(String CONFIG_PARAM_PREFIX, Config config) {
         //overwrite params with params from grakn config
-        Map<String, Object> updatedParams = Maps.newHashMap(params());
+        Map<String, Object> updatedParams = Maps.newHashMap(params);
         config.properties()
                 .stringPropertyNames()
                 .stream()
@@ -112,19 +109,20 @@ public class StorageConfig extends ProcessConfig<Object> {
                         updatedParams.put(param, config.properties().getProperty(prop));
                     }
                 });
-        return updatedParams;
+        Map<String, Object> updatedParams1 = Maps.newHashMap(new StorageConfig(updatedParams).params);
+        updatedParams1.putAll(dirParams);
+        return new StorageConfig(updatedParams1);
     }
 
-    @Override
-    public StorageConfig updateGenericParams(Config config) {
-        return new StorageConfig(this.updateParamsFromConfig(CONFIG_PARAM_PREFIX, config));
-    }
 
-    @Override
-    public StorageConfig updateFromConfig(Config config){
-        return this
-                .updateGenericParams(config)
-                .updateDirs(config);
+    private String toConfigString() {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+        try {
+            ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
+            mapper.writeValue(outputstream, params);
+            return outputstream.toString(StandardCharsets.UTF_8.name());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
-
 }

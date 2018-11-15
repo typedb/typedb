@@ -19,7 +19,6 @@
 package grakn.core.server.bootup;
 
 import grakn.core.commons.config.SystemProperty;
-import grakn.core.server.bootup.config.ConfigProcessor;
 import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
@@ -39,7 +38,7 @@ import java.util.Scanner;
 public class GraknBootup {
     private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);
 
-    private static final String ENGINE = "server";
+    private static final String SERVER = "server";
     private static final String STORAGE = "storage";
 
     private final StorageBootup storageBootup;
@@ -155,7 +154,7 @@ public class GraknBootup {
 
     private void serverStop(String arg) {
         switch (arg) {
-            case ENGINE:
+            case SERVER:
                 engineBootup.stop();
                 break;
             case STORAGE:
@@ -169,14 +168,14 @@ public class GraknBootup {
 
     private void serverStart(String arg) {
         switch (arg) {
-            case ENGINE:
+            case SERVER:
                 engineBootup.startIfNotRunning(arg);
                 break;
             case STORAGE:
                 storageBootup.startIfNotRunning();
                 break;
             default:
-                ConfigProcessor.updateProcessConfigs();
+                StorageConfig.updateStorageConfig();
                 storageBootup.startIfNotRunning();
                 engineBootup.startIfNotRunning(arg);
         }
@@ -186,8 +185,8 @@ public class GraknBootup {
         System.out.println("Usage: grakn server COMMAND\n" +
                 "\n" +
                 "COMMAND:\n" +
-                "start ["+ENGINE+"|"+STORAGE+"|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
-                "stop ["+ENGINE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
+                "start ["+ SERVER +"|"+STORAGE+"|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
+                "stop ["+ SERVER +"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
                 "status                         Check if Grakn is running\n" +
                 "clean                          DANGEROUS: wipe data completely\n" +
                 "\n" +
