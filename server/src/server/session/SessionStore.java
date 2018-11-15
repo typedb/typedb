@@ -97,7 +97,7 @@ public class SessionStore {
     }
 
     private static String getLockingKey(Keyspace keyspace) {
-        return "/creating-new-keyspace-lock/" + keyspace.getValue();
+        return "/creating-new-keyspace-lock/" + keyspace.getName();
     }
 
     public Config config() {

@@ -18,7 +18,6 @@
 
 package grakn.core.console;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.commons.http.SimpleURI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -47,7 +46,7 @@ import static grakn.core.commons.util.CommonUtil.toImmutableList;
  */
 public class GraqlShellOptions {
 
-    public static final Keyspace DEFAULT_KEYSPACE = Keyspace.of("grakn");
+    public static final String DEFAULT_KEYSPACE = "grakn";
 
     private static final String KEYSPACE = "k";
     private static final String EXECUTE = "e";
@@ -125,9 +124,9 @@ public class GraqlShellOptions {
         return cmd.hasOption(HELP) || !cmd.getArgList().isEmpty();
     }
 
-    public Keyspace getKeyspace() {
+    public String getKeyspace() {
         String keyspace = cmd.getOptionValue(KEYSPACE);
-        return keyspace != null ? Keyspace.of(keyspace) : DEFAULT_KEYSPACE;
+        return keyspace != null ? keyspace : DEFAULT_KEYSPACE;
     }
 
     @Nullable

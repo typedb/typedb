@@ -44,7 +44,7 @@ import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.exception.GraknBackendException;
-import grakn.core.server.exception.GraknException;
+import grakn.core.commons.exception.GraknException;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.GraqlSyntaxException;
 import grakn.core.server.keyspace.Keyspace;

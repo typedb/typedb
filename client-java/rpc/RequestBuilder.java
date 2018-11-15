@@ -47,7 +47,7 @@ public class RequestBuilder {
 
         public static SessionProto.Transaction.Req open(grakn.core.server.keyspace.Keyspace keyspace, grakn.core.server.Transaction.Type txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
-                    .setKeyspace(keyspace.getValue())
+                    .setKeyspace(keyspace.getName())
                     .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
                     .build();
 

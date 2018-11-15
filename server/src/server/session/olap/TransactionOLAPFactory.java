@@ -24,7 +24,7 @@ import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.oltp.TransactionOLTPFactory;
 import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
@@ -66,7 +66,7 @@ public class TransactionOLAPFactory extends TransactionFactory<TransactionImpl<H
         String hostnameConf = "storage.hostname";
 
         // Values
-        String keyspaceValue = session.keyspace().getValue();
+        String keyspaceValue = session.keyspace().getName();
         String hostnameValue = session.config().getProperty(ConfigKey.STORAGE_HOSTNAME);
 
         // build override map

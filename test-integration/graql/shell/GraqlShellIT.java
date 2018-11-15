@@ -21,7 +21,7 @@ package grakn.core.graql.shell;
 import grakn.core.console.GraqlConsole;
 import grakn.core.console.GraqlShellOptions;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
@@ -718,7 +718,7 @@ public class GraqlShellIT {
         int keyspaceIndex = argList.indexOf("-k") + 1;
         if (keyspaceIndex == 0) {
             argList.add("-k");
-            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE.getValue());
+            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE);
             keyspaceIndex = argList.size() - 1;
         }
 

@@ -20,7 +20,7 @@ package grakn.core.commons.config.test;
 
 import grakn.core.commons.config.Config;
 import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 

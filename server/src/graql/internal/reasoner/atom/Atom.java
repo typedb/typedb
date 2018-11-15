@@ -41,7 +41,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;

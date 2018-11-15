@@ -61,7 +61,7 @@ import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
 import grakn.core.commons.util.CommonUtil;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;

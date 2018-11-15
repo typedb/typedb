@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.util;
+package grakn.core.commons.exception;
 
 import javax.annotation.CheckReturnValue;
 
@@ -76,6 +76,8 @@ public enum ErrorMessage {
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
     BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
+    INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
+                                  "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

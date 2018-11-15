@@ -20,6 +20,7 @@ package grakn.core.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.AttributeType.DataType;
@@ -31,9 +32,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
-import grakn.core.graql.Pattern;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.Transaction;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -144,7 +143,7 @@ public class RemoteConceptIT {
     @Before
     public void setUp() {
         // move session construction to setupClass
-        Keyspace randomKeyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
+        String randomKeyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
         session = new Grakn(server.grpcUri()).session(randomKeyspace);
 
         tx = session.transaction(Transaction.Type.WRITE);

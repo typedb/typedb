@@ -18,13 +18,10 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.Transaction;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import grakn.core.client.Grakn;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.RelationshipType;
-import grakn.core.graql.concept.Role;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Graql;
 import grakn.core.graql.InsertQuery;
@@ -32,10 +29,12 @@ import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.RelationshipType;
+import grakn.core.graql.concept.Role;
 import grakn.core.rule.GraknTestServer;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
+import grakn.core.server.Transaction;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -58,11 +57,11 @@ public class BenchmarkBigIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Keyspace keyspace;
+    private String keyspace;
 
     @Before
-    public void setupSession() {
-        this.keyspace = Keyspace.of("a"+ UUID.randomUUID().toString().replaceAll("-", ""));
+    public void randomiseKeyspace() {
+        this.keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
     private void loadOntology(String fileName, Grakn.Session session){

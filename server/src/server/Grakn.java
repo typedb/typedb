@@ -21,7 +21,7 @@ package grakn.core.server;
 import grakn.core.server.bootup.EnginePidManager;
 import grakn.core.server.bootup.GraknBootup;
 import grakn.core.commons.config.SystemProperty;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;

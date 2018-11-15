@@ -35,7 +35,7 @@ import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
@@ -334,7 +334,7 @@ public class TransactionIT {
 
     @Test
     public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
-        String keyspace = tx.keyspace().getValue();
+        String keyspace = tx.keyspace().getName();
         failAtOpeningTx(session, Transaction.Type.WRITE, keyspace);
         failAtOpeningTx(session, Transaction.Type.BATCH, keyspace);
         tx.close();

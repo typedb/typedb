@@ -21,7 +21,7 @@ package grakn.core.server.rpc;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.server.exception.GraknBackendException;
-import grakn.core.server.exception.GraknException;
+import grakn.core.commons.exception.GraknException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.GraqlSyntaxException;

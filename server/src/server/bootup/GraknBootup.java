@@ -20,7 +20,7 @@ package grakn.core.server.bootup;
 
 import grakn.core.commons.config.SystemProperty;
 import grakn.core.server.bootup.config.ConfigProcessor;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

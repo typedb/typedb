@@ -19,7 +19,7 @@
 package grakn.core.commons.config;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 
 import java.nio.file.Path;
 

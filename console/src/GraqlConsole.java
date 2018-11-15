@@ -20,7 +20,7 @@ package grakn.core.console;
 
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.Grakn;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import grakn.core.commons.http.SimpleURI;
 import com.google.common.collect.ImmutableList;
@@ -92,7 +92,7 @@ public class GraqlConsole {
         SimpleURI location = options.getUri();
 
         SimpleURI uri = location != null ? location : defaultGrpcUri;
-        Keyspace keyspace = options.getKeyspace();
+        String keyspace = options.getKeyspace();
         Grakn client = new Grakn(uri);
 
         try (GraqlShell shell = new GraqlShell(historyFile, client, keyspace, console, serr, outputFormat, infer)) {

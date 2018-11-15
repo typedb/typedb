@@ -23,7 +23,7 @@ import grakn.core.server.session.TransactionFactory;
 import grakn.core.server.session.oltp.optimisation.JanusPreviousPropertyStepStrategy;
 import grakn.core.commons.config.ConfigKey;
 import grakn.core.server.Transaction;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -154,7 +154,7 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
     private JanusGraph configureGraph(boolean batchLoading){
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
                 set(STORAGE_HOSTNAME, session().config().getProperty(ConfigKey.STORAGE_HOSTNAME)).
-                set(STORAGE_KEYSPACE, session().keyspace().getValue()).
+                set(STORAGE_KEYSPACE, session().keyspace().getName()).
                 set(STORAGE_BATCH_LOADING, batchLoading);
 
         //Load Defaults
@@ -176,7 +176,7 @@ final public class TransactionOLTPFactory extends TransactionFactory<Transaction
             builder.set(key.toString(), value);
         });
 
-        LOG.debug("Opening graph {}", session().keyspace().getValue());
+        LOG.debug("Opening graph {}", session().keyspace().getName());
         return builder.open();
     }
 

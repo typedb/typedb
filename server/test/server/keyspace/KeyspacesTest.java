@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class KeyspaceTest {
+public class KeyspacesTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -50,7 +50,7 @@ public class KeyspaceTest {
 
     private void invalidKeyspace(String keyspace) {
         expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidKeyspace(keyspace).getMessage());
+        expectedException.expectMessage(TransactionException.invalidKeyspaceName(keyspace).getMessage());
         Keyspace.of(keyspace);
     }
 

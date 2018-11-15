@@ -16,26 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.exception;
+package grakn.core.commons.exception;
 
 /**
- * <p>
- *     Root Grakn Exception
- * </p>
- *
- * <p>
- *     Encapsulates any exception which is thrown by the Grakn stack.
- *     This includes failures server side, failed graph mutations, and failed querying attempts
- * </p>
- *
+ * Root Grakn Exception
+ * Encapsulates any exception which is thrown by the Grakn stack.
+ * This includes failures server side, failed graph mutations, and failed querying attempts
  */
 public abstract class GraknException extends RuntimeException {
 
-    protected GraknException(String error){
+    protected GraknException(String error) {
         super(error);
     }
 
-    protected GraknException(String error, Exception e){
+    protected GraknException(String error, Exception e) {
         super(error, e);
     }
 

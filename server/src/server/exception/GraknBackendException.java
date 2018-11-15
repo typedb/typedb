@@ -18,10 +18,11 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.commons.exception.GraknException;
 import grakn.core.server.keyspace.Keyspace;
 
-import static grakn.core.commons.util.ErrorMessage.BACKEND_EXCEPTION;
-import static grakn.core.commons.util.ErrorMessage.INITIALIZATION_EXCEPTION;
+import static grakn.core.commons.exception.ErrorMessage.BACKEND_EXCEPTION;
+import static grakn.core.commons.exception.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
  * <p>

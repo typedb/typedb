@@ -29,7 +29,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.commons.util.ErrorMessage;
+import grakn.core.commons.exception.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
