@@ -1495,7 +1495,7 @@ public class ReasoningIT {
 
             List<ConceptMap> answers2 = qb.<GetQuery>parse(queryString2).execute();
             List<ConceptMap> equivalentAnswers2 = qb.<GetQuery>parse(equivalentQueryString2).execute();
-            assertEquals(12, answers2.size());
+            assertEquals(27, answers2.size());
             assertCollectionsEqual(answers2, equivalentAnswers2);
 
             //role variables bound hence should return original 9 instances
