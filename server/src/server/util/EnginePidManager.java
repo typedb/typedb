@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.util;
 
 import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.server.bootup.BootupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

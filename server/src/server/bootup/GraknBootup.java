@@ -175,7 +175,7 @@ public class GraknBootup {
                 storageBootup.startIfNotRunning();
                 break;
             default:
-                StorageConfig.updateStorageConfig();
+                StorageConfig.initialise();
                 storageBootup.startIfNotRunning();
                 engineBootup.startIfNotRunning(arg);
         }

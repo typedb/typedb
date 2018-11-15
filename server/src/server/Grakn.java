@@ -18,8 +18,7 @@
 
 package grakn.core.server;
 
-import grakn.core.server.bootup.EnginePidManager;
-import grakn.core.server.bootup.GraknBootup;
+import grakn.core.server.util.EnginePidManager;
 import grakn.core.commons.config.SystemProperty;
 import grakn.core.commons.exception.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
@@ -47,12 +46,6 @@ public class Grakn {
 
     private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
-    /**
-     *
-     * Invocation from class '{@link GraknBootup}'
-     *
-     * @param args
-     */
     public static void main(String[] args) {
 
         Option enableBenchmark = Option.builder("b")

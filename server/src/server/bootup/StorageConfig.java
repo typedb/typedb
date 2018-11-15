@@ -18,14 +18,14 @@
 
 package grakn.core.server.bootup;
 
-import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.config.Config;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import grakn.core.commons.config.Config;
+import grakn.core.commons.config.ConfigKey;
 import grakn.core.commons.config.SystemProperty;
 
 import java.io.ByteArrayOutputStream;
@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -53,74 +54,50 @@ public class StorageConfig {
     private static final String COMMITLOG_DIR_CONFIG_KEY = "commitlog_directory";
     private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
-    private final ImmutableMap<String, Object> params;
 
-    private StorageConfig(Map<String, Object> yamlParams) {
-        this.params = ImmutableMap.copyOf(yamlParams);
-    }
-
-    static void updateStorageConfig() {
-        Config config = Config.read(Paths.get(SystemProperty.CONFIGURATION_FILE.value()));
-        String result;
+    static void initialise() {
         try {
+            Config inputConfig = Config.read(Paths.get(SystemProperty.CONFIGURATION_FILE.value()));
+            String oldConfig;
             byte[] bytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
-            result = new String(bytes, StandardCharsets.UTF_8);
-        } catch (IOException e1) {
-            throw new RuntimeException(e1);
-        }
-        String configString = result;
-        Map<String, Object> result1;
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-        try {
+            oldConfig = new String(bytes, StandardCharsets.UTF_8);
+
+
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+
             TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
-            Map<String, Object> yamlParams = mapper.readValue(configString, reference);
-            result1 = Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
-        } catch (IOException e1) {
-            throw new RuntimeException(e1);
-        }
-        String updatedStorageConfigString = new StorageConfig(result1)
-                .updateFromConfig(config)
-                .toConfigString();
-        try {
-            Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), updatedStorageConfigString.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+            Map<String, Object> yamlParams = mapper.readValue(oldConfig, reference);
+            Map<String, Object> oldConfigMap = Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
+            Map<String, Object> newConfigMap = new HashMap<>(oldConfigMap);
 
-    private StorageConfig updateFromConfig(Config config) {
-        String dataDir = config.getProperty(ConfigKey.DATA_DIR);
+            String dataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
 
-        ImmutableMap<String, Object> dirParams = ImmutableMap.of(
-                DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dataDir + DATA_SUBDIR),
-                SAVED_CACHES_DIR_CONFIG_KEY, dataDir + SAVED_CACHES_SUBDIR,
-                COMMITLOG_DIR_CONFIG_KEY, dataDir + COMMITLOG_SUBDIR
-        );
+            ImmutableMap<String, Object> cassandraDataDirs = ImmutableMap.of(
+                    DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dataDir + DATA_SUBDIR),
+                    SAVED_CACHES_DIR_CONFIG_KEY, dataDir + SAVED_CACHES_SUBDIR,
+                    COMMITLOG_DIR_CONFIG_KEY, dataDir + COMMITLOG_SUBDIR
+            );
+            newConfigMap.putAll(cassandraDataDirs);
 
-        //overwrite params with params from grakn config
-        Map<String, Object> updatedParams = Maps.newHashMap(params);
-        config.properties()
-                .stringPropertyNames()
-                .stream()
-                .filter(prop -> prop.contains(CONFIG_PARAM_PREFIX))
-                .forEach(prop -> {
-                    String param = prop.replaceAll(CONFIG_PARAM_PREFIX, "");
-                    if (updatedParams.containsKey(param)) {
-                        updatedParams.put(param, config.properties().getProperty(prop));
-                    }
-                });
-        Map<String, Object> updatedParams1 = Maps.newHashMap(new StorageConfig(updatedParams).params);
-        updatedParams1.putAll(dirParams);
-        return new StorageConfig(updatedParams1);
-    }
+            //overwrite params with params from grakn config
+            inputConfig.properties()
+                    .stringPropertyNames()
+                    .stream()
+                    .filter(prop -> prop.contains(CONFIG_PARAM_PREFIX))
+                    .forEach(prop -> {
+                        String param = prop.replaceAll(CONFIG_PARAM_PREFIX, "");
+                        if (newConfigMap.containsKey(param)) {
+                            newConfigMap.put(param, inputConfig.properties().getProperty(prop));
+                        }
+                    });
 
-
-    private String toConfigString() {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-        try {
+            mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
-            mapper.writeValue(outputstream, params);
-            return outputstream.toString(StandardCharsets.UTF_8.name());
+            mapper.writeValue(outputstream, newConfigMap);
+
+            String newConfigStr = outputstream.toString(StandardCharsets.UTF_8.name());
+            Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), newConfigStr.getBytes(StandardCharsets.UTF_8));
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
