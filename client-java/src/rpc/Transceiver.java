@@ -19,12 +19,9 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionServiceGrpc;
-import brave.Tracer;
-import brave.Tracing;
-import brave.propagation.TraceContext;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import io.grpc.StatusRuntimeException;
@@ -35,7 +32,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static brave.internal.HexCodec.toLowerHex;
 
 
 /**
@@ -76,36 +72,8 @@ public class Transceiver implements AutoCloseable {
      * This method is non-blocking - it returns immediately.
      */
     public void send(Transaction.Req request) {
-
-        // set the current tracing context into the request
-        Tracer tracer = Tracing.currentTracer();
-
-        if (tracer != null && tracer.currentSpan() != null) {
-            TraceContext context = tracer.currentSpan().context();
-            Transaction.Req.Builder builder = request.toBuilder();
-
-            // span ID
-            String spanIdStr = toLowerHex(context.spanId());
-            builder.putMetadata("spanId", spanIdStr);
-
-            // parent ID
-            Long parentId = context.parentId();
-            if (parentId == null) {
-                builder.putMetadata("parentId", "");
-            } else {
-                builder.putMetadata("parentId", toLowerHex(parentId));
-            }
-
-            // Trace ID
-            String traceIdLow = toLowerHex(context.traceId());
-            String traceIdHigh = toLowerHex(context.traceIdHigh());
-            builder.putMetadata("traceIdLow", traceIdLow);
-            builder.putMetadata("traceIdHigh", traceIdHigh);
-            request = builder.build(); // update the request
-        }
-
         if (responseListener.terminated.get()) {
-            throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+            throw TransactionException.transactionClosed(null, "The gRPC connection closed");
         }
         requestSender.onNext(request);
     }
@@ -178,7 +146,7 @@ public class Transceiver implements AutoCloseable {
             // Only after checking for existing messages, we check if the connection was already terminated, so we don't
             // block for a response forever
             if (terminated.get()) {
-                throw GraknTxOperationException.transactionClosed(null, "The gRPC connection closed");
+                throw TransactionException.transactionClosed(null, "The gRPC connection closed");
             }
 
             // Block for a response (because we are confident there are no responses and the connection has not closed)

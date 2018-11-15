@@ -18,7 +18,7 @@
 
 package grakn.core.util;
 
-import grakn.core.GraknTx;
+import grakn.core.server.Transaction;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class GraqlTestUtil {
 
-    public static void assertExists(GraknTx tx, Pattern... patterns) {
+    public static void assertExists(Transaction tx, Pattern... patterns) {
         assertExists(tx.graql(), patterns);
     }
 
@@ -47,7 +47,7 @@ public class GraqlTestUtil {
         assertTrue(iterable.iterator().hasNext());
     }
 
-    public static void assertNotExists(GraknTx tx, Pattern... patterns) {
+    public static void assertNotExists(Transaction tx, Pattern... patterns) {
         assertNotExists(tx.graql(), patterns);
     }
 

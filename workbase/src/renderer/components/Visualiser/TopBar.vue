@@ -11,6 +11,7 @@
 
         <div class="right">
             <keyspaces-handler :tabId="tabId" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
+            <button class="btn" @click="$emit('toggle-preferences')"><vue-icon icon="cog" className="vue-icon"></vue-icon></button>
         </div>
     </div>
 </template>

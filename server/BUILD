@@ -16,22 +16,49 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
+
+antlr4(
+    name = "graql-java",
+    srcs = glob(["src/graql/grammar/*.g4"]),
+    visitor = True,
+    package = "grakn.core.graql.grammar"
+)
+
+genrule(
+    name = "grakn-version",
+    srcs = [
+        "templates/util/GraknVersion.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
+    outs = ["util/GraknVersion.java"]
+)
 
 java_library(
     name = "server",
-    srcs = glob(["src/**/*.java"]),
+    srcs = [
+       ":grakn-version",
+       ":graql-java",
+   ] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//grakn-graql",
         "//protocol:protocol-java",
         "//util",
 
         # External dependencies
+        "//dependencies/maven/artifacts/grakn/benchmark:lib",
+
+        "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
         "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
@@ -41,12 +68,26 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
-        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-sender-urlconnection",
-        "//dependencies/maven/artifacts/io/zipkin/reporter2:zipkin-reporter", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/io/zipkin/zipkin2:zipkin", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/antlr:antlr4-runtime", # sync version with @antlr4_runtime//jar
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-mapreduce-client-core", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/spark:spark-core-2-11",
+        "//dependencies/maven/artifacts/org/apache/spark:spark-launcher-2-11", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/thrift:libthrift", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cassandra",
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
+        "//dependencies/maven/artifacts/org/scala-lang:scala-library", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/org/scala-lang:scalap", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -59,8 +100,10 @@ java_library(
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
-    visibility = ["//visibility:public"],
+    resources = glob(["src/resources/*"]),
     tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
+    javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
+
 )
 
 deploy_maven_jar(
@@ -85,33 +128,6 @@ genrule(
     outs = ["//server:dist/grakn-core-server.zip"],
     cmd  = "$(location distribution.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location services/grakn/grakn-core-ascii.txt) $(location server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml)",
     tools = ["distribution.sh"]
-)
-
-java_test(
-    name = "process-wide-lock-provider-test",
-    test_class = "grakn.core.server.lock.ProcessWideLockProviderTest",
-    srcs = ["test/lock/ProcessWideLockProviderTest.java"],
-    deps = [":server"],
-    size = "small"
-)
-
-java_test(
-    name = "rocks-db-queue-test",
-    test_class = "grakn.core.server.deduplicator.RocksDbQueueTest",
-    srcs = ["test/deduplicator/RocksDbQueueTest.java"],
-    deps = [
-        ":server",
-        "//grakn-graql",
-        "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-    ],
-    size = "small",
-    flaky = True
-)
-
-test_suite(
-    name = "test-unit",
-    tags = ["small"],
 )
 
 exports_files(

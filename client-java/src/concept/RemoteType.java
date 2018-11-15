@@ -20,18 +20,18 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Role;
-import grakn.core.concept.Thing;
-import grakn.core.concept.Type;
-import grakn.core.exception.GraknTxOperationException;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.Role;
+import grakn.core.graql.concept.Thing;
+import grakn.core.graql.concept.Type;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.protocol.ConceptProto;
 
 import java.util.stream.Stream;
 
 /**
- * Client implementation of {@link grakn.core.concept.Type}
+ * Client implementation of {@link Type}
  *
  * @param <SomeType> The exact type of this class
  * @param <SomeThing> the exact type of instances of this class
@@ -56,7 +56,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType isAbstract(Boolean isAbstract) throws GraknTxOperationException {
+    public final SomeType isAbstract(Boolean isAbstract) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeSetAbstractReq(ConceptProto.Type.SetAbstract.Req.newBuilder()
                         .setAbstract(isAbstract)).build();
@@ -93,7 +93,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType key(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType key(AttributeType attributeType) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeKeyReq(ConceptProto.Type.Key.Req.newBuilder()
                         .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
@@ -103,7 +103,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType has(AttributeType attributeType) throws GraknTxOperationException {
+    public final SomeType has(AttributeType attributeType) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypeHasReq(ConceptProto.Type.Has.Req.newBuilder()
                         .setAttributeType(RequestBuilder.Concept.concept(attributeType))).build();
@@ -113,7 +113,7 @@ abstract class RemoteType<SomeType extends Type, SomeThing extends Thing> extend
     }
 
     @Override
-    public final SomeType plays(Role role) throws GraknTxOperationException {
+    public final SomeType plays(Role role) throws TransactionException {
         ConceptProto.Method.Req method = ConceptProto.Method.Req.newBuilder()
                 .setTypePlaysReq(ConceptProto.Type.Plays.Req.newBuilder()
                         .setRole(RequestBuilder.Concept.concept(role))).build();
