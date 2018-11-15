@@ -40,7 +40,10 @@ java_test(
             "//dependencies/maven/artifacts/com/google/guava:guava",
             "//dependencies/maven/artifacts/commons-collections:commons-collections",
         ],
-    resources = ["//test-integration/graql/reasoner/resources:generic-schema", "//test-integration/graql/reasoner/resources:unification-with-types"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:generic-schema",
+        "//test-integration/graql/reasoner/resources:unification-with-types"
+        ],
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

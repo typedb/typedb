@@ -251,6 +251,9 @@ dependencies:
     commons-lang3:
       version: "3.3.1"
       lang: java
+    commons-math3:
+      version: "3.6.1"
+      lang: java
 
   org.apache.hadoop:
     hadoop-annotations:
