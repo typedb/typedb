@@ -92,8 +92,8 @@ public abstract class RemoteConcept<SomeConcept extends Concept> implements Conc
     protected final Stream<? extends Concept> conceptStream
             (int iteratorId, Function<ConceptProto.Method.Iter.Res, ConceptProto.Concept> conceptGetter) {
 
-        Iterable<? extends  Concept> iterable = () -> new Grakn.Transaction.Iterator<>(
-                tx(), iteratorId, res -> of(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
+        Iterable<? extends  Concept> iterable = () -> tx().iterator(
+                iteratorId, res -> of(conceptGetter.apply(res.getConceptMethodIterRes()), tx())
         );
 
         return StreamSupport.stream(iterable.spliterator(), false);

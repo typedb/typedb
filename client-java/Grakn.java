@@ -50,7 +50,6 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.KeyspaceServiceGrpc.KeyspaceServiceBlockingStub;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
-import grakn.core.protocol.SessionServiceGrpc.SessionServiceStub;
 import grakn.core.server.QueryExecutor;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
@@ -82,7 +81,6 @@ public final class Grakn {
     }
 
     public Grakn(SimpleURI uri, boolean benchmark) {
-
         if (benchmark) {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
                     .intercept(new ClientTracingInstrumentationInterceptor("client-java-instrumentation"))
@@ -91,8 +89,12 @@ public final class Grakn {
             channel = ManagedChannelBuilder.forAddress(uri.getHost(), uri.getPort())
                     .usePlaintext(true).build();
         }
+        keyspaces = new Keyspaces(channel);
+    }
 
-        keyspaces = new Keyspaces();
+    public Grakn(ManagedChannel channel) {
+        this.channel = channel;
+        keyspaces = new Keyspaces(channel);
     }
 
     public Session session(String keyspace) {
@@ -120,17 +122,9 @@ public final class Grakn {
             this.keyspace = keyspace;
         }
 
-        SessionServiceGrpc.SessionServiceStub sessionStub() {
-            return SessionServiceGrpc.newStub(channel);
-        }
-
         @Override
         public Transaction transaction(grakn.core.server.Transaction.Type type) {
             return new Transaction(this, type);
-        }
-
-        public Transaction transaction(grakn.core.server.Transaction.Type type, SessionServiceStub sessionStub) {
-            return new Transaction(this, type, sessionStub);
         }
 
         @Override
@@ -156,6 +150,10 @@ public final class Grakn {
             keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         }
 
+        private Keyspaces(ManagedChannel channel) {
+            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
+        }
+
         public void delete(String name) {
             if (!Validator.isValidKeyspaceName(name)) {
                 throw GraknClientException.invalidKeyspaceName(name);
@@ -168,7 +166,7 @@ public final class Grakn {
     /**
      * Remote implementation of {@link grakn.core.server.Transaction} that communicates with a Grakn server using gRPC.
      */
-    public static final class Transaction implements grakn.core.server.Transaction {
+    public final class Transaction implements grakn.core.server.Transaction {
 
         private final Session session;
         private final Type type;
@@ -177,15 +175,7 @@ public final class Grakn {
         private Transaction(Session session, Type type) {
             this.session = session;
             this.type = type;
-            this.transceiver = Transceiver.create(session.sessionStub());
-            transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
-            responseOrThrow();
-        }
-
-        private Transaction(Session session, Type type, SessionServiceStub sessionStub) {
-            this.session = session;
-            this.type = type;
-            this.transceiver = Transceiver.create(sessionStub);
+            this.transceiver = Transceiver.create(SessionServiceGrpc.newStub(channel));
             transceiver.send(RequestBuilder.Transaction.open(session.keyspace(), type));
             responseOrThrow();
         }
@@ -407,18 +397,22 @@ public final class Grakn {
             return responseOrThrow().getIterateRes();
         }
 
+        public <T> Iterator<T> iterator(int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
+            return new Iterator<>(this, iteratorId, responseReader);
+        }
+
         /**
          * A client-side iterator over gRPC messages. Will send {@link SessionProto.Transaction.Iter.Req} messages until
          * {@link SessionProto.Transaction.Iter.Res} returns done as a message.
          *
          * @param <T> class type of objects being iterated
          */
-        public static class Iterator<T> extends AbstractIterator<T> {
+        public class Iterator<T> extends AbstractIterator<T> {
             private final int iteratorId;
             private Transaction tx;
             private Function<SessionProto.Transaction.Iter.Res, T> responseReader;
 
-            public Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
+            private Iterator(Transaction tx, int iteratorId, Function<SessionProto.Transaction.Iter.Res, T> responseReader) {
                 this.tx = tx;
                 this.iteratorId = iteratorId;
                 this.responseReader = responseReader;
