@@ -30,7 +30,11 @@ java_test(
 )
 java_test(
     name = "query-unification-it",
-    srcs = ["AtomicQueryUnificationIT.java", "TestQueryPattern.java"],
+    srcs = ["AtomicQueryUnificationIT.java",
+            "patterns/RelationPattern.java",
+            "patterns/TypePattern.java",
+            "patterns/ResourcePattern.java",
+            "patterns/TestQueryPattern.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
             "//server",
