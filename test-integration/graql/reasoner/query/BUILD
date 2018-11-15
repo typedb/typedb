@@ -30,7 +30,11 @@ java_test(
 )
 java_test(
     name = "query-unification-it",
-    srcs = ["AtomicQueryUnificationIT.java", "TestQueryPattern.java"],
+    srcs = ["AtomicQueryUnificationIT.java",
+            "patterns/RelationPattern.java",
+            "patterns/TypePattern.java",
+            "patterns/ResourcePattern.java",
+            "patterns/TestQueryPattern.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
             "//server",
@@ -40,7 +44,8 @@ java_test(
             "//dependencies/maven/artifacts/com/google/guava:guava",
             "//dependencies/maven/artifacts/commons-collections:commons-collections",
         ],
-    resources = ["//test-integration/graql/reasoner/resources:generic-schema", "//test-integration/graql/reasoner/resources:unification-with-types"],
+    resources = ["//test-integration/graql/reasoner/resources:generic-schema",
+                 "//test-integration/graql/reasoner/resources:unification-with-types"],
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
