@@ -42,7 +42,6 @@ export default {
     commit('setVisFacade', visFacade.initVisualiser(container, state.visStyle));
   },
 
-
   async [UPDATE_METATYPE_INSTANCES]({ dispatch, commit }) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     const metaTypeInstances = await loadMetaTypeInstances(graknTx);
@@ -76,7 +75,7 @@ export default {
       .filter(x => x.label !== 'relationship');
     // Find nodes that are subconcepts of existing types - these nodes will only have isa edges
     const subConcepts = await computeSubConcepts(nodes);
-
+    debugger;
     const subConceptsIds = new Set(subConcepts.nodes.map(n => n.id));
 
     const relNodes = nodes.filter(x => !subConceptsIds.has(x.id));

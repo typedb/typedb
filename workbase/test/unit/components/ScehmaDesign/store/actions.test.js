@@ -2,13 +2,12 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 
 import {
-  CURRENT_KEYSPACE_CHANGED,
+  LOAD_SCHEMA,
 } from '@/components/shared/StoresActions';
 
 import actions from '@/components/SchemaDesign/store/actions';
 import mutations from '@/components/SchemaDesign/store/mutations';
 import getters from '@/components/SchemaDesign/store/getters';
-import state from '@/components/SchemaDesign/store/state';
 
 
 jest.mock('grakn', () => ({ txType: { WRITE: 'write' } }));
@@ -24,10 +23,12 @@ describe('actions', () => {
       actions,
       mutations,
       getters,
-      state,
+      state: {
+        visFacade: {},
+      },
     });
 
-    store.dispatch(CURRENT_KEYSPACE_CHANGED, 'gene');
+    store.dispatch(LOAD_SCHEMA);
   });
 });
 
