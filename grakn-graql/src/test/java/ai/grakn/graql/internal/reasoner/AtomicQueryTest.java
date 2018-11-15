@@ -42,7 +42,9 @@ import ai.grakn.graql.internal.query.answer.ConceptMapImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicEquivalence;
 import ai.grakn.graql.internal.reasoner.patterns.RelationPattern;
+import ai.grakn.graql.internal.reasoner.patterns.ResourcePattern;
 import ai.grakn.graql.internal.reasoner.patterns.TestQueryPattern;
+import ai.grakn.graql.internal.reasoner.patterns.TypePattern;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence;
@@ -223,13 +225,14 @@ public class AtomicQueryTest {
                 .flatMap(a -> multiUnifier.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
+        assertEquals(answers, permutedAnswers);
+
         MultiUnifier multiUnifier2 = childAtom.getMultiUnifier(parentAtom, UnifierType.RULE);
         Set<ConceptMap> permutedAnswers2 = answers.stream()
                 .flatMap(a -> multiUnifier2.stream().map(a::unify))
                 .collect(Collectors.toSet());
 
         assertEquals(fullAnswers, permutedAnswers2);
-        assertEquals(answers, permutedAnswers);
     }
 
     @Test
@@ -265,9 +268,12 @@ public class AtomicQueryTest {
     private static Attribute<Object> resource;
     private static Attribute<Object> anotherResource;
 
-    private static RelationPattern differentRelationVariants;
-    private static RelationPattern differentRelationVariantsWithMetaRoles;
-    private static RelationPattern differentRelationVariantsWithRelationVariable;
+    private static TestQueryPattern differentRelationVariants;
+    private static TestQueryPattern differentRelationVariantsWithMetaRoles;
+    private static TestQueryPattern differentRelationVariantsWithRelationVariable;
+
+    private static TestQueryPattern differentResourceVariants;
+    private static TestQueryPattern differentTypeVariants;
 
     @BeforeClass
     public static void setupGenericSchema(){
@@ -289,6 +295,9 @@ public class AtomicQueryTest {
         System.out.println(entity);
         System.out.println(anotherBaseEntity);
         System.out.println(subEntity);
+
+        differentTypeVariants = new TypePattern(entity.id(), anotherEntity.id());
+        differentResourceVariants = new ResourcePattern(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
 
         differentRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(
@@ -362,7 +371,7 @@ public class AtomicQueryTest {
                 Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
                 new ArrayList<>()
         ) {
-            
+
             @Override
             public int[][] exactMatrix(){
                 return new int[][]{
@@ -376,14 +385,14 @@ public class AtomicQueryTest {
                         {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
                         {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
                         {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},//14
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0},//14
                         {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0},
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
                 };
             }
@@ -969,7 +978,7 @@ public class AtomicQueryTest {
     @Test
     public void testUnification_differentTypeVariants_EXACT(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = TestQueryPattern.differentTypeVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
+        List<String> qs = differentTypeVariants.patterns();
         subListExcluding(qs, Lists.newArrayList(3, 4, 7, 8)).forEach(q -> exactUnification(q, qs, new ArrayList<>(), graph));
         exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), graph);
         exactUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), graph);
@@ -980,52 +989,33 @@ public class AtomicQueryTest {
     @Test
     public void testUnification_differentTypeVariants_STRUCTURAL(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = TestQueryPattern.differentTypeVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
-        subListExcluding(qs, Lists.newArrayList(3, 4, 6, 7, 8)).forEach(q -> structuralUnification(q, qs, new ArrayList<>(), graph));
-    
-        structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), graph);
-        structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), graph);
 
-        structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), graph);
-        structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), graph);
-        structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), graph);
+        unification(
+                differentTypeVariants.patterns(),
+                differentTypeVariants.patterns(),
+                differentTypeVariants.structuralMatrix(),
+                UnifierType.STRUCTURAL,
+                graph
+        );
     }
 
     @Test
     public void testUnification_differentTypeVariants_RULE(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = TestQueryPattern.differentTypeVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
 
-        ruleUnification(qs.get(0), qs, qs, graph);
-        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 13, 14, 15, 16, 17, 18)), graph);
-        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 13, 14, 15, 16, 17, 18)), graph);
-        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10, 11, 12)), graph);
-        ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10, 11, 12)), graph);
-        ruleUnification(qs.get(5), qs, qs, graph);
-
-        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 9, 10, 11, 12)), graph);
-        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 8, 9, 10, 11, 12)), graph);
-        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 7, 9, 10, 11, 12)), graph);
-
-        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 11)), graph);
-        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 11, 12)), graph);
-
-        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 9, 10, 12)), graph);
-        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 10, 11)), graph);
-
-        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 16, 17, 18)), graph);
-        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 15, 17, 18)), graph);
-
-        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 14, 16, 17, 18)), graph);
-        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 15, 17, 18)), graph);
-        ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 14, 15, 16, 18)), graph);
-        ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 14, 15, 16, 17)), graph);
+        unification(
+                differentTypeVariants.patterns(),
+                differentTypeVariants.patterns(),
+                differentTypeVariants.ruleMatrix(),
+                UnifierType.RULE,
+                graph
+        );
     }
 
     @Test
     public void testUnification_differentResourceVariants_EXACT(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = TestQueryPattern.differentResourceVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
+        List<String> qs = differentResourceVariants.patterns();
 
         exactUnification(qs.get(0), qs, new ArrayList<>(), graph);
         exactUnification(qs.get(1), qs, new ArrayList<>(), graph);
@@ -1072,93 +1062,25 @@ public class AtomicQueryTest {
     @Test
     public void testUnification_differentResourceVariants_STRUCTURAL(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = TestQueryPattern.differentResourceVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
 
-        structuralUnification(qs.get(0), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(1), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(2), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(3), qs, new ArrayList<>(), graph);
-
-        structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(5)), graph);
-        structuralUnification(qs.get(5), qs, Collections.singletonList(qs.get(4)), graph);
-
-        structuralUnification(qs.get(6), qs, Collections.singletonList(qs.get(7)), graph);
-        structuralUnification(qs.get(7), qs, Collections.singletonList(qs.get(6)), graph);
-
-        structuralUnification(qs.get(8), qs, Collections.singletonList(qs.get(10)), graph);
-        structuralUnification(qs.get(9), qs, Collections.singletonList(qs.get(11)), graph);
-        structuralUnification(qs.get(10), qs, Collections.singletonList(qs.get(8)), graph);
-        structuralUnification(qs.get(11), qs, Collections.singletonList(qs.get(9)), graph);
-
-        structuralUnification(qs.get(12), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(13), qs, new ArrayList<>(), graph);
-
-        structuralUnification(qs.get(14), qs, Collections.singletonList(qs.get(16)), graph);
-        structuralUnification(qs.get(15), qs, Collections.singletonList(qs.get(17)), graph);
-        structuralUnification(qs.get(16), qs, Collections.singletonList(qs.get(14)), graph);
-        structuralUnification(qs.get(17), qs, Collections.singletonList(qs.get(15)), graph);
-
-        structuralUnification(qs.get(18), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(19), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(20), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(21), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(22), qs, new ArrayList<>(), graph);
-
-        structuralUnification(qs.get(23), qs, Collections.singletonList(qs.get(24)), graph);
-        structuralUnification(qs.get(24), qs, Collections.singletonList(qs.get(23)), graph);
-        structuralUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(26, 29)), graph);
-        structuralUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(25, 29)), graph);
-        structuralUnification(qs.get(27), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(28), qs, new ArrayList<>(), graph);
-        structuralUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(25, 26)), graph);
-        structuralUnification(qs.get(30), qs, new ArrayList<>(), graph);
+        unification(
+                differentResourceVariants.patterns(),
+                differentResourceVariants.patterns(),
+                differentResourceVariants.structuralMatrix(),
+                UnifierType.STRUCTURAL,
+                graph);
     }
 
     @Test
     public void testUnification_differentResourceVariants_RULE(){
         EmbeddedGraknTx<?> graph = genericSchema.tx();
-        List<String> qs = TestQueryPattern.differentResourceVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
 
-        ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
-        ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28)), graph);
-        ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28, 30)), graph);
-        ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(28)), graph);
-
-        ruleUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
-        ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), graph);
-
-        ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
-        ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), graph);
-
-        ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 10, 12)), graph);
-        ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 11, 12, 13)), graph);
-        ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8, 12)), graph);
-        ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9, 12, 13)), graph);
-
-        ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13)), graph);
-        ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9, 11, 12 )), graph);
-
-        ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 19, 20, 21)), graph);
-        ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(1, 2, 3, 17, 18, 20, 21)), graph);
-        ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 19, 20, 21)), graph);
-        ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 18, 20, 21)), graph);
-
-        ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29, 30)), graph);
-        ruleUnification(qs.get(19), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 16, 18, 20, 21)), graph);
-        ruleUnification(qs.get(20), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30)), graph);
-        ruleUnification(qs.get(21), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 15, 16, 17, 18, 19, 20)), graph);
-
-        ruleUnification(qs.get(22), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29, 30)), graph);
-        ruleUnification(qs.get(23), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29)), graph);
-        ruleUnification(qs.get(24), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29)), graph);
-
-        ruleUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
-        ruleUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
-
-        ruleUnification(qs.get(27), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 25, 26, 29)), graph);
-        ruleUnification(qs.get(28), subListExcluding(qs, Lists.newArrayList(28)), new ArrayList<>(), graph);
-        ruleUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), graph);
-        ruleUnification(qs.get(30), qs, subList(qs, Lists.newArrayList(1, 3, 18, 20, 22)), graph);
+        unification(
+                differentResourceVariants.patterns(),
+                differentResourceVariants.patterns(),
+                differentResourceVariants.ruleMatrix(),
+                UnifierType.RULE,
+                graph);
     }
 
     @Test
@@ -1167,9 +1089,9 @@ public class AtomicQueryTest {
         List<List<String>> queryTypes = Lists.newArrayList(
                 differentRelationVariants.patterns(),
                 differentRelationVariantsWithRelationVariable.patterns(),
-                TestQueryPattern.differentTypeVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id()),
-                TestQueryPattern.differentResourceVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id())
-                );
+                differentTypeVariants.patterns(),
+                differentResourceVariants.patterns()
+        );
         queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> exactUnification(q, qto, new ArrayList<>(), graph))));
     }
 
@@ -1179,21 +1101,26 @@ public class AtomicQueryTest {
         List<List<String>> queryTypes = Lists.newArrayList(
                 differentRelationVariants.patterns(),
                 differentRelationVariantsWithRelationVariable.patterns(),
-                TestQueryPattern.differentTypeVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id()),
-                TestQueryPattern.differentResourceVariants.patterns(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id())
+                differentTypeVariants.patterns(),
+                differentResourceVariants.patterns()
         );
         queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> structuralUnification(q, qto, new ArrayList<>(), graph))));
     }
+
 
     private void unification(String child, List<String> queries, List<String> queriesWithUnifier, UnifierType unifierType, EmbeddedGraknTx graph){
         queries.forEach(parent -> unification(child, parent, queriesWithUnifier.contains(parent) || parent.equals(child), unifierType, graph));
     }
 
     private void unification(List<String> queries, int[][] resultMatrix, UnifierType unifierType, EmbeddedGraknTx graph){
+        unification(queries, queries, resultMatrix, unifierType, graph);
+    }
+
+    private void unification(List<String> children, List<String> parents, int[][] resultMatrix, UnifierType unifierType, EmbeddedGraknTx graph){
         int i = 0;
         int j = 0;
-        for (String child : queries) {
-            for (String parent : queries) {
+        for (String child : children) {
+            for (String parent : parents) {
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, graph);
                 j++;
             }
@@ -1228,7 +1155,7 @@ public class AtomicQueryTest {
         }
         return multiUnifier;
     }
-    
+
     /**
      * checks the correctness and uniqueness of an EXACT unifier required to unify child query with parent
      * @param parentString parent query string
@@ -1632,14 +1559,6 @@ public class AtomicQueryTest {
         equivalence(query5, queries, Collections.singletonList(query5b), ReasonerQueryEquivalence.StructuralEquivalence, graph);
     }
 
-    private Concept getConceptByResourceValue(EmbeddedGraknTx<?> graph, String id){
-        Set<Concept> instances = graph.getAttributesByValue(id)
-                .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
-        if (instances.size() != 1)
-            throw new IllegalStateException("Something wrong, multiple instances with given res value");
-        return instances.iterator().next();
-    }
-
     private void equivalence(String target, List<String> queries, List<String> equivalentQueries, ReasonerQueryEquivalence equiv, EmbeddedGraknTx graph){
         queries.forEach(q -> equivalence(target, q, equivalentQueries.contains(q) || q.equals(target), equiv, graph));
     }
@@ -1701,6 +1620,14 @@ public class AtomicQueryTest {
         if (expectation) {
             assertEquals(a.toString() + " hash=? " + b.toString(), equivalence.hash(a) == equivalence.hash(b), true);
         }
+    }
+
+    private Concept getConceptByResourceValue(EmbeddedGraknTx<?> graph, String id){
+        Set<Concept> instances = graph.getAttributesByValue(id)
+                .stream().flatMap(Attribute::owners).collect(Collectors.toSet());
+        if (instances.size() != 1)
+            throw new IllegalStateException("Something wrong, multiple instances with given res value");
+        return instances.iterator().next();
     }
 
     private Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){

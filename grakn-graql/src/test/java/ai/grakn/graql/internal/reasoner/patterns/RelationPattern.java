@@ -31,14 +31,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.patterns.TestQueryPattern.identity;
-
-public abstract class RelationPattern {
+public abstract class RelationPattern extends TestQueryPattern {
 
     private final List<Pattern> patterns;
 
@@ -52,17 +48,14 @@ public abstract class RelationPattern {
 
     }
 
+    @Override
     public List<String> patterns() {
         return patterns.stream().map(Object::toString).collect(Collectors.toList());
     }
 
+    @Override
     public int size(){ return patterns.size();}
 
-    public int[][] exactMatrix() { return identity(size()); }
-
-    public abstract int[][] structuralMatrix();
-
-    public abstract int[][] ruleMatrix();
 
     /**
      * Generates different relation patterns variants as a cartesian products of provided id configurations.
