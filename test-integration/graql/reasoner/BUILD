@@ -1,6 +1,6 @@
 java_test(
     name = "reasoning-it",
-    size = "large",
+    size = "enormous",
     srcs = ["ReasoningIT.java"],
     classpath_resources = [
         "//test-integration/resources:logback-test",
