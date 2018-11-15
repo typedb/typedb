@@ -19,10 +19,9 @@
 
 package grakn.core.client.rpc;
 
-import grakn.core.GraknTxType;
-import grakn.core.concept.AttributeType;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.protocol.ConceptProto;
@@ -46,7 +45,7 @@ public class RequestBuilder {
      */
     public static class Transaction {
 
-        public static SessionProto.Transaction.Req open(grakn.core.Keyspace keyspace, GraknTxType txType) {
+        public static SessionProto.Transaction.Req open(grakn.core.server.keyspace.Keyspace keyspace, grakn.core.server.Transaction.Type txType) {
             SessionProto.Transaction.Open.Req openRequest = SessionProto.Transaction.Open.Req.newBuilder()
                     .setKeyspace(keyspace.getValue())
                     .setType(SessionProto.Transaction.Type.valueOf(txType.getId()))
@@ -147,14 +146,14 @@ public class RequestBuilder {
      */
     public static class Concept {
 
-        public static ConceptProto.Concept concept(grakn.core.concept.Concept concept) {
+        public static ConceptProto.Concept concept(grakn.core.graql.concept.Concept concept) {
             return ConceptProto.Concept.newBuilder()
                     .setId(concept.id().getValue())
                     .setBaseType(getBaseType(concept))
                     .build();
         }
 
-        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.concept.Concept concept) {
+        private static ConceptProto.Concept.BASE_TYPE getBaseType(grakn.core.graql.concept.Concept concept) {
             if (concept.isEntityType()) {
                 return ConceptProto.Concept.BASE_TYPE.ENTITY_TYPE;
             } else if (concept.isRelationshipType()) {
@@ -178,7 +177,7 @@ public class RequestBuilder {
             }
         }
 
-        public static Collection<ConceptProto.Concept> concepts(Collection<grakn.core.concept.Concept> concepts) {
+        public static Collection<ConceptProto.Concept> concepts(Collection<grakn.core.graql.concept.Concept> concepts) {
             return concepts.stream().map(Concept::concept).collect(toList());
         }
 

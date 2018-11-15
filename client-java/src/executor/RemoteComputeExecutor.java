@@ -19,7 +19,7 @@
 
 package grakn.core.client.executor;
 
-import grakn.core.ComputeExecutor;
+import grakn.core.server.ComputeExecutor;
 import grakn.core.graql.answer.Answer;
 
 import java.util.stream.Stream;

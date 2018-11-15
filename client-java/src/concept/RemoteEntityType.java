@@ -20,15 +20,16 @@
 package grakn.core.client.concept;
 
 import grakn.core.client.Grakn;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Entity;
-import grakn.core.concept.EntityType;
+import grakn.core.graql.concept.Concept;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Entity;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Type;
 import grakn.core.protocol.ConceptProto;
 import com.google.auto.value.AutoValue;
 
 /**
- * Client implementation of a MetaType, a special type of {@link grakn.core.concept.Type}
+ * Client implementation of a MetaType, a special type of {@link Type}
  *
  * TODO: This class is not defined in which is not defined in Core API, and at server side implementation.
  * TODO: we should remove this class, or implement properly on server side.

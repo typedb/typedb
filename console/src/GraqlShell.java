@@ -18,12 +18,11 @@
 
 package grakn.core.console;
 
-import grakn.core.GraknSession;
-import grakn.core.GraknTx;
-import grakn.core.GraknTxType;
-import grakn.core.Keyspace;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.Grakn;
-import grakn.core.concept.AttributeType;
+import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.Query;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.internal.printer.Printer;
@@ -90,8 +89,8 @@ public class GraqlShell implements AutoCloseable {
     private final HistoryFile historyFile;
 
     private final Grakn client;
-    private final GraknSession session;
-    private GraknTx tx;
+    private final Session session;
+    private Transaction tx;
     private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
 
     private final GraqlCompleter graqlCompleter;
@@ -121,7 +120,7 @@ public class GraqlShell implements AutoCloseable {
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = client.session(keyspace).transaction(GraknTxType.WRITE);
+        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -298,7 +297,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void reopenTx() {
         if (!tx.isClosed()) tx.close();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     public boolean errorOccurred() {
