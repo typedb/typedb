@@ -138,12 +138,15 @@ public class ReasoningIT {
         typeDerivationFromRelationsSession = server.sessionWithNewKeyspace();
         loadFromFile("typeDerivationFromRelations.gql", typeDerivationFromRelationsSession);
 
+        //currently disallowed by rule validation
+        /*
         freshEntityDerivationSession = server.sessionWithNewKeyspace();
         loadFromFile("freshEntityDerivation.gql", freshEntityDerivationSession);
         freshEntityDerivationFromRelationsSession = server.sessionWithNewKeyspace();
         loadFromFile("freshEntityDerivationFromRelations.gql", freshEntityDerivationFromRelationsSession);
         freshRelationDerivationSession = server.sessionWithNewKeyspace();
         loadFromFile("freshRelationDerivation.gql", freshRelationDerivationSession);
+        */
 
         appendingRPsContextSession = server.sessionWithNewKeyspace();
         loadFromFile("appendingRPs.gql", appendingRPsContextSession);
@@ -206,6 +209,7 @@ public class ReasoningIT {
 
     private static void loadFromFile(String fileName, Session session){
         try {
+            System.out.println("Loading " + fileName);
             InputStream inputStream = ReasoningIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/stubs/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
