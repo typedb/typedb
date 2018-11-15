@@ -90,12 +90,12 @@ public final class Grakn {
             channel = ManagedChannelBuilder.forAddress(parsedURI.getHost(), parsedURI.getPort())
                     .usePlaintext(true).build();
         }
-        keyspaces = new Keyspaces(channel);
+        keyspaces = new Keyspaces();
     }
 
     public Grakn(ManagedChannel channel) {
         this.channel = channel;
-        keyspaces = new Keyspaces(channel);
+        keyspaces = new Keyspaces();
     }
 
     public Session session(String keyspace) {
@@ -148,10 +148,6 @@ public final class Grakn {
         private KeyspaceServiceBlockingStub keyspaceBlockingStub;
 
         private Keyspaces() {
-            keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
-        }
-
-        private Keyspaces(ManagedChannel channel) {
             keyspaceBlockingStub = KeyspaceServiceGrpc.newBlockingStub(channel);
         }
 
