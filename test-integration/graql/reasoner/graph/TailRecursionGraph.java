@@ -29,7 +29,7 @@ import grakn.core.server.Transaction;
 public class TailRecursionGraph extends ParametrisedTestGraph {
 
     public TailRecursionGraph(Session session) {
-        super(session, "tail-recursion.gql", Label.of("index"));
+        super(session, "recursion/tail-recursion.gql", Label.of("index"));
     }
 
     @Override

@@ -24,6 +24,6 @@ import grakn.core.server.Session;
 public class PathTreeSymmetricGraph extends PathTreeGraph {
 
     public PathTreeSymmetricGraph(Session session){
-        super(session, "path-test-symmetric.gql");
+        super(session, "pathTest-symmetric.gql");
     }
 }

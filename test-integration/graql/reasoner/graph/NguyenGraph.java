@@ -30,7 +30,7 @@ import grakn.core.server.Transaction;
 public class NguyenGraph extends ParametrisedTestGraph {
 
     public NguyenGraph(Session session) {
-        super(session, "nguyen-test.gql", Label.of("index"));
+        super(session, "recursion/nguyen.gql", Label.of("index"));
     }
 
     @Override
