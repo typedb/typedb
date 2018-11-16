@@ -441,7 +441,9 @@ public class RecursionIT {
         session.close();
     }
 
-    /**test3 from Nguyen (similar to test 6.5 from Cao)
+    /**
+     * test3 from Nguyen (similar to test 6.5 from Cao):
+     *
      * N(x, y) :- R(x, y)
      * N(x, y) :- P(x, z), N(z, w), Q(w, y)
      *
@@ -500,6 +502,25 @@ public class RecursionIT {
         session.close();
     }
 
+    @Test
+    public void testPathSymmetric(){
+        final int N = 2;
+        final int depth = 3;
+        Session session = server.sessionWithNewKeyspace();
+        PathTreeSymmetricGraph graph = new PathTreeSymmetricGraph(session);
+        graph.load(N, depth);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        QueryBuilder qb = tx.graql().infer(false);
+        QueryBuilder iqb = tx.graql().infer(true);
+
+        String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
+        String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
+
+        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+        tx.close();
+        session.close();
+    }
+
     /**test 6.10 from Cao p. 82*/
     @Test
     public void testPathTree(){
@@ -534,28 +555,8 @@ public class RecursionIT {
     }
 
     @Test
-    public void testPathSymmetric(){
-        final int N = 2;
-        final int depth = 3;
-        Session session = server.sessionWithNewKeyspace();
-        PathTreeSymmetricGraph graph = new PathTreeSymmetricGraph(session);
-        graph.load(N, depth);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
-
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
-        String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
-
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
-        tx.close();
-        session.close();
-    }
-
-    @Test
     /*modified test 6.10 from Cao p. 82*/
     public void testPathMatrix(){
-        final int N = 3;
         Transaction tx = pathMatrixSession.transaction(Transaction.Type.WRITE);
         QueryBuilder qb = tx.graql().infer(false);
         QueryBuilder iqb = tx.graql().infer(true);
@@ -569,7 +570,7 @@ public class RecursionIT {
     @Test
     /*modified test 6.10 from Cao p. 82*/
     public void testPathMatrixPrime(){
-        Transaction tx = pathTreeSession.transaction(Transaction.Type.WRITE);
+        Transaction tx = pathMatrixSession.transaction(Transaction.Type.WRITE);
         QueryBuilder qb = tx.graql().infer(false);
         QueryBuilder iqb = tx.graql().infer(true);
 

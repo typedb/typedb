@@ -78,6 +78,7 @@ public enum ErrorMessage {
     BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
                                   "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
+    FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

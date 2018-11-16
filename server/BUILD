@@ -47,22 +47,17 @@ java_library(
    ] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//protocol:protocol-java",
         "//commons",
+        "//protocol:protocol-java",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
-
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/commons-io:commons-io", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
@@ -90,7 +85,6 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scalap", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -114,8 +108,11 @@ deploy_maven_jar(
 
 java_binary(
     name = "server-binary",
-    main_class = "grakn.core.server.bootup.GraknBootup",
-    runtime_deps = ["//server"],
+    main_class = "grakn.core.server.daemon.GraknDaemon",
+    runtime_deps = [
+        "//server/src/server/daemon",
+        "//server"
+    ],
     visibility = ["//visibility:public"]
 )
 

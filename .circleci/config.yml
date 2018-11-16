@@ -53,7 +53,26 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //test-integration/graql/reasoner/... --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
+
+  test-integration-reasoner-recursion:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //test-integration/graql/reasoner:recursion-it --test_output=errors
+
+  test-integration-reasoner-components:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //test-integration/graql/reasoner/atomic/... --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner/benchmark/... --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner/cache/... --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner/query/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -197,6 +216,8 @@ workflows:
       - test-unit
       - test-integration
       - test-integration-reasoner
+      - test-integration-reasoner-recursion
+      - test-integration-reasoner-components
       - test-integration-analytics
       - test-end-to-end
       - client-nodejs-e2e

@@ -4,7 +4,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.AttributeIT",
      deps = [
          "//server",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
      ],
@@ -17,7 +17,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.AttributeTypeIT",
      deps = [
          "//server",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -29,7 +29,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.ConceptIT",
      deps = [
          "//server",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
@@ -42,7 +42,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.EntityIT",
      deps = [
          "//server",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -55,7 +55,7 @@ java_test(
      deps = [
          "//server",
          "//commons",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
@@ -69,7 +69,7 @@ java_test(
      deps = [
          "//server",
          "//commons",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
          "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -83,7 +83,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.RelationshipTypeIT",
      deps = [
          "//server",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -95,7 +95,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.RoleIT",
      deps = [
          "//server",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
@@ -108,7 +108,7 @@ java_test(
      deps = [
          "//server",
          "//commons",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
      ],
@@ -122,7 +122,7 @@ java_test(
      deps = [
          "//server",
          "//commons",
-         "//test-integration/rule:concurrent-grakn-server",
+         "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
      ],
