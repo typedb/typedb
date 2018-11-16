@@ -4,7 +4,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryEquivalenceIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava"
         ],
@@ -13,12 +13,12 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 java_test(
-    name = "query-it",
+    name = "atomic-query-it",
     srcs = ["AtomicQueryIT.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//test-integration/graql/reasoner/graph:geo-graph",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -31,14 +31,14 @@ java_test(
 java_test(
     name = "query-unification-it",
     srcs = ["AtomicQueryUnificationIT.java",
-            "patterns/RelationPattern.java",
-            "patterns/TypePattern.java",
-            "patterns/ResourcePattern.java",
-            "patterns/TestQueryPattern.java"],
+            "pattern/RelationPattern.java",
+            "pattern/TypePattern.java",
+            "pattern/ResourcePattern.java",
+            "pattern/TestQueryPattern.java"],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//test-integration/graql/reasoner/graph:geo-graph",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -50,4 +50,63 @@ java_test(
         ],
     size = "medium",
     classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+
+java_test(
+    name = "query-validity-it",
+    size = "medium",
+    srcs = ["QueryValidityIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
+    test_class = "grakn.core.graql.reasoner.query.QueryValidityIT",
+    deps = [
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+    ],
+)
+
+
+java_test(
+    name = "query-it",
+    size = "medium",
+    srcs = ["QueryIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.reasoner.query.QueryIT",
+    deps = [
+        "//server",
+        "//test-integration/graql/reasoner/graph:geo-graph",
+        "//test-integration/rule:grakn-test-server",
+    ],
+)
+
+java_test(
+    name = "ontological-query-it",
+    size = "large",
+    srcs = ["OntologicalQueryIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    data = ["//test-integration/graql/reasoner/resources:rule-applicability"],
+    test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+java_test(
+    name = "resolution-plan-it",
+    srcs = ["ResolutionPlanIT.java"],
+    test_class = "grakn.core.graql.reasoner.query.ResolutionPlanIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+    ],
+    resources = ["//test-integration/graql/reasoner/resources:resolution-plan"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    size = "medium",
 )

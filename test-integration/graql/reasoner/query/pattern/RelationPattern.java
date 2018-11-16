@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.graql.reasoner.query.pattern;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
@@ -38,7 +38,7 @@ public abstract class RelationPattern extends TestQueryPattern {
 
     private final List<Pattern> patterns;
 
-    RelationPattern(Multimap<Label, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
+    public RelationPattern(Multimap<Label, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
         ImmutableMultimap.Builder<Label, Pair<Label, List<ConceptId>>> builder = ImmutableMultimap.builder();
         rpConf.forEach((key, value) -> builder.put(key, new Pair<>(value, ids)));
         this.patterns = generateRelationPatterns(

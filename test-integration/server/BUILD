@@ -22,7 +22,7 @@ java_test(
     srcs = ["AttributeDeduplicatorIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     size = "large"
 )

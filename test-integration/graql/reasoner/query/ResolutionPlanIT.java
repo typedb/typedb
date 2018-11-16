@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner;
+package grakn.core.graql.reasoner.query;
 
 import grakn.core.graql.concept.Type;
 import grakn.core.server.Session;
@@ -731,6 +731,7 @@ public class ResolutionPlanIT {
 @interface Repeat {
     int times();
 }
+
 class RepeatRule implements TestRule {
 
     private static class RepeatStatement extends Statement {
