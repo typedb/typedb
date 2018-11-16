@@ -96,7 +96,7 @@ public class RecursionIT {
         sameGenerationSession = server.sessionWithNewKeyspace();
         loadFromFile("same-generation.gql", sameGenerationSession);
 
-        final int pathSize = 3;
+        final int pathSize = 2;
         final int depth = 3;
         pathTreeSession = server.sessionWithNewKeyspace();
         PathTreeGraph pathGraph = new PathTreeGraph(pathTreeSession);
@@ -138,7 +138,6 @@ public class RecursionIT {
             throw new RuntimeException(e);
         }
     }
-
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test

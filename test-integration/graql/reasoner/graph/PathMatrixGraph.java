@@ -35,7 +35,7 @@ import grakn.core.server.Transaction;
 public class PathMatrixGraph extends ParametrisedTestGraph {
 
     public PathMatrixGraph(Session session){
-        super(session, "path-test.gql", Label.of("index"));
+        super(session, "pathTest.gql", Label.of("index"));
     }
 
     @Override

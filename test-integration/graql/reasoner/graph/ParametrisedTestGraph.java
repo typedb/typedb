@@ -49,6 +49,7 @@ public abstract class ParametrisedTestGraph {
 
     private void loadSchema(Session session) {
         try {
+            System.out.println("Loading... " + gqlPath + schemaFile);
             InputStream inputStream = ParametrisedTestGraph.class.getClassLoader().getResourceAsStream(gqlPath + schemaFile);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
