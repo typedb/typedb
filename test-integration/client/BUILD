@@ -5,7 +5,7 @@ java_test(
     deps = [
         "//server",
         "//client-java",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"
@@ -21,7 +21,7 @@ java_test(
     deps = [
         "//server",
         "//client-java",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/com/google/guava:guava"

@@ -4,7 +4,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.cache.LazyQueryCacheIT",
     deps = [
                 "//server",
-                "//test-integration/rule:concurrent-grakn-server",
+                "//test-integration/rule:grakn-test-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
@@ -17,7 +17,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.cache.QueryCacheIT",
     deps = [
                 "//server",
-                "//test-integration/rule:concurrent-grakn-server",
+                "//test-integration/rule:grakn-test-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
@@ -30,7 +30,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.cache.RuleCacheIT",
     deps = [
                 "//server",
-                "//test-integration/rule:concurrent-grakn-server",
+                "//test-integration/rule:grakn-test-server",
                 "//dependencies/maven/artifacts/com/google/guava:guava"
             ],
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],

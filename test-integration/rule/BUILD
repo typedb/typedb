@@ -17,7 +17,7 @@
 #
 
 java_library(
-    name = "concurrent-grakn-server",
+    name = "grakn-test-server",
     srcs = ["GraknTestServer.java"],
     deps = [
         "//server",

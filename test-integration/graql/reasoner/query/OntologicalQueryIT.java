@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner;
+package grakn.core.graql.reasoner.query;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;

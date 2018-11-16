@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.graql.reasoner.query.pattern;
 
 import com.google.common.collect.Lists;
 import grakn.core.graql.concept.ConceptId;
@@ -26,7 +26,7 @@ public class ResourcePattern extends TestQueryPattern {
 
     private final List<String> patterns;
 
-    ResourcePattern(ConceptId entityId, ConceptId anotherEntityId, ConceptId resourceId, ConceptId anotherResourceId) {
+    public ResourcePattern(ConceptId entityId, ConceptId anotherEntityId, ConceptId resourceId, ConceptId anotherResourceId) {
         this.patterns = Lists.newArrayList(
                 "{$x has resource $r;}",
                 "{$xb has resource-long $rb;}",
