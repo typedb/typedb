@@ -19,56 +19,27 @@
 package(default_visibility = ["//test-integration/graql/reasoner:__subpackages__"])
 
 filegroup(
-    name = "ancestor",
-    srcs = ["ancestor.gql"],
-)
-
-filegroup(
-    name = "ancestor-friend",
-    srcs = ["ancestor-friend.gql"],
+    name = "recursion-schemas",
+    srcs = [
+    "ancestor.gql",
+    "ancestor-friend.gql",
+    "reachability.gql",
+    "reachability-symmetric.gql",
+    "recursivity.gql",
+    "recursivity-rsg.gql",
+    "recursivity-sg.gql",
+    "recursivity-tc.gql",
+    "same-generation.gql",
+    "transitivity.gql"
+    ]
 )
 
 filegroup(
     name = "nguyen",
-    srcs = ["nguyen.gql"],
-)
-
-filegroup(
-    name = "reachability",
-    srcs = ["reachability.gql"],
-)
-
-filegroup(
-    name = "reachability-symmetric",
-    srcs = ["reachability-symmetric.gql"],
-)
-
-filegroup(
-    name = "recursivity",
-    srcs = ["recursivity.gql"],
-)
-
-filegroup(
-    name = "recursivity-rsg",
-    srcs = ["recursivity-rsg.gql"],
-)
-
-filegroup(
-    name = "recursivity-sg",
-    srcs = ["recursivity-sg.gql"],
-)
-
-filegroup(
-    name = "recursivity-tx",
-    srcs = ["recursivity-tc.gql"],
-)
-
-filegroup(
-    name = "same-generation",
-    srcs = ["same-generation.gql"],
+    srcs = ["nguyen.gql"]
 )
 
 filegroup(
     name = "tail-recursion",
-    srcs = ["tail-recursion.gql"],
+    srcs = ["tail-recursion.gql"]
 )

@@ -24,7 +24,6 @@ import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.NguyenGraph;
@@ -41,16 +40,16 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
-import static grakn.core.util.GraqlTestUtil.assertQueriesEqual;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
 public class RecursionIT {
@@ -97,7 +96,6 @@ public class RecursionIT {
         sameGenerationSession = server.sessionWithNewKeyspace();
         loadFromFile("same-generation.gql", sameGenerationSession);
 
-
         final int pathSize = 3;
         final int depth = 3;
         pathTreeSession = server.sessionWithNewKeyspace();
@@ -130,7 +128,7 @@ public class RecursionIT {
     private static void loadFromFile(String fileName, Session session){
         try {
             System.out.println("Loading " + fileName);
-            InputStream inputStream = ReasoningIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/stubs/" + fileName);
+            InputStream inputStream = RecursionIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/recursion/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
@@ -582,24 +580,16 @@ public class RecursionIT {
         assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
     }
 
-    @Test
-    public void testDiagonal(){
-        final int N = 10;
-        Session session = server.sessionWithNewKeyspace();
-        DiagonalGraph graph = new DiagonalGraph(session);
-        graph.load(N);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder iqb = tx.graql().infer(true);
-
-        String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
-
-        assertEquals(iqb.<GetQuery>parse(queryString).execute().size(), 64);
-        tx.close();
-        session.close();
-    }
-
     private Concept getConcept(TransactionImpl graph, String typeName, Object val){
         return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x")
                 .stream().map(ans -> ans.get("x")).findAny().orElse(null);
+    }
+
+    private static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
+        assertTrue(CollectionUtils.isEqualCollection(c1, c2));
+    }
+
+    private static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
+        assertCollectionsEqual(q1.execute(), q2.execute());
     }
 }
