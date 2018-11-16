@@ -36,7 +36,7 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.GraqlSyntaxException;
 import grakn.core.server.exception.InvalidKBException;
@@ -193,7 +193,7 @@ public class TransactionTest {
     @Test
     public void whenOpeningATxFails_Throw() {
         SessionProto.Transaction.Req openRequest = RequestBuilder.Transaction.open(KEYSPACE, Transaction.Type.WRITE);
-        GraknException expectedException = GraknBackendException.create("well something went wrong");
+        GraknException expectedException = GraknServerException.create("well something went wrong");
         throwOn(openRequest, expectedException);
 
         exception.expect(RuntimeException.class);
@@ -481,7 +481,7 @@ public class TransactionTest {
 
         if (e instanceof TemporaryWriteException) {
             exception = error(Status.RESOURCE_EXHAUSTED, e);
-        } else if (e instanceof GraknBackendException) {
+        } else if (e instanceof GraknServerException) {
             exception = error(Status.INTERNAL, e);
         } else if (e instanceof PropertyNotUniqueException) {
             exception = error(Status.ALREADY_EXISTS, e);

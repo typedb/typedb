@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
 import grakn.core.commons.config.SystemProperty;
 import grakn.core.commons.exception.ErrorMessage;

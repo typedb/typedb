@@ -20,7 +20,7 @@ package grakn.core.server.rpc;
 
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.commons.exception.GraknException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.GraqlQueryException;
@@ -384,7 +384,7 @@ public class ResponseBuilder {
             String message = ge.getName() + "-" + ge.getMessage();
             if (e instanceof TemporaryWriteException) {
                 return exception(Status.RESOURCE_EXHAUSTED, message);
-            } else if (e instanceof GraknBackendException) {
+            } else if (e instanceof GraknServerException) {
                 return exception(Status.INTERNAL, message);
             } else if (e instanceof PropertyNotUniqueException) {
                 return exception(Status.ALREADY_EXISTS, message);

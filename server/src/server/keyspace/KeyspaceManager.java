@@ -25,7 +25,7 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
 import grakn.core.commons.config.Config;
-import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionFactoryBuilder;
@@ -74,7 +74,7 @@ public class KeyspaceManager {
         try (TransactionImpl<?> tx = systemKeyspaceSession.transaction(Transaction.Type.WRITE)) {
             AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
-                throw GraknBackendException.initializationException(keyspace);
+                throw GraknServerException.initializationException(keyspace);
             }
             Attribute<String> attribute = keyspaceName.create(keyspace.getName());
             if (attribute.owner() == null) {

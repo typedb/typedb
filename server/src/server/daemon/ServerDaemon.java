@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
-import grakn.core.server.Grakn;
+import grakn.core.commons.config.Config;
 import grakn.core.commons.config.ConfigKey;
 import grakn.core.commons.config.SystemProperty;
-import grakn.core.commons.config.Config;
+import grakn.core.server.Grakn;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.server.bootup.DaemonExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the Engine process,
@@ -47,18 +47,18 @@ import static grakn.core.server.bootup.DaemonExecutor.WAIT_INTERVAL_SECOND;
  */
 public class ServerDaemon {
     private static final String DISPLAY_NAME = "Grakn Core Server";
-    private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
-    private static final Path ENGINE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
+    private static final long SERVER_STARTUP_TIMEOUT_S = 300;
+    private static final Path SERVER_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
     private static final String JAVA_OPTS = SystemProperty.ENGINE_JAVAOPTS.value();
 
-    protected final Path graknHome;
-    protected final Path graknPropertiesPath;
+    private final Path graknHome;
+    private final Path graknPropertiesPath;
     private final Config graknProperties;
 
-    private DaemonExecutor bootupProcessExecutor;
+    private DaemonExecutor executor;
 
-    public ServerDaemon(DaemonExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
-        this.bootupProcessExecutor = bootupProcessExecutor;
+    ServerDaemon(DaemonExecutor executor, Path graknHome, Path graknPropertiesPath) {
+        this.executor = executor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
         this.graknProperties = Config.read(graknPropertiesPath);
@@ -67,12 +67,12 @@ public class ServerDaemon {
     /**
      * @return the main class of Engine. In KGMS, this method will be overridden to return a different class.
      */
-    public Class getEngineMainClass() {
+    private Class getEngineMainClass() {
         return Grakn.class;
     }
 
-    public void startIfNotRunning(String benchmarkFlag) {
-        boolean isEngineRunning = bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
+    void startIfNotRunning(String benchmarkFlag) {
+        boolean isEngineRunning = executor.isProcessRunning(SERVER_PIDFILE);
         if (isEngineRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
@@ -81,15 +81,15 @@ public class ServerDaemon {
     }
 
     public void stop() {
-        bootupProcessExecutor.stopProcessIfRunning(ENGINE_PIDFILE, DISPLAY_NAME);
+        executor.stopProcessIfRunning(SERVER_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
-        bootupProcessExecutor.processStatus(ENGINE_PIDFILE, DISPLAY_NAME);
+        executor.processStatus(SERVER_PIDFILE, DISPLAY_NAME);
     }
 
-    public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '" + bootupProcessExecutor.getPidFromFile(ENGINE_PIDFILE).orElse("") + "' (from " + ENGINE_PIDFILE + "), '" + bootupProcessExecutor.getPidFromPsOf(getEngineMainClass().getName()) + "' (from ps -ef)");
+    void statusVerbose() {
+        System.out.println(DISPLAY_NAME + " pid = '" + executor.getPidFromFile(SERVER_PIDFILE).orElse("") + "' (from " + SERVER_PIDFILE + "), '" + executor.getPidFromPsOf(getEngineMainClass().getName()) + "' (from ps -ef)");
     }
 
     public void clean() {
@@ -109,16 +109,16 @@ public class ServerDaemon {
     }
 
     public boolean isRunning() {
-        return bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
+        return executor.isProcessRunning(SERVER_PIDFILE);
     }
 
     private void start(String benchmarkFlag) {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<DaemonExecutor.Response> startEngineAsync = bootupProcessExecutor.executeAsync(engineCommand(benchmarkFlag), graknHome.toFile());
+        Future<DaemonExecutor.Response> startEngineAsync = executor.executeAsync(serverCommand(benchmarkFlag), graknHome.toFile());
 
-        LocalDateTime timeout = LocalDateTime.now().plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
+        LocalDateTime timeout = LocalDateTime.now().plusSeconds(SERVER_STARTUP_TIMEOUT_S);
 
         while (LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isDone()) {
             System.out.print(".");
@@ -127,7 +127,7 @@ public class ServerDaemon {
             String host = graknProperties.getProperty(ConfigKey.SERVER_HOST_NAME);
             int port = graknProperties.getProperty(ConfigKey.GRPC_PORT);
 
-            if (bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE) && isEngineReady(host, port)) {
+            if (executor.isProcessRunning(SERVER_PIDFILE) && isEngineReady(host, port)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -148,24 +148,24 @@ public class ServerDaemon {
         }
     }
 
-    private List<String> engineCommand(String benchmarkFlag) {
-        ArrayList<String> engineCommand = new ArrayList<>();
-        engineCommand.add("java");
-        engineCommand.add("-cp");
-        engineCommand.add(getEngineClassPath());
-        engineCommand.add("-Dgrakn.dir=" + graknHome);
-        engineCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
-        engineCommand.add("-Dgrakn.pidfile=" + ENGINE_PIDFILE);
+    private List<String> serverCommand(String benchmarkFlag) {
+        ArrayList<String> serverCommand = new ArrayList<>();
+        serverCommand.add("java");
+        serverCommand.add("-cp");
+        serverCommand.add(getEngineClassPath());
+        serverCommand.add("-Dgrakn.dir=" + graknHome);
+        serverCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
+        serverCommand.add("-Dgrakn.pidfile=" + SERVER_PIDFILE);
         // This is because https://wiki.apache.org/hadoop/WindowsProblems
-        engineCommand.add("-Dhadoop.home.dir="+graknHome.resolve("services").resolve("hadoop"));
+        serverCommand.add("-Dhadoop.home.dir="+graknHome.resolve("services").resolve("hadoop"));
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
-            engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
+            serverCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
-        engineCommand.add(getEngineMainClass().getName());
+        serverCommand.add(getEngineMainClass().getName());
 
         // benchmarking flag
-        engineCommand.add(benchmarkFlag);
-        return engineCommand;
+        serverCommand.add(benchmarkFlag);
+        return serverCommand;
     }
 
     private String getEngineClassPath() {

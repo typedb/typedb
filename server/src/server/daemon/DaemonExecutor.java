@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
 import com.google.auto.value.AutoValue;
 import org.apache.commons.io.FileUtils;
@@ -37,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * This class is responsible for spawning process.
- *
  */
 public class DaemonExecutor {
 
@@ -52,7 +51,9 @@ public class DaemonExecutor {
         }
 
         public abstract String stdout();
+
         public abstract String stderr();
+
         public abstract int exitCode();
     }
 
@@ -176,9 +177,9 @@ public class DaemonExecutor {
         waitUntilStopped(pidFile);
     }
 
-    private List<String> killProcessCommand(String pid){
+    private List<String> killProcessCommand(String pid) {
         if (isWindows()) {
-            return Arrays.asList("cmd", "/c", "taskkill /F /PID "+ pid.trim());
+            return Arrays.asList("cmd", "/c", "taskkill /F /PID " + pid.trim());
         } else {
             return Arrays.asList(SH, "-c", "kill " + pid.trim());
         }

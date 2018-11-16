@@ -2,7 +2,7 @@ package grakn.core.rule;
 
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
-import grakn.core.server.bootup.GraknCassandra;
+import grakn.core.server.GraknStorage;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
@@ -68,7 +68,7 @@ public class GraknTestServer extends ExternalResource {
             File cassandraConfig = buildCassandraConfigWithRandomPorts();
             System.setProperty("cassandra.config", "file:" + cassandraConfig.getAbsolutePath());
             System.setProperty("cassandra-foreground", "true");
-            GraknCassandra.main(new String[]{});
+            GraknStorage.main(new String[]{});
             System.out.println("Cassandra started.");
 
             //Start Grakn server

@@ -16,23 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
 /**
- *
+ * Grakn Daemon Exception
  */
 public class GraknDaemonException extends RuntimeException {
-    public GraknDaemonException() {
-        super();
-    }
 
-    public GraknDaemonException(String message) { super(message);}
+    GraknDaemonException(String message) { super(message);}
 
-    public GraknDaemonException(Throwable cause) {
+    GraknDaemonException(Throwable cause) {
         super(cause);
-    }
-
-    public GraknDaemonException(String message, Throwable cause) {
-        super(message, cause);
     }
 }

@@ -20,7 +20,7 @@ package grakn.core.server.session.oltp;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.server.exception.GraknBackendException;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.graql.internal.Schema;
@@ -97,7 +97,7 @@ public class TransactionOLTP extends TransactionImpl<JanusGraph> {
 
     /**
      * Executes a method which has the potential to throw a {@link TemporaryLockingException} or a {@link PermanentLockingException}.
-     * If the exception is thrown it is wrapped in a {@link GraknBackendException} so that the transaction can be retried.
+     * If the exception is thrown it is wrapped in a {@link GraknServerException} so that the transaction can be retried.
      *
      * @param method The locking method to execute
      */
@@ -108,7 +108,7 @@ public class TransactionOLTP extends TransactionImpl<JanusGraph> {
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw TemporaryWriteException.temporaryLock(e);
             } else {
-                throw GraknBackendException.unknown(e);
+                throw GraknServerException.unknown(e);
             }
         }
     }

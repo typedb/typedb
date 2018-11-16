@@ -16,16 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.Maps;
+import grakn.core.commons.config.Config;
 import grakn.core.commons.config.ConfigKey;
 import grakn.core.commons.config.SystemProperty;
-import grakn.core.commons.config.Config;
+import grakn.core.server.GraknStorage;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
@@ -49,7 +50,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.server.bootup.DaemonExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including
@@ -245,7 +246,7 @@ public class StorageDaemon {
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {
             storageCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
-        storageCommand.add(GraknCassandra.class.getCanonicalName());
+        storageCommand.add(GraknStorage.class.getCanonicalName());
         return storageCommand;
     }
 

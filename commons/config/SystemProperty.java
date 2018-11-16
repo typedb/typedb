@@ -22,7 +22,6 @@ import javax.annotation.Nullable;
 
 /**
  * Enum representing system properties used by Grakn
- *
  */
 public enum SystemProperty {
 
@@ -44,6 +43,7 @@ public enum SystemProperty {
 
     /**
      * Return the key identifying the system property
+     *
      * @return the key identifying the system property
      */
     public String key() {
@@ -52,6 +52,7 @@ public enum SystemProperty {
 
     /**
      * Retrieve the value of the system property
+     *
      * @return the value of the system property, or null if the system property is not set
      */
     @Nullable
@@ -61,6 +62,7 @@ public enum SystemProperty {
 
     /**
      * Set the value of the system property
+     *
      * @param value the value to set on the system property
      */
     public void set(String value) {

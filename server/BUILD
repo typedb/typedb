@@ -114,7 +114,7 @@ deploy_maven_jar(
 
 java_binary(
     name = "server-binary",
-    main_class = "grakn.core.server.bootup.GraknDaemon",
+    main_class = "grakn.core.server.daemon.GraknDaemon",
     runtime_deps = ["//server"],
     visibility = ["//visibility:public"]
 )
