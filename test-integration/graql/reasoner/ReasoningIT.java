@@ -32,7 +32,7 @@ import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
@@ -75,7 +75,7 @@ import static org.junit.Assert.assertTrue;
 public class ReasoningIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl reflexiveRelationSession;
     private static SessionImpl reflexiveSymmetricRelationSession;

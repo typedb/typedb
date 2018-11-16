@@ -1,51 +1,41 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.graql.reasoner.graph;
 
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
-import grakn.core.graql.Query;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("CheckReturnValue")
-public class DiagonalGraph {
-    private final static Label key = Label.of("name");
-    private final Session session;
+public class DiagonalGraph extends ParametrisedTestGraph {
 
     public DiagonalGraph(Session session) {
-        this.session = session;
+        super(session, "diagonalTest.gql", Label.of("name"));
     }
 
-    public void load(int n, int m) {
-        loadSchema();
-        buildExtensionalDB(n, m);
-    }
-
-    private void loadSchema() {
-        try {
-            InputStream inputStream = DiagonalGraph.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/diagonalTest.gql");
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
-            tx.graql().parser().parseList(s).forEach(Query::execute);
-            tx.commit();
-        } catch (Exception e) {
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void buildExtensionalDB(int n, int m) {
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
+    @Override
+    protected void buildExtensionalDB(int n, int m) {
+        Transaction tx = tx();
         Role relFrom = tx.getRole("rel-from");
         Role relTo = tx.getRole("rel-to");
 
@@ -56,7 +46,7 @@ public class DiagonalGraph {
         long inserts = 0;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                instanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, entity1, key).id();
+                instanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, entity1, key()).id();
                 inserts++;
                 if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
 
@@ -80,19 +70,11 @@ public class DiagonalGraph {
                 if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);
             }
         }
-        System.out.println("Extensional DB loaded.");
         tx.commit();
     }
 
-
-    private static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
-        Thing inst = type.create();
-        putResource(inst, tx.getSchemaConcept(key), id);
-        return inst;
-    }
-
-    private static <T> void putResource(Thing thing, AttributeType<T> attributeType, T resource) {
-        Attribute attributeInstance = attributeType.create(resource);
-        thing.has(attributeInstance);
+    @Override
+    protected void buildExtensionalDB(int n) {
+        buildExtensionalDB(n, n);
     }
 }

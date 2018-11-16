@@ -18,51 +18,52 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
 @SuppressWarnings("CheckReturnValue")
-public class TransitivityChainGraph extends ParametrisedTestGraph {
+public class TailRecursionGraph extends ParametrisedTestGraph {
 
-    public TransitivityChainGraph(Session session) {
-        super(session, "quadraticTransitivity.gql", Label.of("index"));
+    public TailRecursionGraph(Session session) {
+        super(session, "tail-recursion.gql", Label.of("index"));
     }
 
     @Override
-    protected void buildExtensionalDB(int n){
+    protected void buildExtensionalDB(int n, int m) {
         Transaction tx = tx();
+        Label key = key();
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
+        EntityType bEntity = tx.getEntityType("b-entity");
         RelationshipType q = tx.getRelationshipType("Q");
-        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key());
-        ConceptId[] aInstanceIds = new ConceptId[n];
-        for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = putEntityWithResource(tx, "a" + i, aEntity, key()).id();
+
+        putEntityWithResource(tx, "a0", aEntity, key);
+        for(int i = 1 ; i <= m + 1 ;i++) {
+            for (int j = 1; j <= n; j++) {
+                putEntityWithResource(tx, "b" + i + "," + j, bEntity, key);
+            }
         }
 
-        q.create()
-                .assign(qfrom, aInst)
-                .assign(qto, tx.getConcept(aInstanceIds[0]));
-
-        for(int i = 0 ; i < n - 1 ; i++) {
+        for (int j = 1; j <= n; j++) {
             q.create()
-                    .assign(qfrom, tx.getConcept(aInstanceIds[i]))
-                    .assign(qto, tx.getConcept(aInstanceIds[i+1]));
+                    .assign(qfrom, getInstance(tx, "a0"))
+                    .assign(qto, getInstance(tx, "b1" + "," + j));
+            for(int i = 1 ; i <= m ;i++) {
+                q.create()
+                        .assign(qfrom, getInstance(tx, "b" + i + "," + j))
+                        .assign(qto, getInstance(tx, "b" + (i + 1) + "," + j));
+            }
         }
-        tx.commit();
     }
 
-
     @Override
-    protected void buildExtensionalDB(int n, int children) {
-        buildExtensionalDB(n);
+    protected void buildExtensionalDB(int n) {
+        buildExtensionalDB(n, n);
     }
 }

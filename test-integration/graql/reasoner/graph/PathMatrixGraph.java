@@ -18,72 +18,61 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import com.google.common.math.IntMath;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
 /**
- * Defines a Graph based on test 6.10 from Cao p. 82.
+ * Defines a KB based on test 6.10 from Cao p. 82, but arranged in a matrix instead of a tree.
+ *
+ * @author Kasper Piskorski
+ *
  */
 @SuppressWarnings("CheckReturnValue")
-public class PathTreeGraph extends ParametrisedTestGraph {
+public class PathMatrixGraph extends ParametrisedTestGraph {
 
-    public PathTreeGraph(Session session) {
-        super(session, "pathTest.gql", Label.of("index"));
-    }
-
-    public PathTreeGraph(Session session, String schemaFile) {
-        super(session, schemaFile, Label.of("index"));
+    public PathMatrixGraph(Session session){
+        super(session, "path-test.gql", Label.of("index"));
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int children){
+    protected void buildExtensionalDB( int n, int m) {
         Transaction tx = tx();
-        Role fromRole = tx.getRole("arc-from");
-        Role toRole = tx.getRole("arc-to");
-
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
+        Role arcFrom = tx.getRole("arc-from");
+        Role arcTo = tx.getRole("arc-to");
 
         RelationshipType arc = tx.getRelationshipType("arc");
         putEntityWithResource(tx, "a0", startVertex, key());
 
-        int outputThreshold = 500;
-        for (int i = 1; i <= n; i++) {
-            int m = IntMath.pow(children, i);
+        for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 putEntityWithResource(tx, "a" + i + "," + j, vertex, key());
-                if (j != 0 && j % outputThreshold == 0) {
-                    System.out.println(j + " entities out of " + m + " inserted");
-                }
             }
         }
 
-        for (int j = 0; j < children; j++) {
-            arc.create()
-                    .assign(fromRole, getInstance(tx, "a0"))
-                    .assign(toRole, getInstance(tx, "a1," + j));
-        }
+        arc.create()
+                .assign(arcFrom, getInstance(tx, "a0"))
+                .assign(arcTo, getInstance(tx, "a0,0"));
 
-        for (int i = 1; i < n; i++) {
-            int m = IntMath.pow(children, i);
+        for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                for (int c = 0; c < children; c++) {
+                if (j < n - 1) {
                     arc.create()
-                            .assign(fromRole, getInstance(tx, "a" + i + "," + j))
-                            .assign(toRole, getInstance(tx, "a" + (i + 1) + "," + (j * children + c)));
-
+                            .assign(arcFrom, getInstance(tx, "a" + i + "," + j))
+                            .assign(arcTo, getInstance(tx, "a" + i + "," + (j + 1)));
                 }
-                if (j != 0 && j % outputThreshold == 0) {
-                    System.out.println("level " + i + "/" + (n - 1) + ": " + j + " entities out of " + m + " connected");
+                if (i < m - 1) {
+                    arc.create()
+                            .assign(arcFrom, getInstance(tx, "a" + i + "," + j))
+                            .assign(arcTo, getInstance(tx, "a" + (i + 1) + "," + j));
                 }
             }
         }
-        tx.commit();
     }
 
     @Override

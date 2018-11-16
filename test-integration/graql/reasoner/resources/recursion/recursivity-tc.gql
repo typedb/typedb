@@ -1,0 +1,66 @@
+define
+
+###################################################
+####################Schema######################
+#################################################
+
+entity2 sub entity
+    has index;
+q sub entity2;
+
+N-TC-roleA sub role;
+N-TC-roleB sub role;
+N-TC sub relationship, relates N-TC-roleB, relates N-TC-roleA;
+entity2 plays N-TC-roleB, plays N-TC-roleA;
+
+TC-roleA sub role;
+TC-roleB sub role;
+TC sub relationship, relates TC-roleA, relates TC-roleB;
+entity2 plays TC-roleA, plays TC-roleB;
+
+P-roleA sub role;
+P-roleB sub role;
+P sub relationship, relates P-roleA, relates P-roleB;
+entity2 plays P-roleA, plays P-roleB;
+
+index sub attribute, datatype string;
+
+insert
+
+####################################################
+##################DATA#############################
+####################################################
+
+$a isa entity2, has index "a";
+$a1 isa entity2, has index "a1";
+$a2 isa q, has index "a2";
+
+(P-roleA: $a1, P-roleB: $a) isa P;
+(P-roleA: $a2, P-roleB: $a1) isa P;
+
+define
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+$x isa q;
+(TC-roleA: $x, TC-roleB: $y) isa TC;},
+then {
+(N-TC-roleA: $x, N-TC-roleB: $y) isa N-TC;};
+
+rule-2
+when {
+(P-roleA: $x, P-roleB: $y) isa P;},
+then {
+(TC-roleA: $x, TC-roleB: $y) isa TC;};
+
+rule-3
+when {
+(P-roleA: $x, P-roleB: $z) isa P;
+(TC-roleA:$z, TC-roleB: $y) isa TC;},
+then {
+(TC-roleA: $x, TC-roleB: $y) isa TC;};
+
