@@ -265,6 +265,7 @@ public class StorageDaemon {
         return Arrays.asList(
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,
+                //TODO: this needs to be removed or find lighter cassandra deps
                 NodeTool.class.getCanonicalName(),
                 "statusthrift"
         );
