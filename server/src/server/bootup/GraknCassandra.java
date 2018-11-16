@@ -29,7 +29,6 @@ import java.lang.management.ManagementFactory;
 /**
  * CassandraDaemon Wrapper that persists Cassandra PID to file once the service is up and running
  */
-
 public class GraknCassandra {
     private static final Logger LOG = LoggerFactory.getLogger(GraknCassandra.class);
 

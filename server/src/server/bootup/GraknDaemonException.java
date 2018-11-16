@@ -21,18 +21,18 @@ package grakn.core.server.bootup;
 /**
  *
  */
-public class BootupException extends RuntimeException {
-    public BootupException() {
+public class GraknDaemonException extends RuntimeException {
+    public GraknDaemonException() {
         super();
     }
 
-    public BootupException(String message) { super(message);}
+    public GraknDaemonException(String message) { super(message);}
 
-    public BootupException(Throwable cause) {
+    public GraknDaemonException(Throwable cause) {
         super(cause);
     }
 
-    public BootupException(String message, Throwable cause) {
+    public GraknDaemonException(String message, Throwable cause) {
         super(message, cause);
     }
 }

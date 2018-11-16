@@ -66,7 +66,7 @@ if exist .\services\lib\core.console-*.jar (
 
 if exist .\services\lib\core.server-*.jar (
    set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\server;%GRAKN_HOME%\services\lib\*"
-   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" grakn.core.server.bootup.GraknBootup %*
+   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dengine.javaopts="%ENGINE_JAVAOPTS%" grakn.core.server.bootup.GraknDaemon %*
    goto exit
 ) else (
    echo Grakn Core Server is not included in this Grakn distribution^.

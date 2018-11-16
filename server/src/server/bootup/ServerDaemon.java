@@ -38,14 +38,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.bootup.DaemonExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the Engine process,
  * including starting, stopping, and performing status checks
  *
  */
-public class EngineBootup {
+public class ServerDaemon {
     private static final String DISPLAY_NAME = "Grakn Core Server";
     private static final long ENGINE_STARTUP_TIMEOUT_S = 300;
     private static final Path ENGINE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
@@ -55,9 +55,9 @@ public class EngineBootup {
     protected final Path graknPropertiesPath;
     private final Config graknProperties;
 
-    private BootupProcessExecutor bootupProcessExecutor;
+    private DaemonExecutor bootupProcessExecutor;
 
-    public EngineBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
+    public ServerDaemon(DaemonExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
         this.bootupProcessExecutor = bootupProcessExecutor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
@@ -116,7 +116,7 @@ public class EngineBootup {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<BootupProcessResult> startEngineAsync = bootupProcessExecutor.executeAsync(engineCommand(benchmarkFlag), graknHome.toFile());
+        Future<DaemonExecutor.Response> startEngineAsync = bootupProcessExecutor.executeAsync(engineCommand(benchmarkFlag), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(ENGINE_STARTUP_TIMEOUT_S);
 
@@ -142,9 +142,9 @@ public class EngineBootup {
         try {
             String errorMessage = "Process exited with code '" + startEngineAsync.get().exitCode() + "': '" + startEngineAsync.get().stderr() + "'";
             System.err.println(errorMessage);
-            throw new BootupException(errorMessage);
+            throw new GraknDaemonException(errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            throw new BootupException(e);
+            throw new GraknDaemonException(e);
         }
     }
 

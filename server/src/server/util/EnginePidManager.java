@@ -19,7 +19,7 @@
 package grakn.core.server.util;
 
 import grakn.core.commons.exception.ErrorMessage;
-import grakn.core.server.bootup.BootupException;
+import grakn.core.server.bootup.GraknDaemonException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class EnginePidManager {
         try {
             return Long.parseLong(pidString);
         } catch (NumberFormatException e) {
-            throw new BootupException(ErrorMessage.COULD_NOT_GET_PID.getMessage(pidString), e);
+            throw new GraknDaemonException(ErrorMessage.COULD_NOT_GET_PID.getMessage(pidString), e);
         }
     }
 
@@ -76,7 +76,7 @@ public class EnginePidManager {
         try {
             Files.write(pidFilePath, pidString.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new BootupException(e);
+            throw new GraknDaemonException(e);
         }
     }
 }
