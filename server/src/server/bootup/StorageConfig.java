@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import grakn.core.commons.config.Config;
 import grakn.core.commons.config.ConfigKey;
@@ -58,36 +57,40 @@ public class StorageConfig {
 
     static void initialise() {
         try {
-            byte[] oldConfigBytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
             TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
+            ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
 
+            // Read the original Cassandra config from services/cassandra/cassandra.yaml into a String
+            byte[] oldConfigBytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
             String oldConfig = new String(oldConfigBytes, StandardCharsets.UTF_8);
+
+            // Convert the String of config values into a Map
             Map<String, Object> oldConfigMap = mapper.readValue(oldConfig, reference);
             oldConfigMap = Maps.transformValues(oldConfigMap, value -> value == null ? EMPTY_VALUE : value);
 
+            // Set the original config as the starting point of the new config values
             Map<String, Object> newConfigMap = new HashMap<>(oldConfigMap);
 
+            // Read the Grakn config which is available to the user
             Config inputConfig = Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
+
+            // Set the new data directories for Cassandra
             String newDataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
             newConfigMap.put(DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(newDataDir + DATA_SUBDIR));
             newConfigMap.put(SAVED_CACHES_DIR_CONFIG_KEY, newDataDir + SAVED_CACHES_SUBDIR);
             newConfigMap.put(COMMITLOG_DIR_CONFIG_KEY, newDataDir + COMMITLOG_SUBDIR);
 
-            //overwrite params with params from grakn config
+            // Overwrite Cassandra config values with values provided in the Grakn config
             inputConfig.properties().stringPropertyNames().stream()
                     .filter(key -> key.contains(CONFIG_PARAM_PREFIX))
-                    .forEach(key -> {
-                        String param = key.replaceAll(CONFIG_PARAM_PREFIX, "");
-                        if (newConfigMap.containsKey(param)) {
-                            newConfigMap.put(param, inputConfig.properties().getProperty(key));
-                        }
-                    });
+                    .forEach(key -> newConfigMap.put(
+                            key.replaceAll(CONFIG_PARAM_PREFIX, ""),
+                            inputConfig.properties().getProperty(key)
+                    ));
 
-            mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-            ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
+            // Write the new Cassandra config into the original file:services/cassandra/cassandra.yaml
             mapper.writeValue(outputstream, newConfigMap);
-
             String newConfigStr = outputstream.toString(StandardCharsets.UTF_8.name());
             Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), newConfigStr.getBytes(StandardCharsets.UTF_8));
 
