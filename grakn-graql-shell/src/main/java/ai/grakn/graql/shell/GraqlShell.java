@@ -119,7 +119,7 @@ public class GraqlShell implements AutoCloseable {
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = client.session(keyspace).transaction(GraknTxType.WRITE);
+        tx = cli    ent.session(keyspace).transaction(GraknTxType.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {

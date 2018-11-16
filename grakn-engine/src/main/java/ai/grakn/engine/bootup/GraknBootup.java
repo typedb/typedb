@@ -43,6 +43,7 @@ public class GraknBootup {
 
     private static final String ENGINE = "engine";
     private static final String STORAGE = "storage";
+    private static final Class GRAKN_CLASS = Grakn.class;
 
     private final StorageBootup storageBootup;
     private final EngineBootup engineBootup;
@@ -64,7 +65,7 @@ public class GraknBootup {
 
             BootupProcessExecutor bootupProcessExecutor = new BootupProcessExecutor();
             GraknBootup graknBootup = new GraknBootup(new StorageBootup(bootupProcessExecutor, graknHome, graknProperties),
-                    new EngineBootup(bootupProcessExecutor, graknHome, graknProperties));
+                    new EngineBootup(bootupProcessExecutor, graknHome, graknProperties, GRAKN_CLASS));
 
             graknBootup.run(args);
             System.exit(0);

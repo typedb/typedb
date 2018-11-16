@@ -59,22 +59,18 @@ public class EngineBootup {
     protected final Path graknHome;
     protected final Path graknPropertiesPath;
     private final GraknConfig graknProperties;
+    private final Class engineMainClass;
 
     private BootupProcessExecutor bootupProcessExecutor;
 
-    public EngineBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
+    public EngineBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath, Class engineMainClass) {
         this.bootupProcessExecutor = bootupProcessExecutor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
         this.graknProperties = GraknConfig.read(graknPropertiesPath.toFile());
+        this.engineMainClass = engineMainClass;
     }
 
-    /**
-     * @return the main class of Engine. In KGMS, this method will be overridden to return a different class.
-     */
-    public Class getEngineMainClass() {
-        return Grakn.class;
-    }
 
     public void startIfNotRunning() {
         boolean isEngineRunning = bootupProcessExecutor.isProcessRunning(ENGINE_PIDFILE);
@@ -167,7 +163,7 @@ public class EngineBootup {
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
             engineCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
-        engineCommand.add(getEngineMainClass().getName());
+        engineCommand.add(engineMainClass.getName());
         return engineCommand;
     }
 
