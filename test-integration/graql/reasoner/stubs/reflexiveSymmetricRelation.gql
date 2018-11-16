@@ -1,0 +1,57 @@
+define
+
+#Roles
+
+symmetricRole sub role;
+role1 sub role;
+role2 sub role;
+
+#Entities
+
+genericEntity sub entity
+    plays symmetricRole
+    plays role1
+    plays role2;
+
+anotherGenericEntity sub entity
+    plays symmetricRole
+    plays role1
+    plays role2;
+
+#Relations
+
+symmetricRelation sub relationship
+    relates symmetricRole;
+
+relation sub relationship
+    relates role1
+    relates role2;
+
+#Rules
+
+rule-1 sub rule
+    when {
+    	$x isa genericEntity;
+    }
+    then {
+    	(symmetricRole: $x, symmetricRole: $x) isa symmetricRelation;
+    };
+
+rule-2 sub rule
+    when {
+        (role1: $c, role2: $m) isa relation;
+        (symmetricRole: $m, symmetricRole: $op) isa symmetricRelation;
+    }
+    then {
+        (symmetricRole: $c, symmetricRole: $op) isa symmetricRelation;
+    };
+
+insert
+
+#Data
+
+$a isa anotherGenericEntity;
+$b isa genericEntity;
+$c isa anotherGenericEntity;
+(role1: $a, role2: $b) isa relation;
+(symmetricRole: $b, symmetricRole: $c) isa symmetricRelation;

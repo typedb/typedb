@@ -43,7 +43,7 @@ java_library(
         "//external:jar/org/apache/commons/commons-math3"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
