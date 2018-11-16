@@ -99,7 +99,7 @@ java_test(
 java_test(
     name = "resolution-plan-it",
     srcs = ["ResolutionPlanIT.java"],
-    test_class = "grakn.core.graql.reasoner.ResolutionPlanIT",
+    test_class = "grakn.core.graql.reasoner.query.ResolutionPlanIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
