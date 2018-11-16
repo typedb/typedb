@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Container class for storing and manipulating storage configuration.
@@ -57,37 +58,29 @@ public class StorageConfig {
 
     static void initialise() {
         try {
-            Config inputConfig = Config.read(Paths.get(SystemProperty.CONFIGURATION_FILE.value()));
-            String oldConfig;
-            byte[] bytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
-            oldConfig = new String(bytes, StandardCharsets.UTF_8);
-
-
+            byte[] oldConfigBytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-
             TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
-            Map<String, Object> yamlParams = mapper.readValue(oldConfig, reference);
-            Map<String, Object> oldConfigMap = Maps.transformValues(yamlParams, value -> value == null ? EMPTY_VALUE : value);
+
+            String oldConfig = new String(oldConfigBytes, StandardCharsets.UTF_8);
+            Map<String, Object> oldConfigMap = mapper.readValue(oldConfig, reference);
+            oldConfigMap = Maps.transformValues(oldConfigMap, value -> value == null ? EMPTY_VALUE : value);
+
             Map<String, Object> newConfigMap = new HashMap<>(oldConfigMap);
 
-            String dataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
-
-            ImmutableMap<String, Object> cassandraDataDirs = ImmutableMap.of(
-                    DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(dataDir + DATA_SUBDIR),
-                    SAVED_CACHES_DIR_CONFIG_KEY, dataDir + SAVED_CACHES_SUBDIR,
-                    COMMITLOG_DIR_CONFIG_KEY, dataDir + COMMITLOG_SUBDIR
-            );
-            newConfigMap.putAll(cassandraDataDirs);
+            Config inputConfig = Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
+            String newDataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
+            newConfigMap.put(DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(newDataDir + DATA_SUBDIR));
+            newConfigMap.put(SAVED_CACHES_DIR_CONFIG_KEY, newDataDir + SAVED_CACHES_SUBDIR);
+            newConfigMap.put(COMMITLOG_DIR_CONFIG_KEY, newDataDir + COMMITLOG_SUBDIR);
 
             //overwrite params with params from grakn config
-            inputConfig.properties()
-                    .stringPropertyNames()
-                    .stream()
-                    .filter(prop -> prop.contains(CONFIG_PARAM_PREFIX))
-                    .forEach(prop -> {
-                        String param = prop.replaceAll(CONFIG_PARAM_PREFIX, "");
+            inputConfig.properties().stringPropertyNames().stream()
+                    .filter(key -> key.contains(CONFIG_PARAM_PREFIX))
+                    .forEach(key -> {
+                        String param = key.replaceAll(CONFIG_PARAM_PREFIX, "");
                         if (newConfigMap.containsKey(param)) {
-                            newConfigMap.put(param, inputConfig.properties().getProperty(prop));
+                            newConfigMap.put(param, inputConfig.properties().getProperty(key));
                         }
                     });
 
