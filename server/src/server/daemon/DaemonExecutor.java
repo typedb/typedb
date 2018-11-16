@@ -16,8 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
+import com.google.auto.value.AutoValue;
 import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
@@ -36,25 +37,41 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * This class is responsible for spawning process.
- *
  */
-public class BootupProcessExecutor {
+public class DaemonExecutor {
+
+    @AutoValue
+    public abstract static class Response {
+        public static Response create(String stdout, String stderr, int exitCode) {
+            return new AutoValue_DaemonExecutor_Response(stdout, stderr, exitCode);
+        }
+
+        public boolean success() {
+            return exitCode() == 0;
+        }
+
+        public abstract String stdout();
+
+        public abstract String stderr();
+
+        public abstract int exitCode();
+    }
 
     public static final long WAIT_INTERVAL_SECOND = 2;
     public static final String SH = "/bin/sh";
 
-    public CompletableFuture<BootupProcessResult> executeAsync(List<String> command, File workingDirectory) {
+    public CompletableFuture<Response> executeAsync(List<String> command, File workingDirectory) {
         return CompletableFuture.supplyAsync(() -> executeAndWait(command, workingDirectory));
     }
 
-    public BootupProcessResult executeAndWait(List<String> command, File workingDirectory) {
+    public Response executeAndWait(List<String> command, File workingDirectory) {
         try {
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
             ProcessResult result = new ProcessExecutor()
                     .readOutput(true)
                     .redirectError(stderr)
                     .directory(workingDirectory).command(command).execute();
-            return BootupProcessResult.create(result.outputUTF8(), stderr.toString(StandardCharsets.UTF_8.name()), result.getExitValue());
+            return Response.create(result.outputUTF8(), stderr.toString(StandardCharsets.UTF_8.name()), result.getExitValue());
         } catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
         }
@@ -111,7 +128,7 @@ public class BootupProcessExecutor {
                 if (processPid.trim().isEmpty()) {
                     return false;
                 }
-                BootupProcessResult command =
+                Response command =
                         executeAndWait(checkPIDRunningCommand(processPid), null);
 
                 if (command.exitCode() != 0) {
@@ -160,9 +177,9 @@ public class BootupProcessExecutor {
         waitUntilStopped(pidFile);
     }
 
-    private List<String> killProcessCommand(String pid){
+    private List<String> killProcessCommand(String pid) {
         if (isWindows()) {
-            return Arrays.asList("cmd", "/c", "taskkill /F /PID "+ pid.trim());
+            return Arrays.asList("cmd", "/c", "taskkill /F /PID " + pid.trim());
         } else {
             return Arrays.asList(SH, "-c", "kill " + pid.trim());
         }

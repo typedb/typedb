@@ -34,7 +34,7 @@ import static grakn.core.commons.exception.ErrorMessage.LOCKING_EXCEPTION;
  * </p>
  *
  */
-public class TemporaryWriteException extends GraknBackendException{
+public class TemporaryWriteException extends GraknServerException {
     private TemporaryWriteException(String error, Exception e) {
         super(error, e);
     }

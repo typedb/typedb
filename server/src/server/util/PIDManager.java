@@ -16,9 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.util;
 
 import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.server.exception.GraknServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,17 +30,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- *
  * A class responsible for managing the PID file of Engine
- *
- *
  */
-public class EnginePidManager {
-    private static final Logger LOG = LoggerFactory.getLogger(EnginePidManager.class);
+public class PIDManager {
+    private static final Logger LOG = LoggerFactory.getLogger(PIDManager.class);
 
     private Path pidFile;
 
-    public EnginePidManager(Path pidFile) {
+    public PIDManager(Path pidFile) {
         this.pidFile = pidFile;
     }
 
@@ -54,7 +52,7 @@ public class EnginePidManager {
         try {
             return Long.parseLong(pidString);
         } catch (NumberFormatException e) {
-            throw new BootupException(ErrorMessage.COULD_NOT_GET_PID.getMessage(pidString), e);
+            throw GraknServerException.invalidPIDException(pidString);
         }
     }
 
@@ -75,7 +73,7 @@ public class EnginePidManager {
         try {
             Files.write(pidFilePath, pidString.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new BootupException(e);
+            throw GraknServerException.fileWriteException(pidFilePath.toString());
         }
     }
 }

@@ -18,6 +18,7 @@
 
 package grakn.core.server.exception;
 
+import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.commons.exception.GraknException;
 import grakn.core.server.keyspace.Keyspace;
 
@@ -25,47 +26,48 @@ import static grakn.core.commons.exception.ErrorMessage.BACKEND_EXCEPTION;
 import static grakn.core.commons.exception.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
- * <p>
- *     Backend Grakn Exception
- * </p>
- *
- * <p>
- *     Failures which occur server side are wrapped in this exception. This can include but is not limited to:
- *     - Cassandra Timeouts
- *     - Malformed Requests
- * </p>
- *
+ * Backend Grakn Exception
+ * Failures which occur server side are wrapped in this exception.
+ * This can include but is not limited to:
+ * - Cassandra Timeouts
+ * - Malformed Requests
  */
-public class GraknBackendException extends GraknException {
+public class GraknServerException extends GraknException {
 
-    private final String NAME = "GraknBackendException";
+    GraknServerException(String error) {
+        super(error);
+    }
 
-    protected GraknBackendException(String error, Exception e) {
+    GraknServerException(String error, Exception e) {
         super(error, e);
     }
 
     @Override
     public String getName() {
-        return NAME;
+        return this.getClass().getName();
     }
 
-    GraknBackendException(String error){
-        super(error);
-    }
-
-    public static GraknBackendException create(String error) {
-        return new GraknBackendException(error);
+    public static GraknServerException create(String error) {
+        return new GraknServerException(error);
     }
 
     /**
      * Thrown when the persistence layer throws an unexpected exception.
      * This can include timeouts
      */
-    public static GraknBackendException unknown(Exception e){
-        return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
+    public static GraknServerException unknown(Exception e) {
+        return new GraknServerException(BACKEND_EXCEPTION.getMessage(), e);
     }
 
-    public static GraknBackendException initializationException(Keyspace keyspace) {
+    public static GraknServerException initializationException(Keyspace keyspace) {
         return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
+    }
+
+    public static GraknServerException invalidPIDException(String pid) {
+        return create(ErrorMessage.COULD_NOT_GET_PID.getMessage(pid));
+    }
+
+    public static GraknServerException fileWriteException(String filepath) {
+        return create(ErrorMessage.FILE_WRITE_EXCEPTION.getMessage(filepath));
     }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;
@@ -29,9 +29,8 @@ import java.lang.management.ManagementFactory;
 /**
  * CassandraDaemon Wrapper that persists Cassandra PID to file once the service is up and running
  */
-
-public class GraknCassandra {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknCassandra.class);
+public class GraknStorage {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknStorage.class);
 
     public static void main(String[] args) {
         try {

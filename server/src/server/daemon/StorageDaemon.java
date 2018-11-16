@@ -16,39 +16,49 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+import com.google.common.collect.Maps;
+import grakn.core.commons.config.Config;
 import grakn.core.commons.config.ConfigKey;
 import grakn.core.commons.config.SystemProperty;
-import grakn.core.commons.config.Config;
+import grakn.core.server.GraknStorage;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.server.bootup.BootupProcessExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.server.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including
  * starting and stopping, performing status checks, and cleaning the data.
- *
  * The PID file for the Storage component is managed internally by Cassandra and not by this class. This means that
  * you will not find any code which creates or deletes the PID file for the Storage component.
- *
  */
-public class StorageBootup {
+public class StorageDaemon {
 
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
@@ -57,22 +67,77 @@ public class StorageBootup {
     private static final Path STORAGE_DATA = Paths.get("db", "cassandra");
     private static final String JAVA_OPTS = SystemProperty.STORAGE_JAVAOPTS.value();
 
+    private static final String EMPTY_VALUE = "";
+    private static final String CONFIG_PARAM_PREFIX = "storage.internal.";
+    private static final String SAVED_CACHES_SUBDIR = "cassandra/saved_caches";
+    private static final String COMMITLOG_SUBDIR = "cassandra/commitlog";
+    private static final String DATA_SUBDIR = "cassandra/data";
+    private static final String DATA_FILE_DIR_CONFIG_KEY = "data_file_directories";
+    private static final String SAVED_CACHES_DIR_CONFIG_KEY = "saved_caches_directory";
+    private static final String COMMITLOG_DIR_CONFIG_KEY = "commitlog_directory";
+    private static final String STORAGE_CONFIG_PATH = "services/cassandra/";
+    private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
-    private BootupProcessExecutor bootupProcessExecutor;
+
+    private DaemonExecutor daemonExecutor;
     private final Path graknHome;
     private final Config graknProperties;
 
-    public StorageBootup(BootupProcessExecutor bootupProcessExecutor, Path graknHome, Path graknPropertiesPath) {
+    StorageDaemon(DaemonExecutor daemonExecutor, Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
         this.graknProperties = Config.read(graknPropertiesPath);
-        this.bootupProcessExecutor = bootupProcessExecutor;
+        this.daemonExecutor = daemonExecutor;
+    }
+
+    private void initialiseConfig() {
+        try {
+            ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
+            ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
+
+            // Read the original Cassandra config from services/cassandra/cassandra.yaml into a String
+            byte[] oldConfigBytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
+            String oldConfig = new String(oldConfigBytes, StandardCharsets.UTF_8);
+
+            // Convert the String of config values into a Map
+            Map<String, Object> oldConfigMap = mapper.readValue(oldConfig, reference);
+            oldConfigMap = Maps.transformValues(oldConfigMap, value -> value == null ? EMPTY_VALUE : value);
+
+            // Set the original config as the starting point of the new config values
+            Map<String, Object> newConfigMap = new HashMap<>(oldConfigMap);
+
+            // Read the Grakn config which is available to the user
+            Config inputConfig = Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
+
+            // Set the new data directories for Cassandra
+            String newDataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
+            newConfigMap.put(DATA_FILE_DIR_CONFIG_KEY, Collections.singletonList(newDataDir + DATA_SUBDIR));
+            newConfigMap.put(SAVED_CACHES_DIR_CONFIG_KEY, newDataDir + SAVED_CACHES_SUBDIR);
+            newConfigMap.put(COMMITLOG_DIR_CONFIG_KEY, newDataDir + COMMITLOG_SUBDIR);
+
+            // Overwrite Cassandra config values with values provided in the Grakn config
+            inputConfig.properties().stringPropertyNames().stream()
+                    .filter(key -> key.contains(CONFIG_PARAM_PREFIX))
+                    .forEach(key -> newConfigMap.put(
+                            key.replaceAll(CONFIG_PARAM_PREFIX, ""),
+                            inputConfig.properties().getProperty(key)
+                    ));
+
+            // Write the new Cassandra config into the original file:services/cassandra/cassandra.yaml
+            mapper.writeValue(outputstream, newConfigMap);
+            String newConfigStr = outputstream.toString(StandardCharsets.UTF_8.name());
+            Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), newConfigStr.getBytes(StandardCharsets.UTF_8));
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Attempt to start Storage if it is not already running
      */
-    public void startIfNotRunning() {
-        boolean isStorageRunning = bootupProcessExecutor.isProcessRunning(STORAGE_PIDFILE);
+    void startIfNotRunning() {
+        boolean isStorageRunning = daemonExecutor.isProcessRunning(STORAGE_PIDFILE);
         if (isStorageRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
@@ -82,16 +147,16 @@ public class StorageBootup {
     }
 
     public void stop() {
-        bootupProcessExecutor.stopProcessIfRunning(STORAGE_PIDFILE, DISPLAY_NAME);
+        daemonExecutor.stopProcessIfRunning(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
     public void status() {
-        bootupProcessExecutor.processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
+        daemonExecutor.processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
-    public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '" + bootupProcessExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
-                "' (from " + STORAGE_PIDFILE + "), '" + bootupProcessExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) + "' (from ps -ef)");
+    void statusVerbose() {
+        System.out.println(DISPLAY_NAME + " pid = '" + daemonExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
+                                   "' (from " + STORAGE_PIDFILE + "), '" + daemonExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) + "' (from ps -ef)");
     }
 
     public void clean() {
@@ -112,22 +177,25 @@ public class StorageBootup {
     }
 
     public boolean isRunning() {
-        return bootupProcessExecutor.isProcessRunning(STORAGE_PIDFILE);
+        return daemonExecutor.isProcessRunning(STORAGE_PIDFILE);
     }
 
     /**
      * Attempt to start Storage and perform periodic polling until it is ready. The readiness check is performed with nodetool.
      * <p>
-     * A {@link BootupException} will be thrown if Storage does not start after a timeout specified
+     * A {@link GraknDaemonException} will be thrown if Storage does not start after a timeout specified
      * in the 'WAIT_INTERVAL_SECOND' field.
      *
-     * @throws BootupException
+     * @throws GraknDaemonException
      */
     private void start() {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<BootupProcessResult> result = bootupProcessExecutor.executeAsync(storageCommand(), graknHome.toFile());
+        // Consume configuration from Grakn config file into Cassandra config file
+        initialiseConfig();
+
+        Future<DaemonExecutor.Response> result = daemonExecutor.executeAsync(storageCommand(), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
@@ -152,14 +220,14 @@ public class StorageBootup {
         try {
             String errorMessage = "Process exited with code '" + result.get().exitCode() + "': '" + result.get().stderr() + "'";
             System.err.println(errorMessage);
-            throw new BootupException(errorMessage);
+            throw new GraknDaemonException(errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            throw new BootupException(e);
+            throw new GraknDaemonException(e);
         }
     }
 
     private String storageStatus() {
-        return bootupProcessExecutor.executeAndWait(nodetoolCommand(), graknHome.toFile()).stdout().trim();
+        return daemonExecutor.executeAndWait(nodetoolCommand(), graknHome.toFile()).stdout().trim();
     }
 
     private List<String> storageCommand() {
@@ -178,7 +246,7 @@ public class StorageBootup {
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {
             storageCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
-        storageCommand.add(GraknCassandra.class.getCanonicalName());
+        storageCommand.add(GraknStorage.class.getCanonicalName());
         return storageCommand;
     }
 
@@ -197,6 +265,7 @@ public class StorageBootup {
         return Arrays.asList(
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,
+                //TODO: this needs to be removed or find lighter cassandra deps
                 NodeTool.class.getCanonicalName(),
                 "statusthrift"
         );

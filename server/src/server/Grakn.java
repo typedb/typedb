@@ -18,8 +18,7 @@
 
 package grakn.core.server;
 
-import grakn.core.server.bootup.EnginePidManager;
-import grakn.core.server.bootup.GraknBootup;
+import grakn.core.server.util.PIDManager;
 import grakn.core.commons.config.SystemProperty;
 import grakn.core.commons.exception.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
@@ -47,12 +46,6 @@ public class Grakn {
 
     private static final Logger LOG = LoggerFactory.getLogger(Grakn.class);
 
-    /**
-     *
-     * Invocation from class '{@link GraknBootup}'
-     *
-     * @param args
-     */
     public static void main(String[] args) {
 
         Option enableBenchmark = Option.builder("b")
@@ -90,7 +83,7 @@ public class Grakn {
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
 
             Path pidfile = Paths.get(graknPidFileProperty);
-            EnginePidManager enginePidManager = new EnginePidManager(pidfile);
+            PIDManager enginePidManager = new PIDManager(pidfile);
             enginePidManager.trackGraknPid();
 
             // Start Engine

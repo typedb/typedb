@@ -16,10 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.bootup;
+package grakn.core.server.daemon;
 
 import grakn.core.commons.config.SystemProperty;
-import grakn.core.server.bootup.config.ConfigProcessor;
 import grakn.core.commons.exception.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
@@ -33,20 +32,19 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 
 /**
- * The {@link GraknBootup} class is responsible for starting, stopping and cleaning the keyspaces of Grakn
- *
+ * The {@link GraknDaemon} class is responsible for starting, stopping and cleaning the keyspaces of Grakn
  */
-public class GraknBootup {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknBootup.class);
+public class GraknDaemon {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknDaemon.class);
 
-    private static final String ENGINE = "server";
+    private static final String SERVER = "server";
     private static final String STORAGE = "storage";
 
-    private final StorageBootup storageBootup;
-    private final EngineBootup engineBootup;
+    private final StorageDaemon storageBootup;
+    private final ServerDaemon engineBootup;
 
     /**
-     * Main function of the {@link GraknBootup}. It is meant to be invoked by the 'grakn' bash script.
+     * Main function of the {@link GraknDaemon}. It is meant to be invoked by the 'grakn' bash script.
      * You should have 'grakn.dir' and 'grakn.conf' Java properties set.
      *
      * @param args arguments such as 'server start', 'server stop', 'clean', and so on
@@ -60,15 +58,16 @@ public class GraknBootup {
 
             printGraknLogo();
 
-            BootupProcessExecutor bootupProcessExecutor = new BootupProcessExecutor();
-            GraknBootup graknBootup = new GraknBootup(new StorageBootup(bootupProcessExecutor, graknHome, graknProperties),
-                    new EngineBootup(bootupProcessExecutor, graknHome, graknProperties));
+            DaemonExecutor bootupProcessExecutor = new DaemonExecutor();
+            GraknDaemon daemon = new GraknDaemon(
+                    new StorageDaemon(bootupProcessExecutor, graknHome, graknProperties),
+                    new ServerDaemon(bootupProcessExecutor, graknHome, graknProperties)
+            );
 
-            graknBootup.run(args);
+            daemon.run(args);
             System.exit(0);
 
-        }
-        catch (RuntimeException ex) {
+        } catch (RuntimeException ex) {
             LOG.error(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage(), ex);
             System.out.println(ErrorMessage.UNABLE_TO_START_GRAKN.getMessage());
             System.err.println(ex.getMessage());
@@ -76,7 +75,7 @@ public class GraknBootup {
         }
     }
 
-    private GraknBootup(StorageBootup storageBootup, EngineBootup engineBootup) {
+    private GraknDaemon(StorageDaemon storageBootup, ServerDaemon engineBootup) {
         this.storageBootup = storageBootup;
         this.engineBootup = engineBootup;
     }
@@ -84,7 +83,8 @@ public class GraknBootup {
     /**
      * Basic environment checks. Grakn should only be ran if users are running Java 8,
      * home folder can be detected, and the configuration file 'grakn.properties' exists.
-     * @param graknHome path to $GRAKN_HOME
+     *
+     * @param graknHome       path to $GRAKN_HOME
      * @param graknProperties path to the 'grakn.properties' file
      */
     private static void assertEnvironment(Path graknHome, Path graknProperties) {
@@ -102,7 +102,7 @@ public class GraknBootup {
 
     private static void printGraknLogo() {
         Path ascii = Paths.get(".", "services", "grakn", "grakn-core-ascii.txt");
-        if(ascii.toFile().exists()) {
+        if (ascii.toFile().exists()) {
             try {
                 System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
             } catch (IOException e) {
@@ -113,9 +113,10 @@ public class GraknBootup {
 
     /**
      * Accepts various Grakn commands (eg., 'grakn server start')
-     * @param args arrays of arguments, eg., { 'server', 'start' }
      *
-     *        option may be eg., `--benchmark`
+     * @param args arrays of arguments, eg., { 'server', 'start' }
+     *             <p>
+     *             option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
@@ -155,7 +156,7 @@ public class GraknBootup {
 
     private void serverStop(String arg) {
         switch (arg) {
-            case ENGINE:
+            case SERVER:
                 engineBootup.stop();
                 break;
             case STORAGE:
@@ -169,14 +170,13 @@ public class GraknBootup {
 
     private void serverStart(String arg) {
         switch (arg) {
-            case ENGINE:
+            case SERVER:
                 engineBootup.startIfNotRunning(arg);
                 break;
             case STORAGE:
                 storageBootup.startIfNotRunning();
                 break;
             default:
-                ConfigProcessor.updateProcessConfigs();
                 storageBootup.startIfNotRunning();
                 engineBootup.startIfNotRunning(arg);
         }
@@ -184,24 +184,24 @@ public class GraknBootup {
 
     private void serverHelp() {
         System.out.println("Usage: grakn server COMMAND\n" +
-                "\n" +
-                "COMMAND:\n" +
-                "start ["+ENGINE+"|"+STORAGE+"|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
-                "stop ["+ENGINE+"|"+STORAGE+"]   Stop Grakn (or optionally, only one of the component)\n" +
-                "status                         Check if Grakn is running\n" +
-                "clean                          DANGEROUS: wipe data completely\n" +
-                "\n" +
-                "Tips:\n" +
-                "- Start Grakn with 'grakn server start'\n" +
-                "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n" +
-                "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
+                                   "\n" +
+                                   "COMMAND:\n" +
+                                   "start [" + SERVER + "|" + STORAGE + "|--benchmark] Start Grakn (or optionally, only one of the component, or with benchmarking enabled)\n" +
+                                   "stop [" + SERVER + "|" + STORAGE + "]   Stop Grakn (or optionally, only one of the component)\n" +
+                                   "status                         Check if Grakn is running\n" +
+                                   "clean                          DANGEROUS: wipe data completely\n" +
+                                   "\n" +
+                                   "Tips:\n" +
+                                   "- Start Grakn with 'grakn server start'\n" +
+                                   "- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively\n" +
+                                   "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
     }
 
     private void serverStatus(String verboseFlag) {
         storageBootup.status();
         engineBootup.status();
 
-        if(verboseFlag.equals("--verbose")) {
+        if (verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
             storageBootup.statusVerbose();
             engineBootup.statusVerbose();
@@ -214,21 +214,21 @@ public class GraknBootup {
 
     private void help() {
         System.out.println("Usage: grakn COMMAND\n" +
-                "\n" +
-                "COMMAND:\n" +
-                "server     Manage Grakn components\n" +
-                "version    Print Grakn version\n" +
-                "help       Print this message\n" +
-                "\n" +
-                "Tips:\n" +
-                "- Start Grakn with 'grakn server start'\n" +
-                "- You can then perform queries by opening a console with 'grakn console'");
+                                   "\n" +
+                                   "COMMAND:\n" +
+                                   "server     Manage Grakn components\n" +
+                                   "version    Print Grakn version\n" +
+                                   "help       Print this message\n" +
+                                   "\n" +
+                                   "Tips:\n" +
+                                   "- Start Grakn with 'grakn server start'\n" +
+                                   "- You can then perform queries by opening a console with 'grakn console'");
     }
 
     private void clean() {
         boolean storage = storageBootup.isRunning();
         boolean grakn = engineBootup.isRunning();
-        if(storage || grakn) {
+        if (storage || grakn) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
         }

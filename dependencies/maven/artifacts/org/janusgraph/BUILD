@@ -86,12 +86,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/org/openrdf/sesame:sesame-rio-n3",
-        "//dependencies/maven/artifacts/org/openrdf/sesame:sesame-rio-ntriples",
-        "//dependencies/maven/artifacts/org/openrdf/sesame:sesame-rio-rdfxml",
-        "//dependencies/maven/artifacts/org/openrdf/sesame:sesame-rio-trig",
-        "//dependencies/maven/artifacts/org/openrdf/sesame:sesame-rio-trix",
-        "//dependencies/maven/artifacts/org/openrdf/sesame:sesame-rio-turtle",
         ":janusgraph-core",
         ":janusgraph-es",
         ":janusgraph-hbase"
