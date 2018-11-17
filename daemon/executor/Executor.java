@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.daemon;
+package grakn.core.daemon.executor;
 
 import com.google.auto.value.AutoValue;
 import org.apache.commons.io.FileUtils;
@@ -38,12 +38,12 @@ import java.util.concurrent.TimeoutException;
 /**
  * This class is responsible for spawning process.
  */
-public class DaemonExecutor {
+public class Executor {
 
     @AutoValue
-    public abstract static class Response {
-        public static Response create(String stdout, String stderr, int exitCode) {
-            return new AutoValue_DaemonExecutor_Response(stdout, stderr, exitCode);
+    public abstract static class Result {
+        public static Result create(String stdout, String stderr, int exitCode) {
+            return new AutoValue_Executor_Result(stdout, stderr, exitCode);
         }
 
         public boolean success() {
@@ -60,18 +60,24 @@ public class DaemonExecutor {
     public static final long WAIT_INTERVAL_SECOND = 2;
     public static final String SH = "/bin/sh";
 
-    public CompletableFuture<Response> executeAsync(List<String> command, File workingDirectory) {
+    public CompletableFuture<Result> executeAsync(List<String> command, File workingDirectory) {
         return CompletableFuture.supplyAsync(() -> executeAndWait(command, workingDirectory));
     }
 
-    public Response executeAndWait(List<String> command, File workingDirectory) {
+    public Result executeAndWait(List<String> command, File workingDirectory) {
         try {
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
             ProcessResult result = new ProcessExecutor()
-                    .readOutput(true)
-                    .redirectError(stderr)
-                    .directory(workingDirectory).command(command).execute();
-            return Response.create(result.outputUTF8(), stderr.toString(StandardCharsets.UTF_8.name()), result.getExitValue());
+                    .readOutput(true).redirectError(stderr).directory(workingDirectory)
+                    .command(command)
+                    .execute();
+
+            return Result.create(
+                    result.outputUTF8(),
+                    stderr.toString(StandardCharsets.UTF_8.name()),
+                    result.getExitValue()
+            );
         } catch (IOException | InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
         }
@@ -128,7 +134,7 @@ public class DaemonExecutor {
                 if (processPid.trim().isEmpty()) {
                     return false;
                 }
-                Response command =
+                Result command =
                         executeAndWait(checkPIDRunningCommand(processPid), null);
 
                 if (command.exitCode() != 0) {

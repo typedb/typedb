@@ -32,7 +32,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - run: bazel test //commons/... --test_output=errors
+      - run: bazel test //common/... --test_output=errors
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
 

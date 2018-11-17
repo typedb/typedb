@@ -16,11 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.daemon;
+package grakn.core.daemon.executor;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
+import grakn.core.daemon.exception.GraknDaemonException;
 import grakn.core.server.Grakn;
 
 import java.io.File;
@@ -38,13 +39,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.daemon.executor.Executor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the Server process,
  * including starting, stopping, and performing status checks
  */
-public class ServerDaemon {
+public class Server {
     private static final String DISPLAY_NAME = "Grakn Core Server";
     private static final long SERVER_STARTUP_TIMEOUT_S = 300;
     private static final Path SERVER_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
@@ -54,9 +55,9 @@ public class ServerDaemon {
     private final Path graknPropertiesPath;
     private final Config graknProperties;
 
-    private DaemonExecutor executor;
+    private Executor executor;
 
-    ServerDaemon(DaemonExecutor executor, Path graknHome, Path graknPropertiesPath) {
+    public Server(Executor executor, Path graknHome, Path graknPropertiesPath) {
         this.executor = executor;
         this.graknHome = graknHome;
         this.graknPropertiesPath = graknPropertiesPath;
@@ -70,7 +71,7 @@ public class ServerDaemon {
         return Grakn.class;
     }
 
-    void startIfNotRunning(String benchmarkFlag) {
+    public void startIfNotRunning(String benchmarkFlag) {
         boolean isServerRunning = executor.isProcessRunning(SERVER_PIDFILE);
         if (isServerRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
@@ -87,7 +88,7 @@ public class ServerDaemon {
         executor.processStatus(SERVER_PIDFILE, DISPLAY_NAME);
     }
 
-    void statusVerbose() {
+    public void statusVerbose() {
         System.out.println(DISPLAY_NAME + " pid = '" + executor.getPidFromFile(SERVER_PIDFILE).orElse("") + "' (from " + SERVER_PIDFILE + "), '" + executor.getPidFromPsOf(getServerMainClass().getName()) + "' (from ps -ef)");
     }
 
@@ -115,7 +116,7 @@ public class ServerDaemon {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<DaemonExecutor.Response> startServerAsync = executor.executeAsync(serverCommand(benchmarkFlag), graknHome.toFile());
+        Future<Executor.Result> startServerAsync = executor.executeAsync(serverCommand(benchmarkFlag), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(SERVER_STARTUP_TIMEOUT_S);
 
@@ -143,7 +144,7 @@ public class ServerDaemon {
             System.err.println(errorMessage);
             throw new GraknDaemonException(errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            throw new GraknDaemonException(e);
+            throw new GraknDaemonException(e.getMessage(), e);
         }
     }
 

@@ -16,16 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.daemon;
+package grakn.core.daemon.exception;
+
+import grakn.core.common.exception.GraknException;
 
 /**
  * Grakn Daemon Exception
  */
-public class GraknDaemonException extends RuntimeException {
+public class GraknDaemonException extends GraknException {
 
-    GraknDaemonException(String message) { super(message);}
+    public GraknDaemonException(String message) {
+        super(message);
+    }
 
-    GraknDaemonException(Throwable cause) {
-        super(cause);
+    public GraknDaemonException(String message, Exception e) {
+        super(message, e);
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getName();
     }
 }

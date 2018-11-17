@@ -20,6 +20,9 @@ package grakn.core.daemon;
 
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.daemon.executor.Executor;
+import grakn.core.daemon.executor.Server;
+import grakn.core.daemon.executor.Storage;
 import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,8 +44,8 @@ public class GraknDaemon {
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
 
-    private final StorageDaemon storageDaemon;
-    private final ServerDaemon serverDaemon;
+    private final Storage storageExecutor;
+    private final Server serverExecutor;
 
     /**
      * Main function of the {@link GraknDaemon}. It is meant to be invoked by the 'grakn' bash script.
@@ -59,10 +62,10 @@ public class GraknDaemon {
 
             printGraknLogo();
 
-            DaemonExecutor bootupProcessExecutor = new DaemonExecutor();
+            Executor bootupProcessExecutor = new Executor();
             GraknDaemon daemon = new GraknDaemon(
-                    new StorageDaemon(bootupProcessExecutor, graknHome, graknProperties),
-                    new ServerDaemon(bootupProcessExecutor, graknHome, graknProperties)
+                    new Storage(bootupProcessExecutor, graknHome, graknProperties),
+                    new Server(bootupProcessExecutor, graknHome, graknProperties)
             );
 
             daemon.run(args);
@@ -76,9 +79,9 @@ public class GraknDaemon {
         }
     }
 
-    private GraknDaemon(StorageDaemon storageDaemon, ServerDaemon serverDaemon) {
-        this.storageDaemon = storageDaemon;
-        this.serverDaemon = serverDaemon;
+    private GraknDaemon(Storage storageExecutor, Server serverExecutor) {
+        this.storageExecutor = storageExecutor;
+        this.serverExecutor = serverExecutor;
     }
 
     /**
@@ -157,28 +160,28 @@ public class GraknDaemon {
     private void serverStop(String arg) {
         switch (arg) {
             case SERVER:
-                serverDaemon.stop();
+                serverExecutor.stop();
                 break;
             case STORAGE:
-                storageDaemon.stop();
+                storageExecutor.stop();
                 break;
             default:
-                serverDaemon.stop();
-                storageDaemon.stop();
+                serverExecutor.stop();
+                storageExecutor.stop();
         }
     }
 
     private void serverStart(String arg) {
         switch (arg) {
             case SERVER:
-                serverDaemon.startIfNotRunning(arg);
+                serverExecutor.startIfNotRunning(arg);
                 break;
             case STORAGE:
-                storageDaemon.startIfNotRunning();
+                storageExecutor.startIfNotRunning();
                 break;
             default:
-                storageDaemon.startIfNotRunning();
-                serverDaemon.startIfNotRunning(arg);
+                storageExecutor.startIfNotRunning();
+                serverExecutor.startIfNotRunning(arg);
         }
     }
 
@@ -198,13 +201,13 @@ public class GraknDaemon {
     }
 
     private void serverStatus(String verboseFlag) {
-        storageDaemon.status();
-        serverDaemon.status();
+        storageExecutor.status();
+        serverExecutor.status();
 
         if (verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
-            storageDaemon.statusVerbose();
-            serverDaemon.statusVerbose();
+            storageExecutor.statusVerbose();
+            serverExecutor.statusVerbose();
         }
     }
 
@@ -226,8 +229,8 @@ public class GraknDaemon {
     }
 
     private void clean() {
-        boolean storage = storageDaemon.isRunning();
-        boolean server = serverDaemon.isRunning();
+        boolean storage = storageExecutor.isRunning();
+        boolean server = serverExecutor.isRunning();
         if (storage || server) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
@@ -239,8 +242,8 @@ public class GraknDaemon {
             System.out.println("Response '" + response + "' did not equal 'y' or 'Y'.  Canceling clean operation.");
             return;
         }
-        storageDaemon.clean();
-        serverDaemon.clean();
+        storageExecutor.clean();
+        serverExecutor.clean();
     }
 }
 
