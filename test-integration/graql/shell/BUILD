@@ -1,6 +1,6 @@
 java_test(
     name = "graql-shell-it",
-    srcs = ["GraqlShellIT.java"],
+    srcs = ["ConsoleSessionIT.java"],
     test_class = "grakn.core.graql.shell.GraqlShellIT",
     deps = [
         "//server",

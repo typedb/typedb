@@ -18,6 +18,7 @@
 
 package grakn.core.console;
 
+import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.client.Grakn;
@@ -52,7 +53,7 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
  * A Graql REPL shell that can be run from the command line
  *
  */
-public class GraqlShell implements AutoCloseable {
+public class ConsoleSession implements AutoCloseable {
 
     private static final String EDIT_COMMAND = "edit";
     private static final String COMMIT_COMMAND = "commit";
@@ -66,7 +67,7 @@ public class GraqlShell implements AutoCloseable {
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
-
+    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
 
     private boolean errorOccurred = false;
@@ -74,7 +75,7 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Array of available commands in shell
      */
-    public static final ImmutableList<String> COMMANDS = ImmutableList.of(
+    static final ImmutableList<String> COMMANDS = ImmutableList.of(
             EDIT_COMMAND, COMMIT_COMMAND, ROLLBACK_COMMAND, LOAD_COMMAND, DISPLAY_COMMAND, CLEAR_COMMAND, EXIT_COMMAND,
             LICENSE_COMMAND, CLEAN_COMMAND
     );
@@ -82,7 +83,7 @@ public class GraqlShell implements AutoCloseable {
     private final String keyspace;
     private final OutputFormat outputFormat;
     private final boolean infer;
-    private ConsoleReader console;
+    private ConsoleReader consoleReader;
     private final PrintStream serr;
 
     private final HistoryFile historyFile;
@@ -96,33 +97,31 @@ public class GraqlShell implements AutoCloseable {
     private final ExternalEditor editor = ExternalEditor.create();
 
 
-    public static String loadQuery(Path filePath) throws IOException {
+    static String loadQuery(Path filePath) throws IOException {
         List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
         return lines.stream().collect(joining("\n"));
     }
 
-    /**
-     * Create a new Graql shell
-     */
-    public GraqlShell(
-            String historyFilename, Grakn client, String keyspace, ConsoleReader console, PrintStream serr,
-            OutputFormat outputFormat, boolean infer
-    ) throws IOException {
-        this.keyspace = keyspace;
-        this.outputFormat = outputFormat;
-        this.infer = infer;
-        this.console = console;
-        this.client = client;
-        this.session = client.session(keyspace);
-        this.serr = serr;
-        this.graqlCompleter = GraqlCompleter.create(session);
-        this.historyFile = HistoryFile.create(console, historyFilename);
 
-
-        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
+    ConsoleSession(String serverAddress, String keyspace, boolean infer) throws IOException {
+        this(serverAddress, keyspace, infer, System.out, System.err);
     }
 
-    public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
+    ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
+        this.keyspace = keyspace;
+        this.outputFormat = new OutputFormat.Graql();
+        this.infer = infer;
+        this.consoleReader = new ConsoleReader(System.in, printOut);
+        this.client = new Grakn(serverAddress);
+        this.session = client.session(keyspace);
+        this.serr = printErr;
+        this.graqlCompleter = GraqlCompleter.create(session);
+        this.historyFile = HistoryFile.create(consoleReader, HISTORY_FILENAME);
+    }
+
+    public ConsoleSession start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
+        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
+
         try {
             if (queryStrings != null) {
                 for (String queryString : queryStrings) {
@@ -133,8 +132,10 @@ public class GraqlShell implements AutoCloseable {
                 executeRepl();
             }
         } finally {
-            console.flush();
+            consoleReader.flush();
         }
+
+        return this;
     }
 
     /**
@@ -148,21 +149,21 @@ public class GraqlShell implements AutoCloseable {
      * Run a Read-Evaluate-Print loop until the input terminates
      */
     private void executeRepl() throws IOException, InterruptedException {
-        License.printLicensePrompt(console);
+        License.printLicensePrompt(consoleReader);
 
         // Disable JLine feature when seeing a '!', which is used in our queries
-        console.setExpandEvents(false);
+        consoleReader.setExpandEvents(false);
 
-        console.setPrompt(consolePrompt(tx.keyspace().getName()));
+        consoleReader.setPrompt(consolePrompt(tx.keyspace().getName()));
 
         // Add all autocompleters
-        console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
+        consoleReader.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
 
         String queryString;
 
         java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
 
-        while ((queryString = console.readLine()) != null) {
+        while ((queryString = consoleReader.readLine()) != null) {
             Matcher matcher = commandPattern.matcher(queryString);
 
             if (matcher.matches()) {
@@ -180,10 +181,10 @@ public class GraqlShell implements AutoCloseable {
                         clean();
                         continue;
                     case CLEAR_COMMAND:
-                        console.clearScreen();
+                        consoleReader.clearScreen();
                         continue;
                     case LICENSE_COMMAND:
-                        License.printLicense(console);
+                        License.printLicense(consoleReader);
                         continue;
                     case EXIT_COMMAND:
                         return;
@@ -239,15 +240,15 @@ public class GraqlShell implements AutoCloseable {
 
             results.forEach(result -> {
                 try {
-                    console.println(result);
+                    consoleReader.println(result);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             });
         });
 
-        // Flush the console so the output is all displayed before the next command
-        console.flush();
+        // Flush the ConsoleReader so the output is all displayed before the next command
+        consoleReader.flush();
     }
 
     private void setDisplayOptions(Set<String> displayOptions) {
@@ -266,17 +267,17 @@ public class GraqlShell implements AutoCloseable {
 
     private void clean() throws IOException {
         // Get user confirmation to clean graph
-        console.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
-        console.println("Type 'confirm' to continue...");
-        String line = console.readLine();
+        consoleReader.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
+        consoleReader.println("Type 'confirm' to continue...");
+        String line = consoleReader.readLine();
         if (line != null && line.equals("confirm")) {
-            console.print("Cleaning keyspace...");
-            console.flush();
+            consoleReader.print("Cleaning keyspace...");
+            consoleReader.flush();
             client.keyspaces().delete(keyspace);
-            console.println("done.");
+            consoleReader.println("done.");
             reopenTx();
         } else {
-            console.println("Cancelling clean.");
+            consoleReader.println("Cancelling clean.");
         }
     }
 

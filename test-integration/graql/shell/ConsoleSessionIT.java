@@ -18,14 +18,12 @@
 
 package grakn.core.graql.shell;
 
-import grakn.core.console.GraqlConsole;
-import grakn.core.console.GraqlShellOptions;
+import grakn.core.console.GraknConsole;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.GraknVersion;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -69,13 +67,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GraqlShellIT {
+public class ConsoleSessionIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     private static InputStream trueIn;
-    private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
 
@@ -139,7 +136,7 @@ public class GraqlShellIT {
 
     @Test
     public void whenUsingExecuteOptionAndPassingGetQueriesWithoutVariables_PrintWarning() {
-        ShellResponse response = runShell("", "-e", "match sub entity; get;");
+        Response response = runShell("", "-e", "match sub entity; get;");
 
         // There should still be a result...
         assertThat(response.out(), containsString("{}"));
@@ -184,7 +181,7 @@ public class GraqlShellIT {
 
     @Test
     public void testFileOption() {
-        ShellResponse response = runShell("", "-f", "test-integration/graql/shell/file-(with-parentheses).gql");
+        Response response = runShell("", "-f", "test-integration/graql/shell/file-(with-parentheses).gql");
         assertEquals("", response.err());
     }
 
@@ -354,7 +351,7 @@ public class GraqlShellIT {
 
     @Test
     public void testInvalidQuery() {
-        ShellResponse response = runShell(
+        Response response = runShell(
                 "define movie sub entity; insert $moon isa movie; $europa isa $moon;\n"
         );
 
@@ -424,7 +421,7 @@ public class GraqlShellIT {
 
     @Test
     public void whenServerIsNotRunning_ShowAnError() throws Exception {
-        ShellResponse response = runShell("", "-r", "localhost:7654");
+        Response response = runShell("", "-r", "localhost:7654");
         assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 
@@ -475,7 +472,7 @@ public class GraqlShellIT {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
             // Query has a syntax error
-            ShellResponse response = runShell(
+            Response response = runShell(
                     "define X sub attribute datatype string; insert isa X value '" + value + "' ;\n"
             );
 
@@ -487,13 +484,13 @@ public class GraqlShellIT {
 
     @Test
     public void testCommitError() {
-        ShellResponse response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n");
+        Response response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n");
         assertFalse(response.out(), response.err().isEmpty());
     }
 
     @Test
     public void testCommitErrorExecuteOption() {
-        ShellResponse response = runShell("", "-e", "insert bob sub relation;");
+        Response response = runShell("", "-e", "insert bob sub relation;");
         assertFalse(response.out(), response.err().isEmpty());
     }
 
@@ -583,7 +580,7 @@ public class GraqlShellIT {
 
     @Test
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() {
-        ShellResponse response = runShell(
+        Response response = runShell(
                 "match $x sub concet; aggregate count;\n" +
                         "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;\n"
         );
@@ -605,7 +602,7 @@ public class GraqlShellIT {
 
     @Test
     public void whenErrorOccurs_DoNotShowStackTrace() {
-        ShellResponse response = runShell("match fofobjiojasd\n");
+        Response response = runShell("match fofobjiojasd\n");
 
         assertFalse(response.out(), response.err().isEmpty());
         assertThat(response.err(), not(containsString(".java")));
@@ -613,13 +610,13 @@ public class GraqlShellIT {
 
     @Test
     public void whenErrorDoesNotOccurs_Return0() {
-        ShellResponse response = runShell("match $x sub entity; get;\n");
+        Response response = runShell("match $x sub entity; get;\n");
         assertTrue(response.success());
     }
 
     @Test
     public void whenErrorOccurs_Return1() {
-        ShellResponse response = runShell("match fofobjiojasd\n");
+        Response response = runShell("match fofobjiojasd\n");
         assertFalse(response.success());
     }
 
@@ -661,13 +658,13 @@ public class GraqlShellIT {
     }
 
     private String runShellWithoutErrors(String input, String... args) {
-        ShellResponse response = runShell(input, args);
+        Response response = runShell(input, args);
         String errMessage = response.err();
         assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
         return response.out();
     }
 
-    private ShellResponse runShell(String input, String... args) {
+    private Response runShell(String input, String... args) {
         args = addKeyspaceAndUriParams(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
@@ -692,9 +689,9 @@ public class GraqlShellIT {
         try {
             System.setIn(in);
 
-            GraqlShellOptions options = GraqlShellOptions.create(args);
+            GraknConsole options = GraknConsole.create(args);
 
-            success = GraqlConsole.start(options, historyFile, out, err);
+            success = GraknConsole.start(options, out, err);
         } catch (Exception e) {
             e.printStackTrace();
             err.flush();
@@ -708,7 +705,7 @@ public class GraqlShellIT {
 
         assertNotNull(success);
 
-        return ShellResponse.of(bout.toString(), berr.toString(), success);
+        return Response.of(bout.toString(), berr.toString(), success);
     }
 
     // TODO: Remove this when we can clear graphs properly (TP #13745)
@@ -718,7 +715,7 @@ public class GraqlShellIT {
         int keyspaceIndex = argList.indexOf("-k") + 1;
         if (keyspaceIndex == 0) {
             argList.add("-k");
-            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE);
+            argList.add(GraknConsole.DEFAULT_KEYSPACE);
             keyspaceIndex = argList.size() - 1;
         }
 
@@ -734,15 +731,15 @@ public class GraqlShellIT {
     }
 
     @AutoValue
-    static abstract class ShellResponse {
+    static abstract class Response {
         abstract String out();
 
         abstract String err();
 
         abstract boolean success();
 
-        static ShellResponse of(String out, String err, boolean success) {
-            return new AutoValue_GraqlShellIT_ShellResponse(out, err, success);
+        static Response of(String out, String err, boolean success) {
+            return new AutoValue_ConsoleSessionIT_Response(out, err, success);
         }
     }
 }

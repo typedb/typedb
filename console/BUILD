@@ -28,7 +28,7 @@ genrule(
 
 java_binary(
     name = "console-binary",
-    main_class = "grakn.core.console.Graql",
+    main_class = "grakn.core.console.GraknConsole",
     runtime_deps = [":console"],
     visibility = ["//:__pkg__"],
 )

@@ -54,7 +54,7 @@ goto exiterror
 
 if exist .\services\lib\core.console-*.jar (
   set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\client;%GRAKN_HOME%\services\lib\*"
-  java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.console.Graql %*
+  java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.console.GraknConsole %*
   goto exit
 ) else (
   echo Grakn Core Console is not included in this Grakn distribution^.

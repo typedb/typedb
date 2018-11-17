@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 /**
- * Handles printing the license for {@link GraqlShell}.
+ * Handles printing the license for {@link ConsoleSession}.
  *
  */
 public class License {

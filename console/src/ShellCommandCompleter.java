@@ -30,7 +30,7 @@ public class ShellCommandCompleter implements Completer {
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        GraqlShell.COMMANDS.stream()
+        ConsoleSession.COMMANDS.stream()
                 .filter(command -> command.startsWith(buffer))
                 .forEach(candidates::add);
 
