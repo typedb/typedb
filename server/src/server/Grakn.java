@@ -83,10 +83,10 @@ public class Grakn {
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
 
             Path pidfile = Paths.get(graknPidFileProperty);
-            PIDManager enginePidManager = new PIDManager(pidfile);
-            enginePidManager.trackGraknPid();
+            PIDManager pidManager = new PIDManager(pidfile);
+            pidManager.trackGraknPid();
 
-            // Start Engine
+            // Start Server
             Server server = ServerFactory.createServer(benchmark);
             server.start();
         } catch (RuntimeException | IOException e) {

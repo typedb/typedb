@@ -21,14 +21,14 @@ public class ClientJavaE2EConstants {
 
     public static void assertGraknRunning() {
         Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
-        boolean engineReady = isEngineReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", engineReady, equalTo(true));
+        boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
+        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(true));
     }
 
     public static void assertGraknStopped() {
         Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
-        boolean engineReady = isEngineReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", engineReady, equalTo(false));
+        boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
+        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
     }
 
     public static void assertZipExists() {
@@ -45,7 +45,7 @@ public class ClientJavaE2EConstants {
                 .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
     }
 
-    private static boolean isEngineReady(String host, int port) {
+    private static boolean isServerReady(String host, int port) {
         try {
             Socket s = new Socket(host, port);
             s.close();

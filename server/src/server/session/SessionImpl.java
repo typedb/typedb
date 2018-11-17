@@ -66,18 +66,18 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Creates a {@link SessionImpl} specific for internal use (within Engine),
+     * Creates a {@link SessionImpl} specific for internal use (within Grakn Server),
      * using provided Grakn configuration
      */
-    public static SessionImpl createEngineSession(Keyspace keyspace, Config config, TransactionFactoryBuilder transactionFactoryBuilder) {
+    public static SessionImpl create(Keyspace keyspace, Config config, TransactionFactoryBuilder transactionFactoryBuilder) {
         return new SessionImpl(keyspace, config, transactionFactoryBuilder);
     }
 
-    public static SessionImpl createEngineSession(Keyspace keyspace, Config config) {
+    public static SessionImpl create(Keyspace keyspace, Config config) {
         return new SessionImpl(keyspace, config, TransactionFactoryBuilder.getInstance());
     }
 
-    public static SessionImpl createEngineSession(Keyspace keyspace) {
+    public static SessionImpl create(Keyspace keyspace) {
         return new SessionImpl(keyspace, Config.create(), TransactionFactoryBuilder.getInstance());
     }
 

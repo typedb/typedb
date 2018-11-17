@@ -30,7 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * A class responsible for managing the PID file of Engine
+ * A class responsible for managing the PID file of Grakn Server
  */
 public class PIDManager {
     private static final Logger LOG = LoggerFactory.getLogger(PIDManager.class);

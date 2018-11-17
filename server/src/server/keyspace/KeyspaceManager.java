@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  */
 public class KeyspaceManager {
     // This will eventually be configurable and obtained the same way the factory is obtained
-    // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
+    // from Server. For now, we just make sure Server and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there!
     private static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
@@ -59,7 +59,7 @@ public class KeyspaceManager {
 
     public KeyspaceManager(Config config){
         this.config = config;
-        this.systemKeyspaceSession = SessionImpl.createEngineSession(SYSTEM_KB_KEYSPACE, config, TransactionFactoryBuilder.getInstance());
+        this.systemKeyspaceSession = SessionImpl.create(SYSTEM_KB_KEYSPACE, config, TransactionFactoryBuilder.getInstance());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -111,7 +111,7 @@ public class KeyspaceManager {
            return false;
         }
 
-        SessionImpl session = SessionImpl.createEngineSession(keyspace, config);
+        SessionImpl session = SessionImpl.create(keyspace, config);
         session.close();
         try(TransactionImpl tx = session.transaction(Transaction.Type.WRITE)){
             tx.closeSession();

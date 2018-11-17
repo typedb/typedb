@@ -30,25 +30,25 @@ import java.util.UUID;
 
 /**
  * <p>
- *     Assigns a random ID to the current instance of Engine.
+ *     Assigns a random ID to the current instance of Grakn Server.
  * </p>
  *
  */
 @AutoValue
-public abstract class EngineID implements Serializable {
+public abstract class ServerID implements Serializable {
     private static final long serialVersionUID = 8846772120873129437L;
-    private static final Logger LOG = LoggerFactory.getLogger(EngineID.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerID.class);
 
     @CheckReturnValue
     public abstract String getValue();
 
     @CheckReturnValue
-    public static EngineID of(String value) {
-        return new AutoValue_EngineID(value);
+    public static ServerID of(String value) {
+        return new AutoValue_ServerID(value);
     }
 
     @CheckReturnValue
-    public static EngineID me() {
+    public static ServerID me() {
         String hostName = "";
         try {
             hostName = InetAddress.getLocalHost().getHostName();
@@ -59,6 +59,6 @@ public abstract class EngineID implements Serializable {
 
         String value = hostName+"-"+UUID.randomUUID().toString();
 
-        return EngineID.of(value);
+        return ServerID.of(value);
     }
 }

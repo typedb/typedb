@@ -30,22 +30,22 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /**
- * Engine's internal {@link Transaction} Factory
+ * Grakn Server's internal {@link Transaction} Factory
  * This internal factory is used to produce {@link Transaction}s.
  */
 public class SessionStore {
-    private final Config engineConfig;
+    private final Config config;
     private final KeyspaceManager keyspaceStore;
     private final Map<Keyspace, SessionImpl> openedSessions;
     private final LockManager lockManager;
 
-    public static SessionStore create(LockManager lockManager, Config engineConfig, KeyspaceManager keyspaceStore) {
-        return new SessionStore(engineConfig, lockManager, keyspaceStore);
+    public static SessionStore create(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
+        return new SessionStore(config, lockManager, keyspaceStore);
     }
 
-    private SessionStore(Config engineConfig, LockManager lockManager, KeyspaceManager keyspaceStore) {
+    private SessionStore(Config config, LockManager lockManager, KeyspaceManager keyspaceStore) {
         this.openedSessions = new HashMap<>();
-        this.engineConfig = engineConfig;
+        this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
     }
@@ -72,7 +72,7 @@ public class SessionStore {
      */
     private SessionImpl session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, SessionImpl.createEngineSession(keyspace, engineConfig, TransactionFactoryBuilder.getInstance()));
+            openedSessions.put(keyspace, SessionImpl.create(keyspace, config, TransactionFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
@@ -101,7 +101,7 @@ public class SessionStore {
     }
 
     public Config config() {
-        return engineConfig;
+        return config;
     }
 
     public KeyspaceManager keyspaceStore() {

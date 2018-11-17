@@ -64,15 +64,15 @@ public class ServerDaemon {
     }
 
     /**
-     * @return the main class of Engine. In KGMS, this method will be overridden to return a different class.
+     * @return the main class for Grakn Server. In KGMS, this method will be overridden to return a different class.
      */
     private Class getServerMainClass() {
         return Grakn.class;
     }
 
     void startIfNotRunning(String benchmarkFlag) {
-        boolean isEngineRunning = executor.isProcessRunning(SERVER_PIDFILE);
-        if (isEngineRunning) {
+        boolean isServerRunning = executor.isProcessRunning(SERVER_PIDFILE);
+        if (isServerRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
             start(benchmarkFlag);
