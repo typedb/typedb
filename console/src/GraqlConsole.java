@@ -20,7 +20,7 @@ package grakn.core.console;
 
 import grakn.core.client.Grakn;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.util.GraknVersion;
+import grakn.core.common.util.GraknVersion;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;

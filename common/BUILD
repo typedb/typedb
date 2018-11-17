@@ -21,9 +21,12 @@ load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
     name = "common",
-    srcs = glob(
+    srcs = [":grakn-version"] + glob(
         ["**/*.java"],
-        exclude = ["**/test/*.java"]
+        exclude = [
+            "**/test/*.java",
+            "templates/**",
+        ]
     ),
     deps = [
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
@@ -38,6 +41,15 @@ java_library(
     tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
 
+genrule(
+    name = "grakn-version",
+    srcs = [
+        "templates/util/GraknVersion.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
+    outs = ["util/GraknVersion.java"]
+)
 
 deploy_maven_jar(
     name = "deploy-maven-jar",

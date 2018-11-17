@@ -29,22 +29,9 @@ antlr4(
     package = "grakn.core.graql.grammar"
 )
 
-genrule(
-    name = "grakn-version",
-    srcs = [
-        "templates/util/GraknVersion.java",
-        "//:VERSION",
-    ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
-    outs = ["util/GraknVersion.java"]
-)
-
 java_library(
     name = "server",
-    srcs = [
-       ":grakn-version",
-       ":graql-java",
-   ] + glob(["src/**/*.java"]),
+    srcs = [":graql-java"] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//common",

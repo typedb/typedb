@@ -22,7 +22,7 @@ import grakn.core.console.GraqlConsole;
 import grakn.core.console.GraqlShellOptions;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.util.GraknVersion;
+import grakn.core.common.util.GraknVersion;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;

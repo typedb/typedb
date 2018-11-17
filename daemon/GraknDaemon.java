@@ -20,10 +20,10 @@ package grakn.core.daemon;
 
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.GraknVersion;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
-import grakn.core.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +119,7 @@ public class GraknDaemon {
      * Accepts various Grakn commands (eg., 'grakn server start')
      *
      * @param args arrays of arguments, eg., { 'server', 'start' }
-     * option may be eg., `--benchmark`
+     *             option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
