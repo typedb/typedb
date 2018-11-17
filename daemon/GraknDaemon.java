@@ -226,9 +226,9 @@ public class GraknDaemon {
     }
 
     private void clean() {
-        boolean storage = this.storageDaemon.isRunning();
-        boolean grakn = serverDaemon.isRunning();
-        if (storage || grakn) {
+        boolean storage = storageDaemon.isRunning();
+        boolean server = serverDaemon.isRunning();
+        if (storage || server) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
         }
@@ -239,7 +239,7 @@ public class GraknDaemon {
             System.out.println("Response '" + response + "' did not equal 'y' or 'Y'.  Canceling clean operation.");
             return;
         }
-        this.storageDaemon.clean();
+        storageDaemon.clean();
         serverDaemon.clean();
     }
 }
