@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.daemon;
+package grakn.core.daemon;
 
 import grakn.core.commons.config.SystemProperty;
 import grakn.core.commons.exception.ErrorMessage;
@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Scanner;
 
 /**
@@ -40,8 +41,8 @@ public class GraknDaemon {
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
 
-    private final StorageDaemon storageBootup;
-    private final ServerDaemon engineBootup;
+    private final StorageDaemon storageDaemon;
+    private final ServerDaemon serverDaemon;
 
     /**
      * Main function of the {@link GraknDaemon}. It is meant to be invoked by the 'grakn' bash script.
@@ -51,8 +52,8 @@ public class GraknDaemon {
      */
     public static void main(String[] args) {
         try {
-            Path graknHome = Paths.get(SystemProperty.CURRENT_DIRECTORY.value());
-            Path graknProperties = Paths.get(SystemProperty.CONFIGURATION_FILE.value());
+            Path graknHome = Paths.get(Objects.requireNonNull(SystemProperty.CURRENT_DIRECTORY.value()));
+            Path graknProperties = Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value()));
 
             assertEnvironment(graknHome, graknProperties);
 
@@ -75,9 +76,9 @@ public class GraknDaemon {
         }
     }
 
-    private GraknDaemon(StorageDaemon storageBootup, ServerDaemon engineBootup) {
-        this.storageBootup = storageBootup;
-        this.engineBootup = engineBootup;
+    private GraknDaemon(StorageDaemon storageDaemon, ServerDaemon serverDaemon) {
+        this.storageDaemon = storageDaemon;
+        this.serverDaemon = serverDaemon;
     }
 
     /**
@@ -115,8 +116,7 @@ public class GraknDaemon {
      * Accepts various Grakn commands (eg., 'grakn server start')
      *
      * @param args arrays of arguments, eg., { 'server', 'start' }
-     *             <p>
-     *             option may be eg., `--benchmark`
+     * option may be eg., `--benchmark`
      */
     public void run(String[] args) {
         String context = args.length > 0 ? args[0] : "";
@@ -157,28 +157,28 @@ public class GraknDaemon {
     private void serverStop(String arg) {
         switch (arg) {
             case SERVER:
-                engineBootup.stop();
+                serverDaemon.stop();
                 break;
             case STORAGE:
-                storageBootup.stop();
+                storageDaemon.stop();
                 break;
             default:
-                engineBootup.stop();
-                storageBootup.stop();
+                serverDaemon.stop();
+                storageDaemon.stop();
         }
     }
 
     private void serverStart(String arg) {
         switch (arg) {
             case SERVER:
-                engineBootup.startIfNotRunning(arg);
+                serverDaemon.startIfNotRunning(arg);
                 break;
             case STORAGE:
-                storageBootup.startIfNotRunning();
+                storageDaemon.startIfNotRunning();
                 break;
             default:
-                storageBootup.startIfNotRunning();
-                engineBootup.startIfNotRunning(arg);
+                storageDaemon.startIfNotRunning();
+                serverDaemon.startIfNotRunning(arg);
         }
     }
 
@@ -198,13 +198,13 @@ public class GraknDaemon {
     }
 
     private void serverStatus(String verboseFlag) {
-        storageBootup.status();
-        engineBootup.status();
+        storageDaemon.status();
+        serverDaemon.status();
 
         if (verboseFlag.equals("--verbose")) {
             System.out.println("======== Failure Diagnostics ========");
-            storageBootup.statusVerbose();
-            engineBootup.statusVerbose();
+            storageDaemon.statusVerbose();
+            serverDaemon.statusVerbose();
         }
     }
 
@@ -226,8 +226,8 @@ public class GraknDaemon {
     }
 
     private void clean() {
-        boolean storage = storageBootup.isRunning();
-        boolean grakn = engineBootup.isRunning();
+        boolean storage = this.storageDaemon.isRunning();
+        boolean grakn = serverDaemon.isRunning();
         if (storage || grakn) {
             System.out.println("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup.");
             return;
@@ -239,8 +239,8 @@ public class GraknDaemon {
             System.out.println("Response '" + response + "' did not equal 'y' or 'Y'.  Canceling clean operation.");
             return;
         }
-        storageBootup.clean();
-        engineBootup.clean();
+        this.storageDaemon.clean();
+        serverDaemon.clean();
     }
 }
 

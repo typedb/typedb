@@ -32,7 +32,7 @@ public enum SystemProperty {
     TEST_PROFILE("grakn.test-profile"), // Only used in tests
     PROJECT_RELATIVE_DIR("main.basedir"), // Only used in tests
     GRAKN_PID_FILE("grakn.pidfile"),
-    ENGINE_JAVAOPTS("engine.javaopts"),
+    SERVER_JAVAOPTS("server.javaopts"),
     STORAGE_JAVAOPTS("storage.javaopts");
 
     private String key;

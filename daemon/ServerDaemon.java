@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.daemon;
+package grakn.core.daemon;
 
 import grakn.core.commons.config.Config;
 import grakn.core.commons.config.ConfigKey;
@@ -38,18 +38,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.server.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
 
 /**
- * A class responsible for managing the Engine process,
+ * A class responsible for managing the Server process,
  * including starting, stopping, and performing status checks
- *
  */
 public class ServerDaemon {
     private static final String DISPLAY_NAME = "Grakn Core Server";
     private static final long SERVER_STARTUP_TIMEOUT_S = 300;
     private static final Path SERVER_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
-    private static final String JAVA_OPTS = SystemProperty.ENGINE_JAVAOPTS.value();
+    private static final String JAVA_OPTS = SystemProperty.SERVER_JAVAOPTS.value();
 
     private final Path graknHome;
     private final Path graknPropertiesPath;
@@ -67,7 +66,7 @@ public class ServerDaemon {
     /**
      * @return the main class of Engine. In KGMS, this method will be overridden to return a different class.
      */
-    private Class getEngineMainClass() {
+    private Class getServerMainClass() {
         return Grakn.class;
     }
 
@@ -89,7 +88,7 @@ public class ServerDaemon {
     }
 
     void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '" + executor.getPidFromFile(SERVER_PIDFILE).orElse("") + "' (from " + SERVER_PIDFILE + "), '" + executor.getPidFromPsOf(getEngineMainClass().getName()) + "' (from ps -ef)");
+        System.out.println(DISPLAY_NAME + " pid = '" + executor.getPidFromFile(SERVER_PIDFILE).orElse("") + "' (from " + SERVER_PIDFILE + "), '" + executor.getPidFromPsOf(getServerMainClass().getName()) + "' (from ps -ef)");
     }
 
     public void clean() {
@@ -116,18 +115,18 @@ public class ServerDaemon {
         System.out.print("Starting " + DISPLAY_NAME + "...");
         System.out.flush();
 
-        Future<DaemonExecutor.Response> startEngineAsync = executor.executeAsync(serverCommand(benchmarkFlag), graknHome.toFile());
+        Future<DaemonExecutor.Response> startServerAsync = executor.executeAsync(serverCommand(benchmarkFlag), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(SERVER_STARTUP_TIMEOUT_S);
 
-        while (LocalDateTime.now().isBefore(timeout) && !startEngineAsync.isDone()) {
+        while (LocalDateTime.now().isBefore(timeout) && !startServerAsync.isDone()) {
             System.out.print(".");
             System.out.flush();
 
             String host = graknProperties.getProperty(ConfigKey.SERVER_HOST_NAME);
             int port = graknProperties.getProperty(ConfigKey.GRPC_PORT);
 
-            if (executor.isProcessRunning(SERVER_PIDFILE) && isEngineReady(host, port)) {
+            if (executor.isProcessRunning(SERVER_PIDFILE) && isServerReady(host, port)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -140,7 +139,7 @@ public class ServerDaemon {
         System.out.println("FAILED!");
         System.err.println("Unable to start " + DISPLAY_NAME + ".");
         try {
-            String errorMessage = "Process exited with code '" + startEngineAsync.get().exitCode() + "': '" + startEngineAsync.get().stderr() + "'";
+            String errorMessage = "Process exited with code '" + startServerAsync.get().exitCode() + "': '" + startServerAsync.get().stderr() + "'";
             System.err.println(errorMessage);
             throw new GraknDaemonException(errorMessage);
         } catch (InterruptedException | ExecutionException e) {
@@ -152,31 +151,31 @@ public class ServerDaemon {
         ArrayList<String> serverCommand = new ArrayList<>();
         serverCommand.add("java");
         serverCommand.add("-cp");
-        serverCommand.add(getEngineClassPath());
+        serverCommand.add(getServerClassPath());
         serverCommand.add("-Dgrakn.dir=" + graknHome);
         serverCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         serverCommand.add("-Dgrakn.pidfile=" + SERVER_PIDFILE);
         // This is because https://wiki.apache.org/hadoop/WindowsProblems
-        serverCommand.add("-Dhadoop.home.dir="+graknHome.resolve("services").resolve("hadoop"));
+        serverCommand.add("-Dhadoop.home.dir=" + graknHome.resolve("services").resolve("hadoop"));
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
             serverCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
-        serverCommand.add(getEngineMainClass().getName());
+        serverCommand.add(getServerMainClass().getName());
 
         // benchmarking flag
         serverCommand.add(benchmarkFlag);
         return serverCommand;
     }
 
-    private String getEngineClassPath() {
+    private String getServerClassPath() {
         // TODO:
-        // move server-build-bin_deploy.jar to the folder 'services/lib'
+        // move server-binary_deploy.jar to the folder 'services/lib'
         // then, this code should be graknHome.resolve("services/lib/*.jar")
         Path jar = Paths.get("services", "lib", "server-binary_deploy.jar");
         return graknHome.resolve(jar) + File.pathSeparator + graknHome.resolve("conf");
     }
 
-    private static boolean isEngineReady(String host, int port) {
+    private static boolean isServerReady(String host, int port) {
         try {
             Socket s = new Socket(host, port);
             s.close();

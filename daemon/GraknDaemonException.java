@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.daemon;
+package grakn.core.daemon;
 
 /**
  * Grakn Daemon Exception

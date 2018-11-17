@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.daemon;
+package grakn.core.daemon;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,7 +50,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.server.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including
