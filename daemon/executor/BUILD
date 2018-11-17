@@ -16,26 +16,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:__pkg__"])
+package(default_visibility = ["//daemon:__pkg__"])
 
 java_library(
-    name = "daemon",
+    name = "grakn-daemon-executor",
     srcs = glob(["**/*.java"]),
     deps = [
         # Daemon subpackages
-        "//daemon/executor:grakn-daemon-executor",
+        "//daemon/exception:grakn-daemon-exception",
 
         # Grakn Core dependencies
         "//common",
         "//server",
 
-        # External dependencies
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
-    ],
-    visibility = ["//server:__pkg__"],
+        # External dependencies
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all", # NEEDS TO GO
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+    ]
 )
