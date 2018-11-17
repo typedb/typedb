@@ -40,7 +40,7 @@ java_library(
         # Grakn Core dependencies
         "//client-java",
         "//server",
-        "//commons",
+        "//common",
 
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

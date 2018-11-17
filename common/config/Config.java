@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.config;
+package grakn.core.common.config;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

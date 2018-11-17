@@ -36,7 +36,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;

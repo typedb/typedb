@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static grakn.core.commons.util.CommonUtil.toImmutableList;
+import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
  *

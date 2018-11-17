@@ -18,7 +18,7 @@
 
 package grakn.core.server.util;
 
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.exception.GraknServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

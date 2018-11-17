@@ -27,7 +27,7 @@ java_library(
         # Grakn Core dependencies
         "//server",
         "//protocol:protocol-java",
-        "//commons",
+        "//common",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
@@ -65,7 +65,7 @@ java_test(
     test_class = "grakn.core.client.test.TransactionTest",
     deps = [
         ":client-java",
-        "//commons",
+        "//common",
         "//server",
         "//protocol:protocol-java",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

@@ -44,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.commons.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**

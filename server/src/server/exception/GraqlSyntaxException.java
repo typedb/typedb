@@ -18,12 +18,12 @@
 
 package grakn.core.server.exception;
 
-import grakn.core.commons.exception.GraknException;
+import grakn.core.common.exception.GraknException;
 
 import java.util.Map;
 
-import static grakn.core.commons.exception.ErrorMessage.INVALID_STATEMENT;
-import static grakn.core.commons.exception.ErrorMessage.TEMPLATE_MISSING_KEY;
+import static grakn.core.common.exception.ErrorMessage.INVALID_STATEMENT;
+import static grakn.core.common.exception.ErrorMessage.TEMPLATE_MISSING_KEY;
 
 /**
  * <p>

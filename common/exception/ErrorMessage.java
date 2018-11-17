@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.exception;
+package grakn.core.common.exception;
 
 import javax.annotation.CheckReturnValue;
 

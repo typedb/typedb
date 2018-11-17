@@ -18,9 +18,9 @@
 
 package grakn.core.daemon;
 
-import grakn.core.commons.config.Config;
-import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.config.SystemProperty;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.config.SystemProperty;
 import grakn.core.server.Grakn;
 
 import java.io.File;

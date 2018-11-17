@@ -47,7 +47,7 @@ java_library(
    ] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//commons",
+        "//common",
         "//protocol:protocol-java",
 
         # External dependencies

@@ -16,22 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.exception;
+package grakn.core.common.exception;
 
-/**
- * Root Grakn Exception
- * Encapsulates any exception which is thrown by the Grakn stack.
- * This includes failures server side, failed graph mutations, and failed querying attempts
- */
-public abstract class GraknException extends RuntimeException {
+import java.util.regex.Pattern;
 
-    protected GraknException(String error) {
-        super(error);
+public class Validator {
+
+    private static final int KEYSPACE_NAME_MAX_LENGTH = 48;
+
+    public static boolean isValidKeyspaceName(String name) {
+        if(!Pattern.matches("[a-z_][a-z_0-9]*", name) || name.length() > KEYSPACE_NAME_MAX_LENGTH) {
+            return false;
+        }
+        return true;
     }
-
-    protected GraknException(String error, Exception e) {
-        super(error, e);
-    }
-
-    public abstract String getName();
 }

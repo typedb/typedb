@@ -21,7 +21,7 @@ import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
-import grakn.core.commons.config.Config;
+import grakn.core.common.config.Config;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

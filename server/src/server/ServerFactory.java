@@ -18,7 +18,7 @@
 
 package grakn.core.server;
 
-import grakn.core.commons.config.ConfigKey;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.session.SessionStore;
 import grakn.core.server.util.LockManager;
@@ -29,7 +29,7 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.util.ServerID;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.commons.config.Config;
+import grakn.core.common.config.Config;
 import io.grpc.ServerBuilder;
 
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;

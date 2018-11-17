@@ -21,7 +21,7 @@ package grakn.core.graql.shell;
 import grakn.core.console.GraqlConsole;
 import grakn.core.console.GraqlShellOptions;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.util.GraknVersion;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;

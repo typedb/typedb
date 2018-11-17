@@ -36,7 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 
-import static grakn.core.commons.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
+import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created

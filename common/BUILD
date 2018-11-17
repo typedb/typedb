@@ -20,7 +20,7 @@ package(default_visibility = ["//visibility:public"])
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
-    name = "commons",
+    name = "common",
     srcs = glob(
         ["**/*.java"],
         exclude = ["**/test/*.java"]
@@ -35,21 +35,21 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
-    tags = ["maven_coordinates=grakn.core:commons:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
 
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":commons"],
+    targets = [":common"],
     version_file = "//:VERSION",
 )
 
 java_test(
     name = "grakn-config-test",
-    test_class = "grakn.core.commons.config.test.ConfigTest",
+    test_class = "grakn.core.common.config.test.ConfigTest",
     srcs = ["config/test/ConfigTest.java"],
-    deps = [":commons"],
+    deps = [":common"],
     resources = ["//server:conf/grakn.properties"],
     size = "small"
 )
