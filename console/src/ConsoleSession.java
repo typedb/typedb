@@ -50,7 +50,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn land!\n" +
-            "Copyright (C) 2018  Grakn Labs Limited\n\n";
+            "Copyright (C) 2018 Grakn Labs Limited\n\n";
 
     private static final String EDIT = "edit";
     private static final String COMMIT = "commit";
@@ -67,8 +67,9 @@ public class ConsoleSession implements AutoCloseable {
 
     private final boolean infer;
     private final String keyspace;
-    private final PrintStream serr;
+    private final PrintStream printErr;
     private final ConsoleReader consoleReader;
+    private final Printer<?> printer = Printer.stringPrinter(true);
 
     private final HistoryFile historyFile;
     private final GraqlCompleter graqlCompleter;
@@ -86,7 +87,7 @@ public class ConsoleSession implements AutoCloseable {
         this.consoleReader = new ConsoleReader(System.in, printOut);
         this.client = new Grakn(serverAddress);
         this.session = client.session(keyspace);
-        this.serr = printErr;
+        this.printErr = printErr;
         this.graqlCompleter = GraqlCompleter.create(session);
         this.historyFile = HistoryFile.create(consoleReader, HISTORY_FILENAME);
     }
@@ -150,7 +151,7 @@ public class ConsoleSession implements AutoCloseable {
                 try {
                     queryString = readFile(path);
                 } catch (IOException e) {
-                    serr.println(e.toString());
+                    printErr.println(e.toString());
                     hasError = true;
                     continue;
                 }
@@ -166,19 +167,26 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
-        Printer<?> printer = Printer.stringPrinter(true);
+        // We'll use streams so we can print the answer out much faster and smoother
         try {
+            // Parse the string to get a stream of Graql Queries
             Stream<Query<Answer>> queries = tx.graql().infer(infer).parser().parseList(queryString);
-            Stream<String> results = queries.flatMap(query -> printer.toStream(query.stream()));
-            results.forEach(result -> {
+
+            // Get the stream of answers for each query (query.stream())
+            // Get the  stream of printed answers (printer.toStream(..))
+            // Combine the stream of printed answers into one stream (queries.flatMap(..))
+            Stream<String> answers = queries.flatMap(query -> printer.toStream(query.stream()));
+
+            // For each printed answer, print them them on one line
+            answers.forEach(answer -> {
                 try {
-                    consoleReader.println(result);
+                    consoleReader.println(answer);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             });
-        } catch (RuntimeException e1) {
-            serr.println(e1.getMessage());
+        } catch (RuntimeException e) {
+            printErr.println(e.getMessage());
             hasError = true;
             reopenTransaction();
         }
@@ -190,7 +198,7 @@ public class ConsoleSession implements AutoCloseable {
         try {
             tx.commit();
         } catch (RuntimeException e) {
-            serr.println(e.getMessage());
+            printErr.println(e.getMessage());
             hasError = true;
         } finally {
             reopenTransaction();
@@ -201,7 +209,7 @@ public class ConsoleSession implements AutoCloseable {
         try {
             tx.close();
         } catch (RuntimeException e) {
-            serr.println(e.getMessage());
+            printErr.println(e.getMessage());
             hasError = true;
         } finally {
             reopenTransaction();
