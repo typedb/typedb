@@ -124,7 +124,7 @@ public class GraknConsole {
         OutputStreamWriter writer = new OutputStreamWriter(sout, Charset.defaultCharset());
         PrintWriter printer = new PrintWriter(new BufferedWriter(writer));
         formatter.printHelp(
-                printer, formatter.getWidth(), "grakn console", null,
+                printer, formatter.getWidth(), "grakn console [options]", null,
                 options, formatter.getLeftPadding(), formatter.getDescPadding(), null
         );
         printer.flush();

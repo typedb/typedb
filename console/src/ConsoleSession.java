@@ -29,6 +29,7 @@ import grakn.core.server.Transaction;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +37,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
@@ -50,18 +53,21 @@ public class ConsoleSession implements AutoCloseable {
             "Welcome to Grakn Console. You are now in Grakn land!\n" +
             "Copyright (C) 2018 Grakn Labs Limited\n\n";
 
-    private static final String EDIT = "edit";
+    private static final String EDITOR = "editor";
     private static final String COMMIT = "commit";
     private static final String ROLLBACK = "rollback";
     private static final String LOAD = "load";
     private static final String CLEAR = "clear";
     private static final String EXIT = "exit";
     private static final String CLEAN = "clean";
-    static final ImmutableList<String> COMMANDS = ImmutableList.of(EDIT, COMMIT, ROLLBACK, LOAD, CLEAR, EXIT, CLEAN);
+    static final ImmutableList<String> COMMANDS = ImmutableList.of(EDITOR, COMMIT, ROLLBACK, LOAD, CLEAR, EXIT, CLEAN);
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
-    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
+
+    private static final String HISTORY_FILE = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
+    private static final String EDITOR_DEFAULT = "vim";
+    private static final String EDITOR_FILE = "/graql-tmp.gql";
 
     private final boolean infer;
     private final String keyspace;
@@ -71,7 +77,6 @@ public class ConsoleSession implements AutoCloseable {
 
     private final HistoryFile historyFile;
     private final GraqlCompleter graqlCompleter;
-    private final ExternalEditor editor = ExternalEditor.create();
 
     private final Grakn client;
     private final Session session;
@@ -86,7 +91,7 @@ public class ConsoleSession implements AutoCloseable {
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
         this.printErr = printErr;
         this.graqlCompleter = GraqlCompleter.create(session);
-        this.historyFile = HistoryFile.create(consoleReader, HISTORY_FILENAME);
+        this.historyFile = HistoryFile.create(consoleReader, HISTORY_FILE);
     }
 
     void load(Path filePath) throws IOException {
@@ -114,8 +119,8 @@ public class ConsoleSession implements AutoCloseable {
         String queryString;
 
         while ((queryString = consoleReader.readLine()) != null) {
-            if (queryString.equals(EDIT)) {
-                executeQuery(editor.execute());
+            if (queryString.equals(EDITOR)) {
+                executeQuery(openTextEditor());
 
             } else if (queryString.startsWith(LOAD + ' ')) {
                 queryString = readFile(Paths.get(unescapeJava(queryString.substring(LOAD.length() + 1))));
@@ -232,5 +237,24 @@ public class ConsoleSession implements AutoCloseable {
         tx.close();
         session.close();
         historyFile.close();
+    }
+
+    /**
+     * Open the user's preferred editor to write a query
+     * @return the string written in the editor
+     */
+    private String openTextEditor() throws IOException, InterruptedException {
+        String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(EDITOR_DEFAULT);
+        File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + EDITOR_FILE);
+        tempFile.createNewFile();
+
+        // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
+        ProcessBuilder builder = new ProcessBuilder(
+                "/bin/bash", "-c",
+                editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath()
+        );
+
+        builder.start().waitFor();
+        return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
 }
