@@ -81,7 +81,8 @@ java_library(
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
-    resources = glob(["src/resources/*"]),
+    resources = ["LICENSE"] + glob(["resources/*"]),
+    resource_strip_prefix = "server",
     tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 
@@ -100,7 +101,7 @@ java_binary(
         "//daemon",
         "//server"
     ],
-    visibility = ["//visibility:public"]
+    visibility = ["//:__pkg__"],
 )
 
 genrule(
