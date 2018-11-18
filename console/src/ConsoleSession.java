@@ -20,11 +20,9 @@ package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import grakn.core.client.Grakn;
 import grakn.core.graql.Query;
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.internal.printer.Printer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -39,59 +37,50 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 
 
 /**
- * A Graql REPL shell that can be run from the command line
- *
+ * A Grakn Console Session that allows a user to interact with the Grakn Server
  */
 public class ConsoleSession implements AutoCloseable {
-
-    private static final String EDIT = "edit";
-    private static final String COMMIT = "commit";
-    private static final String ROLLBACK = "rollback";
-    private static final String LOAD = "load";
-    private static final String DISPLAY = "display";
-    private static final String CLEAR = "clear";
-    private static final String EXIT = "exit";
-    private static final String CLEAN = "clean";
-    static final ImmutableList<String> COMMANDS = ImmutableList.of(EDIT, COMMIT, ROLLBACK, LOAD, DISPLAY, CLEAR, EXIT, CLEAN);
-
-    private static final String ANSI_PURPLE = "\u001B[35m";
-    private static final String ANSI_RESET = "\u001B[0m";
-    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn land!\n" +
             "Copyright (C) 2018  Grakn Labs Limited\n\n";
 
-    private boolean errorOccurred = false;
+    private static final String EDIT = "edit";
+    private static final String COMMIT = "commit";
+    private static final String ROLLBACK = "rollback";
+    private static final String LOAD = "load";
+    private static final String CLEAR = "clear";
+    private static final String EXIT = "exit";
+    private static final String CLEAN = "clean";
+    static final ImmutableList<String> COMMANDS = ImmutableList.of(EDIT, COMMIT, ROLLBACK, LOAD, CLEAR, EXIT, CLEAN);
 
+    private static final String ANSI_PURPLE = "\u001B[35m";
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
-    private final String keyspace;
-    private final OutputFormat outputFormat;
     private final boolean infer;
-    private ConsoleReader consoleReader;
+    private final String keyspace;
     private final PrintStream serr;
+    private final ConsoleReader consoleReader;
 
     private final HistoryFile historyFile;
+    private final GraqlCompleter graqlCompleter;
+    private final ExternalEditor editor = ExternalEditor.create();
 
     private final Grakn client;
     private final Session session;
     private Transaction tx;
-    private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
 
-    private final GraqlCompleter graqlCompleter;
-    private final ExternalEditor editor = ExternalEditor.create();
-
+    private boolean hasError = false;
 
     static String loadQuery(Path filePath) throws IOException {
         List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
@@ -100,7 +89,6 @@ public class ConsoleSession implements AutoCloseable {
 
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
-        this.outputFormat = new OutputFormat.Graql();
         this.infer = infer;
         this.consoleReader = new ConsoleReader(System.in, printOut);
         this.client = new Grakn(serverAddress);
@@ -120,7 +108,7 @@ public class ConsoleSession implements AutoCloseable {
                     commit();
                 }
             } else {
-                executeRepl();
+                open();
             }
         } finally {
             consoleReader.flush();
@@ -129,30 +117,19 @@ public class ConsoleSession implements AutoCloseable {
         return this;
     }
 
-    /**
-     * The string to be displayed at the prompt
-     */
     private static String consolePrompt(String keyspace) {
         return ANSI_PURPLE + keyspace + ANSI_RESET + "> ";
     }
 
-    /**
-     * Run a Read-Evaluate-Print loop until the input terminates
-     */
-    private void executeRepl() throws IOException, InterruptedException {
-        consoleReader.print(COPYRIGHT);
-
-        // Disable JLine feature when seeing a '!', which is used in our queries
-        consoleReader.setExpandEvents(false);
-
-        consoleReader.setPrompt(consolePrompt(tx.keyspace().getName()));
-
-        // Add all autocompleters
+    private void open() throws IOException, InterruptedException {
         consoleReader.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
+        consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
+        consoleReader.setPrompt(consolePrompt(session.keyspace().getName()));
+        consoleReader.print(COPYRIGHT);
 
         String queryString;
 
-        java.util.regex.Pattern commandPattern = java.util.regex.Pattern.compile("\\s*(.*?)\\s*;?");
+        Pattern commandPattern = Pattern.compile("\\s*(.*?)\\s*;?");
 
         while ((queryString = consoleReader.readLine()) != null) {
             Matcher matcher = commandPattern.matcher(queryString);
@@ -191,23 +168,9 @@ public class ConsoleSession implements AutoCloseable {
                     queryString = loadQuery(path);
                 } catch (IOException e) {
                     serr.println(e.toString());
-                    errorOccurred = true;
+                    hasError = true;
                     continue;
                 }
-            }
-
-            // Set the resources to display
-            if (queryString.startsWith(DISPLAY + " ")) {
-                int endIndex;
-                if (queryString.endsWith(";")) {
-                    endIndex = queryString.length() - 1;
-                } else {
-                    endIndex = queryString.length();
-                }
-                String[] arguments = queryString.substring(DISPLAY.length() + 1, endIndex).split(",");
-                Set<String> resources = Stream.of(arguments).map(String::trim).collect(toSet());
-                setDisplayOptions(resources);
-                continue;
             }
 
             executeQuery(queryString);
@@ -215,17 +178,10 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     private void executeQuery(String queryString) throws IOException {
-        Printer<?> printer = outputFormat.getPrinter(displayAttributes);
-
-        handleGraknExceptions(() -> {
-            Stream<Query<Answer>> queries = tx
-                    .graql()
-                    .infer(infer)
-                    .parser()
-                    .parseList(queryString);
-
+        Printer<?> printer = Printer.stringPrinter(true);
+        try {
+            Stream<Query<Answer>> queries = tx.graql().infer(infer).parser().parseList(queryString);
             Stream<String> results = queries.flatMap(query -> printer.toStream(query.stream()));
-
             results.forEach(result -> {
                 try {
                     consoleReader.println(result);
@@ -233,24 +189,35 @@ public class ConsoleSession implements AutoCloseable {
                     e.printStackTrace();
                 }
             });
-        });
+        } catch (RuntimeException e1) {
+            serr.println(e1.getMessage());
+            hasError = true;
+            reopenTransaction();
+        }
 
-        // Flush the ConsoleReader so the output is all displayed before the next command
-        consoleReader.flush();
+        consoleReader.flush(); // Flush the ConsoleReader before the next command
     }
 
-    private void setDisplayOptions(Set<String> displayOptions) {
-        displayAttributes = displayOptions.stream().map(tx::getAttributeType).collect(toImmutableSet());
+    private void commit() {
+        try {
+            tx.commit();
+        } catch (RuntimeException e) {
+            serr.println(e.getMessage());
+            hasError = true;
+        } finally {
+            reopenTransaction();
+        }
     }
 
-    private void commit() throws IOException {
-        handleGraknExceptions(() -> tx.commit());
-        reopenTx();
-    }
-
-    private void rollback() throws IOException {
-        handleGraknExceptions(() -> tx.close());
-        reopenTx();
+    private void rollback() {
+        try {
+            tx.close();
+        } catch (RuntimeException e) {
+            serr.println(e.getMessage());
+            hasError = true;
+        } finally {
+            reopenTransaction();
+        }
     }
 
     private void clean() throws IOException {
@@ -263,33 +230,19 @@ public class ConsoleSession implements AutoCloseable {
             consoleReader.flush();
             client.keyspaces().delete(keyspace);
             consoleReader.println("done.");
-            reopenTx();
+            reopenTransaction();
         } else {
-            consoleReader.println("Cancelling clean.");
+            consoleReader.println("Clean command cancelled");
         }
     }
 
-    private void handleGraknExceptions(RunnableThrowsIO runnable) throws IOException {
-        try {
-            runnable.run();
-        } catch (RuntimeException e) {
-            serr.println(e.getMessage());
-            errorOccurred = true;
-            reopenTx();
-        }
-    }
-
-    private interface RunnableThrowsIO {
-        void run() throws IOException;
-    }
-
-    private void reopenTx() {
+    private void reopenTransaction() {
         if (!tx.isClosed()) tx.close();
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
-    boolean errorOccurred() {
-        return errorOccurred;
+    boolean hasError() {
+        return hasError;
     }
 
     @Override

@@ -118,7 +118,7 @@ public class GraknConsole {
 
         try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, !commandLine.hasOption(NO_INFER), printOut, printErr)) {
             consoleSession.start(queries);
-            return !consoleSession.errorOccurred();
+            return !consoleSession.hasError();
         } catch (RuntimeException e) {
             if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
                 printErr.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
