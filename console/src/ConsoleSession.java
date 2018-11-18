@@ -77,8 +77,6 @@ public class ConsoleSession implements AutoCloseable {
     private final Session session;
     private Transaction tx;
 
-    private boolean hasError = false;
-
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
         this.infer = infer;
@@ -173,11 +171,14 @@ public class ConsoleSession implements AutoCloseable {
             });
         } catch (RuntimeException e) {
             printErr.println(e.getMessage());
-            hasError = true;
             reopenTransaction();
         }
 
         consoleReader.flush(); // Flush the ConsoleReader before the next command
+
+        // It is important that we DO NOT close the transaction at the end of a query
+        // The user may want to do consecutive operations onto the database
+        // The transaction will only close once the user decides to COMMIT or ROLLBACK
     }
 
     private void commit() {
@@ -185,7 +186,6 @@ public class ConsoleSession implements AutoCloseable {
             tx.commit();
         } catch (RuntimeException e) {
             printErr.println(e.getMessage());
-            hasError = true;
         } finally {
             reopenTransaction();
         }
@@ -196,7 +196,6 @@ public class ConsoleSession implements AutoCloseable {
             tx.close();
         } catch (RuntimeException e) {
             printErr.println(e.getMessage());
-            hasError = true;
         } finally {
             reopenTransaction();
         }
@@ -204,15 +203,20 @@ public class ConsoleSession implements AutoCloseable {
 
     private void clean() throws IOException {
         // Get user confirmation to clean graph
-        consoleReader.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
-        consoleReader.println("Type 'confirm' to continue...");
+        consoleReader.println("Are you sure? CLEAN command will delete the current keyspace and its content.");
+        consoleReader.println("Type 'confirm' to continue: ");
+
         String line = consoleReader.readLine();
+
         if (line != null && line.equals("confirm")) {
-            consoleReader.print("Cleaning keyspace...");
+            consoleReader.println("Cleaning keyspace: " + keyspace);
+            consoleReader.println("...");
             consoleReader.flush();
             client.keyspaces().delete(keyspace);
-            consoleReader.println("done.");
+            consoleReader.println("Keyspace deleted: " + keyspace);
+
             reopenTransaction();
+
         } else {
             consoleReader.println("Clean command cancelled");
         }
@@ -221,10 +225,6 @@ public class ConsoleSession implements AutoCloseable {
     private void reopenTransaction() {
         if (!tx.isClosed()) tx.close();
         tx = session.transaction(Transaction.Type.WRITE);
-    }
-
-    boolean hasError() {
-        return hasError;
     }
 
     @Override
