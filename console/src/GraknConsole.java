@@ -79,25 +79,28 @@ public class GraknConsole {
         options.addOption(VERSION, "version", false, "print version");
 
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd1 = parser.parse(options, args);
-        return new GraknConsole(cmd1, options);
+        CommandLine commandLine = parser.parse(options, args);
+        return new GraknConsole(commandLine, options);
     }
 
     public boolean start(PrintStream printOut, PrintStream printErr) throws InterruptedException, IOException {
-        // Print usage message if requested or if invalid arguments provided
+
+        // Print usage guidelines for Grakn Console
         if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
             printUsage(printOut);
             return true;
-        } else if (commandLine.hasOption(VERSION)) {
+        }
+        // Print Grakn Console version
+        else if (commandLine.hasOption(VERSION)) {
             printOut.println(GraknVersion.VERSION);
             return true;
         }
 
-        //   --------   If no option set we start GraqlShell   ----------
-
+        // Get the Grakn Server address (host + port)
         String serverAddress = commandLine.getOptionValue(URI);
         serverAddress = serverAddress != null ? serverAddress : Grakn.DEFAULT_URI;
 
+        // Get the keyspace to access
         String keyspace = commandLine.getOptionValue(KEYSPACE);
         keyspace = keyspace != null ? keyspace : DEFAULT_KEYSPACE;
 

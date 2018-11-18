@@ -55,30 +55,26 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
  */
 public class ConsoleSession implements AutoCloseable {
 
-    private static final String EDIT_COMMAND = "edit";
-    private static final String COMMIT_COMMAND = "commit";
-    private static final String ROLLBACK_COMMAND = "rollback";
-    private static final String LOAD_COMMAND = "load";
-    private static final String DISPLAY_COMMAND = "display";
-    private static final String CLEAR_COMMAND = "clear";
-    private static final String EXIT_COMMAND = "exit";
-    private static final String LICENSE_COMMAND = "license";
-    private static final String CLEAN_COMMAND = "clean";
+    private static final String EDIT = "edit";
+    private static final String COMMIT = "commit";
+    private static final String ROLLBACK = "rollback";
+    private static final String LOAD = "load";
+    private static final String DISPLAY = "display";
+    private static final String CLEAR = "clear";
+    private static final String EXIT = "exit";
+    private static final String CLEAN = "clean";
+    static final ImmutableList<String> COMMANDS = ImmutableList.of(EDIT, COMMIT, ROLLBACK, LOAD, DISPLAY, CLEAR, EXIT, CLEAN);
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String HISTORY_FILENAME = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
 
+    private static final String COPYRIGHT = "\n" +
+            "Welcome to Grakn Console. You are now in Grakn land!\n" +
+            "Copyright (C) 2018  Grakn Labs Limited\n\n";
 
     private boolean errorOccurred = false;
 
-    /**
-     * Array of available commands in shell
-     */
-    static final ImmutableList<String> COMMANDS = ImmutableList.of(
-            EDIT_COMMAND, COMMIT_COMMAND, ROLLBACK_COMMAND, LOAD_COMMAND, DISPLAY_COMMAND, CLEAR_COMMAND, EXIT_COMMAND,
-            LICENSE_COMMAND, CLEAN_COMMAND
-    );
 
     private final String keyspace;
     private final OutputFormat outputFormat;
@@ -100,11 +96,6 @@ public class ConsoleSession implements AutoCloseable {
     static String loadQuery(Path filePath) throws IOException {
         List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
         return lines.stream().collect(joining("\n"));
-    }
-
-
-    ConsoleSession(String serverAddress, String keyspace, boolean infer) throws IOException {
-        this(serverAddress, keyspace, infer, System.out, System.err);
     }
 
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
@@ -141,7 +132,7 @@ public class ConsoleSession implements AutoCloseable {
     /**
      * The string to be displayed at the prompt
      */
-    private static final String consolePrompt(String keyspace) {
+    private static String consolePrompt(String keyspace) {
         return ANSI_PURPLE + keyspace + ANSI_RESET + "> ";
     }
 
@@ -149,7 +140,7 @@ public class ConsoleSession implements AutoCloseable {
      * Run a Read-Evaluate-Print loop until the input terminates
      */
     private void executeRepl() throws IOException, InterruptedException {
-        License.printLicensePrompt(consoleReader);
+        consoleReader.print(COPYRIGHT);
 
         // Disable JLine feature when seeing a '!', which is used in our queries
         consoleReader.setExpandEvents(false);
@@ -168,25 +159,22 @@ public class ConsoleSession implements AutoCloseable {
 
             if (matcher.matches()) {
                 switch (matcher.group(1)) {
-                    case EDIT_COMMAND:
+                    case EDIT:
                         executeQuery(editor.execute());
                         continue;
-                    case COMMIT_COMMAND:
+                    case COMMIT:
                         commit();
                         continue;
-                    case ROLLBACK_COMMAND:
+                    case ROLLBACK:
                         rollback();
                         continue;
-                    case CLEAN_COMMAND:
+                    case CLEAN:
                         clean();
                         continue;
-                    case CLEAR_COMMAND:
+                    case CLEAR:
                         consoleReader.clearScreen();
                         continue;
-                    case LICENSE_COMMAND:
-                        License.printLicense(consoleReader);
-                        continue;
-                    case EXIT_COMMAND:
+                    case EXIT:
                         return;
                     case "":
                         // Ignore empty command
@@ -195,8 +183,8 @@ public class ConsoleSession implements AutoCloseable {
             }
 
             // Load from a file if load command used
-            if (queryString.startsWith(LOAD_COMMAND + " ")) {
-                String pathString = queryString.substring(LOAD_COMMAND.length() + 1);
+            if (queryString.startsWith(LOAD + " ")) {
+                String pathString = queryString.substring(LOAD.length() + 1);
                 Path path = Paths.get(unescapeJavaScript(pathString));
 
                 try {
@@ -209,14 +197,14 @@ public class ConsoleSession implements AutoCloseable {
             }
 
             // Set the resources to display
-            if (queryString.startsWith(DISPLAY_COMMAND + " ")) {
+            if (queryString.startsWith(DISPLAY + " ")) {
                 int endIndex;
                 if (queryString.endsWith(";")) {
                     endIndex = queryString.length() - 1;
                 } else {
                     endIndex = queryString.length();
                 }
-                String[] arguments = queryString.substring(DISPLAY_COMMAND.length() + 1, endIndex).split(",");
+                String[] arguments = queryString.substring(DISPLAY.length() + 1, endIndex).split(",");
                 Set<String> resources = Stream.of(arguments).map(String::trim).collect(toSet());
                 setDisplayOptions(resources);
                 continue;
@@ -300,7 +288,7 @@ public class ConsoleSession implements AutoCloseable {
         tx = session.transaction(Transaction.Type.WRITE);
     }
 
-    public boolean errorOccurred() {
+    boolean errorOccurred() {
         return errorOccurred;
     }
 
