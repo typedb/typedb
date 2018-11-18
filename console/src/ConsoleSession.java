@@ -36,8 +36,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
@@ -97,7 +95,7 @@ public class ConsoleSession implements AutoCloseable {
         String queries = readFile(filePath);
         tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
 
-        try{
+        try {
             executeQuery(queries);
             commit();
             consoleReader.println();
@@ -108,7 +106,6 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     void run() throws IOException, InterruptedException {
-        Pattern commands = Pattern.compile("\\s*(.*?)\\s*;?");
         consoleReader.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
@@ -117,50 +114,36 @@ public class ConsoleSession implements AutoCloseable {
         String queryString;
 
         while ((queryString = consoleReader.readLine()) != null) {
-            Matcher matcher = commands.matcher(queryString);
+            if (queryString.equals(EDIT)) {
+                executeQuery(editor.execute());
 
-            if (matcher.matches()) {
-                switch (matcher.group(1)) {
-                    case EDIT:
-                        executeQuery(editor.execute());
-                        continue;
-                    case COMMIT:
-                        commit();
-                        continue;
-                    case ROLLBACK:
-                        rollback();
-                        continue;
-                    case CLEAN:
-                        clean();
-                        continue;
-                    case CLEAR:
-                        consoleReader.clearScreen();
-                        continue;
-                    case EXIT:
-                        consoleReader.flush();
-                        return;
-                    case "":
-                        continue; // Ignore empty command
-                }
-            }
+            } else if (queryString.startsWith(LOAD + ' ')) {
+                queryString = readFile(Paths.get(unescapeJava(queryString.substring(LOAD.length() + 1))));
+                executeQuery(queryString);
 
-            // Load from a file if load command used
-            if (queryString.startsWith(LOAD + " ")) {
-                String pathString = queryString.substring(LOAD.length() + 1);
-                Path path = Paths.get(unescapeJava(pathString));
+            } else if (queryString.equals(COMMIT)) {
+                commit();
 
-                try {
-                    queryString = readFile(path);
-                } catch (IOException e) {
-                    printErr.println(e.toString());
-                    hasError = true;
-                    continue;
-                }
-            }
+            } else if (queryString.equals(ROLLBACK)) {
+                rollback();
 
-            executeQuery(queryString);
+            } else if (queryString.equals(CLEAN)) {
+                clean();
+
+            } else if (queryString.equals(CLEAR)) {
+                consoleReader.clearScreen();
+
+            } else if (queryString.equals(EXIT)) {
+                consoleReader.flush();
+                return;
+
+            } else if (!queryString.isEmpty()) {
+                executeQuery(queryString);
+
+            } // We ignore empty commands
         }
     }
+
 
     private static String readFile(Path filePath) throws IOException {
         List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
