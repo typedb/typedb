@@ -23,8 +23,6 @@ import grakn.core.client.Grakn;
 import grakn.core.graql.Query;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.internal.printer.Printer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
 import jline.console.ConsoleReader;
 import jline.console.history.FileHistory;
 
@@ -75,8 +73,8 @@ public class ConsoleSession implements AutoCloseable {
     private final FileHistory historyFile;
 
     private final Grakn client;
-    private final Session session;
-    private Transaction tx;
+    private final Grakn.Session session;
+    private Grakn.Transaction tx;
 
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
@@ -95,7 +93,7 @@ public class ConsoleSession implements AutoCloseable {
 
     void load(Path filePath) throws IOException {
         String queries = readFile(filePath);
-        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
+        tx = client.session(keyspace).transaction(Grakn.Transaction.Type.WRITE);
 
         try {
             consoleReader.print("Loading: " + filePath.toString());
@@ -113,7 +111,7 @@ public class ConsoleSession implements AutoCloseable {
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
 
-        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
+        tx = client.session(keyspace).transaction(Grakn.Transaction.Type.WRITE);
         String queryString;
 
         while ((queryString = consoleReader.readLine()) != null) {
@@ -227,7 +225,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private void reopenTransaction() {
         if (!tx.isClosed()) tx.close();
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Grakn.Transaction.Type.WRITE);
     }
 
     @Override

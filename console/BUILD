@@ -39,7 +39,7 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//client-java",
-        "//server",
+        "//server", # NEEDS TO GO
         "//common",
 
         # External dependencies
