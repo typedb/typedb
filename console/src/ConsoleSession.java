@@ -40,7 +40,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
+import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
 
 
 /**
@@ -84,9 +84,10 @@ public class ConsoleSession implements AutoCloseable {
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
         this.infer = infer;
-        this.consoleReader = new ConsoleReader(System.in, printOut);
         this.client = new Grakn(serverAddress);
         this.session = client.session(keyspace);
+        this.consoleReader = new ConsoleReader(System.in, printOut);
+        this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
         this.printErr = printErr;
         this.graqlCompleter = GraqlCompleter.create(session);
         this.historyFile = HistoryFile.create(consoleReader, HISTORY_FILENAME);
@@ -99,6 +100,7 @@ public class ConsoleSession implements AutoCloseable {
         try{
             executeQuery(queries);
             commit();
+            consoleReader.println();
             consoleReader.println("Successful commit: " + filePath.toString());
         } finally {
             consoleReader.flush();
@@ -109,7 +111,6 @@ public class ConsoleSession implements AutoCloseable {
         Pattern commands = Pattern.compile("\\s*(.*?)\\s*;?");
         consoleReader.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
-        consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
         consoleReader.print(COPYRIGHT);
 
         tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
@@ -146,7 +147,7 @@ public class ConsoleSession implements AutoCloseable {
             // Load from a file if load command used
             if (queryString.startsWith(LOAD + " ")) {
                 String pathString = queryString.substring(LOAD.length() + 1);
-                Path path = Paths.get(unescapeJavaScript(pathString));
+                Path path = Paths.get(unescapeJava(pathString));
 
                 try {
                     queryString = readFile(path);
