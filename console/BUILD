@@ -16,26 +16,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//visibility:__pkg__"])
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
-
-genrule(
-    name = "distribution",
-    srcs = ["//:grakn", "console-binary_deploy.jar"],
-    outs = ["dist/grakn-core-console.zip"],
-    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
-    tools = ["distribution.sh"]
-)
-
-java_binary(
-    name = "console-binary",
-    main_class = "grakn.core.console.GraknConsole",
-    runtime_deps = [":console"],
-    visibility = ["//:__pkg__"],
-)
 
 java_library(
     name = "console",
-    srcs = glob(["src/**/*.java"]),
+    srcs = glob(["**/*.java"]),
     deps = [
         # Grakn Core dependencies
         "//client-java",
@@ -62,12 +48,23 @@ java_library(
     tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
 )
 
+java_binary(
+    name = "console-binary",
+    main_class = "grakn.core.console.GraknConsole",
+    runtime_deps = [":console"],
+    visibility = ["//:__pkg__"],
+)
+
 deploy_maven_jar(
     name = "deploy-maven-jar",
     targets = [":console"],
     version_file = "//:VERSION",
 )
 
-exports_files(
-    ["conf/logback.xml"],
+genrule(
+    name = "distribution",
+    srcs = ["//:grakn", "console-binary_deploy.jar"],
+    outs = ["dist/grakn-core-console.zip"],
+    cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
+    tools = ["distribution.sh"]
 )
