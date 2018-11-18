@@ -31,40 +31,39 @@ import java.io.IOException;
  */
 final class HistoryFile implements AutoCloseable {
 
-    private final FileHistory jlineHistory;
+    private final FileHistory history;
 
-    private HistoryFile(FileHistory jlineHistory) {
-        this.jlineHistory = jlineHistory;
+    private HistoryFile(FileHistory history) {
+        this.history = history;
     }
 
     // The result of createNewFile indicates if the file already existed, but that doesn't matter
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_BAD_PRACTICE")
-    public static HistoryFile create(ConsoleReader consoleReader, String historyFilename) throws IOException {
+    public static HistoryFile create(ConsoleReader consoleReader, String fileName) throws IOException {
 
         // Create history file
-        File historyFile = new File(historyFilename);
+        File file = new File(fileName);
+        file.createNewFile();
 
-        historyFile.createNewFile();
-
-        FileHistory jlineHistory = new FileHistory(historyFile);
-
-        consoleReader.setHistory(jlineHistory);
+        // Set the console reader history to the file
+        FileHistory history = new FileHistory(file);
+        consoleReader.setHistory(history);
 
         // Make sure history is saved on shutdown
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                jlineHistory.flush();
+                history.flush();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }));
 
-        return new HistoryFile(jlineHistory);
+        return new HistoryFile(history);
     }
 
     @Override
     public void close() throws IOException {
-        jlineHistory.flush();
+        history.flush();
     }
 }

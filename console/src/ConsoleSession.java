@@ -29,7 +29,6 @@ import grakn.core.server.Transaction;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +40,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 
 
@@ -82,11 +80,6 @@ public class ConsoleSession implements AutoCloseable {
 
     private boolean hasError = false;
 
-    static String loadQuery(Path filePath) throws IOException {
-        List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
-        return lines.stream().collect(joining("\n"));
-    }
-
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
         this.infer = infer;
@@ -98,41 +91,31 @@ public class ConsoleSession implements AutoCloseable {
         this.historyFile = HistoryFile.create(consoleReader, HISTORY_FILENAME);
     }
 
-    public ConsoleSession start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
+    void load(Path filePath) throws IOException {
+        String queries = readFile(filePath);
         tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
 
-        try {
-            if (queryStrings != null) {
-                for (String queryString : queryStrings) {
-                    executeQuery(queryString);
-                    commit();
-                }
-            } else {
-                open();
-            }
+        try{
+            executeQuery(queries);
+            commit();
+            consoleReader.println("Successful commit: " + filePath.toString());
         } finally {
             consoleReader.flush();
         }
-
-        return this;
     }
 
-    private static String consolePrompt(String keyspace) {
-        return ANSI_PURPLE + keyspace + ANSI_RESET + "> ";
-    }
-
-    private void open() throws IOException, InterruptedException {
+    void run() throws IOException, InterruptedException {
+        Pattern commands = Pattern.compile("\\s*(.*?)\\s*;?");
         consoleReader.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
-        consoleReader.setPrompt(consolePrompt(session.keyspace().getName()));
+        consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
         consoleReader.print(COPYRIGHT);
 
+        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
         String queryString;
 
-        Pattern commandPattern = Pattern.compile("\\s*(.*?)\\s*;?");
-
         while ((queryString = consoleReader.readLine()) != null) {
-            Matcher matcher = commandPattern.matcher(queryString);
+            Matcher matcher = commands.matcher(queryString);
 
             if (matcher.matches()) {
                 switch (matcher.group(1)) {
@@ -152,10 +135,10 @@ public class ConsoleSession implements AutoCloseable {
                         consoleReader.clearScreen();
                         continue;
                     case EXIT:
+                        consoleReader.flush();
                         return;
                     case "":
-                        // Ignore empty command
-                        continue;
+                        continue; // Ignore empty command
                 }
             }
 
@@ -165,7 +148,7 @@ public class ConsoleSession implements AutoCloseable {
                 Path path = Paths.get(unescapeJavaScript(pathString));
 
                 try {
-                    queryString = loadQuery(path);
+                    queryString = readFile(path);
                 } catch (IOException e) {
                     serr.println(e.toString());
                     hasError = true;
@@ -175,6 +158,11 @@ public class ConsoleSession implements AutoCloseable {
 
             executeQuery(queryString);
         }
+    }
+
+    private static String readFile(Path filePath) throws IOException {
+        List<String> lines = Files.readAllLines(filePath, StandardCharsets.UTF_8);
+        return String.join("\n", lines);
     }
 
     private void executeQuery(String queryString) throws IOException {

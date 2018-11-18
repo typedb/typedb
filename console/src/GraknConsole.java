@@ -20,7 +20,6 @@ package grakn.core.console;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.google.common.collect.Lists;
 import grakn.core.client.Grakn;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.GraknVersion;
@@ -83,7 +82,7 @@ public class GraknConsole {
         return new GraknConsole(commandLine, options);
     }
 
-    public boolean start(PrintStream printOut, PrintStream printErr) throws InterruptedException, IOException {
+    public boolean session(PrintStream printOut, PrintStream printErr) throws InterruptedException, IOException {
 
         // Print usage guidelines for Grakn Console
         if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
@@ -104,21 +103,22 @@ public class GraknConsole {
         String keyspace = commandLine.getOptionValue(KEYSPACE);
         keyspace = keyspace != null ? keyspace : DEFAULT_KEYSPACE;
 
-        String[] paths = commandLine.getOptionValues(FILE);
-        List<Path> filePaths = paths != null ? Stream.of(paths).map(Paths::get).collect(toImmutableList()) : null;
-
-        List<String> queries = null;
-        if (filePaths != null) {
-            queries = Lists.newArrayList();
-
-            for (Path filePath : filePaths) {
-                queries.add(ConsoleSession.loadQuery(filePath));
-            }
-        }
-
+        // Finally, we start the Grakn Console Session
         try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, !commandLine.hasOption(NO_INFER), printOut, printErr)) {
-            consoleSession.start(queries);
+
+            // Either we open a Console Session to load some Graql file(s)
+            if (commandLine.hasOption(FILE)) {
+                String[] paths = commandLine.getOptionValues(FILE);
+                List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(toImmutableList());
+                for (Path file : filePaths) consoleSession.load(file);
+            }
+            // Or we open an live Console Session for the user to interact with Grakn
+            else {
+                consoleSession.run();
+            }
+
             return !consoleSession.hasError();
+
         } catch (RuntimeException e) {
             if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
                 printErr.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
@@ -150,7 +150,7 @@ public class GraknConsole {
 
         try {
             GraknConsole console = GraknConsole.create(Arrays.copyOfRange(args, 1, args.length));
-            console.start(System.out, System.err);
+            console.session(System.out, System.err);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
         }
