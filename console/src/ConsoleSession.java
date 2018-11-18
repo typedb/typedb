@@ -19,7 +19,6 @@
 package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.collect.ImmutableList;
 import grakn.core.client.Grakn;
 import grakn.core.graql.Query;
 import grakn.core.graql.answer.Answer;
@@ -27,7 +26,6 @@ import grakn.core.graql.internal.printer.Printer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import jline.console.ConsoleReader;
-import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 
 import java.io.File;
@@ -60,7 +58,6 @@ public class ConsoleSession implements AutoCloseable {
     private static final String CLEAR = "clear";
     private static final String EXIT = "exit";
     private static final String CLEAN = "clean";
-    static final ImmutableList<String> COMMANDS = ImmutableList.of(EDITOR, COMMIT, ROLLBACK, LOAD, CLEAR, EXIT, CLEAN);
 
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -76,7 +73,6 @@ public class ConsoleSession implements AutoCloseable {
     private final Printer<?> printer = Printer.stringPrinter(true);
 
     private final FileHistory historyFile;
-    private final GraqlCompleter graqlCompleter;
 
     private final Grakn client;
     private final Session session;
@@ -90,7 +86,6 @@ public class ConsoleSession implements AutoCloseable {
         this.consoleReader = new ConsoleReader(System.in, printOut);
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().getName() + ANSI_RESET + "> ");
         this.printErr = printErr;
-        this.graqlCompleter = GraqlCompleter.create(session);
 
         File file = new File(HISTORY_FILE);
         file.createNewFile();
@@ -115,7 +110,6 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     void run() throws IOException, InterruptedException {
-        consoleReader.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
         consoleReader.setExpandEvents(false); // Disable JLine feature when seeing a '!'
         consoleReader.print(COPYRIGHT);
 
@@ -245,6 +239,7 @@ public class ConsoleSession implements AutoCloseable {
 
     /**
      * Open the user's preferred editor to write a query
+     *
      * @return the string written in the editor
      */
     private String openTextEditor() throws IOException, InterruptedException {
