@@ -25,7 +25,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.GraknVersion;
 import io.grpc.Status;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
@@ -60,15 +59,30 @@ public class GraknConsole {
     private static final String HELP = "h";
     private static final String VERSION = "v";
 
+    private final Options options = getOptions();
     private final CommandLine commandLine;
-    private final Options options;
+    private final PrintStream printOut;
+    private final PrintStream printErr;
 
-    private GraknConsole(CommandLine commandLine, Options options) {
-        this.commandLine = commandLine;
-        this.options = options;
+    private final Boolean infer;
+    private final String serverAddress;
+    private final String keyspace;
+
+    public GraknConsole(String[] args, PrintStream printOut, PrintStream printErr) throws ParseException {
+        this.printOut = printOut;
+        this.printErr = printErr;
+
+        this.commandLine = new DefaultParser().parse(options, args);
+        this.infer = !commandLine.hasOption(NO_INFER);
+
+        String serverAddressArg = commandLine.getOptionValue(URI);
+        this.serverAddress = serverAddressArg != null ? serverAddressArg : Grakn.DEFAULT_URI;
+
+        String keyspaceArg = commandLine.getOptionValue(KEYSPACE);
+        this.keyspace = keyspaceArg != null ? keyspaceArg : DEFAULT_KEYSPACE;
     }
 
-    public static GraknConsole create(String[] args) throws ParseException {
+    public static Options getOptions() {
         Options options = new Options();
         options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
         options.addOption(FILE, "file", true, "graql file path to execute");
@@ -77,82 +91,66 @@ public class GraknConsole {
         options.addOption(HELP, "help", false, "print usage message");
         options.addOption(VERSION, "version", false, "print version");
 
-        CommandLineParser parser = new DefaultParser();
-        CommandLine commandLine = parser.parse(options, args);
-        return new GraknConsole(commandLine, options);
+        return options;
     }
 
-    public boolean session(PrintStream printOut, PrintStream printErr) throws InterruptedException, IOException {
-
+    public void run() throws InterruptedException, IOException {
         // Print usage guidelines for Grakn Console
         if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
-            printUsage(printOut);
-            return true;
+            printHelp(printOut);
         }
         // Print Grakn Console version
         else if (commandLine.hasOption(VERSION)) {
             printOut.println(GraknVersion.VERSION);
-            return true;
         }
-
-        // Get the Grakn Server address (host + port)
-        String serverAddress = commandLine.getOptionValue(URI);
-        serverAddress = serverAddress != null ? serverAddress : Grakn.DEFAULT_URI;
-
-        // Get the keyspace to access
-        String keyspace = commandLine.getOptionValue(KEYSPACE);
-        keyspace = keyspace != null ? keyspace : DEFAULT_KEYSPACE;
-
-        // Finally, we start the Grakn Console Session
-        try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, !commandLine.hasOption(NO_INFER), printOut, printErr)) {
-
-            // Either we open a Console Session to load some Graql file(s)
-            if (commandLine.hasOption(FILE)) {
+        // Start a Console Session to load some Graql file(s)
+        else if (commandLine.hasOption(FILE)) {
+            try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
                 String[] paths = commandLine.getOptionValues(FILE);
                 List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(toImmutableList());
                 for (Path file : filePaths) consoleSession.load(file);
             }
-            // Or we open an live Console Session for the user to interact with Grakn
-            else {
+        }
+        // Start a live Console Session for the user to interact with Grakn
+        else {
+            try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
                 consoleSession.run();
             }
-
-            return !consoleSession.hasError();
-
-        } catch (RuntimeException e) {
-            if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
-                printErr.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
-            } else {
-                printErr.println(e.getMessage());
-            }
-            return false;
         }
     }
 
-    private void printUsage(PrintStream sout) {
-        HelpFormatter helpFormatter = new HelpFormatter();
-        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(sout, Charset.defaultCharset());
-        PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));
-        int width = helpFormatter.getWidth();
-        int leftPadding = helpFormatter.getLeftPadding();
-        int descPadding = helpFormatter.getDescPadding();
-        helpFormatter.printHelp(printWriter, width, "grakn console", null, options, leftPadding, descPadding, null);
-        printWriter.flush();
+    private void printHelp(PrintStream sout) {
+        HelpFormatter formatter = new HelpFormatter();
+        OutputStreamWriter writer = new OutputStreamWriter(sout, Charset.defaultCharset());
+        PrintWriter printer = new PrintWriter(new BufferedWriter(writer));
+        formatter.printHelp(
+                printer, formatter.getWidth(), "grakn console", null,
+                options, formatter.getLeftPadding(), formatter.getDescPadding(), null
+        );
+        printer.flush();
     }
 
     /**
      * Invocation from bash script './grakn console'
      */
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
         // Disable logging for Grakn console as we only use System.out
         Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.OFF);
 
         try {
-            GraknConsole console = GraknConsole.create(Arrays.copyOfRange(args, 1, args.length));
-            console.session(System.out, System.err);
-        } catch (ParseException e) {
-            System.err.println(e.getMessage());
+            GraknConsole console = new GraknConsole(Arrays.copyOfRange(args, 1, args.length), System.out, System.err);
+            console.run();
+
+            System.exit(0);
+        } catch (Exception e) {
+            if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
+                System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+            } else {
+                System.err.println(e.getMessage());
+            }
+
+            System.exit(1);
         }
     }
 }

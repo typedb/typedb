@@ -96,9 +96,11 @@ public class ConsoleSession implements AutoCloseable {
         tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
 
         try {
+            consoleReader.print("Loading: " + filePath.toString());
+            consoleReader.println("...");
             executeQuery(queries);
             commit();
-            consoleReader.println();
+            consoleReader.println("...");
             consoleReader.println("Successful commit: " + filePath.toString());
         } finally {
             consoleReader.flush();

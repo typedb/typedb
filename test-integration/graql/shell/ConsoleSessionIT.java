@@ -684,14 +684,14 @@ public class ConsoleSessionIT {
         PrintStream out = new PrintStream(tout);
         PrintStream err = new PrintStream(terr);
 
-        Boolean success = null;
+        boolean success = false;
 
         try {
             System.setIn(in);
 
-            GraknConsole console = GraknConsole.create(args);
-
-            success = console.session(out, err);
+            GraknConsole console = new GraknConsole(args, out, err);
+            console.run();
+            success = true;
         } catch (Exception e) {
             e.printStackTrace();
             err.flush();
@@ -703,8 +703,7 @@ public class ConsoleSessionIT {
         out.flush();
         err.flush();
 
-        assertNotNull(success);
-
+        assertTrue(success);
         return Response.of(bout.toString(), berr.toString(), success);
     }
 
