@@ -18,10 +18,10 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.commons.config.ConfigKey;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.commons.config.Config;
+import grakn.core.common.config.Config;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
 import grakn.core.server.session.SessionStore;

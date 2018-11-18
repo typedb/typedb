@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.config.test;
+package grakn.core.common.config.test;
 
-import grakn.core.commons.config.Config;
-import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 

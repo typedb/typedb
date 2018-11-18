@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.exception;
+package grakn.core.common.exception;
 
 import javax.annotation.CheckReturnValue;
 
@@ -32,12 +32,12 @@ public enum ErrorMessage {
     GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"),
     UNSUPPORTED_JAVA_VERSION("Unsupported Java version [%s] found. Grakn needs Java 1.8 in order to run."),
     UNABLE_TO_START_GRAKN("An error has occurred during boot-up. Please run 'grakn server status' or check the logs located under the 'logs' directory."),
-    UNABLE_TO_START_ENGINE_JAR_NOT_FOUND("Unable to start Engine, No JAR files found! Please re-download the Grakn distribution."),
+    UNABLE_TO_START_SERVER_JAR_NOT_FOUND("Unable to start Server, No JAR files found! Please re-download the Grakn distribution."),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
     UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
     PID_ALREADY_EXISTS("Pid file already exists: '[%s]'. Overwriting..."),
-    COULD_NOT_GET_PID("Couldn't get the PID of Grakn Engine. Received '%s'"),
+    COULD_NOT_GET_PID("Couldn't get the PID of Grakn Server. Received '%s'"),
 
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
@@ -142,11 +142,11 @@ public enum ErrorMessage {
     CANNOT_FIND_CLASS("The %s implementation %s must be accessible in the classpath"),
 
     //--------------------------------------------- Client Errors
-    INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
+    INVALID_SERVER_RESPONSE("Grakn Server located at [%s] returned response [%s], cannot proceed."),
     INVALID_FACTORY("Graph Factory [%s] is not valid"),
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['knowledge-base.mode'] missing from provided config. " +
             "Cannot produce graph"),
-    COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
+    COULD_NOT_REACH_SERVER("Could not reach Grakn Server at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TX("no graph provided"),
@@ -187,7 +187,7 @@ public enum ErrorMessage {
 
     UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
 
-    ENGINE_STARTUP_ERROR("Could not start Grakn engine: [%s]"),
+    SERVER_STARTUP_ERROR("Could not start Grakn Server: [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
     MISSING_MANDATORY_BODY_REQUEST_PARAMETERS("Missing mandatory parameter in body [%s]"),

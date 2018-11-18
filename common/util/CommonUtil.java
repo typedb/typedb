@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.util;
+package grakn.core.common.util;
 
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.commons.config.SystemProperty;
+import grakn.core.common.config.SystemProperty;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

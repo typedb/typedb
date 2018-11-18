@@ -20,10 +20,13 @@ package(default_visibility = ["//visibility:public"])
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
-    name = "commons",
-    srcs = glob(
+    name = "common",
+    srcs = [":grakn-version"] + glob(
         ["**/*.java"],
-        exclude = ["**/test/*.java"]
+        exclude = [
+            "**/test/*.java",
+            "templates/**",
+        ]
     ),
     deps = [
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
@@ -35,21 +38,30 @@ java_library(
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
-    tags = ["maven_coordinates=grakn.core:commons:{pom_version}"],
+    tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
 )
 
+genrule(
+    name = "grakn-version",
+    srcs = [
+        "templates/util/GraknVersion.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
+    outs = ["util/GraknVersion.java"]
+)
 
 deploy_maven_jar(
     name = "deploy-maven-jar",
-    targets = [":commons"],
+    targets = [":common"],
     version_file = "//:VERSION",
 )
 
 java_test(
     name = "grakn-config-test",
-    test_class = "grakn.core.commons.config.test.ConfigTest",
+    test_class = "grakn.core.common.config.test.ConfigTest",
     srcs = ["config/test/ConfigTest.java"],
-    deps = [":commons"],
+    deps = [":common"],
     resources = ["//server:conf/grakn.properties"],
     size = "small"
 )

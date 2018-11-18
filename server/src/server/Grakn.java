@@ -19,8 +19,8 @@
 package grakn.core.server;
 
 import grakn.core.server.util.PIDManager;
-import grakn.core.commons.config.SystemProperty;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.config.SystemProperty;
+import grakn.core.common.exception.ErrorMessage;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -83,10 +83,10 @@ public class Grakn {
                     .orElseThrow(() -> new RuntimeException(ErrorMessage.GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED.getMessage()));
 
             Path pidfile = Paths.get(graknPidFileProperty);
-            PIDManager enginePidManager = new PIDManager(pidfile);
-            enginePidManager.trackGraknPid();
+            PIDManager pidManager = new PIDManager(pidfile);
+            pidManager.trackGraknPid();
 
-            // Start Engine
+            // Start Server
             Server server = ServerFactory.createServer(benchmark);
             server.start();
         } catch (RuntimeException | IOException e) {

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.config;
+package grakn.core.common.config;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 
 /**
- * Singleton class used to read config file and make all the settings available to the Grakn Engine classes.
+ * Singleton class used to read config file and make all the settings available to the Grakn Server classes.
  *
  */
 public class Config {
@@ -71,7 +71,7 @@ public class Config {
         try {
             inputStream = new FileInputStream(path.toString());
         } catch (FileNotFoundException e) {
-            LOG.error("Could not load engine properties from {}", path, e);
+            LOG.error("Could not load server properties from {}", path, e);
         }
         return read(inputStream);
     }
@@ -81,7 +81,7 @@ public class Config {
         try {
             prop.load(inputStream);
         } catch (IOException e) {
-            LOG.error("Could not load engine properties from input stream provided", e);
+            LOG.error("Could not load server properties from input stream provided", e);
         }
         return Config.of(prop);
     }

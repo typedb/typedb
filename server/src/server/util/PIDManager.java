@@ -18,7 +18,7 @@
 
 package grakn.core.server.util;
 
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.exception.GraknServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * A class responsible for managing the PID file of Engine
+ * A class responsible for managing the PID file of Grakn Server
  */
 public class PIDManager {
     private static final Logger LOG = LoggerFactory.getLogger(PIDManager.class);

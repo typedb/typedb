@@ -16,22 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.exception;
+package grakn.core.daemon.exception;
+
+import grakn.core.common.exception.GraknException;
 
 /**
- * Root Grakn Exception
- * Encapsulates any exception which is thrown by the Grakn stack.
- * This includes failures server side, failed graph mutations, and failed querying attempts
+ * Grakn Daemon Exception
  */
-public abstract class GraknException extends RuntimeException {
+public class GraknDaemonException extends GraknException {
 
-    protected GraknException(String error) {
-        super(error);
+    public GraknDaemonException(String message) {
+        super(message);
     }
 
-    protected GraknException(String error, Exception e) {
-        super(error, e);
+    public GraknDaemonException(String message, Exception e) {
+        super(message, e);
     }
 
-    public abstract String getName();
+    @Override
+    public String getName() {
+        return this.getClass().getName();
+    }
 }

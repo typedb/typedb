@@ -21,7 +21,7 @@ java_library(
     srcs = ["GraknTestServer.java"],
     deps = [
         "//server",
-        "//commons",
+        "//common",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",

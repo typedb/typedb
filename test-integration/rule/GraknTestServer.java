@@ -12,12 +12,12 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.SessionStore;
-import grakn.core.server.util.EngineID;
+import grakn.core.server.util.ServerID;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerLockManager;
-import grakn.core.commons.config.Config;
-import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.http.SimpleURI;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.http.SimpleURI;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -64,23 +64,25 @@ public class GraknTestServer extends ExternalResource {
     protected void before() {
         try {
             //Start Cassandra with random ports
+            System.out.println("Starting Grakn Storage...");
             generateCassandraRandomPorts();
             File cassandraConfig = buildCassandraConfigWithRandomPorts();
             System.setProperty("cassandra.config", "file:" + cassandraConfig.getAbsolutePath());
             System.setProperty("cassandra-foreground", "true");
             GraknStorage.main(new String[]{});
-            System.out.println("Cassandra started.");
+            System.out.println("Grakn Storage started");
 
             //Start Grakn server
             grpcPort = findUnusedLocalPort();
             dataDirTmp = Files.createTempDirectory("db-for-test");
             serverConfig = createTestConfig(dataDirTmp.toString());
-            System.out.println("starting engine...");
+            System.out.println("Starting Grakn Server...");
 
-            graknServer = createGraknServer();
+            graknServer = createServer();
             graknServer.start();
+            System.out.println("Grakn Server started");
         } catch (IOException e) {
-            throw new RuntimeException("Cannot start Server", e);
+            throw new RuntimeException("Cannot start Grakn Server", e);
         }
     }
 
@@ -104,7 +106,7 @@ public class GraknTestServer extends ExternalResource {
 
     public SessionImpl sessionWithNewKeyspace() {
         Keyspace randomKeyspace = Keyspace.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
-        return SessionImpl.createEngineSession(randomKeyspace, serverConfig);
+        return SessionImpl.create(randomKeyspace, serverConfig);
     }
 
     public SessionStore txFactory(){
@@ -160,8 +162,8 @@ public class GraknTestServer extends ExternalResource {
         return config;
     }
 
-    private Server createGraknServer() {
-        EngineID id = EngineID.me();
+    private Server createServer() {
+        ServerID id = ServerID.me();
 
         // distributed locks
         LockManager lockManager = new ServerLockManager();

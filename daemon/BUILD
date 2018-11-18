@@ -16,29 +16,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//visibility:__pkg__"])
+
 java_library(
     name = "daemon",
     srcs = glob(["**/*.java"]),
     deps = [
+        # Daemon subpackages
+        "//daemon/executor:grakn-daemon-executor",
+
         # Grakn Core dependencies
-        "//commons",
-        "//server",
+        "//common",
 
         # External dependencies
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core", # NEEDS TO GO
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind", # NEEDS TO GO
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml", # NEEDS TO GO
-        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all", # NEEDS TO GO
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
+    resources = ["LICENSE"],
+    resource_strip_prefix = "daemon",
     visibility = ["//server:__pkg__"],
 )

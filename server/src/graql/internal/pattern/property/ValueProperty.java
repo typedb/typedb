@@ -27,7 +27,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 

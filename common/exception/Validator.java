@@ -16,16 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.daemon;
+package grakn.core.common.exception;
 
-/**
- * Grakn Daemon Exception
- */
-public class GraknDaemonException extends RuntimeException {
+import java.util.regex.Pattern;
 
-    GraknDaemonException(String message) { super(message);}
+public class Validator {
 
-    GraknDaemonException(Throwable cause) {
-        super(cause);
+    private static final int KEYSPACE_NAME_MAX_LENGTH = 48;
+
+    public static boolean isValidKeyspaceName(String name) {
+        if(!Pattern.matches("[a-z_][a-z_0-9]*", name) || name.length() > KEYSPACE_NAME_MAX_LENGTH) {
+            return false;
+        }
+        return true;
     }
 }

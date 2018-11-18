@@ -4,7 +4,7 @@ java_test(
      test_class = "grakn.core.server.kb.ValidatorIT",
      deps = [
          "//server",
-         "//commons",
+         "//common",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
@@ -30,7 +30,7 @@ java_test(
   test_class = "grakn.core.server.kb.TransactionIT",
   deps = [
       "//server",
-      "//commons",
+      "//common",
       "//test-integration/rule:grakn-test-server",
       "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
       "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

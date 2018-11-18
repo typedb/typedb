@@ -16,16 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.daemon;
+package grakn.core.daemon.executor;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.google.common.collect.Maps;
-import grakn.core.commons.config.Config;
-import grakn.core.commons.config.ConfigKey;
-import grakn.core.commons.config.SystemProperty;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.config.SystemProperty;
+import grakn.core.daemon.exception.GraknDaemonException;
 import grakn.core.server.GraknStorage;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
@@ -50,7 +51,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static grakn.core.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
+import static grakn.core.daemon.executor.Executor.WAIT_INTERVAL_SECOND;
 
 /**
  * A class responsible for managing the bootup-related process for the Storage component, including
@@ -58,7 +59,7 @@ import static grakn.core.daemon.DaemonExecutor.WAIT_INTERVAL_SECOND;
  * The PID file for the Storage component is managed internally by Cassandra and not by this class. This means that
  * you will not find any code which creates or deletes the PID file for the Storage component.
  */
-public class StorageDaemon {
+public class Storage {
 
     private static final String DISPLAY_NAME = "Storage";
     private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
@@ -79,14 +80,14 @@ public class StorageDaemon {
     private static final String STORAGE_CONFIG_NAME = "cassandra.yaml";
 
 
-    private DaemonExecutor daemonExecutor;
+    private Executor daemonExecutor;
     private final Path graknHome;
     private final Config graknProperties;
 
-    StorageDaemon(DaemonExecutor daemonExecutor, Path graknHome, Path graknPropertiesPath) {
+    public Storage(Executor processExecutor, Path graknHome, Path graknPropertiesPath) {
         this.graknHome = graknHome;
         this.graknProperties = Config.read(graknPropertiesPath);
-        this.daemonExecutor = daemonExecutor;
+        this.daemonExecutor = processExecutor;
     }
 
     private void initialiseConfig() {
@@ -136,7 +137,7 @@ public class StorageDaemon {
     /**
      * Attempt to start Storage if it is not already running
      */
-    void startIfNotRunning() {
+    public void startIfNotRunning() {
         boolean isStorageRunning = daemonExecutor.isProcessRunning(STORAGE_PIDFILE);
         if (isStorageRunning) {
             System.out.println(DISPLAY_NAME + " is already running");
@@ -154,7 +155,7 @@ public class StorageDaemon {
         daemonExecutor.processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
     }
 
-    void statusVerbose() {
+    public void statusVerbose() {
         System.out.println(DISPLAY_NAME + " pid = '" + daemonExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
                                    "' (from " + STORAGE_PIDFILE + "), '" + daemonExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) + "' (from ps -ef)");
     }
@@ -195,7 +196,7 @@ public class StorageDaemon {
         // Consume configuration from Grakn config file into Cassandra config file
         initialiseConfig();
 
-        Future<DaemonExecutor.Response> result = daemonExecutor.executeAsync(storageCommand(), graknHome.toFile());
+        Future<Executor.Result> result = daemonExecutor.executeAsync(storageCommand(), graknHome.toFile());
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
@@ -222,7 +223,7 @@ public class StorageDaemon {
             System.err.println(errorMessage);
             throw new GraknDaemonException(errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            throw new GraknDaemonException(e);
+            throw new GraknDaemonException(e.getMessage(), e);
         }
     }
 

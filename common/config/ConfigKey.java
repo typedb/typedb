@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.commons.config;
+package grakn.core.common.config;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 
 import java.nio.file.Path;
 

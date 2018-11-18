@@ -29,25 +29,12 @@ antlr4(
     package = "grakn.core.graql.grammar"
 )
 
-genrule(
-    name = "grakn-version",
-    srcs = [
-        "templates/util/GraknVersion.java",
-        "//:VERSION",
-    ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
-    outs = ["util/GraknVersion.java"]
-)
-
 java_library(
     name = "server",
-    srcs = [
-       ":grakn-version",
-       ":graql-java",
-   ] + glob(["src/**/*.java"]),
+    srcs = [":graql-java"] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//commons",
+        "//common",
         "//protocol:protocol-java",
 
         # External dependencies
@@ -94,7 +81,8 @@ java_library(
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
-    resources = glob(["src/resources/*"]),
+    resources = ["LICENSE"] + glob(["resources/*"]),
+    resource_strip_prefix = "server",
     tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 
@@ -113,7 +101,7 @@ java_binary(
         "//daemon",
         "//server"
     ],
-    visibility = ["//visibility:public"]
+    visibility = ["//:__pkg__"],
 )
 
 genrule(
