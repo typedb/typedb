@@ -83,29 +83,25 @@ public class GraknConsole {
         return new GraknConsole(cmd1, options);
     }
 
-    public static boolean start(GraknConsole options) throws InterruptedException, IOException {
-        return start(options, System.out, System.err);
-    }
-
-    public static boolean start(GraknConsole options, PrintStream printOut, PrintStream printErr) throws InterruptedException, IOException {
+    public boolean start(PrintStream printOut, PrintStream printErr) throws InterruptedException, IOException {
         // Print usage message if requested or if invalid arguments provided
-        if (options.commandLine.hasOption(HELP) || !options.commandLine.getArgList().isEmpty()) {
-            options.printUsage(printOut);
+        if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
+            printUsage(printOut);
             return true;
-        } else if (options.commandLine.hasOption(VERSION)) {
+        } else if (commandLine.hasOption(VERSION)) {
             printOut.println(GraknVersion.VERSION);
             return true;
         }
 
         //   --------   If no option set we start GraqlShell   ----------
 
-        String serverAddress = options.commandLine.getOptionValue(URI);
+        String serverAddress = commandLine.getOptionValue(URI);
         serverAddress = serverAddress != null ? serverAddress : Grakn.DEFAULT_URI;
 
-        String keyspace = options.commandLine.getOptionValue(KEYSPACE);
+        String keyspace = commandLine.getOptionValue(KEYSPACE);
         keyspace = keyspace != null ? keyspace : DEFAULT_KEYSPACE;
 
-        String[] paths = options.commandLine.getOptionValues(FILE);
+        String[] paths = commandLine.getOptionValues(FILE);
         List<Path> filePaths = paths != null ? Stream.of(paths).map(Paths::get).collect(toImmutableList()) : null;
 
         List<String> queries = null;
@@ -117,7 +113,7 @@ public class GraknConsole {
             }
         }
 
-        try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, !options.commandLine.hasOption(NO_INFER), printOut, printErr)) {
+        try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, !commandLine.hasOption(NO_INFER), printOut, printErr)) {
             consoleSession.start(queries);
             return !consoleSession.errorOccurred();
         } catch (RuntimeException e) {
@@ -141,16 +137,6 @@ public class GraknConsole {
         printWriter.flush();
     }
 
-    private static void help() {
-        System.out.println("Usage: grakn COMMAND\n" +
-                                   "\n" +
-                                   "COMMAND:\n" +
-                                   "console  Start a REPL console for running Graql queries. Defaults to connecting to http://localhost\n" +
-                                   "version  Print Grakn version\n" +
-                                   "help     Print this message");
-
-    }
-
     /**
      * Invocation from bash script './grakn console'
      */
@@ -159,26 +145,11 @@ public class GraknConsole {
         Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.OFF);
 
-        String context = args.length > 0 ? args[0] : "";
-
-        switch (context) {
-            case "console":
-                GraknConsole console;
-
-                try {
-                    console = GraknConsole.create(Arrays.copyOfRange(args, 1, args.length));
-                } catch (ParseException e) {
-                    System.err.println(e.getMessage());
-                    return;
-                }
-
-                GraknConsole.start(console);
-                break;
-            case "version":
-                System.out.println(GraknVersion.VERSION);
-                break;
-            default:
-                GraknConsole.help();
+        try {
+            GraknConsole console = GraknConsole.create(Arrays.copyOfRange(args, 1, args.length));
+            console.start(System.out, System.err);
+        } catch (ParseException e) {
+            System.err.println(e.getMessage());
         }
     }
 }

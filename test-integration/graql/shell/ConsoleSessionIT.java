@@ -689,9 +689,9 @@ public class ConsoleSessionIT {
         try {
             System.setIn(in);
 
-            GraknConsole options = GraknConsole.create(args);
+            GraknConsole console = GraknConsole.create(args);
 
-            success = GraknConsole.start(options, out, err);
+            success = console.start(out, err);
         } catch (Exception e) {
             e.printStackTrace();
             err.flush();
