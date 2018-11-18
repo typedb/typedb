@@ -31,7 +31,6 @@ java_library(
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
         "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
@@ -39,10 +38,10 @@ java_library(
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    visibility = ["//test-integration:__subpackages__"],
     runtime_deps = [
         "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
     ],
+    visibility = ["//test-integration:__subpackages__"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
     tags = ["maven_coordinates=grakn.core:console:{pom_version}"],

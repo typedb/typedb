@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
- * Grakn Console is a Command Line Interface to the Grakn Core database
+ * Grakn Console is a Command Line Application to interact with the Grakn Core database
  */
 public class GraknConsole {
 
