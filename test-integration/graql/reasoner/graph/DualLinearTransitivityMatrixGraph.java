@@ -26,15 +26,27 @@ import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 
-public class DualLinearTransitivityMatrixGraph extends ParametrisedTestGraph {
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 
+public class DualLinearTransitivityMatrixGraph{
+
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final static String gqlFile = "dualLinearTransitivity.gql";
     private final static Label key = Label.of("index");
 
     public DualLinearTransitivityMatrixGraph(Session session){
-        super(session, "dualLinearTransitivity.gql", Label.of("index"));
+        this.session = session;
     }
-    
-    @Override
+
+    public final void load(int n, int m) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
+    }
+
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Role R1from = tx.getRole("R1-from");
         Role R1to = tx.getRole("R1-to");
@@ -79,10 +91,5 @@ public class DualLinearTransitivityMatrixGraph extends ParametrisedTestGraph {
                         .assign(R2to, tx.getConcept(bInstancesIds[i + 1][j]));
             }
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, Transaction tx) {
-        buildExtensionalDB(n, n, tx);
     }
 }

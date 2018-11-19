@@ -26,18 +26,36 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import com.google.common.math.IntMath;
 
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.util.GraqlTestUtil.getInstance;
+
 /**
  * Defines a Graph based on test 6.10 from Cao p. 82.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PathTreeGraph extends ParametrisedTestGraph {
+public class PathTreeGraph{
 
-    public PathTreeGraph(Session session) {
-        super(session, "pathTest.gql", Label.of("index"));
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final String gqlFile;
+    private final static Label key = Label.of("index");
+
+    public PathTreeGraph(Session session){
+        this.session = session;
+        this.gqlFile = "pathTest.gql";
     }
 
     public PathTreeGraph(Session session, String schemaFile) {
-        super(session, schemaFile, Label.of("index"));
+        this.session = session;
+        this.gqlFile = schemaFile;
+    }
+
+    public final void load(int n, int m) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
     }
 
     protected void buildExtensionalDB(int n, int children, Transaction tx) {
@@ -52,13 +70,13 @@ public class PathTreeGraph extends ParametrisedTestGraph {
         EntityType startVertex = tx.getEntityType("start-vertex");
 
         RelationshipType arc = tx.getRelationshipType("arc");
-        putEntityWithResource(tx, "a0", startVertex, key());
+        putEntityWithResource(tx, "a0", startVertex, key);
 
         int outputThreshold = 500;
         for (int i = 1; i <= n; i++) {
             int m = IntMath.pow(children, i);
             for (int j = 0; j < m; j++) {
-                putEntityWithResource(tx, "a" + i + "," + j, vertex, key());
+                putEntityWithResource(tx, "a" + i + "," + j, vertex, key);
                 if (j != 0 && j % outputThreshold == 0) {
                     System.out.println(j + " entities out of " + m + " inserted");
                 }
@@ -85,10 +103,5 @@ public class PathTreeGraph extends ParametrisedTestGraph {
                 }
             }
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, Transaction tx) {
-        buildExtensionalDB(n, n, tx);
     }
 }
