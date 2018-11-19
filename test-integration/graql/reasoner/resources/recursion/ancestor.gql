@@ -1,0 +1,62 @@
+define
+
+
+###################################################
+####################Schema######################
+#################################################
+
+person sub entity
+    has name;
+
+parent sub role;
+child sub role;
+Parent sub relationship, relates parent, relates child;
+person plays parent, plays child;
+
+ancestor sub role;
+descendant sub role;
+Ancestor sub relationship, relates ancestor, relates descendant;
+person plays ancestor, plays descendant;
+
+name sub attribute, datatype string;
+
+insert
+
+####################################################
+##################DATA#############################
+####################################################
+
+$a isa person, has name 'a';
+$aa isa person, has name 'aa';
+$aaa isa person, has name 'aaa';
+$aab isa person, has name 'aab';
+$aaaa isa person, has name 'aaaa';
+$ab isa person, has name 'ab';
+$c isa person, has name 'c';
+$ca isa person, has name 'ca';
+
+(parent: $a, child: $aa) isa Parent;
+(parent: $a, child: $ab) isa Parent;
+(parent: $aa, child: $aaa) isa Parent;
+(parent: $aa, child: $aab) isa Parent;
+(parent: $aaa, child: $aaaa) isa Parent;
+(parent: $c, child: $ca) isa Parent;
+
+define
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+(parent: $x, child: $z) isa Parent;
+(ancestor: $z, descendant: $y) isa Ancestor;},
+then {
+(ancestor: $x, descendant: $y) isa Ancestor;};
+
+rule-2
+when {
+(parent: $x, child: $y) isa Parent;},
+then {
+(ancestor: $x, descendant: $y) isa Ancestor;};

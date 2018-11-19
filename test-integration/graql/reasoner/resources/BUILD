@@ -20,57 +20,80 @@ package(default_visibility = ["//test-integration/graql/reasoner:__subpackages__
 
 filegroup(
     name = "generic-schema",
-    srcs = ["genericSchema.gql"]
+    srcs = ["genericSchema.gql"],
 )
+
 filegroup(
     name = "reified-resource-applicability",
-    srcs = ["reifiedResourceApplicabilityTest.gql"]
+    srcs = ["reifiedResourceApplicabilityTest.gql"],
 )
+
 filegroup(
     name = "resource-applicability",
-    srcs = ["resourceApplicabilityTest.gql"]
+    srcs = ["resourceApplicabilityTest.gql"],
 )
+
 filegroup(
     name = "role-inference",
-    srcs = ["roleInferenceTest.gql"]
+    srcs = ["roleInferenceTest.gql"],
 )
+
 filegroup(
     name = "rule-applicability",
-    srcs = ["ruleApplicabilityTest.gql"]
+    srcs = ["ruleApplicabilityTest.gql"],
 )
+
 filegroup(
     name = "type-inference",
-    srcs = ["typeInferenceTest.gql"]
+    srcs = ["typeInferenceTest.gql"],
 )
+
 filegroup(
     name = "materialisation",
-    srcs = ["materialisationTest.gql"]
+    srcs = ["materialisationTest.gql"],
 )
+
 filegroup(
     name = "unification-with-types",
-    srcs = ["unificationWithTypesTest.gql"]
+    srcs = ["unificationWithTypesTest.gql"],
 )
+
 filegroup(
     name = "diagonal-test",
-    srcs = ["diagonalTest.gql"]
+    srcs = ["diagonalTest.gql"],
 )
+
+filegroup(
+    name = "dual-linear-transitivity",
+    srcs = ["dualLinearTransitivity.gql"],
+)
+
 filegroup(
     name = "path-test",
-    srcs = ["pathTest.gql"]
+    srcs = ["pathTest.gql"],
 )
+
+filegroup(
+    name = "path-test-symmetric",
+    srcs = ["pathTest-symmetric.gql"],
+)
+
 filegroup(
     name = "linear-transivity",
-    srcs = ["linearTransitivity.gql"]
+    srcs = ["linearTransitivity.gql"],
 )
+
 filegroup(
     name = "multi-join",
-    srcs = ["multiJoin.gql"]
+    srcs = ["multiJoin.gql"],
 )
+
 filegroup(
     name = "quadratic-transitivity",
-    srcs = ["quadraticTransitivity.gql"]
+    srcs = ["quadraticTransitivity.gql"],
 )
+
 filegroup(
     name = "resolution-plan",
-    srcs = ["resolutionPlanTest.gql"]
+    srcs = ["resolutionPlanTest.gql"],
 )

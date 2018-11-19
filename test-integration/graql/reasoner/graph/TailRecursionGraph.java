@@ -18,58 +18,60 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.concept.Thing;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.util.GraqlTestUtil.getInstance;
 
 @SuppressWarnings("CheckReturnValue")
-public class TransitivityChainGraph {
+public class TailRecursionGraph{
 
     private final Session session;
-    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
-    private final static String gqlFile = "quadraticTransitivity.gql";
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion/";
+    private final static String gqlFile = "tail-recursion.gql";
     private final static Label key = Label.of("index");
 
-    public TransitivityChainGraph(Session session){
+    public TailRecursionGraph(Session session){
         this.session = session;
     }
 
-    public final void load(int n) {
+    public final void load(int n, int m) {
         Transaction tx = session.transaction(Transaction.Type.WRITE);
         loadFromFile(gqlPath, gqlFile, tx);
-        buildExtensionalDB(n, tx);
+        buildExtensionalDB(n, m, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, Transaction tx){
+    protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
+        EntityType bEntity = tx.getEntityType("b-entity");
         RelationshipType q = tx.getRelationshipType("Q");
-        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
-        ConceptId[] aInstanceIds = new ConceptId[n];
-        for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = putEntityWithResource(tx, "a" + i, aEntity, key).id();
+
+        putEntityWithResource(tx, "a0", aEntity, key);
+        for(int i = 1 ; i <= m + 1 ;i++) {
+            for (int j = 1; j <= n; j++) {
+                putEntityWithResource(tx, "b" + i + "," + j, bEntity, key);
+            }
         }
 
-        q.create()
-                .assign(qfrom, aInst)
-                .assign(qto, tx.getConcept(aInstanceIds[0]));
-
-        for(int i = 0 ; i < n - 1 ; i++) {
+        for (int j = 1; j <= n; j++) {
             q.create()
-                    .assign(qfrom, tx.getConcept(aInstanceIds[i]))
-                    .assign(qto, tx.getConcept(aInstanceIds[i+1]));
+                    .assign(qfrom, getInstance(tx, "a0"))
+                    .assign(qto, getInstance(tx, "b1" + "," + j));
+            for(int i = 1 ; i <= m ;i++) {
+                q.create()
+                        .assign(qfrom, getInstance(tx, "b" + i + "," + j))
+                        .assign(qto, getInstance(tx, "b" + (i + 1) + "," + j));
+            }
         }
     }
-
 }

@@ -1,0 +1,71 @@
+define
+
+###################################################
+####################Schema######################
+#################################################
+
+entity2 sub entity
+    has name;
+Human sub entity2;
+
+parent sub role;
+child sub role;
+Parent sub relationship, relates parent, relates child;
+entity2 plays parent, plays child;
+
+SG-role sub role;
+SameGen sub relationship, relates SG-role;
+entity2 plays SG-role;
+
+name sub attribute, datatype string;
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+$x isa Human;},
+then {
+(SG-role: $x, SG-role: $x) isa SameGen;
+};
+
+rule-2
+when {
+(parent: $x, child: $u) isa Parent;
+(parent: $y, child: $v) isa Parent;
+(SG-role: $u, SG-role: $v) isa SameGen;},
+then {
+(SG-role: $x, SG-role: $y) isa SameGen;};
+
+insert
+
+####################################################
+##################DATA#############################
+####################################################
+
+$a isa entity2, has name "a";
+$b isa entity2, has name "b";
+$c isa entity2, has name "c";
+$d isa Human, has name "d";
+$e isa entity2, has name "e";
+$f isa entity2, has name "f";
+$g isa entity2, has name "g";
+$h isa entity2, has name "h";
+
+(parent: $a, child: $b) isa Parent;
+(parent: $a, child: $c) isa Parent;
+
+(parent: $b, child: $d) isa Parent;
+(parent: $c, child: $d) isa Parent;
+(parent: $e, child: $d) isa Parent;
+
+(parent: $f, child: $e) isa Parent;
+
+#Extra data
+(parent: $g, child: $f) isa Parent;
+
+(parent: $h, child: $g) isa Parent;
+
+
+

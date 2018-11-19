@@ -47,13 +47,21 @@ jobs:
       - run: bazel test //test-integration/graql/internal/... --test_output=errors
     # - run: bazel test //test-integration/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
 
-  test-integration-reasoner-general:
+  test-integration-reasoner:
     machine: true
     working_directory: ~/grakn
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //test-integration/graql/reasoner:all --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
+
+  test-integration-reasoner-recursion:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //test-integration/graql/reasoner:recursion-it --test_output=errors
 
   test-integration-reasoner-components:
     machine: true
@@ -207,7 +215,8 @@ workflows:
               ignore: /.*/
       - test-unit
       - test-integration
-      - test-integration-reasoner-general
+      - test-integration-reasoner
+      - test-integration-reasoner-recursion
       - test-integration-reasoner-components
       - test-integration-analytics
       - test-end-to-end

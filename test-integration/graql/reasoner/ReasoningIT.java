@@ -141,11 +141,11 @@ public class ReasoningIT {
         //currently disallowed by rule validation
         /*
         freshEntityDerivationSession = server.sessionWithNewKeyspace();
-        loadFromFile("freshEntityDerivation.gql", freshEntityDerivationSession);
+        loadFromFileAndCommit("freshEntityDerivation.gql", freshEntityDerivationSession);
         freshEntityDerivationFromRelationsSession = server.sessionWithNewKeyspace();
-        loadFromFile("freshEntityDerivationFromRelations.gql", freshEntityDerivationFromRelationsSession);
+        loadFromFileAndCommit("freshEntityDerivationFromRelations.gql", freshEntityDerivationFromRelationsSession);
         freshRelationDerivationSession = server.sessionWithNewKeyspace();
-        loadFromFile("freshRelationDerivation.gql", freshRelationDerivationSession);
+        loadFromFileAndCommit("freshRelationDerivation.gql", freshRelationDerivationSession);
         */
 
         appendingRPsContextSession = server.sessionWithNewKeyspace();
