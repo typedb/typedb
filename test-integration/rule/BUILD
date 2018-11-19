@@ -31,8 +31,8 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
     ],
     data = [
-        "//server:grakn-properties",
+        "//server:conf/grakn.properties",
         "//test-integration/resources:cassandra-embedded"
     ],
-    visibility = ["//test-integration:__subpackages__"]
+    visibility = ["//visibility:public"]
 )

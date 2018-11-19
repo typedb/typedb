@@ -18,25 +18,27 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
-java_library(
-    name = "daemon",
-    srcs = glob(["**/*.java"]),
+java_test(
+    name = "grakn-console-it",
+    srcs = ["GraknConsoleIT.java"],
+    test_class = "grakn.core.console.test.GraknConsoleIT",
     deps = [
         # Package dependencies
-        "//daemon/executor:grakn-daemon-executor",
+        "//console",
 
         # Grakn Core dependencies
         "//common",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
 
         # External dependencies
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
-    ],
-    resources = ["LICENSE"],
-    resource_strip_prefix = "daemon",
-    visibility = ["//server:__pkg__"],
+    data = ["file-(with-parentheses).gql"],
+    size = "large",
+    classpath_resources = ["//test-integration/resources:logback-test"]
 )

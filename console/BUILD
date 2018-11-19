@@ -16,7 +16,49 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
+
+java_library(
+    name = "console",
+    srcs = glob(["**/*.java"]),
+    deps = [
+        # Grakn Core dependencies
+        "//client-java",
+        "//server", # NEEDS TO GO
+        "//common",
+
+        # External dependencies
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/commons-cli",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
+        "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/jline:jline",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+    ],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
+    ],
+    visibility = ["//console/test:__subpackages__"],
+    resources = ["LICENSE"],
+    resource_strip_prefix = "console",
+    tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
+)
+
+java_binary(
+    name = "console-binary",
+    main_class = "grakn.core.console.GraknConsole",
+    runtime_deps = [":console"],
+    visibility = ["//:__pkg__"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":console"],
+    version_file = "//:VERSION",
+)
 
 genrule(
     name = "distribution",
@@ -26,48 +68,9 @@ genrule(
     tools = ["distribution.sh"]
 )
 
-java_binary(
-    name = "console-binary",
-    main_class = "grakn.core.console.Graql",
-    runtime_deps = [":console"],
-    visibility = ["//:__pkg__"],
-)
+test_suite(
+    name = "console-test-integration",
+    tests = [
 
-java_library(
-    name = "console",
-    srcs = glob(["src/**/*.java"]),
-    deps = [
-        # Grakn Core dependencies
-        "//client-java",
-        "//server",
-        "//common",
-
-        # External dependencies
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-cli",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/jline:jline",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-    ],
-    visibility = ["//test-integration:__subpackages__"],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
-    ],
-    resources = ["LICENSE"],
-    resource_strip_prefix = "console",
-    tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
-)
-
-deploy_maven_jar(
-    name = "deploy-maven-jar",
-    targets = [":console"],
-    version_file = "//:VERSION",
-)
-
-exports_files(
-    ["conf/logback.xml"],
+    ]
 )

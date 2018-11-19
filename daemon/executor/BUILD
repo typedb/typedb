@@ -22,7 +22,7 @@ java_library(
     name = "grakn-daemon-executor",
     srcs = glob(["**/*.java"]),
     deps = [
-        # Daemon subpackages
+        # Package dependencies
         "//daemon/exception:grakn-daemon-exception",
 
         # Grakn Core dependencies
