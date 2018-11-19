@@ -40,7 +40,7 @@ import grakn.core.graql.Var;
 import grakn.core.graql.VarPattern;
 import grakn.core.graql.grammar.GraqlBaseVisitor;
 import grakn.core.graql.grammar.GraqlParser;
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.Syntax;
 import grakn.core.graql.internal.util.StringUtil;
 import com.google.common.collect.ImmutableMap;

@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.analytics;
 
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;

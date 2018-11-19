@@ -23,7 +23,7 @@ import com.google.common.util.concurrent.Striped;
 import java.util.concurrent.locks.Lock;
 
 /**
- * Simple locking mechanism that can be used in case of single engine execution
+ * Simple locking mechanism that can be used in case of single server execution
  */
 public class ServerLockManager implements LockManager {
 

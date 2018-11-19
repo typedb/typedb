@@ -18,7 +18,7 @@
 
 package grakn.core.server.exception;
 
-import grakn.core.commons.exception.GraknException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Rule;
 import grakn.core.server.keyspace.Keyspace;
@@ -32,7 +32,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -41,16 +41,16 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 
-import static grakn.core.commons.exception.ErrorMessage.CLOSE_FAILURE;
-import static grakn.core.commons.exception.ErrorMessage.HAS_INVALID;
-import static grakn.core.commons.exception.ErrorMessage.INVALID_DIRECTION;
-import static grakn.core.commons.exception.ErrorMessage.INVALID_PROPERTY_USE;
-import static grakn.core.commons.exception.ErrorMessage.LABEL_TAKEN;
-import static grakn.core.commons.exception.ErrorMessage.META_TYPE_IMMUTABLE;
-import static grakn.core.commons.exception.ErrorMessage.NO_TYPE;
-import static grakn.core.commons.exception.ErrorMessage.REGEX_NOT_STRING;
-import static grakn.core.commons.exception.ErrorMessage.RESERVED_WORD;
-import static grakn.core.commons.exception.ErrorMessage.UNKNOWN_CONCEPT;
+import static grakn.core.common.exception.ErrorMessage.CLOSE_FAILURE;
+import static grakn.core.common.exception.ErrorMessage.HAS_INVALID;
+import static grakn.core.common.exception.ErrorMessage.INVALID_DIRECTION;
+import static grakn.core.common.exception.ErrorMessage.INVALID_PROPERTY_USE;
+import static grakn.core.common.exception.ErrorMessage.LABEL_TAKEN;
+import static grakn.core.common.exception.ErrorMessage.META_TYPE_IMMUTABLE;
+import static grakn.core.common.exception.ErrorMessage.NO_TYPE;
+import static grakn.core.common.exception.ErrorMessage.REGEX_NOT_STRING;
+import static grakn.core.common.exception.ErrorMessage.RESERVED_WORD;
+import static grakn.core.common.exception.ErrorMessage.UNKNOWN_CONCEPT;
 
 /**
  * <p>

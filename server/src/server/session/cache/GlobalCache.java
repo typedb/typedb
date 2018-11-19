@@ -18,11 +18,11 @@
 
 package grakn.core.server.session.cache;
 
-import grakn.core.commons.config.ConfigKey;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.LabelId;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.commons.config.Config;
+import grakn.core.common.config.Config;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

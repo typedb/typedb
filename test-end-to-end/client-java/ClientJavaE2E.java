@@ -1,6 +1,5 @@
 package grakn.core.client;
 
-import grakn.core.commons.http.SimpleURI;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.ComputeQuery;
 import grakn.core.graql.DefineQuery;

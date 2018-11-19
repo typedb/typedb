@@ -21,8 +21,8 @@ package grakn.core.graql.shell;
 import grakn.core.console.GraqlConsole;
 import grakn.core.console.GraqlShellOptions;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.commons.exception.ErrorMessage;
-import grakn.core.util.GraknVersion;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.GraknVersion;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
@@ -423,7 +423,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenEngineIsNotRunning_ShowAnError() throws Exception {
+    public void whenServerIsNotRunning_ShowAnError() throws Exception {
         ShellResponse response = runShell("", "-r", "localhost:7654");
         assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }

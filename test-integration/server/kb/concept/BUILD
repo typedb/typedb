@@ -54,7 +54,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.EntityTypeIT",
      deps = [
          "//server",
-         "//commons",
+         "//common",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
@@ -68,7 +68,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.RelationshipIT",
      deps = [
          "//server",
-         "//commons",
+         "//common",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -107,7 +107,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.SchemaConceptIT",
      deps = [
          "//server",
-         "//commons",
+         "//common",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -121,7 +121,7 @@ java_test(
      test_class = "grakn.core.server.kb.concept.SchemaMutationIT",
      deps = [
          "//server",
-         "//commons",
+         "//common",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
