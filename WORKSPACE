@@ -76,6 +76,7 @@ yarn_install(
     yarn_lock = "//client-nodejs:yarn.lock",
 )
 
+node_repositories(package_json = ["//workbase:package.json"])
 
 ########################################
 # Load compiler dependencies for ANTLR #

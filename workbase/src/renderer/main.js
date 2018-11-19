@@ -16,7 +16,7 @@ import CustomPlugins from './customPlugins/';
 
 Array.prototype.flatMap = function flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
-const ENGINE_AUTHENTICATED = false;
+const SERVER_AUTHENTICATED = false;
 const LANDING_PAGE = '/develop/data';
 
 // Disable devtools message
@@ -42,9 +42,9 @@ const router = new VueRouter({
 });
 
 // Set state variables in global store - this needs to happen before everything else
-store.commit('setAuthentication', ENGINE_AUTHENTICATED);
+store.commit('setAuthentication', SERVER_AUTHENTICATED);
 store.commit('setLandingPage', LANDING_PAGE);
-store.commit('loadLocalCredentials', ENGINE_AUTHENTICATED);
+store.commit('loadLocalCredentials', SERVER_AUTHENTICATED);
 
 // Before loading a new route check if the user is authorised
 router.beforeEach((to, from, next) => {

@@ -11,20 +11,28 @@
   "homepage": "https://grakn.ai",
   "main": "./dist/electron/main.js",
   "scripts": {
-    "build": "node .electron-vue/build.js && electron-builder --publish never",
-    "build:dir": "node .electron-vue/build.js && electron-builder --dir",
-    "build:clean": "cross-env BUILD_TARGET=clean node .electron-vue/build.js",
+    "build": "node .electron-vue/build.js && ./node_modules/electron-builder/out/cli/cli.js --publish never",
+    "build:dir": "node .electron-vue/build.js && ./node_modules/electron-builder/out/cli/cli.js --dir",
+    "build:clean": "./node_modules/cross-env/dist/bin/cross-env.js BUILD_TARGET=clean node .electron-vue/build.js",
     "dev": "node .electron-vue/dev-runner.js",
     "pack": "npm run pack:main && npm run pack:renderer",
-    "pack:main": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.main.config.js",
-    "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js",
+    "pack:main": "./node_modules/cross-env/dist/bin/cross-env.js NODE_ENV=production ./node_modules/webpack/bin/webpack.js --progress --colors --config .electron-vue/webpack.main.config.js",
+    "pack:renderer": "./node_modules/cross-env/dist/bin/cross-env.js NODE_ENV=production ./node_modules/webpack/bin/webpack.js --progress --colors --config .electron-vue/webpack.renderer.config.js",
     "postinstall": "npm install grpc --runtime=electron --target=3.0.6",
-    "test": "./node_modules/jest/bin/jest.js ./test/unit",
-    "e2e": "npm run pack && ./node_modules/jest/bin/jest.js ./test/e2e --runInBand"
+    "//": [
+      "For running tests we first copy them over __test_run_root folder, also resolving symlinks",
+      "This is required for being able to run tests with bazel"
+    ],
+    "pretest": "rm -rf __test_run_root && cp -RL test __test_run_root",
+    "test": "./node_modules/jest/bin/jest.js ./__test_run_root/unit",
+    "posttest": "rm -rf __test_run_root",
+    "pree2e": "npm run pretest",
+    "e2e": "npm run pack && ./node_modules/jest/bin/jest.js ./__test_run_root/e2e --runInBand",
+    "poste2e": "npm run posttest"
   },
   "build": {
     "productName": "Grakn Workbase",
-    "appId": "ai.grakn.workbase",
+    "appId": "grakn.core.workbase",
     "directories": {
       "output": "build"
     },

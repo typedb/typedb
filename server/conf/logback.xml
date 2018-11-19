@@ -64,7 +64,7 @@
     </logger>
 
     <!--All GRAKN logs go to main log file-->
-    <logger name="ai.grakn" level="${log.level:-INFO}">
+    <logger name="grakn.core" level="${log.level:-INFO}">
         <appender-ref ref="MAIN"/>
     </logger>
 
@@ -74,7 +74,7 @@
     </logger>
 
     <!--GRAKN ASCII text on startup goes to Standard Out-->
-    <logger name="ai.grakn.core.server.Server" level="INFO">
+    <logger name="grakn.core.server.Server" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 

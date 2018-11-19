@@ -1,9 +1,8 @@
-import EngineSettings from '@/components/EngineSettings';
+import ServerSettings from '@/components/ServerSettings';
 import PersistentStorage from '@/components/shared/PersistentStorage';
 
-const DEFAULT_ENGINE_HOST = '127.0.0.1';
-const DEFAULT_ENGINE_PORT = '4567';
-const DEFAULT_ENGINE_GRPC_PORT = '48555';
+const DEFAULT_SERVER_HOST = '127.0.0.1';
+const DEFAULT_SERVER_PORT = '48555';
 
 jest.mock('@/components/shared/PersistentStorage', () => ({
   get: jest.fn(),
@@ -15,30 +14,30 @@ PersistentStorage.set.mockImplementation((key, value) => {
   PersistentStorage.get.mockImplementation(() => value);
 });
 
-describe('EngineHost', () => {
-  test('getEngineHostDefault', () => {
+describe('ServerHost', () => {
+  test('getServerHostDefault', () => {
     PersistentStorage.get.mockImplementation(() => null);
-    const engineHost = EngineSettings.getEngineHost();
-    expect(engineHost).toBe(DEFAULT_ENGINE_HOST);
+    const serverHost = ServerSettings.getServerHost();
+    expect(serverHost).toBe(DEFAULT_SERVER_HOST);
   });
 
-  test('getEngineHostNotDefault', () => {
-    EngineSettings.setEngineHost('123.1.1.1');
-    const engineHost = EngineSettings.getEngineHost();
-    expect(engineHost).toBe('123.1.1.1');
+  test('getServerHostNotDefault', () => {
+    ServerSettings.setServerHost('123.1.1.1');
+    const serverHost = ServerSettings.getServerHost();
+    expect(serverHost).toBe('123.1.1.1');
   });
 });
 
-describe('EngineGrpcPort', () => {
-  test('getEngineGrpcPortDefault', () => {
+describe('ServerPort', () => {
+  test('getServerPortDefault', () => {
     PersistentStorage.get.mockImplementation(() => null);
-    const engineGrpcPort = EngineSettings.getEngineGrpcPort();
-    expect(engineGrpcPort).toBe(DEFAULT_ENGINE_GRPC_PORT);
+    const serverPort = ServerSettings.getServerPort();
+    expect(serverPort).toBe(DEFAULT_SERVER_PORT);
   });
 
-  test('getEngineGrpcPortNotDefault', () => {
-    EngineSettings.setEngineGrpcPort('12345');
-    const engineGrpcPort = EngineSettings.getEngineGrpcPort();
-    expect(engineGrpcPort).toBe('12345');
+  test('getServerNotDefault', () => {
+    ServerSettings.setServerPort('12345');
+    const serverPort = ServerSettings.getServerPort();
+    expect(serverPort).toBe('12345');
   });
 });

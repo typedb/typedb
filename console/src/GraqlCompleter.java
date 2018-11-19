@@ -16,28 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTxType;
-import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.Autocomplete;
-import ai.grakn.kb.admin.GraknAdmin;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.Autocomplete;
 import jline.console.completer.Completer;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocompleter for Graql.
  * Provides a default 'complete' method that will filter results to only those that pass the Graql lexer
  *
- * @author Felix Chapman
  */
 public class GraqlCompleter implements Completer {
 
@@ -47,9 +45,9 @@ public class GraqlCompleter implements Completer {
         this.labels = labels;
     }
 
-    public static GraqlCompleter create(GraknSession session) {
+    public static GraqlCompleter create(Session session) {
         ImmutableSet<Label> labels;
-        try (GraknAdmin tx = session.transaction(GraknTxType.READ).admin()) {
+        try (Transaction tx = session.transaction(Transaction.Type.READ)) {
 
             Stream<SchemaConcept> metaConcepts =
                     Stream.of(tx.getMetaConcept(), tx.getMetaRole(), tx.getMetaRule()).flatMap(SchemaConcept::subs);

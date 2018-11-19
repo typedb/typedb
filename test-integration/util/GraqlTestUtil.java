@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.util;
+package grakn.core.util;
 
-import ai.grakn.GraknTx;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.QueryBuilder;
+import grakn.core.server.Transaction;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
 
 import java.util.Collection;
 import org.apache.commons.collections.CollectionUtils;
@@ -32,11 +32,10 @@ import static org.junit.Assert.assertTrue;
 /**
  * Helper methods for writing tests for Graql
  *
- * @author Felix Chapman
  */
 public class GraqlTestUtil {
 
-    public static void assertExists(GraknTx tx, Pattern... patterns) {
+    public static void assertExists(Transaction tx, Pattern... patterns) {
         assertExists(tx.graql(), patterns);
     }
 
@@ -48,7 +47,7 @@ public class GraqlTestUtil {
         assertTrue(iterable.iterator().hasNext());
     }
 
-    public static void assertNotExists(GraknTx tx, Pattern... patterns) {
+    public static void assertNotExists(Transaction tx, Pattern... patterns) {
         assertNotExists(tx.graql(), patterns);
     }
 

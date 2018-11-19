@@ -27,11 +27,11 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="ai.grakn" level="DEBUG" additivity="false">
+    <logger name="grakn.core" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="ai.grakn.engine.Server" level="WARN">
+    <logger name="grakn.core.server.Server" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>
 

@@ -16,13 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
-import ai.grakn.util.SimpleURI;
+import grakn.core.client.Grakn;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.GraknVersion;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;
@@ -33,14 +31,13 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
 
-import static ai.grakn.core.console.GraqlShell.loadQuery;
+import static grakn.core.console.GraqlShell.loadQuery;
 
 /**
  *
  *  Graql console class that executes actions associated to options, if any option is set
  *  otherwise instantiates a GraqlShell
  *
- * @author marcoscoppetta
  */
 
 public class GraqlConsole {
@@ -89,12 +86,12 @@ public class GraqlConsole {
 
         boolean infer = options.shouldInfer();
         ConsoleReader console = new ConsoleReader(System.in, sout);
-        SimpleURI defaultGrpcUri = Grakn.DEFAULT_URI;
-        SimpleURI location = options.getUri();
+        String defaultURI = Grakn.DEFAULT_URI;
+        String userURI = options.getUri();
 
-        SimpleURI uri = location != null ? location : defaultGrpcUri;
-        Keyspace keyspace = options.getKeyspace();
-        Grakn client = new Grakn(uri);
+        String serverURI = userURI != null ? userURI : defaultURI;
+        String keyspace = options.getKeyspace();
+        Grakn client = new Grakn(serverURI);
 
         try (GraqlShell shell = new GraqlShell(historyFile, client, keyspace, console, serr, outputFormat, infer)) {
             List<Path> filePaths = options.getFiles();

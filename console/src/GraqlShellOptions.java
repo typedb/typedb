@@ -16,10 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.Keyspace;
-import ai.grakn.util.SimpleURI;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -39,16 +37,15 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
+import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
  * Wrapper for parsing command-line options for Graql shell
  *
- * @author Felix Chapman
  */
 public class GraqlShellOptions {
 
-    public static final Keyspace DEFAULT_KEYSPACE = Keyspace.of("grakn");
+    public static final String DEFAULT_KEYSPACE = "grakn";
 
     private static final String KEYSPACE = "k";
     private static final String EXECUTE = "e";
@@ -71,7 +68,7 @@ public class GraqlShellOptions {
         options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
         options.addOption(EXECUTE, "execute", true, "query to execute");
         options.addOption(FILE, "file", true, "graql file path to execute");
-        options.addOption(URI, "uri", true, "uri to factory to engine");
+        options.addOption(URI, "address", true, "Grakn Server address");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
         options.addOption(VERSION, "version", false, "print version");
@@ -113,9 +110,8 @@ public class GraqlShellOptions {
     }
 
     @Nullable
-    public SimpleURI getUri() {
-        String uri = cmd.getOptionValue(URI);
-        return uri != null ? new SimpleURI(uri) : null;
+    public String getUri() {
+        return cmd.getOptionValue(URI);
     }
 
     public boolean displayVersion() {
@@ -126,9 +122,9 @@ public class GraqlShellOptions {
         return cmd.hasOption(HELP) || !cmd.getArgList().isEmpty();
     }
 
-    public Keyspace getKeyspace() {
+    public String getKeyspace() {
         String keyspace = cmd.getOptionValue(KEYSPACE);
-        return keyspace != null ? Keyspace.of(keyspace) : DEFAULT_KEYSPACE;
+        return keyspace != null ? keyspace : DEFAULT_KEYSPACE;
     }
 
     @Nullable

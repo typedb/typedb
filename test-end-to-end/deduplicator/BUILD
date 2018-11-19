@@ -1,10 +1,11 @@
 java_test(
     name = "attribute-deduplicator-e2e",
-    test_class = "ai.grakn.deduplicator.AttributeDeduplicatorE2E",
+    test_class = "grakn.core.deduplicator.AttributeDeduplicatorE2E",
     srcs = ["AttributeDeduplicatorE2E.java", "AttributeDeduplicatorE2EConstants.java"],
     deps = [
-        "//grakn-graql:grakn-graql",
-        "//client-java:client-java",
+        "//server",
+        "//client-java",
+        "//common",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",

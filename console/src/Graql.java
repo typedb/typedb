@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.util.GraknVersion;
+import grakn.core.common.util.GraknVersion;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.base.StandardSystemProperty;
@@ -34,7 +34,6 @@ import java.util.Arrays;
  *
  * Please keep the class name "Graql" as it is what will be displayed to the user.
  *
- * @author Michele Orsi
  */
 public class Graql {
 

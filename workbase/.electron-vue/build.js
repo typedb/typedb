@@ -1,5 +1,7 @@
 'use strict'
 
+module.paths = module.paths.concat([process.env.NODE_PATH]);
+
 process.env.NODE_ENV = 'production'
 
 const { say } = require('cfonts')

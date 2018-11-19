@@ -16,19 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ai.grakn.core.console;
+package grakn.core.console;
 
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTx;
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.client.Grakn;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.Query;
-import ai.grakn.graql.answer.Answer;
-import ai.grakn.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.client.Grakn;
+import grakn.core.graql.Query;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.internal.printer.Printer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 
@@ -44,7 +42,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
@@ -53,7 +51,6 @@ import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 /**
  * A Graql REPL shell that can be run from the command line
  *
- * @author Felix Chapman
  */
 public class GraqlShell implements AutoCloseable {
 
@@ -82,7 +79,7 @@ public class GraqlShell implements AutoCloseable {
             LICENSE_COMMAND, CLEAN_COMMAND
     );
 
-    private final Keyspace keyspace;
+    private final String keyspace;
     private final OutputFormat outputFormat;
     private final boolean infer;
     private ConsoleReader console;
@@ -91,8 +88,8 @@ public class GraqlShell implements AutoCloseable {
     private final HistoryFile historyFile;
 
     private final Grakn client;
-    private final GraknSession session;
-    private GraknTx tx;
+    private final Session session;
+    private Transaction tx;
     private Set<AttributeType<?>> displayAttributes = ImmutableSet.of();
 
     private final GraqlCompleter graqlCompleter;
@@ -108,7 +105,7 @@ public class GraqlShell implements AutoCloseable {
      * Create a new Graql shell
      */
     public GraqlShell(
-            String historyFilename, Grakn client, Keyspace keyspace, ConsoleReader console, PrintStream serr,
+            String historyFilename, Grakn client, String keyspace, ConsoleReader console, PrintStream serr,
             OutputFormat outputFormat, boolean infer
     ) throws IOException {
         this.keyspace = keyspace;
@@ -122,7 +119,7 @@ public class GraqlShell implements AutoCloseable {
         this.historyFile = HistoryFile.create(console, historyFilename);
 
 
-        tx = client.session(keyspace).transaction(GraknTxType.WRITE);
+        tx = client.session(keyspace).transaction(Transaction.Type.WRITE);
     }
 
     public void start(@Nullable List<String> queryStrings) throws IOException, InterruptedException {
@@ -143,8 +140,8 @@ public class GraqlShell implements AutoCloseable {
     /**
      * The string to be displayed at the prompt
      */
-    private static final String consolePrompt(Keyspace keyspace) {
-        return ANSI_PURPLE + keyspace.toString() + ANSI_RESET + "> ";
+    private static final String consolePrompt(String keyspace) {
+        return ANSI_PURPLE + keyspace + ANSI_RESET + "> ";
     }
 
     /**
@@ -156,7 +153,7 @@ public class GraqlShell implements AutoCloseable {
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
 
-        console.setPrompt(consolePrompt(tx.keyspace()));
+        console.setPrompt(consolePrompt(tx.keyspace().getName()));
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));
@@ -299,7 +296,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void reopenTx() {
         if (!tx.isClosed()) tx.close();
-        tx = session.transaction(GraknTxType.WRITE);
+        tx = session.transaction(Transaction.Type.WRITE);
     }
 
     public boolean errorOccurred() {

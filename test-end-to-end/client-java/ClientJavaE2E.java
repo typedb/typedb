@@ -1,19 +1,17 @@
-package ai.grakn.client;
+package grakn.core.client;
 
-import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.DefineQuery;
-import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.answer.ConceptMap;
-import ai.grakn.graql.answer.ConceptSet;
-import ai.grakn.graql.answer.Value;
-import ai.grakn.util.GraqlSyntax;
-import ai.grakn.util.SimpleURI;
+import grakn.core.graql.AggregateQuery;
+import grakn.core.graql.ComputeQuery;
+import grakn.core.graql.DefineQuery;
+import grakn.core.graql.DeleteQuery;
+import grakn.core.graql.GetQuery;
+import grakn.core.graql.InsertQuery;
+import grakn.core.graql.Syntax;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.answer.Value;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.server.Transaction;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,15 +26,15 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static ai.grakn.client.ClientJavaE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static ai.grakn.client.ClientJavaE2EConstants.assertGraknRunning;
-import static ai.grakn.client.ClientJavaE2EConstants.assertGraknStopped;
-import static ai.grakn.client.ClientJavaE2EConstants.assertZipExists;
-import static ai.grakn.client.ClientJavaE2EConstants.unzipGrakn;
-import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.label;
-import static ai.grakn.graql.Graql.var;
+import static grakn.core.client.ClientJavaE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.client.ClientJavaE2EConstants.assertGraknRunning;
+import static grakn.core.client.ClientJavaE2EConstants.assertGraknStopped;
+import static grakn.core.client.ClientJavaE2EConstants.assertZipExists;
+import static grakn.core.client.ClientJavaE2EConstants.unzipGrakn;
+import static grakn.core.graql.Graql.and;
+import static grakn.core.graql.Graql.count;
+import static grakn.core.graql.Graql.label;
+import static grakn.core.graql.Graql.var;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -65,7 +63,6 @@ import static org.hamcrest.Matchers.hasSize;
  * The rule is one such that if there is an offspring which is the result of a certain child-bearing act, then
  * that offspring is the child of the male and female partners which are involved in the mating act.
  *
- * @author Ganeshwara Herawan Hananda
  */
 public class ClientJavaE2E {
     private static Logger LOG = LoggerFactory.getLogger(ClientJavaE2E.class);
@@ -238,7 +235,7 @@ public class ClientJavaE2E {
 
         localhostGraknTx(tx -> {
             LOG.info("clientJavaE2E() - compute count...");
-            final ComputeQuery<Value> computeQuery = tx.graql().compute(GraqlSyntax.Compute.Method.COUNT).in("lion");
+            final ComputeQuery<Value> computeQuery = tx.graql().compute(Syntax.Compute.Method.COUNT).in("lion");
             LOG.info("clientJavaE2E() - '" + computeQuery + "'");
             int computeCount = computeQuery.execute().get(0).number().intValue();
             assertThat(computeCount, equalTo(lionNames().length));
@@ -263,11 +260,11 @@ public class ClientJavaE2E {
     }
 
     private void localhostGraknTx(Consumer<Grakn.Transaction> fn) {
-        SimpleURI graknHost = new SimpleURI("localhost", 48555);
-        Keyspace keyspace = Keyspace.of("grakn");
+        String host = "localhost:48555";
+        String keyspace = "grakn";
 
-        try (Grakn.Session session = new Grakn(graknHost).session(keyspace)) {
-            try (Grakn.Transaction transaction = session.transaction(GraknTxType.WRITE)) {
+        try (Grakn.Session session = new Grakn(host).session(keyspace)) {
+            try (Grakn.Transaction transaction = session.transaction(Transaction.Type.WRITE)) {
                 fn.accept(transaction);
             }
         }
