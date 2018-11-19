@@ -35,8 +35,7 @@ public class DualLinearTransitivityMatrixGraph extends ParametrisedTestGraph {
     }
     
     @Override
-    protected void buildExtensionalDB(int n, int m) {
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Role R1from = tx.getRole("R1-from");
         Role R1to = tx.getRole("R1-to");
         Role R2from = tx.getRole("R2-from");
@@ -83,7 +82,7 @@ public class DualLinearTransitivityMatrixGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        buildExtensionalDB(n, n);
+    protected void buildExtensionalDB(int n, Transaction tx) {
+        buildExtensionalDB(n, n, tx);
     }
 }

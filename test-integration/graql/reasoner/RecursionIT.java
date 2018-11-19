@@ -403,20 +403,20 @@ public class RecursionIT {
     @Test
     public void testDualLinearTransitivityMatrix(){
         final int N = 5;
-        Session session = server.sessionWithNewKeyspace();
-        DualLinearTransitivityMatrixGraph graph = new DualLinearTransitivityMatrixGraph(session);
-        graph.load(N);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        try(Session session = server.sessionWithNewKeyspace()) {
+            DualLinearTransitivityMatrixGraph graph = new DualLinearTransitivityMatrixGraph(session);
+            graph.load(N);
+            try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
 
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+                QueryBuilder qb = tx.graql().infer(false);
+                QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
-        String explicitQuery = "match $y isa a-entity or $y isa end; get;";
+                String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; get $y;";
+                String explicitQuery = "match $y isa a-entity or $y isa end; get;";
 
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
-        tx.close();
-        session.close();
+                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            }
+        }
     }
 
     /**
@@ -425,20 +425,19 @@ public class RecursionIT {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        Session session = server.sessionWithNewKeyspace();
-        TailRecursionGraph tailRecursionGraph = new TailRecursionGraph(session);
-        tailRecursionGraph.load(N, M);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        try(Session session = server.sessionWithNewKeyspace()) {
+            TailRecursionGraph tailRecursionGraph = new TailRecursionGraph(session);
+            tailRecursionGraph.load(N, M);
+            try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                QueryBuilder qb = tx.graql().infer(false);
+                QueryBuilder iqb = tx.graql().infer(true);
 
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+                String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; get $y;";
+                String explicitQuery = "match $y isa b-entity; get;";
 
-        String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; get $y;";
-        String explicitQuery = "match $y isa b-entity; get;";
-
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
-        tx.close();
-        session.close();
+                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            }
+        }
     }
 
     /**
@@ -463,23 +462,23 @@ public class RecursionIT {
      *                bN   --  Q --    aN+1
      */
     @Test
-    public void testNguyen(){
+    public void testNguyen() {
         final int N = 9;
-        Session session = server.sessionWithNewKeyspace();
-        NguyenGraph graph = new NguyenGraph(session);
-        graph.load(N);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try (Session session = server.sessionWithNewKeyspace()) {
+            NguyenGraph graph = new NguyenGraph(session);
+            graph.load(N);
+            try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                QueryBuilder qb = tx.graql().infer(false);
+                QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
-        String explicitQuery = "match $y isa a-entity; get;";
+                String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
+                String explicitQuery = "match $y isa a-entity; get;";
 
-        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
-        assertCollectionsEqual(answers, explicitAnswers);
-        tx.close();
-        session.close();
+                List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+                List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+                assertCollectionsEqual(answers, explicitAnswers);
+            }
+        }
     }
 
     /**test 6.9 from Cao p.82*/
@@ -487,97 +486,99 @@ public class RecursionIT {
     public void testLinearTransitivityMatrix(){
         final int N = 5;
         final int M = 5;
-        Session session = server.sessionWithNewKeyspace();
-        LinearTransitivityMatrixGraph graph = new LinearTransitivityMatrixGraph(session);
-        graph.load(N, M);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try(Session session = server.sessionWithNewKeyspace()) {
+            LinearTransitivityMatrixGraph graph = new LinearTransitivityMatrixGraph(session);
+            graph.load(N, M);
+            try(Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                QueryBuilder qb = tx.graql().infer(false);
+                QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; get $y;";
-        String explicitQuery = "match $y isa a-entity; get;";
+                String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; get $y;";
+                String explicitQuery = "match $y isa a-entity; get;";
 
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
-        tx.close();
-        session.close();
+                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            }
+        }
     }
 
     @Test
-    public void testPathSymmetric(){
+    public void testPathSymmetric() {
         final int N = 2;
         final int depth = 3;
-        Session session = server.sessionWithNewKeyspace();
-        PathTreeSymmetricGraph graph = new PathTreeSymmetricGraph(session);
-        graph.load(N, depth);
-        Transaction tx = session.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try(Session session = server.sessionWithNewKeyspace()) {
+            PathTreeSymmetricGraph graph = new PathTreeSymmetricGraph(session);
+            graph.load(N, depth);
+            try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
+                QueryBuilder qb = tx.graql().infer(false);
+                QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
-        String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
+                String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
+                String explicitQuery = "match {$y isa vertex;} or {$y isa start-vertex;}; get;";
 
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
-        tx.close();
-        session.close();
+                assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            }
+        }
     }
 
     /**test 6.10 from Cao p. 82*/
     @Test
     public void testPathTree(){
-        TransactionImpl tx = pathTreeSession.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try(TransactionImpl tx = pathTreeSession.transaction(Transaction.Type.WRITE)) {
+            QueryBuilder qb = tx.graql().infer(false);
+            QueryBuilder iqb = tx.graql().infer(true);
 
-        Concept a0 = getConcept(tx, "index", "a0");
+            Concept a0 = getConcept(tx, "index", "a0");
 
-        String queryString = "match (path-from: $x, path-to: $y) isa path;" +
-                "$x has index 'a0';" +
-                "get $y;";
-        String explicitQuery = "match $y isa vertex; get;";
+            String queryString = "match (path-from: $x, path-to: $y) isa path;" +
+                    "$x has index 'a0';" +
+                    "get $y;";
+            String explicitQuery = "match $y isa vertex; get;";
 
-
-        List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
-        List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
-
-        assertCollectionsEqual(answers, explicitAnswers);
+            List<ConceptMap> answers = iqb.<GetQuery>parse(queryString).execute();
+            List<ConceptMap> explicitAnswers = qb.<GetQuery>parse(explicitQuery).execute();
+            assertCollectionsEqual(answers, explicitAnswers);
+        }
     }
 
     @Test
     public void testPathTreePrime(){
-        Transaction tx = pathTreeSession.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try(TransactionImpl tx = pathTreeSession.transaction(Transaction.Type.WRITE)) {
+            QueryBuilder qb = tx.graql().infer(false);
+            QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
-        String explicitQuery = "match $y isa vertex; get;";
+            String queryString = "match ($x, $y) isa path;$x has index 'a0'; get $y;";
+            String explicitQuery = "match $y isa vertex; get;";
 
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+        }
     }
 
     @Test
     /*modified test 6.10 from Cao p. 82*/
     public void testPathMatrix(){
-        Transaction tx = pathMatrixSession.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try(TransactionImpl tx = pathMatrixSession.transaction(Transaction.Type.WRITE)) {
+            QueryBuilder qb = tx.graql().infer(false);
+            QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; get $y;";
-        String explicitQuery = "match $y isa vertex; get;";
+            String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; get $y;";
+            String explicitQuery = "match $y isa vertex; get;";
 
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+        }
     }
 
     @Test
     /*modified test 6.10 from Cao p. 82*/
     public void testPathMatrixPrime(){
-        Transaction tx = pathMatrixSession.transaction(Transaction.Type.WRITE);
-        QueryBuilder qb = tx.graql().infer(false);
-        QueryBuilder iqb = tx.graql().infer(true);
+        try(Transaction tx = pathMatrixSession.transaction(Transaction.Type.WRITE)) {
+            QueryBuilder qb = tx.graql().infer(false);
+            QueryBuilder iqb = tx.graql().infer(true);
 
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;get $y, $ind;";
-        String explicitQuery = "match $y isa vertex;$y has index $ind; get;";
+            String queryString = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;get $y, $ind;";
+            String explicitQuery = "match $y isa vertex;$y has index $ind; get;";
 
-        assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+            assertQueriesEqual(qb.parse(explicitQuery), iqb.parse(queryString));
+        }
     }
 
     private Concept getConcept(TransactionImpl graph, String typeName, Object val){

@@ -34,8 +34,7 @@ public class NguyenGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, Transaction tx) {
         Label key = key();
         Role Rfrom = tx.getRole("R-rA");
         Role Rto = tx.getRole("R-rB");
@@ -94,7 +93,7 @@ public class NguyenGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int children) {
-        buildExtensionalDB(n);
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
+        buildExtensionalDB(n, tx);
     }
 }

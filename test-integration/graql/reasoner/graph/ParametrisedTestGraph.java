@@ -47,14 +47,12 @@ public abstract class ParametrisedTestGraph {
         this.key = key;
     }
 
-    private void loadSchema(Session session) {
+    private void loadSchema(Transaction tx) {
         try {
             System.out.println("Loading... " + gqlPath + schemaFile);
             InputStream inputStream = ParametrisedTestGraph.class.getClassLoader().getResourceAsStream(gqlPath + schemaFile);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            Transaction tx = session.transaction(Transaction.Type.WRITE);
             tx.graql().parser().parseList(s).forEach(Query::execute);
-            tx.commit();
         } catch (Exception e) {
             System.err.println(e);
             throw new RuntimeException(e);
@@ -62,21 +60,23 @@ public abstract class ParametrisedTestGraph {
     }
 
     public final void load(int n) {
-        loadSchema(session);
-        buildExtensionalDB(n);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadSchema(tx);
+        buildExtensionalDB(n, tx);
+        tx.commit();
     }
 
     public final void load(int n, int m) {
-        loadSchema(session);
-        buildExtensionalDB(n, m);
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadSchema(tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
     }
 
     Label key(){ return key;}
 
-    Transaction tx(){ return session.transaction(Transaction.Type.WRITE); }
-
-    abstract protected void buildExtensionalDB(int n, int children);
-    abstract protected void buildExtensionalDB(int n);
+    abstract protected void buildExtensionalDB(int n, int children, Transaction tx);
+    abstract protected void buildExtensionalDB(int n, Transaction tx);
 
     static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();

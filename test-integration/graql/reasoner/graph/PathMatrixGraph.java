@@ -39,8 +39,7 @@ public class PathMatrixGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB( int n, int m) {
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, int m, Transaction tx) {
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
         Role arcFrom = tx.getRole("arc-from");
@@ -76,7 +75,7 @@ public class PathMatrixGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        buildExtensionalDB(n, n);
+    protected void buildExtensionalDB(int n, Transaction tx) {
+        buildExtensionalDB(n, n, tx);
     }
 }

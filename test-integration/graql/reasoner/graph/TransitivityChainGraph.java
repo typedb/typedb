@@ -35,8 +35,7 @@ public class TransitivityChainGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n){
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, Transaction tx){
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 
@@ -57,12 +56,11 @@ public class TransitivityChainGraph extends ParametrisedTestGraph {
                     .assign(qfrom, tx.getConcept(aInstanceIds[i]))
                     .assign(qto, tx.getConcept(aInstanceIds[i+1]));
         }
-        tx.commit();
     }
 
 
     @Override
-    protected void buildExtensionalDB(int n, int children) {
-        buildExtensionalDB(n);
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
+        buildExtensionalDB(n, tx);
     }
 }

@@ -33,8 +33,7 @@ public class TailRecursionGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int m) {
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Label key = key();
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
@@ -63,7 +62,7 @@ public class TailRecursionGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        buildExtensionalDB(n, n);
+    protected void buildExtensionalDB(int n, Transaction tx) {
+        buildExtensionalDB(n, n, tx);
     }
 }

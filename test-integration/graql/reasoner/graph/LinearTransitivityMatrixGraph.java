@@ -36,8 +36,7 @@ public class LinearTransitivityMatrixGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int m){
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, int m, Transaction tx){
         Role Qfrom = tx.getRole("Q-from");
         Role Qto = tx.getRole("Q-to");
 
@@ -69,11 +68,10 @@ public class LinearTransitivityMatrixGraph extends ParametrisedTestGraph {
                 }
             }
         }
-        tx.commit();
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        buildExtensionalDB(n, n);
+    protected void buildExtensionalDB(int n, Transaction tx) {
+        buildExtensionalDB(n, n, tx);
     }
 }

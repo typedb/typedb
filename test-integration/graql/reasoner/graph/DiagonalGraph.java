@@ -34,8 +34,7 @@ public class DiagonalGraph extends ParametrisedTestGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int m) {
-        Transaction tx = tx();
+    protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Role relFrom = tx.getRole("rel-from");
         Role relTo = tx.getRole("rel-to");
 
@@ -70,11 +69,10 @@ public class DiagonalGraph extends ParametrisedTestGraph {
                 if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);
             }
         }
-        tx.commit();
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        buildExtensionalDB(n, n);
+    protected void buildExtensionalDB(int n, Transaction tx) {
+        buildExtensionalDB(n, n, tx);
     }
 }

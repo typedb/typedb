@@ -40,11 +40,13 @@ public class PathTreeGraph extends ParametrisedTestGraph {
         super(session, schemaFile, Label.of("index"));
     }
 
-    @Override
-    protected void buildExtensionalDB(int n, int children){
-        Transaction tx = tx();
-        Role fromRole = tx.getRole("arc-from");
-        Role toRole = tx.getRole("arc-to");
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
+        buildTree("arc-from", "arc-to", n , children, tx);
+    }
+
+    void buildTree(String fromRoleValue, String toRoleValue, int n, int children, Transaction tx) {
+        Role fromRole = tx.getRole(fromRoleValue);
+        Role toRole = tx.getRole(toRoleValue);
 
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
@@ -83,11 +85,10 @@ public class PathTreeGraph extends ParametrisedTestGraph {
                 }
             }
         }
-        tx.commit();
     }
 
     @Override
-    protected void buildExtensionalDB(int n) {
-        buildExtensionalDB(n, n);
+    protected void buildExtensionalDB(int n, Transaction tx) {
+        buildExtensionalDB(n, n, tx);
     }
 }
