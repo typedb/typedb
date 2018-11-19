@@ -31,7 +31,7 @@ import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.Graql;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -63,7 +63,7 @@ public class CorenessIT {
     public Session session;
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Before
     public void setUp() {

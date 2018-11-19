@@ -5,7 +5,7 @@ java_test(
     deps = [
         "//server",
         "//client-java",
-        "//util",
+        "//common",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",

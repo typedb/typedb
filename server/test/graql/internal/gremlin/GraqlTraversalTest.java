@@ -33,7 +33,7 @@ import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.pattern.property.IdProperty;
 import grakn.core.graql.internal.pattern.property.SubProperty;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

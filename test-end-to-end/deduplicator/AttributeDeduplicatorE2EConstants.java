@@ -18,8 +18,8 @@
 
 package grakn.core.deduplicator;
 
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.GraknConfig;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.config.Config;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -38,15 +38,15 @@ public class AttributeDeduplicatorE2EConstants {
     public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution test", "grakn-core-all");
 
     public static void assertGraknRunning() {
-        GraknConfig config = GraknConfig.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
-        boolean engineReady = isEngineReady(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", engineReady, equalTo(true));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
+        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(true));
     }
 
     public static void assertGraknStopped() {
-        GraknConfig config = GraknConfig.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
-        boolean engineReady = isEngineReady(config.getProperty(GraknConfigKey.SERVER_HOST_NAME), config.getProperty(GraknConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", engineReady, equalTo(false));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
+        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
     }
 
     public static void assertZipExists() {
@@ -63,7 +63,7 @@ public class AttributeDeduplicatorE2EConstants {
                 .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
     }
 
-    private static boolean isEngineReady(String host, int port) {
+    private static boolean isServerReady(String host, int port) {
         try {
             Socket s = new Socket(host, port);
             s.close();

@@ -44,7 +44,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.Syntax.Char.COMMA_SPACE;
 import static grakn.core.graql.Syntax.Char.EQUAL;
 import static grakn.core.graql.Syntax.Char.QUOTE;

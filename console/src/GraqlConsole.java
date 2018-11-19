@@ -18,11 +18,9 @@
 
 package grakn.core.console;
 
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.client.Grakn;
-import grakn.core.util.ErrorMessage;
-import grakn.core.util.GraknVersion;
-import grakn.core.util.SimpleURI;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.GraknVersion;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.grpc.Status;
@@ -88,12 +86,12 @@ public class GraqlConsole {
 
         boolean infer = options.shouldInfer();
         ConsoleReader console = new ConsoleReader(System.in, sout);
-        SimpleURI defaultGrpcUri = Grakn.DEFAULT_URI;
-        SimpleURI location = options.getUri();
+        String defaultURI = Grakn.DEFAULT_URI;
+        String userURI = options.getUri();
 
-        SimpleURI uri = location != null ? location : defaultGrpcUri;
-        Keyspace keyspace = options.getKeyspace();
-        Grakn client = new Grakn(uri);
+        String serverURI = userURI != null ? userURI : defaultURI;
+        String keyspace = options.getKeyspace();
+        Grakn client = new Grakn(serverURI);
 
         try (GraqlShell shell = new GraqlShell(historyFile, client, keyspace, console, serr, outputFormat, infer)) {
             List<Path> filePaths = options.getFiles();

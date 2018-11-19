@@ -31,7 +31,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.answer.ConceptSetMeasure;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class DegreeIT {
     private Transaction tx;
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Before
     public void setUp() {

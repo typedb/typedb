@@ -17,7 +17,7 @@ import grakn.core.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.server.session.TransactionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import com.google.common.collect.ImmutableMap;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 public class LazyQueryCacheIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl ruleApplicabilitySession;
 

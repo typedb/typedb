@@ -18,12 +18,12 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.server.exception.TransactionException;
 import com.google.auto.value.AutoValue;
+import grakn.core.common.exception.Validator;
+import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
-import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -37,32 +37,31 @@ import java.util.regex.Pattern;
  */
 @AutoValue
 public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
-    private static final int MAX_LENGTH = 48;
     private static final long serialVersionUID = 2726154016735929123L;
 
-    public abstract String getValue();
+    public abstract String getName();
 
     @Override
     public int compareTo(Keyspace o) {
         if(equals(o)) return 0;
-        return getValue().compareTo(o.getValue());
+        return getName().compareTo(o.getName());
     }
 
     /**
      *
-     * @param value The string which potentially represents a unique {@link Keyspace}
+     * @param name The string which potentially represents a unique {@link Keyspace}
      * @return The matching {@link Keyspace}
      */
     @CheckReturnValue
-    public static Keyspace of(String value){
-        if(!Pattern.matches("[a-z_][a-z_0-9]*", value) || value.length() > MAX_LENGTH) {
-            throw TransactionException.invalidKeyspace(value);
+    public static Keyspace of(String name){
+        if(!Validator.isValidKeyspaceName(name)) {
+            throw TransactionException.invalidKeyspaceName(name);
         }
-        return new AutoValue_Keyspace(value);
+        return new AutoValue_Keyspace(name);
     }
 
     @Override
     public final String toString() {
-        return getValue();
+        return getName();
     }
 }

@@ -39,8 +39,8 @@ import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.Casting;
-import grakn.core.util.CommonUtil;
-import grakn.core.util.ErrorMessage;
+import grakn.core.common.util.CommonUtil;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 
 import com.google.common.collect.Iterables;
@@ -53,13 +53,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.util.ErrorMessage.VALIDATION_CASTING;
-import static grakn.core.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
-import static grakn.core.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
-import static grakn.core.util.ErrorMessage.VALIDATION_RELATION_TYPE;
-import static grakn.core.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
-import static grakn.core.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
-import static grakn.core.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_CASTING;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPE;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_REQUIRED_RELATION;
+import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
 
 /**
  * <p>

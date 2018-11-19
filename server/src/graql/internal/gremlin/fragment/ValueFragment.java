@@ -30,7 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Set;
 
-import static grakn.core.util.CommonUtil.optionalToStream;
+import static grakn.core.common.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
 @AutoValue

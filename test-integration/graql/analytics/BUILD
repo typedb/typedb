@@ -4,7 +4,7 @@ java_test(
     srcs = ["AnalyticsIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -16,7 +16,7 @@ java_test(
     srcs = ["ConnectedComponentIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -29,7 +29,7 @@ java_test(
     srcs = ["CorenessIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -41,7 +41,7 @@ java_test(
     srcs = ["CountIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -53,7 +53,7 @@ java_test(
     srcs = ["DegreeIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -66,7 +66,7 @@ java_test(
     srcs = ["GraqlIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -79,7 +79,7 @@ java_test(
     srcs = ["KCoreIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
     ],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -91,7 +91,7 @@ java_test(
     srcs = ["PathIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",
@@ -104,7 +104,7 @@ java_test(
     srcs = ["StatisticsIT.java"],
     deps = [
         "//server",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
     size = "large",

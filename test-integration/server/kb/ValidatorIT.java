@@ -28,8 +28,8 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.rule.ConcurrentGraknServer;
-import grakn.core.util.ErrorMessage;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.common.exception.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertThat;
 public class ValidatorIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

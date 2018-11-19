@@ -18,10 +18,10 @@
 
 package grakn.core.server.deduplicator;
 
-import grakn.core.util.GraknConfigKey;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.util.GraknConfig;
+import grakn.core.common.config.Config;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.RocksDbQueue;
 import grakn.core.server.session.SessionStore;
@@ -71,11 +71,11 @@ public class AttributeDeduplicatorDaemon {
 
     /**
      * Instantiates {@link AttributeDeduplicatorDaemon}
-     * @param config a reference to an instance of {@link GraknConfig} which is initialised from a grakn.properties.
+     * @param config a reference to an instance of {@link Config} which is initialised from a grakn.properties.
      * @param txFactory an {@link SessionStore} instance which provides access to write into the database
      */
-    public AttributeDeduplicatorDaemon(GraknConfig config, SessionStore txFactory) {
-        Path dataDir = Paths.get(config.getProperty(GraknConfigKey.DATA_DIR));
+    public AttributeDeduplicatorDaemon(Config config, SessionStore txFactory) {
+        Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
         Path queueDataDir = dataDir.resolve(queueDataDirRelative);
         this.queue = new RocksDbQueue(queueDataDir);
         this.txFactory = txFactory;

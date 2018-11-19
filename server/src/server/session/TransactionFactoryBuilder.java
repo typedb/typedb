@@ -20,9 +20,8 @@ package grakn.core.server.session;
 
 import grakn.core.server.session.olap.TransactionOLAPFactory;
 import grakn.core.server.session.oltp.TransactionOLTPFactory;
-import grakn.core.util.GraknConfigKey;
-import grakn.core.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.structure.Graph;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +54,9 @@ public class TransactionFactoryBuilder {
 
     public TransactionFactory<?, ?> getFactory(SessionImpl session, boolean isComputerFactory) {
         try {
-            String factoryKey = session.config().getProperty(GraknConfigKey.KB_MODE);
+            String factoryKey = session.config().getProperty(ConfigKey.KB_MODE);
             if (isComputerFactory) {
-                factoryKey = session.config().getProperty(GraknConfigKey.KB_ANALYTICS);
+                factoryKey = session.config().getProperty(ConfigKey.KB_ANALYTICS);
             }
 
             return getFactory(factoryKey, session);

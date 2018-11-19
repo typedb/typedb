@@ -28,7 +28,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.answer.Value;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
 import org.junit.After;
 import org.junit.Assert;
@@ -50,7 +50,7 @@ public class CountIT {
     public Session session;
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Before
     public void setUp() {
@@ -117,7 +117,7 @@ public class CountIT {
         }
 
         // running 4 jobs at the same time
-        // collecting the result in the end so engine won't stop before the test finishes
+        // collecting the result in the end so server won't stop before the test finishes
         Set<Long> result;
         result = list.parallelStream()
                 .map(i -> executeCount(session))

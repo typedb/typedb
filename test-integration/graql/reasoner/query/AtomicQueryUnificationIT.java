@@ -1,5 +1,20 @@
-
-
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 package grakn.core.graql.reasoner.query;
 
@@ -11,6 +26,7 @@ import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.Graql;
@@ -28,11 +44,15 @@ import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.reasoner.query.pattern.RelationPattern;
+import grakn.core.graql.reasoner.query.pattern.ResourcePattern;
+import grakn.core.graql.reasoner.query.pattern.TestQueryPattern;
+import grakn.core.graql.reasoner.query.pattern.TypePattern;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -50,9 +70,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.Graql.var;
-import static grakn.core.graql.reasoner.query.TestQueryPattern.subList;
-import static grakn.core.graql.reasoner.query.TestQueryPattern.subListExcluding;
-import static grakn.core.graql.reasoner.query.TestQueryPattern.subListExcludingElements;
+import static grakn.core.graql.reasoner.query.pattern.TestQueryPattern.subList;
+import static grakn.core.graql.reasoner.query.pattern.TestQueryPattern.subListExcluding;
+import static grakn.core.graql.reasoner.query.pattern.TestQueryPattern.subListExcludingElements;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections.CollectionUtils.isEqualCollection;
 import static org.junit.Assert.assertEquals;
@@ -62,7 +82,7 @@ import static org.junit.Assert.assertTrue;
 public class AtomicQueryUnificationIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
     private static SessionImpl unificationWithTypesSession;
@@ -80,14 +100,12 @@ public class AtomicQueryUnificationIT {
         }
     }
 
-    private static Entity entity;
-    private static Entity anotherEntity;
-    private static Entity anotherBaseEntity;
-    private static Entity subEntity;
-    private static Relationship relation;
-    private static Relationship anotherRelation;
-    private static Attribute<Object> resource;
-    private static Attribute<Object> anotherResource;
+    private static TestQueryPattern differentRelationVariants;
+    private static TestQueryPattern differentRelationVariantsWithMetaRoles;
+    private static TestQueryPattern differentRelationVariantsWithRelationVariable;
+
+    private static TestQueryPattern differentResourceVariants;
+    private static TestQueryPattern differentTypeVariants;
 
 
     @BeforeClass
@@ -96,21 +114,249 @@ public class AtomicQueryUnificationIT {
         loadFromFile("genericSchema.gql", genericSchemaSession);
         unificationWithTypesSession = server.sessionWithNewKeyspace();
         loadFromFile("unificationWithTypesTest.gql", unificationWithTypesSession);
+
         try(Transaction tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             EntityType subRoleEntityType = tx.getEntityType("subRoleEntity");
             Iterator<Entity> entities = tx.getEntityType("baseRoleEntity").instances()
                     .filter(et -> !et.type().equals(subRoleEntityType) )
                     .collect(toSet()).iterator();
-            entity = entities.next();
-            anotherEntity = entities.next();
-            anotherBaseEntity = tx.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
-            subEntity = tx.getEntityType("subRoleEntity").instances().findFirst().orElse(null);
+            Entity entity = entities.next();
+            Entity anotherEntity = entities.next();
+            Entity anotherBaseEntity = tx.getEntityType("anotherBaseRoleEntity").instances().findFirst().orElse(null);
+            Entity subEntity = subRoleEntityType.instances().findFirst().orElse(null);
             Iterator<Relationship> relations = tx.getRelationshipType("baseRelation").subs().flatMap(RelationshipType::instances).iterator();
-            relation = relations.next();
-            anotherRelation = relations.next();
+            Relationship relation = relations.next();
+            Relationship anotherRelation = relations.next();
             Iterator<Attribute<Object>> resources = tx.getAttributeType("resource").instances().collect(toSet()).iterator();
-            resource = resources.next();
-            anotherResource = resources.next();
+            Attribute<Object> resource = resources.next();
+            Attribute<Object> anotherResource = resources.next();
+            System.out.println(entity);
+            System.out.println(anotherBaseEntity);
+            System.out.println(subEntity);
+
+            differentTypeVariants = new TypePattern(entity.id(), anotherEntity.id());
+            differentResourceVariants = new ResourcePattern(entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
+
+            differentRelationVariants = new RelationPattern(
+                    ImmutableMultimap.of(
+                            Label.of("baseRole1"), Label.of("baseRoleEntity"),
+                            Label.of("baseRole2"), Label.of("anotherBaseRoleEntity")
+                    ),
+                    Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                    new ArrayList<>()
+            ){
+                @Override
+                public int[][] structuralMatrix() {
+                    return new int[][]{
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                            {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//7
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//11
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},//14
+                            {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}
+                    };
+                }
+
+                @Override
+                public int[][] ruleMatrix() {
+                    return new int[][]{
+                            //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//0
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1},
+
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0},//3
+                            {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0},
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0},
+                            {1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1},
+
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},//7
+                            {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+
+                            {1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0},//11
+                            {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                            {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0},
+                            {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0},
+
+                            {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1},//15
+                            {1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0},
+                            {1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+                            {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1}
+                    };
+                }
+            };
+
+            differentRelationVariantsWithMetaRoles = new RelationPattern(
+                    ImmutableMultimap.of(
+                            Label.of("role"), Label.of("baseRoleEntity"),
+                            Label.of("role"), Label.of("anotherBaseRoleEntity")
+                    ),
+                    Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                    new ArrayList<>()
+            ) {
+
+                @Override
+                public int[][] exactMatrix(){
+                    return new int[][]{
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                            {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0},//14
+                            {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+                    };
+                }
+                @Override
+                public int[][] structuralMatrix() {
+                    return new int[][]{
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                            {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//7
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//11
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},//14
+                            {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}
+                    };
+                }
+
+                @Override
+                public int[][] ruleMatrix() {
+                    return new int[][]{
+                            //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//0
+                            {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
+
+                            {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0},//3
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1},
+
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0},//7
+                            {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                            {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0},
+
+                            {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},//11
+                            {1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                            {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0},
+                            {1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0},
+
+                            {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1},//15
+                            {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0},
+                            {1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0},
+                            {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1}
+                    };
+                }
+            };
+
+            differentRelationVariantsWithRelationVariable = new RelationPattern(
+                    ImmutableMultimap.of(
+                            Label.of("baseRole1"), Label.of("baseRoleEntity"),
+                            Label.of("baseRole2"), Label.of("anotherBaseRoleEntity")
+                    ),
+                    Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                    Lists.newArrayList(relation.id(), anotherRelation.id())
+            ){
+                @Override
+                public int[][] structuralMatrix() {
+                    return new int[][]{
+                            {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                            {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                            {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},//7
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},//11
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},//14
+                            {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1}
+                    };
+                }
+
+                @Override
+                public int[][] ruleMatrix() {
+                    return new int[][]{
+                            //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//0
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},
+
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1},//3
+                            {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1},
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1},
+                            {1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1},
+
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},//7
+                            {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+                            {1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+                            {1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1},
+
+                            {1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1},//11
+                            {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1},
+                            {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1},
+                            {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1},
+
+                            {1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},//15
+                            {1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1},
+                            {1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1},
+                            {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+                            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1}
+                    };
+                }
+            };
         }
     }
 
@@ -122,7 +368,8 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithSubs(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
+
             Concept x1 = getConceptByResourceValue(tx, "x1");
             Concept x2 = getConceptByResourceValue(tx, "x2");
 
@@ -143,7 +390,7 @@ public class AtomicQueryUnificationIT {
                     var("x1"), var("x2"),
                     var("x2"), var("x1")
             ));
-            assertTrue(unifier.equals(correctUnifier));
+            assertEquals(correctUnifier, unifier);
 
             ReasonerAtomicQuery yChildQuery = ReasonerQueries.atomic(ybaseQuery, yAnswer);
             ReasonerAtomicQuery yChildQuery2 = ReasonerQueries.atomic(ybaseQuery, flippedYAnswer);
@@ -153,20 +400,20 @@ public class AtomicQueryUnificationIT {
                     var("y1"), var("x1"),
                     var("y2"), var("x2")
             ));
-            assertTrue(unifier2.equals(correctUnifier2));
+            assertEquals(correctUnifier2, unifier2);
 
             MultiUnifier unifier3 = yChildQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier3 = new MultiUnifierImpl(ImmutableMultimap.of(
                     var("y1"), var("x2"),
                     var("y2"), var("x1")
             ));
-            assertTrue(unifier3.equals(correctUnifier3));
+            assertEquals(correctUnifier3, unifier3);
         }
     }
 
     @Test //only a single unifier exists
     public void testUnification_EXACT_BinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)){
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{$x1 isa twoRoleEntity;($x1, $x2) isa binary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{$y1 isa twoRoleEntity;($y1, $y2) isa binary;}"), tx);
 
@@ -175,13 +422,13 @@ public class AtomicQueryUnificationIT {
                     var("y1"), var("x1"),
                     var("y2"), var("x2")
             ));
-            assertEquals(unifier, correctUnifier);
+            assertTrue(unifier.equals(correctUnifier));
         }
     }
 
     @Test //only a single unifier exists
     public void testUnification_EXACT_BinaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)){
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{$x1 isa twoRoleEntity;$x2 isa twoRoleEntity2;($x1, $x2) isa binary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{$y1 isa twoRoleEntity;$y2 isa twoRoleEntity2;($y1, $y2) isa binary;}"), tx);
 
@@ -190,13 +437,13 @@ public class AtomicQueryUnificationIT {
                     var("y1"), var("x1"),
                     var("y2"), var("x2")
             ));
-            assertEquals(unifier, correctUnifier);
+            assertEquals(correctUnifier, unifier);
         }
     }
 
     @Test
     public void testUnification_EXACT_TernaryRelation_ParentRepeatsRoles(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)){
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{(role1: $x, role1: $y, role2: $z) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role3: $q) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role2: $q) isa ternary;}"), tx);
@@ -207,9 +454,9 @@ public class AtomicQueryUnificationIT {
             MultiUnifier emptyUnifier2 = childQuery2.getMultiUnifier(parentQuery);
             MultiUnifier emptyUnifier3 = childQuery4.getMultiUnifier(parentQuery);
 
-            assertEquals(emptyUnifier, MultiUnifierImpl.nonExistent());
-            assertEquals(emptyUnifier2, MultiUnifierImpl.nonExistent());
-            assertEquals(emptyUnifier3, MultiUnifierImpl.nonExistent());
+            assertEquals(MultiUnifierImpl.nonExistent(), emptyUnifier);
+            assertEquals(MultiUnifierImpl.nonExistent(), emptyUnifier2);
+            assertEquals(MultiUnifierImpl.nonExistent(), emptyUnifier3);
 
             MultiUnifier unifier = childQuery3.getMultiUnifier(parentQuery);
             MultiUnifier correctUnifier = new MultiUnifierImpl(
@@ -222,14 +469,14 @@ public class AtomicQueryUnificationIT {
                             var("v"), var("x"),
                             var("q"), var("z"))
             );
-            assertEquals(unifier, correctUnifier);
+            assertEquals(correctUnifier, unifier);
             assertEquals(2, unifier.size());
         }
     }
 
     @Test
     public void testUnification_EXACT_TernaryRelation_ParentRepeatsMetaRoles_ParentRepeatsRPs(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{(role: $x, role: $x, role2: $y) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role3: $q) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role2: $q) isa ternary;}"), tx);
@@ -243,7 +490,7 @@ public class AtomicQueryUnificationIT {
                             var("u"), var("x"),
                             var("v"), var("y"))
             );
-            assertEquals(unifier, correctUnifier);
+            assertEquals(correctUnifier, unifier);
 
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(
@@ -256,7 +503,7 @@ public class AtomicQueryUnificationIT {
                             var("v"), var("x"),
                             var("q"), var("y"))
             );
-            assertEquals(unifier2, correctUnifier2);
+            assertEquals(correctUnifier2, unifier2);
             assertEquals(unifier2.size(), 2);
 
             MultiUnifier unifier3 = childQuery3.getMultiUnifier(parentQuery, UnifierType.RULE);
@@ -266,20 +513,20 @@ public class AtomicQueryUnificationIT {
                             var("v"), var("x"),
                             var("q"), var("y"))
             );
-            assertEquals(unifier3, correctUnifier3);
+            assertEquals(correctUnifier3, unifier3);
 
             MultiUnifier unifier4 = childQuery4.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier4 = new MultiUnifierImpl(ImmutableMultimap.of(
                     var("u"), var("x"),
                     var("q"), var("y")
             ));
-            assertEquals(unifier4, correctUnifier4);
+            assertEquals(correctUnifier4, unifier4);
         }
     }
 
     @Test
     public void testUnification_EXACT_TernaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)){
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{$x1 isa threeRoleEntity;$x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{$y3 isa threeRoleEntity3;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}"), tx);
@@ -291,14 +538,14 @@ public class AtomicQueryUnificationIT {
                     var("y2"), var("x2"),
                     var("y3"), var("x3")
             ));
-            assertEquals(unifier, correctUnifier);
-            assertEquals(unifier2, MultiUnifierImpl.nonExistent());
+            assertEquals(correctUnifier, unifier);
+            assertEquals(MultiUnifierImpl.nonExistent(), unifier2);
         }
     }
 
     @Test
     public void testUnification_RULE_TernaryRelation_ParentRepeatsMetaRoles(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{(role: $x, role: $y, role2: $z) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role3: $q) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role2: $q) isa ternary;}"), tx);
@@ -316,8 +563,8 @@ public class AtomicQueryUnificationIT {
                             var("v"), var("z"),
                             var("q"), var("x"))
             );
-            assertEquals(unifier, correctUnifier);
-            assertEquals(unifier.size(), 2);
+            assertEquals(correctUnifier, unifier);
+            assertEquals(2, unifier.size());
 
             MultiUnifier unifier2 = childQuery2.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(
@@ -338,8 +585,8 @@ public class AtomicQueryUnificationIT {
                             var("v"), var("x"),
                             var("q"), var("z"))
             );
-            assertEquals(unifier2, correctUnifier2);
-            assertEquals(unifier2.size(), 4);
+            assertEquals(correctUnifier2, unifier2);
+            assertEquals(4, unifier2.size());
 
             MultiUnifier unifier3 = childQuery3.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier3 = new MultiUnifierImpl(
@@ -352,8 +599,8 @@ public class AtomicQueryUnificationIT {
                             var("v"), var("x"),
                             var("q"), var("z"))
             );
-            assertEquals(unifier3, correctUnifier3);
-            assertEquals(unifier3.size(), 2);
+            assertEquals(correctUnifier3, unifier3);
+            assertEquals(2, unifier3.size());
 
             MultiUnifier unifier4 = childQuery4.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier4 = new MultiUnifierImpl(ImmutableMultimap.of(
@@ -361,13 +608,13 @@ public class AtomicQueryUnificationIT {
                     var("u"), var("y"),
                     var("q"), var("z")
             ));
-            assertEquals(unifier4, correctUnifier4);
+            assertEquals(correctUnifier4, unifier4);
         }
     }
 
     @Test
     public void testUnification_RULE_TernaryRelation_ParentRepeatsRoles_ParentRepeatsRPs(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{(role1: $x, role1: $x, role2: $y) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role3: $q) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{(role1: $u, role2: $v, role2: $q) isa ternary;}"), tx);
@@ -386,20 +633,20 @@ public class AtomicQueryUnificationIT {
                     var("v"), var("x"),
                     var("q"), var("y")
             ));
-            assertEquals(unifier, correctUnifier);
+            assertEquals(correctUnifier, unifier);
 
             MultiUnifier unifier2 = childQuery4.getMultiUnifier(parentQuery, UnifierType.RULE);
             MultiUnifier correctUnifier2 = new MultiUnifierImpl(ImmutableMultimap.of(
                     var("u"), var("x"),
                     var("q"), var("y")
             ));
-            assertEquals(unifier2, correctUnifier2);
+            assertEquals(correctUnifier2, unifier2);
         }
     }
 
     @Test
     public void testUnification_RULE_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{$x1 isa threeRoleEntity;$x2 isa threeRoleEntity2; $x3 isa threeRoleEntity3;($x1, $x2, $x3) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;($y2, $y3, $y1) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{$y3 isa threeRoleEntity3;$y2 isa threeRoleEntity2;$y1 isa threeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}"), tx);
@@ -411,14 +658,14 @@ public class AtomicQueryUnificationIT {
                     var("y2"), var("x2"),
                     var("y3"), var("x3")
             ));
-            assertEquals(unifier, correctUnifier);
-            assertEquals(unifier2, correctUnifier);
+            assertEquals(correctUnifier, unifier);
+            assertEquals(correctUnifier, unifier2);
         }
     }
 
     @Test // subSubThreeRoleEntity sub subThreeRoleEntity sub threeRoleEntity3
     public void testUnification_RULE_TernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes_TypeHierarchyInvolved(){
-        try(TransactionImpl<?> tx =  unificationWithTypesSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = unificationWithTypesSession.transaction(Transaction.Type.READ)) {
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("{$x1 isa threeRoleEntity;$x2 isa subThreeRoleEntity; $x3 isa subSubThreeRoleEntity;($x1, $x2, $x3) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("{$y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;($y2, $y3, $y1) isa ternary;}"), tx);
             ReasonerAtomicQuery childQuery2 = ReasonerQueries.atomic(conjunction("{$y1 isa threeRoleEntity;$y2 isa subThreeRoleEntity;$y3 isa subSubThreeRoleEntity;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}"), tx);
@@ -451,15 +698,15 @@ public class AtomicQueryUnificationIT {
                             var("y2"), var("x2"),
                             var("y3"), var("x1"))
             );
-            assertTrue(unifier.equals(correctUnifier));
-            assertTrue(unifier2.equals(correctUnifier));
+            assertEquals(correctUnifier, unifier);
+            assertEquals(correctUnifier, unifier2);
         }
     }
 
 
     @Test
     public void testUnification_RULE_ResourcesWithTypes(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String parentQuery = "{$x has resource $r; $x isa baseRoleEntity;}";
 
             String childQuery = "{$r has resource $x; $r isa subRoleEntity;}";
@@ -474,7 +721,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_MetaTypeParent(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String parentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa entity; $y isa entity;}";
 
             String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v); $u isa baseRoleEntity; $v isa baseRoleEntity;}";
@@ -495,7 +742,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String baseParentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa baseRoleEntity; $y isa baseRoleEntity;}";
             String parentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa subSubRoleEntity; $y isa subSubRoleEntity;}";
 
@@ -504,7 +751,7 @@ public class AtomicQueryUnificationIT {
             String specialisedRelation3 = "{(subSubRole1: $u, subSubRole2: $v); $u isa subSubRoleEntity; $v isa subSubRoleEntity;}";
             String specialisedRelation4 = "{(subSubRole1: $y, subSubRole2: $x); $y isa subSubRoleEntity; $x isa subSubRoleEntity;}";
 
-            unificationWithResultChecks(baseParentRelation, specialisedRelation, false, false, true, UnifierType.RULE,  tx);
+            unificationWithResultChecks(baseParentRelation, specialisedRelation, false, false, true, UnifierType.RULE, tx);
             unificationWithResultChecks(baseParentRelation, specialisedRelation2, false, false, true, UnifierType.RULE, tx);
             unificationWithResultChecks(baseParentRelation, specialisedRelation3, false, false, true, UnifierType.RULE, tx);
             unificationWithResultChecks(baseParentRelation, specialisedRelation4, false, false, true, UnifierType.RULE, tx);
@@ -518,7 +765,7 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent_middleTypes(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             String parentRelation = "{(baseRole1: $x, baseRole2: $y); $x isa subRoleEntity; $y isa subRoleEntity;}";
 
             String specialisedRelation = "{(subRole1: $u, anotherSubRole2: $v); $u isa subRoleEntity; $v isa subSubRoleEntity;}";
@@ -535,136 +782,71 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentRelationVariants_EXACT(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = grakn.core.graql.reasoner.query.TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity);
-            qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariants.patterns(), differentRelationVariants.exactMatrix(), UnifierType.EXACT, tx);
         }
     }
 
     @Test
     public void testUnification_differentRelationVariants_STRUCTURAL(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = grakn.core.graql.reasoner.query.TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity);
-
-            structuralUnification(qs.get(0), qs, new ArrayList<>(), tx);
-
-            structuralUnification(qs.get(1), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(2), qs, subList(qs, Lists.newArrayList(3, 4)), tx);
-            structuralUnification(qs.get(3), qs, subList(qs, Lists.newArrayList(2, 4)), tx);
-            structuralUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(2, 3)), tx);
-
-            structuralUnification(qs.get(5), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), tx);
-            structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), tx);
-            structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), tx);
-
-            structuralUnification(qs.get(9), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(11)), tx);
-            structuralUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(10)), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariants.patterns(), differentRelationVariants.structuralMatrix(), UnifierType.STRUCTURAL, tx);
         }
     }
 
     @Test
     public void testUnification_differentRelationVariants_RULE(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = grakn.core.graql.reasoner.query.TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariants.patterns(), differentRelationVariants.ruleMatrix(), UnifierType.RULE, tx);
+        }
+    }
 
-            ruleUnification(qs.get(0), qs, qs, tx);
+    @Test
+    public void testUnification_differentRelationVariantsWithMetaRoles_EXACT(){
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariantsWithMetaRoles.patterns(), differentRelationVariantsWithMetaRoles.exactMatrix(), UnifierType.EXACT, tx);
+        }
+    }
 
-            ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3)), tx);
-            ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 11)), tx);
-            ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 4, 9, 10, 11)), tx);
-            ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 10)), tx);
+    @Test
+    public void testUnification_differentRelationVariantsWithMetaRoles_STRUCTURAL(){
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariantsWithMetaRoles.patterns(), differentRelationVariantsWithMetaRoles.structuralMatrix(), UnifierType.STRUCTURAL, tx);
+        }
+    }
 
-            ruleUnification(qs.get(5), qs, subListExcluding(qs, Lists.newArrayList(7, 9, 10, 11)), tx);
-            ruleUnification(qs.get(6), qs, subListExcluding(qs, Lists.newArrayList(7, 8, 9, 10, 11)), tx);
-            ruleUnification(qs.get(7), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 8)), tx);
-            ruleUnification(qs.get(8), qs, subListExcluding(qs, Lists.newArrayList(6, 7, 9, 10, 11)), tx);
-
-            ruleUnification(qs.get(9), qs, subListExcluding(qs, Lists.newArrayList(3, 5, 6, 8)), tx);
-            ruleUnification(qs.get(10), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 5, 6, 8, 11)), tx);
-            ruleUnification(qs.get(11), qs, subListExcluding(qs, Lists.newArrayList(2, 3, 5, 6, 8, 10)), tx);
+    @Test
+    public void testUnification_differentRelationVariantsWithMetaRoles_RULE(){
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariantsWithMetaRoles.patterns(), differentRelationVariantsWithMetaRoles.ruleMatrix(), UnifierType.RULE, tx);
         }
     }
 
     @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_EXACT(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation);
-
-            exactUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(1)), tx);
-            exactUnification(qs.get(1), qs, subList(qs, Lists.newArrayList(0)), tx);
-            subListExcluding(qs, Lists.newArrayList(0, 1)).forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariantsWithRelationVariable.patterns(), differentRelationVariantsWithRelationVariable.exactMatrix(), UnifierType.EXACT, tx);
         }
     }
 
     @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_STRUCTURAL(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation);
-
-            structuralUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(1)), tx);
-            structuralUnification(qs.get(1), qs, subList(qs, Lists.newArrayList(0)), tx);
-            structuralUnification(qs.get(2), qs, new ArrayList<>(), tx);
-
-            structuralUnification(qs.get(3), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(5, 6)), tx);
-            structuralUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(4, 6)), tx);
-            structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(4, 5)), tx);
-
-            structuralUnification(qs.get(7), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(9, 10)), tx);
-            structuralUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(8, 10)), tx);
-            structuralUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(8, 9)), tx);
-
-            structuralUnification(qs.get(11), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(13)), tx);
-            structuralUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(12)), tx);
-
-            structuralUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(15)), tx);
-            structuralUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(14)), tx);
-            structuralUnification(qs.get(16), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(17), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(18), qs, new ArrayList<>(), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariantsWithRelationVariable.patterns(), differentRelationVariantsWithRelationVariable.structuralMatrix(), UnifierType.STRUCTURAL, tx);
         }
     }
 
     @Test
     public void testUnification_differentRelationVariantsWithRelationVariable_RULE(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation);
-
-            ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(1)), tx);
-            ruleUnification(qs.get(1), qs, subList(qs, Lists.newArrayList(0)), tx);
-            ruleUnification(qs.get(2), qs, qs, tx);
-
-            ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(5, 16)), tx);
-            ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 13, 16)), tx);
-            ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 1, 2, 7, 8, 9, 10, 14, 15, 16, 17)), tx);
-            ruleUnification(qs.get(6), qs, subListExcluding(qs, Lists.newArrayList(4, 5, 6, 12, 16, 18)), tx);
-
-            ruleUnification(qs.get(7), qs, subListExcluding(qs, Lists.newArrayList(9, 11, 12, 13, 18)), tx);
-            ruleUnification(qs.get(8), qs, subListExcluding(qs, Lists.newArrayList(9, 10, 11, 12, 13, 18)), tx);
-            ruleUnification(qs.get(9), qs, subListExcluding(qs, Lists.newArrayList(7, 8, 9, 10, 17)), tx);
-            ruleUnification(qs.get(10), qs, subListExcluding(qs, Lists.newArrayList(8, 9, 10, 11, 12, 13, 17, 18)), tx);
-
-            ruleUnification(qs.get(11), qs, subListExcluding(qs, Lists.newArrayList(5, 7, 8, 10, 16, 17)), tx);
-            ruleUnification(qs.get(12), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 7, 8, 10, 13, 16, 17)), tx);
-            ruleUnification(qs.get(13), qs, subListExcluding(qs, Lists.newArrayList(4, 5, 7, 8, 10, 12, 16, 17, 18)), tx);
-
-            ruleUnification(qs.get(14), qs, subListExcluding(qs, Lists.newArrayList(15)), tx);
-            ruleUnification(qs.get(15), qs, subListExcluding(qs, Lists.newArrayList(14, 16, 17, 18)), tx);
-
-            ruleUnification(qs.get(16), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 6, 11, 12, 13, 15, 18)), tx);
-            ruleUnification(qs.get(17), qs, subListExcluding(qs, Lists.newArrayList(9, 10, 11, 12, 13, 15, 18)), tx);
-            ruleUnification(qs.get(18), qs, subListExcluding(qs, Lists.newArrayList(5, 6, 7, 8, 10, 13, 15, 16, 17)), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(differentRelationVariantsWithRelationVariable.patterns(), differentRelationVariantsWithRelationVariable.ruleMatrix(), UnifierType.RULE, tx);
         }
     }
 
     @Test
     public void testUnification_differentTypeVariants_EXACT(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            List<String> qs = differentTypeVariants.patterns();
             subListExcluding(qs, Lists.newArrayList(3, 4, 7, 8)).forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
             exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), tx);
             exactUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), tx);
@@ -675,55 +857,34 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentTypeVariants_STRUCTURAL(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
-            subListExcluding(qs, Lists.newArrayList(3, 4, 6, 7, 8)).forEach(q -> structuralUnification(q, qs, new ArrayList<>(), tx));
-
-            structuralUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), tx);
-            structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), tx);
-
-            structuralUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(7, 8)), tx);
-            structuralUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(6, 8)), tx);
-            structuralUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(6, 7)), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(
+                    differentTypeVariants.patterns(),
+                    differentTypeVariants.patterns(),
+                    differentTypeVariants.structuralMatrix(),
+                    UnifierType.STRUCTURAL,
+                    tx
+            );
         }
     }
 
     @Test
     public void testUnification_differentTypeVariants_RULE(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource);
-
-            ruleUnification(qs.get(0), qs, qs, tx);
-            ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 13, 14, 15, 16, 17, 18)), tx);
-            ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(3, 4, 13, 14, 15, 16, 17, 18)), tx);
-            ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10, 11, 12)), tx);
-            ruleUnification(qs.get(4), qs, subListExcluding(qs, Lists.newArrayList(1, 2, 6, 7, 8, 9, 10, 11, 12)), tx);
-            ruleUnification(qs.get(5), qs, qs, tx);
-
-            ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 9, 10, 11, 12)), tx);
-            ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 8, 9, 10, 11, 12)), tx);
-            ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 7, 9, 10, 11, 12)), tx);
-
-            ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 11)), tx);
-            ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 11, 12)), tx);
-
-            ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 9, 10, 12)), tx);
-            ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 1, 2, 5, 6, 7, 8, 10, 11)), tx);
-
-            ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 16, 17, 18)), tx);
-            ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 15, 17, 18)), tx);
-
-            ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 14, 16, 17, 18)), tx);
-            ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 15, 17, 18)), tx);
-            ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 14, 15, 16, 18)), tx);
-            ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 13, 14, 15, 16, 17)), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(
+                    differentTypeVariants.patterns(),
+                    differentTypeVariants.patterns(),
+                    differentTypeVariants.ruleMatrix(),
+                    UnifierType.RULE,
+                    tx
+            );
         }
     }
 
     @Test
     public void testUnification_differentResourceVariants_EXACT(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            List<String> qs = differentResourceVariants.patterns();
 
             exactUnification(qs.get(0), qs, new ArrayList<>(), tx);
             exactUnification(qs.get(1), qs, new ArrayList<>(), tx);
@@ -770,106 +931,36 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_differentResourceVariants_STRUCTURAL(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
-
-            structuralUnification(qs.get(0), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(1), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(2), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(3), qs, new ArrayList<>(), tx);
-
-            structuralUnification(qs.get(4), qs, Collections.singletonList(qs.get(5)), tx);
-            structuralUnification(qs.get(5), qs, Collections.singletonList(qs.get(4)), tx);
-
-            structuralUnification(qs.get(6), qs, Collections.singletonList(qs.get(7)), tx);
-            structuralUnification(qs.get(7), qs, Collections.singletonList(qs.get(6)), tx);
-
-            structuralUnification(qs.get(8), qs, Collections.singletonList(qs.get(10)), tx);
-            structuralUnification(qs.get(9), qs, Collections.singletonList(qs.get(11)), tx);
-            structuralUnification(qs.get(10), qs, Collections.singletonList(qs.get(8)), tx);
-            structuralUnification(qs.get(11), qs, Collections.singletonList(qs.get(9)), tx);
-
-            structuralUnification(qs.get(12), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(13), qs, new ArrayList<>(), tx);
-
-            structuralUnification(qs.get(14), qs, Collections.singletonList(qs.get(16)), tx);
-            structuralUnification(qs.get(15), qs, Collections.singletonList(qs.get(17)), tx);
-            structuralUnification(qs.get(16), qs, Collections.singletonList(qs.get(14)), tx);
-            structuralUnification(qs.get(17), qs, Collections.singletonList(qs.get(15)), tx);
-
-            structuralUnification(qs.get(18), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(19), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(20), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(21), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(22), qs, new ArrayList<>(), tx);
-
-            structuralUnification(qs.get(23), qs, Collections.singletonList(qs.get(24)), tx);
-            structuralUnification(qs.get(24), qs, Collections.singletonList(qs.get(23)), tx);
-            structuralUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(26, 29)), tx);
-            structuralUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(25, 29)), tx);
-            structuralUnification(qs.get(27), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(28), qs, new ArrayList<>(), tx);
-            structuralUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(25, 26)), tx);
-            structuralUnification(qs.get(30), qs, new ArrayList<>(), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(
+                    differentResourceVariants.patterns(),
+                    differentResourceVariants.patterns(),
+                    differentResourceVariants.structuralMatrix(),
+                    UnifierType.STRUCTURAL,
+                    tx);
         }
     }
 
     @Test
     public void testUnification_differentResourceVariants_RULE(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            List<String> qs = TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource);
-
-            ruleUnification(qs.get(0), qs, subList(qs, Lists.newArrayList(3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)), tx);
-            ruleUnification(qs.get(1), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28)), tx);
-            ruleUnification(qs.get(2), qs, subListExcluding(qs, Lists.newArrayList(0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 28, 30)), tx);
-            ruleUnification(qs.get(3), qs, subListExcluding(qs, Lists.newArrayList(28)), tx);
-
-            ruleUnification(qs.get(4), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), tx);
-            ruleUnification(qs.get(5), qs, subList(qs, Lists.newArrayList(0, 3, 6, 7, 8, 9, 10, 11, 12, 13)), tx);
-
-            ruleUnification(qs.get(6), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), tx);
-            ruleUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 8, 9, 10, 11, 12, 13)), tx);
-
-            ruleUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 10, 12)), tx);
-            ruleUnification(qs.get(9), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 11, 12, 13)), tx);
-            ruleUnification(qs.get(10), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8, 12)), tx);
-            ruleUnification(qs.get(11), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9, 12, 13)), tx);
-
-            ruleUnification(qs.get(12), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13)), tx);
-            ruleUnification(qs.get(13), qs, subList(qs, Lists.newArrayList(0, 3, 4, 5, 6, 7, 9, 11, 12 )), tx);
-
-            ruleUnification(qs.get(14), qs, subList(qs, Lists.newArrayList(1, 2, 3, 16, 19, 20, 21)), tx);
-            ruleUnification(qs.get(15), qs, subList(qs, Lists.newArrayList(1, 2, 3, 17, 18, 20, 21)), tx);
-            ruleUnification(qs.get(16), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 19, 20, 21)), tx);
-            ruleUnification(qs.get(17), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 18, 20, 21)), tx);
-
-            ruleUnification(qs.get(18), qs, subList(qs, Lists.newArrayList(1, 2, 3, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29, 30)), tx);
-            ruleUnification(qs.get(19), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 16, 18, 20, 21)), tx);
-            ruleUnification(qs.get(20), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30)), tx);
-            ruleUnification(qs.get(21), qs, subList(qs, Lists.newArrayList(1, 2, 3, 14, 15, 16, 17, 18, 19, 20)), tx);
-
-            ruleUnification(qs.get(22), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29, 30)), tx);
-            ruleUnification(qs.get(23), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29)), tx);
-            ruleUnification(qs.get(24), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 29)), tx);
-
-            ruleUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), tx);
-            ruleUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), tx);
-
-            ruleUnification(qs.get(27), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 25, 26, 29)), tx);
-            ruleUnification(qs.get(28), subListExcluding(qs, Lists.newArrayList(28)), new ArrayList<>(), tx);
-            ruleUnification(qs.get(29), qs, subList(qs, Lists.newArrayList(1, 2, 3, 18, 20, 22, 23, 24, 25, 26, 27, 29)), tx);
-            ruleUnification(qs.get(30), qs, subList(qs, Lists.newArrayList(1, 3, 18, 20, 22)), tx);
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
+            unification(
+                    differentResourceVariants.patterns(),
+                    differentResourceVariants.patterns(),
+                    differentResourceVariants.ruleMatrix(),
+                    UnifierType.RULE,
+                    tx);
         }
     }
 
     @Test
     public void testUnification_orthogonalityOfVariants_EXACT(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             List<List<String>> queryTypes = Lists.newArrayList(
-                    TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity),
-                    TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation),
-                    TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource),
-                    TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource)
+                    differentRelationVariants.patterns(),
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    differentTypeVariants.patterns(),
+                    differentResourceVariants.patterns()
             );
             queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> exactUnification(q, qto, new ArrayList<>(), tx))));
         }
@@ -877,19 +968,37 @@ public class AtomicQueryUnificationIT {
 
     @Test
     public void testUnification_orthogonalityOfVariants_STRUCTURAL(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+        try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             List<List<String>> queryTypes = Lists.newArrayList(
-                    TestQueryPattern.differentRelationVariants.patternList(entity, anotherBaseEntity, subEntity),
-                    TestQueryPattern.differentRelationVariantsWithRelationVariable.patternList(entity, anotherBaseEntity, subEntity, relation, anotherRelation),
-                    TestQueryPattern.differentTypeVariants.patternList(resource, anotherResource),
-                    TestQueryPattern.differentResourceVariants.patternList(entity, anotherEntity, resource, anotherResource)
+                    differentRelationVariants.patterns(),
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    differentTypeVariants.patterns(),
+                    differentResourceVariants.patterns()
             );
             queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> structuralUnification(q, qto, new ArrayList<>(), tx))));
         }
     }
 
+
     private void unification(String child, List<String> queries, List<String> queriesWithUnifier, UnifierType unifierType, TransactionImpl tx){
         queries.forEach(parent -> unification(child, parent, queriesWithUnifier.contains(parent) || parent.equals(child), unifierType, tx));
+    }
+
+    private void unification(List<String> queries, int[][] resultMatrix, UnifierType unifierType, TransactionImpl tx){
+        unification(queries, queries, resultMatrix, unifierType, tx);
+    }
+
+    private void unification(List<String> children, List<String> parents, int[][] resultMatrix, UnifierType unifierType, TransactionImpl tx){
+        int i = 0;
+        int j = 0;
+        for (String child : children) {
+            for (String parent : parents) {
+                unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
+                j++;
+            }
+            i++;
+            j = 0;
+        }
     }
 
     private void structuralUnification(String child, List<String> queries, List<String> queriesWithUnifier, TransactionImpl tx){
@@ -903,7 +1012,6 @@ public class AtomicQueryUnificationIT {
     private void ruleUnification(String child, List<String> queries, List<String> queriesWithUnifier, TransactionImpl tx){
         unification(child, queries, queriesWithUnifier, UnifierType.RULE, tx);
     }
-
 
     private MultiUnifier unification(String childString, String parentString, boolean unifierExists, UnifierType unifierType, TransactionImpl tx){
         ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
@@ -986,7 +1094,6 @@ public class AtomicQueryUnificationIT {
         assertTrue(isEqualCollection(c1, c2));
     }
 
-
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
         singleQueryEquivalence(a, a, true, equiv);
         singleQueryEquivalence(b, b, true, equiv);
@@ -995,11 +1102,11 @@ public class AtomicQueryUnificationIT {
     }
 
     private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
-        assertEquals(equiv.name() + " - Query: " + a.toString() + " =? " + b.toString(), queryExpectation, equiv.equivalent(a, b));
+        assertEquals(equiv.name() + " - Queries:\n" + a.toString() + "\n=?\n" + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
         if (queryExpectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), true, equiv.hash(a) == equiv.hash(b));
+            assertEquals(a.toString() + " hash=? " + b.toString(), equiv.hash(a), equiv.hash(b));
         }
     }
 

@@ -4,7 +4,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.atomic.AtomicTypeInferenceIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
             "//test-integration/util:graql-test-util"
@@ -19,7 +19,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.atomic.AtomicUnificationIT",
     deps = [
             "//server",
-                        "//test-integration/rule:concurrent-grakn-server",
+                        "//test-integration/rule:grakn-test-server",
 
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -35,7 +35,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.atomic.AtomicRuleApplicabilityIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava",
             "//test-integration/util:graql-test-util"
@@ -52,7 +52,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.atomic.AtomicRoleInferenceIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava"
         ],
@@ -68,7 +68,7 @@ java_test(
     test_class = "grakn.core.graql.reasoner.atomic.AtomicEquivalenceIT",
     deps = [
             "//server",
-            "//test-integration/rule:concurrent-grakn-server",
+            "//test-integration/rule:grakn-test-server",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/com/google/guava:guava"
         ],

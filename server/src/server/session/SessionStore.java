@@ -22,7 +22,7 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.util.GraknConfig;
+import grakn.core.common.config.Config;
 import grakn.core.server.util.LockManager;
 
 import java.util.HashMap;
@@ -30,22 +30,22 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /**
- * Engine's internal {@link Transaction} Factory
+ * Grakn Server's internal {@link Transaction} Factory
  * This internal factory is used to produce {@link Transaction}s.
  */
 public class SessionStore {
-    private final GraknConfig engineConfig;
+    private final Config config;
     private final KeyspaceManager keyspaceStore;
     private final Map<Keyspace, SessionImpl> openedSessions;
     private final LockManager lockManager;
 
-    public static SessionStore create(LockManager lockManager, GraknConfig engineConfig, KeyspaceManager keyspaceStore) {
-        return new SessionStore(engineConfig, lockManager, keyspaceStore);
+    public static SessionStore create(LockManager lockManager, Config config, KeyspaceManager keyspaceStore) {
+        return new SessionStore(config, lockManager, keyspaceStore);
     }
 
-    private SessionStore(GraknConfig engineConfig, LockManager lockManager, KeyspaceManager keyspaceStore) {
+    private SessionStore(Config config, LockManager lockManager, KeyspaceManager keyspaceStore) {
         this.openedSessions = new HashMap<>();
-        this.engineConfig = engineConfig;
+        this.config = config;
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
     }
@@ -72,7 +72,7 @@ public class SessionStore {
      */
     private SessionImpl session(Keyspace keyspace){
         if(!openedSessions.containsKey(keyspace)){
-            openedSessions.put(keyspace, SessionImpl.createEngineSession(keyspace, engineConfig, TransactionFactoryBuilder.getInstance()));
+            openedSessions.put(keyspace, SessionImpl.create(keyspace, config, TransactionFactoryBuilder.getInstance()));
         }
         return openedSessions.get(keyspace);
     }
@@ -97,11 +97,11 @@ public class SessionStore {
     }
 
     private static String getLockingKey(Keyspace keyspace) {
-        return "/creating-new-keyspace-lock/" + keyspace.getValue();
+        return "/creating-new-keyspace-lock/" + keyspace.getName();
     }
 
-    public GraknConfig config() {
-        return engineConfig;
+    public Config config() {
+        return config;
     }
 
     public KeyspaceManager keyspaceStore() {

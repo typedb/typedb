@@ -20,7 +20,7 @@ package grakn.core.server.exception;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static grakn.core.util.ErrorMessage.LOCKING_EXCEPTION;
+import static grakn.core.common.exception.ErrorMessage.LOCKING_EXCEPTION;
 
 /**
  * <p>
@@ -34,7 +34,7 @@ import static grakn.core.util.ErrorMessage.LOCKING_EXCEPTION;
  * </p>
  *
  */
-public class TemporaryWriteException extends GraknBackendException{
+public class TemporaryWriteException extends GraknServerException {
     private TemporaryWriteException(String error, Exception e) {
         super(error, e);
     }

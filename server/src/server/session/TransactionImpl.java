@@ -50,8 +50,8 @@ import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
-import grakn.core.util.ErrorMessage;
-import grakn.core.util.GraknConfigKey;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.config.ConfigKey;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -78,7 +78,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static grakn.core.util.ErrorMessage.CANNOT_FIND_CLASS;
+import static grakn.core.common.exception.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -186,7 +186,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
      * @return the number of instances a {@link grakn.core.graql.concept.Type} must have before it is shareded
      */
     public long shardingThreshold() {
-        return session().config().getProperty(GraknConfigKey.SHARDING_THRESHOLD);
+        return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
     }
 
     public TransactionCache txCache() {

@@ -5,6 +5,7 @@ java_test(
     srcs = ["ServerRPCTest.java"],
     test_class = "grakn.core.server.rpc.ServerRPCTest",
     deps = [
+        "//common",
         "//server",
         "//client-java",
         "//protocol:protocol-java",

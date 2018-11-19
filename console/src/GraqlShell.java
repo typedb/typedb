@@ -18,16 +18,15 @@
 
 package grakn.core.console;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.client.Grakn;
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.Query;
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.internal.printer.Printer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.client.Grakn;
+import grakn.core.graql.Query;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.internal.printer.Printer;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 
@@ -43,7 +42,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
@@ -80,7 +79,7 @@ public class GraqlShell implements AutoCloseable {
             LICENSE_COMMAND, CLEAN_COMMAND
     );
 
-    private final Keyspace keyspace;
+    private final String keyspace;
     private final OutputFormat outputFormat;
     private final boolean infer;
     private ConsoleReader console;
@@ -106,7 +105,7 @@ public class GraqlShell implements AutoCloseable {
      * Create a new Graql shell
      */
     public GraqlShell(
-            String historyFilename, Grakn client, Keyspace keyspace, ConsoleReader console, PrintStream serr,
+            String historyFilename, Grakn client, String keyspace, ConsoleReader console, PrintStream serr,
             OutputFormat outputFormat, boolean infer
     ) throws IOException {
         this.keyspace = keyspace;
@@ -141,8 +140,8 @@ public class GraqlShell implements AutoCloseable {
     /**
      * The string to be displayed at the prompt
      */
-    private static final String consolePrompt(Keyspace keyspace) {
-        return ANSI_PURPLE + keyspace.toString() + ANSI_RESET + "> ";
+    private static final String consolePrompt(String keyspace) {
+        return ANSI_PURPLE + keyspace + ANSI_RESET + "> ";
     }
 
     /**
@@ -154,7 +153,7 @@ public class GraqlShell implements AutoCloseable {
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
 
-        console.setPrompt(consolePrompt(tx.keyspace()));
+        console.setPrompt(consolePrompt(tx.keyspace().getName()));
 
         // Add all autocompleters
         console.addCompleter(new AggregateCompleter(graqlCompleter, new ShellCommandCompleter()));

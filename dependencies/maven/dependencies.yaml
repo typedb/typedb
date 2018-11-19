@@ -251,6 +251,9 @@ dependencies:
     commons-lang3:
       version: "3.3.1"
       lang: java
+    commons-math3:
+      version: "3.6.1"
+      lang: java
 
   org.apache.hadoop:
     hadoop-annotations:
@@ -398,6 +401,12 @@ dependencies:
       - "com.codahale.metrics:metrics-core" # PREVIOUSLY AVAILABLE
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
       - "log4j:log4j"
+      - "org.openrdf.sesame:sesame-rio-n3"
+      - "org.openrdf.sesame:sesame-rio-ntriples"
+      - "org.openrdf.sesame:sesame-rio-rdfxml"
+      - "org.openrdf.sesame:sesame-rio-trig"
+      - "org.openrdf.sesame:sesame-rio-trix"
+      - "org.openrdf.sesame:sesame-rio-turtle"
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
 

@@ -29,40 +29,22 @@ antlr4(
     package = "grakn.core.graql.grammar"
 )
 
-genrule(
-    name = "grakn-version",
-    srcs = [
-        "templates/util/GraknVersion.java",
-        "//:VERSION",
-    ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/util/GraknVersion.java) >> $@",
-    outs = ["util/GraknVersion.java"]
-)
-
 java_library(
     name = "server",
-    srcs = [
-       ":grakn-version",
-       ":graql-java",
-   ] + glob(["src/**/*.java"]),
+    srcs = [":graql-java"] + glob(["src/**/*.java"]),
     deps = [
         # Grakn Core dependencies
+        "//common",
         "//protocol:protocol-java",
-        "//util",
 
         # External dependencies
         "//dependencies/maven/artifacts/grakn/benchmark:lib",
-
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
-        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/commons-io:commons-io", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
@@ -90,7 +72,6 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scalap", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -100,7 +81,8 @@ java_library(
         "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
-    resources = glob(["src/resources/*"]),
+    resources = ["LICENSE"] + glob(["resources/*"]),
+    resource_strip_prefix = "server",
     tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 
@@ -114,9 +96,12 @@ deploy_maven_jar(
 
 java_binary(
     name = "server-binary",
-    main_class = "grakn.core.server.bootup.GraknBootup",
-    runtime_deps = ["//server"],
-    visibility = ["//visibility:public"]
+    main_class = "grakn.core.daemon.GraknDaemon",
+    runtime_deps = [
+        "//daemon",
+        "//server"
+    ],
+    visibility = ["//:__pkg__"],
 )
 
 genrule(

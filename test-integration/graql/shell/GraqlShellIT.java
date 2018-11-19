@@ -20,9 +20,9 @@ package grakn.core.graql.shell;
 
 import grakn.core.console.GraqlConsole;
 import grakn.core.console.GraqlShellOptions;
-import grakn.core.rule.ConcurrentGraknServer;
-import grakn.core.util.ErrorMessage;
-import grakn.core.util.GraknVersion;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.util.GraknVersion;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
@@ -72,7 +72,7 @@ import static org.junit.Assert.fail;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     private static InputStream trueIn;
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
@@ -423,7 +423,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenEngineIsNotRunning_ShowAnError() throws Exception {
+    public void whenServerIsNotRunning_ShowAnError() throws Exception {
         ShellResponse response = runShell("", "-r", "localhost:7654");
         assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
@@ -718,7 +718,7 @@ public class GraqlShellIT {
         int keyspaceIndex = argList.indexOf("-k") + 1;
         if (keyspaceIndex == 0) {
             argList.add("-k");
-            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE.getValue());
+            argList.add(GraqlShellOptions.DEFAULT_KEYSPACE);
             keyspaceIndex = argList.size() - 1;
         }
 

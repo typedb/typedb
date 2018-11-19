@@ -14,7 +14,7 @@ java_test(
     srcs = ["QueryParserTest.java"],
     deps = [
         "//server",
-        "//util",
+        "//common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],

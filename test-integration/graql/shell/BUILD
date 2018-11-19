@@ -5,8 +5,8 @@ java_test(
     deps = [
         "//server",
         "//console",
-        "//util",
-        "//test-integration/rule:concurrent-grakn-server",
+        "//common",
+        "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/sharegov:mjson",

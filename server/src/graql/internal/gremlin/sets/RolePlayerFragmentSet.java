@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toSet;
 
 /**

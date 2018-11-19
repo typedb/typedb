@@ -69,7 +69,7 @@ import grakn.core.server.ComputeExecutor;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.olap.TransactionOLAP;
-import grakn.core.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;

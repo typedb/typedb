@@ -43,8 +43,8 @@ import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
-import grakn.core.server.exception.GraknBackendException;
-import grakn.core.server.exception.GraknException;
+import grakn.core.server.exception.GraknServerException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.GraqlSyntaxException;
 import grakn.core.server.keyspace.Keyspace;
@@ -665,7 +665,7 @@ public class ServerRPCTest {
     @Test
     public void whenOpeningTxFails_Throw() throws Throwable {
         String message = "the backend went wrong";
-        GraknException error = GraknBackendException.create(message);
+        GraknException error = GraknServerException.create(message);
 
         when(txFactory.tx(MYKS, grakn.core.server.Transaction.Type.WRITE)).thenThrow(error);
 

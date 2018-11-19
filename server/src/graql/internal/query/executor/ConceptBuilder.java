@@ -40,7 +40,7 @@ import grakn.core.graql.internal.pattern.property.SubProperty;
 import grakn.core.graql.internal.pattern.property.ThenProperty;
 import grakn.core.graql.internal.pattern.property.ValueProperty;
 import grakn.core.graql.internal.pattern.property.WhenProperty;
-import grakn.core.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.internal.Schema;
 
 import javax.annotation.Nullable;

@@ -33,7 +33,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.kb.structure.Shard;
-import grakn.core.rule.ConcurrentGraknServer;
+import grakn.core.rule.GraknTestServer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -44,8 +44,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Set;
 
-import static grakn.core.util.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
-import static grakn.core.util.ErrorMessage.RESERVED_WORD;
+import static grakn.core.common.exception.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
+import static grakn.core.common.exception.ErrorMessage.RESERVED_WORD;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -61,7 +61,7 @@ import static org.junit.Assert.assertTrue;
 public class EntityTypeIT {
 
     @ClassRule
-    public static final ConcurrentGraknServer server = new ConcurrentGraknServer();
+    public static final GraknTestServer server = new GraknTestServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();

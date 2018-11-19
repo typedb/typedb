@@ -30,7 +30,7 @@ java_binary(
     name = "console-binary",
     main_class = "grakn.core.console.Graql",
     runtime_deps = [":console"],
-    visibility = ["//visibility:public"]
+    visibility = ["//:__pkg__"],
 )
 
 java_library(
@@ -40,7 +40,7 @@ java_library(
         # Grakn Core dependencies
         "//client-java",
         "//server",
-        "//util",
+        "//common",
 
         # External dependencies
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -53,10 +53,12 @@ java_library(
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//test-integration:__subpackages__"],
     runtime_deps = [
         "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
     ],
+    resources = ["LICENSE"],
+    resource_strip_prefix = "console",
     tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
 )
 
@@ -68,5 +70,4 @@ deploy_maven_jar(
 
 exports_files(
     ["conf/logback.xml"],
-    visibility = ["//visibility:public"]
 )

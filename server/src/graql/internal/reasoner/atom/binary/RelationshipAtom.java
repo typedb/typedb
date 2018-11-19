@@ -60,8 +60,8 @@ import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.internal.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.internal.reasoner.utils.conversion.TypeConverter;
 import grakn.core.server.kb.concept.RelationshipTypeImpl;
-import grakn.core.util.CommonUtil;
-import grakn.core.util.ErrorMessage;
+import grakn.core.common.util.CommonUtil;
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
@@ -75,6 +75,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -307,11 +309,20 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                 && this.predicateBindingsAlphaEquivalent(that);
     }
 
+    @Memoized
     @Override
     public int alphaEquivalenceHashCode() {
         int equivalenceHashCode = baseHashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
-        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
+        SortedSet<Integer> hashes = new TreeSet<>();
+        this.getRoleTypeMap().entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .sorted(Comparator.comparing(e -> e.getValue().label()))
+                .forEach(e -> hashes.add(e.hashCode()));
+        this.getRoleConceptIdMap().entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .sorted(Comparator.comparing(Map.Entry::getValue))
+                .forEach(e -> hashes.add(e.hashCode()));
+        for (Integer hash : hashes) equivalenceHashCode = equivalenceHashCode * 37 + hash;
         return equivalenceHashCode;
     }
 

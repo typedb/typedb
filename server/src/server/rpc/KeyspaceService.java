@@ -48,7 +48,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         try {
-            Iterable<String> list = keyspaceStore.keyspaces().stream().map(Keyspace::getValue)
+            Iterable<String> list = keyspaceStore.keyspaces().stream().map(Keyspace::getName)
                     .collect(Collectors.toSet());
             response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();

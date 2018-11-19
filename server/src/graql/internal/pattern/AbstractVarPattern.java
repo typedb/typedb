@@ -52,7 +52,7 @@ import grakn.core.graql.internal.pattern.property.ThenProperty;
 import grakn.core.graql.internal.pattern.property.ValueProperty;
 import grakn.core.graql.internal.pattern.property.WhenProperty;
 import grakn.core.graql.internal.util.StringConverter;
-import grakn.core.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;

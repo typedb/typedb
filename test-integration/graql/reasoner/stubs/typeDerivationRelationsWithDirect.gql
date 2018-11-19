@@ -1,0 +1,48 @@
+define
+
+#Entities
+
+baseEntity sub entity
+    plays baseRole;
+
+baseRelation sub relationship
+    relates baseRole;
+subRelation sub baseRelation
+    relates baseRole;
+subSubRelation sub subRelation
+    relates baseRole;
+
+derivedRelation sub relationship
+    relates baseRole;
+directDerivedRelation sub derivedRelation
+    relates baseRole;
+
+#Rules
+
+relationRule sub rule
+    when {
+        ($x, $y) isa subRelation;
+    }
+    then {
+        ($x, $y) isa derivedRelation;
+    };
+
+directRelationRule sub rule
+    when {
+        ($x, $y) isa! subRelation;
+    }
+    then {
+        ($x, $y) isa directDerivedRelation;
+    };
+
+insert
+
+#Data
+
+$x isa baseEntity;
+$y isa baseEntity;
+$z isa baseEntity;
+
+(baseRole: $x, baseRole: $x) isa baseRelation;
+(baseRole: $y, baseRole: $y) isa subRelation;
+(baseRole: $z, baseRole: $z) isa subSubRelation;

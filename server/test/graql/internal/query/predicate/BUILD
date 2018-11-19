@@ -22,7 +22,7 @@ java_test(
     srcs = ["ComparatorPredicateTest.java"],
     deps = [
         "//server",
-        "//util",
+        "//common",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],

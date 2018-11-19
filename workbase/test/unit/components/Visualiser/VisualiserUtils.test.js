@@ -46,6 +46,21 @@ describe('limit Query', () => {
     match $x isa person;
     $r($x, $y); offset 0; limit 10; get;`);
   });
+  test('query containing multi-line get query', () => {
+    const query = `
+    match $x isa person;
+    get    
+         $x;`;
+    const limited = limitQuery(query);
+    expect(limited).toBe(`
+    match $x isa person; offset 0; limit 10; get    
+         $x;`);
+  });
+  test('query without get', () => {
+    const query = 'match $x isa person;';
+    const limited = limitQuery(query);
+    expect(limited).toBe('match $x isa person;');
+  });
 });
 
 describe('Compute Attributes', () => {
