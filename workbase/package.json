@@ -24,8 +24,9 @@
       "This is required for being able to run tests with bazel"
     ],
     "pretest": "rm -rf __test_run_root && cp -RL test __test_run_root",
-    "test": "./node_modules/jest/bin/jest.js ./__test_run_root/unit",
-    "posttest": "rm -rf __test_run_root",
+    "unittest": "./node_modules/jest/bin/jest.js ./__test_run_root/unit",
+    "test": "npm install grpc && npm run unittest",
+    "posttest": "npm run postinstall && rm -rf __test_run_root",
     "pree2e": "npm run pretest",
     "e2e": "npm run pack && ./node_modules/jest/bin/jest.js ./__test_run_root/e2e --runInBand",
     "poste2e": "npm run posttest"
@@ -82,7 +83,7 @@
     "codemirror": "^5.38.0",
     "electron-store": "^1.3.0",
     "grakn": "1.3.1",
-    "grpc": "^1.16.0",
+    "grpc": "^1.16.1",
     "hex-to-hsl": "^1.0.2",
     "image-data-uri": "^1.1.1",
     "jquery": "^3.2.1",
