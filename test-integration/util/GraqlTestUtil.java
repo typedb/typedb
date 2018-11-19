@@ -91,10 +91,10 @@ public class GraqlTestUtil {
         }
     }
 
-    public static void loadFromFile(String gqlPath, String file, Session session) {
-        try(Transaction tx = session.transaction(Transaction.Type.WRITE)){
-            loadFromFile(gqlPath, file, tx);
-        }
+    public static void loadFromFileAndCommit(String gqlPath, String file, Session session) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, file, tx);
+        tx.commit();
     }
 
 

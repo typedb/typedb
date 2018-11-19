@@ -33,7 +33,7 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 public class NguyenGraph{
 
     private final Session session;
-    private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion";
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion/";
     private final static String gqlFile = "nguyen.gql";
     private final static Label key = Label.of("index");
 

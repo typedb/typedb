@@ -31,11 +31,11 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 
+import grakn.core.util.GraqlTestUtil;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertQueriesEqual;
-import static grakn.core.util.GraqlTestUtil.loadFromFile;
 
 @SuppressWarnings("CheckReturnValue")
 public class RecursionIT {
@@ -49,7 +49,7 @@ public class RecursionIT {
     @Test
     public void testTransitivity() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "transitivity.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "transitivity.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -67,7 +67,7 @@ public class RecursionIT {
     @Test
     public void testAncestor() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "ancestor.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "ancestor.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -123,7 +123,7 @@ public class RecursionIT {
     @Test
     public void testAncestorFriend() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "ancestor-friend.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "ancestor-friend.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -150,7 +150,7 @@ public class RecursionIT {
     @Test
     public void testSameGeneration(){
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "recursivity-sg.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-sg.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -167,7 +167,7 @@ public class RecursionIT {
     @Test
     public void testTC() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "recursivity-tc.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-tc.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -183,7 +183,7 @@ public class RecursionIT {
     @Test
     public void testReachability(){
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "reachability.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -206,7 +206,7 @@ public class RecursionIT {
     @Test
     public void testReachabilitySymmetric() {
         try (Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "reachability-symmetric.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "reachability-symmetric.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -224,7 +224,7 @@ public class RecursionIT {
     @Test
     public void testSameGenerationCao(){
         try(Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "same-generation.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "same-generation.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);
@@ -242,7 +242,7 @@ public class RecursionIT {
     @Test
     public void testReverseSameGeneration() {
         try(Session session = server.sessionWithNewKeyspace()) {
-            loadFromFile(resourcePath, "recursivity-rsg.gql", session);
+            GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-rsg.gql", session);
             try (Transaction tx = session.transaction(Transaction.Type.WRITE)) {
                 QueryBuilder qb = tx.graql().infer(false);
                 QueryBuilder iqb = tx.graql().infer(true);

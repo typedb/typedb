@@ -33,7 +33,7 @@ import static grakn.core.util.GraqlTestUtil.getInstance;
 public class TailRecursionGraph{
 
     private final Session session;
-    private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion";
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion/";
     private final static String gqlFile = "tail-recursion.gql";
     private final static Label key = Label.of("index");
 
