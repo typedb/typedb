@@ -34,7 +34,7 @@ export default {
 
   [OPEN_GRAKN_TX]({ state, commit }) {
     const graknTx = state.graknSession.transaction(Grakn.txType.WRITE);
-    commit('schemaHandler', new SchemaHandler(graknTx));
+    commit('setSchemaHandler', new SchemaHandler(graknTx));
     return graknTx;
   },
 
