@@ -39,7 +39,7 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## System Requirements
 
-### Running Grakn Core
+### Download and Running Grakn Core
 
 To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need:
 1. Java 8 (OpenJDK or Oracle Java) with the $JAVA_HOME set accordingly
@@ -47,7 +47,9 @@ To run Grakn Core (which you can download from the [Download Centre](https://gra
 
 You can visit the [Setup Guide](http://dev.grakn.ai/docs/get-started/setup-guide) to help your installation.
 
-### Compiling Grakn Core
+### Compiling Grakn Core from Source
+
+> Note: You don't need to compile Grakn Core from source if you just want to use Grakn. See the _"Download and Run"_ section above. 
 
 Grakn is built using [Bazel](https://bazel.build). To compile Grakn Core from source:
 1. Make sure you have Java 8 and Python 2 installed on your machine.

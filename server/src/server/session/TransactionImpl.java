@@ -50,8 +50,8 @@ import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
-import grakn.core.commons.exception.ErrorMessage;
-import grakn.core.commons.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.config.ConfigKey;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -78,7 +78,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static grakn.core.commons.exception.ErrorMessage.CANNOT_FIND_CLASS;
+import static grakn.core.common.exception.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**

@@ -64,7 +64,7 @@ elif [ "$1" = "console" ]; then
 elif [ "$1" = "server" ] || [ "$1" = "version" ]; then
     if [ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]; then
         CLASSPATH="./${SERVER_JAR_FILENAME}:./conf/"
-        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dengine.javaopts="${ENGINE_JAVAOPTS}" grakn.core.server.daemon.GraknDaemon $@
+        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dserver.javaopts="${SERVER_JAVAOPTS}" grakn.core.daemon.GraknDaemon $@
     else
         echo "Grakn Core Server is not included in this Grakn distribution."
         echo "You may want to install Grakn Core Server or Grakn Core (all)."

@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.graql.Graql.var;
 import static grakn.core.graql.internal.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
-import static grakn.core.commons.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for generating greedy traversal plans

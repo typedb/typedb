@@ -117,7 +117,7 @@ public class CountIT {
         }
 
         // running 4 jobs at the same time
-        // collecting the result in the end so engine won't stop before the test finishes
+        // collecting the result in the end so server won't stop before the test finishes
         Set<Long> result;
         result = list.parallelStream()
                 .map(i -> executeCount(session))

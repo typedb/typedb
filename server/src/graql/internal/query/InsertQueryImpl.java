@@ -28,7 +28,7 @@ import grakn.core.graql.admin.InsertQueryAdmin;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;

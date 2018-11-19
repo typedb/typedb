@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.client.Grakn;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.client.rpc.RequestBuilder;
-import grakn.core.commons.exception.GraknException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;

@@ -18,9 +18,9 @@
 
 package grakn.core.server.exception;
 
-import grakn.core.commons.exception.GraknException;
+import grakn.core.common.exception.GraknException;
 import grakn.core.server.Transaction;
-import grakn.core.commons.exception.ErrorMessage;
+import grakn.core.common.exception.ErrorMessage;
 
 import java.util.List;
 

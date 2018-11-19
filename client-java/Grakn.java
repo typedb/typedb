@@ -27,9 +27,9 @@ import grakn.core.client.executor.RemoteQueryExecutor;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.ResponseReader;
 import grakn.core.client.rpc.Transceiver;
-import grakn.core.commons.exception.Validator;
-import grakn.core.commons.http.SimpleURI;
-import grakn.core.commons.util.CommonUtil;
+import grakn.core.common.exception.Validator;
+import grakn.core.common.http.SimpleURI;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.Query;
 import grakn.core.graql.QueryBuilder;
@@ -63,7 +63,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static grakn.core.commons.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**
  * Entry-point which communicates with a running Grakn server using gRPC.

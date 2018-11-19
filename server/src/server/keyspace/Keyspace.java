@@ -19,7 +19,7 @@
 package grakn.core.server.keyspace;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.commons.exception.Validator;
+import grakn.core.common.exception.Validator;
 import grakn.core.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;

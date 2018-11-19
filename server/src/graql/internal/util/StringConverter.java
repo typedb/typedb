@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
-import static grakn.core.commons.util.CommonUtil.toImmutableSet;
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for converting Graql strings, used in the parser and for toString methods

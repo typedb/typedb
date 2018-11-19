@@ -4,7 +4,7 @@ java_test(
     srcs = ["GraqlTraversalTest.java", "GraqlMatchers.java"],
     deps = [
         "//server",
-        "//commons",
+        "//common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",

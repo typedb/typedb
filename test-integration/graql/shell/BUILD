@@ -5,7 +5,7 @@ java_test(
     deps = [
         "//server",
         "//console",
-        "//commons",
+        "//common",
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/com/google/guava:guava",

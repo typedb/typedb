@@ -19,8 +19,8 @@
 
 package grakn.core.client.exception;
 
-import grakn.core.commons.exception.ErrorMessage;
-import grakn.core.commons.exception.GraknException;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.common.exception.GraknException;
 
 public class GraknClientException extends GraknException {
 
