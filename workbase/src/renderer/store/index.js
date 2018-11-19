@@ -45,8 +45,8 @@ export default new Vuex.Store({
       state.credentials = null;
       storage.delete('user-credentials');
     },
-    loadLocalCredentials(state, ENGINE_AUTHENTICATED) {
-      if (!ENGINE_AUTHENTICATED) {
+    loadLocalCredentials(state, SERVER_AUTHENTICATED) {
+      if (!SERVER_AUTHENTICATED) {
         state.credentials = null;
       } else {
         const localCredentials = storage.get('user-credentials');
