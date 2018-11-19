@@ -1,6 +1,6 @@
 java_test(
     name = "neq-predicate-it",
-    size = "small",
+    size = "medium",
     srcs = ["NeqPredicateIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
@@ -43,7 +43,7 @@ java_test(
 
 java_test(
     name = "resource-attachment-it",
-    size = "small",
+    size = "medium",
     srcs = ["ResourceAttachmentIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
@@ -59,7 +59,7 @@ java_test(
 
 java_test(
     name = "type-generation-it",
-    size = "small",
+    size = "medium",
     srcs = ["TypeGenerationIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
@@ -73,7 +73,7 @@ java_test(
 
 java_test(
     name = "type-hierarchies-it",
-    size = "small",
+    size = "medium",
     srcs = ["TypeHierarchiesIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
@@ -88,7 +88,7 @@ java_test(
 
 java_test(
     name = "variable-roles-it",
-    size = "small",
+    size = "medium",
     srcs = ["VariableRolesIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
