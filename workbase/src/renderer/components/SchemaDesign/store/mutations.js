@@ -31,4 +31,7 @@ export default {
   setContextMenu(state, contextMenu) {
     state.contextMenu = contextMenu;
   },
+  setSchemaHandler(state, schemaHandler) {
+    state.schemaHandler = schemaHandler;
+  },
 };

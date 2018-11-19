@@ -5,9 +5,12 @@ import {
   LOAD_SCHEMA,
 } from '@/components/shared/StoresActions';
 
+
 import actions from '@/components/SchemaDesign/store/actions';
 import mutations from '@/components/SchemaDesign/store/mutations';
 import getters from '@/components/SchemaDesign/store/getters';
+
+import MockConcepts from '../../../../helpers/MockConcepts';
 
 
 jest.mock('grakn', () => ({ txType: { WRITE: 'write' } }));
@@ -25,6 +28,9 @@ describe('actions', () => {
       getters,
       state: {
         visFacade: {},
+        graknSession: {
+          transaction: () => Promise.resolve({ query: () => Promise.resolve({ collect: () => Promise.resolve([MockConcepts.getMockAnswer2()]) }) }),
+        },
       },
     });
 

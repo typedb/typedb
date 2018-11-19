@@ -8,4 +8,5 @@ export default {
   isActive: state => (state.currentKeyspace !== null),
   contextMenu: state => state.contextMenu,
   loadingSchema: state => state.loadingSchema,
+  schemaHandler: state => state.schemaHandler,
 };

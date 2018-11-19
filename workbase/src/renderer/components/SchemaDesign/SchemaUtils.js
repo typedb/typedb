@@ -1,6 +1,6 @@
 import storage from '@/components/shared/PersistentStorage';
 
-const META_CONCEPTS = new Set(['entity', 'relationship', 'attribute', 'role']);
+export const META_CONCEPTS = new Set(['entity', 'relationship', 'attribute', 'role']);
 
 export async function computeSubConcepts(nodes) {
   const edges = [];
@@ -74,3 +74,8 @@ export async function loadMetaTypeInstances(graknTx) {
   return metaTypeInstances;
 }
 
+export async function typeInboundEdges(type, visFacade) {
+  const roles = await type.plays();
+  const relationshipTypes = await Promise.all(roles.map(role => role.relationshipTypes())).then(rels => rels.flatMap(x => x));
+  return relationshipTypesOutboundEdges(relationshipTypes.filter(rel => visFacade.getNode(rel)));
+}
