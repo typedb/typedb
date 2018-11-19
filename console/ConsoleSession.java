@@ -60,9 +60,9 @@ public class ConsoleSession implements AutoCloseable {
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
 
-    private static final String HISTORY_FILE = StandardSystemProperty.USER_HOME.value() + "/.graql-history";
+    private static final String HISTORY_FILE = StandardSystemProperty.USER_HOME.value() + "/.grakn-console-history";
     private static final String EDITOR_DEFAULT = "vim";
-    private static final String EDITOR_FILE = "/graql-tmp.gql";
+    private static final String EDITOR_FILE = "/grakn-console-editor.gql";
 
     private final boolean infer;
     private final String keyspace;

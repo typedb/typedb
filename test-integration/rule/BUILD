@@ -34,5 +34,5 @@ java_library(
         "//server:conf/grakn.properties",
         "//test-integration/resources:cassandra-embedded"
     ],
-    visibility = ["//test-integration:__subpackages__"]
+    visibility = ["//visibility:public"]
 )

@@ -36,6 +36,15 @@ jobs:
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
 
+  console:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: bazel test //console/... --test_size_filters=small
+      - run: bazel test //console/... --test_size_filters=medium
+      - run: bazel test //console/... --test_size_filters=large
+      - run: bazel test //console/... --test_size_filters=enormous
+
   test-integration:
     machine: true
     working_directory: ~/grakn
@@ -205,6 +214,7 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      - console
       - test-unit
       - test-integration
       - test-integration-reasoner-general

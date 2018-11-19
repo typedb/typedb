@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:__pkg__"])
+package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 java_library(
@@ -41,7 +41,7 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
     ],
-    visibility = ["//test-integration:__subpackages__"],
+    visibility = ["//console/test:__subpackages__"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
     tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
@@ -66,4 +66,11 @@ genrule(
     outs = ["dist/grakn-core-console.zip"],
     cmd  = "$(location distribution.sh) $(location dist/grakn-core-console.zip) $(location //:grakn) $(location console-binary_deploy.jar)",
     tools = ["distribution.sh"]
+)
+
+test_suite(
+    name = "console-test-integration",
+    tests = [
+
+    ]
 )

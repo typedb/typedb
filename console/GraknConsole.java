@@ -85,7 +85,7 @@ public class GraknConsole {
     public static Options getOptions() {
         Options options = new Options();
         options.addOption(KEYSPACE, "keyspace", true, "keyspace of the graph");
-        options.addOption(FILE, "file", true, "graql file path to execute");
+        options.addOption(FILE, "file", true, "path to a Graql file");
         options.addOption(URI, "address", true, "Grakn Server address");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
