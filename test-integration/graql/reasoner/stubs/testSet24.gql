@@ -13,11 +13,11 @@ entity1 sub entity
 
 #Relations
 
-relation1 sub relationship
+reflexiveRelation sub relationship
     relates role1
     relates role2;
 
-relation2 sub relationship
+uniquePairRelation sub relationship
     relates role1
     relates role2;
 
@@ -29,7 +29,7 @@ rule-1 sub rule
     	$y isa entity1;
     }
     then {
-    	(role1:$x, role2:$y) isa relation1;
+    	(role1:$x, role2:$y) isa reflexiveRelation;
     };
 
 rule-2 sub rule
@@ -39,7 +39,7 @@ rule-2 sub rule
     	$x != $y;
     }
     then {
-    	(role1:$x, role2:$y) isa relation2;
+    	(role1:$x, role2:$y) isa uniquePairRelation;
     };
 
 insert
