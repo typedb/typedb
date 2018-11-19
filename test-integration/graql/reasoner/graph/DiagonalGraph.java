@@ -26,14 +26,28 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+
 @SuppressWarnings("CheckReturnValue")
-public class DiagonalGraph extends ParametrisedTestGraph {
+public class DiagonalGraph{
+
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final static String gqlFile = "diagonalTest.gql";
 
     public DiagonalGraph(Session session) {
-        super(session, "diagonalTest.gql", Label.of("name"));
+        this.session = session;
+    }
+    private Label key(){ return Label.of("name");}
+
+    public final void load(int n, int m) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
     }
 
-    @Override
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Role relFrom = tx.getRole("rel-from");
         Role relTo = tx.getRole("rel-to");
@@ -69,10 +83,5 @@ public class DiagonalGraph extends ParametrisedTestGraph {
                 if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);
             }
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, Transaction tx) {
-        buildExtensionalDB(n, n, tx);
     }
 }

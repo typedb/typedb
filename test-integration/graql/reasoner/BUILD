@@ -29,8 +29,6 @@ java_test(
     test_class = "grakn.core.graql.reasoner.RecursionIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/commons-collections",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/graql/reasoner/graph:dual-linear-transitivity-graph",

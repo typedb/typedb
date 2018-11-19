@@ -27,15 +27,28 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+
 @SuppressWarnings("CheckReturnValue")
-public class LinearTransitivityMatrixGraph extends ParametrisedTestGraph {
+public class LinearTransitivityMatrixGraph{
 
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final static String gqlFile = "linearTransitivity.gql";
+    private final static Label key = Label.of("index");
 
-    public LinearTransitivityMatrixGraph(Session session) {
-        super(session, "linearTransitivity.gql", Label.of("index"));
+    public LinearTransitivityMatrixGraph(Session session){
+        this.session = session;
     }
 
-    @Override
+    public final void load(int n, int m) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
+    }
+
     protected void buildExtensionalDB(int n, int m, Transaction tx){
         Role Qfrom = tx.getRole("Q-from");
         Role Qto = tx.getRole("Q-to");
@@ -43,10 +56,10 @@ public class LinearTransitivityMatrixGraph extends ParametrisedTestGraph {
         EntityType aEntity = tx.getEntityType("a-entity");
         RelationshipType Q = tx.getRelationshipType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
-        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key());
+        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {
             for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, aEntity, key()).id();
+                aInstancesIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, aEntity, key).id();
             }
         }
 
@@ -68,10 +81,5 @@ public class LinearTransitivityMatrixGraph extends ParametrisedTestGraph {
                 }
             }
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, Transaction tx) {
-        buildExtensionalDB(n, n, tx);
     }
 }

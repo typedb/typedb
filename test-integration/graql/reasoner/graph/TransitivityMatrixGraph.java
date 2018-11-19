@@ -27,25 +27,39 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 
-@SuppressWarnings("CheckReturnValue")
-public class TransitivityMatrixGraph extends ParametrisedTestGraph {
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 
-    public TransitivityMatrixGraph(Session session) {
-        super(session, "quadraticTransitivity.gql",  Label.of("index"));
+@SuppressWarnings("CheckReturnValue")
+public class TransitivityMatrixGraph{
+
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final static String gqlFile = "tail-quadraticTransitivity.gql";
+    private final static Label key = Label.of("index");
+
+    public TransitivityMatrixGraph(Session session){
+        this.session = session;
     }
 
-    @Override
+    public final void load(int n, int m) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
+    }
+
     protected void buildExtensionalDB(int n, int m, Transaction tx){
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
         RelationshipType q = tx.getRelationshipType("Q");
-        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key());
+        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                aInstanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, aEntity, key()).id();
+                aInstanceIds[i][j] = putEntityWithResource(tx, "a" + i + "," + j, aEntity, key).id();
             }
         }
 
@@ -67,10 +81,5 @@ public class TransitivityMatrixGraph extends ParametrisedTestGraph {
                 }
             }
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, Transaction tx) {
-        buildExtensionalDB(n, n, tx);
     }
 }

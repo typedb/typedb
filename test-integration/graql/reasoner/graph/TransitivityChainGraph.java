@@ -27,24 +27,38 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
 
-@SuppressWarnings("CheckReturnValue")
-public class TransitivityChainGraph extends ParametrisedTestGraph {
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 
-    public TransitivityChainGraph(Session session) {
-        super(session, "quadraticTransitivity.gql", Label.of("index"));
+@SuppressWarnings("CheckReturnValue")
+public class TransitivityChainGraph {
+
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final static String gqlFile = "quadraticTransitivity.gql";
+    private final static Label key = Label.of("index");
+
+    public TransitivityChainGraph(Session session){
+        this.session = session;
     }
 
-    @Override
+    public final void load(int n) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, tx);
+        tx.commit();
+    }
+
     protected void buildExtensionalDB(int n, Transaction tx){
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 
         EntityType aEntity = tx.getEntityType("a-entity");
         RelationshipType q = tx.getRelationshipType("Q");
-        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key());
+        Thing aInst = putEntityWithResource(tx, "a", tx.getEntityType("entity2"), key);
         ConceptId[] aInstanceIds = new ConceptId[n];
         for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = putEntityWithResource(tx, "a" + i, aEntity, key()).id();
+            aInstanceIds[i] = putEntityWithResource(tx, "a" + i, aEntity, key).id();
         }
 
         q.create()
@@ -58,9 +72,4 @@ public class TransitivityChainGraph extends ParametrisedTestGraph {
         }
     }
 
-
-    @Override
-    protected void buildExtensionalDB(int n, int children, Transaction tx) {
-        buildExtensionalDB(n, tx);
-    }
 }

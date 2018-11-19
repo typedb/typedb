@@ -25,6 +25,10 @@ import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
+import static grakn.core.util.GraqlTestUtil.getInstance;
+
 /**
  * Defines a KB based on test 6.10 from Cao p. 82, but arranged in a matrix instead of a tree.
  *
@@ -32,13 +36,24 @@ import grakn.core.server.Transaction;
  *
  */
 @SuppressWarnings("CheckReturnValue")
-public class PathMatrixGraph extends ParametrisedTestGraph {
+public class PathMatrixGraph {
+
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/";
+    private final static String gqlFile = "pathTest.gql";
+    private final static Label key = Label.of("index");
 
     public PathMatrixGraph(Session session){
-        super(session, "pathTest.gql", Label.of("index"));
+        this.session = session;
     }
 
-    @Override
+    public final void load(int n, int m) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, m, tx);
+        tx.commit();
+    }
+
     protected void buildExtensionalDB(int n, int m, Transaction tx) {
         EntityType vertex = tx.getEntityType("vertex");
         EntityType startVertex = tx.getEntityType("start-vertex");
@@ -46,11 +61,11 @@ public class PathMatrixGraph extends ParametrisedTestGraph {
         Role arcTo = tx.getRole("arc-to");
 
         RelationshipType arc = tx.getRelationshipType("arc");
-        putEntityWithResource(tx, "a0", startVertex, key());
+        putEntityWithResource(tx, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                putEntityWithResource(tx, "a" + i + "," + j, vertex, key());
+                putEntityWithResource(tx, "a" + i + "," + j, vertex, key);
             }
         }
 
@@ -72,10 +87,5 @@ public class PathMatrixGraph extends ParametrisedTestGraph {
                 }
             }
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, Transaction tx) {
-        buildExtensionalDB(n, n, tx);
     }
 }

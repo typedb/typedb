@@ -1,23 +1,23 @@
 java_library(
     name = "diagonal-graph",
-    srcs = [
-        "DiagonalGraph.java",
-        "ParametrisedTestGraph.java",
-    ],
+    srcs = ["DiagonalGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:diagonal-test"],
     visibility = ["//test-integration:__subpackages__"],
-    deps = ["//server"],
+    deps = [
+        "//server",
+        "//test-integration/util:graql-test-util",
+    ],
 )
 
 java_library(
     name = "dual-linear-transitivity-graph",
-    srcs = [
-        "DualLinearTransitivityMatrixGraph.java",
-        "ParametrisedTestGraph.java",
-    ],
+    srcs = ["DualLinearTransitivityMatrixGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:dual-linear-transitivity"],
     visibility = ["//test-integration:__subpackages__"],
-    deps = ["//server"],
+    deps = [
+        "//server",
+        "//test-integration/util:graql-test-util",
+    ],
 )
 
 java_library(
@@ -29,73 +29,54 @@ java_library(
 
 java_library(
     name = "linear-transitivity-matrix-graph",
-    srcs = [
-        "LinearTransitivityMatrixGraph.java",
-        "ParametrisedTestGraph.java",
-    ],
+    srcs = ["LinearTransitivityMatrixGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:linear-transivity"],
     visibility = ["//test-integration:__subpackages__"],
-    deps = ["//server"],
+    deps = [
+        "//server",
+        "//test-integration/util:graql-test-util",
+    ],
 )
 
 java_library(
     name = "nguyen-graph",
-    srcs = [
-        "NguyenGraph.java",
-        "ParametrisedTestGraph.java",
-    ],
+    srcs = ["NguyenGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources/recursion:nguyen"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
-    ],
-)
-
-java_library(
-    name = "parameterised-test-graph",
-    srcs = [
-        "ParametrisedTestGraph.java",
-    ],
-    visibility = ["//test-integration:__subpackages__"],
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
 java_library(
     name = "path-matrix-graph",
-    srcs = [
-        "ParametrisedTestGraph.java",
-        "PathMatrixGraph.java",
-    ],
+    srcs = ["PathMatrixGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:path-test"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
 java_library(
     name = "path-tree-graph",
-    srcs = [
-        "ParametrisedTestGraph.java",
-        "PathTreeGraph.java",
-    ],
+    srcs = ["PathTreeGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:path-test"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
 java_library(
     name = "path-tree-symmetric-graph",
     srcs = [
-        "ParametrisedTestGraph.java",
         "PathTreeGraph.java",
         "PathTreeSymmetricGraph.java",
     ],
@@ -104,41 +85,40 @@ java_library(
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
 java_library(
     name = "tail-recursion-graph",
-    srcs = [
-        "ParametrisedTestGraph.java",
-        "TailRecursionGraph.java",
-    ],
+    srcs = ["TailRecursionGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources/recursion:tail-recursion"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
 java_library(
     name = "transitivity-chain-graph",
-    srcs = [
-        "ParametrisedTestGraph.java",
-        "TransitivityChainGraph.java",
-    ],
+    srcs = ["TransitivityChainGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:quadratic-transitivity"],
     visibility = ["//test-integration:__subpackages__"],
-    deps = ["//server"],
+    deps = [
+        "//server",
+        "//test-integration/util:graql-test-util",
+    ],
 )
 
 java_library(
     name = "transitivity-matrix-graph",
-    srcs = [
-        "ParametrisedTestGraph.java",
-        "TransitivityMatrixGraph.java",
-    ],
+    srcs = ["TransitivityMatrixGraph.java"],
     resources = ["//test-integration/graql/reasoner/resources:quadratic-transitivity"],
     visibility = ["//test-integration:__subpackages__"],
-    deps = ["//server"],
+    deps = [
+        "//server",
+        "//test-integration/util:graql-test-util",
+    ],
 )

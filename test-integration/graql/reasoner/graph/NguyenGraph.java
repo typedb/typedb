@@ -26,16 +26,29 @@ import grakn.core.graql.concept.Role;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 
-@SuppressWarnings("CheckReturnValue")
-public class NguyenGraph extends ParametrisedTestGraph {
+import static grakn.core.util.GraqlTestUtil.loadFromFile;
+import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 
-    public NguyenGraph(Session session) {
-        super(session, "recursion/nguyen.gql", Label.of("index"));
+@SuppressWarnings("CheckReturnValue")
+public class NguyenGraph{
+
+    private final Session session;
+    private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion/";
+    private final static String gqlFile = "nguyen.gql";
+    private final static Label key = Label.of("index");
+
+    public NguyenGraph(Session session){
+        this.session = session;
     }
 
-    @Override
+    public final void load(int n) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, gqlFile, tx);
+        buildExtensionalDB(n, tx);
+        tx.commit();
+    }
+
     protected void buildExtensionalDB(int n, Transaction tx) {
-        Label key = key();
         Role Rfrom = tx.getRole("R-rA");
         Role Rto = tx.getRole("R-rB");
         Role qfrom = tx.getRole("Q-rA");
@@ -90,10 +103,5 @@ public class NguyenGraph extends ParametrisedTestGraph {
                     .assign(qfrom, tx.getConcept(bInstancesIds[i]))
                     .assign(qto, tx.getConcept(aInstancesIds[i+1]));
         }
-    }
-
-    @Override
-    protected void buildExtensionalDB(int n, int children, Transaction tx) {
-        buildExtensionalDB(n, tx);
     }
 }
