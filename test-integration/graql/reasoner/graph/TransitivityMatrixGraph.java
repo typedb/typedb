@@ -35,7 +35,7 @@ public class TransitivityMatrixGraph{
 
     private final Session session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
-    private final static String gqlFile = "tail-quadraticTransitivity.gql";
+    private final static String gqlFile = "quadraticTransitivity.gql";
     private final static Label key = Label.of("index");
 
     public TransitivityMatrixGraph(Session session){
