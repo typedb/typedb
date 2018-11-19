@@ -40,14 +40,11 @@ public class GeoGraph {
 
     private Role geoEntity, entityLocation;
 
-    private Thing Europe;
-    private Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;
-    private Thing Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
-    private Thing Poland, England, Germany, France, Italy;
-    private Thing UW;
-    private Thing PW;
-    private Thing Imperial;
-    private Thing UCL;
+    private static Thing Europe;
+    private static Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;
+    private static Thing Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
+    private static Thing Poland, England, Germany, France, Italy;
+    private static Thing UW, PW, Imperial, UCL;
 
     public GeoGraph(Session session){
         this.session = session;
@@ -115,7 +112,6 @@ public class GeoGraph {
         Germany = putEntityWithResource(tx, "Germany", country, key.label());
         Bavaria = putEntityWithResource(tx, "Bavaria", region, key.label());
         Munich = putEntityWithResource(tx, "Munich", city, key.label());
-        putEntityWithResource(tx, "University of Munich", university, key.label());
 
         France = putEntityWithResource(tx, "France", country, key.label());
         IleDeFrance = putEntityWithResource(tx, "IleDeFrance", region, key.label());

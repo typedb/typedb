@@ -39,6 +39,7 @@ java_test(
         "//test-integration/graql/reasoner/graph:path-tree-symmetric-graph",
         "//test-integration/graql/reasoner/graph:tail-recursion-graph",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
@@ -58,5 +59,6 @@ java_test(
         "//server",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
     ],
 )
