@@ -110,78 +110,86 @@ export default {
 
   async [DEFINE_ENTITY_TYPE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
-
     await state.schemaHandler.defineEntityType(payload);
 
-    await dispatch(COMMIT_TX, graknTx);
+    dispatch(COMMIT_TX, graknTx).then(async () => {
+      const type = await graknTx.getSchemaConcept(payload.label);
+      const sup = await type.sup();
+      const supLabel = await sup.getLabel();
+      let edges;
 
-    const type = await graknTx.getSchemaConcept(payload.label);
-    const sup = await type.sup();
-    const supLabel = await sup.getLabel();
-    let edges;
-
-    // If the supertype is a concept defined by user
-    // we just draw the isa edge instead of all edges from relationshipTypes
-    if (!META_CONCEPTS.has(supLabel)) {
-      edges = [{ from: type.id, to: sup.id, label: 'isa' }];
-    } else {
-      edges = await typeInboundEdges(type, this.visFacade);
-    }
-    const label = await type.getLabel();
-    const nodes = [Object.assign(type, { label })];
-    state.visFacade.addToCanvas({ nodes, edges });
+      // If the supertype is a concept defined by user
+      // we just draw the isa edge instead of all edges from relationshipTypes
+      if (!META_CONCEPTS.has(supLabel)) {
+        edges = [{ from: type.id, to: sup.id, label: 'isa' }];
+      } else {
+        edges = await typeInboundEdges(type, this.visFacade);
+      }
+      const label = await type.getLabel();
+      const nodes = [Object.assign(type, { label })];
+      state.visFacade.addToCanvas({ nodes, edges });
+    })
+      .catch((e) => { throw e; });
   },
 
   async [DEFINE_ROLE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineRole(payload);
-    await dispatch(COMMIT_TX, graknTx);
+    dispatch(COMMIT_TX, graknTx)
+      .catch((e) => { throw e; });
   },
 
   async [DEFINE_ATTRIBUTE_TYPE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineAttributeType(payload);
-    await dispatch(COMMIT_TX, graknTx);
+    dispatch(COMMIT_TX, graknTx)
+      .catch((e) => { throw e; });
   },
 
   async [DEFINE_RELATIONSHIP_TYPE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineRelationshipType(payload);
-    await dispatch(COMMIT_TX, graknTx);
 
-    const type = await graknTx.getSchemaConcept(payload.label);
-    const label = await type.getLabel();
-    const sup = await type.sup();
-    const supLabel = await sup.getLabel();
+    dispatch(COMMIT_TX, graknTx).then(async () => {
+      const type = await graknTx.getSchemaConcept(payload.label);
+      const label = await type.getLabel();
+      const sup = await type.sup();
+      const supLabel = await sup.getLabel();
 
-    let edges;
-    // If the supertype is a concept defined by user
-    // we just draw the isa edge instead of all edges to roleplayers
-    if (!META_CONCEPTS.has(supLabel)) {
-      edges = [{ from: type.id, to: sup.id, label: 'isa' }];
-    } else {
-      const relatesEdges = await relationshipTypesOutboundEdges([type]);
-      const plays = await typeInboundEdges(type, this.visFacade);
-      edges = plays.concat(relatesEdges);
-    }
-    const nodes = [Object.assign(type, { label })];
-    state.visFacade.addToCanvas({ nodes, edges });
+      let edges;
+      // If the supertype is a concept defined by user
+      // we just draw the isa edge instead of all edges to roleplayers
+      if (!META_CONCEPTS.has(supLabel)) {
+        edges = [{ from: type.id, to: sup.id, label: 'isa' }];
+      } else {
+        const relatesEdges = await relationshipTypesOutboundEdges([type]);
+        const plays = await typeInboundEdges(type, this.visFacade);
+        edges = plays.concat(relatesEdges);
+      }
+      const nodes = [Object.assign(type, { label })];
+      state.visFacade.addToCanvas({ nodes, edges });
+    })
+      .catch((e) => { throw e; });
   },
 
   async [DELETE_TYPE]({ state, dispatch, commit }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     const typeId = await state.schemaHandler.deleteType(payload);
-    await dispatch(COMMIT_TX, graknTx);
-    state.visFacade.deleteFromCanvas([typeId]);
-    commit('selectedNodes'.null);
+    dispatch(COMMIT_TX, graknTx).then(() => {
+      state.visFacade.deleteFromCanvas([typeId]);
+      commit('selectedNodes'.null);
+    })
+      .catch((e) => { throw e; });
   },
 
   // Difference with action above: this deletes a schema concept that is not shown in canvas
   async [DELETE_SCHEMA_CONCEPT]({ state, dispatch, commit }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.defineRelationshipType(payload);
-    await dispatch(COMMIT_TX, graknTx);
-    commit('selectedNodes'.null);
+    dispatch(COMMIT_TX, graknTx).then(() => {
+      commit('selectedNodes'.null);
+    })
+      .catch((e) => { throw e; });
   },
 
   async [REFRESH_SELECTED_NODE]({ state, commit }) {
@@ -194,26 +202,32 @@ export default {
   async [DELETE_PLAYS_ROLE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.deletePlaysRole(payload);
-    await dispatch(COMMIT_TX, graknTx);
-    const type = await graknTx.getSchemaConcept(payload.label);
-    state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
-    dispatch(REFRESH_SELECTED_NODE);
+    dispatch(COMMIT_TX, graknTx).then(async () => {
+      const type = await graknTx.getSchemaConcept(payload.label);
+      state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
+      dispatch(REFRESH_SELECTED_NODE);
+    })
+      .catch((e) => { throw e; });
   },
 
   async [DELETE_RELATES_ROLE]({ state, dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await state.schemaHandler.deleteRelatesRole(payload);
-    await dispatch(COMMIT_TX, graknTx);
-    const type = await graknTx.getSchemaConcept(payload.label);
-    state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
-    dispatch(REFRESH_SELECTED_NODE);
+    dispatch(COMMIT_TX, graknTx).then(async () => {
+      const type = await graknTx.getSchemaConcept(payload.label);
+      state.visFacade.deleteEdgesOnNode(type.id, payload.roleName);
+      dispatch(REFRESH_SELECTED_NODE);
+    })
+      .catch((e) => { throw e; });
   },
 
   async [DELETE_ATTRIBUTE]({ dispatch }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
     await this.schemaHandler.deleteAttribute(payload);
-    await dispatch(COMMIT_TX, graknTx);
-    dispatch(REFRESH_SELECTED_NODE);
+    dispatch(COMMIT_TX, graknTx).then(() => {
+      dispatch(REFRESH_SELECTED_NODE);
+    })
+      .catch((e) => { throw e; });
   },
 
   async [ADD_TYPE]({ dispatch, state }, payload) {
