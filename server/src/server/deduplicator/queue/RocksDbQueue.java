@@ -18,12 +18,8 @@
 
 package grakn.core.server.deduplicator.queue;
 
-import java.nio.file.Path;
-import java.util.LinkedList;
-import java.util.List;
-
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.server.keyspace.Keyspace;
 import mjson.Json;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -31,6 +27,10 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
+
+import java.nio.file.Path;
+import java.util.LinkedList;
+import java.util.List;
 
 import static grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.deserialiseAttributeUtf8;
 import static grakn.core.server.deduplicator.queue.RocksDbQueue.SerialisationUtils.serialiseAttributeUtf8;

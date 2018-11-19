@@ -40,10 +40,9 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: bazel test //console/... --test_size_filters=small
-      - run: bazel test //console/... --test_size_filters=medium
-      - run: bazel test //console/... --test_size_filters=large
-      - run: bazel test //console/... --test_size_filters=enormous
+      - checkout
+      - *install_bazel
+      - run: bazel test //console/...
 
   test-integration:
     machine: true

@@ -364,7 +364,7 @@ public class GraknConsoleIT {
     }
 
     @Test
-    public void when_cancellingCleanCommand_keyspaceIsNotDeleted() throws Exception {
+    public void when_cancellingCleanCommand_expect_keyspaceIsNotDeleted() throws Exception {
         assertConsoleSessionMatches(
                 "define my-type sub entity;",
                 is("{}"),
