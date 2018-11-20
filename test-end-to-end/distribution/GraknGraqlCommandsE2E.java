@@ -31,8 +31,8 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
 
 import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknStopped;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,12 +58,12 @@ public class GraknGraqlCommandsE2E {
     public void beforeEachTests_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
         assertZipExists();
         unzipGrakn();
-        assertGraknStopped();
+        assertGraknIsNotRunning();
     }
 
     @After
     public void afterEachTests_cleanupDistribution() throws IOException {
-        assertGraknStopped();
+        assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
 
@@ -90,9 +90,9 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void grakn_shouldBeAbleToStartAndStop() throws IOException, InterruptedException, TimeoutException {
         commandExecutor.command("./grakn", "server", "start").execute();
-        assertGraknRunning();
+        assertGraknIsRunning();
         commandExecutor.command("./grakn", "server", "stop").execute();
-        assertGraknStopped();
+        assertGraknIsNotRunning();
     }
 
     /**
@@ -109,7 +109,7 @@ public class GraknGraqlCommandsE2E {
      */
     @Test
     public void grakn_testPrintStatus_whenCurrentlyStopped() throws IOException, InterruptedException, TimeoutException {
-        assertGraknStopped();
+        assertGraknIsNotRunning();
         String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
         assertThat(output, allOf(containsString("Storage: NOT RUNNING"), containsString("Grakn Core Server: NOT RUNNING")));
     }

@@ -1,3 +1,21 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.graql.reasoner.graph;
 
 import grakn.core.server.Session;
@@ -22,14 +40,11 @@ public class GeoGraph {
 
     private Role geoEntity, entityLocation;
 
-    private Thing Europe;
-    private Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;
-    private Thing Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
-    private Thing Poland, England, Germany, France, Italy;
-    private Thing UW;
-    private Thing PW;
-    private Thing Imperial;
-    private Thing UCL;
+    private static Thing Europe;
+    private static Thing Warsaw, Wroclaw, London, Munich, Paris, Milan;
+    private static Thing Masovia, Silesia, GreaterLondon, Bavaria, IleDeFrance, Lombardy;
+    private static Thing Poland, England, Germany, France, Italy;
+    private static Thing UW, PW, Imperial, UCL;
 
     public GeoGraph(Session session){
         this.session = session;
@@ -97,7 +112,6 @@ public class GeoGraph {
         Germany = putEntityWithResource(tx, "Germany", country, key.label());
         Bavaria = putEntityWithResource(tx, "Bavaria", region, key.label());
         Munich = putEntityWithResource(tx, "Munich", city, key.label());
-        putEntityWithResource(tx, "University of Munich", university, key.label());
 
         France = putEntityWithResource(tx, "France", country, key.label());
         IleDeFrance = putEntityWithResource(tx, "IleDeFrance", region, key.label());

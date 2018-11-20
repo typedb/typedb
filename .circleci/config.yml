@@ -36,6 +36,14 @@ jobs:
       - run: bazel test //server/... --test_output=errors
       - run: bazel test //client-java/... --test_output=errors
 
+  console:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - *install_bazel
+      - run: bazel test //console/...
+
   test-integration:
     machine: true
     working_directory: ~/grakn
@@ -47,13 +55,22 @@ jobs:
       - run: bazel test //test-integration/graql/internal/... --test_output=errors
     # - run: bazel test //test-integration/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
 
-  test-integration-reasoner-general:
+  test-integration-reasoner:
     machine: true
     working_directory: ~/grakn
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //test-integration/graql/reasoner:all --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
+
+  test-integration-reasoner-other:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //test-integration/graql/reasoner:recursion-it --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
 
   test-integration-reasoner-components:
     machine: true
@@ -205,9 +222,11 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+      - console
       - test-unit
       - test-integration
-      - test-integration-reasoner-general
+      - test-integration-reasoner
+      - test-integration-reasoner-other
       - test-integration-reasoner-components
       - test-integration-analytics
       - test-end-to-end

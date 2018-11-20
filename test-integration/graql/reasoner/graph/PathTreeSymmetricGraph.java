@@ -16,15 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.console;
+package grakn.core.graql.reasoner.graph;
 
-import org.apache.commons.cli.ParseException;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
-/**
- * Factory to produce {@link GraqlShellOptions}. Can be extended to produce a {@link GraqlShellOptions} that accepts
- * extra arguments.
- *
- */
-public interface GraqlShellOptionsFactory {
-    GraqlShellOptions createGraqlShellOptions(String[] args) throws ParseException;
+@SuppressWarnings("CheckReturnValue")
+public class PathTreeSymmetricGraph extends PathTreeGraph {
+
+    public PathTreeSymmetricGraph(Session session){
+        super(session, "pathTest-symmetric.gql");
+    }
+
+    @Override
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
+        buildTree("coordinate", "coordinate", n , children, tx);
+    }
 }

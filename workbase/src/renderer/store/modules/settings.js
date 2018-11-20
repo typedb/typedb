@@ -2,7 +2,7 @@
 
 export default {
   state: {
-    engineHost: undefined,
-    enginePort: undefined,
+    serverHost: undefined,
+    serverPort: undefined,
   },
 };

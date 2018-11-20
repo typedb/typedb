@@ -1,0 +1,65 @@
+define
+
+###################################################
+####################Schema######################
+#################################################
+
+"person" sub entity
+      has name;
+
+"parent" sub role;
+"child" sub role;
+"Parent" sub relationship, relates parent, relates child;
+person plays parent, plays child;
+
+"sibA" sub role;
+"sibB" sub role;
+"Sibling" sub relationship, relates sibA, relates sibB;
+person plays sibA, plays sibB;
+
+"SG-role-A" sub role;
+"SG-role-B" sub role;
+"SameGen" sub relationship, relates SG-role-A, relates SG-role-B;
+person plays SG-role-A, plays SG-role-B;
+
+"name" sub attribute, datatype string;
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1
+when {
+(sibA: $x, sibB: $y) isa Sibling;},
+then {
+(SG-role-A: $x, SG-role-B: $y) isa SameGen;};
+
+rule-2
+when {
+(parent: $x, child: $u) isa Parent;
+($u, $v) isa SameGen;
+(parent: $y, child: $v) isa Parent;},
+then {
+(SG-role-A: $x, SG-role-B: $y) isa SameGen;};
+
+rule-3
+when {
+(parent: $z, child: $x) isa Parent;
+(parent: $z, child: $y) isa Parent;},
+then {
+(sibA: $x, sibB: $y) isa Sibling;};
+
+insert
+
+####################################################
+##################DATA#############################
+####################################################
+
+$ann isa person, has name "ann";
+$bill isa person, has name "bill";
+$john isa person, has name "john";
+$peter isa person, has name "peter";
+
+(parent: $john, child: $ann) isa Parent;
+(parent: $john, child: $peter) isa Parent;
+(parent: $john, child: $bill) isa Parent;

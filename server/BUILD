@@ -22,6 +22,11 @@ load("@rules_antlr//antlr:antlr4.bzl", "antlr4")
 load("//dependencies/deployment/maven:rules.bzl", "deploy_maven_jar")
 
 
+exports_files(
+    glob(["conf/**", "services/**"]),
+    visibility = ["//visibility:public"]
+)
+
 antlr4(
     name = "graql-java",
     srcs = glob(["src/graql/grammar/*.g4"]),
@@ -88,12 +93,6 @@ java_library(
 
 )
 
-deploy_maven_jar(
-    name = "deploy-maven-jar",
-    targets = [":server"],
-    version_file = "//:VERSION",
-)
-
 java_binary(
     name = "server-binary",
     main_class = "grakn.core.daemon.GraknDaemon",
@@ -102,6 +101,12 @@ java_binary(
         "//server"
     ],
     visibility = ["//:__pkg__"],
+)
+
+deploy_maven_jar(
+    name = "deploy-maven-jar",
+    targets = [":server"],
+    version_file = "//:VERSION",
 )
 
 genrule(
@@ -113,15 +118,4 @@ genrule(
     outs = ["//server:dist/grakn-core-server.zip"],
     cmd  = "$(location distribution.sh) $(location //server:dist/grakn-core-server.zip) $(location //:grakn) $(location services/grakn/grakn-core-ascii.txt) $(location server-binary_deploy.jar) $(location //server:conf/grakn.properties) $(location //server:conf/logback.xml) $(location //server:services/cassandra/logback.xml) $(location //server:services/cassandra/cassandra.yaml)",
     tools = ["distribution.sh"]
-)
-
-exports_files(
-    glob(["conf/**", "services/**"]),
-    visibility = ["//visibility:public"]
-)
-
-filegroup(
-    name = "grakn-properties",
-    srcs = ["conf/grakn.properties"],
-    visibility = ["//visibility:public"]
 )

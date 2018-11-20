@@ -18,14 +18,25 @@
 
 package grakn.core.util;
 
+import grakn.core.graql.concept.Attribute;
+import grakn.core.graql.concept.EntityType;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.Thing;
+import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.QueryBuilder;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -33,6 +44,7 @@ import static org.junit.Assert.assertTrue;
  * Helper methods for writing tests for Graql
  *
  */
+@SuppressWarnings("CheckReturnValue")
 public class GraqlTestUtil {
 
     public static void assertExists(Transaction tx, Pattern... patterns) {
@@ -65,5 +77,40 @@ public class GraqlTestUtil {
 
     public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
         assertCollectionsEqual(q1.execute(), q2.execute());
+    }
+
+    public static void loadFromFile(String gqlPath, String file, Transaction tx) {
+        try {
+            System.out.println("Loading... " + gqlPath + file);
+            InputStream inputStream = GraqlTestUtil.class.getClassLoader().getResourceAsStream(gqlPath + file);
+            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
+            tx.graql().parser().parseList(s).forEach(q -> q.execute());
+        } catch (Exception e) {
+            System.err.println(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void loadFromFileAndCommit(String gqlPath, String file, Session session) {
+        Transaction tx = session.transaction(Transaction.Type.WRITE);
+        loadFromFile(gqlPath, file, tx);
+        tx.commit();
+    }
+
+
+    public static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
+        Thing inst = type.create();
+        Attribute attributeInstance = tx.getAttributeType(key.getValue()).create(id);
+        inst.has(attributeInstance);
+        return inst;
+    }
+
+    public static Thing getInstance(Transaction tx, String id){
+        Set<Thing> things = tx.getAttributesByValue(id)
+                .stream().flatMap(Attribute::owners).collect(toSet());
+        if (things.size() != 1) {
+            throw new IllegalStateException("Multiple things with given resource value");
+        }
+        return things.iterator().next();
     }
 }

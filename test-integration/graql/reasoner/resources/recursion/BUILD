@@ -16,27 +16,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:__pkg__"])
+package(default_visibility = ["//test-integration/graql/reasoner:__subpackages__"])
 
-java_library(
-    name = "daemon",
-    srcs = glob(["**/*.java"]),
-    deps = [
-        # Package dependencies
-        "//daemon/executor:grakn-daemon-executor",
+filegroup(
+    name = "recursion-schemas",
+    srcs = [
+    "ancestor.gql",
+    "ancestor-friend.gql",
+    "reachability.gql",
+    "reachability-symmetric.gql",
+    "recursivity.gql",
+    "recursivity-rsg.gql",
+    "recursivity-sg.gql",
+    "recursivity-tc.gql",
+    "same-generation.gql",
+    "transitivity.gql"
+    ]
+)
 
-        # Grakn Core dependencies
-        "//common",
+filegroup(
+    name = "nguyen",
+    srcs = ["nguyen.gql"]
+)
 
-        # External dependencies
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
-    ],
-    resources = ["LICENSE"],
-    resource_strip_prefix = "daemon",
-    visibility = ["//server:__pkg__"],
+filegroup(
+    name = "tail-recursion",
+    srcs = ["tail-recursion.gql"]
 )
