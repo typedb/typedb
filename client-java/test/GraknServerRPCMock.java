@@ -60,7 +60,7 @@ import static org.mockito.Mockito.mock;
  * </p>
  *
  */
-public final class ServerRPCMock extends ExternalResource {
+public final class GraknServerRPCMock extends ExternalResource {
 
     private final ServerIteratorsMock rpcIterators = new ServerIteratorsMock();
 
@@ -73,7 +73,7 @@ public final class ServerRPCMock extends ExternalResource {
     @SuppressWarnings("unchecked") // safe because mock
     private StreamObserver<Transaction.Req> requestListener = mock(StreamObserver.class);
 
-    public ServerRPCMock(SessionServiceGrpc.SessionServiceImplBase sessionService, KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService) {
+    public GraknServerRPCMock(SessionServiceGrpc.SessionServiceImplBase sessionService, KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService) {
         this.sessionService = sessionService;
         this.keyspaceService = keyspaceService;
     }

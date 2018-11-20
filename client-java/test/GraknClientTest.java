@@ -74,7 +74,7 @@ import static org.mockito.Mockito.verify;
 /**
  * Unit Tests for {@link grakn.core.client.Grakn.Transaction}
  */
-public class TransactionTest {
+public class GraknClientTest {
 
     private final static SessionServiceGrpc.SessionServiceImplBase sessionService = mock(SessionServiceGrpc.SessionServiceImplBase.class);
     private final static KeyspaceServiceGrpc.KeyspaceServiceImplBase keyspaceService = mock(KeyspaceServiceGrpc.KeyspaceServiceImplBase.class);
@@ -87,7 +87,7 @@ public class TransactionTest {
     public final GrpcServerRule serverRule = new GrpcServerRule().directExecutor();
 
     @Rule
-    public final ServerRPCMock server = new ServerRPCMock(sessionService, keyspaceService);
+    public final GraknServerRPCMock server = new GraknServerRPCMock(sessionService, keyspaceService);
 
     private static final Keyspace KEYSPACE = Keyspace.of("grakn");
     private static final String V123 = "V123";
