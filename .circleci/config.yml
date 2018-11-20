@@ -63,13 +63,14 @@ jobs:
     - *install_bazel
     - run: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
 
-  test-integration-reasoner-recursion:
+  test-integration-reasoner-other:
     machine: true
     working_directory: ~/grakn
     steps:
     - checkout
     - *install_bazel
     - run: bazel test //test-integration/graql/reasoner:recursion-it --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
 
   test-integration-reasoner-components:
     machine: true
@@ -225,7 +226,7 @@ workflows:
       - test-unit
       - test-integration
       - test-integration-reasoner
-      - test-integration-reasoner-recursion
+      - test-integration-reasoner-other
       - test-integration-reasoner-components
       - test-integration-analytics
       - test-end-to-end
