@@ -101,10 +101,17 @@ public abstract class Binary extends Atom {
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         Binary that = (Binary) obj;
-        return  (this.isUserDefined() == that.isUserDefined())
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId())
+        return equivalenceBase(that)
                 && this.predicateBindingsEquivalent(that, AtomicEquivalence.AlphaEquivalence);
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Binary that = (Binary) obj;
+        return equivalenceBase(that)
+                && this.predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
     }
 
     @Override
@@ -115,19 +122,15 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        Binary that = (Binary) obj;
-        return  (this.isUserDefined() == that.isUserDefined())
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId())
-                && this.predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
-    }
-
-    @Override
     public int structuralEquivalenceHashCode() {
         return alphaEquivalenceHashCode();
+    }
+
+    private boolean equivalenceBase(Binary that){
+        return (this.isUserDefined() == that.isUserDefined())
+                && (this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName())
+                && this.isDirect() == that.isDirect()
+                && Objects.equals(this.getTypeId(), that.getTypeId());
     }
 
     boolean predicateBindingsEquivalent(Binary that, AtomicEquivalence equiv) {

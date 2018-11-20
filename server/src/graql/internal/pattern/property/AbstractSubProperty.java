@@ -99,7 +99,7 @@ public abstract class AbstractSubProperty extends AbstractVarProperty implements
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.superType();
-        Var typeVariable = typeVar.var().asUserDefined();
+        Var typeVariable = typeVar.var();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return SubAtom.create(varName, typeVariable, predicateId, parent);
