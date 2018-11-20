@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.client;
+package grakn.core.client.test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import grakn.core.client.Grakn;
 import grakn.core.graql.AggregateQuery;
 import grakn.core.graql.DeleteQuery;
 import grakn.core.graql.GetQuery;
@@ -112,7 +113,7 @@ import static org.junit.Assert.assertTrue;
  * Integration Tests for {@link grakn.core.server.Server} RPC
  */
 @SuppressWarnings("CheckReturnValue")
-public class RemoteQueryIT {
+public class GraknClientIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();

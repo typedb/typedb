@@ -16,10 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.client;
+package grakn.core.client.concept.test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.client.Grakn;
 import grakn.core.graql.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
@@ -33,7 +34,6 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Thing;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Transaction;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -143,10 +143,10 @@ public class RemoteConceptIT {
     @Before
     public void setUp() {
         // move session construction to setupClass
-        String randomKeyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+        String randomKeyspace = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         session = new Grakn(server.grpcUri().toString()).session(randomKeyspace);
 
-        tx = session.transaction(Transaction.Type.WRITE);
+        tx = session.transaction(Grakn.Transaction.Type.WRITE);
 
         // Attribute Types
         email = tx.putAttributeType(EMAIL, DataType.STRING).regex(EMAIL_REGEX);
@@ -283,16 +283,17 @@ public class RemoteConceptIT {
     }
 
     @Test
-    public void whenCallingGetWhenOnMetaRule_ReturnNull(){
+    public void whenCallingGetWhenOnMetaRule_ReturnNull() {
         assertNull(metaRule.when());
     }
 
     @Test
-    public void whenCallingGetThenOnMetaRule_ReturnNull(){
+    public void whenCallingGetThenOnMetaRule_ReturnNull() {
         assertNull(metaRule.then());
     }
 
-    @Ignore @Test //TODO: build a more expressive dataset to test this
+    @Ignore
+    @Test //TODO: build a more expressive dataset to test this
     public void whenCallingIsInferred_GetTheExpectedResult() {
         //assertTrue(thing.isInferred());
         //assertFalse(thing.isInferred());
