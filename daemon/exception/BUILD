@@ -19,7 +19,7 @@
 package(default_visibility = ["//daemon:__subpackages__"])
 
 java_library(
-    name = "grakn-daemon-exception",
+    name = "exception",
     srcs = glob(["**/*.java"]),
     deps = [
         # Grakn Core dependencies

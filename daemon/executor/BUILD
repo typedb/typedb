@@ -23,7 +23,7 @@ java_library(
     srcs = glob(["**/*.java"]),
     deps = [
         # Package dependencies
-        "//daemon/exception:grakn-daemon-exception",
+        "//daemon/exception:exception",
 
         # Grakn Core dependencies
         "//common",
