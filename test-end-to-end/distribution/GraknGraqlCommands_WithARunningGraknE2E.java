@@ -30,8 +30,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknStopped;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
@@ -55,15 +55,15 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
         assertZipExists();
         unzipGrakn();
-        assertGraknStopped();
+        assertGraknIsNotRunning();
         commandExecutor.command("./grakn", "server", "start").execute();
-        assertGraknRunning();
+        assertGraknIsRunning();
     }
 
     @AfterClass
     public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
         commandExecutor.command("./grakn", "server", "stop").execute();
-        assertGraknStopped();
+        assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
 
@@ -71,26 +71,14 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
      * test 'graql console' and 'define person sub entity;' from inside the console
      */
     @Test
-    public void graql_shouldBeAbleToExecuteQuery_fromRepl() throws IOException, InterruptedException, TimeoutException {
+    public void graql_shouldBeAbleToExecuteQuery_fromConsoleSession() throws IOException, InterruptedException, TimeoutException {
         String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
         String graql = "define person sub entity; insert $x isa person; match $x isa person; get;\n";
 
         String output = commandExecutor
+                .command("./grakn", "console", "-k", randomKeyspace)
                 .redirectInput(new ByteArrayInputStream(graql.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn", "console", "-k", randomKeyspace).execute().outputUTF8();
-
-        assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
-    }
-
-    /**
-     * test "graql console -e 'define person sub entity;"
-     */
-    @Test
-    public void graql_shouldBeAbleToExecuteQuery_fromArgument() throws IOException, InterruptedException, TimeoutException {
-        String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
-        String graql = "define person sub entity; insert $x isa person; match $x isa person; get;";
-
-        String output = commandExecutor.command("./grakn", "console", "-k", randomKeyspace, "-e", graql).execute().outputUTF8();
+                .execute().outputUTF8();
 
         assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
     }
