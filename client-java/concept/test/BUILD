@@ -21,7 +21,7 @@ package(default_visibility = ["//visibility:__pkg__"])
 java_test(
     name = "remote-concept-it",
     srcs = ["RemoteConceptIT.java"],
-    test_class = "grakn.core.client.RemoteConceptIT",
+    test_class = "grakn.core.client.concept.test.RemoteConceptIT",
     deps = [
         # Grakn Core dependencies
         "//client-java",
