@@ -33,7 +33,7 @@ jobs:
     - checkout
     - *install_bazel
     - run: bazel test //client-java/... --test_size_filters=small
-    - run: bazel test //client-java/... --test_size_filters=medium,large,enourmous
+    - run: bazel test //client-java/... --test_size_filters=medium,large,enormous
 
   client-nodejs:
     machine: true
