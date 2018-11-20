@@ -88,7 +88,6 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - run: bazel run @nodejs//:npm install
     - run: bazel test //workbase:tests-unit
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
@@ -98,7 +97,7 @@ jobs:
     - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: Xvfb :99 &
     - run: export DISPLAY=:99
-    - run: bazel test -s --test_output=streamed //workbase:tests-e2e
+    - run: bazel test --test_output=streamed //workbase:tests-e2e
 
   test-integration:
     machine: true
