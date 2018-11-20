@@ -582,7 +582,7 @@ public class ReasoningIT {
 
                 assertCollectionsEqual("Rules are not matched correctly!", variants, inferredRelations);
 
-                List<ConceptMap> derivedRPTriples = qb.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;").execute();
+                List<ConceptMap> derivedRPTriples = iqb.<GetQuery>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;").execute();
                 assertEquals("Rule body is not rewritten correctly!", 2, derivedRPTriples.size());
             }
         }
