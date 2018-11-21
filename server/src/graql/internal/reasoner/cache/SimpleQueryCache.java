@@ -22,7 +22,7 @@ import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.query.QueryAnswers;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;

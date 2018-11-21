@@ -34,7 +34,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.pattern.property.VarPropertyInternal;
-import grakn.core.graql.internal.query.Queries;
+import grakn.core.graql.query.Queries;
 import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.ImmutableMultiset;

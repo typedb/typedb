@@ -36,7 +36,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutorImpl;
-import grakn.core.graql.internal.query.QueryBuilderImpl;
+import grakn.core.graql.query.QueryBuilderImpl;
 import grakn.core.server.QueryExecutor;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
