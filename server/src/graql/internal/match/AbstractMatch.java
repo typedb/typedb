@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.query.match;
+package grakn.core.graql.internal.match;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.Aggregate;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.query.executor;
+package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;

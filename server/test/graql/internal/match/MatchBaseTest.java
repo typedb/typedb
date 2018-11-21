@@ -16,9 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.query.match;
+package grakn.core.graql.internal.match;
 
-import grakn.core.server.Transaction;
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -26,31 +28,31 @@ import org.junit.Test;
 import static grakn.core.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
-public class MatchKBTest {
+public class MatchBaseTest {
 
-    private final AbstractMatch query =
-            new MatchBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
+    private final Conjunction<PatternAdmin> pattern1 = Patterns.conjunction(Sets.newHashSet(
+            var("x").isa("movie").admin(),
+            var().rel("x").rel("y").admin()
+    ));
+
+    private final Conjunction<PatternAdmin> pattern2 = Patterns.conjunction(Sets.newHashSet(
+            var("x").isa("movie").has("title", var("y")).admin()
+    ));
 
     @Test
-    public void matchesContainingTheSameGraphAndMatchBaseAreEqual() {
-        Transaction graph = mock(Transaction.class);
-
-        MatchTx query1 = new MatchTx(graph, query);
-        MatchTx query2 = new MatchTx(graph, query);
+    public void matchesContainingTheSamePatternAreEqual() {
+        MatchBase query1 = new MatchBase(pattern1);
+        MatchBase query2 = new MatchBase(pattern1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
     }
 
     @Test
-    public void matchesContainingDifferentGraphsAreNotEqual() {
-        Transaction graph1 = mock(Transaction.class);
-        Transaction graph2 = mock(Transaction.class);
-
-        MatchTx query1 = new MatchTx(graph1, query);
-        MatchTx query2 = new MatchTx(graph2, query);
+    public void matchesContainingDifferentPatternsAreNotEqual() {
+        MatchBase query1 = new MatchBase(pattern1);
+        MatchBase query2 = new MatchBase(pattern2);
 
         assertNotEquals(query1, query2);
     }

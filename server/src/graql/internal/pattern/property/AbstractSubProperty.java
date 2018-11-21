@@ -26,7 +26,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.query.executor.ConceptBuilder;
+import grakn.core.graql.internal.executor.ConceptBuilder;
 import grakn.core.graql.internal.reasoner.atom.binary.SubAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;

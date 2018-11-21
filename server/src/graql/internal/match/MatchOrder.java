@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.query.match;
+package grakn.core.graql.internal.match;
 
 import grakn.core.graql.Match;
 import grakn.core.graql.answer.ConceptMap;

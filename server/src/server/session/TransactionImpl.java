@@ -91,7 +91,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class TransactionImpl<G extends Graph> implements Transaction {
     final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "grakn.core.graql.internal.query.QueryBuilderImpl";
-    private static final String QUERY_EXECUTOR_CLASS_NAME = "grakn.core.graql.internal.query.executor.QueryExecutorImpl";
+    private static final String QUERY_EXECUTOR_CLASS_NAME = "QueryExecutorImpl";
 
     //----------------------------- Shared Variables
     private final SessionImpl session;

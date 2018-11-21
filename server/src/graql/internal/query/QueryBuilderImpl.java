@@ -35,7 +35,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.internal.parser.QueryParserImpl;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.internal.query.match.MatchBase;
+import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.ImmutableList;

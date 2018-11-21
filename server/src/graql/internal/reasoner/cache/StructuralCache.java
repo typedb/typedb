@@ -25,7 +25,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.internal.query.match.MatchBase;
+import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
