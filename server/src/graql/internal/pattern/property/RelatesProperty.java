@@ -153,7 +153,7 @@ public abstract class RelatesProperty extends AbstractVarProperty {
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
         VarPatternAdmin roleVar = this.role();
-        Var roleVariable = roleVar.var().asUserDefined();
+        Var roleVariable = roleVar.var();
         IdPredicate predicate = getIdPredicate(roleVariable, roleVar, vars, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         return RelatesAtom.create(varName, roleVariable, predicateId, parent);

@@ -29,16 +29,9 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Static class defining different equivalence comparisons for reasoner queries ({@link ReasonerQuery}):
- *
- * - Equality - two queries are equal if they contain the same {@link Atomic}s of which all corresponding pairs are equal.
- *
- * - Alpha equivalence - two queries are alpha-equivalent if they are equal up to the choice of free variables.
- *
- * - Structural equivalence - two queries are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates).
+ * Static class defining different equivalence comparisons for reasoner queries ({@link ReasonerQuery}).
  *
  * </p>
- *
  *
  */
 public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery> {
@@ -57,6 +50,9 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         return AtomicEquivalence.equivalenceHash(q.getAtoms(atomType), equiv);
     }
 
+    /**
+     * Equality - two queries are equal if they contain the same {@link Atomic}s of which all corresponding pairs are equal.
+     */
     public final static ReasonerQueryEquivalence Equality = new ReasonerQueryEquivalence(){
 
         @Override
@@ -73,6 +69,10 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         }
     };
 
+    /**
+     * Alpha equivalence - two queries are alpha-equivalent if they are equal up to the choice of free variables.
+     * NB: two queries are alpha-equivalent iff their answer sets are equal.
+     */
     public final static ReasonerQueryEquivalence AlphaEquivalence = new ReasonerQueryEquivalence(){
 
         @Override
@@ -89,6 +89,10 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
         }
     };
 
+    /**
+     * Structural equivalence - two queries are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates).
+     * * NB: two queries are structurally-equivalent iff after id transformation, their answer sets are equal.
+     */
     public final static ReasonerQueryEquivalence StructuralEquivalence = new ReasonerQueryEquivalence(){
 
         @Override
