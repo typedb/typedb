@@ -847,11 +847,7 @@ public class AtomicQueryUnificationIT {
     public void testUnification_differentTypeVariants_EXACT(){
         try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             List<String> qs = differentTypeVariants.patterns();
-            subListExcluding(qs, Lists.newArrayList(3, 4, 7, 8)).forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
-            exactUnification(qs.get(3), qs, Collections.singletonList(qs.get(4)), tx);
-            exactUnification(qs.get(4), qs, Collections.singletonList(qs.get(3)), tx);
-            exactUnification(qs.get(7), qs, subList(qs, Lists.newArrayList(8)), tx);
-            exactUnification(qs.get(8), qs, subList(qs, Lists.newArrayList(7)), tx);
+            qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
         }
     }
 
@@ -916,8 +912,8 @@ public class AtomicQueryUnificationIT {
             exactUnification(qs.get(21), qs, new ArrayList<>(), tx);
 
             exactUnification(qs.get(22), qs, new ArrayList<>(), tx);
-            exactUnification(qs.get(23), qs, Collections.singletonList(qs.get(24)), tx);
-            exactUnification(qs.get(24), qs, Collections.singletonList(qs.get(23)), tx);
+            exactUnification(qs.get(23), qs, new ArrayList<>(), tx);
+            exactUnification(qs.get(24), qs, new ArrayList<>(), tx);
 
             exactUnification(qs.get(25), qs, subList(qs, Lists.newArrayList(26)), tx);
             exactUnification(qs.get(26), qs, subList(qs, Lists.newArrayList(25)), tx);

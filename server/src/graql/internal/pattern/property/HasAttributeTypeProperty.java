@@ -180,7 +180,7 @@ public abstract class HasAttributeTypeProperty extends AbstractVarProperty imple
         Var varName = var.var().asUserDefined();
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
-        Var predicateVar = var().asUserDefined();
+        Var predicateVar = var();
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         ConceptId predicateId = schemaConcept != null? schemaConcept.id() : null;
         //isa part
