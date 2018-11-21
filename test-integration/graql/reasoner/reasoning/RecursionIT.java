@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner;
+package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.graql.GetQuery;
 import grakn.core.graql.QueryBuilder;

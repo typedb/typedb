@@ -58,27 +58,3 @@ deploy_maven_jar(
     targets = [":client-java"],
     version_file = "//:VERSION",
 )
-
-java_test(
-    name = "transaction-test",
-    srcs = glob(["test/**/*.java"]),
-    test_class = "grakn.core.client.test.TransactionTest",
-    deps = [
-        ":client-java",
-        "//common",
-        "//server",
-        "//protocol:protocol-java",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-testing",
-        "//dependencies/maven/artifacts/io/grpc:grpc-stub",
-        "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-    ],
-    size = "small",
-)
-
-test_suite(
-    name = "test-unit",
-    tags = ["small"],
-)

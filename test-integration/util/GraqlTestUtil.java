@@ -75,6 +75,10 @@ public class GraqlTestUtil {
         assertTrue(CollectionUtils.isEqualCollection(c1, c2));
     }
 
+    public static <T> void assertCollectionsEqual(String msg, Collection<T> c1, Collection<T> c2) {
+        assertTrue(msg, CollectionUtils.isEqualCollection(c1, c2));
+    }
+
     public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
         assertCollectionsEqual(q1.execute(), q2.execute());
     }

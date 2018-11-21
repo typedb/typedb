@@ -16,13 +16,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//daemon:__subpackages__"])
+package(default_visibility = ["//visibility:__pkg__"])
 
-java_library(
-    name = "exception",
-    srcs = glob(["**/*.java"]),
+java_test(
+    name = "remote-concept-it",
+    srcs = ["RemoteConceptIT.java"],
+    test_class = "grakn.core.client.concept.test.RemoteConceptIT",
     deps = [
         # Grakn Core dependencies
-        "//common",
-    ]
+        "//client-java",
+        "//server", # NEEDS TO GO
+
+        "//test-integration/rule:grakn-test-server",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/guava:guava"
+    ],
+    size = "large",
+    classpath_resources = ["//test-integration/resources:logback-test"]
 )
+
+

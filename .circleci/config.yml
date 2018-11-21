@@ -26,15 +26,45 @@ jobs:
           paths:
             - .
 
-  test-unit:
+  client-java:
     machine: true
     working_directory: ~/grakn
     steps:
-      - checkout
-      - *install_bazel
-      - run: bazel test //common/... --test_output=errors
-      - run: bazel test //server/... --test_output=errors
-      - run: bazel test //client-java/... --test_output=errors
+    - checkout
+    - *install_bazel
+    - run: bazel test //client-java/... --test_size_filters=small
+    - run: bazel test //client-java/... --test_size_filters=medium,large,enormous
+
+  client-nodejs:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel build //:distribution --sandbox_debug
+    - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+    - run: bazel test //client-nodejs:test-integration --test_output=streamed
+
+  client-python:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel build //:distribution --sandbox_debug
+    - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+    - run: bazel test //client_python:test_integration --test_output=streamed
+
+  common:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //common/...
 
   console:
     machine: true
@@ -44,16 +74,39 @@ jobs:
       - *install_bazel
       - run: bazel test //console/...
 
+  server:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //server/... --test_output=errors
+
+  workbase:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+    - checkout
+    - *install_bazel
+    - run: bazel test //workbase:tests-unit
+    - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
+    - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
+    - run: bazel build //:distribution --sandbox_debug
+    - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
+    - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
+    - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
+    - run: Xvfb :99 &
+    - run: export DISPLAY=:99
+    - run: bazel test --test_output=streamed //workbase:tests-e2e
+
   test-integration:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
       - *install_bazel
-      - run: bazel test //test-integration/client/... --test_output=errors
       - run: bazel test //test-integration/server/... --test_output=errors
       - run: bazel test //test-integration/graql/internal/... --test_output=errors
-    # - run: bazel test //test-integration/graql/shell/... --test_output=errors --TODO re add shell tests as soon as fixed
 
   test-integration-reasoner:
     machine: true
@@ -62,15 +115,15 @@ jobs:
     - checkout
     - *install_bazel
     - run: bazel test //test-integration/graql/reasoner:reasoning-it --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
 
-  test-integration-reasoner-other:
+  test-integration-reasoner-general:
     machine: true
     working_directory: ~/grakn
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //test-integration/graql/reasoner:recursion-it --test_output=errors
-    - run: bazel test //test-integration/graql/reasoner:geo-inference-it --test_output=errors
+    - run: bazel test //test-integration/graql/reasoner/reasoning/... --test_output=errors
 
   test-integration-reasoner-components:
     machine: true
@@ -99,54 +152,6 @@ jobs:
       - *install_bazel
       - run: bazel build //:distribution --sandbox_debug
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
-
-  client-nodejs-e2e:
-      machine: true
-      working_directory: ~/grakn
-      steps:
-        - checkout
-        - *install_bazel
-        - run: bazel build //:distribution --sandbox_debug
-        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
-        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-        - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-        - run: bazel test //client-nodejs:test-integration --test_output=streamed
-
-  client-python-e2e:
-      machine: true
-      working_directory: ~/grakn
-      steps:
-        - checkout
-        - *install_bazel
-        - run: bazel build //:distribution --sandbox_debug
-        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
-        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-        - run: bazel test //client_python:test_integration --test_output=streamed
-
-  workbase-unit-tests:
-      machine: true
-      working_directory: ~/grakn
-      steps:
-        - checkout
-        - *install_bazel
-        - run: bazel run @nodejs//:npm install
-        - run: bazel test //workbase:tests-unit
-
-  workbase-e2e:
-      machine: true
-      working_directory: ~/grakn
-      steps:
-        - checkout
-        - *install_bazel
-        - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
-        - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
-        - run: bazel build //:distribution --sandbox_debug
-        - run: unzip bazel-genfiles/dist/grakn-core-all.zip -d bazel-genfiles/dist/
-        - run: nohup bazel-genfiles/dist/grakn-core-all/grakn server start
-        - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
-        - run: Xvfb :99 &
-        - run: export DISPLAY=:99
-        - run: bazel test -s --test_output=streamed //workbase:tests-e2e
 
   build-workbase-linux:
       machine: true
@@ -212,27 +217,22 @@ jobs:
 
 workflows:
   version: 2
-  run-all-tests:
+  grakn-core-ci:
     jobs:
-      - build:
-          filters:
-            tags:
-              ignore: /.*/
-      - workbase-unit-tests:
-          filters:
-            tags:
-              ignore: /.*/
+      - build
+      - client-java
+      - client-nodejs
+      - client-python
+      - common
       - console
-      - test-unit
+      - server
+      - workbase
       - test-integration
       - test-integration-reasoner
-      - test-integration-reasoner-other
+      - test-integration-reasoner-general
       - test-integration-reasoner-components
       - test-integration-analytics
       - test-end-to-end
-      - client-nodejs-e2e
-      - client-python-e2e
-      - workbase-e2e
 
   build-and-deploy:
     jobs:

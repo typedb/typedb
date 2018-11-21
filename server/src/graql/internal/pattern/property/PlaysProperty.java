@@ -114,7 +114,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.role();
-        Var typeVariable = typeVar.var().asUserDefined();
+        Var typeVariable = typeVar.var();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
         ConceptId predicateId = predicate == null? null : predicate.getPredicate();
         return PlaysAtom.create(varName, typeVariable, predicateId, parent);

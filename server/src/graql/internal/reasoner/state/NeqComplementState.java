@@ -24,6 +24,7 @@ import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,9 +50,9 @@ import java.util.stream.Collectors;
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
-public class NeqComplementState extends AtomicState {
+public class NeqComplementState extends QueryStateBase {
 
-    private final ResolutionState complementState;
+    private final AtomicState complementState;
     private boolean visited = false;
 
     private final ConceptMap neqPredicateSub;
@@ -63,13 +64,13 @@ public class NeqComplementState extends AtomicState {
                        QueryStateBase parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        SimpleQueryCache<ReasonerAtomicQuery> cache) {
-        super(q, sub, u, parent, subGoals, cache);
-
+        super(sub, u, parent, subGoals, cache);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(q, sub);
         this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        this.neqPredicateSub = getQuery().getSubstitution().merge(sub)
+        this.neqPredicateSub = query.getSubstitution().merge(sub)
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        complementState = getQuery().positive().subGoal(sub, u, this, subGoals, cache);
+        this.complementState = new AtomicState(query.positive(), sub, u, this, subGoals, cache);
     }
 
     @Override
@@ -81,6 +82,11 @@ public class NeqComplementState extends AtomicState {
         return isNeqSatisfied?
                 new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
                 null;
+    }
+
+    @Override
+    ConceptMap consumeAnswer(AnswerState state) {
+        return complementState.consumeAnswer(state);
     }
 
     @Override
