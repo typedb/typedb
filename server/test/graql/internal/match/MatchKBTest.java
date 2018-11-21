@@ -18,12 +18,9 @@
 
 package grakn.core.graql.internal.match;
 
-import grakn.core.graql.internal.match.AbstractMatch;
-import grakn.core.graql.internal.match.MatchBase;
-import grakn.core.graql.internal.match.MatchTx;
-import grakn.core.server.Transaction;
-import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
+import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.server.Transaction;
 import org.junit.Test;
 
 import static grakn.core.graql.Graql.var;
