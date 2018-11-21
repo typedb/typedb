@@ -25,12 +25,14 @@ SchemaHandler.prototype.defineRole = async function define({ label, superType })
   const type = await this.tx.putRole(label);
   const directSuper = await this.tx.getSchemaConcept(superType);
   await type.sup(directSuper);
+  return type;
 };
 
 SchemaHandler.prototype.defineRelationshipType = async function define({ label, superType }) {
   const type = await this.tx.putRelationshipType(label);
   const directSuper = await this.tx.getSchemaConcept(superType);
   await type.sup(directSuper);
+  return type;
 };
 
 SchemaHandler.prototype.defineAttributeType = async function define({ label, superType, dataType, inheritDatatype }) {
@@ -47,41 +49,41 @@ SchemaHandler.prototype.deleteType = async function deleteType({ label }) {
   return type.id;
 };
 
-
-SchemaHandler.prototype.addAttribute = async function addAttribute({ label, typeLabel }) {
+SchemaHandler.prototype.addAttribute = async function addAttribute({ label, attributeLabel }) {
   const type = await this.tx.getSchemaConcept(label);
-  const attribute = await this.tx.getSchemaConcept(typeLabel);
-  return type.attribute(attribute);
+  const attribute = await this.tx.getSchemaConcept(attributeLabel);
+  return type.has(attribute);
 };
 
-SchemaHandler.prototype.deleteAttribute = async function deleteAttribute({ label, attributeName }) {
+SchemaHandler.prototype.deleteAttribute = async function deleteAttribute({ label, attributeLabel }) {
   const type = await this.tx.getSchemaConcept(label);
-  const attribute = await this.tx.getSchemaConcept(attributeName);
-  return type.removeAttribute(attribute);
+  const attribute = await this.tx.getSchemaConcept(attributeLabel);
+  return type.unhas(attribute);
 };
 
-SchemaHandler.prototype.addPlaysRole = async function addPlaysRole({ label, typeLabel }) {
+SchemaHandler.prototype.addPlaysRole = async function addPlaysRole({ label, roleLabel }) {
   const type = await this.tx.getSchemaConcept(label);
-  const role = await this.tx.getSchemaConcept(typeLabel);
+  const role = await this.tx.getSchemaConcept(roleLabel);
   return type.plays(role);
 };
 
-SchemaHandler.prototype.deletePlaysRole = async function deletePlaysRole({ label, roleName }) {
+SchemaHandler.prototype.deletePlaysRole = async function deletePlaysRole({ label, roleLabel }) {
   const type = await this.tx.getSchemaConcept(label);
-  const role = await this.tx.getSchemaConcept(roleName);
-  return type.deletePlays(role);
+  const role = await this.tx.getSchemaConcept(roleLabel);
+  return type.unplay(role);
 };
 
-SchemaHandler.prototype.addRelatesRole = async function addRelatesRole({ label, typeLabel }) {
+SchemaHandler.prototype.addRelatesRole = async function addRelatesRole({ label, roleLabel }) {
   const relationshipType = await this.tx.getSchemaConcept(label);
-  const role = await this.tx.getSchemaConcept(typeLabel);
+  const role = await this.tx.getSchemaConcept(roleLabel);
   return relationshipType.relates(role);
 };
 
-SchemaHandler.prototype.deleteRelatesRole = async function deleteRelatesRole({ label, roleName }) {
+SchemaHandler.prototype.deleteRelatesRole = async function deleteRelatesRole({ label, roleLabel }) {
   const relationshipType = await this.tx.getSchemaConcept(label);
-  const role = await this.tx.getSchemaConcept(roleName);
-  return relationshipType.deleteRelates(role);
+  const role = await this.tx.getSchemaConcept(roleLabel);
+  await relationshipType.unrelate(role);
+  return role.delete();
 };
 
 export default SchemaHandler;

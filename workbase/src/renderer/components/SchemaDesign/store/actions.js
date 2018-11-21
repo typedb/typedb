@@ -21,7 +21,7 @@ import {
 import Grakn from 'grakn';
 import SchemaHandler from '../SchemaHandler';
 import {
-  META_CONCEPTS,
+  // META_CONCEPTS,
   computeSubConcepts,
   relationshipTypesOutboundEdges,
   updateNodePositions,
@@ -30,10 +30,13 @@ import {
 } from '../SchemaUtils';
 import SchemaCanvasEventsHandler from '../SchemaCanvasEventsHandler';
 
+const META_CONCEPTS = new Set(['entity', 'relationship', 'attribute', 'role']);
+
+
 export default {
 
-  [OPEN_GRAKN_TX]({ state, commit }) {
-    const graknTx = state.graknSession.transaction(Grakn.txType.WRITE);
+  async [OPEN_GRAKN_TX]({ state, commit }) {
+    const graknTx = await state.graknSession.transaction(Grakn.txType.WRITE);
     commit('setSchemaHandler', new SchemaHandler(graknTx));
     return graknTx;
   },
@@ -104,32 +107,38 @@ export default {
     commit('loadingSchema', false);
   },
 
-  async [COMMIT_TX](graknTx) {
+  async [COMMIT_TX](store, graknTx) {
     return graknTx.commit();
   },
 
   async [DEFINE_ENTITY_TYPE]({ state, dispatch }, payload) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
+    let graknTx = await dispatch(OPEN_GRAKN_TX);
+
     await state.schemaHandler.defineEntityType(payload);
 
     dispatch(COMMIT_TX, graknTx).then(async () => {
+      graknTx = await dispatch(OPEN_GRAKN_TX);
+
       const type = await graknTx.getSchemaConcept(payload.label);
       const sup = await type.sup();
-      const supLabel = await sup.getLabel();
+      const supLabel = await sup.label();
       let edges;
-
       // If the supertype is a concept defined by user
       // we just draw the isa edge instead of all edges from relationshipTypes
       if (!META_CONCEPTS.has(supLabel)) {
         edges = [{ from: type.id, to: sup.id, label: 'isa' }];
       } else {
-        edges = await typeInboundEdges(type, this.visFacade);
+        edges = await typeInboundEdges(type, state.visFacade);
       }
-      const label = await type.getLabel();
+      const label = await type.label();
+
       const nodes = [Object.assign(type, { label })];
+
       state.visFacade.addToCanvas({ nodes, edges });
     })
-      .catch((e) => { throw e; });
+      .catch((e) => {
+        throw e;
+      });
   },
 
   async [DEFINE_ROLE]({ state, dispatch }, payload) {
@@ -163,7 +172,7 @@ export default {
         edges = [{ from: type.id, to: sup.id, label: 'isa' }];
       } else {
         const relatesEdges = await relationshipTypesOutboundEdges([type]);
-        const plays = await typeInboundEdges(type, this.visFacade);
+        const plays = await typeInboundEdges(type, state.visFacade);
         edges = plays.concat(relatesEdges);
       }
       const nodes = [Object.assign(type, { label })];
@@ -171,6 +180,7 @@ export default {
     })
       .catch((e) => { throw e; });
   },
+
 
   async [DELETE_TYPE]({ state, dispatch, commit }, payload) {
     const graknTx = await dispatch(OPEN_GRAKN_TX);
