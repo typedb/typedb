@@ -1,7 +1,7 @@
 java_test(
     name = "aggregate-query-impl-test",
     test_class = "grakn.core.graql.query.AggregateQueryImplTest",
-    srcs = ["AggregateQueryImplTest.java"],
+    srcs = ["AggregateQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],

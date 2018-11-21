@@ -19,10 +19,10 @@
 
 package grakn.core.client.executor;
 
+import grakn.core.graql.query.AggregateQuery;
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
 import grakn.core.client.Grakn;
-import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;

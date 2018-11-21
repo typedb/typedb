@@ -18,10 +18,14 @@
 
 package grakn.core.graql.internal.parser;
 
+import com.google.common.collect.ImmutableMap;
+import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.grammar.GraqlBaseVisitor;
+import grakn.core.graql.grammar.GraqlParser;
+import grakn.core.graql.internal.util.StringUtil;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
@@ -35,15 +39,11 @@ import grakn.core.graql.query.Order;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Syntax;
 import grakn.core.graql.query.ValuePredicate;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
-import grakn.core.graql.grammar.GraqlBaseVisitor;
-import grakn.core.graql.grammar.GraqlParser;
-import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.query.Syntax;
-import grakn.core.graql.internal.util.StringUtil;
-import com.google.common.collect.ImmutableMap;
+import grakn.core.server.exception.GraqlQueryException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;

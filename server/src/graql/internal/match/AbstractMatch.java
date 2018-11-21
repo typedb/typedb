@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.match;
 
+import grakn.core.graql.query.AggregateQuery;
 import grakn.core.server.Transaction;
 import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;

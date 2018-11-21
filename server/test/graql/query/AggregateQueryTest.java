@@ -27,7 +27,7 @@ import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class AggregateQueryImplTest {
+public class AggregateQueryTest {
 
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
