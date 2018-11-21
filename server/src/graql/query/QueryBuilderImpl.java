@@ -18,18 +18,18 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.parser.QueryParserImpl;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -130,7 +130,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     public <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
-        return new ComputeQueryImpl<>(tx, method);
+        return new ComputeQuery<>(tx, method);
     }
 
     @Override

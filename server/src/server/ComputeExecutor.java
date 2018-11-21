@@ -18,8 +18,6 @@
 
 package grakn.core.server;
 
-import grakn.core.graql.query.ComputeQuery;
-
 import java.util.stream.Stream;
 
 /**

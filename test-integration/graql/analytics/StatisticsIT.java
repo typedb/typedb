@@ -18,8 +18,8 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import com.google.common.collect.Sets;
+import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -28,14 +28,14 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.InvalidKBException;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.answer.Value;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.graql.internal.Schema;
-import com.google.common.collect.Sets;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.server.exception.InvalidKBException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

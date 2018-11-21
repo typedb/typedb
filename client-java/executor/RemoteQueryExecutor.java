@@ -19,10 +19,11 @@
 
 package grakn.core.client.executor;
 
-import grakn.core.graql.query.AggregateQuery;
-import grakn.core.server.ComputeExecutor;
-import grakn.core.server.QueryExecutor;
 import grakn.core.client.Grakn;
+import grakn.core.graql.answer.Answer;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.query.AggregateQuery;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
@@ -30,9 +31,8 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.answer.ConceptSet;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.QueryExecutor;
 
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;

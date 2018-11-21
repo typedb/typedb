@@ -18,193 +18,523 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
+import grakn.core.graql.internal.util.StringConverter;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.answer.Answer;
 
 import javax.annotation.CheckReturnValue;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.query.Syntax.Char.COMMA_SPACE;
+import static grakn.core.graql.query.Syntax.Char.EQUAL;
+import static grakn.core.graql.query.Syntax.Char.QUOTE;
+import static grakn.core.graql.query.Syntax.Char.SEMICOLON;
+import static grakn.core.graql.query.Syntax.Char.SPACE;
+import static grakn.core.graql.query.Syntax.Char.SQUARE_CLOSE;
+import static grakn.core.graql.query.Syntax.Char.SQUARE_OPEN;
+import static grakn.core.graql.query.Syntax.Command.COMPUTE;
+import static grakn.core.graql.query.Syntax.Compute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.ALGORITHMS_DEFAULT;
+import static grakn.core.graql.query.Syntax.Compute.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.ARGUMENTS_DEFAULT;
 import static grakn.core.graql.query.Syntax.Compute.Algorithm;
 import static grakn.core.graql.query.Syntax.Compute.Argument;
+import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_REQUIRED;
+import static grakn.core.graql.query.Syntax.Compute.Condition;
+import static grakn.core.graql.query.Syntax.Compute.Condition.FROM;
+import static grakn.core.graql.query.Syntax.Compute.Condition.IN;
+import static grakn.core.graql.query.Syntax.Compute.Condition.OF;
+import static grakn.core.graql.query.Syntax.Compute.Condition.TO;
+import static grakn.core.graql.query.Syntax.Compute.Condition.USING;
+import static grakn.core.graql.query.Syntax.Compute.Condition.WHERE;
+import static grakn.core.graql.query.Syntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
 import static grakn.core.graql.query.Syntax.Compute.Method;
 import static grakn.core.graql.query.Syntax.Compute.Parameter;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.CONTAINS;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.K;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.MIN_K;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.SIZE;
+import static java.util.stream.Collectors.joining;
+
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  * @param <T> return type of ComputeQuery
  */
-public interface ComputeQuery<T extends Answer> extends Query<T> {
+public class ComputeQuery<T extends Answer> implements Query<T> {
 
-    /**
-     * @param tx the graph to execute the compute query on
-     * @return a ComputeQuery with the graph set
-     */
+    private Transaction tx;
+    private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
+
+    private Method method;
+    private boolean includeAttributes;
+
+    // All these condition properties need to start off as NULL, they will be initialised when the user provides input
+    private ConceptId fromID = null;
+    private ConceptId toID = null;
+    private Set<Label> ofTypes = null;
+    private Set<Label> inTypes = null;
+    private Algorithm algorithm = null;
+    private ArgumentsImpl arguments = null; // But arguments will also be set when where() is called for cluster/centrality
+
+    private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
+
+    public ComputeQuery(Transaction tx, Method<T> method) {
+        this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
+    }
+
+    public ComputeQuery(Transaction tx, Method method, boolean includeAttributes) {
+        this.method = method;
+        this.tx = tx;
+        this.includeAttributes = includeAttributes;
+    }
+
+    private Map<Condition, Supplier<Optional<?>>> setConditionsMap() {
+        Map<Condition, Supplier<Optional<?>>> conditions = new HashMap<>();
+        conditions.put(FROM, this::from);
+        conditions.put(TO, this::to);
+        conditions.put(OF, this::of);
+        conditions.put(IN, this::in);
+        conditions.put(USING, this::using);
+        conditions.put(WHERE, this::where);
+
+        return conditions;
+    }
+
     @Override
-    ComputeQuery<T> withTx(Transaction tx);
+    public final Stream<T> stream() {
+        Optional<GraqlQueryException> exception = getException();
+        if (exception.isPresent()) throw exception.get();
 
-    /**
-     * @param fromID is the Concept ID of in which compute path query will start from
-     * @return A ComputeQuery with the fromID set
-     */
-    ComputeQuery<T> from(ConceptId fromID);
+        ComputeExecutor<T> job = executor().run(this);
 
-    /**
-     * @return a String representing the name of the compute query method
-     */
-    Method method();
+        runningJobs.add(job);
 
-    /**
-     * @return a Concept ID in which which compute query will start from
-     */
+        try {
+            return job.stream();
+        } finally {
+            runningJobs.remove(job);
+        }
+
+    }
+
+    public final void kill() {
+        runningJobs.forEach(ComputeExecutor::kill);
+    }
+
+    @Override
+    public final ComputeQuery<T> withTx(Transaction tx) {
+        this.tx = tx;
+        return this;
+    }
+
+    @Override
+    public final Transaction tx() {
+        return tx;
+    }
+
+    public final Method method() {
+        return method;
+    }
+
+    public final ComputeQuery<T> from(ConceptId fromID) {
+        this.fromID = fromID;
+        return this;
+    }
+
     @CheckReturnValue
-    Optional<ConceptId> from();
+    public final Optional<ConceptId> from() {
+        return Optional.ofNullable(fromID);
+    }
 
-    /**
-     * @param toID is the Concept ID in which compute query will stop at
-     * @return A ComputeQuery with the toID set
-     */
-    ComputeQuery<T> to(ConceptId toID);
+    public final ComputeQuery<T> to(ConceptId toID) {
+        this.toID = toID;
+        return this;
+    }
 
-    /**
-     * @return a Concept ID in which which compute query will stop at
-     */
     @CheckReturnValue
-    Optional<ConceptId> to();
+    public final Optional<ConceptId> to() {
+        return Optional.ofNullable(toID);
+    }
 
-    /**
-     * @param types is an array of concept types in which the compute query would apply to
-     * @return a ComputeQuery with the of set
-     */
-    ComputeQuery<T> of(String type, String... types);
+    public final ComputeQuery<T> of(String type, String... types) {
+        ArrayList<String> typeList = new ArrayList<>(types.length + 1);
+        typeList.add(type);
+        typeList.addAll(Arrays.asList(types));
 
-    /**
-     * @param types is an array of concept types in which the compute query would apply to
-     * @return a ComputeQuery with the of set
-     */
-    ComputeQuery<T> of(Collection<Label> types);
+        return of(typeList.stream().map(Label::of).collect(toImmutableSet()));
+    }
 
-    /**
-     * @return the collection of concept types in which the compute query would apply to
-     */
+    public final ComputeQuery<T> of(Collection<Label> types) {
+        this.ofTypes = ImmutableSet.copyOf(types);
+
+        return this;
+    }
+
     @CheckReturnValue
-    Optional<Set<Label>> of();
+    public final Optional<Set<Label>> of() {
+        return Optional.ofNullable(ofTypes);
+    }
 
-    /**
-     * @param types is an array of concept types that determines the scope of graph for the compute query
-     * @return a ComputeQuery with the inTypes set
-     */
-    ComputeQuery<T> in(String type, String... types);
+    public final ComputeQuery<T> in(String type, String... types) {
+        ArrayList<String> typeList = new ArrayList<>(types.length + 1);
+        typeList.add(type);
+        typeList.addAll(Arrays.asList(types));
 
-    /**
-     * @param types is an array of concept types that determines the scope of graph for the compute query
-     * @return a ComputeQuery with the inTypes set
-     */
-    ComputeQuery<T> in(Collection<Label> types);
+        return in(typeList.stream().map(Label::of).collect(toImmutableSet()));
+    }
 
-    /**
-     * @return the collection of concept types that determines the scope of graph for the compute query
-     */
+    public final ComputeQuery<T> in(Collection<Label> types) {
+        this.inTypes = ImmutableSet.copyOf(types);
+        return this;
+    }
+
     @CheckReturnValue
-    Optional<Set<Label>> in();
+    public final Optional<Set<Label>> in() {
+        if (this.inTypes == null) return Optional.of(ImmutableSet.of());
+        return Optional.of(this.inTypes);
+    }
 
-    /**
-     * @param algorithm name as an condition for the compute query
-     * @return a ComputeQuery with algorithm condition set
-     */
-    ComputeQuery<T> using(Algorithm algorithm);
+    public final ComputeQuery<T> using(Algorithm algorithm) {
+        this.algorithm = algorithm;
+        return this;
+    }
 
-    /**
-     * @return the algorithm type for the compute query
-     */
     @CheckReturnValue
-    Optional<Algorithm> using();
+    public final Optional<Algorithm> using() {
+        if (ALGORITHMS_DEFAULT.containsKey(method) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
+        return Optional.ofNullable(algorithm);
+    }
 
-    /**
-     * @param arg  is an argument that could provided to modify the compute query parameters
-     * @param args is an array of arguments
-     * @return a ComputeQuery with the arguments set
-     */
-    ComputeQuery<T> where(Argument arg, Argument... args);
+    public final ComputeQuery<T> where(Argument arg, Argument... args) {
+        ArrayList<Argument> argList = new ArrayList(args.length + 1);
+        argList.add(arg);
+        argList.addAll(Arrays.asList(args));
 
-    /**
-     * @param args is a list of arguments that could be provided to modify the compute query parameters
-     * @return
-     */
-    ComputeQuery<T> where(Collection<Argument> args);
+        return this.where(argList);
+    }
 
-    /**
-     * @return an Arguments object containing all the provided individual arguments combined
-     */
+    public final ComputeQuery<T> where(Collection<Argument> args) {
+        if (this.arguments == null) this.arguments = new ArgumentsImpl();
+        for (Argument arg : args) this.arguments.setArgument(arg);
+
+        return this;
+    }
+
     @CheckReturnValue
-    Optional<Arguments> where();
+    public final Optional<ArgumentsImpl> where() {
+        if (ARGUMENTS_DEFAULT.containsKey(method) && arguments == null) arguments = new ArgumentsImpl();
+        return Optional.ofNullable(this.arguments);
+    }
 
-    /**
-     * Allow analytics query to include attributes and their relationships
-     *
-     * @return a ComputeQuery with the inTypes set
-     */
-    ComputeQuery<T> includeAttributes(boolean include);
+    public final ComputeQuery<T> includeAttributes(boolean include) {
+        this.includeAttributes = include;
+        return this;
+    }
 
-    /**
-     * Get if this query will include attributes and their relationships
-     */
     @CheckReturnValue
-    boolean includesAttributes();
+    public final boolean includesAttributes() {
+        return includeAttributes;
+    }
 
-    /**
-     * @return a boolean representing whether this query is a valid Graql Compute query given the provided conditions
-     */
-    @CheckReturnValue
-    boolean isValid();
+    @Override
+    public final Boolean inferring() {
+        return false;
+    }
 
-    /**
-     * @return any exception if the query is invalid
-     */
     @CheckReturnValue
-    Optional<GraqlQueryException> getException();
+    public final boolean isValid() {
+        return !getException().isPresent();
+    }
+
+    @CheckReturnValue
+    public Optional<GraqlQueryException> getException() {
+        // Check that all required conditions for the current query method are provided
+        for (Condition condition : collect(CONDITIONS_REQUIRED.get(this.method()))) {
+            if (!this.conditionsMap.get(condition).get().isPresent()) {
+                return Optional.of(GraqlQueryException.invalidComputeQuery_missingCondition(this.method()));
+            }
+        }
+
+        // Check that all the provided conditions are accepted for the current query method
+        for (Condition condition : this.conditionsMap.keySet().stream()
+                .filter(con -> this.conditionsMap.get(con).get().isPresent())
+                .collect(Collectors.toSet())) {
+            if (!CONDITIONS_ACCEPTED.get(this.method()).contains(condition)) {
+                return Optional.of(GraqlQueryException.invalidComputeQuery_invalidCondition(this.method()));
+            }
+        }
+
+        // Check that the provided algorithm is accepted for the current query method
+        if (ALGORITHMS_ACCEPTED.containsKey(this.method()) && !ALGORITHMS_ACCEPTED.get(this.method()).contains(this.using().get())) {
+            return Optional.of(GraqlQueryException.invalidComputeQuery_invalidMethodAlgorithm(this.method()));
+        }
+
+        // Check that the provided arguments are accepted for the current query method and algorithm
+        if (this.where().isPresent()) {
+            for (Parameter param : this.where().get().getParameters()) {
+                if (!ARGUMENTS_ACCEPTED.get(this.method()).get(this.using().get()).contains(param)) {
+                    return Optional.of(GraqlQueryException.invalidComputeQuery_invalidArgument(this.method(), this.using().get()));
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private <T> Collection<T> collect(Collection<T> collection) {
+        return collection != null ? collection : Collections.emptyList();
+    }
+
+    @Override
+    public final String toString() {
+        StringBuilder query = new StringBuilder();
+
+        query.append(str(COMPUTE, SPACE, method));
+        if (!conditionsSyntax().isEmpty()) query.append(str(SPACE, conditionsSyntax()));
+        query.append(SEMICOLON);
+
+        return query.toString();
+    }
+
+    private String conditionsSyntax() {
+        List<String> conditionsList = new ArrayList<>();
+
+        // It is important that check for whether each condition is NULL, rather than using the getters.
+        // Because, we want to know the user provided conditions, rather than the default conditions from the getters.
+        // The exception is for arguments. It needs to be set internally for the query object to have default argument
+        // values. However, we can query for .getParameters() to get user provided argument parameters.
+        if (fromID != null) conditionsList.add(str(FROM, SPACE, QUOTE, fromID, QUOTE));
+        if (toID != null) conditionsList.add(str(TO, SPACE, QUOTE, toID, QUOTE));
+        if (ofTypes != null) conditionsList.add(ofSyntax());
+        if (inTypes != null) conditionsList.add(inSyntax());
+        if (algorithm != null) conditionsList.add(algorithmSyntax());
+        if (arguments != null && !arguments.getParameters().isEmpty()) conditionsList.add(argumentsSyntax());
+
+        return conditionsList.stream().collect(joining(COMMA_SPACE.toString()));
+    }
+
+    private String ofSyntax() {
+        if (ofTypes != null) return str(OF, SPACE, typesSyntax(ofTypes));
+
+        return "";
+    }
+
+    private String inSyntax() {
+        if (inTypes != null) return str(IN, SPACE, typesSyntax(inTypes));
+
+        return "";
+    }
+
+    private String typesSyntax(Set<Label> types) {
+        StringBuilder inTypesString = new StringBuilder();
+
+        if (!types.isEmpty()) {
+            if (types.size() == 1) inTypesString.append(StringConverter.typeLabelToString(types.iterator().next()));
+            else {
+                inTypesString.append(SQUARE_OPEN);
+                inTypesString.append(inTypes.stream().map(StringConverter::typeLabelToString).collect(joining(COMMA_SPACE.toString())));
+                inTypesString.append(SQUARE_CLOSE);
+            }
+        }
+
+        return inTypesString.toString();
+    }
+
+    private String algorithmSyntax() {
+        if (algorithm != null) return str(USING, SPACE, algorithm);
+
+        return "";
+    }
+
+    private String argumentsSyntax() {
+        if (arguments == null) return "";
+
+        List<String> argumentsList = new ArrayList<>();
+        StringBuilder argumentsString = new StringBuilder();
+
+        for (Parameter param : arguments.getParameters()) {
+            argumentsList.add(str(param, EQUAL, arguments.getArgument(param).get()));
+        }
+
+        if (!argumentsList.isEmpty()) {
+            argumentsString.append(str(WHERE, SPACE));
+            if (argumentsList.size() == 1) argumentsString.append(argumentsList.get(0));
+            else {
+                argumentsString.append(SQUARE_OPEN);
+                argumentsString.append(argumentsList.stream().collect(joining(COMMA_SPACE.toString())));
+                argumentsString.append(SQUARE_CLOSE);
+            }
+        }
+
+        return argumentsString.toString();
+    }
+
+    private String str(Object... objects) {
+        StringBuilder builder = new StringBuilder();
+        for (Object obj : objects) builder.append(obj.toString());
+        return builder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ComputeQuery<?> that = (ComputeQuery<?>) o;
+
+        return (Objects.equals(this.tx(), that.tx()) &&
+                this.method().equals(that.method()) &&
+                this.from().equals(that.from()) &&
+                this.to().equals(that.to()) &&
+                this.of().equals(that.of()) &&
+                this.in().equals(that.in()) &&
+                this.using().equals(that.using()) &&
+                this.where().equals(that.where()) &&
+                this.includesAttributes() == that.includesAttributes());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tx.hashCode();
+        result = 31 * result + Objects.hashCode(method);
+        result = 31 * result + Objects.hashCode(fromID);
+        result = 31 * result + Objects.hashCode(toID);
+        result = 31 * result + Objects.hashCode(ofTypes);
+        result = 31 * result + Objects.hashCode(inTypes);
+        result = 31 * result + Objects.hashCode(algorithm);
+        result = 31 * result + Objects.hashCode(arguments);
+        result = 31 * result + Objects.hashCode(includeAttributes);
+
+        return result;
+    }
 
     /**
      * Checks Whether this query will modify the graph
      */
     @Override
-    default boolean isReadOnly() {
+    public boolean isReadOnly() {
         return true;
     }
 
     /**
-     * kill the compute query, terminate the job
-     */
-    void kill();
-
-
-    /**
-     * Argument inner interface to provide access Compute Query arguments
+     * Argument inner class to provide access Compute Query arguments
      *
          */
-    interface Arguments {
+    public class ArgumentsImpl {
+
+        private LinkedHashMap<Parameter, Argument> argumentsOrdered = new LinkedHashMap<>();
+
+        private final Map<Parameter, Supplier<Optional<?>>> argumentsMap = setArgumentsMap();
+
+        private Map<Parameter, Supplier<Optional<?>>> setArgumentsMap() {
+            Map<Parameter, Supplier<Optional<?>>> arguments = new HashMap<>();
+            arguments.put(MIN_K, this::minK);
+            arguments.put(K, this::k);
+            arguments.put(SIZE, this::size);
+            arguments.put(CONTAINS, this::contains);
+
+            return arguments;
+        }
+
+        private void setArgument(Argument arg) {
+            argumentsOrdered.remove(arg.type());
+            argumentsOrdered.put(arg.type(), arg);
+        }
 
         @CheckReturnValue
-        Optional<?> getArgument(Parameter param);
+        public Optional<?> getArgument(Parameter param) {
+            return argumentsMap.get(param).get();
+        }
 
         @CheckReturnValue
-        Collection<Parameter> getParameters();
+        public Collection<Parameter> getParameters() {
+            return argumentsOrdered.keySet();
+        }
 
         @CheckReturnValue
-        Optional<Long> minK();
+        public Optional<Long> minK() {
+            Object defaultArg = getDefaultArgument(MIN_K);
+            if (defaultArg != null) return Optional.of((Long) defaultArg);
+
+            return Optional.ofNullable((Long) getArgumentValue(MIN_K));
+        }
 
         @CheckReturnValue
-        Optional<Long> k();
+        public Optional<Long> k() {
+            Object defaultArg = getDefaultArgument(K);
+            if (defaultArg != null) return Optional.of((Long) defaultArg);
+
+            return Optional.ofNullable((Long) getArgumentValue(K));
+        }
 
         @CheckReturnValue
-        Optional<Long> size();
+        public Optional<Long> size() {
+            return Optional.ofNullable((Long) getArgumentValue(SIZE));
+        }
 
         @CheckReturnValue
-        Optional<ConceptId> contains();
+        public Optional<ConceptId> contains() {
+            return Optional.ofNullable((ConceptId) getArgumentValue(CONTAINS));
+        }
+
+        private Object getArgumentValue(Parameter param) {
+            return argumentsOrdered.get(param) != null ? argumentsOrdered.get(param).get() : null;
+        }
+
+        private Object getDefaultArgument(Parameter param) {
+            if (ARGUMENTS_DEFAULT.containsKey(method) &&
+                    ARGUMENTS_DEFAULT.get(method).containsKey(algorithm) &&
+                    ARGUMENTS_DEFAULT.get(method).get(algorithm).containsKey(param) &&
+                    !argumentsOrdered.containsKey(param))
+            {
+                return ARGUMENTS_DEFAULT.get(method).get(algorithm).get(param);
+            }
+
+            return null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ArgumentsImpl that = (ArgumentsImpl) o;
+
+            return (this.minK().equals(that.minK()) &&
+                    this.k().equals(that.k()) &&
+                    this.size().equals(that.size()) &&
+                    this.contains().equals(that.contains()));
+        }
+
+
+        @Override
+        public int hashCode() {
+            int result = tx.hashCode();
+            result = 31 * result + argumentsOrdered.hashCode();
+
+            return result;
+        }
     }
-
 }
