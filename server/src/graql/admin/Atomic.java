@@ -82,8 +82,15 @@ public interface Atomic {
 
     /**
      * @return true if the atomic corresponds to a resource atom
-     * */
+     */
+    @CheckReturnValue
     default boolean isResource(){ return false;}
+
+    /**
+     * @return if atom contains properties considering only explicit type hierarchies
+     */
+    @CheckReturnValue
+    default boolean isDirect(){ return false;}
 
     /**
      * @return true if obj alpha-equivalent
@@ -102,6 +109,24 @@ public interface Atomic {
      */
     @CheckReturnValue
     default boolean isCompatibleWith(Object obj){return isAlphaEquivalent(obj);}
+
+    /**
+     * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
+     * i. e. determines if:
+     *
+     * A >= B
+     *
+     * is true meaning that B is more general than A and the respective answer sets meet:
+     *
+     * answers(B) subsetOf answers(A)
+     *
+     * i. e. the set of answers of A is a subset of the set of answers of B
+     *
+     * @param atom to compare with
+     * @return true if this atom subsumes the provided atom
+     */
+    @CheckReturnValue
+    boolean subsumes(Atomic atom);
 
     /**
      * @return alpha-equivalence hash code

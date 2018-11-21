@@ -123,6 +123,9 @@ public class MultiUnifierImpl implements MultiUnifier{
         return multiUnifier.isEmpty();
     }
 
+    @Override
+    public boolean isUnique() { return size() == 1; }
+
     public boolean contains(Unifier u2) {
         return unifiers().stream().anyMatch(u -> u.containsAll(u2));
     }

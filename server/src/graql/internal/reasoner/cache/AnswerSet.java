@@ -18,30 +18,22 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- *
- * <p>
- * Simple class for defining query entries.
- * </p>
- *
- * @param <Q> query type the entry corresponds to
- * @param <T> corresponding element to be cached
- *
- * @author Kasper Piskorski
- *
+ * TODO
  */
-public class CacheEntry<Q extends ReasonerQuery, T> {
+public interface AnswerSet extends Iterable<ConceptMap>, Set<ConceptMap>{
 
-    private final Q query;
-    private final T cachedElement;
+    Set<ConceptMap> get(ConceptMap partialAnswer);
 
-    CacheEntry(Q query, T element){
-        this.query = query;
-        this.cachedElement = element;
-    }
+    Set<ConceptMap> getAll();
 
-    public Q query(){ return query;}
-    public T cachedElement(){ return cachedElement;}
+    boolean add(ConceptMap answer);
+
+    Stream<ConceptMap> stream();
+
+    boolean isEmpty();
 }

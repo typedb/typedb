@@ -18,30 +18,24 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import java.util.Collection;
 
 /**
- *
- * <p>
- * Simple class for defining query entries.
- * </p>
- *
- * @param <Q> query type the entry corresponds to
- * @param <T> corresponding element to be cached
- *
- * @author Kasper Piskorski
- *
+ * 
+ * @param <Q>
+ * @param <R>
  */
-public class CacheEntry<Q extends ReasonerQuery, T> {
+abstract class SimpleQueryCacheBase<
+        Q extends ReasonerQueryImpl,
+        R extends Collection<ConceptMap>> extends QueryCacheBase<Q, R, Q, R> {
 
-    private final Q query;
-    private final T cachedElement;
+    @Override
+    UnifierType unifierType() { return UnifierType.EXACT; }
 
-    CacheEntry(Q query, T element){
-        this.query = query;
-        this.cachedElement = element;
-    }
+    @Override Q queryToKey(Q query) { return query; }
+    @Override Q keyToQuery(Q key) { return key; }
 
-    public Q query(){ return query;}
-    public T cachedElement(){ return cachedElement;}
 }

@@ -114,6 +114,15 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.ValuePre
     }
 
     @Override
+    public boolean subsumes(Atomic atomic){
+        if (this.isAlphaEquivalent(atomic)) return true;
+        if (atomic == null || this.getClass() != atomic.getClass()) return false;
+        if (atomic == this) return true;
+        ValuePredicate that = (ValuePredicate) atomic;
+        return this.getPredicate().subsumes(that.getPredicate());
+    }
+
+    @Override
     public String getPredicateValue() {
         return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
     }

@@ -19,6 +19,7 @@
 package grakn.core.server.exception;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -318,8 +319,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException("Attempted to obtain unifiers on non-atomic queries.");
     }
 
-    public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query) {
-        return new GraqlQueryException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString()));
+    public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query, ConceptMap answer) {
+        return new GraqlQueryException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString(), answer.toString()));
     }
 
     public static GraqlQueryException noAtomsSelected(ReasonerQuery query) {

@@ -18,10 +18,13 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
+import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
-import java.util.Set;
+import grakn.core.graql.internal.reasoner.utils.Pair;
+import java.util.Collection;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 
 /**
@@ -37,34 +40,42 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  * @param <S> the type of answer being cached
- *
+ * @param <SE> the type of answer being cached
+ * @author Kasper Piskorski
  *
  */
-public interface QueryCache<Q extends ReasonerQueryImpl, S extends Iterable<ConceptMap>>{
+public interface QueryCache<
+        Q extends ReasonerQueryImpl,
+        S extends Iterable<ConceptMap>,
+        SE extends Collection<ConceptMap>>{
 
     /**
      * record answer iterable for a specific query and retrieve the updated answers
      * @param query to be recorded
      * @param answers to this query
-     * @return updated answer iterable
+     * @return updated entry
      */
-    S record(Q query, S answers);
+    CacheEntry<Q, SE> record(Q query, S answers);
 
     /**
      * record answer stream for a specific query and retrieve the updated stream
      * @param query to be recorded
      * @param answers answer stream of the query
-     * @return updated answer stream
+     * @return updated entry
      */
-    Stream<ConceptMap> record(Q query, Stream<ConceptMap> answers);
+    CacheEntry<Q, SE> record(Q query, Stream<ConceptMap> answers);
 
     /**
      * record single answer to a specific query
      * @param query of interest
      * @param answer to this query
-     * @return recorded answer
+     * @return updated entry
      */
-    ConceptMap record(Q query, ConceptMap answer);
+    CacheEntry<Q, SE> record(Q query, ConceptMap answer);
+
+    CacheEntry<Q, SE> record(Q query, ConceptMap answer, @Nullable CacheEntry<Q, SE> entry, @Nullable MultiUnifier unifier);
+
+    CacheEntry<Q, SE> record(Q query, ConceptMap answer, @Nullable MultiUnifier unifier);
 
     /**
      * retrieve (possibly) cached answers for provided query
@@ -75,23 +86,17 @@ public interface QueryCache<Q extends ReasonerQueryImpl, S extends Iterable<Conc
 
     Stream<ConceptMap> getAnswerStream(Q query);
 
+    Pair<S, MultiUnifier> getAnswersWithUnifier(Q query);
+
+    Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
+
+
     /**
      * Query cache containment check
      * @param query to be checked for containment
      * @return true if cache contains the query
      */
     boolean contains(Q query);
-
-    /**
-     * @return all queries contained in this cache
-     */
-    Set<Q> getQueries();
-
-    /**
-     * Perform cache union
-     * @param c2 union right operand
-     */
-    void merge(QueryCacheBase<Q, S> c2);
 
     /**
      * Clear the cache

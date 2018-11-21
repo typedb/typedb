@@ -18,21 +18,20 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.concept.ConceptId;
+import com.google.common.base.Equivalence;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.query.match.MatchBase;
-import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.base.Equivalence;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -50,9 +49,10 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  *
+ * @author Kasper Piskorski
  *
  */
-class StructuralCache<Q extends ReasonerQueryImpl>{
+public class StructuralCache<Q extends ReasonerQueryImpl>{
 
     private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;

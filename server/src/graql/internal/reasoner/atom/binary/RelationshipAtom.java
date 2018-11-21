@@ -17,6 +17,8 @@
  */
 package grakn.core.graql.internal.reasoner.atom.binary;
 
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
+import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -92,6 +94,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.bottom;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRelationTypesWithRoles;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.compatibleRoles;
 import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.multimapIntersection;
@@ -875,11 +878,13 @@ public abstract class RelationshipAtom extends IsaAtomBase {
      */
     private Set<List<Pair<RelationPlayer, RelationPlayer>>> getRelationPlayerMappings(RelationshipAtom parentAtom, UnifierComparison matchType) {
         Multimap<Role, RelationPlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
-        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(!matchType.equals(UnifierType.STRUCTURAL));
-        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(!matchType.equals(UnifierType.STRUCTURAL));
+        Map<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(matchType.inferTypes());
+        Map<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(matchType.inferTypes());
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationPlayer, RelationPlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
+        if (parentAtom.getRelationPlayers().size() > this.getRelationPlayers().size()) return new HashSet<>();
+
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) getParentQuery();
         Set<Role> childRoles = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers().stream()
@@ -981,6 +986,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
             if (this.equals(parentAtom)
+                    && unifierType != UnifierType.SUBSUMPTIVE
                     && this.getPartialSubstitutions().collect(toSet()).equals(parentAtom.getPartialSubstitutions().collect(toSet()))
                     && this.getTypeConstraints().collect(toSet()).equals(parentAtom.getTypeConstraints().collect(toSet()))){
                 return MultiUnifierImpl.trivial();
@@ -1011,6 +1017,40 @@ public abstract class RelationshipAtom extends IsaAtomBase {
             unifiers.add(baseUnifier);
         }
         return new MultiUnifierImpl(unifiers);
+    }
+
+    private HashMultimap<Var, Role> getVarRoleMap() {
+        HashMultimap<Var, Role> map = HashMultimap.create();
+        getRoleVarMap().asMap().forEach((key, value) -> value.forEach(var -> map.put(var, key)));
+        return map;
+    }
+    @Override
+    public SemanticDifference semanticDifference(Atom p, Unifier unifier) {
+        SemanticDifference baseDiff = super.semanticDifference(p, unifier);
+        if (!p.isRelation()) return baseDiff;
+        RelationshipAtom parentAtom = (RelationshipAtom) p;
+        Map<Var, VariableDefinition> diff = new HashMap<>();
+        //getRoleVariables
+        Set<Var> parentRoleVars = parentAtom.getRoleExpansionVariables();
+        HashMultimap<Var, Role> childVarRoleMap = this.getVarRoleMap();
+        HashMultimap<Var, Role> parentVarRoleMap = parentAtom.getVarRoleMap();
+        unifier.mappings().forEach( m -> {
+            Var childVar = m.getKey();
+            Var parentVar = m.getValue();
+            Set<Role> childRoles = childVarRoleMap.get(childVar);
+            Set<Role> parentRoles = parentVarRoleMap.get(parentVar);
+            Role role = null;
+            if(parentRoleVars.contains(parentVar)){
+                Set<Label> roleLabel = this.getRelationPlayers().stream()
+                        .filter(rp -> rp.getRole().isPresent())
+                        .filter(rp -> rp.getRole().get().var().equals(childVar))
+                        .map(rp -> rp.getRole().get().getTypeLabel().get())
+                        .collect(toSet());
+                role = tx().getRole(Iterables.getOnlyElement(roleLabel).getValue());
+            }
+            diff.put(childVar, new VariableDefinition(null, role, bottom(Sets.difference(childRoles, parentRoles)), new HashSet<>()));
+        });
+        return baseDiff.merge(new SemanticDifference(diff));
     }
 
     @Override

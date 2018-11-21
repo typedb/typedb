@@ -16,32 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.reasoner.cache;
+package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 
 /**
- *
- * <p>
- * Simple class for defining query entries.
- * </p>
- *
- * @param <Q> query type the entry corresponds to
- * @param <T> corresponding element to be cached
+ * State used to acknowledge db completion of a query in the cache - all db answers to the query are cached.
  *
  * @author Kasper Piskorski
- *
  */
-public class CacheEntry<Q extends ReasonerQuery, T> {
+public class CacheCompletionState extends ResolutionState {
 
-    private final Q query;
-    private final T cachedElement;
+    final private ReasonerAtomicQuery query;
+    final private IndexedSemanticCache cache;
 
-    CacheEntry(Q query, T element){
+    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent, IndexedSemanticCache cache){
+        super(sub, parent);
         this.query = query;
-        this.cachedElement = element;
+        this.cache = cache;
     }
 
-    public Q query(){ return query;}
-    public T cachedElement(){ return cachedElement;}
+    @Override
+    public ResolutionState generateSubGoal() {
+        cache.ackDBCompleteness(query);
+        return null;
+    }
+
 }

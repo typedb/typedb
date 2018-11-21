@@ -95,6 +95,9 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
+    public IsaAtom toIsaAtom(){ return this; }
+
+    @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return isDirect()? IsaExplicitProperty.class : IsaProperty.class;}
 
     //NB: overriding as these require a derived property

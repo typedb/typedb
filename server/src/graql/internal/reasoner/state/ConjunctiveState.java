@@ -21,6 +21,7 @@ package grakn.core.graql.internal.reasoner.state;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -35,6 +36,7 @@ import java.util.Set;
  * Query state corresponding to a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
  * </p>
  *
+ * @author Kasper Piskorski
  *
  */
 public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
@@ -44,12 +46,9 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
                             Unifier u,
                             QueryStateBase parent,
                             Set<ReasonerAtomicQuery> visitedSubGoals,
-                            SimpleQueryCache<ReasonerAtomicQuery> cache) {
-        super(ReasonerQueries.create(q, sub), sub, u, MultiUnifierImpl::new, parent, visitedSubGoals, cache);
+                            IndexedSemanticCache cache) {
+        super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals, cache);
     }
-
-    @Override
-    MultiUnifier getCacheUnifier() { return new MultiUnifierImpl();}
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){

@@ -29,6 +29,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -327,7 +328,7 @@ public class InferenceRule {
      * @param cache query cache
      * @return resolution subGoal formed from this rule
      */
-    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, IndexedSemanticCache cache){
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta

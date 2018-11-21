@@ -18,15 +18,13 @@
 
 package grakn.core.graql.internal.reasoner.state;
 
-import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  *
@@ -36,20 +34,18 @@ import java.util.function.Supplier;
  *
  * @param <Q> the type of query that this state is corresponding to
  *
+ * @author Kasper Piskorski
  *
  */
 public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{
 
     private final Q query;
     private final Iterator<ResolutionState> subGoalIterator;
-    private final Supplier<MultiUnifier> cacheUnifierSupplier;
-    private MultiUnifier cacheUnifier = null;
 
-    QueryState(Q query, ConceptMap sub, Unifier u, Supplier<MultiUnifier> cus, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
+    QueryState(Q query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, IndexedSemanticCache cache) {
         super(sub, u, parent, subGoals, cache);
         this.query = query;
         this.subGoalIterator = query.queryStateIterator(this, subGoals, cache);
-        this.cacheUnifierSupplier = cus;
     }
 
     @Override
@@ -64,12 +60,4 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
      * @return query corresponding to this query state
      */
     Q getQuery(){ return query;}
-
-    /**
-     * @return cache unifier if any
-     */
-    MultiUnifier getCacheUnifier(){
-        if (cacheUnifier == null) this.cacheUnifier = cacheUnifierSupplier.get();
-        return cacheUnifier;
-    }
 }

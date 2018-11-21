@@ -18,15 +18,15 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MultiUnifier;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.utils.Pair;
-
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -37,35 +37,34 @@ import java.util.stream.Stream;
  *
  * @param <Q> the type of query that is being cached
  *
+ * @author Kasper Piskorski
  *
  */
-public class LazyQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<Q, LazyAnswerIterator> {
+public class LazyQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCacheBase<Q, LazyAnswerIterator> {
 
     public LazyQueryCache(){ super();}
 
     @Override
-    public ConceptMap record(Q query, ConceptMap answer) {
-        record(query, Stream.of(answer));
-        return answer;
+    public CacheEntry<Q, LazyAnswerIterator> record(Q query, ConceptMap answer) {
+        return record(query, Stream.of(answer));
     }
 
     @Override
-    public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
+    public CacheEntry<Q, LazyAnswerIterator> record(Q query, LazyAnswerIterator answers) {
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            Stream<ConceptMap> unifiedStream = answers.unify(query.getMultiUnifier(equivalentQuery)).stream();
+            Stream<ConceptMap> unifiedStream = answers.unify(query.getMultiUnifier(equivalentQuery, unifierType())).stream();
             //NB: entry overwrite
             this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
-            return getAnswers(query);
+            return match;
         }
-        this.putEntry(query, answers);
-        return answers;
+        return putEntry(query, answers);
     }
 
     @Override
-    public Stream<ConceptMap> record(Q query, Stream<ConceptMap> answers) {
-        return recordRetrieveLazy(query, answers).stream();
+    public CacheEntry<Q, LazyAnswerIterator> record(Q query, Stream<ConceptMap> answers) {
+        return recordRetrieveLazy(query, answers);
     }
 
     /**
@@ -74,19 +73,18 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<
      * @param answers answer stream of the query
      * @return lazy iterator of updated answers
      */
-    public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<ConceptMap> answers){
+    private CacheEntry<Q, LazyAnswerIterator> recordRetrieveLazy(Q query, Stream<ConceptMap> answers){
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match!= null) {
             Q equivalentQuery = match.query();
-            MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery);
+            MultiUnifier multiUnifier = query.getMultiUnifier(equivalentQuery, unifierType());
             Stream<ConceptMap> unifiedStream = answers.flatMap(a -> a.unify(multiUnifier));
             //NB: entry overwrite
             this.putEntry(match.query(), match.cachedElement().merge(unifiedStream));
-            return getAnswers(query);
+            return match;
         }
         LazyAnswerIterator liter = new LazyAnswerIterator(answers);
-        this.putEntry(query, liter);
-        return liter;
+        return putEntry(query, liter);
     }
 
     @Override
@@ -104,15 +102,15 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
             LazyAnswerIterator unified = match.cachedElement().unify(multiUnifier);
             return new Pair<>(unified, multiUnifier);
         }
-        Stream<ConceptMap> answerStream = record(
+        CacheEntry<Q, LazyAnswerIterator> record = record(
                 query,
                 query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query)))
         );
-        return new Pair<>(new LazyAnswerIterator(answerStream), new MultiUnifierImpl());
+        return new Pair<>(new LazyAnswerIterator(record.cachedElement().stream()), new MultiUnifierImpl());
     }
 
     @Override
@@ -120,16 +118,33 @@ public class LazyQueryCache<Q extends ReasonerQueryImpl> extends QueryCacheBase<
         CacheEntry<Q, LazyAnswerIterator> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
-            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query);
+            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
             Stream<ConceptMap> unified = match.cachedElement().stream().flatMap(a -> a.unify(multiUnifier));
             return new Pair<>(unified, multiUnifier);
         }
 
-        Stream<ConceptMap> answerStream = record(
+        CacheEntry<Q, LazyAnswerIterator> record = record(
                 query,
                 query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query)))
         );
-        return new Pair<>(answerStream, new MultiUnifierImpl());
+        return new Pair<>(record.cachedElement().stream(), new MultiUnifierImpl());
     }
 
+    @Override
+    public CacheEntry<Q, LazyAnswerIterator> record(Q query, ConceptMap answer, @Nullable MultiUnifier unifier) {
+        //TODO
+        return null;
+    }
+
+    @Override
+    public CacheEntry<Q, LazyAnswerIterator> record(Q query, ConceptMap answer, @Nullable CacheEntry<Q, LazyAnswerIterator> entry, @Nullable MultiUnifier unifier) {
+        //TODO
+        return null;
+    }
+
+    @Override
+    public ConceptMap findAnswer(Q query, ConceptMap ans) {
+        //TODO
+        return null;
+    }
 }

@@ -25,6 +25,10 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
+import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -117,6 +121,28 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public boolean isAtomic(){ return true;}
 
     /**
+     * @param parent
+     * @return
+     */
+    public boolean subsumes(ReasonerAtomicQuery parent){
+        MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
+        if (multiUnifier.isEmpty()) return false;
+        MultiUnifier inverse = multiUnifier.inverse();
+        return//check whether propagated answers would be complete
+                !inverse.isEmpty() &&
+                        inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
+                        && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
+                        && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
+    }
+    /**
+     * @param parent
+     * @return
+     */
+    public boolean isUnifiableWith(ReasonerAtomicQuery parent){
+        return this.getAtom().isUnifiableWith(parent.getAtom());
+    }
+
+    /**
      * @return the atom constituting this atomic query
      */
     public Atom getAtom() {
@@ -148,12 +174,24 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
+     * Calculates:
+     * - subsumptive unifier between this (child) and parent query
+     * - semantic difference between this (child and parent query
+     * @param parent parent query
+     * @return pair of subsumptive unifier and semantic difference between this and parent query
+     */
+    public Set<Pair<Unifier, SemanticDifference>> getMultiUnifierWithSemanticDiff(ReasonerAtomicQuery parent){
+        return this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE).stream()
+                .map(u -> new Pair<>(u, this.getAtom().semanticDifference(parent.getAtom(), u)))
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * materialise  this query with the accompanying answer - persist to kb
      * @param answer to be materialised
      * @return stream of materialised answers
      */
     public Stream<ConceptMap> materialise(ConceptMap answer) {
-        //System.out.println("Materialising: " + this.withSubstitution(answer));
         return this.withSubstitution(answer)
                 .getAtom()
                 .materialise()
@@ -161,7 +199,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, SimpleQueryCache<ReasonerAtomicQuery> cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, IndexedSemanticCache cache){
         return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
@@ -174,12 +212,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, IndexedSemanticCache cache) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setQuery(this)))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
+
+        Iterator<ResolutionState> dbCompletionIterator =
+                Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMapImpl(), null, cache));
 
         Iterator<ResolutionState> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
@@ -192,6 +233,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
                     .iterator();
         }
-        return Iterators.concat(dbIterator, subGoalIterator);
+        return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 }

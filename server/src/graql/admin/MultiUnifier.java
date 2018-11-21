@@ -58,6 +58,12 @@ public interface MultiUnifier extends Iterable<Unifier> {
     boolean isEmpty();
 
     /**
+     * @return true if the multiunifier is unique, i.e. holds a single unifier
+     */
+    @CheckReturnValue
+    boolean isUnique();
+
+    /**
      * @return unique unifier if exists, throws an exception otherwise
      */
     @CheckReturnValue

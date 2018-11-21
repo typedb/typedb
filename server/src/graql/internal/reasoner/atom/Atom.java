@@ -17,37 +17,45 @@
  */
 package grakn.core.graql.internal.reasoner.atom;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.concept.Rule;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.exception.GraqlQueryException;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.graql.Var;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Rule;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
-import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
+import grakn.core.graql.internal.reasoner.cache.VariableDefinition;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.rule.RuleUtils;
+import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.common.exception.ErrorMessage;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
+import grakn.core.server.exception.GraqlQueryException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -62,6 +70,7 @@ import static java.util.stream.Collectors.toSet;
  * {@link AtomicBase} extension defining specialised functionalities.
  * </p>
  *
+ * @author Kasper Piskorski
  *
  */
 public abstract class Atom extends AtomicBase {
@@ -77,8 +86,42 @@ public abstract class Atom extends AtomicBase {
         throw GraqlQueryException.illegalAtomConversion(this, IsaAtom.class);
     }
 
+    /**
+     * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
+     * i. e. determines if:
+     *
+     * A >= B
+     *
+     * is true meaning that B is more general than A and the respective answer sets meet:
+     *
+     * answers(B) subsetOf answers(A)
+     *
+     * i. e. the set of answers of A is a subset of the set of answers of B
+     *
+     * @param atomic to compare with
+     * @return true if this atom subsumes the provided atom
+     */
+    @Override
+    public boolean subsumes(Atomic atomic){
+        if (!atomic.isAtom()) return false;
+        Atom parent = (Atom) atomic;
+        MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
+        if (multiUnifier.isEmpty()) return false;
+
+        MultiUnifier inverse = multiUnifier.inverse();
+        return//check whether propagated answers would be complete
+                !inverse.isEmpty() &&
+                        inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
+                        && !parent.getPredicates(NeqPredicate.class).findFirst().isPresent()
+                        && !this.getPredicates(NeqPredicate.class).findFirst().isPresent();
+    }
+
+    /**
+     * @param atom to unify with
+     * @return true if this unifies with atom via rule unifier
+     */
     public boolean isUnifiableWith(Atom atom){
-       return !this.getMultiUnifier(atom, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent());
+        return !this.getMultiUnifier(atom, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
@@ -105,8 +148,7 @@ public abstract class Atom extends AtomicBase {
         Set<Var> mappedVars = Stream.concat(getPredicates(), getInnerPredicates())
                 .map(AtomicBase::getVarName)
                 .collect(toSet());
-        return getVarNames().stream()
-                .allMatch(mappedVars::contains);
+        return mappedVars.containsAll(getVarNames());
     }
 
     /**
@@ -123,7 +165,7 @@ public abstract class Atom extends AtomicBase {
      */
     public boolean isDisconnected(){
         return isSelectable()
-            && getParentQuery().getAtoms(Atom.class)
+                && getParentQuery().getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
                 .filter(at -> !at.equals(this))
                 .allMatch(at -> Sets.intersection(at.getVarNames(), this.getVarNames()).isEmpty());
@@ -166,6 +208,11 @@ public abstract class Atom extends AtomicBase {
      */
     public Stream<VarProperty> getVarProperties(){
         return getCombinedPattern().admin().varPatterns().stream().flatMap(vp -> vp.getProperties(getVarPropertyClass()));
+    }
+
+    @Override
+    public boolean isDirect() {
+        return getPattern().admin().getProperties().anyMatch(VarProperty::isExplicit);
     }
 
     /**
@@ -367,5 +414,40 @@ public abstract class Atom extends AtomicBase {
         //NB only for relations we can have non-unique unifiers
         Unifier unifier = this.getUnifier(parentAtom, unifierType);
         return unifier != null? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
+    }
+
+    /**
+     * Calculates the semantic difference between the parent and this (child) atom,
+     * that needs to be applied on A(P) to find the subset belonging to A(C).
+     *
+     * @param parentAtom parent atom
+     * @param unifier child->parent unifier
+     * @return semantic difference between child and parent
+     */
+    public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier){
+        Map<Var, VariableDefinition> diff = new HashMap<>();
+        ImmutableMap<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
+        ImmutableMap<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
+        Unifier unifierInverse = unifier.inverse();
+
+        unifier.mappings().forEach( m -> {
+            Var childVar = m.getKey();
+            Var parentVar = m.getValue();
+            Type childType = childVarTypeMap.get(childVar);
+            Type parentType = parentVarTypeMap.get(parentVar);
+            Type type = childType != null?
+                    parentType != null?
+                            (!parentType.equals(childType)? childType : null) :
+                            childType
+                    : null;
+
+            Set<ValuePredicate> predicates = this.getPredicates(childVar, ValuePredicate.class).collect(toSet());
+            parentAtom.getPredicates(parentVar, ValuePredicate.class)
+                    .flatMap(vp -> vp.unify(unifierInverse).stream())
+                    .forEach(predicates::remove);
+
+            diff.put(childVar, new VariableDefinition(type, null, new HashSet<>(), predicates));
+        });
+        return new SemanticDifference(diff);
     }
 }

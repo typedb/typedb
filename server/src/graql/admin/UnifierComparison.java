@@ -29,9 +29,24 @@ import java.util.Set;
  * Interface for defining unifier comparisons.
  * </p>
  *
+ * @author Kasper Piskorski
  *
  */
 public interface UnifierComparison {
+
+    /**
+     *
+     * @return true if types should be inferred when computing unifier
+     */
+    boolean inferTypes();
+
+    /**
+     *
+     * @param parent
+     * @param child
+     * @return
+     */
+    boolean typeExplicitenessCompatibility(Atomic parent, Atomic child);
 
     /**
      * @param parent {@link SchemaConcept} of parent expression
@@ -68,7 +83,11 @@ public interface UnifierComparison {
      * @param child multipredicate of child attribute
      * @return true if multipredicates of attributes are compatible
      */
-    boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child);
+    default boolean attributeValueCompatibility(Set<Atomic> parent, Set<Atomic> child){
+        //checks intra-vp compatibility
+        return (child.isEmpty() || child.stream().allMatch(cp -> child.stream().allMatch(cp::isCompatibleWith)))
+                && (parent.isEmpty() || parent.stream().allMatch(cp -> parent.stream().allMatch(cp::isCompatibleWith)));
+    }
 
     /**
      *

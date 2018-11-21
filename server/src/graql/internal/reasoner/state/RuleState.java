@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
@@ -40,7 +41,7 @@ public class RuleState extends QueryStateBase{
     private final InferenceRule rule;
     private final Iterator<ResolutionState> bodyIterator;
 
-    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, SimpleQueryCache<ReasonerAtomicQuery> cache) {
+    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, IndexedSemanticCache cache) {
         super(sub, unifier, parent, visitedSubGoals, cache);
         this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals, cache));
         this.rule = rule;
@@ -48,7 +49,9 @@ public class RuleState extends QueryStateBase{
 
     @Override
     public String toString(){
-        return super.toString() + "\n" + rule + "\n";
+        return super.toString() + " to state @" + Integer.toHexString(getParentState().hashCode()) + "\n" +
+                rule + "\n" +
+                "Unifier: " + getUnifier();
     }
 
     @Override

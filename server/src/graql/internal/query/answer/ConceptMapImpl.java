@@ -55,6 +55,7 @@ import java.util.stream.Stream;
  * Wrapper for a query result class {@link ConceptMap}.
  * </p>
  *
+ * @author Kasper Piskorski
  *
  */
 public class ConceptMapImpl implements ConceptMap {
@@ -144,8 +145,15 @@ public class ConceptMapImpl implements ConceptMap {
         return map.equals(a2.map);
     }
 
+    private int hashCode = 0;
+
     @Override
-    public int hashCode(){ return map.hashCode();}
+    public int hashCode(){
+        if (hashCode == 0) {
+            hashCode = map.hashCode();
+        }
+        return hashCode;
+    }
 
     @Override
     public void forEach(BiConsumer<Var, Concept> consumer) {
@@ -241,11 +249,14 @@ public class ConceptMapImpl implements ConceptMap {
                 }
             }
         }
-        return new ConceptMapImpl(unified, this.explanation());
+
+        ConceptMapImpl answer = new ConceptMapImpl(unified, this.explanation());
+        return answer;
     }
 
     @Override
     public Stream<ConceptMap> unify(MultiUnifier multiUnifier) {
+        if (multiUnifier.isEmpty()) return Stream.of(this);
         return multiUnifier.stream().map(this::unify);
     }
 
@@ -280,3 +291,4 @@ public class ConceptMapImpl implements ConceptMap {
                 .collect(Collectors.toSet());
     }
 }
+

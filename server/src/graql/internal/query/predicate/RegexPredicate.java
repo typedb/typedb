@@ -73,4 +73,9 @@ abstract class RegexPredicate implements ValuePredicate {
         Object thatVal = p.equalsValue().orElse(null);
         return thatVal == null || this.regexPredicate().test(thatVal);
     }
+
+    @Override
+    public boolean subsumes(ValuePredicate predicate) {
+        return this.isCompatibleWith(predicate);
+    }
 }

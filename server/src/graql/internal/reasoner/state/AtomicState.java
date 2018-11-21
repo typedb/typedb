@@ -19,9 +19,13 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.Var;
+import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.cache.CacheEntry;
+import grakn.core.graql.internal.reasoner.cache.IndexedAnswerSet;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -37,21 +41,24 @@ import java.util.Set;
  * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
  * </p>
  *
+ * @author Kasper Piskorski
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 class AtomicState extends QueryState<ReasonerAtomicQuery>{
+
+    private MultiUnifier cacheUnifier = null;
+    private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
 
     AtomicState(ReasonerAtomicQuery query,
                 ConceptMap sub,
                 Unifier u,
                 QueryStateBase parent,
                 Set<ReasonerAtomicQuery> subGoals,
-                SimpleQueryCache<ReasonerAtomicQuery> cache) {
+                IndexedSemanticCache cache) {
         super(ReasonerQueries.atomic(query, sub),
                 sub,
                 u,
-                () -> cache.getAnswerStreamWithUnifier(ReasonerQueries.atomic(query, sub)).getValue().inverse(),
                 parent,
                 subGoals,
                 cache);
@@ -84,7 +91,26 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                     materialisedAnswer(baseAnswer, rule, unifier) :
                     ruleAnswer(baseAnswer, rule, unifier);
         }
-        return getCache().record(query, answer, getCacheUnifier());
+        return recordAnswer(query, answer);
+    }
+
+    /**
+     * @return cache unifier if any
+     */
+    private MultiUnifier getCacheUnifier(){
+        if (cacheUnifier == null) this.cacheUnifier = getCache().getCacheUnifier(getQuery());
+        return cacheUnifier;
+    }
+
+    private ConceptMap recordAnswer(ReasonerAtomicQuery query, ConceptMap answer){
+        if(answer.isEmpty()) return answer;
+        //TODO fix handling of cached unifier
+        if (cacheEntry == null){
+            cacheEntry = getCache().record(query, answer, cacheEntry, null);
+            return answer;
+        }
+        getCache().record(query, answer, cacheEntry, getCacheUnifier());
+        return answer;
     }
 
     private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
@@ -103,7 +129,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
         ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        SimpleQueryCache<ReasonerAtomicQuery> cache = getCache();
+        IndexedSemanticCache cache = getCache();
 
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
@@ -116,13 +142,13 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
         //check if the specific answer to ruleHead already in cache/db
         ConceptMap headAnswer = cache
-                .getAnswer(ruleHead, answer)
+                .findAnswer(ruleHead, answer)
                 .project(queryVars)
                 .unify(unifier);
 
         //if not and query different than rule head do the same with the query
         ConceptMap queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
-                cache.getAnswer(query, answer) :
+                cache.findAnswer(query, answer) :
                 new ConceptMapImpl();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db

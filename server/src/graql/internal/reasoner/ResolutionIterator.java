@@ -20,6 +20,7 @@ package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -49,7 +50,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ReasonerQueryImpl query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
-    private final SimpleQueryCache<ReasonerAtomicQuery> cache = new SimpleQueryCache<>();
+    private final IndexedSemanticCache cache = new IndexedSemanticCache();
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;
