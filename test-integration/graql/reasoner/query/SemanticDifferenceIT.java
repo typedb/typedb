@@ -63,7 +63,7 @@ public class SemanticDifferenceIT {
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        loadFromFileAndCommit(resourcePath,"genericSchema.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 
     @AfterClass

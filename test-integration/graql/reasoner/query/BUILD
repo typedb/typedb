@@ -121,7 +121,9 @@ java_test(
     size = "medium",
     srcs = ["SemanticDifferenceIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    data = ["//test-integration/graql/reasoner/resources:rule-applicability"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:generic-schema",
+    ],
     test_class = "grakn.core.graql.reasoner.query.SemanticDifferenceIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
