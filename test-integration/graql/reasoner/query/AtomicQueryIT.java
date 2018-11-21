@@ -32,7 +32,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;

@@ -35,7 +35,7 @@ import grakn.core.graql.grammar.GraqlParser.PatternsContext;
 import grakn.core.graql.grammar.GraqlParser.QueryContext;
 import grakn.core.graql.grammar.GraqlParser.QueryEOFContext;
 import grakn.core.graql.grammar.GraqlParser.QueryListContext;
-import grakn.core.graql.internal.query.aggregate.Aggregates;
+import grakn.core.graql.query.aggregate.Aggregates;
 import grakn.core.graql.internal.template.TemplateParser;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;

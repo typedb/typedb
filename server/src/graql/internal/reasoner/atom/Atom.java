@@ -29,7 +29,7 @@ import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;

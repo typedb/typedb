@@ -23,7 +23,7 @@ import grakn.core.graql.InsertQuery;
 import grakn.core.graql.Match;
 import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.Var;
-import grakn.core.graql.internal.query.QueryBuilderImpl;
+import grakn.core.graql.query.QueryBuilderImpl;
 import org.junit.Test;
 
 import static grakn.core.graql.Graql.var;

@@ -11,7 +11,7 @@ import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.cache.LazyQueryCache;
 import grakn.core.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;

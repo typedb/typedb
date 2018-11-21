@@ -32,7 +32,7 @@ import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.protocol.AnswerProto;
 import com.google.common.collect.ImmutableMap;
 

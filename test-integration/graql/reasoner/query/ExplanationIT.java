@@ -8,7 +8,7 @@
 //import grakn.core.graql.admin.Explanation;
 //import grakn.core.graql.admin.ReasonerQuery;
 //import grakn.core.graql.answer.ConceptMap;
-//import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+//import grakn.core.graql.query.answer.ConceptMapImpl;
 //import com.google.common.collect.ImmutableList;
 //import com.google.common.collect.ImmutableMap;
 //import com.google.common.collect.Iterables;
