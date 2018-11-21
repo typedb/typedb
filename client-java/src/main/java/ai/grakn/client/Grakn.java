@@ -72,8 +72,6 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  * For now, only a subset of {@link GraknSession} and {@link ai.grakn.GraknTx} features are supported.
  */
 public final class Grakn {
-    public static final SimpleURI DEFAULT_URI = new SimpleURI("localhost:48555");
-
     @Deprecated
     public static final SimpleURI DEFAULT_HTTP_URI = new SimpleURI("localhost:4567");
 

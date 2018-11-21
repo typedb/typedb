@@ -54,7 +54,6 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>client-java</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
