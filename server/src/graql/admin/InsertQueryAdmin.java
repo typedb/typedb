@@ -19,8 +19,8 @@
 package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Match;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

@@ -29,7 +29,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.graql.Pattern;
+import grakn.core.graql.query.Pattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;

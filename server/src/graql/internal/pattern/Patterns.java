@@ -18,21 +18,22 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Disjunction;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.query.Pattern;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Factory for instances of {@link grakn.core.graql.Pattern}.
+ * Factory for instances of {@link Pattern}.
  *
- * Also includes helper methods to operate on a {@link grakn.core.graql.Pattern} or {@link VarPattern}.
+ * Also includes helper methods to operate on a {@link Pattern} or {@link VarPattern}.
  *
  */
 public class Patterns {

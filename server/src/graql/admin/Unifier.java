@@ -18,7 +18,7 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 
 import com.google.common.collect.ImmutableSet;
 import javax.annotation.CheckReturnValue;

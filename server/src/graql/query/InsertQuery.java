@@ -16,37 +16,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
+package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.admin.DeleteQueryAdmin;
-import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.admin.InsertQueryAdmin;
+import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 
 /**
- * A query for deleting concepts from a {@link Match}.
+ * A query for inserting data.
  * <p>
- * A {@link DeleteQuery} is built from a {@link Match} and will perform a delete operation for every result of
- * the {@link Match}.
+ * A {@link InsertQuery} can be built from a {@link QueryBuilder} or a {@link Match}.
  * <p>
- * The delete operation to perform is based on what {@link VarPattern} objects are provided to it. If only variable names
- * are provided, then the delete query will delete the concept bound to each given variable name. If property flags
- * are provided, e.g. {@code var("x").has("name")} then only those properties are deleted.
+ * When built from a {@code QueryBuilder}, the insert query will execute once, inserting all the variables provided.
+ * <p>
+ * When built from a {@link Match}, the {@link InsertQuery} will execute for each result of the {@link Match},
+ * where variable names in the {@link InsertQuery} are bound to the concept in the result of the {@link Match}.
  *
  */
-public interface DeleteQuery extends Query<ConceptSet> {
+public interface InsertQuery extends Query<ConceptMap> {
 
     /**
      * @param tx the graph to execute the query on
-     * @return a new DeleteQuery with the graph set
+     * @return a new InsertQuery with the graph set
      */
     @Override
-    DeleteQuery withTx(Transaction tx);
+    InsertQuery withTx(Transaction tx);
 
     /**
      * @return admin instance for inspecting and manipulating this query
      */
     @CheckReturnValue
-    DeleteQueryAdmin admin();
+    InsertQueryAdmin admin();
+
 }

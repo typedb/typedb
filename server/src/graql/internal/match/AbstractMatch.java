@@ -19,16 +19,16 @@
 package grakn.core.graql.internal.match;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.Aggregate;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Order;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Aggregate;
+import grakn.core.graql.query.AggregateQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Order;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MatchAdmin;
@@ -47,7 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.Order.asc;
+import static grakn.core.graql.query.Order.asc;
 
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatch implements MatchAdmin {

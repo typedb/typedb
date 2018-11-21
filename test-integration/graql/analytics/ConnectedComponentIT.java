@@ -30,7 +30,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.graql.Graql;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
@@ -47,11 +47,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.Syntax.Compute.Argument.contains;
-import static grakn.core.graql.Syntax.Compute.Argument.size;
-import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
-import static grakn.core.graql.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.Syntax.Compute.Argument.contains;
+import static grakn.core.graql.query.Syntax.Compute.Argument.size;
+import static grakn.core.graql.query.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

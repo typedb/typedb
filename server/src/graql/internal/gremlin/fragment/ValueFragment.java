@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.ValuePredicate;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.ValuePredicate;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.server.session.TransactionImpl;
 import com.google.auto.value.AutoValue;

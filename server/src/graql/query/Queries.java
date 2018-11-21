@@ -20,11 +20,6 @@ package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Aggregate;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
 import grakn.core.graql.admin.DeleteQueryAdmin;
 import grakn.core.graql.admin.InsertQueryAdmin;
 import grakn.core.graql.admin.MatchAdmin;

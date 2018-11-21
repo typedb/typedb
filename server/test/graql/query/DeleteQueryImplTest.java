@@ -18,17 +18,12 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.DeleteQueryImpl;
 import org.junit.Test;
 
 import java.util.Collection;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

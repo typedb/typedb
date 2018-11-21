@@ -23,7 +23,7 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Pattern;
+import grakn.core.graql.query.Pattern;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;

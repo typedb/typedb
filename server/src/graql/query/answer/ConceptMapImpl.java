@@ -20,8 +20,8 @@ package grakn.core.graql.query.answer;
 
 import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.Atomic;

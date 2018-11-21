@@ -16,32 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
+package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.answer.Answer;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.answer.ConceptMap;
 
-import javax.annotation.Nullable;
+import java.util.Collection;
 
 /**
- * An aggregate query produced from a {@link Match}.
- *
- * @param <T> the type of the result of the aggregate query
+ * A query for undefining {@link SchemaConcept}s.
+ * <p>
+ *     The query will undefine all {@link SchemaConcept}s described in the {@link VarPattern}s provided.
+ * </p>
  *
  */
-public interface AggregateQuery<T extends Answer> extends Query<T> {
+public interface UndefineQuery extends Query<ConceptMap> {
 
     @Override
-    AggregateQuery<T> withTx(Transaction tx);
+    UndefineQuery withTx(Transaction tx);
 
     /**
-     * Get the {@link Match} that this {@link AggregateQuery} will operate on.
+     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
      */
-    @Nullable
-    Match match();
-
-    /**
-     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
-     */
-    Aggregate<T> aggregate();
+    Collection<? extends VarPattern> varPatterns();
 }

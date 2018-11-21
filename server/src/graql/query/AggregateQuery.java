@@ -16,26 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.reasoner.utils.conversion;
+package grakn.core.graql.query;
 
-import grakn.core.graql.concept.Attribute;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.query.VarPattern;
+import grakn.core.server.Transaction;
+import grakn.core.graql.answer.Answer;
+
+import javax.annotation.Nullable;
 
 /**
- * <p>
- * Class for conversions from {@link Attribute}s.
- * </p>
+ * An aggregate query produced from a {@link Match}.
+ *
+ * @param <T> the type of the result of the aggregate query
+ *
  */
-class AttributeConverter implements ConceptConverter<Attribute> {
+public interface AggregateQuery<T extends Answer> extends Query<T> {
 
-    public Pattern pattern(Attribute concept) {
-        Var owner = Graql.var().asUserDefined();
-        VarPattern resourceVar = Graql.var().asUserDefined().val(concept.value());
-        return owner
-                .has(concept.type().label(),resourceVar)
-                .id(concept.owner().id());
-    }
+    @Override
+    AggregateQuery<T> withTx(Transaction tx);
+
+    /**
+     * Get the {@link Match} that this {@link AggregateQuery} will operate on.
+     */
+    @Nullable
+    Match match();
+
+    /**
+     * Get the {@link Aggregate} that will be executed against the results of the {@link #match()}.
+     */
+    Aggregate<T> aggregate();
 }

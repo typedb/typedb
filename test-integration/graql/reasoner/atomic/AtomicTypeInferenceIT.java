@@ -26,10 +26,10 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Query;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -62,7 +62,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 

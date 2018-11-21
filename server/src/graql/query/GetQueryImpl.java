@@ -19,9 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;

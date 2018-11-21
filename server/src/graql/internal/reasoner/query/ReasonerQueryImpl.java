@@ -22,8 +22,8 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
@@ -75,7 +75,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 
 /**
  *

@@ -27,7 +27,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.TemporaryWriteException;
-import grakn.core.graql.Pattern;
+import grakn.core.graql.query.Pattern;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;

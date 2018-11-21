@@ -16,27 +16,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
+package grakn.core.graql.query;
 
-import grakn.core.graql.answer.Answer;
+import grakn.core.server.Transaction;
 import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.Set;
 
 /**
- * An aggregate operation to perform on a query.
- * @param <T> the type of the result of the aggregate operation
- *
+ * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
+ * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
+ * the knowledge base in an efficient fashion to find any matching answers.
  */
-public interface Aggregate<T extends Answer> {
+public interface GetQuery extends Query<ConceptMap> {
+
     /**
-     * The function to apply to the stream of results to produce the aggregate result.
-     * @param stream a stream of query results
-     * @return the result of the aggregate operation
+     * @param tx the transaction to execute the query on
+     * @return a new {@link GetQuery} with the transaction set
+     */
+    @Override
+    GetQuery withTx(Transaction tx);
+
+    /**
+     * Get the {@link Match} this {@link GetQuery} contains
      */
     @CheckReturnValue
-    List<T> apply(Stream<? extends ConceptMap> stream);
+    Match match();
 
+    /**
+     * Get the {@link Var}s this {@link GetQuery} will select from the answers
+     */
+    @CheckReturnValue
+    Set<Var> vars();
 }

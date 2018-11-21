@@ -19,16 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.DefineQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Query;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.QueryParser;
-import grakn.core.graql.UndefineQuery;
-import grakn.core.graql.VarPattern;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
@@ -45,7 +35,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static grakn.core.graql.Syntax.Compute.Method;
+import static grakn.core.graql.query.Syntax.Compute.Method;
 /**
  * A starting point for creating queries.
  * <p>

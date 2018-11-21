@@ -18,15 +18,15 @@
 
 package grakn.core.graql.internal.gremlin.fragment;
 
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.query.QueryBuilderImpl;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class IsaExplicitTest {

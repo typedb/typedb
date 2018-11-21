@@ -18,9 +18,9 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;

@@ -20,7 +20,7 @@ package grakn.core.graql.answer;
 
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.MultiUnifier;

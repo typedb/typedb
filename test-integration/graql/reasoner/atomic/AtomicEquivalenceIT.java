@@ -3,7 +3,7 @@ package grakn.core.graql.reasoner.atomic;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.VarPatternAdmin;

@@ -5,7 +5,7 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Entity;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

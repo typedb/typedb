@@ -21,7 +21,7 @@ package grakn.core.graql.internal.pattern.property;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;

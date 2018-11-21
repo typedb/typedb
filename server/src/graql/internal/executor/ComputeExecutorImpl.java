@@ -23,10 +23,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Syntax;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Syntax;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.graql.answer.ConceptSet;
@@ -91,19 +91,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
-import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
-import static grakn.core.graql.Syntax.Compute.Method.COUNT;
-import static grakn.core.graql.Syntax.Compute.Method.MAX;
-import static grakn.core.graql.Syntax.Compute.Method.MEAN;
-import static grakn.core.graql.Syntax.Compute.Method.MEDIAN;
-import static grakn.core.graql.Syntax.Compute.Method.MIN;
-import static grakn.core.graql.Syntax.Compute.Method.PATH;
-import static grakn.core.graql.Syntax.Compute.Method.STD;
-import static grakn.core.graql.Syntax.Compute.Method.SUM;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.query.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.query.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.query.Syntax.Compute.Method.MAX;
+import static grakn.core.graql.query.Syntax.Compute.Method.MEAN;
+import static grakn.core.graql.query.Syntax.Compute.Method.MEDIAN;
+import static grakn.core.graql.query.Syntax.Compute.Method.MIN;
+import static grakn.core.graql.query.Syntax.Compute.Method.PATH;
+import static grakn.core.graql.query.Syntax.Compute.Method.STD;
+import static grakn.core.graql.query.Syntax.Compute.Method.SUM;
 
 /**
  * A Graql Compute query job executed against a {@link TransactionOLAP}.

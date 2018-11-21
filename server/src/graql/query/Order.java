@@ -16,28 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
-
-import grakn.core.server.Transaction;
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.answer.ConceptMap;
-
-import java.util.Collection;
+package grakn.core.graql.query;
 
 /**
- * A query for undefining {@link SchemaConcept}s.
- * <p>
- *     The query will undefine all {@link SchemaConcept}s described in the {@link VarPattern}s provided.
- * </p>
+ * Ordering for {@link Match} results
  *
  */
-public interface UndefineQuery extends Query<ConceptMap> {
-
-    @Override
-    UndefineQuery withTx(Transaction tx);
+public enum Order {
+    /**
+     * Ascending order
+     */
+    asc,
 
     /**
-     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     * Descending order
      */
-    Collection<? extends VarPattern> varPatterns();
+    desc
 }

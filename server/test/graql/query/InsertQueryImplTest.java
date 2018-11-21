@@ -18,17 +18,14 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.query.InsertQueryImpl;
 import grakn.core.server.Transaction;
-import grakn.core.graql.Graql;
-import grakn.core.graql.InsertQuery;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;

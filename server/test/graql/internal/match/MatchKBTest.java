@@ -23,7 +23,7 @@ import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.server.Transaction;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;

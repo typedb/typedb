@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
+package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
@@ -29,10 +29,10 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.graql.Syntax.Compute.Algorithm;
-import static grakn.core.graql.Syntax.Compute.Argument;
-import static grakn.core.graql.Syntax.Compute.Method;
-import static grakn.core.graql.Syntax.Compute.Parameter;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm;
+import static grakn.core.graql.query.Syntax.Compute.Argument;
+import static grakn.core.graql.query.Syntax.Compute.Method;
+import static grakn.core.graql.query.Syntax.Compute.Parameter;
 
 /**
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn

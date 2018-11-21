@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.pattern.property;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.executor.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;

@@ -19,9 +19,6 @@
 package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.Aggregate;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.Match;
 import grakn.core.graql.answer.Answer;
 import com.google.auto.value.AutoValue;
 

@@ -25,8 +25,8 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;
@@ -51,12 +51,12 @@ import static grakn.core.common.exception.ErrorMessage.NEGATIVE_OFFSET;
 import static grakn.core.common.exception.ErrorMessage.NON_POSITIVE_LIMIT;
 import static grakn.core.common.exception.ErrorMessage.UNEXPECTED_RESULT;
 import static grakn.core.common.exception.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static grakn.core.graql.Syntax.Compute;
-import static grakn.core.graql.Syntax.Compute.ALGORITHMS_ACCEPTED;
-import static grakn.core.graql.Syntax.Compute.ARGUMENTS_ACCEPTED;
-import static grakn.core.graql.Syntax.Compute.CONDITIONS_ACCEPTED;
-import static grakn.core.graql.Syntax.Compute.CONDITIONS_REQUIRED;
-import static grakn.core.graql.Syntax.Compute.METHODS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute;
+import static grakn.core.graql.query.Syntax.Compute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_REQUIRED;
+import static grakn.core.graql.query.Syntax.Compute.METHODS_ACCEPTED;
 
 /**
  * <p>

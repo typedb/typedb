@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.answer.ConceptMapImpl;
