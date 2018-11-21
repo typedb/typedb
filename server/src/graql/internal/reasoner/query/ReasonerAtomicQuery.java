@@ -120,8 +120,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public boolean isAtomic(){ return true;}
 
     /**
-     * @param parent
-     * @return
+     * Determines whether the subsumption relation between this (C) and provided query (P) holds,
+     * i. e. determines if:
+     *
+     * C <= P
+     *
+     * is true meaning that P is more general than C and their respective answer sets meet:
+     *
+     * answers(C) subsetOf answers(P)
+     *
+     * i. e. the set of answers of C is a subset of the set of answers of P
+     *
+     * @param parent query to compare with
+     * @return true if this query subsumes the provided query
      */
     public boolean subsumes(ReasonerAtomicQuery parent){
         MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);

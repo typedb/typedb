@@ -114,11 +114,11 @@ public interface Atomic {
      * Determines whether the subsumption relation between this (A) and provided atom (B) holds,
      * i. e. determines if:
      *
-     * A >= B
+     * A <= B
      *
      * is true meaning that B is more general than A and the respective answer sets meet:
      *
-     * answers(B) subsetOf answers(A)
+     * answers(A) subsetOf answers(B)
      *
      * i. e. the set of answers of A is a subset of the set of answers of B
      *

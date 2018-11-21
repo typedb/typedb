@@ -65,55 +65,36 @@ public abstract class SemanticCache<
     abstract CacheEntry<ReasonerAtomicQuery, SE> createEntry(ReasonerAtomicQuery query, Set<ConceptMap> answers);
 
     private CacheEntry<ReasonerAtomicQuery, SE> addEntry(CacheEntry<ReasonerAtomicQuery, SE> entry){
-        addEntryCalls++;
-        long start = System.currentTimeMillis();
-        ////LOG.trace("Creating new entry for: " + entry.query());
         CacheEntry<ReasonerAtomicQuery, SE> cacheEntry = putEntry(entry);
         updateFamily(entry.query());
         computeParents(entry.query());
         propagateAnswersTo(entry.query(), false);
-
-        addEntryTime += System.currentTimeMillis() - start;
-
         return cacheEntry;
     }
-
-    public static long conversionTime = 0;
-    public static long parentComputations = 0;
-
-    public static long dbCompleteTime = 0;
-    public static long dbCompleteAckTime = 0;
 
     final private Set<ReasonerAtomicQuery> dbCompleteQueries = new HashSet<>();
     final private Set<QE> dbCompleteEntries = new HashSet<>();
 
     private boolean isDBComplete(ReasonerAtomicQuery query){
-        long start = System.currentTimeMillis();
-        boolean contains = dbCompleteEntries.contains(queryToKey(query))
+        return dbCompleteEntries.contains(queryToKey(query))
                 || dbCompleteQueries.contains(query);
-        dbCompleteTime += System.currentTimeMillis() - start;
-        return contains;
     }
 
     public void ackDBCompleteness(ReasonerAtomicQuery query){
-        long start = System.currentTimeMillis();
         if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
             dbCompleteQueries.add(query);
         } else {
             dbCompleteEntries.add(queryToKey(query));
-            //LOG.debug("Cache db complete for: " + query);
+            LOG.trace("Cache db complete for: " + query);
         }
-        dbCompleteAckTime += System.currentTimeMillis() - start;
     }
 
     private void ackDBCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
-        long start = System.currentTimeMillis();
         if (dbCompleteQueries.contains(parent)) dbCompleteQueries.add(query);
         if (dbCompleteEntries.contains(queryToKey(parent))){
             dbCompleteEntries.add(queryToKey(query));
-            //LOG.debug("Cache db complete for: " + query);
+            LOG.trace("Cache db complete for: " + query);
         }
-        dbCompleteAckTime += System.currentTimeMillis() - start;
     }
 
 
@@ -142,7 +123,6 @@ public abstract class SemanticCache<
     }
 
     private Set<QE> computeParents(ReasonerAtomicQuery child){
-        parentComputations++;
         Set<QE> family = getFamily(child);
         Set<QE> computedParents = new HashSet<>();
         if (family != null) {
@@ -159,8 +139,6 @@ public abstract class SemanticCache<
 
     //NB: uses getEntry
     private void propagateAnswersTo(ReasonerAtomicQuery target, boolean inferred){
-        long start = System.currentTimeMillis();
-
         CacheEntry<ReasonerAtomicQuery, SE> childMatch = getEntry(target);
         if (childMatch != null) {
             ReasonerAtomicQuery child = childMatch.query();
@@ -175,8 +153,6 @@ public abstract class SemanticCache<
                             }
                     );
         }
-
-        propagateTime += System.currentTimeMillis() - start;
     }
 
     @Override
@@ -185,54 +161,34 @@ public abstract class SemanticCache<
             ConceptMap answer,
             @Nullable CacheEntry<ReasonerAtomicQuery, SE> entry,
             @Nullable MultiUnifier unifier) {
-        long start = System.currentTimeMillis();
-        recordCalls++;
-        if (unifier == null) unifyCalls++;
-
         /*
          * find SE entry
          * - if entry exists - easy
          * - if not, add entry and establish whether any parents present
          */
         CacheEntry<ReasonerAtomicQuery, SE> match = entry != null? entry : this.getEntry(query);
-        //LOG.debug("recording answer: " + answer + " to query: " + query);
         if (match != null){
 
             ReasonerAtomicQuery equivalentQuery = match.query();
             SE answerSet = match.cachedElement();
-
-            //long start2 = System.currentTimeMillis();
             MultiUnifier multiUnifier = unifier == null? query.getMultiUnifier(equivalentQuery, unifierType()) : unifier;
-            //unifierTime += System.currentTimeMillis() - start2;
-
-            long start3 = System.currentTimeMillis();
             Set<Var> cacheVars = equivalentQuery.getVarNames();
             //NB: this indexes answer according to all indices in the set
             multiUnifier.stream()
                     .map(answer::unify)
                     .peek(ans -> {
                         if (!ans.vars().equals(cacheVars)){
-                            System.out.println("query: " + query);
-                            System.out.println("cache query: " + equivalentQuery);
                             throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery, ans);
                         }
                     })
                     .forEach(answerSet::add);
-
-            //unifyTime += System.currentTimeMillis() - start3;
-
-            recordTime1 += System.currentTimeMillis() - start;
             return match;
         }
-
-        CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, Sets.newHashSet(answer)));
-        recordTime2 += System.currentTimeMillis() - start;
-        return newEntry;
+        return addEntry(createEntry(query, Sets.newHashSet(answer)));
     }
 
 
     private Pair<Stream<ConceptMap>, MultiUnifier> getDBAnswerStreamWithUnifier(ReasonerAtomicQuery query){
-        ////LOG.debug("No complete answers found. Fetching answers from the DB for : " + query);
         return new Pair<>(
                 structuralCache().get(query),
                 MultiUnifierImpl.trivial()
@@ -240,15 +196,10 @@ public abstract class SemanticCache<
     }
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
-        getCalls++;
         long start = System.currentTimeMillis();
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
 
         if (match != null) {
-            cacheHits++;
-
-            ////LOG.debug("Fetching answers from cache for: " + query);
-
             //TODO extra check is a quasi-completeness check if there's no parent present we have no guarantees about completeness with respect to the db.
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
             Pair<Stream<ConceptMap>, MultiUnifier> returnPair =
@@ -260,19 +211,14 @@ public abstract class SemanticCache<
                                             cachePair.getKey().filter(ans -> ans.explanation().isRuleExplanation())
                                     ),
                                     cachePair.getValue());
-
-            getTime += System.currentTimeMillis() - start;
             return returnPair;
         }
-        cacheMiss++;
 
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
         if (!parents.isEmpty() && parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)))){
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
-            Pair<Stream<ConceptMap>, MultiUnifier> streamMultiUnifierPair = new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
-            getTime += System.currentTimeMillis() - start;
-            return streamMultiUnifierPair;
+            return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
         }
         return getDBAnswerStreamWithUnifier(query);
     }

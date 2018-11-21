@@ -55,24 +55,6 @@ public abstract class QueryCacheBase<
     private final StructuralCache<Q> sCache = new StructuralCache<>();
     private final RuleCache ruleCache = new RuleCache();
 
-    public static long propagateTime = 0;
-    public static long recordTime1 = 0, recordTime2 = 0;
-    public static long getTime = 0;
-    public static long addEntryTime= 0;
-    public static long getEntryTime = 0;
-    public static long putEntryTime = 0;
-    public static long unifyTime= 0;
-    public static long unifierTime = 0;
-
-    public static long recordCalls = 0;
-    public static long getCalls = 0;
-    public static long unifyCalls = 0;
-    public static long getEntryCalls = 0;
-    public static long addEntryCalls = 0;
-    public static long putEntryCalls = 0;
-    public static long cacheHits =0;
-    public static long cacheMiss = 0;
-
     QueryCacheBase(){ }
 
     abstract UnifierType unifierType();
@@ -131,11 +113,7 @@ public abstract class QueryCacheBase<
      * @return corresponding cache entry if any or null
      */
     CacheEntry<Q, SE> getEntry(Q query){
-        getEntryCalls++;
-        long start = System.currentTimeMillis();
-        CacheEntry<Q, SE> cacheEntry = cache.get(queryToKey(query));
-        getEntryTime += System.currentTimeMillis() - start;
-        return cacheEntry;
+        return cache.get(queryToKey(query));
     }
 
     /**
@@ -149,10 +127,7 @@ public abstract class QueryCacheBase<
     }
 
     CacheEntry<Q, SE> putEntry(CacheEntry<Q, SE> cacheEntry) {
-        putEntryCalls++;
-        long start = System.currentTimeMillis();
         cache.put(queryToKey(cacheEntry.query()), cacheEntry);
-        putEntryTime += System.currentTimeMillis() - start;
         return cacheEntry;
     }
 }

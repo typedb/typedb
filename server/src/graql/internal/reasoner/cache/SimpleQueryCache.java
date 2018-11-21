@@ -86,9 +86,6 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
      * @return recorded answer
      */
     public CacheEntry<Q, Set<ConceptMap>> record(Q query, ConceptMap answer, @Nullable CacheEntry<Q, Set<ConceptMap>> entry, @Nullable MultiUnifier unifier){
-        recordCalls++;
-        long start = System.currentTimeMillis();
-
         CacheEntry<Q, Set<ConceptMap>> match =  entry != null? entry : this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
@@ -104,13 +101,11 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
                         }
                     })
                     .forEach(answers::add);
-            recordTime1 += System.currentTimeMillis() - start;
             return match;
         } else {
             if (!answer.vars().containsAll(query.getVarNames())){
                 throw GraqlQueryException.invalidQueryCacheEntry(query, answer);
             }
-            recordTime1 += System.currentTimeMillis() - start;
             return putEntry(query, Sets.newHashSet(answer));
         }
     }
@@ -136,8 +131,6 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
 
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query) {
-        getCalls++;
-        long start = System.currentTimeMillis();
         CacheEntry<Q, Set<ConceptMap>> match =  this.getEntry(query);
         if (match != null) {
             Q equivalentQuery = match.query();
@@ -147,9 +140,7 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
             //NB: this is not lazy
             //lazy version would be answers.stream().flatMap(ans -> ans.unify(multiUnifier))
             //NB: Concurrent modification exception if lazy
-            Pair<Stream<ConceptMap>, MultiUnifier> streamMultiUnifierPair = new Pair<>(answers.stream().flatMap(ans -> ans.unify(multiUnifier)).collect(toSet()).stream(), multiUnifier);
-            getTime += System.currentTimeMillis() - start;
-            return streamMultiUnifierPair;
+            return new Pair<>(answers.stream().flatMap(ans -> ans.unify(multiUnifier)).collect(toSet()).stream(), multiUnifier);
         }
         return new Pair<>(
                 structuralCache().get(query),

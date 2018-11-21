@@ -73,21 +73,18 @@ public class IndexedSemanticCache extends SemanticCache<Equivalence.Wrapper<Reas
         IndexedAnswerSet childAnswers = childEntry.cachedElement();
         ConceptMap baseAnswerIndex = target.getAnswerIndex();
 
-        LOG.debug("propagating answers \nfrom: " + parent + "\nto: " + target);
+        LOG.trace("Propagating answers \nfrom: " + parent + "\nto: " + target);
 
         MultiUnifier targetToParentUnifier = target.getMultiUnifier(parent, semanticUnifier());
         Set<Pair<Unifier, SemanticDifference>> parentToChildUnifierDelta =
                 child.getMultiUnifierWithSemanticDiff(parent).stream()
                 .map(unifierDelta -> new Pair<>(unifierDelta.getKey().inverse(), unifierDelta.getValue()))
                 .collect(toSet());
-        //Set<ConceptMap> parentIndices = baseAnswerIndex.unify(childToParentUnifier).collect(toSet());
 
         Set<ConceptMap> parentAnswersToPropagate = baseAnswerIndex.unify(targetToParentUnifier)
                 .flatMap(sub ->
                         parentAnswers.getAll().stream()
-                                .filter(ans -> inferred
-                                        || ans.explanation().isLookupExplanation()
-                                        //|| parentIndices.contains(ans)
+                                .filter(ans -> inferred || ans.explanation().isLookupExplanation()
                                 ))
                 .collect(toSet());
 
@@ -114,7 +111,7 @@ public class IndexedSemanticCache extends SemanticCache<Equivalence.Wrapper<Reas
                 .filter(childAnswers::add)
                 .forEach(newAnswers::add);
 
-        LOG.debug(newAnswers.size() + " new answers propagated: " + newAnswers);
+        LOG.trace(newAnswers.size() + " new answers propagated: " + newAnswers);
     }
 
     @Override
