@@ -21,6 +21,22 @@ java_library(
 )
 
 java_library(
+    name = "generic-schema-graph",
+    srcs = ["GenericSchemaGraph.java"],
+    data = ["//test-integration/graql/reasoner/resources:generic-schema"],
+    visibility = ["//test-integration:__subpackages__"],
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
+        "//test-integration/graql/reasoner/pattern:query-pattern",
+        "//test-integration/graql/reasoner/pattern:relation-pattern",
+        "//test-integration/graql/reasoner/pattern:resource-pattern",
+        "//test-integration/graql/reasoner/pattern:type-pattern",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+java_library(
     name = "geo-graph",
     srcs = ["GeoGraph.java"],
     visibility = ["//test-integration:__subpackages__"],

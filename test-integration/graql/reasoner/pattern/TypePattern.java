@@ -16,46 +16,49 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query.pattern;
+package grakn.core.graql.reasoner.pattern;
 
 import com.google.common.collect.Lists;
 import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Label;
 import java.util.List;
 
-public class TypePattern extends TestQueryPattern {
+public class TypePattern extends QueryPattern {
 
     private final List<String> patterns;
 
-    public TypePattern(ConceptId resourceId, ConceptId anotherResourceId) {
+    public TypePattern(
+            Label type, Label anotherType, Label metaType,
+            ConceptId conceptId, ConceptId anotherConceptId) {
         this.patterns =  Lists.newArrayList(
                 "{$x isa $type;}",
-                "{$xb isa resource;}",
-                "{$xc isa! resource;}",
-                "{$xd isa $typed;$typed label resource-long;}",
-                "{$xe isa resource-long;}",
-                "{$xf isa attribute;}",
+                "{$xb isa  " + type + ";}",
+                "{$xc isa! " + type + ";}",
+                "{$xd isa $typed;$typed label " + anotherType + ";}",
+                "{$xe isa " + anotherType + ";}",
+                "{$xf isa " + metaType + ";}",
 
                 //6-8
-                "{$x1a isa resource; $x1a id '" + resourceId + "';}",
-                "{$x1b isa resource; $x1b id '" + anotherResourceId + "';}",
-                "{$x1c isa $type1; $type1 label resource;$x1c id '" + anotherResourceId + "';}",
+                "{$x1a isa " + type + "; $x1a id '" + conceptId + "';}",
+                "{$x1b isa " + type + "; $x1b id '" + anotherConceptId + "';}",
+                "{$x1c isa $type1; $type1 label " + type + ";$x1c id '" + anotherConceptId + "';}",
 
                 //9-12
-                "{$x2a isa resource; $x2a == 'someValue';}",
-                "{$x2b isa resource; $x2b == 'someOtherValue';}",
+                "{$x2a isa " + type + "; $x2a == 'someValue';}",
+                "{$x2b isa " + type + "; $x2b == 'someOtherValue';}",
 
-                "{$x2c isa resource; $x2c contains 'Value';}",
-                "{$x2d isa resource; $x2d contains 'Other';}",
+                "{$x2c isa " + type + "; $x2c contains 'Value';}",
+                "{$x2d isa " + type + "; $x2d contains 'Other';}",
 
                 //13-14
-                "{$x3a isa resource-long; $x3a == '0';}",
-                "{$x3b isa resource-long; $x3b == '1';}",
+                "{$x3a isa " + anotherType + "; $x3a == '0';}",
+                "{$x3b isa " + anotherType + "; $x3b == '1';}",
 
                 //15-18
-                "{$x4a isa resource-long; $x4a > '0';}",
-                "{$x4b isa resource-long; $x4b < '1';}",
-                "{$x4c isa resource-long; $x4c >= '0';}",
-                "{$x4d isa resource-long; $x4d <= '1';}"
+                "{$x4a isa " + anotherType + "; $x4a > '0';}",
+                "{$x4b isa " + anotherType + "; $x4b < '1';}",
+                "{$x4c isa " + anotherType + "; $x4c >= '0';}",
+                "{$x4d isa " + anotherType + "; $x4d <= '1';}"
 
                 //16-18
                 //TODO

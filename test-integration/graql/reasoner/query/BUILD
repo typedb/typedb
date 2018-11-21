@@ -10,6 +10,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
@@ -35,10 +36,6 @@ java_test(
     size = "medium",
     srcs = [
         "AtomicQueryUnificationIT.java",
-        "pattern/RelationPattern.java",
-        "pattern/ResourcePattern.java",
-        "pattern/TestQueryPattern.java",
-        "pattern/TypePattern.java",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = [
@@ -51,8 +48,14 @@ java_test(
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
+        "//test-integration/graql/reasoner/graph:generic-schema-graph",
         "//test-integration/graql/reasoner/graph:geo-graph",
+        "//test-integration/graql/reasoner/pattern:query-pattern",
+        "//test-integration/graql/reasoner/pattern:relation-pattern",
+        "//test-integration/graql/reasoner/pattern:resource-pattern",
+        "//test-integration/graql/reasoner/pattern:type-pattern",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
     ],
 )
 
@@ -123,6 +126,30 @@ java_test(
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+java_test(
+    name = "subsumption-it",
+    size = "medium",
+    srcs = ["SubsumptionIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:generic-schema",
+    ],
+    test_class = "grakn.core.graql.reasoner.query.SubsumptionIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/graql/reasoner/graph:generic-schema-graph",
+        "//test-integration/graql/reasoner/pattern:query-pattern",
+        "//test-integration/graql/reasoner/pattern:relation-pattern",
+        "//test-integration/graql/reasoner/pattern:resource-pattern",
+        "//test-integration/graql/reasoner/pattern:type-pattern",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
     ],

@@ -206,7 +206,8 @@ public abstract class Binary extends Atom {
                 || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentVarName), this.getIdPredicate(childVarName))
                 || !unifierType.idCompatibility(parentAtom.getIdPredicate(parentPredicateVarName), this.getIdPredicate(childPredicateVarName))
                 || !unifierType.attributeValueCompatibility(parentPredicate, childPredicate)
-                || !unifierType.attributeValueCompatibility(parentTypePredicate, childTypePredicate) ){
+                || !unifierType.attributeValueCompatibility(parentTypePredicate, childTypePredicate)
+                || !unifierType.typeExplicitenessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();
         }
 
