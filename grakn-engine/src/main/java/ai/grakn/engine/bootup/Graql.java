@@ -52,7 +52,8 @@ public class Graql {
      * @param args
      */
     public static void main(String[] args) throws IOException, InterruptedException, ParseException {
-        GraqlShellOptions shellOptions = GraqlShellOptions.create(args);
+        String[] argsWithoutContext = Arrays.copyOfRange(args, 1, args.length);
+        GraqlShellOptions shellOptions = GraqlShellOptions.create(argsWithoutContext);
         SimpleURI location = shellOptions.getUri();
 
         SimpleURI uri = location != null ? location : DEFAULT_URI;
