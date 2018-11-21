@@ -73,7 +73,7 @@
 </style>
 
 <script>
-    import KeyspacesHandler from './KeyspacesHandler.vue';
+    import KeyspacesHandler from '../shared/KeyspacesHandler.vue';
 
     export default {
       components: { KeyspacesHandler },

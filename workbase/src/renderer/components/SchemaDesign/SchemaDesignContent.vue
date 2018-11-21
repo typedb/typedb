@@ -78,7 +78,7 @@
 // import NewTypePanel from '../NewTypePanel/NewTypePanel.vue';
 // import ManageSchemaConcepts from '../ManageSchemaConcepts';
 // import ContextMenu from './ContextMenu.vue';
-import GraphCanvas from './GraphCanvas.vue';
+import GraphCanvas from '../shared/GraphCanvas.vue';
 import TopBar from './TopBar';
 import actions from './store/actions';
 import mutations from './store/mutations';
