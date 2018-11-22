@@ -19,35 +19,125 @@
 package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.admin.InsertQueryAdmin;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.concept.Type;
+import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.admin.MatchAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.common.util.CommonUtil;
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * A query for inserting data.
- * <p>
- * A {@link InsertQuery} can be built from a {@link QueryBuilder} or a {@link Match}.
- * <p>
+ * A query for inserting data, which can be built from a {@link QueryBuilder} or a {@link Match}.
  * When built from a {@code QueryBuilder}, the insert query will execute once, inserting all the variables provided.
- * <p>
- * When built from a {@link Match}, the {@link InsertQuery} will execute for each result of the {@link Match},
- * where variable names in the {@link InsertQuery} are bound to the concept in the result of the {@link Match}.
- *
+ * When built from a {@link Match}, the insert query will execute for each result of the {@link Match},
+ * where variable names in the insert query are bound to the concept in the result of the {@link Match}.
  */
-public interface InsertQuery extends Query<ConceptMap> {
+@AutoValue
+public abstract class InsertQuery implements Query<ConceptMap> {
 
     /**
-     * @param tx the graph to execute the query on
-     * @return a new InsertQuery with the graph set
+     * At least one of {@code tx} and {@code match} must be absent.
+     * @param tx the graph to execute on
+     * @param match the {@link Match} to insert for each result
+     * @param vars a collection of Vars to insert
      */
-    @Override
-    InsertQuery withTx(Transaction tx);
+    static InsertQuery create(Transaction tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
+        if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
+
+        if (vars.isEmpty()) {
+            throw GraqlQueryException.noPatterns();
+        }
+
+        return new AutoValue_InsertQuery(tx, match, ImmutableList.copyOf(vars));
+    }
 
     /**
-     * @return admin instance for inspecting and manipulating this query
+     * @return the {@link Match} that this insert query is using, if it was provided one
+     */
+    @Nullable
+    @CheckReturnValue
+    public abstract Match match();
+
+    /**
+     * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    InsertQueryAdmin admin();
+    public abstract Collection<VarPatternAdmin> varPatterns();
 
+    @Override
+    public final InsertQuery withTx(Transaction tx) {
+        if (match() != null) {
+            return Queries.insert(match().withTx(tx).admin(), varPatterns());
+        } else {
+            return Queries.insert(tx, varPatterns());
+        }
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
+
+    @Override
+    public final Stream<ConceptMap> stream() {
+        return executor().run(this);
+    }
+
+    @CheckReturnValue
+    public InsertQuery admin() {
+        return this;
+    }
+
+    @CheckReturnValue
+    public Set<SchemaConcept> getSchemaConcepts() {
+        if (getTx() == null) throw GraqlQueryException.noTx();
+        Transaction theGraph = getTx();
+
+        Set<SchemaConcept> types = allVarPatterns()
+                .map(VarPatternAdmin::getTypeLabel)
+                .flatMap(CommonUtil::optionalToStream)
+                .map(theGraph::<Type>getSchemaConcept)
+                .collect(Collectors.toSet());
+
+        if (match() != null) types.addAll(match().admin().getSchemaConcepts());
+
+        return types;
+    }
+
+    private Stream<VarPatternAdmin> allVarPatterns() {
+        return varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream());
+    }
+
+    private Transaction getTx() {
+        if (match() != null && match().admin().tx() != null) return match().admin().tx();
+        else return tx();
+    }
+
+    @Override
+    public final String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        if (match() != null) builder.append(match()).append("\n");
+        builder.append("insert ");
+        builder.append(varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim());
+
+        return builder.toString();
+    }
+
+    @Override
+    public final Boolean inferring() {
+        if (match() != null) return match().admin().inferring();
+        else return false;
+    }
 }

@@ -32,7 +32,7 @@ java_test(
 java_test(
     name = "insert-query-impl-test",
     test_class = "grakn.core.graql.query.InsertQueryImplTest",
-    srcs = ["InsertQueryImplTest.java"],
+    srcs = ["InsertQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
