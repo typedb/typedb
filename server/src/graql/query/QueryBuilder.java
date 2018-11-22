@@ -26,7 +26,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
-import grakn.core.graql.internal.parser.QueryParserImpl;
+import grakn.core.graql.parser.QueryParser;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.server.Transaction;
@@ -48,7 +48,7 @@ public class QueryBuilder {
 
     @Nullable
     private final Transaction tx;
-    private final QueryParser queryParser = QueryParserImpl.create(this);
+    private final QueryParser queryParser = QueryParser.create(this);
     private boolean infer = true;
 
     public QueryBuilder() {

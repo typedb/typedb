@@ -26,7 +26,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;

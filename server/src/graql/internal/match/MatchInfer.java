@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.match;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;

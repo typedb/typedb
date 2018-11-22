@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.template.macro;
 
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.macro.Macro;
 
 import java.util.List;

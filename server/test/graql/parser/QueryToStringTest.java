@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.parser;
+package grakn.core.graql.parser;
 
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.query.ComputeQuery;

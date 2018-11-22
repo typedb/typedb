@@ -28,7 +28,7 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.answer.ConceptList;

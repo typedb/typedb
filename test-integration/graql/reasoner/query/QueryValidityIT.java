@@ -22,7 +22,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.query.Query;
 import grakn.core.server.session.TransactionImpl;

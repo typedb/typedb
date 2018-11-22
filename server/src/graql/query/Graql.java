@@ -25,6 +25,7 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.Value;
+import grakn.core.graql.parser.QueryParser;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.query.aggregate.Aggregates;
 import grakn.core.graql.query.predicate.Predicates;

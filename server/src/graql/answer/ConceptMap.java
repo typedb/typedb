@@ -35,8 +35,9 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Var;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 
+import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,15 +92,15 @@ public class ConceptMap implements Answer<ConceptMap> {
         return explanation;
     }
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ImmutableMap<Var, Concept> map() {
         return map;
     }
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Set<Var> vars() { return map.keySet();}
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Collection<Concept> concepts() { return map.values(); }
 
     /**
@@ -107,7 +108,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      *
      * @throws GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Concept get(String var) {
         return get(Graql.var(var));
     }
@@ -117,23 +118,23 @@ public class ConceptMap implements Answer<ConceptMap> {
      *
      * @throws GraqlQueryException if the {@link Var} is not in this {@link ConceptMap}
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Concept get(Var var) {
         Concept concept = map.get(var);
         if (concept == null) throw GraqlQueryException.varNotInQuery(var);
         return concept;
     }
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public boolean containsVar(Var var) { return map.containsKey(var);}
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public boolean containsAll(ConceptMap map) { return this.map.entrySet().containsAll(map.map().entrySet());}
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public boolean isEmpty() { return map.isEmpty();}
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public int size() { return map.size();}
 
     @Override
@@ -166,7 +167,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param explanation flag for providing explanation
      * @return merged answer
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ConceptMap merge(ConceptMap map, boolean mergeExplanation) {
         if (map.isEmpty()) return this;
         if (this.isEmpty()) return map;
@@ -225,7 +226,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param a2 answer to be merged with
      * @return merged answer
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ConceptMap merge(ConceptMap a2) { return this.merge(a2, false);}
 
     /**
@@ -242,7 +243,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param vars variables defining the projection
      * @return project the answer retaining the requested variables
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ConceptMap project(Set<Var> vars) {
         return new ConceptMap(
                 this.map.entrySet().stream()
@@ -256,7 +257,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param unifier set of mappings between variables
      * @return unified answer
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public ConceptMap unify(Unifier unifier) {
         if (unifier.isEmpty()) return this;
         Map<Var, Concept> unified = new HashMap<>();
@@ -282,7 +283,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param multiUnifier set of unifiers defining variable mappings
      * @return stream of unified answers
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Stream<ConceptMap> unify(MultiUnifier multiUnifier) {
         return multiUnifier.stream().map(this::unify);
     }
@@ -291,7 +292,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param toExpand set of variables for which {@link Role} hierarchy should be expanded
      * @return stream of answers with expanded role hierarchy
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Stream<ConceptMap> expandHierarchies(Set<Var> toExpand) {
         if (toExpand.isEmpty()) return Stream.of(this);
         List<Set<Pair<Var, Concept>>> entryOptions = map.entrySet().stream()
@@ -317,7 +318,7 @@ public class ConceptMap implements Answer<ConceptMap> {
      * @param parent query context
      * @return (partial) set of predicates corresponding to this answer
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Set<Atomic> toPredicates(ReasonerQuery parent) {
         Set<Var> varNames = parent.getVarNames();
         return map.entrySet().stream()

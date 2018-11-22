@@ -16,19 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.parser;
+package grakn.core.graql.parser;
 
-import grakn.core.common.exception.ErrorMessage;
 import com.google.auto.value.AutoValue;
+import grakn.core.common.exception.ErrorMessage;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
 
 @AutoValue
 abstract class SyntaxError {
-    abstract @Nullable String queryLine();
+    abstract @Nullable
+    String queryLine();
+
     abstract int line();
+
     abstract int charPositionInLine();
+
     abstract String msg();
 
     static SyntaxError of(int line, String msg) {

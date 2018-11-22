@@ -58,7 +58,7 @@ import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 
 import javax.annotation.Nullable;

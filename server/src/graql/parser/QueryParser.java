@@ -16,18 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.parser;
+package grakn.core.graql.parser;
 
-import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.query.QueryBuilder;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.GraqlSyntaxException;
-import grakn.core.graql.query.Aggregate;
-import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryParser;
-import grakn.core.graql.query.Var;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableMap;
 import grakn.core.graql.grammar.GraqlLexer;
 import grakn.core.graql.grammar.GraqlParser;
 import grakn.core.graql.grammar.GraqlParser.PatternContext;
@@ -35,11 +27,16 @@ import grakn.core.graql.grammar.GraqlParser.PatternsContext;
 import grakn.core.graql.grammar.GraqlParser.QueryContext;
 import grakn.core.graql.grammar.GraqlParser.QueryEOFContext;
 import grakn.core.graql.grammar.GraqlParser.QueryListContext;
-import grakn.core.graql.query.aggregate.Aggregates;
 import grakn.core.graql.internal.template.TemplateParser;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableBiMap;
-import com.google.common.collect.ImmutableMap;
+import grakn.core.graql.query.Aggregate;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.QueryBuilder;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.aggregate.Aggregates;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
@@ -63,39 +60,32 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * Default implementation of {@link QueryParser}
- *
+ * Class for parsing query strings into valid queries
  */
-public class QueryParserImpl implements QueryParser {
+public class QueryParser {
 
     private final QueryBuilder queryBuilder;
     private final TemplateParser templateParser = TemplateParser.create();
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
     private boolean defineAllVars = false;
 
-    public static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
-            "long", AttributeType.DataType.LONG,
-            "double", AttributeType.DataType.DOUBLE,
-            "string", AttributeType.DataType.STRING,
-            "boolean", AttributeType.DataType.BOOLEAN,
-            "date", AttributeType.DataType.DATE
-    );
-
     /**
      * Create a query parser with the specified graph
-     *  @param queryBuilder the QueryBuilderImpl to operate the query on
+     *
+     * @param queryBuilder the QueryBuilderImpl to operate the query on
      */
-    private QueryParserImpl(QueryBuilder queryBuilder) {
+    private QueryParser(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
     }
 
     /**
      * Create a query parser with the specified graph
-     *  @param queryBuilder the QueryBuilderImpl to operate the query on
-     *  @return a query parser that operates with the specified graph
+     *
+     * @param queryBuilder the QueryBuilderImpl to operate the query on
+     * @return a query parser that operates with the specified graph
      */
     public static QueryParser create(QueryBuilder queryBuilder) {
-        QueryParserImpl parser = new QueryParserImpl(queryBuilder);
+        QueryParser parser = new QueryParser(queryBuilder);
         parser.registerDefaultAggregates();
         return parser;
     }
@@ -113,21 +103,39 @@ public class QueryParserImpl implements QueryParser {
         });
     }
 
-    @Override
+    /**
+     * Register an aggregate that can be used when parsing a Graql query
+     *
+     * @param name            the name of the aggregate
+     * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
+     */
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, aggregateMethod);
     }
 
-    @Override
+    /**
+     * Set whether the parser should set all {@link Var}s as user-defined. If it does, then every variable will
+     * generate a user-defined name and be returned in results. For example:
+     * <pre>
+     *     match ($x, $y);
+     * </pre>
+     * <p>
+     * The previous query would normally return only two concepts per result for {@code $x} and {@code $y}. However,
+     * if the flag is set it will also return a third variable with a random name representing the relation
+     * {@code $123 ($x, $y)}.
+     */
     public void defineAllVars(boolean defineAllVars) {
         this.defineAllVars = defineAllVars;
     }
 
-    @Override
     /**
      * @param queryString a string representing a query
      * @return
-     * a query, the type will depend on the type of QUERY.
+     * a query, the type will depend on the type of query.
+     */
+    /**
+     * @param queryString a string representing a query
+     * @return a query, the type will depend on the type of QUERY.
      */
     @SuppressWarnings("unchecked")
     public <T extends Query<?>> T parseQuery(String queryString) {
@@ -143,9 +151,8 @@ public class QueryParserImpl implements QueryParser {
 
     /**
      * @param reader a reader representing several queries
-     * @return a list of queries
+     * @return a stream of query objects
      */
-    @Override
     public <T extends Query<?>> Stream<T> parseReader(Reader reader) {
         UnbufferedCharStream charStream = new UnbufferedCharStream(reader);
         GraqlErrorListener errorListener = GraqlErrorListener.withoutQueryString();
@@ -205,25 +212,39 @@ public class QueryParserImpl implements QueryParser {
         return StreamSupport.stream(queryIterator.spliterator(), false);
     }
 
-    @Override
+    /**
+     * @param queryString a string representing several queries
+     * @return a stream of query objects
+     */
     public <T extends Query<?>> Stream<T> parseList(String queryString) {
         return (Stream<T>) QUERY_LIST.parse(queryString);
     }
 
-    @Override
+    /**
+     * @param patternsString a string representing a list of patterns
+     * @return a list of patterns
+     */
     public List<Pattern> parsePatterns(String patternsString) {
         return PATTERNS.parse(patternsString);
     }
 
-    @Override
-    public Pattern parsePattern(String patternString){
+    /**
+     * @param patternString a string representing a pattern
+     * @return a pattern
+     */
+    public Pattern parsePattern(String patternString) {
         return PATTERN.parse(patternString);
     }
 
-    @Override
+    /**
+     * @param template a string representing a templated graql query
+     * @param data     data to use in template
+     * @return a resolved graql query
+     */
     public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data) {
         return parseList(templateParser.parseTemplate(template, data));
     }
+
     private static GraqlLexer createLexer(CharStream input, GraqlErrorListener errorListener) {
         GraqlLexer lexer = new GraqlLexer(input);
         lexer.removeErrorListeners();
@@ -269,23 +290,23 @@ public class QueryParserImpl implements QueryParser {
 
     private final QueryPart<QueryListContext, Stream<? extends Query<?>>> QUERY_LIST =
             createQueryPart(parser -> parser.queryList(),
-                    (constructor, context) -> constructor.visitQueryList(context));
+                            (constructor, context) -> constructor.visitQueryList(context));
 
     private final QueryPart<QueryEOFContext, Query<?>> QUERY_EOF =
             createQueryPart(parser -> parser.queryEOF(),
-                    (constructor, context) -> constructor.visitQueryEOF(context));
+                            (constructor, context) -> constructor.visitQueryEOF(context));
 
     private final QueryPart<QueryContext, Query<?>> QUERY =
             createQueryPart(parser -> parser.query(),
-                    (constructor, context) -> constructor.visitQuery(context));
+                            (constructor, context) -> constructor.visitQuery(context));
 
     private final QueryPart<PatternsContext, List<Pattern>> PATTERNS =
             createQueryPart(parser -> parser.patterns(),
-                    (constructor, context) -> constructor.visitPatterns(context));
+                            (constructor, context) -> constructor.visitPatterns(context));
 
     private final QueryPart<PatternContext, Pattern> PATTERN =
             createQueryPart(parser -> parser.pattern(),
-                    (constructor, context) -> constructor.visitPattern(context));
+                            (constructor, context) -> constructor.visitPattern(context));
 
     private <S extends ParseTree, T> QueryPart<S, T> createQueryPart(
             Function<GraqlParser, S> parseTree, BiFunction<GraqlConstructor, S, T> visit) {

@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.template;
 
-import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.grammar.GraqlTemplateLexer;
 import grakn.core.graql.grammar.GraqlTemplateParser;
-import grakn.core.graql.internal.parser.GraqlErrorListener;
+import grakn.core.graql.parser.GraqlErrorListener;
 import grakn.core.graql.internal.template.macro.BooleanMacro;
 import grakn.core.graql.internal.template.macro.ConcatMacro;
 import grakn.core.graql.internal.template.macro.DateMacro;

@@ -1,6 +1,6 @@
 java_test(
     name = "gramlin-visitor-test",
-    test_class = "grakn.core.graql.internal.parser.GremlinVisitorTest",
+    test_class = "grakn.core.graql.parser.GremlinVisitorTest",
     srcs = ["GremlinVisitorTest.java"],
     deps = [
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -10,7 +10,7 @@ java_test(
 
 java_test(
     name = "query-parser-test",
-    test_class = "grakn.core.graql.internal.parser.QueryParserTest",
+    test_class = "grakn.core.graql.parser.QueryParserTest",
     srcs = ["QueryParserTest.java"],
     deps = [
         "//server",
@@ -23,7 +23,7 @@ java_test(
 
 java_test(
     name = "query-to-string-test",
-    test_class = "grakn.core.graql.internal.parser.QueryToStringTest",
+    test_class = "grakn.core.graql.parser.QueryToStringTest",
     srcs = ["QueryToStringTest.java"],
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

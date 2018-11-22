@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.parser;
+package grakn.core.graql.parser;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -42,11 +42,10 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryParser;
 import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.Var;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;

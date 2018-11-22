@@ -66,7 +66,7 @@ import grakn.core.graql.internal.analytics.StdMapReduce;
 import grakn.core.graql.internal.analytics.SumMapReduce;
 import grakn.core.graql.internal.analytics.Utility;
 import grakn.core.server.ComputeExecutor;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.olap.TransactionOLAP;
 import grakn.core.common.util.CommonUtil;

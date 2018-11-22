@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.exception;
+package grakn.core.graql.exception;
 
 import grakn.core.common.exception.GraknException;
 import grakn.core.graql.concept.AttributeType;
@@ -162,10 +162,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException createInstanceOfMetaConcept(Var var, Type type) {
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.label());
-    }
-
-    public static GraqlQueryException insertMetaType(Label label, SchemaConcept schemaConcept) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.label()));
     }
 
     /**

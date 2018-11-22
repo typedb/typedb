@@ -22,17 +22,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.Transceiver;
-import grakn.core.graql.query.ComputeQuery;
-import grakn.core.graql.query.DeleteQuery;
-import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Graql;
+import grakn.core.common.exception.GraknException;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.exception.GraqlSyntaxException;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
@@ -44,9 +46,7 @@ import grakn.core.protocol.SessionServiceGrpc;
 import grakn.core.server.QueryExecutor;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.exception.GraknServerException;
-import grakn.core.common.exception.GraknException;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.SessionStore;
@@ -103,7 +103,7 @@ import static org.mockito.Mockito.when;
 public class ServerRPCTest {
 
     private static final String EXCEPTION_MESSAGE = "OH DEAR";
-    private static final GraknException EXCEPTION = GraqlQueryException.create(EXCEPTION_MESSAGE);
+    private static final GraknException EXCEPTION = InvalidKBException.create(EXCEPTION_MESSAGE);
 
     private static final int PORT = 5555;
     private static final Keyspace MYKS = Keyspace.of("myks");
@@ -312,8 +312,8 @@ public class ServerRPCTest {
             AnswerProto.Answer.Builder answerX = AnswerProto.Answer.newBuilder().setConceptMap(conceptMapX);
             Transaction.Res resX = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
-                            .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(answerX))).build();
+                                           .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
+                                                                    .setAnswer(answerX))).build();
             assertEquals(resX, response1);
 
             tx.send(iterate(iterator));
@@ -325,8 +325,8 @@ public class ServerRPCTest {
             AnswerProto.Answer.Builder answerY = AnswerProto.Answer.newBuilder().setConceptMap(conceptMapY);
             Transaction.Res resY = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
-                            .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(answerY))).build();
+                                           .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
+                                                                    .setAnswer(answerY))).build();
             assertEquals(resY, response2);
 
             tx.send(iterate(iterator));
@@ -389,10 +389,10 @@ public class ServerRPCTest {
 
             Transaction.Res expected = Transaction.Res.newBuilder()
                     .setIterateRes(Transaction.Iter.Res.newBuilder()
-                            .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
-                                    .setAnswer(AnswerProto.Answer.newBuilder()
-                                            .setValue(AnswerProto.Value.newBuilder()
-                                                    .setNumber(AnswerProto.Number.newBuilder().setValue("100")))))).build();
+                                           .setQueryIterRes(Transaction.Query.Iter.Res.newBuilder()
+                                                                    .setAnswer(AnswerProto.Answer.newBuilder()
+                                                                                       .setValue(AnswerProto.Value.newBuilder()
+                                                                                                         .setNumber(AnswerProto.Number.newBuilder().setValue("100")))))).build();
 
             assertEquals(expected, tx.receive().ok());
         }
@@ -432,7 +432,8 @@ public class ServerRPCTest {
         verify(tx.graql()).infer(false);
     }
 
-    @Test @Ignore // TODO: re-enable this test after investigating the possibility of a race condition
+    @Test
+    @Ignore // TODO: re-enable this test after investigating the possibility of a race condition
     public void whenExecutingQueryWithInferenceOn_InferenceIsTurnedOn() throws InterruptedException {
         try (Transceiver tx = Transceiver.create(stub)) {
             tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
@@ -445,7 +446,8 @@ public class ServerRPCTest {
         verify(tx.graql()).infer(true);
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void whenGettingALabel_TheLabelIsReturned() throws InterruptedException {
         ConceptId id = ConceptId.of("V123456");
         Label label = Label.of("Dunstan");
@@ -465,7 +467,8 @@ public class ServerRPCTest {
         }
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void whenGettingIsImplicitProperty_IsImplicitIsReturned() throws InterruptedException {
         ConceptId id = ConceptId.of("V123456");
 
@@ -484,7 +487,8 @@ public class ServerRPCTest {
         }
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void whenGettingIsInferredProperty_IsInferredIsReturned() throws InterruptedException {
         ConceptId id = ConceptId.of("V123456");
 
@@ -503,7 +507,8 @@ public class ServerRPCTest {
         }
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void whenRemovingRolePlayer_RolePlayerIsRemoved() throws InterruptedException {
         ConceptId conceptId = ConceptId.of("V123456");
         ConceptId roleId = ConceptId.of("ROLE");
@@ -539,7 +544,8 @@ public class ServerRPCTest {
         }
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void whenGettingALabelForANonExistentConcept_Throw() throws InterruptedException {
         ConceptId id = ConceptId.of("V123456");
 
@@ -557,7 +563,8 @@ public class ServerRPCTest {
         }
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void whenGettingALabelForANonSchemaConcept_Throw() throws InterruptedException {
         ConceptId id = ConceptId.of("V123456");
 
@@ -703,7 +710,7 @@ public class ServerRPCTest {
     @Test
     public void whenExecutingQueryFails_Throw() throws Throwable {
         String message = "your query is dumb";
-        GraknException expectedException = GraqlQueryException.create(message);
+        GraknException expectedException = InvalidKBException.create(message);
 
         when(query.stream()).thenThrow(expectedException);
 
@@ -759,7 +766,7 @@ public class ServerRPCTest {
     }
 
     @Test
-    public void whenSendingRetrieveKeyspacesReq_ReturnListOfExistingKeyspaces(){
+    public void whenSendingRetrieveKeyspacesReq_ReturnListOfExistingKeyspaces() {
         KeyspaceProto.Keyspace.Retrieve.Res response = keyspaceBlockingStub.retrieve(KeyspaceProto.Keyspace.Retrieve.Req.getDefaultInstance());
         assertThat(new ArrayList<>(response.getNamesList()), containsInAnyOrder("testkeyspace1", "testkeyspace2"));
     }

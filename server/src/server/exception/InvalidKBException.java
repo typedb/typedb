@@ -19,6 +19,8 @@
 package grakn.core.server.exception;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.graql.concept.Label;
+import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.Transaction;
 import grakn.core.common.exception.ErrorMessage;
 
@@ -62,5 +64,9 @@ public class InvalidKBException extends GraknException {
             message.append(s);
         }
         return create(message.toString());
+    }
+
+    public static InvalidKBException insertMetaType(Label label, SchemaConcept schemaConcept) {
+        return new InvalidKBException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.label()));
     }
 }
