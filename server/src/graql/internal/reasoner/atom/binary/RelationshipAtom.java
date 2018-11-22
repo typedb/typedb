@@ -114,8 +114,8 @@ import static java.util.stream.Collectors.toSet;
 @AutoValue
 public abstract class RelationshipAtom extends IsaAtomBase {
 
-    public abstract ImmutableList<RelationPlayer> getRelationPlayers();
-    public abstract ImmutableSet<Label> getRoleLabels();
+    abstract ImmutableList<RelationPlayer> getRelationPlayers();
+    abstract ImmutableSet<Label> getRoleLabels();
 
     private ImmutableList<SchemaConcept> possibleTypes = null;
 
@@ -1030,8 +1030,14 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         if (!p.isRelation()) return baseDiff;
         RelationshipAtom parentAtom = (RelationshipAtom) p;
         Map<Var, VariableDefinition> diff = new HashMap<>();
-        //getRoleVariables
-        Set<Var> parentRoleVars = parentAtom.getRoleExpansionVariables();
+
+        Set<Var> parentRoleVars = parentAtom.getRelationPlayers().stream()
+                .map(RelationPlayer::getRole)
+                .flatMap(CommonUtil::optionalToStream)
+                .filter(pattern -> pattern.var().isUserDefinedName())
+                .map(VarPatternAdmin::var)
+                .collect(Collectors.toSet());
+
         HashMultimap<Var, Role> childVarRoleMap = this.getVarRoleMap();
         HashMultimap<Var, Role> parentVarRoleMap = parentAtom.getVarRoleMap();
         unifier.mappings().forEach( m -> {

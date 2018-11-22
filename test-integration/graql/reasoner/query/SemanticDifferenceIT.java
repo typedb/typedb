@@ -3,16 +3,16 @@
  * Copyright (C) 2018 Grakn Labs Ltd
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
+ * it under the terms of the GNU Affero parent Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU Affero parent Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU Affero parent Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
@@ -44,12 +44,12 @@ import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SemanticDifferenceIT {
 
@@ -72,40 +72,16 @@ public class SemanticDifferenceIT {
     }
 
     @Test
-    public void typeSpecification(){
+    public void whenChildSpecifiesType_typesAreFilteredCorrectly(){
         try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
-            String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
-            String generalPattern = patternise(base);
-            String specificPattern = patternise(base, "$x isa " + baseRoleEntity.label() + ";");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
-
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
-            Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
-
-            SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            Graql.var("x"),
-                            new VariableDefinition(baseRoleEntity, null, new HashSet<>(), new HashSet<>())
-                    )
-            );
-            assertEquals(expected, semanticPair.getValue());
-        }
-    }
-
-    @Test
-    public void typeSpecialisation(){
-        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
             String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
-            String generalPattern = patternise(base, "$x isa " + baseRoleEntity.label() + ";");
-            String specificPattern = patternise(base, "$x isa " + subRoleEntity.label() + ";");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
+            String parentPattern = patternise(base);
+            String childPattern = patternise(base, "$x isa " + subRoleEntity.label() + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
@@ -115,20 +91,52 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> assertTrue(subRoleEntity.subs().anyMatch(t -> t.equals(ans.get("x").asThing().type()))));
         }
     }
 
     @Test
-    public void roleSpecification(){
+    public void whenChildSpecialisesType_typesAreFilteredCorrectly(){
+        try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
+            EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
+            EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
+            String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
+            String parentPattern = patternise(base, "$x isa " + baseRoleEntity.label() + ";");
+            String childPattern = patternise(base, "$x isa " + subRoleEntity.label() + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
+            Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
+
+            SemanticDifference expected = new SemanticDifference(
+                    ImmutableMap.of(
+                            Graql.var("x"),
+                            new VariableDefinition(subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                    )
+            );
+            assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> assertTrue(subRoleEntity.subs().anyMatch(t -> t.equals(ans.get("x").asThing().type()))));
+        }
+    }
+
+    @Test
+    public void whenChildSpecifiesRole_rolesAreFilteredCorrectly(){
         try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Role role = tx.getRole("baseRole1");
             String base = "($role: $x, baseRole2: $y) isa binary;";
-            String generalPattern = patternise(base);
-            String specificPattern = patternise(base, "$role label " + role.label() + ";");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
+            String parentPattern = patternise(base);
+            String childPattern = patternise(base, "$role label " + role.label() + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
@@ -140,44 +148,54 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> assertTrue(role.subs().anyMatch(t -> t.equals(ans.get("role")))));
         }
     }
 
     @Test
-    public void roleSpecialisation(){
+    public void whenChildSpecialisesRole_rolesAreFilteredCorrectly(){
         try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
-            String base = "($role: $x, baseRole2: $y) isa binary;";
-            String generalPattern = patternise(base, "$role label " + baseRole.label() + ";");
-            String specificPattern = patternise(base, "$role label " + subRole.label() + ";");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
+            String base = "$r ($role: $x, baseRole2: $y) isa binary;";
+            String parentPattern = patternise(base, "$role label " + baseRole.label() + ";");
+            String childPattern = patternise(base, "$role label " + subRole.label() + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableMap.of(
+                            Graql.var("role"),
+                            new VariableDefinition(null, subRole, new HashSet<>(), new HashSet<>()),
                             Graql.var("x"),
                             new VariableDefinition(null, null, Sets.newHashSet(subRole), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> assertTrue(subRole.subs().anyMatch(t -> t.equals(ans.get("role")))));
         }
     }
 
     @Test
-    public void playedRoleSpecialisation(){
+    public void whenChildSpecialisesPlayedRole_RPsAreFilteredCorrectly(){
         try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
             Role subRole1 = tx.getRole("subRole1");
-            Role subRole2 = tx.getRole("subRole2");
-            String generalPattern = patternise("(baseRole1: $x, baseRole2: $y) isa binary;");
-            String specificPattern = patternise("(subRole1: $x, subRole2: $y) isa binary;");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
+            Role subRole2 = tx.getRole("subSubRole2");
+            String parentPattern = patternise("(baseRole1: $x, baseRole2: $y) isa binary;");
+            String childPattern = patternise("(" + subRole1.label() + ": $x, " + subRole2.label() + ": $y) isa binary;");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
@@ -189,21 +207,33 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> {
+                        assertTrue(
+                                !Sets.union(
+                                        Sets.newHashSet(ans.get("x").asThing().relationships(subRole1)),
+                                        Sets.newHashSet(ans.get("y").asThing().relationships(subRole2))
+                        ).isEmpty()
+                        );
+                    });
         }
     }
 
     @Test
-    public void valuePredicateSpecification(){
+    public void whenChildSpecifiesValuePredicate_valuesAreFilteredCorrectly(){
         try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            String generalPattern = patternise("$x has resource $r;");
-            String specificPattern = patternise("$x has resource 'b';");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
+            String parentPattern = patternise("$x has resource-long $r;");
+            final long value = 0;
+            String childPattern = patternise("$x has resource-long " + value + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
-            ResourceAtom resource = (ResourceAtom) specific.getAtom();
+            ResourceAtom resource = (ResourceAtom) child.getAtom();
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableMap.of(
@@ -212,23 +242,26 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> assertEquals(value, ans.get("r").asAttribute().value()));
         }
     }
 
-    //TODO needs more tests on subsumptive unification on resources
-    @Ignore
     @Test
     public void valuePredicateSpecialisation(){
         try(TransactionImpl<?> tx = genericSchemaSession.transaction(Transaction.Type.WRITE)) {
-            String generalPattern = patternise("$x has resource-long >0;");
-            String specificPattern = patternise("$x has resource-long 1;");
-            ReasonerAtomicQuery general = ReasonerQueries.atomic(conjunction(generalPattern), tx);
-            ReasonerAtomicQuery specific = ReasonerQueries.atomic(conjunction(specificPattern), tx);
+            String parentPattern = patternise("$x has resource-long >0;");
+            final long value = 1;
+            String childPattern = patternise("$x has resource-long " + value + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
-            Set<Pair<Unifier, SemanticDifference>> semanticPairs = specific.getMultiUnifierWithSemanticDiff(general);
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
-            ResourceAtom resource = (ResourceAtom) specific.getAtom();
+            ResourceAtom resource = (ResourceAtom) child.getAtom();
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableMap.of(
@@ -237,6 +270,10 @@ public class SemanticDifferenceIT {
                     )
             );
             assertEquals(expected, semanticPair.getValue());
+
+            parent.getQuery().stream()
+                    .filter(expected::satisfiedBy)
+                    .forEach(ans -> assertEquals(value, ans.get("r").asAttribute().value()));
         }
     }
 
