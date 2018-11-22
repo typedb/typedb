@@ -25,7 +25,6 @@ import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.query.QueryBuilderImpl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,7 +53,7 @@ public class QueryToStringTest {
 
     @Before
     public void setUp() {
-        qb = new QueryBuilderImpl();
+        qb = new QueryBuilder();
     }
 
     @Test

@@ -57,7 +57,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static QueryBuilder withoutGraph() {
-        return new QueryBuilderImpl();
+        return new QueryBuilder();
     }
 
     /**

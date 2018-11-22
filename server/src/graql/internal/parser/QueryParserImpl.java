@@ -19,13 +19,13 @@
 package grakn.core.graql.internal.parser;
 
 import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.GraqlSyntaxException;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.QueryParser;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.grammar.GraqlLexer;

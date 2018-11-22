@@ -23,10 +23,10 @@ import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.QueryBuilder;
 
 import java.io.BufferedReader;
 import java.io.InputStream;

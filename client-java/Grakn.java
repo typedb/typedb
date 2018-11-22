@@ -32,7 +32,6 @@ import grakn.core.common.http.SimpleURI;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Query;
-import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -43,7 +42,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.query.QueryBuilderImpl;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;
@@ -199,7 +198,7 @@ public final class Grakn {
 
         @Override
         public QueryBuilder graql() {
-            return new QueryBuilderImpl(this);
+            return new QueryBuilder(this);
         }
 
         @Override
