@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;

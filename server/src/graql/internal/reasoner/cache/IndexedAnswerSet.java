@@ -22,7 +22,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;

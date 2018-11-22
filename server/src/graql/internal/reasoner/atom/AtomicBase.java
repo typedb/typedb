@@ -23,7 +23,7 @@ import grakn.core.graql.Pattern;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.server.session.TransactionImpl;

@@ -41,7 +41,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.pattern.property.HasAttributeProperty;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;

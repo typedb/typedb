@@ -46,7 +46,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
 import grakn.core.graql.internal.pattern.property.RelationshipProperty;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;

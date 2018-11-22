@@ -33,7 +33,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
-import grakn.core.graql.internal.query.answer.ConceptMapImpl;
+import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 

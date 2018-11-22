@@ -43,7 +43,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.internal.query.QueryBuilderImpl;
+import grakn.core.graql.query.QueryBuilderImpl;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
 import grakn.core.protocol.KeyspaceServiceGrpc;

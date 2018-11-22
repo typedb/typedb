@@ -19,10 +19,10 @@
 package grakn.core.server.session;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
-import grakn.core.server.QueryExecutor;
+import grakn.core.common.config.ConfigKey;
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.Pattern;
+import grakn.core.graql.QueryBuilder;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -34,24 +34,26 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.server.exception.TransactionException;
+import grakn.core.graql.internal.Schema;
+import grakn.core.graql.internal.executor.QueryExecutorImpl;
+import grakn.core.graql.query.QueryBuilderImpl;
+import grakn.core.server.QueryExecutor;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Validator;
-import grakn.core.server.kb.concept.RoleImpl;
-import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.internal.Schema;
-import grakn.core.server.session.cache.GlobalCache;
-import grakn.core.server.session.cache.TransactionCache;
-import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ElementFactory;
+import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.TypeImpl;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.config.ConfigKey;
+import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.cache.GlobalCache;
+import grakn.core.server.session.cache.RuleCache;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -63,8 +65,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -78,7 +78,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static grakn.core.common.exception.ErrorMessage.CANNOT_FIND_CLASS;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -90,8 +89,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class TransactionImpl<G extends Graph> implements Transaction {
     final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
-    private static final String QUERY_BUILDER_CLASS_NAME = "grakn.core.graql.internal.query.QueryBuilderImpl";
-    private static final String QUERY_EXECUTOR_CLASS_NAME = "grakn.core.graql.internal.query.executor.QueryExecutorImpl";
 
     //----------------------------- Shared Variables
     private final SessionImpl session;
@@ -99,11 +96,6 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
     private final ElementFactory elementFactory;
     private final GlobalCache globalCache;
 
-    private static final @Nullable
-    Constructor<?> queryBuilderConstructor = getQueryBuilderConstructor();
-
-    private static final @Nullable
-    Method queryExecutorFactory = getQueryExecutorFactory();
 
     //----------------------------- Transaction Specific
     private final ThreadLocal<TransactionCache> localConceptLog = new ThreadLocal<>();
@@ -310,14 +302,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     @Override
     public QueryBuilder graql() {
-        if (queryBuilderConstructor == null) {
-            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query executor", QUERY_EXECUTOR_CLASS_NAME));
-        }
-        try {
-            return (QueryBuilder) queryBuilderConstructor.newInstance(this);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return new QueryBuilderImpl(this);
     }
 
     public ElementFactory factory() {
@@ -813,32 +798,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     @Override
     public final QueryExecutor queryExecutor() {
-        if (queryExecutorFactory == null) {
-            throw new RuntimeException(CANNOT_FIND_CLASS.getMessage("query builder", QUERY_BUILDER_CLASS_NAME));
-        }
-        try {
-            return (QueryExecutor) queryExecutorFactory.invoke(null, this);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static @Nullable
-    Constructor<?> getQueryBuilderConstructor() {
-        try {
-            return Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(Transaction.class);
-        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            return null;
-        }
-    }
-
-    private static @Nullable
-    Method getQueryExecutorFactory() {
-        try {
-            return Class.forName(QUERY_EXECUTOR_CLASS_NAME).getDeclaredMethod("create", TransactionImpl.class);
-        } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
-            return null;
-        }
+        return QueryExecutorImpl.create(this);
     }
 
     /**
