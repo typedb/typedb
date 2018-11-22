@@ -36,7 +36,10 @@ import org.slf4j.LoggerFactory;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * TODO
+ *
+ * Implementation of {@link SemanticCache} using {@link grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence#StructuralEquivalence}
+ * for query equivalence checks and {@link IndexedAnswerSet}s for storing query answer sets.
+ *
  */
 public class IndexedSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
 

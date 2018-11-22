@@ -107,7 +107,6 @@ public class MultiUnifierImpl implements MultiUnifier{
 
     @Override
     public Unifier getAny() {
-        //TODO add a check it's a structural one
         UnmodifiableIterator<Unifier> iterator = multiUnifier.iterator();
         if (!iterator.hasNext()){
             throw GraqlQueryException.nonExistentUnifier();

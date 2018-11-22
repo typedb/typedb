@@ -103,7 +103,6 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
 
     private ConceptMap recordAnswer(ReasonerAtomicQuery query, ConceptMap answer){
         if(answer.isEmpty()) return answer;
-        //TODO fix handling of cached unifier
         if (cacheEntry == null){
             cacheEntry = getCache().record(query, answer, cacheEntry, null);
             return answer;

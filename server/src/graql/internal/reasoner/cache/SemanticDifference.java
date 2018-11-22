@@ -39,10 +39,10 @@ import java.util.stream.Collectors;
 
 /**
  * Quantifies semantic difference between two queries provided they are in a subsumption relation, i. e. there exists
- * a {@link Unifier} of Subsumptive {@link UnifierType} between them.
+ * a {@link Unifier} of {@link UnifierType#SUBSUMPTIVE} between them.
  *
- * Can be thought of as the definition of a specialisation operation that allows to transform a more generic query
- * to a more specific one.
+ * Semantic difference between query C and P defines a specialisation operation
+ * required to transform query P into a query equivalent to C.
  *
  * In that way we can check whether answers to the parent (more generic) query are also answers
  * to the child query (more specific).

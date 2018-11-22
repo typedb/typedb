@@ -42,8 +42,34 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
+
 /**
- * TODO
+ * Base implementation of a semantic query cache - query cache capable of recognising relations between queries
+ * and subsequently reusing their answer sets.
+ *
+ * Relies on the following concepts:
+ * - Query Subsumption {@link ReasonerAtomicQuery#subsumes(ReasonerAtomicQuery)}
+ * Subsumption relation between a query C (child) and a provided query P (parent) holds if:
+ *
+ * C <= P,
+ *
+ * is true, meaning that P is more general than C (C specialises P)
+ * and their respective answer sets meet:
+ *
+ * answers(C) subsetOf answers(P)
+ *
+ * i. e. the set of answers of C is a subset of the set of answers of P.
+ *
+ * - query semantic difference {@link SemanticDifference}
+ * Semantic difference between query C and P defines a specialisation operation
+ * required to transform query P into a query equivalent to C.
+ *
+ * Those concepts form the basis of the operation of the semantic cache:
+ * if we are looking for answers to query C and the cache already contains query P which has all DB entries (db-complete),
+ * we can propagate the answers, possibly specialising them (applying the semantic difference).
+ *
+ * @param <QE> cache entry query type
+ * @param <SE> cache entry storage type
  */
 public abstract class SemanticCache<
         QE,
