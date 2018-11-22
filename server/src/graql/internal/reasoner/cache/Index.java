@@ -25,7 +25,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * TODO
+ *
+ * Index for {@link IndexedAnswerSet}. Corresponds to a set of variables which partial substitutions need to map.
+ *
  */
 public class Index{
     final private ImmutableSet<Var> vars;

@@ -24,7 +24,7 @@ import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.reasoner.cache.CacheEntry;
 import grakn.core.graql.internal.reasoner.cache.IndexedAnswerSet;
-import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -54,7 +54,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
                 Unifier u,
                 QueryStateBase parent,
                 Set<ReasonerAtomicQuery> subGoals,
-                IndexedSemanticCache cache) {
+                MultilevelSemanticCache cache) {
         super(ReasonerQueries.atomic(query, sub),
                 sub,
                 u,
@@ -127,7 +127,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier){
         ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        IndexedSemanticCache cache = getCache();
+        MultilevelSemanticCache cache = getCache();
 
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);

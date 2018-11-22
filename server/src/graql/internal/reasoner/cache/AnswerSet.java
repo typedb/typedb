@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * TODO
+ * Interface for classes storing query answer sets.
  */
 public interface AnswerSet extends Iterable<ConceptMap>, Set<ConceptMap>{
 

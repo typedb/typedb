@@ -41,9 +41,9 @@ import static java.util.stream.Collectors.toSet;
  * for query equivalence checks and {@link IndexedAnswerSet}s for storing query answer sets.
  *
  */
-public class IndexedSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
+public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IndexedSemanticCache.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultilevelSemanticCache.class);
 
     @Override public UnifierType unifierType() { return UnifierType.STRUCTURAL;}
 

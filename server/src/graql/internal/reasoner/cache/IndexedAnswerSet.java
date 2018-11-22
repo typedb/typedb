@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * TODO
+ * Query answer set indexed with partial substitutions (partial answers).
  */
 public class IndexedAnswerSet implements AnswerSet{
 
@@ -107,8 +107,6 @@ public class IndexedAnswerSet implements AnswerSet{
         if (index.equals(Index.empty())) return indexedAnswers.get(new ConceptMapImpl());
         return new HashSet<>(indexedAnswers.values());
     }
-
-    public static long addTime = 0;
 
     @Override
     //add answer to all indices

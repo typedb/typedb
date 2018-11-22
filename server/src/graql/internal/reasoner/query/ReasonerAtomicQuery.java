@@ -25,7 +25,7 @@ import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.cache.SemanticDifference;
 import grakn.core.graql.internal.reasoner.state.CacheCompletionState;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
@@ -144,13 +144,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
                         && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
     }
-    /**
-     * @param parent
-     * @return
-     */
-    public boolean isUnifiableWith(ReasonerAtomicQuery parent){
-        return this.getAtom().isUnifiableWith(parent.getAtom());
-    }
 
     /**
      * @return the atom constituting this atomic query
@@ -209,7 +202,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, IndexedSemanticCache cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
         return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
     }
 
@@ -222,7 +215,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, IndexedSemanticCache cache) {
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, MultilevelSemanticCache cache) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setQuery(this)))

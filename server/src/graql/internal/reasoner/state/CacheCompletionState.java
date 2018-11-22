@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 
 /**
@@ -30,9 +30,9 @@ import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 public class CacheCompletionState extends ResolutionState {
 
     final private ReasonerAtomicQuery query;
-    final private IndexedSemanticCache cache;
+    final private MultilevelSemanticCache cache;
 
-    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent, IndexedSemanticCache cache){
+    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent, MultilevelSemanticCache cache){
         super(sub, parent);
         this.query = query;
         this.cache = cache;

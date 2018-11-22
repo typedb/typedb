@@ -20,7 +20,7 @@ package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.reasoner.cache.IndexedSemanticCache;
+import grakn.core.graql.internal.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Iterator;
@@ -42,7 +42,7 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
     private final Q query;
     private final Iterator<ResolutionState> subGoalIterator;
 
-    QueryState(Q query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, IndexedSemanticCache cache) {
+    QueryState(Q query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
         super(sub, u, parent, subGoals, cache);
         this.query = query;
         this.subGoalIterator = query.queryStateIterator(this, subGoals, cache);
