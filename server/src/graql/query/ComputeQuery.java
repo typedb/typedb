@@ -96,7 +96,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     private Set<Label> ofTypes = null;
     private Set<Label> inTypes = null;
     private Algorithm algorithm = null;
-    private ArgumentsImpl arguments = null; // But arguments will also be set when where() is called for cluster/centrality
+    private Arguments arguments = null; // But arguments will also be set when where() is called for cluster/centrality
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
@@ -236,15 +236,15 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
     }
 
     public final ComputeQuery<T> where(Collection<Argument> args) {
-        if (this.arguments == null) this.arguments = new ArgumentsImpl();
+        if (this.arguments == null) this.arguments = new Arguments();
         for (Argument arg : args) this.arguments.setArgument(arg);
 
         return this;
     }
 
     @CheckReturnValue
-    public final Optional<ArgumentsImpl> where() {
-        if (ARGUMENTS_DEFAULT.containsKey(method) && arguments == null) arguments = new ArgumentsImpl();
+    public final Optional<Arguments> where() {
+        if (ARGUMENTS_DEFAULT.containsKey(method) && arguments == null) arguments = new Arguments();
         return Optional.ofNullable(this.arguments);
     }
 
@@ -442,7 +442,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
      * Argument inner class to provide access Compute Query arguments
      *
          */
-    public class ArgumentsImpl {
+    public class Arguments {
 
         private LinkedHashMap<Parameter, Argument> argumentsOrdered = new LinkedHashMap<>();
 
@@ -520,7 +520,7 @@ public class ComputeQuery<T extends Answer> implements Query<T> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            ArgumentsImpl that = (ArgumentsImpl) o;
+            Arguments that = (Arguments) o;
 
             return (this.minK().equals(that.minK()) &&
                     this.k().equals(that.k()) &&
