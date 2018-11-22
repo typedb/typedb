@@ -18,8 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 

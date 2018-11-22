@@ -31,7 +31,6 @@ import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.UnifierComparison;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
@@ -39,7 +38,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.pattern.property.HasAttributeProperty;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
@@ -343,9 +342,9 @@ public abstract class ResourceAtom extends Binary{
 
         if (attribute != null) {
             attachAttribute(owner, attribute);
-            return Stream.of(substitution.merge(new ConceptMapImpl(ImmutableMap.of(resourceVariable, attribute))));
+            return Stream.of(substitution.merge(new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
         }
-        return Stream.of(new ConceptMapImpl());
+        return Stream.of(new ConceptMap());
     }
 
     /**

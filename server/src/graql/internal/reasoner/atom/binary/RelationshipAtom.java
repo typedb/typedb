@@ -33,7 +33,6 @@ import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.ReasonerQuery;
@@ -44,7 +43,7 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
 import grakn.core.graql.internal.pattern.property.RelationshipProperty;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -203,7 +202,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public String toString(){
         String typeString = getSchemaConcept() != null?
                 getSchemaConcept().label().getValue() :
-                "{" + inferPossibleTypes(new ConceptMapImpl()).stream().map(rt -> rt.label().getValue()).collect(Collectors.joining(", ")) + "}";
+                "{" + inferPossibleTypes(new ConceptMap()).stream().map(rt -> rt.label().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
                 (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
@@ -242,7 +241,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     private ConceptMap getRoleSubstitution(){
         Map<Var, Concept> roleSub = new HashMap<>();
         getRolePredicates().forEach(p -> roleSub.put(p.getVarName(), tx().getConcept(p.getPredicate())));
-        return new ConceptMapImpl(roleSub);
+        return new ConceptMap(roleSub);
     }
 
     @Override
@@ -555,7 +554,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public boolean isRuleApplicableViaAtom(Atom ruleAtom) {
         if (!(ruleAtom instanceof RelationshipAtom)) return isRuleApplicableViaAtom(ruleAtom.toRelationshipAtom());
-        RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMapImpl());
+        RelationshipAtom atomWithType = this.addType(ruleAtom.getSchemaConcept()).inferRoles(new ConceptMap());
         return ruleAtom.isUnifiableWith(atomWithType);
     }
 
@@ -617,7 +616,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public ImmutableList<SchemaConcept> getPossibleTypes(){ return inferPossibleTypes(new ConceptMapImpl());}
+    public ImmutableList<SchemaConcept> getPossibleTypes(){ return inferPossibleTypes(new ConceptMap());}
 
     /**
      * infer {@link RelationshipType}s that this {@link RelationshipAtom} can potentially have
@@ -1029,8 +1028,8 @@ public abstract class RelationshipAtom extends IsaAtomBase {
 
         ConceptMap relationSub = getRoleSubstitution().merge(
                 getVarName().isUserDefinedName()?
-                        new ConceptMapImpl(ImmutableMap.of(getVarName(), relationship)) :
-                        new ConceptMapImpl()
+                        new ConceptMap(ImmutableMap.of(getVarName(), relationship)) :
+                        new ConceptMap()
         );
 
         return Stream.of(substitution.merge(relationSub));

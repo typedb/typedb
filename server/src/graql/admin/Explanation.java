@@ -18,8 +18,9 @@
 
 package grakn.core.graql.admin;
 
-import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
+import grakn.core.graql.answer.ConceptMap;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Set;

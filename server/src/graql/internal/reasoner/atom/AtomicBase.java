@@ -23,7 +23,6 @@ import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 import grakn.core.server.session.TransactionImpl;
@@ -108,7 +107,7 @@ public abstract class AtomicBase implements Atomic {
     }
 
     @Override
-    public Atomic inferTypes(){ return inferTypes(new ConceptMapImpl()); }
+    public Atomic inferTypes(){ return inferTypes(new ConceptMap()); }
 
     public Atomic inferTypes(ConceptMap sub){ return this; }
 

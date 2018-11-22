@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.reasoner.query;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
+import grakn.core.graql.answer.ConceptMap;
 
 import java.util.Collection;
 import java.util.HashSet;

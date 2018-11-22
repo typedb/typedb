@@ -18,9 +18,9 @@
 
 package grakn.core.graql.query.aggregate;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.answer.ConceptMap;
 
 import java.util.List;
 import java.util.stream.Collectors;

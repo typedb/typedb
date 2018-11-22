@@ -36,9 +36,8 @@ import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
@@ -71,7 +70,6 @@ import java.util.stream.Collectors;
 
 import static grakn.core.graql.query.Graql.var;
 import static grakn.core.graql.reasoner.query.pattern.TestQueryPattern.subList;
-import static grakn.core.graql.reasoner.query.pattern.TestQueryPattern.subListExcluding;
 import static grakn.core.graql.reasoner.query.pattern.TestQueryPattern.subListExcludingElements;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections.CollectionUtils.isEqualCollection;
@@ -376,11 +374,11 @@ public class AtomicQueryUnificationIT {
             ReasonerAtomicQuery xbaseQuery = ReasonerQueries.atomic(conjunction("{($x1, $x2) isa binary;}"), tx);
             ReasonerAtomicQuery ybaseQuery = ReasonerQueries.atomic(conjunction("{($y1, $y2) isa binary;}"), tx);
 
-            ConceptMap xAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
-            ConceptMap flippedXAnswer = new ConceptMapImpl(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
+            ConceptMap xAnswer = new ConceptMap(ImmutableMap.of(var("x1"), x1, var("x2"), x2));
+            ConceptMap flippedXAnswer = new ConceptMap(ImmutableMap.of(var("x1"), x2, var("x2"), x1));
 
-            ConceptMap yAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
-            ConceptMap flippedYAnswer = new ConceptMapImpl(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
+            ConceptMap yAnswer = new ConceptMap(ImmutableMap.of(var("y1"), x1, var("y2"), x2));
+            ConceptMap flippedYAnswer = new ConceptMap(ImmutableMap.of(var("y1"), x2, var("y2"), x1));
 
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(xbaseQuery, xAnswer);
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(xbaseQuery, flippedXAnswer);

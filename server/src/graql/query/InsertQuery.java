@@ -18,13 +18,13 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.common.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;

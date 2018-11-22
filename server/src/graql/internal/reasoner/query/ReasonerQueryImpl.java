@@ -29,7 +29,6 @@ import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Type;
@@ -58,7 +57,7 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.internal.reasoner.utils.Pair;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Var;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 
@@ -347,7 +346,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public ImmutableMap<Var, Type> getVarTypeMap() {
         if (varTypeMap == null) {
-            this.varTypeMap = getVarTypeMap(new ConceptMapImpl());
+            this.varTypeMap = getVarTypeMap(new ConceptMap());
         }
         return varTypeMap;
     }
@@ -435,7 +434,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
                 answerMap.put(p.getVarName(), concept);
             });
-            substitution = new ConceptMapImpl(answerMap);
+            substitution = new ConceptMap(answerMap);
         }
         return substitution;
     }
@@ -449,7 +448,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
                     roleSub.put(p.getVarName(), concept);
                 });
-        return new ConceptMapImpl(roleSub);
+        return new ConceptMap(roleSub);
     }
 
     /**
@@ -535,7 +534,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             dbIterator = Collections.emptyIterator();
 
             ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMapImpl(), parent.getUnifier(), parent, subGoals, cache));
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals, cache));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }

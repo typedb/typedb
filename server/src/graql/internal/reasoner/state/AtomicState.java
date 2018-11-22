@@ -19,9 +19,8 @@
 package grakn.core.graql.internal.reasoner.state;
 
 import grakn.core.graql.query.Var;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -123,7 +122,7 @@ class AtomicState extends QueryState<ReasonerAtomicQuery>{
         //if not and query different than rule head do the same with the query
         ConceptMap queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead?
                 cache.getAnswer(query, answer) :
-                new ConceptMapImpl();
+                new ConceptMap();
 
         //ensure no duplicates created - only materialise answer if it doesn't exist in the db
         if (headAnswer.isEmpty()

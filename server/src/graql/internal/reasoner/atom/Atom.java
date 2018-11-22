@@ -22,14 +22,13 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.query.Var;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
@@ -289,7 +288,7 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public Atom inferTypes(){ return inferTypes(new ConceptMapImpl()); }
+    public Atom inferTypes(){ return inferTypes(new ConceptMap()); }
 
     @Override
     public Atom inferTypes(ConceptMap sub){ return this; }

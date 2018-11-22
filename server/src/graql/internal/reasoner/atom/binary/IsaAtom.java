@@ -27,13 +27,12 @@ import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.predicate.Predicate;
 
@@ -187,7 +186,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public ImmutableList<SchemaConcept> getPossibleTypes() { return inferPossibleTypes(new ConceptMapImpl()); }
+    public ImmutableList<SchemaConcept> getPossibleTypes() { return inferPossibleTypes(new ConceptMap()); }
 
     @Override
     public List<Atom> atomOptions(ConceptMap sub) {
@@ -202,7 +201,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         EntityType entityType = getSchemaConcept().asEntityType();
         return Stream.of(
                 getParentQuery().getSubstitution()
-                        .merge(new ConceptMapImpl(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred())))
+                        .merge(new ConceptMap(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred())))
         );
     }
 

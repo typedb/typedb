@@ -20,7 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +36,7 @@ public class ConceptMapTest {
     private final Var varInAnswer = var("x");
     private final Concept conceptInAnswer = mock(Concept.class);
 
-    private final ConceptMapImpl answer = new ConceptMapImpl(ImmutableMap.of(varInAnswer, conceptInAnswer));
+    private final ConceptMap answer = new ConceptMap(ImmutableMap.of(varInAnswer, conceptInAnswer));
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

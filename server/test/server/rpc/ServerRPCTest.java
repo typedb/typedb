@@ -27,14 +27,13 @@ import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.QueryBuilder;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -145,7 +144,7 @@ public class ServerRPCTest {
         when(qb.infer(anyBoolean())).thenReturn(qb);
         when(query.executor()).thenReturn(executor);
 
-        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMapImpl()));
+        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMap()));
 
         Set<Keyspace> keyspaceSet = new HashSet<>(Arrays.asList(Keyspace.of("testkeyspace1"), Keyspace.of("testkeyspace2")));
         when(mockedKeyspaceStore.keyspaces()).thenReturn(keyspaceSet);
@@ -291,8 +290,8 @@ public class ServerRPCTest {
         when(conceptY.asAttribute().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<ConceptMap> answers = ImmutableList.of(
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
+                new ConceptMap(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMap(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         when(query.stream()).thenAnswer(params -> answers.stream());
@@ -351,8 +350,8 @@ public class ServerRPCTest {
         when(conceptY.asEntity().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<ConceptMap> answers = ImmutableList.of(
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
+                new ConceptMap(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMap(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate

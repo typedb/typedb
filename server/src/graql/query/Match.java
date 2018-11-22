@@ -18,10 +18,10 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

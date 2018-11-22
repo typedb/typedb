@@ -18,12 +18,12 @@
 
 package grakn.core.graql.query.aggregate;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 
 import java.util.Arrays;
