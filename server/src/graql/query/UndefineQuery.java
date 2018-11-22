@@ -19,25 +19,54 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.Transaction;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * A query for undefining {@link SchemaConcept}s.
- * <p>
- *     The query will undefine all {@link SchemaConcept}s described in the {@link VarPattern}s provided.
- * </p>
- *
+ * A query for undefining the Schema types.
+ * The query will undefine all concepts described in the pattern provided.
  */
-public interface UndefineQuery extends Query<ConceptMap> {
+@AutoValue
+public abstract class UndefineQuery implements Query<ConceptMap> {
+
+    static UndefineQuery of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
+        return new AutoValue_UndefineQuery(tx, ImmutableList.copyOf(varPatterns));
+    }
 
     @Override
-    UndefineQuery withTx(Transaction tx);
+    public UndefineQuery withTx(Transaction tx) {
+        return of(varPatterns(), tx);
+    }
+
+    @Override
+    public Stream<ConceptMap> stream() {
+        return executor().run(this);
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return "undefine " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    public Boolean inferring() {
+        return false;
+    }
 
     /**
      * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
      */
-    Collection<? extends VarPattern> varPatterns();
+    public abstract Collection<? extends VarPattern> varPatterns();
 }

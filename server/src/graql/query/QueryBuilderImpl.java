@@ -126,7 +126,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return UndefineQueryImpl.of(admins, tx);
+        return UndefineQuery.of(admins, tx);
     }
 
     public <T extends Answer> ComputeQuery<T> compute(Method<T> method) {

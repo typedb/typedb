@@ -25,10 +25,10 @@ import grakn.core.graql.query.DefineQuery;
 import grakn.core.graql.query.DeleteQuery;
 import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
-import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.query.Query;
+import grakn.core.graql.query.UndefineQuery;
 
 import java.util.stream.Stream;
 
