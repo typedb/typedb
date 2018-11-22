@@ -42,6 +42,7 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.server.QueryExecutor;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.common.exception.GraknException;
@@ -114,6 +115,7 @@ public class ServerRPCTest {
     private final SessionStore txFactory = mock(SessionStore.class);
     private final TransactionImpl tx = mock(TransactionImpl.class);
     private final GetQuery query = mock(GetQuery.class);
+    private final QueryExecutor executor = mock(QueryExecutor.class);
     private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceManager mockedKeyspaceStore = mock(KeyspaceManager.class);
 
@@ -141,6 +143,7 @@ public class ServerRPCTest {
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
         when(qb.infer(anyBoolean())).thenReturn(qb);
+        when(query.executor()).thenReturn(executor);
 
         when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMapImpl()));
 
@@ -273,17 +276,6 @@ public class ServerRPCTest {
 
         verify(tx).close();
         assertEquals(threadOpenedWith[0], threadClosedWith[0]);
-    }
-
-    @Test
-    public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
-            tx.send(query(QUERY, false));
-        }
-
-        GetQuery query = tx.graql().parse(QUERY);
-        verify(query).stream();
     }
 
     @Test
