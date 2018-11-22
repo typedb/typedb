@@ -20,8 +20,8 @@ package grakn.core.graql.internal.reasoner.explanation;
 
 import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableList;
+import grakn.core.graql.answer.ConceptMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;

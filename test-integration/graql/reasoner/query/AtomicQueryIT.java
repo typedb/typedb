@@ -22,21 +22,20 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Query;
-import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraqlQueryException;
@@ -57,7 +56,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
@@ -128,7 +127,7 @@ public class AtomicQueryIT {
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString);
         List<ConceptMap> answers = new ArrayList<>();
 
-        answers.add(new ConceptMapImpl(
+        answers.add(new ConceptMap(
                 ImmutableMap.of(
                         var("x"), getConceptByResourceValue(tx, "Warsaw"),
                         var("y"), getConceptByResourceValue(tx, "Poland")))
@@ -145,7 +144,7 @@ public class AtomicQueryIT {
     public void testWhenMaterialisingEntity_MaterialisedInformationIsCorrectlyFlaggedAsInferred(){
         TransactionImpl<?> tx = materialisationTestSession.transaction(Transaction.Type.WRITE);
         ReasonerAtomicQuery entityQuery = ReasonerQueries.atomic(conjunction("$x isa newEntity"), tx);
-        assertEquals(entityQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
+        assertEquals(entityQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("x").asEntity().isInferred(), true);
         tx.close();
     }
 
@@ -167,9 +166,9 @@ public class AtomicQueryIT {
 
         ReasonerAtomicQuery reuseResourceQuery = ReasonerQueries.atomic(conjunction(reuseResourcePatternString), tx);
 
-        assertEquals(resourceQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
+        assertEquals(resourceQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("r").asAttribute().isInferred(), true);
 
-        reuseResourceQuery.materialise(new ConceptMapImpl()).collect(Collectors.toList());
+        reuseResourceQuery.materialise(new ConceptMap()).collect(Collectors.toList());
         assertEquals(Iterables.getOnlyElement(
                 qb.<GetQuery>parse("match" +
                         "$x has resource $r via $rel;" +
@@ -202,7 +201,7 @@ public class AtomicQueryIT {
                 tx
         );
 
-        assertEquals(relationQuery.materialise(new ConceptMapImpl()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
+        assertEquals(relationQuery.materialise(new ConceptMap()).findFirst().orElse(null).get("r").asRelationship().isInferred(), true);
         tx.close();
     }
 

@@ -21,17 +21,15 @@ package grakn.core.graql.internal.executor;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.DefineQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Query;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.DefineQuery;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
 import grakn.core.graql.internal.pattern.property.PropertyExecutor;
 import grakn.core.graql.internal.pattern.property.VarPropertyInternal;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
@@ -99,7 +97,7 @@ public class QueryOperationExecutor {
      * Insert all the Vars
      */
     static ConceptMap insertAll(Collection<VarPatternAdmin> patterns, Transaction graph) {
-        return create(patterns, graph, ExecutionType.INSERT).insertAll(new ConceptMapImpl());
+        return create(patterns, graph, ExecutionType.INSERT).insertAll(new ConceptMap());
     }
 
     /**
@@ -111,11 +109,11 @@ public class QueryOperationExecutor {
     }
 
     static ConceptMap defineAll(Collection<VarPatternAdmin> patterns, Transaction graph) {
-        return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMapImpl());
+        return create(patterns, graph, ExecutionType.DEFINE).insertAll(new ConceptMap());
     }
 
     static ConceptMap undefineAll(ImmutableList<VarPatternAdmin> patterns, Transaction tx) {
-        return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMapImpl());
+        return create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new ConceptMap());
     }
 
     private static QueryOperationExecutor create(
@@ -263,7 +261,7 @@ public class QueryOperationExecutor {
         }
 
         Map<Var, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Var::isUserDefinedName);
-        return new ConceptMapImpl(namedConcepts);
+        return new ConceptMap(namedConcepts);
     }
 
     private Concept buildConcept(Var var, ConceptBuilder builder) {

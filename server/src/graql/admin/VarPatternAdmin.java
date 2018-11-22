@@ -19,8 +19,8 @@
 package grakn.core.graql.admin;
 
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;

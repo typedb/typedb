@@ -18,9 +18,9 @@
 
 package grakn.core.graql.internal.reasoner.explanation;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Explanation;
 import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;
 import java.util.Collections;

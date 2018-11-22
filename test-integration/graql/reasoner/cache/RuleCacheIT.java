@@ -7,14 +7,13 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.rule.InferenceRule;
@@ -37,7 +36,7 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -96,7 +95,7 @@ public class RuleCacheIT {
         recordToRetrieveUnifier = retrieveToRecordUnifier.inverse();
 
         Entity entity = tx.getEntityType("anotherNoRoleEntity").instances().findFirst().orElse(null);
-        singleAnswer = new ConceptMapImpl(
+        singleAnswer = new ConceptMap(
                 ImmutableMap.of(
                         var("x"), entity,
                         var("y"), entity

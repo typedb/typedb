@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.printer;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
@@ -25,7 +26,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.internal.util.ANSI;
 import grakn.core.graql.internal.util.StringUtil;

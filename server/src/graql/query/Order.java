@@ -16,25 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
-
-import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.answer.ConceptMap;
-
-import java.util.Collection;
+package grakn.core.graql.query;
 
 /**
- * A query for defining {@link SchemaConcept}s.
- * <p>
- *     The query will define all {@link SchemaConcept}s described in the {@link VarPattern}s provided and return an
- *     {@link ConceptMap} containing bindings for all {@link Var}s in the {@link VarPattern}s.
- * </p>
+ * Ordering for {@link Match} results
  *
  */
-public interface DefineQuery extends Query<ConceptMap> {
+public enum Order {
+    /**
+     * Ascending order
+     */
+    asc,
 
     /**
-     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     * Descending order
      */
-    Collection<? extends VarPattern> varPatterns();
+    desc
 }

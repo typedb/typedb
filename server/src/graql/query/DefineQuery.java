@@ -18,11 +18,9 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.DefineQuery;
-import grakn.core.graql.Query;
-import grakn.core.graql.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
@@ -35,15 +33,20 @@ import java.util.stream.Stream;
  * Implementation for {@link DefineQuery}
  */
 @AutoValue
-abstract class DefineQueryImpl implements DefineQuery {
+public abstract class DefineQuery implements Query<ConceptMap> {
 
-    static DefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
-        return new AutoValue_DefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
+    /**
+     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     */
+    public abstract Collection<? extends VarPattern> varPatterns();
+
+    static DefineQuery of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
+        return new AutoValue_DefineQuery(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
     public Query<ConceptMap> withTx(Transaction tx) {
-        return DefineQueryImpl.of(varPatterns(), tx);
+        return DefineQuery.of(varPatterns(), tx);
     }
 
     @Override

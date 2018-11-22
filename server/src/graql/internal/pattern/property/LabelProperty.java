@@ -22,7 +22,7 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UniqueVarProperty;

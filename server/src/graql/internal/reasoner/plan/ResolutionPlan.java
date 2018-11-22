@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.plan;
 
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.reasoner.atom.Atom;

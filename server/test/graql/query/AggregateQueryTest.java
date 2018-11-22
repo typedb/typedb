@@ -18,20 +18,16 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.Aggregate;
-import grakn.core.graql.AggregateQuery;
-import grakn.core.graql.Graql;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.query.Queries;
 import grakn.core.graql.query.aggregate.Aggregates;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class AggregateQueryImplTest {
+public class AggregateQueryTest {
 
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();

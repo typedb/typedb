@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
@@ -44,27 +44,27 @@ import java.util.stream.Collectors;
  *
  */
 @AutoValue
-public abstract class ValuePredicate extends Predicate<grakn.core.graql.ValuePredicate> {
+public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.ValuePredicate> {
 
     @Override public abstract VarPattern getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
     //need to have it explicitly here cause autovalue gets confused with the generic
-    public abstract grakn.core.graql.ValuePredicate getPredicate();
+    public abstract grakn.core.graql.query.ValuePredicate getPredicate();
 
     public static ValuePredicate create(VarPattern pattern, ReasonerQuery parent) {
         return new AutoValue_ValuePredicate(pattern.admin().var(), pattern, parent, extractPredicate(pattern));
     }
-    public static ValuePredicate create(Var varName, grakn.core.graql.ValuePredicate pred, ReasonerQuery parent) {
+    public static ValuePredicate create(Var varName, grakn.core.graql.query.ValuePredicate pred, ReasonerQuery parent) {
         return create(createValueVar(varName, pred), parent);
     }
     private static ValuePredicate create(ValuePredicate pred, ReasonerQuery parent) {
         return create(pred.getPattern(), parent);
     }
 
-    public static VarPattern createValueVar(Var name, grakn.core.graql.ValuePredicate pred) { return name.val(pred);}
+    public static VarPattern createValueVar(Var name, grakn.core.graql.query.ValuePredicate pred) { return name.val(pred);}
 
-    private static grakn.core.graql.ValuePredicate extractPredicate(VarPattern pattern) {
+    private static grakn.core.graql.query.ValuePredicate extractPredicate(VarPattern pattern) {
         Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {

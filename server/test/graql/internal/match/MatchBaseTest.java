@@ -20,12 +20,11 @@ package grakn.core.graql.internal.match;
 
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 

@@ -2,13 +2,13 @@
 //
 //import grakn.core.server.Transaction;
 //import Concept;
-//import grakn.core.graql.GetQuery;
-//import grakn.core.graql.QueryBuilder;
-//import grakn.core.graql.Var;
+//import grakn.core.graql.query.GetQuery;
+//import grakn.core.graql.query.QueryBuilder;
+//import grakn.core.graql.query.Var;
 //import grakn.core.graql.admin.Explanation;
 //import grakn.core.graql.admin.ReasonerQuery;
 //import grakn.core.graql.answer.ConceptMap;
-//import grakn.core.graql.query.answer.ConceptMapImpl;
+//import grakn.core.graql.answer.ConceptMapImpl;
 //import com.google.common.collect.ImmutableList;
 //import com.google.common.collect.ImmutableMap;
 //import com.google.common.collect.Iterables;
@@ -23,7 +23,7 @@
 //import java.util.Set;
 //import java.util.stream.Collectors;
 //
-//import static grakn.core.graql.Graql.var;
+//import static grakn.core.graql.query.Graql.var;
 //import static junit.framework.TestCase.assertTrue;
 //import static org.junit.Assert.assertEquals;
 //import static org.junit.Assert.assertFalse;

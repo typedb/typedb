@@ -18,10 +18,9 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.UndefineQuery;
-import grakn.core.graql.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
@@ -31,14 +30,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Implementation for {@link UndefineQuery}
- *
+ * A query for undefining the Schema types.
+ * The query will undefine all concepts described in the pattern provided.
  */
 @AutoValue
-abstract class UndefineQueryImpl implements UndefineQuery {
+public abstract class UndefineQuery implements Query<ConceptMap> {
 
-    static UndefineQueryImpl of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
-        return new AutoValue_UndefineQueryImpl(tx, ImmutableList.copyOf(varPatterns));
+    static UndefineQuery of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
+        return new AutoValue_UndefineQuery(tx, ImmutableList.copyOf(varPatterns));
     }
 
     @Override
@@ -65,4 +64,9 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     public Boolean inferring() {
         return false;
     }
+
+    /**
+     * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
+     */
+    public abstract Collection<? extends VarPattern> varPatterns();
 }

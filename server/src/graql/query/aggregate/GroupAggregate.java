@@ -18,14 +18,14 @@
 
 package grakn.core.graql.query.aggregate;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Concept;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Aggregate;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Aggregate;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;

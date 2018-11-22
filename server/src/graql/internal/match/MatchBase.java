@@ -22,14 +22,13 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -96,7 +95,7 @@ public class MatchBase extends AbstractMatch {
                 .map(elements -> makeResults(vars, tx, elements))
                 .distinct()
                 .sequential()
-                .map(ConceptMapImpl::new);
+                .map(ConceptMap::new);
     }
 
     /**

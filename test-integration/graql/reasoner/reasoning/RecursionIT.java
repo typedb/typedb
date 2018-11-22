@@ -18,8 +18,8 @@
 
 package grakn.core.graql.reasoner.reasoning;
 
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.NguyenGraph;

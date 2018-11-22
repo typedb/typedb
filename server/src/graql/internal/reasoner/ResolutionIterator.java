@@ -19,7 +19,6 @@
 package grakn.core.graql.internal.reasoner;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.answer.ConceptMapImpl;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -60,7 +59,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
         this.reiterationRequired = q.requiresReiteration();
-        states.push(query.subGoal(new ConceptMapImpl(), new UnifierImpl(), null, new HashSet<>(), cache));
+        states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
     private ConceptMap findNextAnswer(){
@@ -106,7 +105,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (dAns != 0 || iter == 0) {
                 LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                 iter++;
-                states.push(query.subGoal(new ConceptMapImpl(), new UnifierImpl(), null, new HashSet<>(), cache));
+                states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
                 oldAns = answers.size();
                 return hasNext();
             }

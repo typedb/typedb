@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.iterator;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.answer.ConceptMap;
 
 import java.util.Iterator;
 import java.util.stream.Stream;

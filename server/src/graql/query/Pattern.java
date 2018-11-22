@@ -16,37 +16,41 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
+package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.PatternAdmin;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Set;
 
 /**
- * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
- * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
- * the knowledge base in an efficient fashion to find any matching answers.
+ * A pattern describing a subgraph.
+ * <p>
+ * A {@code Pattern} can describe an entire graph, or just a single concept.
+ * <p>
+ * For example, {@code var("x").isa("movie")} is a pattern representing things that are movies.
+ * <p>
+ * A pattern can also be a conjunction: {@code and(var("x").isa("movie"), var("x").value("Titanic"))}, or a disjunction:
+ * {@code or(var("x").isa("movie"), var("x").isa("tv-show"))}. These can be used to combine other patterns together
+ * into larger patterns.
+ *
  */
-public interface GetQuery extends Query<ConceptMap> {
+public interface Pattern {
 
     /**
-     * @param tx the transaction to execute the query on
-     * @return a new {@link GetQuery} with the transaction set
-     */
-    @Override
-    GetQuery withTx(Transaction tx);
-
-    /**
-     * Get the {@link Match} this {@link GetQuery} contains
+     * @return an Admin class that allows inspecting or manipulating this pattern
      */
     @CheckReturnValue
-    Match match();
+    PatternAdmin admin();
 
     /**
-     * Get the {@link Var}s this {@link GetQuery} will select from the answers
+     * Join patterns in a conjunction
      */
     @CheckReturnValue
-    Set<Var> vars();
+    Pattern and(Pattern pattern);
+
+    /**
+     * Join patterns in a disjunction
+     */
+    @CheckReturnValue
+    Pattern or(Pattern pattern);
 }

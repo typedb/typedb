@@ -21,7 +21,7 @@ package grakn.core.client.concept.test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.client.Grakn;
-import grakn.core.graql.Pattern;
+import grakn.core.graql.query.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.AttributeType.DataType;
@@ -47,7 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;

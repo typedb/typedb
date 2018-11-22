@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.reasoner.atom.binary;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Unifier;
 import java.util.Collection;
 import java.util.Collections;

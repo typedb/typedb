@@ -18,16 +18,16 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.ComputeExecutor;
-import grakn.core.server.Transaction;
+import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.answer.Answer;
 import grakn.core.graql.internal.util.StringConverter;
-import com.google.common.collect.ImmutableSet;
+import grakn.core.server.ComputeExecutor;
+import grakn.core.server.Transaction;
+import grakn.core.server.exception.GraqlQueryException;
 
+import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,36 +45,36 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
-import static grakn.core.graql.Syntax.Char.COMMA_SPACE;
-import static grakn.core.graql.Syntax.Char.EQUAL;
-import static grakn.core.graql.Syntax.Char.QUOTE;
-import static grakn.core.graql.Syntax.Char.SEMICOLON;
-import static grakn.core.graql.Syntax.Char.SPACE;
-import static grakn.core.graql.Syntax.Char.SQUARE_CLOSE;
-import static grakn.core.graql.Syntax.Char.SQUARE_OPEN;
-import static grakn.core.graql.Syntax.Command.COMPUTE;
-import static grakn.core.graql.Syntax.Compute.ALGORITHMS_ACCEPTED;
-import static grakn.core.graql.Syntax.Compute.ALGORITHMS_DEFAULT;
-import static grakn.core.graql.Syntax.Compute.ARGUMENTS_ACCEPTED;
-import static grakn.core.graql.Syntax.Compute.ARGUMENTS_DEFAULT;
-import static grakn.core.graql.Syntax.Compute.Algorithm;
-import static grakn.core.graql.Syntax.Compute.Argument;
-import static grakn.core.graql.Syntax.Compute.CONDITIONS_ACCEPTED;
-import static grakn.core.graql.Syntax.Compute.CONDITIONS_REQUIRED;
-import static grakn.core.graql.Syntax.Compute.Condition;
-import static grakn.core.graql.Syntax.Compute.Condition.FROM;
-import static grakn.core.graql.Syntax.Compute.Condition.IN;
-import static grakn.core.graql.Syntax.Compute.Condition.OF;
-import static grakn.core.graql.Syntax.Compute.Condition.TO;
-import static grakn.core.graql.Syntax.Compute.Condition.USING;
-import static grakn.core.graql.Syntax.Compute.Condition.WHERE;
-import static grakn.core.graql.Syntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
-import static grakn.core.graql.Syntax.Compute.Method;
-import static grakn.core.graql.Syntax.Compute.Parameter;
-import static grakn.core.graql.Syntax.Compute.Parameter.CONTAINS;
-import static grakn.core.graql.Syntax.Compute.Parameter.K;
-import static grakn.core.graql.Syntax.Compute.Parameter.MIN_K;
-import static grakn.core.graql.Syntax.Compute.Parameter.SIZE;
+import static grakn.core.graql.query.Syntax.Char.COMMA_SPACE;
+import static grakn.core.graql.query.Syntax.Char.EQUAL;
+import static grakn.core.graql.query.Syntax.Char.QUOTE;
+import static grakn.core.graql.query.Syntax.Char.SEMICOLON;
+import static grakn.core.graql.query.Syntax.Char.SPACE;
+import static grakn.core.graql.query.Syntax.Char.SQUARE_CLOSE;
+import static grakn.core.graql.query.Syntax.Char.SQUARE_OPEN;
+import static grakn.core.graql.query.Syntax.Command.COMPUTE;
+import static grakn.core.graql.query.Syntax.Compute.ALGORITHMS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.ALGORITHMS_DEFAULT;
+import static grakn.core.graql.query.Syntax.Compute.ARGUMENTS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.ARGUMENTS_DEFAULT;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm;
+import static grakn.core.graql.query.Syntax.Compute.Argument;
+import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_ACCEPTED;
+import static grakn.core.graql.query.Syntax.Compute.CONDITIONS_REQUIRED;
+import static grakn.core.graql.query.Syntax.Compute.Condition;
+import static grakn.core.graql.query.Syntax.Compute.Condition.FROM;
+import static grakn.core.graql.query.Syntax.Compute.Condition.IN;
+import static grakn.core.graql.query.Syntax.Compute.Condition.OF;
+import static grakn.core.graql.query.Syntax.Compute.Condition.TO;
+import static grakn.core.graql.query.Syntax.Compute.Condition.USING;
+import static grakn.core.graql.query.Syntax.Compute.Condition.WHERE;
+import static grakn.core.graql.query.Syntax.Compute.INCLUDE_ATTRIBUTES_DEFAULT;
+import static grakn.core.graql.query.Syntax.Compute.Method;
+import static grakn.core.graql.query.Syntax.Compute.Parameter;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.CONTAINS;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.K;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.MIN_K;
+import static grakn.core.graql.query.Syntax.Compute.Parameter.SIZE;
 import static java.util.stream.Collectors.joining;
 
 
@@ -82,7 +82,7 @@ import static java.util.stream.Collectors.joining;
  * Graql Compute Query: to perform distributed analytics OLAP computation on Grakn
  * @param <T> return type of ComputeQuery
  */
-public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
+public class ComputeQuery<T extends Answer> implements Query<T> {
 
     private Transaction tx;
     private Set<ComputeExecutor> runningJobs = ConcurrentHashMap.newKeySet();
@@ -100,11 +100,11 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
     private final Map<Condition, Supplier<Optional<?>>> conditionsMap = setConditionsMap();
 
-    public ComputeQueryImpl(Transaction tx, Method<T> method) {
+    public ComputeQuery(Transaction tx, Method<T> method) {
         this(tx, method, INCLUDE_ATTRIBUTES_DEFAULT.get(method));
     }
 
-    public ComputeQueryImpl(Transaction tx, Method method, boolean includeAttributes) {
+    public ComputeQuery(Transaction tx, Method method, boolean includeAttributes) {
         this.method = method;
         this.tx = tx;
         this.includeAttributes = includeAttributes;
@@ -139,7 +139,6 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
 
     }
 
-    @Override
     public final void kill() {
         runningJobs.forEach(ComputeExecutor::kill);
     }
@@ -155,34 +154,30 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         return tx;
     }
 
-    @Override
     public final Method method() {
         return method;
     }
 
-    @Override
     public final ComputeQuery<T> from(ConceptId fromID) {
         this.fromID = fromID;
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public final Optional<ConceptId> from() {
         return Optional.ofNullable(fromID);
     }
 
-    @Override
     public final ComputeQuery<T> to(ConceptId toID) {
         this.toID = toID;
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public final Optional<ConceptId> to() {
         return Optional.ofNullable(toID);
     }
 
-    @Override
     public final ComputeQuery<T> of(String type, String... types) {
         ArrayList<String> typeList = new ArrayList<>(types.length + 1);
         typeList.add(type);
@@ -191,19 +186,17 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         return of(typeList.stream().map(Label::of).collect(toImmutableSet()));
     }
 
-    @Override
     public final ComputeQuery<T> of(Collection<Label> types) {
         this.ofTypes = ImmutableSet.copyOf(types);
 
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public final Optional<Set<Label>> of() {
         return Optional.ofNullable(ofTypes);
     }
 
-    @Override
     public final ComputeQuery<T> in(String type, String... types) {
         ArrayList<String> typeList = new ArrayList<>(types.length + 1);
         typeList.add(type);
@@ -212,31 +205,28 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         return in(typeList.stream().map(Label::of).collect(toImmutableSet()));
     }
 
-    @Override
     public final ComputeQuery<T> in(Collection<Label> types) {
         this.inTypes = ImmutableSet.copyOf(types);
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public final Optional<Set<Label>> in() {
         if (this.inTypes == null) return Optional.of(ImmutableSet.of());
         return Optional.of(this.inTypes);
     }
 
-    @Override
     public final ComputeQuery<T> using(Algorithm algorithm) {
         this.algorithm = algorithm;
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public final Optional<Algorithm> using() {
         if (ALGORITHMS_DEFAULT.containsKey(method) && algorithm == null) return Optional.of(ALGORITHMS_DEFAULT.get(method));
         return Optional.ofNullable(algorithm);
     }
 
-    @Override
     public final ComputeQuery<T> where(Argument arg, Argument... args) {
         ArrayList<Argument> argList = new ArrayList(args.length + 1);
         argList.add(arg);
@@ -245,7 +235,6 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         return this.where(argList);
     }
 
-    @Override
     public final ComputeQuery<T> where(Collection<Argument> args) {
         if (this.arguments == null) this.arguments = new ArgumentsImpl();
         for (Argument arg : args) this.arguments.setArgument(arg);
@@ -253,19 +242,18 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         return this;
     }
 
-    @Override
-    public final Optional<Arguments> where() {
+    @CheckReturnValue
+    public final Optional<ArgumentsImpl> where() {
         if (ARGUMENTS_DEFAULT.containsKey(method) && arguments == null) arguments = new ArgumentsImpl();
         return Optional.ofNullable(this.arguments);
     }
 
-    @Override
-    public final ComputeQueryImpl includeAttributes(boolean include) {
+    public final ComputeQuery<T> includeAttributes(boolean include) {
         this.includeAttributes = include;
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public final boolean includesAttributes() {
         return includeAttributes;
     }
@@ -275,12 +263,12 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
         return false;
     }
 
-    @Override
+    @CheckReturnValue
     public final boolean isValid() {
         return !getException().isPresent();
     }
 
-    @Override
+    @CheckReturnValue
     public Optional<GraqlQueryException> getException() {
         // Check that all required conditions for the current query method are provided
         for (Condition condition : collect(CONDITIONS_REQUIRED.get(this.method()))) {
@@ -443,10 +431,18 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
     }
 
     /**
+     * Checks Whether this query will modify the graph
+     */
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
+
+    /**
      * Argument inner class to provide access Compute Query arguments
      *
          */
-    public class ArgumentsImpl implements Arguments {
+    public class ArgumentsImpl {
 
         private LinkedHashMap<Parameter, Argument> argumentsOrdered = new LinkedHashMap<>();
 
@@ -467,17 +463,17 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
             argumentsOrdered.put(arg.type(), arg);
         }
 
-        @Override
+        @CheckReturnValue
         public Optional<?> getArgument(Parameter param) {
             return argumentsMap.get(param).get();
         }
 
-        @Override
+        @CheckReturnValue
         public Collection<Parameter> getParameters() {
             return argumentsOrdered.keySet();
         }
 
-        @Override
+        @CheckReturnValue
         public Optional<Long> minK() {
             Object defaultArg = getDefaultArgument(MIN_K);
             if (defaultArg != null) return Optional.of((Long) defaultArg);
@@ -485,7 +481,7 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
             return Optional.ofNullable((Long) getArgumentValue(MIN_K));
         }
 
-        @Override
+        @CheckReturnValue
         public Optional<Long> k() {
             Object defaultArg = getDefaultArgument(K);
             if (defaultArg != null) return Optional.of((Long) defaultArg);
@@ -493,12 +489,12 @@ public class ComputeQueryImpl<T extends Answer> implements ComputeQuery<T> {
             return Optional.ofNullable((Long) getArgumentValue(K));
         }
 
-        @Override
+        @CheckReturnValue
         public Optional<Long> size() {
             return Optional.ofNullable((Long) getArgumentValue(SIZE));
         }
 
-        @Override
+        @CheckReturnValue
         public Optional<ConceptId> contains() {
             return Optional.ofNullable((ConceptId) getArgumentValue(CONTAINS));
         }

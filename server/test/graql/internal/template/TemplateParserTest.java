@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.template;
 
 import grakn.core.server.exception.GraqlSyntaxException;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;
@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static grakn.core.graql.Graql.parse;
+import static grakn.core.graql.query.Graql.parse;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertEquals;

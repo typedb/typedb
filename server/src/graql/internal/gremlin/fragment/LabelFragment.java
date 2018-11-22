@@ -20,7 +20,7 @@ package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.internal.util.StringConverter;
 import grakn.core.server.session.TransactionImpl;
 import com.google.auto.value.AutoValue;

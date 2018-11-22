@@ -4,13 +4,12 @@ import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Entity;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.cache.SimpleQueryCache;
 import grakn.core.graql.internal.reasoner.query.QueryAnswers;
 import grakn.core.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -32,7 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -92,7 +91,7 @@ public class QueryCacheIT {
         recordToRetrieveUnifier = retrieveToRecordUnifier.inverse();
 
         Entity entity = tx.getEntityType("anotherNoRoleEntity").instances().findFirst().orElse(null);
-        singleAnswer = new ConceptMapImpl(
+        singleAnswer = new ConceptMap(
                 ImmutableMap.of(
                         var("x"), entity,
                         var("y"), entity
@@ -186,11 +185,11 @@ public class QueryCacheIT {
         ConceptMap retrieveAnswer = answer.unify(recordToRetrieveUnifier);
         cache.record(recordQuery, answer);
 
-        assertEquals(cache.getAnswer(recordQuery, new ConceptMapImpl()), new ConceptMapImpl());
+        assertEquals(cache.getAnswer(recordQuery, new ConceptMap()), new ConceptMap());
         assertEquals(cache.getAnswer(recordQuery, answer), answer);
         assertEquals(cache.getAnswer(recordQuery, retrieveAnswer), answer);
 
-        assertEquals(cache.getAnswer(retrieveQuery, new ConceptMapImpl()), new ConceptMapImpl());
+        assertEquals(cache.getAnswer(retrieveQuery, new ConceptMap()), new ConceptMap());
         assertEquals(cache.getAnswer(retrieveQuery, retrieveAnswer), retrieveAnswer);
         assertEquals(cache.getAnswer(retrieveQuery, answer), retrieveAnswer);
     }

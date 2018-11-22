@@ -18,10 +18,10 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.Var;
-import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;

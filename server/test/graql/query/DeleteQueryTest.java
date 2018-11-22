@@ -18,21 +18,16 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
 import com.google.common.collect.Sets;
-import grakn.core.graql.query.DeleteQueryImpl;
 import org.junit.Test;
 
 import java.util.Collection;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class DeleteQueryImplTest {
+public class DeleteQueryTest {
 
     private final Match match1 = Graql.match(var("x").isa("movie"));
     private final Match match2 = Graql.match(var("y").isa("movie"));
@@ -42,8 +37,8 @@ public class DeleteQueryImplTest {
 
     @Test
     public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {
-        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
-        DeleteQuery query2 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query1 = DeleteQuery.of(vars1, match1);
+        DeleteQuery query2 = DeleteQuery.of(vars1, match1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -51,16 +46,16 @@ public class DeleteQueryImplTest {
 
     @Test
     public void deleteQueriesWithDifferentMatchesAreDifferent() {
-        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
-        DeleteQuery query2 = DeleteQueryImpl.of(vars1, match2);
+        DeleteQuery query1 = DeleteQuery.of(vars1, match1);
+        DeleteQuery query2 = DeleteQuery.of(vars1, match2);
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void deleteQueriesWithDifferentVarsAreDifferent() {
-        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
-        DeleteQuery query2 = DeleteQueryImpl.of(vars2, match1);
+        DeleteQuery query1 = DeleteQuery.of(vars1, match1);
+        DeleteQuery query2 = DeleteQuery.of(vars2, match1);
 
         assertNotEquals(query1, query2);
     }

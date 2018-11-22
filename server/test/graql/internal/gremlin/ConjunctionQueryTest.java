@@ -22,10 +22,10 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
@@ -36,9 +36,9 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.Graql.and;
-import static grakn.core.graql.Graql.eq;
-import static grakn.core.graql.Graql.gt;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.eq;
+import static grakn.core.graql.query.Graql.gt;
 import static grakn.core.graql.internal.gremlin.GraqlMatchers.feature;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;

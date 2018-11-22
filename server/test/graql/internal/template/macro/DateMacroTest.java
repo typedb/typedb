@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.template.macro;
 
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.Graql;
+import grakn.core.graql.query.Graql;
 import com.google.common.collect.ImmutableList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

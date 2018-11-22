@@ -22,12 +22,12 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.core.client.Grakn;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
@@ -48,7 +48,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

@@ -18,11 +18,8 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -31,17 +28,20 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Default implementation of {@link GetQuery}
- *
+ * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
+ * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
+ * the knowledge base in an efficient fashion to find any matching answers.
  */
 @AutoValue
-public abstract class GetQueryImpl implements GetQuery {
+public abstract class GetQuery implements Query<ConceptMap> {
 
+    @javax.annotation.CheckReturnValue
     public abstract ImmutableSet<Var> vars();
+    @javax.annotation.CheckReturnValue
     public abstract Match match();
 
-    public static GetQueryImpl of(Match match, ImmutableSet<Var> vars) {
-        return new AutoValue_GetQueryImpl(vars, match);
+    public static GetQuery of(Match match, ImmutableSet<Var> vars) {
+        return new AutoValue_GetQuery(vars, match);
     }
 
     @Override

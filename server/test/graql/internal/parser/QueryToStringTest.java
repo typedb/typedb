@@ -19,33 +19,32 @@
 package grakn.core.graql.internal.parser;
 
 import grakn.core.graql.concept.AttributeType;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Query;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.query.QueryBuilderImpl;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.InsertQuery;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-import static grakn.core.graql.Graql.and;
-import static grakn.core.graql.Graql.contains;
-import static grakn.core.graql.Graql.label;
-import static grakn.core.graql.Graql.lte;
-import static grakn.core.graql.Graql.match;
-import static grakn.core.graql.Graql.neq;
-import static grakn.core.graql.Graql.or;
-import static grakn.core.graql.Graql.var;
-import static grakn.core.graql.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
-import static grakn.core.graql.Syntax.Compute.Algorithm.DEGREE;
-import static grakn.core.graql.Syntax.Compute.Algorithm.K_CORE;
-import static grakn.core.graql.Syntax.Compute.Argument.k;
-import static grakn.core.graql.Syntax.Compute.Argument.min_k;
-import static grakn.core.graql.Syntax.Compute.Argument.size;
-import static grakn.core.graql.Syntax.Compute.Method.CENTRALITY;
-import static grakn.core.graql.Syntax.Compute.Method.CLUSTER;
-import static grakn.core.graql.Syntax.Compute.Method.COUNT;
+import static grakn.core.graql.query.Graql.and;
+import static grakn.core.graql.query.Graql.contains;
+import static grakn.core.graql.query.Graql.label;
+import static grakn.core.graql.query.Graql.lte;
+import static grakn.core.graql.query.Graql.match;
+import static grakn.core.graql.query.Graql.neq;
+import static grakn.core.graql.query.Graql.or;
+import static grakn.core.graql.query.Graql.var;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.CONNECTED_COMPONENT;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.DEGREE;
+import static grakn.core.graql.query.Syntax.Compute.Algorithm.K_CORE;
+import static grakn.core.graql.query.Syntax.Compute.Argument.k;
+import static grakn.core.graql.query.Syntax.Compute.Argument.min_k;
+import static grakn.core.graql.query.Syntax.Compute.Argument.size;
+import static grakn.core.graql.query.Syntax.Compute.Method.CENTRALITY;
+import static grakn.core.graql.query.Syntax.Compute.Method.CLUSTER;
+import static grakn.core.graql.query.Syntax.Compute.Method.COUNT;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -54,7 +53,7 @@ public class QueryToStringTest {
 
     @Before
     public void setUp() {
-        qb = new QueryBuilderImpl();
+        qb = new QueryBuilder();
     }
 
     @Test

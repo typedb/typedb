@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.util;
 
-import grakn.core.graql.Pattern;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 

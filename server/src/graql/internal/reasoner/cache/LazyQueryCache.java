@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.cache;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.MultiUnifier;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.internal.reasoner.iterator.LazyAnswerIterator;

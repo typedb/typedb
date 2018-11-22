@@ -1,13 +1,13 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.GetQuery;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Query;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Query;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.Graql.var;
+import static grakn.core.graql.query.Graql.var;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;

@@ -21,8 +21,7 @@ package grakn.core.server.session;
 import com.google.auto.value.AutoValue;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.QueryBuilder;
+import grakn.core.graql.query.Pattern;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -36,7 +35,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.executor.QueryExecutorImpl;
-import grakn.core.graql.query.QueryBuilderImpl;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.QueryExecutor;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
@@ -302,7 +301,7 @@ public abstract class TransactionImpl<G extends Graph> implements Transaction {
 
     @Override
     public QueryBuilder graql() {
-        return new QueryBuilderImpl(this);
+        return new QueryBuilder(this);
     }
 
     public ElementFactory factory() {

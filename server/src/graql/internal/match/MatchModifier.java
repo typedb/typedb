@@ -20,8 +20,8 @@ package grakn.core.graql.internal.match;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Match;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;
 

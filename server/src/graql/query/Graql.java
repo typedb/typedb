@@ -16,17 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql;
+package grakn.core.graql.query;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.QueryBuilderImpl;
 import grakn.core.graql.query.aggregate.Aggregates;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.internal.util.AdminConverter;
@@ -38,7 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
-import static grakn.core.graql.Syntax.Compute.Method;
+import static grakn.core.graql.query.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -58,7 +57,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static QueryBuilder withoutGraph() {
-        return new QueryBuilderImpl();
+        return new QueryBuilder();
     }
 
     /**

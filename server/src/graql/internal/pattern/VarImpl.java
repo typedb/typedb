@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.VarProperty;
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;

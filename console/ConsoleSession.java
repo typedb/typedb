@@ -20,7 +20,7 @@ package grakn.core.console;
 
 import com.google.common.base.StandardSystemProperty;
 import grakn.core.client.Grakn;
-import grakn.core.graql.Query;
+import grakn.core.graql.query.Query;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.internal.printer.Printer;
 import jline.console.ConsoleReader;

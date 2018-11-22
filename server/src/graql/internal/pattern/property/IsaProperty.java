@@ -20,9 +20,9 @@ package grakn.core.graql.internal.pattern.property;
 
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Var;
-import grakn.core.graql.VarPattern;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;

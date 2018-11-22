@@ -18,8 +18,8 @@
 
 package grakn.core.graql.internal.reasoner.explanation;
 
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.admin.Explanation;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.internal.reasoner.utils.ReasonerUtils;

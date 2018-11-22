@@ -22,19 +22,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.client.rpc.Transceiver;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.GetQuery;
-import grakn.core.graql.Graql;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.ComputeQuery;
+import grakn.core.graql.query.DeleteQuery;
+import grakn.core.graql.query.GetQuery;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Entity;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.Role;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.query.QueryBuilder;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.KeyspaceProto;
@@ -42,6 +41,7 @@ import grakn.core.protocol.KeyspaceServiceGrpc;
 import grakn.core.protocol.SessionProto.Transaction;
 import grakn.core.protocol.SessionProto.Transaction.Open;
 import grakn.core.protocol.SessionServiceGrpc;
+import grakn.core.server.QueryExecutor;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.common.exception.GraknException;
@@ -114,6 +114,7 @@ public class ServerRPCTest {
     private final SessionStore txFactory = mock(SessionStore.class);
     private final TransactionImpl tx = mock(TransactionImpl.class);
     private final GetQuery query = mock(GetQuery.class);
+    private final QueryExecutor executor = mock(QueryExecutor.class);
     private final grakn.core.server.deduplicator.AttributeDeduplicatorDaemon mockedAttributeDeduplicatorDaemon = mock(AttributeDeduplicatorDaemon.class);
     private final KeyspaceManager mockedKeyspaceStore = mock(KeyspaceManager.class);
 
@@ -141,8 +142,9 @@ public class ServerRPCTest {
         when(tx.graql()).thenReturn(qb);
         when(qb.parse(QUERY)).thenReturn(query);
         when(qb.infer(anyBoolean())).thenReturn(qb);
+        when(query.executor()).thenReturn(executor);
 
-        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMapImpl()));
+        when(query.execute()).thenAnswer(params -> Stream.of(new ConceptMap()));
 
         Set<Keyspace> keyspaceSet = new HashSet<>(Arrays.asList(Keyspace.of("testkeyspace1"), Keyspace.of("testkeyspace2")));
         when(mockedKeyspaceStore.keyspaces()).thenReturn(keyspaceSet);
@@ -276,17 +278,6 @@ public class ServerRPCTest {
     }
 
     @Test
-    public void whenExecutingAQueryRemotely_TheQueryIsParsedAndExecuted() {
-        try (Transceiver tx = Transceiver.create(stub)) {
-            tx.send(open(MYKS, grakn.core.server.Transaction.Type.WRITE));
-            tx.send(query(QUERY, false));
-        }
-
-        GetQuery query = tx.graql().parse(QUERY);
-        verify(query).stream();
-    }
-
-    @Test
     public void whenExecutingAQueryRemotely_AResultIsReturned() throws InterruptedException {
         Concept conceptX = mock(Concept.class, RETURNS_DEEP_STUBS);
         when(conceptX.id()).thenReturn(ConceptId.of("V123"));
@@ -299,8 +290,8 @@ public class ServerRPCTest {
         when(conceptY.asAttribute().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<ConceptMap> answers = ImmutableList.of(
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
+                new ConceptMap(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMap(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         when(query.stream()).thenAnswer(params -> answers.stream());
@@ -359,8 +350,8 @@ public class ServerRPCTest {
         when(conceptY.asEntity().type().label()).thenReturn(Label.of("L456"));
 
         ImmutableList<ConceptMap> answers = ImmutableList.of(
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("x"), conceptX)),
-                new ConceptMapImpl(ImmutableMap.of(Graql.var("y"), conceptY))
+                new ConceptMap(ImmutableMap.of(Graql.var("x"), conceptX)),
+                new ConceptMap(ImmutableMap.of(Graql.var("y"), conceptY))
         );
 
         // Produce an endless stream of results - this means if the behaviour is not lazy this will never terminate

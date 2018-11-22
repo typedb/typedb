@@ -18,33 +18,35 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.DeleteQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Var;
-import grakn.core.graql.admin.DeleteQueryAdmin;
-import grakn.core.graql.answer.ConceptSet;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.answer.ConceptSet;
+import grakn.core.server.Transaction;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
 /**
- * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
- *
+ * A query for deleting concepts from a {@link Match} clause.
+ * The delete operation to perform is based on what {@link VarPattern} objects
+ * are provided to it. If only variable names are provided, then the delete
+ * query will delete the concept bound to each given variable name. If property
+ * flags are provided, e.g. {@code var("x").has("name")} then only those
+ * properties are deleted.
  */
 @AutoValue
-abstract class DeleteQueryImpl implements DeleteQueryAdmin {
+public abstract class DeleteQuery implements Query<ConceptSet> {
 
     /**
-     * @param vars a collection of variables to delete
+     * @param vars  a collection of variables to delete
      * @param match a pattern to match and delete for each result
      */
-    static DeleteQueryImpl of(Collection<? extends Var> vars, Match match) {
-        return new AutoValue_DeleteQueryImpl(match, ImmutableSet.copyOf(vars));
+    static DeleteQuery of(Collection<? extends Var> vars, Match match) {
+        return new AutoValue_DeleteQuery(match, ImmutableSet.copyOf(vars));
     }
 
     @Override
@@ -67,8 +69,8 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
         return Queries.delete(match().withTx(tx).admin(), vars());
     }
 
-    @Override
-    public DeleteQueryAdmin admin() {
+    @CheckReturnValue
+    public DeleteQuery admin() {
         return this;
     }
 
@@ -76,7 +78,8 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     public String toString() {
         StringBuilder query = new StringBuilder();
         query.append(match()).append(" ").append("delete");
-        if(!vars().isEmpty()) query.append(" ").append(vars().stream().map(Var::toString).collect(joining(", ")).trim());
+        if (!vars().isEmpty())
+            query.append(" ").append(vars().stream().map(Var::toString).collect(joining(", ")).trim());
         query.append(";");
 
         return query.toString();
@@ -86,4 +89,16 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     public final Boolean inferring() {
         return match().admin().inferring();
     }
+
+    /**
+     * @return the {@link Match} this delete query is operating on
+     */
+    @CheckReturnValue
+    public abstract Match match();
+
+    /**
+     * Get the {@link Var}s to delete on each result of {@link #match()}.
+     */
+    @CheckReturnValue
+    public abstract Set<Var> vars();
 }

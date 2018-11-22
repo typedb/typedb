@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.pattern;
 
 import grakn.core.server.Transaction;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Disjunction;
 import grakn.core.graql.admin.PatternAdmin;

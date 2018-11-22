@@ -30,7 +30,7 @@ import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.graql.Graql;
+import grakn.core.graql.query.Graql;
 import grakn.core.graql.answer.ConceptList;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.graql.internal.Schema;
@@ -48,7 +48,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.graql.internal.analytics.Utility.getResourceEdgeId;
-import static grakn.core.graql.Syntax.Compute.Method.PATH;
+import static grakn.core.graql.query.Syntax.Compute.Method.PATH;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings("CheckReturnValue")

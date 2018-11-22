@@ -18,32 +18,33 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.admin.InsertQueryAdmin;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.common.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A query that will insert a collection of variables into a graph
- *
+ * A query for inserting data, which can be built from a {@link QueryBuilder} or a {@link Match}.
+ * When built from a {@code QueryBuilder}, the insert query will execute once, inserting all the variables provided.
+ * When built from a {@link Match}, the insert query will execute for each result of the {@link Match},
+ * where variable names in the insert query are bound to the concept in the result of the {@link Match}.
  */
 @AutoValue
-abstract class InsertQueryImpl implements InsertQueryAdmin {
+public abstract class InsertQuery implements Query<ConceptMap> {
 
     /**
      * At least one of {@code tx} and {@code match} must be absent.
@@ -51,15 +52,28 @@ abstract class InsertQueryImpl implements InsertQueryAdmin {
      * @param match the {@link Match} to insert for each result
      * @param vars a collection of Vars to insert
      */
-    static InsertQueryImpl create(Transaction tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
+    static InsertQuery create(Transaction tx, MatchAdmin match, Collection<VarPatternAdmin> vars) {
         if (match != null && match.tx() != null) Preconditions.checkArgument(match.tx().equals(tx));
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        return new AutoValue_InsertQueryImpl(tx, match, ImmutableList.copyOf(vars));
+        return new AutoValue_InsertQuery(tx, match, ImmutableList.copyOf(vars));
     }
+
+    /**
+     * @return the {@link Match} that this insert query is using, if it was provided one
+     */
+    @Nullable
+    @CheckReturnValue
+    public abstract Match match();
+
+    /**
+     * @return the variables to insert in the insert query
+     */
+    @CheckReturnValue
+    public abstract Collection<VarPatternAdmin> varPatterns();
 
     @Override
     public final InsertQuery withTx(Transaction tx) {
@@ -80,12 +94,12 @@ abstract class InsertQueryImpl implements InsertQueryAdmin {
         return executor().run(this);
     }
 
-    @Override
-    public InsertQueryAdmin admin() {
+    @CheckReturnValue
+    public InsertQuery admin() {
         return this;
     }
 
-    @Override
+    @CheckReturnValue
     public Set<SchemaConcept> getSchemaConcepts() {
         if (getTx() == null) throw GraqlQueryException.noTx();
         Transaction theGraph = getTx();

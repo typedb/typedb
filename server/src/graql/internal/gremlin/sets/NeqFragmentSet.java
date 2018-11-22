@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.gremlin.sets;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;

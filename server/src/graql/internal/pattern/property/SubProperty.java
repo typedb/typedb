@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.concept.Type;

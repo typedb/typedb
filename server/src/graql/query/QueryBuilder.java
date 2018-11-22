@@ -18,79 +18,71 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.Transaction;
-import grakn.core.graql.ComputeQuery;
-import grakn.core.graql.DefineQuery;
-import grakn.core.graql.InsertQuery;
-import grakn.core.graql.Match;
-import grakn.core.graql.Pattern;
-import grakn.core.graql.Query;
-import grakn.core.graql.QueryBuilder;
-import grakn.core.graql.QueryParser;
-import grakn.core.graql.UndefineQuery;
-import grakn.core.graql.VarPattern;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
+import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.parser.QueryParserImpl;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static grakn.core.graql.Syntax.Compute.Method;
+import static grakn.core.graql.query.Syntax.Compute.Method;
+
 /**
  * A starting point for creating queries.
- * <p>
  * A {@code QueryBuiler} is constructed with a {@code Transaction}. All operations are performed using this
  * transaction. The user must explicitly commit or rollback changes after executing queries.
- * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
- *
  */
-public class QueryBuilderImpl implements QueryBuilder {
+public class QueryBuilder {
 
     @Nullable
     private final Transaction tx;
     private final QueryParser queryParser = QueryParserImpl.create(this);
     private boolean infer = true;
 
-    public QueryBuilderImpl() {
+    public QueryBuilder() {
         this.tx = null;
     }
 
-    @SuppressWarnings("unused") /** used by {@link TransactionImpl#graql()}*/
-    public QueryBuilderImpl(Transaction tx) {
+    @SuppressWarnings("unused")
+    /** used by {@link TransactionImpl#graql()}*/
+    public QueryBuilder(Transaction tx) {
         this.tx = tx;
     }
 
-    @Override
+    /**
+     * Enable or disable inference
+     */
     public QueryBuilder infer(boolean infer) {
         this.infer = infer;
         return this;
     }
 
     /**
-     * @param patterns an array of patterns to match in the knowledge base
+     * @param patterns an array of patterns to match in the graph
      * @return a {@link Match} that will find matches of the given patterns
      */
-    @Override
+    @javax.annotation.CheckReturnValue
     public Match match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
     /**
-     * @param patterns a collection of patterns to match in the knowledge base
+     * @param patterns a collection of patterns to match in the graph
      * @return a {@link Match} that will find matches of the given patterns
      */
-    @Override
+    @javax.annotation.CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
@@ -99,51 +91,73 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param vars an array of variables to insert into the knowledge base
-     * @return an insert query that will insert the given variables into the knowledge base
+     * @param vars an array of variables to insert into the graph
+     * @return an insert query that will insert the given variables into the graph
      */
-    @Override
+    @javax.annotation.CheckReturnValue
     public InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
 
     /**
-     * @param vars a collection of variables to insert into the knowledge base
-     * @return an insert query that will insert the given variables into the knowledge base
+     * @param vars a collection of variables to insert into the graph
+     * @return an insert query that will insert the given variables into the graph
      */
-    @Override
+    @javax.annotation.CheckReturnValue
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(tx, varAdmins);
     }
 
-    @Override
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @javax.annotation.CheckReturnValue
     public DefineQuery define(VarPattern... varPatterns) {
         return define(Arrays.asList(varPatterns));
     }
 
-    @Override
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @javax.annotation.CheckReturnValue
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return DefineQueryImpl.of(admins, tx);
+        return DefineQuery.of(admins, tx);
     }
 
-    @Override
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @javax.annotation.CheckReturnValue
     public UndefineQuery undefine(VarPattern... varPatterns) {
         return undefine(Arrays.asList(varPatterns));
     }
 
-    @Override
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @javax.annotation.CheckReturnValue
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
-        return UndefineQueryImpl.of(admins, tx);
+        return UndefineQuery.of(admins, tx);
     }
 
+    /**
+     * @return a compute query builder for building analytics query
+     */
+    @javax.annotation.CheckReturnValue
     public <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
-        return new ComputeQueryImpl<>(tx, method);
+        return new ComputeQuery<>(tx, method);
     }
 
-    @Override
+    /**
+     * Get a {@link QueryParser} for parsing queries from strings
+     */
     public QueryParser parser() {
         return queryParser;
     }
@@ -152,7 +166,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
-    @Override
+    @javax.annotation.CheckReturnValue
     public <T extends Query<?>> T parse(String queryString) {
         return queryParser.parseQuery(queryString);
     }

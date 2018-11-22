@@ -22,17 +22,16 @@ package grakn.core.client.rpc;
 import grakn.core.client.Grakn;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.Graql;
-import grakn.core.graql.Var;
+import grakn.core.graql.query.Graql;
+import grakn.core.graql.query.Var;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;
-import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
 import grakn.core.graql.answer.ConceptSetMeasure;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.concept.Concept;
-import grakn.core.graql.query.answer.ConceptMapImpl;
+import grakn.core.graql.answer.ConceptMap;
 import grakn.core.protocol.AnswerProto;
 import com.google.common.collect.ImmutableMap;
 
@@ -78,7 +77,7 @@ public class ResponseReader {
         res.getMapMap().forEach((resVar, resConcept) -> {
             map.put(Graql.var(resVar), RemoteConcept.of(resConcept, tx));
         });
-        return new ConceptMapImpl(map.build());
+        return new ConceptMap(map.build());
     }
 
     static ConceptList conceptList(AnswerProto.ConceptList res) {
