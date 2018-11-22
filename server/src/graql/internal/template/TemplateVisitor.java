@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.template;
 
-import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.grammar.GraqlTemplateBaseVisitor;
 import grakn.core.graql.grammar.GraqlTemplateParser;

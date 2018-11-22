@@ -19,7 +19,7 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.concept.Concept;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.answer.ConceptMap;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Rule;

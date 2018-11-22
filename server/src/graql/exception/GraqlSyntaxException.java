@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.exception;
+package grakn.core.graql.exception;
 
 import grakn.core.common.exception.GraknException;
 

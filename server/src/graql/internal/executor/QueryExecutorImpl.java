@@ -37,7 +37,7 @@ import grakn.core.graql.query.UndefineQuery;
 import grakn.core.graql.query.Var;
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 
 import java.util.Collection;

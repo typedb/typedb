@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.parser;
+package grakn.core.graql.parser;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.common.util.CommonUtil;
@@ -43,7 +43,7 @@ import grakn.core.graql.query.Syntax;
 import grakn.core.graql.query.ValuePredicate;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;

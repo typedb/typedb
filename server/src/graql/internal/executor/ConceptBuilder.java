@@ -18,6 +18,8 @@
 
 package grakn.core.graql.internal.executor;
 
+import grakn.core.common.util.CommonUtil;
+import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -28,10 +30,8 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
-import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.internal.Schema;
 import grakn.core.graql.internal.pattern.property.DataTypeProperty;
 import grakn.core.graql.internal.pattern.property.IdProperty;
 import grakn.core.graql.internal.pattern.property.IsaProperty;
@@ -40,8 +40,9 @@ import grakn.core.graql.internal.pattern.property.SubProperty;
 import grakn.core.graql.internal.pattern.property.ThenProperty;
 import grakn.core.graql.internal.pattern.property.ValueProperty;
 import grakn.core.graql.internal.pattern.property.WhenProperty;
-import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.internal.Schema;
+import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.Var;
+import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -76,7 +77,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *     // Executor:
  *     Concept concept = builder.build();
  * </pre>
- *
  */
 public class ConceptBuilder {
 
@@ -438,7 +438,7 @@ public class ConceptBuilder {
         } else if (superConcept.isRule()) {
             concept = executor.tx().putRule(label, use(WHEN), use(THEN));
         } else {
-            throw GraqlQueryException.insertMetaType(label, superConcept);
+            throw InvalidKBException.insertMetaType(label, superConcept);
         }
 
         setSuper(concept, superConcept);
@@ -463,7 +463,7 @@ public class ConceptBuilder {
         } else if (superConcept.isRule()) {
             subConcept.asRule().sup(superConcept.asRule());
         } else {
-            throw GraqlQueryException.insertMetaType(subConcept.label(), superConcept);
+            throw InvalidKBException.insertMetaType(subConcept.label(), superConcept);
         }
     }
 

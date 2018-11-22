@@ -38,7 +38,7 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.graql.reasoner.graph.GeoGraph;

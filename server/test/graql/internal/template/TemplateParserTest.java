@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.template;
 
-import grakn.core.server.exception.GraqlSyntaxException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Query;
 import com.google.common.collect.ImmutableList;

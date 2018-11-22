@@ -34,7 +34,7 @@ import grakn.core.graql.query.Graql;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.server.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
 import org.junit.After;
 import org.junit.Before;
