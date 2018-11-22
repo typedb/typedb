@@ -48,7 +48,8 @@ public class GenericSchemaGraph {
     private final QueryPattern differentRelationVariantsWithRelationVariable;
 
     private final QueryPattern differentResourceVariants;
-    private final QueryPattern differentTypeVariants;
+    private final QueryPattern differentTypeResourceVariants;
+    private final QueryPattern differentTypeRelationVariants;
 
     public GenericSchemaGraph(Session session){
         loadFromFileAndCommit(gqlPath, gqlFile, session);
@@ -58,26 +59,35 @@ public class GenericSchemaGraph {
 
         EntityType entityType = tx.getEntityType("baseRoleEntity");
         EntityType anotherEntityType = tx.getEntityType("anotherBaseRoleEntity");
+        AttributeType<Object> resourceType = tx.getAttributeType("resource");
+        AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
+        RelationshipType binary = tx.getRelationshipType("binary");
+        RelationshipType ternary = tx.getRelationshipType("ternary");
+
         Iterator<Entity> entities = entityType.instances()
                 .filter(et -> !et.type().equals(subRoleEntityType) )
                 .collect(toSet()).iterator();
-
         Entity entity = entities.next();
         Entity anotherEntity = entities.next();
         Entity anotherBaseEntity = anotherEntityType.instances().findFirst().orElse(null);
         Entity subEntity = subRoleEntityType.instances().findFirst().orElse(null);
-        Iterator<Relationship> relations = tx.getRelationshipType("baseRelation").subs().flatMap(RelationshipType::instances).iterator();
+
+        Iterator<Relationship> relations = binary.subs().flatMap(RelationshipType::instances).iterator();
         Relationship relation = relations.next();
         Relationship anotherRelation = relations.next();
-        AttributeType<Object> resourceType = tx.getAttributeType("resource");
-        AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
+
         Iterator<Attribute<Object>> resources = resourceType.instances().collect(toSet()).iterator();
         Attribute<Object> resource = resources.next();
         Attribute<Object> anotherResource = resources.next();
 
-        this.differentTypeVariants = new TypePattern(
+        this.differentTypeResourceVariants = new TypePattern(
                 resourceType.label(), anotherResourceType.label(), tx.getMetaAttributeType().label(),
-                entity.id(), anotherEntity.id());
+                resource.id(), anotherResource.id());
+
+        this.differentTypeRelationVariants = new TypePattern(
+                binary.label(), ternary.label(), tx.getMetaRelationType().label(),
+                relation.id(), anotherRelation.id());
+
         this.differentResourceVariants = new ResourcePattern(
                 resourceType.label(), anotherResourceType.label(),
                 entityType.label(), anotherEntityType.label(),
@@ -307,7 +317,8 @@ public class GenericSchemaGraph {
         tx.close();
     }
 
-    public QueryPattern differentTypeVariants(){ return differentTypeVariants;}
+    public QueryPattern differentTypeResourceVariants(){ return differentTypeResourceVariants;}
+    public QueryPattern differentTypeRelationVariants(){ return differentTypeRelationVariants;}
     public QueryPattern differentResourceVariants(){ return differentResourceVariants;}
     public QueryPattern differentRelationVariants(){ return differentRelationVariants;}
     public QueryPattern differentRelationVariantsWithMetaRoles(){ return differentRelationVariantsWithMetaRoles;}

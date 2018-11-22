@@ -594,7 +594,7 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentTypeVariants_EXACT(){
         try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
-            List<String> qs = genericSchemaGraph.differentTypeVariants().patterns();
+            List<String> qs = genericSchemaGraph.differentTypeResourceVariants().patterns();
             qs.forEach(q -> exactUnification(q, qs, new ArrayList<>(), tx));
         }
     }
@@ -603,9 +603,9 @@ public class AtomicQueryUnificationIT {
     public void testUnification_differentTypeVariants_STRUCTURAL(){
         try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             unification(
-                    genericSchemaGraph.differentTypeVariants().patterns(),
-                    genericSchemaGraph.differentTypeVariants().patterns(),
-                    genericSchemaGraph.differentTypeVariants().structuralMatrix(),
+                    genericSchemaGraph.differentTypeResourceVariants().patterns(),
+                    genericSchemaGraph.differentTypeResourceVariants().patterns(),
+                    genericSchemaGraph.differentTypeResourceVariants().structuralMatrix(),
                     UnifierType.STRUCTURAL,
                     tx
             );
@@ -616,9 +616,9 @@ public class AtomicQueryUnificationIT {
     public void testUnification_differentTypeVariants_RULE(){
         try( TransactionImpl tx = genericSchemaSession.transaction(Transaction.Type.READ)) {
             unification(
-                    genericSchemaGraph.differentTypeVariants().patterns(),
-                    genericSchemaGraph.differentTypeVariants().patterns(),
-                    genericSchemaGraph.differentTypeVariants().ruleMatrix(),
+                    genericSchemaGraph.differentTypeResourceVariants().patterns(),
+                    genericSchemaGraph.differentTypeResourceVariants().patterns(),
+                    genericSchemaGraph.differentTypeResourceVariants().ruleMatrix(),
                     UnifierType.RULE,
                     tx
             );
@@ -703,7 +703,7 @@ public class AtomicQueryUnificationIT {
             List<List<String>> queryTypes = Lists.newArrayList(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
-                    genericSchemaGraph.differentTypeVariants().patterns(),
+                    genericSchemaGraph.differentTypeResourceVariants().patterns(),
                     genericSchemaGraph.differentResourceVariants().patterns()
             );
             queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> exactUnification(q, qto, new ArrayList<>(), tx))));
@@ -716,7 +716,7 @@ public class AtomicQueryUnificationIT {
             List<List<String>> queryTypes = Lists.newArrayList(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithRelationVariable().patterns(),
-                    genericSchemaGraph.differentTypeVariants().patterns(),
+                    genericSchemaGraph.differentTypeResourceVariants().patterns(),
                     genericSchemaGraph.differentResourceVariants().patterns()
             );
             queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> structuralUnification(q, qto, new ArrayList<>(), tx))));
