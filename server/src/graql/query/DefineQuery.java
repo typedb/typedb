@@ -19,22 +19,53 @@
 package grakn.core.graql.query;
 
 import grakn.core.graql.concept.SchemaConcept;
+import grakn.core.server.Transaction;
 import grakn.core.graql.answer.ConceptMap;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * A query for defining {@link SchemaConcept}s.
- * <p>
- *     The query will define all {@link SchemaConcept}s described in the {@link VarPattern}s provided and return an
- *     {@link ConceptMap} containing bindings for all {@link Var}s in the {@link VarPattern}s.
- * </p>
- *
+ * Implementation for {@link DefineQuery}
  */
-public interface DefineQuery extends Query<ConceptMap> {
+@AutoValue
+public abstract class DefineQuery implements Query<ConceptMap> {
 
     /**
      * Get the {@link VarPattern}s describing what {@link SchemaConcept}s to define.
      */
-    Collection<? extends VarPattern> varPatterns();
+    public abstract Collection<? extends VarPattern> varPatterns();
+
+    static DefineQuery of(Collection<? extends VarPattern> varPatterns, @Nullable Transaction tx) {
+        return new AutoValue_DefineQuery(tx, ImmutableList.copyOf(varPatterns));
+    }
+
+    @Override
+    public Query<ConceptMap> withTx(Transaction tx) {
+        return DefineQuery.of(varPatterns(), tx);
+    }
+
+    @Override
+    public final Stream<ConceptMap> stream() {
+        return executor().run(this);
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
+
+    @Override
+    public String toString() {
+        return "define " + varPatterns().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    public Boolean inferring() {
+        return false;
+    }
 }
