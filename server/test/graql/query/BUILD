@@ -31,7 +31,7 @@ java_test(
 
 java_test(
     name = "insert-query-impl-test",
-    test_class = "grakn.core.graql.query.InsertQueryImplTest",
+    test_class = "grakn.core.graql.query.InsertQueryTest",
     srcs = ["InsertQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
