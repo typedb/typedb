@@ -20,7 +20,6 @@ package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
 import grakn.core.server.exception.GraqlQueryException;
-import grakn.core.graql.admin.DeleteQueryAdmin;
 import grakn.core.graql.admin.InsertQueryAdmin;
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
@@ -56,9 +55,9 @@ public class Queries {
         return InsertQueryImpl.create(match.tx(), match, varPattern);
     }
 
-    public static DeleteQueryAdmin delete(MatchAdmin match, Set<Var> vars) {
+    public static DeleteQuery delete(MatchAdmin match, Set<Var> vars) {
         validateMatchVars(match, vars);
-        return DeleteQueryImpl.of(vars, match);
+        return DeleteQuery.of(vars, match);
     }
 
     public static <T extends Answer> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<T> aggregate) {

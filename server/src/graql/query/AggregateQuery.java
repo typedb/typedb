@@ -26,8 +26,8 @@ import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
 /**
- * Implementation of AggregateQuery
- * @param <T> the type of the aggregate result
+ * An aggregate query produced from a {@link Match}.
+ * @param <T> the type of the result of the aggregate query
  */
 @AutoValue
 public abstract class AggregateQuery<T extends Answer> implements Query<T> {

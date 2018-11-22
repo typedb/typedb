@@ -21,8 +21,8 @@ java_test(
 
 java_test(
     name = "delete-query-impl-test",
-    test_class = "grakn.core.graql.query.DeleteQueryImplTest",
-    srcs = ["DeleteQueryImplTest.java"],
+    test_class = "grakn.core.graql.query.DeleteQueryTest",
+    srcs = ["DeleteQueryTest.java"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//server"],
