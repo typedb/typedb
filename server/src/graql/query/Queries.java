@@ -40,7 +40,7 @@ public class Queries {
 
     public static GetQuery get(MatchAdmin match, ImmutableSet<Var> vars) {
         validateMatchVars(match, vars);
-        return GetQueryImpl.of(match, vars);
+        return GetQuery.of(match, vars);
     }
 
     public static InsertQueryAdmin insert(Transaction tx, Collection<VarPatternAdmin> vars) {

@@ -1,11 +1,11 @@
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.GetQuery;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.Role;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Conjunction;

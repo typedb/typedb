@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atomic;
 
+import grakn.core.graql.query.GetQuery;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
@@ -26,7 +27,6 @@ import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.Var;

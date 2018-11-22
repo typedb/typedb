@@ -20,33 +20,57 @@ package grakn.core.graql.query;
 
 import grakn.core.server.Transaction;
 import grakn.core.graql.answer.ConceptMap;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.CheckReturnValue;
-import java.util.Set;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * A query used for finding data in a knowledge base that matches the given patterns. The {@link GetQuery} is a
  * pattern-matching query. The patterns are described in a declarative fashion, then the {@link GetQuery} will traverse
  * the knowledge base in an efficient fashion to find any matching answers.
  */
-public interface GetQuery extends Query<ConceptMap> {
+@AutoValue
+public abstract class GetQuery implements Query<ConceptMap> {
 
-    /**
-     * @param tx the transaction to execute the query on
-     * @return a new {@link GetQuery} with the transaction set
-     */
+    @javax.annotation.CheckReturnValue
+    public abstract ImmutableSet<Var> vars();
+    @javax.annotation.CheckReturnValue
+    public abstract Match match();
+
+    public static GetQuery of(Match match, ImmutableSet<Var> vars) {
+        return new AutoValue_GetQuery(vars, match);
+    }
+
     @Override
-    GetQuery withTx(Transaction tx);
+    public GetQuery withTx(Transaction tx) {
+        return Queries.get(match().withTx(tx).admin(), vars());
+    }
 
-    /**
-     * Get the {@link Match} this {@link GetQuery} contains
-     */
-    @CheckReturnValue
-    Match match();
+    @Override
+    public final Transaction tx() {
+        return match().admin().tx();
+    }
 
-    /**
-     * Get the {@link Var}s this {@link GetQuery} will select from the answers
-     */
-    @CheckReturnValue
-    Set<Var> vars();
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
+
+    @Override
+    public final Stream<ConceptMap> stream() {
+        return executor().run(this);
+    }
+
+    @Override
+    public String toString() {
+        return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+    }
+
+    @Override
+    public final Boolean inferring() {
+        return match().admin().inferring();
+    }
 }
