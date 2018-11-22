@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 /**
  * Aggregate that counts results of a {@link Match}.
  */
-class CountAggregate implements Aggregate<Value> {
+public class CountAggregate implements Aggregate<Value> {
 
     private final Set<Var> vars;
 

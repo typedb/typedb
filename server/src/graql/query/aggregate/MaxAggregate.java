@@ -32,11 +32,11 @@ import java.util.stream.Stream;
 /**
  * Aggregate that finds maximum of a {@link Match}.
  */
-class MaxAggregate implements Aggregate<Value> {
+public class MaxAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
-    MaxAggregate(Var varName) {
+    public MaxAggregate(Var varName) {
         this.varName = varName;
     }
 

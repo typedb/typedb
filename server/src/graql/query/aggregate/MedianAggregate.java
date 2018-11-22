@@ -33,11 +33,11 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a {@link Match}.
  */
-class MedianAggregate implements Aggregate<Value> {
+public class MedianAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
-    MedianAggregate(Var varName) {
+    public MedianAggregate(Var varName) {
         this.varName = varName;
     }
 

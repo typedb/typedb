@@ -33,16 +33,16 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds mean of a {@link Match}.
  */
-class MeanAggregate implements Aggregate<Value> {
+public class MeanAggregate implements Aggregate<Value> {
 
     private final Var varName;
     private final CountAggregate countAggregate;
     private final Aggregate<Value> sumAggregate;
 
-    MeanAggregate(Var var) {
+    public MeanAggregate(Var var) {
         this.varName = var;
         countAggregate = new CountAggregate(Collections.singleton(var));
-        sumAggregate = Aggregates.sum(var);
+        sumAggregate = new SumAggregate(var);
     }
 
     @Override

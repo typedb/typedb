@@ -33,11 +33,11 @@ import static java.lang.Math.sqrt;
 /**
  * Aggregate that finds the unbiased sample standard deviation of a {@link Match}.
  */
-class StdAggregate implements Aggregate<Value> {
+public class StdAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
-    StdAggregate(Var varName) {
+    public StdAggregate(Var varName) {
         this.varName = varName;
     }
 
