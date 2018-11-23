@@ -82,12 +82,18 @@ argument       : VARIABLE  # variableArgument
 
 patterns       : (pattern ';')+ ;
 pattern        : varPattern                    # varPatternCase
+               | 'NOT' pattern                 # notPattern
                | pattern 'or' pattern          # orPattern
                | '{' patterns '}'              # andPattern
                ;
 
 varPatterns    : (varPattern ';')+ ;
-varPattern     : VARIABLE | variable? property (','? property)* ;
+varPattern     : positiveVarPattern
+               | negativeVarPattern
+               ;
+
+positiveVarPattern : VARIABLE | variable? property (','? property)* ;
+negativeVarPattern : 'NOT' positiveVarPattern ;
 
 property       : 'isa' variable                     # isa
                | 'isa!' variable                    # isaExplicit

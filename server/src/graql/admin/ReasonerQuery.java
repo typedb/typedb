@@ -101,6 +101,13 @@ public interface ReasonerQuery{
     boolean isRuleResolvable();
 
     /**
+     * TODO
+     * @return
+     */
+    @CheckReturnValue
+    boolean isPositive();
+
+    /**
      * @param typedVar variable of interest
      * @param parentType which playability in this query is to be checked
      * @return true if typing the typeVar with type is compatible with role configuration of this query

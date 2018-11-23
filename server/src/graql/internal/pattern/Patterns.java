@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.pattern;
 
+import grakn.core.graql.admin.Negation;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Conjunction;
@@ -53,6 +54,10 @@ public class Patterns {
         return new AutoValue_DisjunctionImpl<>(patterns);
     }
 
+    public static <T extends PatternAdmin> Negation<T> negation(Set<T> patterns) {
+        return new AutoValue_NegationImpl<>(patterns);
+    }
+
     public static Var var() {
         return VarImpl.of(Long.toString(counter.getAndIncrement()), Var.Kind.Generated);
     }
@@ -65,7 +70,7 @@ public class Patterns {
         if (properties.isEmpty()) {
             return name.admin();
         } else {
-            return new AutoValue_VarPatternImpl(name, properties);
+            return new AutoValue_PositiveVarPatternImpl(name, properties);
         }
     }
 

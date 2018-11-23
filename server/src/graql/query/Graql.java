@@ -234,6 +234,18 @@ public class Graql {
         return Patterns.disjunction(Sets.newHashSet(patternAdmins));
     }
 
+    @CheckReturnValue
+    public static Pattern not(Pattern... patterns) { return not(Arrays.asList(patterns)); }
+
+    /**
+     * @param patterns a collection of patterns to match
+     * @return a pattern that will match when any contained pattern matches
+     */
+    @CheckReturnValue
+    public static Pattern not(Collection<? extends Pattern> patterns) {
+        Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
+        return Patterns.negation(Sets.newHashSet(patternAdmins));
+    }
 
     // AGGREGATES
 

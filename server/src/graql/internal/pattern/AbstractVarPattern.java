@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.pattern;
 
+import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
@@ -149,6 +150,12 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         // a disjunction containing only one option
         Conjunction<VarPatternAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
+    }
+
+    @Override
+    public PatternAdmin negate() {
+        //TODO
+        return this;
     }
 
     @Override

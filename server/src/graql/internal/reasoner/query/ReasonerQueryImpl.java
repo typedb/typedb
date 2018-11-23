@@ -54,6 +54,7 @@ import grakn.core.graql.internal.reasoner.rule.RuleUtils;
 import grakn.core.graql.internal.reasoner.state.AnswerState;
 import grakn.core.graql.internal.reasoner.state.ConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.CumulativeState;
+import grakn.core.graql.internal.reasoner.state.NegatedConjunctiveState;
 import grakn.core.graql.internal.reasoner.state.QueryStateBase;
 import grakn.core.graql.internal.reasoner.state.ResolutionState;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
@@ -173,7 +174,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public String toString(){
         return "{\n\t" +
-                getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
+                getAtoms().stream().filter(Atomic::isSelectable).map(Atomic::toString).collect(Collectors.joining(";\n\t")) +
                 "\n}";
     }
 
@@ -231,6 +232,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean isRuleResolvable() {
         return selectAtoms().anyMatch(Atom::isRuleResolvable);
     }
+
+    @Override
+    public boolean isPositive() { return getAtoms().stream().allMatch(Atomic::isPositive); }
 
     /**
      * @return true if this query contains disconnected atoms that are unbounded
@@ -479,7 +483,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return new ResolutionIterator(this).hasStream();
+        return resolve(new MultilevelSemanticCache());
+    }
+
+    public Stream<ConceptMap> resolve(MultilevelSemanticCache cache){
+        return this.isRuleResolvable()?
+                new ResolutionIterator(this, cache).hasStream() :
+                getQuery().stream();
     }
 
     /**
@@ -491,7 +501,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return resolution subGoal formed from this query
      */
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        ConjunctiveState conjunctiveState = new ConjunctiveState(this, sub, u, parent, subGoals, cache);
+        return isPositive()? conjunctiveState : new NegatedConjunctiveState(conjunctiveState);
     }
 
     /**

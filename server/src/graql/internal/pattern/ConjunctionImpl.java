@@ -48,14 +48,14 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     @Override
     public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
         // Get all disjunctions in query
-        List<Set<Conjunction<VarPatternAdmin>>> disjunctionsOfConjunctions = getPatterns().stream()
+        List<Set<Conjunction<VarPatternAdmin>>> cnf = getPatterns().stream()
                 .map(p -> p.getDisjunctiveNormalForm().getPatterns())
                 .collect(toList());
 
         // Get the cartesian product.
         // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
         // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
-        Set<Conjunction<VarPatternAdmin>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+        Set<Conjunction<VarPatternAdmin>> dnf = Sets.cartesianProduct(cnf).stream()
                 .map(ConjunctionImpl::fromConjunctions)
                 .collect(toSet());
 
@@ -64,6 +64,9 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
     }
+
+    @Override
+    public PatternAdmin negate() { return Patterns.disjunction(getPatterns().stream().map(PatternAdmin::negate).collect(toSet())); }
 
     @Override
     public Set<Var> commonVars() {

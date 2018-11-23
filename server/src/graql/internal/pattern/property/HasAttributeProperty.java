@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.query.Graql.label;
@@ -208,7 +209,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         Var relationVariable = relationship().var();
         Var attributeVariable = attribute().var().asUserDefined();
         Var predicateVariable = Graql.var();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent).collect(Collectors.toSet());
 
         IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;

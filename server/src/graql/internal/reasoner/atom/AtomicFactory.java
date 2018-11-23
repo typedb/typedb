@@ -23,6 +23,7 @@ import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.ReasonerQuery;
 
 import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.admin.VarProperty;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,7 +47,7 @@ public class AtomicFactory {
     public static Stream<Atomic> createAtoms(Conjunction<VarPatternAdmin> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = pattern.varPatterns().stream()
                 .flatMap(var -> var.getProperties()
-                        .map(vp -> vp.mapToAtom(var, pattern.varPatterns(), parent))
+                        .map(vp -> createAtom(vp, var, pattern.varPatterns(), parent))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
@@ -57,6 +58,19 @@ public class AtomicFactory {
                         .flatMap(Atom::getInnerPredicates)
                         .noneMatch(at::equals)
                 );
+    }
+
+    /**
+     * @param vp
+     * @param var
+     * @param vars
+     * @param parent
+     * @return
+     */
+    public static Atomic createAtom(VarProperty vp, VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent){
+        Atomic atomic = vp.mapToAtom(var, vars, parent);
+        if (atomic == null) return null;
+        return var.isPositive()? atomic : NegatedAtomic.create(atomic);
     }
 
 }

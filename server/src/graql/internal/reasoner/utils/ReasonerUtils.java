@@ -117,21 +117,11 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return set of mapped ValuePredicates
      */
-    public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
-        Set<ValuePredicate> predicates = new HashSet<>();
-        if(valueVar.var().isUserDefinedName()){
-            vars.stream()
-                    .filter(v -> v.var().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(v.var(), vp.predicate(), parent)))
-                    .forEach(predicates::add);
-        }
-        //add value atom
-        else {
-            valueVar.getProperties(ValueProperty.class)
-                    .forEach(vp -> predicates
-                            .add(ValuePredicate.create(createValueVar(valueVariable, vp.predicate()), parent)));
-        }
-        return predicates;
+    public static Stream<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
+        Stream<VarPatternAdmin> sourceVars = valueVar.var().isUserDefinedName()?
+                vars.stream().filter(v -> v.var().equals(valueVariable)).filter(v -> v.isPositive() == valueVar.isPositive()) :
+                Stream.of(valueVar);
+        return sourceVars.flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> ValuePredicate.create(valueVariable, vp.predicate(), parent)));
     }
 
     /**

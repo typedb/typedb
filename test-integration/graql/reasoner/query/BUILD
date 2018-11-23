@@ -102,6 +102,27 @@ java_test(
 )
 
 java_test(
+    name = "negation-it",
+    size = "medium",
+    srcs = [
+        "NegationIT.java",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = [
+        "//test-integration/graql/reasoner/stubs:reasoning-stubs",
+    ],
+    test_class = "grakn.core.graql.reasoner.query.NegationIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+    ],
+)
+
+java_test(
     name = "resolution-plan-it",
     size = "medium",
     srcs = ["ResolutionPlanIT.java"],

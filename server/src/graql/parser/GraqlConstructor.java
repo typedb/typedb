@@ -226,18 +226,23 @@ class GraqlConstructor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Pattern visitAndPattern(GraqlParser.AndPatternContext ctx) {
+        return Graql.and(visitPatterns(ctx.patterns()));
+    }
+
+    @Override public Pattern visitNotPattern(GraqlParser.NotPatternContext ctx) {
+        return Graql.not(visitPattern(ctx.pattern()));
+    }
+
+    @Override
     public List<VarPattern> visitVarPatterns(GraqlParser.VarPatternsContext ctx) {
         return ctx.varPattern().stream().map(this::visitVarPattern).collect(toList());
     }
 
     @Override
-    public Pattern visitAndPattern(GraqlParser.AndPatternContext ctx) {
-        return and(visitPatterns(ctx.patterns()));
-    }
-
-    @Override
-    public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
+    public VarPattern visitPositiveVarPattern(GraqlParser.PositiveVarPatternContext ctx) {
         VarPattern var;
+
         if (ctx.VARIABLE() != null) {
             var = getVariable(ctx.VARIABLE());
         } else {
@@ -246,6 +251,15 @@ class GraqlConstructor extends GraqlBaseVisitor {
         return getVarProperties(ctx.property()).apply(var);
     }
 
+    @Override
+    public VarPattern visitNegativeVarPattern (GraqlParser.NegativeVarPatternContext ctx) {
+        return visitPositiveVarPattern(ctx.positiveVarPattern()).admin().negate().asVarPattern();
+    }
+
+    @Override
+    public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
+        return ctx.positiveVarPattern() != null? visitPositiveVarPattern(ctx.positiveVarPattern()) : visitNegativeVarPattern(ctx.negativeVarPattern());
+    }
     @Override
     public UnaryOperator<VarPattern> visitPropId(GraqlParser.PropIdContext ctx) {
         return var -> var.id(visitId(ctx.id()));

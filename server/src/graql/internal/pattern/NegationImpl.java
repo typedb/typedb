@@ -18,57 +18,53 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.graql.query.Var;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.Disjunction;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-
+import grakn.core.graql.admin.Conjunction;
+import grakn.core.graql.admin.Disjunction;
+import grakn.core.graql.admin.Negation;
+import grakn.core.graql.admin.PatternAdmin;
+import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.Var;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.joining;
 
 @AutoValue
-abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
+abstract class NegationImpl<T extends PatternAdmin> extends AbstractPattern implements Negation<T> {
 
     @Override
     public abstract Set<T> getPatterns();
 
     @Override
     public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
-        // Concatenate all disjunctions into one big disjunction
-        Set<Conjunction<VarPatternAdmin>> dnf = getPatterns().stream()
-                .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
-                .collect(toSet());
-
-        return Patterns.disjunction(dnf);
+        return this.negate().getDisjunctiveNormalForm();
     }
 
     @Override
-    public PatternAdmin negate() { return Patterns.disjunction(getPatterns().stream().map(PatternAdmin::negate).collect(toSet())); }
+    public PatternAdmin negate() {
+        return Iterables.getOnlyElement(getPatterns()).negate();
+    }
 
     @Override
     public Set<Var> commonVars() {
-        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(Sets::intersection).orElse(ImmutableSet.of());
+        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override
-    public boolean isDisjunction() {
-        return true;
-    }
+    public boolean isNegation() { return true; }
 
     @Override
-    public Disjunction<?> asDisjunction() {
+    public Negation<?> asNegation() {
         return this;
     }
 
+
     @Override
     public String toString() {
-        return getPatterns().stream().map(Object::toString).collect(Collectors.joining(" or "));
+        return "NOT {" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
     }
 
     @Override

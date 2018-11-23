@@ -20,15 +20,15 @@ package grakn.core.graql.admin;
 
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Var;
-
-import javax.annotation.CheckReturnValue;
 import java.util.Set;
+import javax.annotation.CheckReturnValue;
 
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Admin class for inspecting and manipulating a Pattern
  *
+ * @author Felix Chapman
  */
 public interface PatternAdmin extends Pattern {
     /**
@@ -43,6 +43,24 @@ public interface PatternAdmin extends Pattern {
      */
     @CheckReturnValue
     Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
+
+    /**
+     *
+     * @return
+     */
+    @CheckReturnValue
+    PatternAdmin negate();
+
+    /**
+     *
+     * @return
+     */
+    @CheckReturnValue
+    default boolean isPositive(){
+        return getDisjunctiveNormalForm().getPatterns().stream()
+                .flatMap(p -> p.getPatterns().stream())
+                .allMatch(PatternAdmin::isPositive);
+    }
 
     /**
      * Get all common, user-defined variable names in the pattern.
@@ -67,6 +85,14 @@ public interface PatternAdmin extends Pattern {
     }
 
     /**
+     * @return true if this Pattern.Admin is a Negation
+     */
+    @CheckReturnValue
+    default boolean isNegation() {
+        return false;
+    }
+
+    /**
      * @return true if this {@link PatternAdmin} is a {@link VarPatternAdmin}
      */
     @CheckReturnValue
@@ -78,7 +104,13 @@ public interface PatternAdmin extends Pattern {
      * @return this Pattern.Admin as a Disjunction, if it is one.
      */
     @CheckReturnValue
-    default Disjunction<?> asDisjunction() {
+    default Disjunction<?> asDisjunction() { throw new UnsupportedOperationException(); }
+
+    /**
+     * @return this Pattern.Admin as a Conjunction, if it is one.
+     */
+    @CheckReturnValue
+    default Conjunction<?> asConjunction() {
         throw new UnsupportedOperationException();
     }
 
@@ -86,7 +118,7 @@ public interface PatternAdmin extends Pattern {
      * @return this Pattern.Admin as a Conjunction, if it is one.
      */
     @CheckReturnValue
-    default Conjunction<?> asConjunction() {
+    default Negation<?> asNegation() {
         throw new UnsupportedOperationException();
     }
 
