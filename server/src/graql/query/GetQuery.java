@@ -23,6 +23,7 @@ import grakn.core.server.Transaction;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -35,9 +36,9 @@ import static java.util.stream.Collectors.joining;
 @AutoValue
 public abstract class GetQuery implements Query<ConceptMap> {
 
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public abstract ImmutableSet<Var> vars();
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public abstract Match match();
 
     public static GetQuery of(Match match, ImmutableSet<Var> vars) {

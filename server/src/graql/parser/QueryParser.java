@@ -20,6 +20,8 @@ package grakn.core.graql.parser;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableMap;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSyntaxException;
 import grakn.core.graql.grammar.GraqlLexer;
 import grakn.core.graql.grammar.GraqlParser;
 import grakn.core.graql.grammar.GraqlParser.PatternContext;
@@ -27,16 +29,12 @@ import grakn.core.graql.grammar.GraqlParser.PatternsContext;
 import grakn.core.graql.grammar.GraqlParser.QueryContext;
 import grakn.core.graql.grammar.GraqlParser.QueryEOFContext;
 import grakn.core.graql.grammar.GraqlParser.QueryListContext;
-import grakn.core.graql.internal.template.TemplateParser;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.Var;
-import grakn.core.graql.query.aggregate.Aggregates;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlSyntaxException;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
@@ -65,7 +63,6 @@ import java.util.stream.StreamSupport;
 public class QueryParser {
 
     private final QueryBuilder queryBuilder;
-    private final TemplateParser templateParser = TemplateParser.create();
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
     private boolean defineAllVars = false;
 
@@ -101,16 +98,6 @@ public class QueryParser {
             }
             return aggregateMethod.apply(args);
         });
-    }
-
-    /**
-     * Register an aggregate that can be used when parsing a Graql query
-     *
-     * @param name            the name of the aggregate
-     * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
-     */
-    public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
-        aggregateMethods.put(name, aggregateMethod);
     }
 
     /**
@@ -236,14 +223,6 @@ public class QueryParser {
         return PATTERN.parse(patternString);
     }
 
-    /**
-     * @param template a string representing a templated graql query
-     * @param data     data to use in template
-     * @return a resolved graql query
-     */
-    public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data) {
-        return parseList(templateParser.parseTemplate(template, data));
-    }
 
     private static GraqlLexer createLexer(CharStream input, GraqlErrorListener errorListener) {
         GraqlLexer lexer = new GraqlLexer(input);
@@ -272,18 +251,18 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, Integer.MAX_VALUE, args -> Graql.count());
-        registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
-        registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
-        registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));
-        registerAggregate("mean", 1, args -> Aggregates.mean((Var) args.get(0)));
-        registerAggregate("median", 1, args -> Aggregates.median((Var) args.get(0)));
-        registerAggregate("std", 1, args -> Aggregates.std((Var) args.get(0)));
+        registerAggregate("sum", 1, args -> Graql.sum((Var) args.get(0)));
+        registerAggregate("max", 1, args -> Graql.max((Var) args.get(0)));
+        registerAggregate("min", 1, args -> Graql.min((Var) args.get(0)));
+        registerAggregate("mean", 1, args -> Graql.mean((Var) args.get(0)));
+        registerAggregate("median", 1, args -> Graql.median((Var) args.get(0)));
+        registerAggregate("std", 1, args -> Graql.std((Var) args.get(0)));
 
         registerAggregate("group", 1, 2, args -> {
             if (args.size() < 2) {
-                return Aggregates.group((Var) args.get(0));
+                return Graql.group((Var) args.get(0));
             } else {
-                return Aggregates.group((Var) args.get(0), (Aggregate) args.get(1));
+                return Graql.group((Var) args.get(0), (Aggregate) args.get(1));
             }
         });
     }

@@ -22,7 +22,7 @@ import com.google.common.base.StandardSystemProperty;
 import grakn.core.client.Grakn;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.answer.Answer;
-import grakn.core.graql.internal.printer.Printer;
+import grakn.core.graql.printer.Printer;
 import jline.console.ConsoleReader;
 import jline.console.history.FileHistory;
 

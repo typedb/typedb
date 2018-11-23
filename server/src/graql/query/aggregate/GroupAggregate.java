@@ -41,12 +41,12 @@ import static java.util.stream.Collectors.toList;
  * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T>> {
+public class GroupAggregate<T extends Answer> implements Aggregate<AnswerGroup<T>> {
 
     private final Var varName;
     private final Aggregate<T> innerAggregate;
 
-    GroupAggregate(Var varName, Aggregate<T> innerAggregate) {
+    public GroupAggregate(Var varName, Aggregate<T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }

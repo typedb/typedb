@@ -32,11 +32,11 @@ import java.util.stream.Stream;
 /**
  * Aggregate that finds minimum of a {@link Match}.
  */
-class MinAggregate implements Aggregate<Value> {
+public class MinAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
-    MinAggregate(Var varName) {
+    public MinAggregate(Var varName) {
         this.varName = varName;
     }
 

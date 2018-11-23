@@ -31,11 +31,11 @@ import java.util.stream.Stream;
 /**
  * Aggregate that sums results of a {@link Match}.
  */
-class SumAggregate implements Aggregate<Value> {
+public class SumAggregate implements Aggregate<Value> {
 
     private final Var varName;
 
-    SumAggregate(Var varName) {
+    public SumAggregate(Var varName) {
         this.varName = varName;
     }
 
