@@ -1029,19 +1029,9 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         SemanticDifference baseDiff = super.semanticDifference(p, unifier);
         if (!p.isRelation()) return baseDiff;
         RelationshipAtom parentAtom = (RelationshipAtom) p;
-        Map<Var, VariableDefinition> diff = new HashMap<>();
-
-        /*
-        Set<Var> parentRoleVars = parentAtom.getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
-                .filter(pattern -> pattern.var().isUserDefinedName())
-                .map(VarPatternAdmin::var)
-                .collect(Collectors.toSet());
-        */
+        Set<VariableDefinition> diff = new HashSet<>();
 
         Set<Var> parentRoleVars= parentAtom.getRoleExpansionVariables();
-
         HashMultimap<Var, Role> childVarRoleMap = this.getVarRoleMap();
         HashMultimap<Var, Role> parentVarRoleMap = parentAtom.getVarRoleMap();
         unifier.mappings().forEach( m -> {
@@ -1058,7 +1048,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
                         .collect(toSet());
                 role = tx().getRole(Iterables.getOnlyElement(roleLabel).getValue());
             }
-            diff.put(childVar, new VariableDefinition(null, role, bottom(Sets.difference(childRoles, parentRoles)), new HashSet<>()));
+            diff.add(new VariableDefinition(childVar,null, role, bottom(Sets.difference(childRoles, parentRoles)), new HashSet<>()));
         });
         return baseDiff.merge(new SemanticDifference(diff));
     }

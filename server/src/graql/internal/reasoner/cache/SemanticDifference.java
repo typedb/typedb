@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.Var;
 import grakn.core.graql.admin.Unifier;
@@ -52,17 +53,10 @@ import java.util.stream.Collectors;
  */
 public class SemanticDifference {
 
-    //TODO define as a set of VariableDefinitions with def holding var
-    final private ImmutableMap<Var, VariableDefinition> definition;
+    final private ImmutableSet<VariableDefinition> definition;
 
-    public SemanticDifference(Map<Var, VariableDefinition> m){
-        this(m.entrySet());
-    }
-
-    private SemanticDifference(Collection<Map.Entry<Var, VariableDefinition>> mappings){
-        ImmutableMap.Builder<Var, VariableDefinition> builder = ImmutableMap.builder();
-        mappings.stream().filter(e -> !e.getValue().isTrivial()).forEach(e -> builder.put(e.getKey(), e.getValue()));
-        this.definition = builder.build();
+    public SemanticDifference(Set<VariableDefinition> definition){
+        this.definition = ImmutableSet.copyOf(definition.stream().filter(vd -> !vd.isTrivial()).iterator());
     }
 
     @Override
@@ -87,16 +81,16 @@ public class SemanticDifference {
         if(!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
         return answer.get(var).asThing()
-                .relationships(roleAndTheirSubs.toArray(new Role[roleAndTheirSubs.size()]))
+                .relationships(roleAndTheirSubs.toArray(new Role[0]))
                 .collect(Collectors.toSet());
     }
 
     public boolean satisfiedBy(ConceptMap answer){
         if (isEmpty()) return true;
 
-        Map<Var, Set<Role>> roleRequirements = this.definition.entrySet().stream()
-                .filter(entry -> !entry.getValue().playedRoles().isEmpty())
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().playedRoles()));
+        Map<Var, Set<Role>> roleRequirements = this.definition.stream()
+                .filter(vd -> !vd.playedRoles().isEmpty())
+                .collect(Collectors.toMap(VariableDefinition::var, VariableDefinition::playedRoles));
 
         //check for role compatibility
         Iterator<Map.Entry<Var, Set<Role>>> reqIterator = roleRequirements.entrySet().iterator();
@@ -113,16 +107,13 @@ public class SemanticDifference {
         }
         if(relationships.isEmpty() && !roleRequirements.isEmpty()) return false;
 
-        //TODO iterate over definition instead of answer
-        return answer.map().entrySet().stream().allMatch(entry -> {
-            Var ansVar = entry.getKey();
-            Concept concept = entry.getValue();
-            VariableDefinition varDef = definition.get(ansVar);
-            if (varDef == null) return true;
-            Type type = varDef.type();
-            Role role = varDef.role();
-            Set<ValuePredicate> vps = varDef.valuePredicates();
-
+        return definition.stream().allMatch(vd -> {
+            Var var = vd.var();
+            Concept concept = answer.get(var);
+            if (concept == null) return false;
+            Type type = vd.type();
+            Role role = vd.role();
+            Set<ValuePredicate> vps = vd.valuePredicates();
             return (type == null || type.subs().anyMatch(t -> t.equals(concept.asThing().type())))
                     && (role == null || role.subs().anyMatch(r -> r.equals(concept.asRole())))
                     && (vps.isEmpty() || vps.stream().allMatch(vp -> vp.getPredicate().getPredicate().get().test(concept.asAttribute().value())));
@@ -130,14 +121,15 @@ public class SemanticDifference {
     }
 
     public SemanticDifference merge(SemanticDifference diff){
-        Map<Var, VariableDefinition> mergedDefinition = new HashMap<>(definition);
-        diff.definition.forEach((var, varDefToMerge) -> {
+        Map<Var, VariableDefinition> mergedDefinition = definition.stream().collect(Collectors.toMap(VariableDefinition::var, vd -> vd));
+        diff.definition.forEach(varDefToMerge -> {
+            Var var = varDefToMerge.var();
             VariableDefinition varDef = mergedDefinition.get(var);
             mergedDefinition.put(var, varDef != null ? varDef.merge(varDefToMerge) : varDefToMerge);
         });
-        return new SemanticDifference(mergedDefinition);
+        return new SemanticDifference(new HashSet<>(mergedDefinition.values()));
     }
 
-    boolean isEmpty(){ return definition.values().stream().allMatch(VariableDefinition::isTrivial);}
+    boolean isEmpty(){ return definition.stream().allMatch(VariableDefinition::isTrivial);}
 
 }

@@ -26,6 +26,7 @@ import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.internal.reasoner.atom.binary.ResourceAtom;
 import grakn.core.graql.internal.reasoner.cache.QueryCache;
+import grakn.core.graql.internal.reasoner.cache.StructuralCache;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueryEquivalence;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,8 +100,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      *
      * Similar to the exact one with addition to allowing id predicates to differ.
-     * Used in {@link ai.grakn.graql.internal.reasoner.cache.StructuralCache} comparisons.
-     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ai.grakn.graql.internal.reasoner.query.ReasonerQueryEquivalence}.
+     * Used in {@link StructuralCache} comparisons.
+     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ReasonerQueryEquivalence}.
      *
      */
     STRUCTURAL {

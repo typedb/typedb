@@ -425,7 +425,7 @@ public abstract class Atom extends AtomicBase {
      * @return semantic difference between child and parent
      */
     public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier){
-        Map<Var, VariableDefinition> diff = new HashMap<>();
+        Set<VariableDefinition> diff = new HashSet<>();
         ImmutableMap<Var, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
         ImmutableMap<Var, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
         Unifier unifierInverse = unifier.inverse();
@@ -446,7 +446,7 @@ public abstract class Atom extends AtomicBase {
                     .flatMap(vp -> vp.unify(unifierInverse).stream())
                     .forEach(predicates::remove);
 
-            diff.put(childVar, new VariableDefinition(type, null, new HashSet<>(), predicates));
+            diff.add(new VariableDefinition(childVar, type, null, new HashSet<>(), predicates));
         });
         return new SemanticDifference(diff);
     }

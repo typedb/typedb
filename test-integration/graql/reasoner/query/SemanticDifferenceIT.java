@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.graql.Graql;
@@ -87,9 +87,8 @@ public class SemanticDifferenceIT {
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            Graql.var("x"),
-                            new VariableDefinition(subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                    ImmutableSet.of(
+                            new VariableDefinition(Graql.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -114,9 +113,8 @@ public class SemanticDifferenceIT {
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            Graql.var("x"),
-                            new VariableDefinition(subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                    ImmutableSet.of(
+                            new VariableDefinition(Graql.var("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -140,11 +138,9 @@ public class SemanticDifferenceIT {
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            Graql.var("role"),
-                            new VariableDefinition(null, role, new HashSet<>(), new HashSet<>()),
-                            Graql.var("x"),
-                            new VariableDefinition(null, null, Sets.newHashSet(role), new HashSet<>())
+                    ImmutableSet.of(
+                            new VariableDefinition(Graql.var("role"),null, role, new HashSet<>(), new HashSet<>()),
+                            new VariableDefinition( Graql.var("x"),null, null, Sets.newHashSet(role), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -169,9 +165,8 @@ public class SemanticDifferenceIT {
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            Graql.var("x"),
-                            new VariableDefinition(null, null, Sets.newHashSet(subRole), new HashSet<>())
+                    ImmutableSet.of(
+                            new VariableDefinition(Graql.var("x"),null, null, Sets.newHashSet(subRole), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -195,11 +190,9 @@ public class SemanticDifferenceIT {
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            Graql.var("x"),
-                            new VariableDefinition(null, null, Sets.newHashSet(subRole1), new HashSet<>()),
-                            Graql.var("y"),
-                            new VariableDefinition(null, null, Sets.newHashSet(subRole2), new HashSet<>())
+                    ImmutableSet.of(
+                            new VariableDefinition(Graql.var("x"),null, null, Sets.newHashSet(subRole1), new HashSet<>()),
+                            new VariableDefinition(Graql.var("y"),null, null, Sets.newHashSet(subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -224,9 +217,8 @@ public class SemanticDifferenceIT {
             ResourceAtom resource = (ResourceAtom) child.getAtom();
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            resource.getAttributeVariable(),
-                            new VariableDefinition(null, null, new HashSet<>(), resource.getInnerPredicates(ValuePredicate.class).collect(toSet()))
+                    ImmutableSet.of(
+                            new VariableDefinition(resource.getAttributeVariable(),null, null, new HashSet<>(), resource.getInnerPredicates(ValuePredicate.class).collect(toSet()))
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -251,9 +243,8 @@ public class SemanticDifferenceIT {
             ResourceAtom resource = (ResourceAtom) child.getAtom();
 
             SemanticDifference expected = new SemanticDifference(
-                    ImmutableMap.of(
-                            resource.getAttributeVariable(),
-                            new VariableDefinition(null, null, new HashSet<>(), resource.getInnerPredicates(ValuePredicate.class).collect(toSet()))
+                    ImmutableSet.of(
+                            new VariableDefinition(resource.getAttributeVariable(),null, null, new HashSet<>(), resource.getInnerPredicates(ValuePredicate.class).collect(toSet()))
                     )
             );
             assertEquals(expected, semanticPair.getValue());

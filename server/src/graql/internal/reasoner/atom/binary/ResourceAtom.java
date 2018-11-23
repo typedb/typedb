@@ -330,14 +330,14 @@ public abstract class ResourceAtom extends Binary{
         SemanticDifference baseDiff = super.semanticDifference(p, unifier);
         if (!p.isResource()) return baseDiff;
         ResourceAtom parentAtom = (ResourceAtom) p;
-        Map<Var, VariableDefinition> diff = new HashMap<>();
+        Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
         Var childVar = getAttributeVariable();
         Set<ValuePredicate> predicates = new HashSet<>(getMultiPredicate());
         parentAtom.getMultiPredicate().stream()
                 .flatMap(vp -> vp.unify(unifierInverse).stream())
                 .forEach(predicates::remove);
-        diff.put( childVar, new VariableDefinition(null, null, new HashSet<>(), predicates));
+        diff.add(new VariableDefinition(childVar, null, null, new HashSet<>(), predicates));
         return baseDiff.merge(new SemanticDifference(diff));
     }
 

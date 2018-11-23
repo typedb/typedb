@@ -19,6 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.Var;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -38,12 +39,14 @@ import javax.annotation.Nullable;
  */
 public class VariableDefinition {
 
+    final private Var var;
     final private Type type;
     final private Role role;
     final private Set<Role> playedRoles;
     final private Set<ValuePredicate> vps;
 
-    public VariableDefinition(@Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps){
+    public VariableDefinition(Var var, @Nullable Type type, @Nullable Role role, Set<Role> playedRoles, Set<ValuePredicate> vps){
+        this.var = var;
         this.type = type;
         this.role = role;
         this.playedRoles = playedRoles;
@@ -52,12 +55,12 @@ public class VariableDefinition {
 
     @Override
     public String toString(){
-        return "{" +
+        return "{" + var + ":{" +
                 "type: " + type + ", " +
                 "role: " + role + ", " +
                 "playedRoles: " + playedRoles + ", " +
                 "vps: " + vps +
-                "}";
+                "}}";
     }
 
     @Override
@@ -65,7 +68,8 @@ public class VariableDefinition {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VariableDefinition that = (VariableDefinition) o;
-        return Objects.equals(type, that.type) &&
+        return Objects.equals(var, that.var) &&
+                Objects.equals(type, that.type) &&
                 Objects.equals(role, that.role) &&
                 Objects.equals(playedRoles, that.playedRoles) &&
                 Objects.equals(vps, that.vps);
@@ -73,16 +77,21 @@ public class VariableDefinition {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, role, playedRoles, vps);
+        return Objects.hash(var, type, role, playedRoles, vps);
     }
 
+    public Var var(){ return var;}
     public Type type(){ return type;}
     public Role role(){ return role;}
     public Set<Role> playedRoles(){ return playedRoles;}
     public Set<ValuePredicate> valuePredicates(){ return vps;}
 
     public VariableDefinition merge(VariableDefinition def){
+        if (!var().equals(def.var())){
+            throw new IllegalStateException("Illegal variable definition merge between:\n" + this + "and\n" + def);
+        }
         return new VariableDefinition(
+                var,
                 def.type() != null? def.type() : this.type(),
                 def.role() != null? def.role() : this.role(),
                 Sets.union(def.playedRoles(), this.playedRoles()),
