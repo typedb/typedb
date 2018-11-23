@@ -21,7 +21,7 @@ import {
 import Grakn from 'grakn';
 import SchemaHandler from '../SchemaHandler';
 import {
-  // META_CONCEPTS,
+  META_CONCEPTS,
   computeSubConcepts,
   relationshipTypesOutboundEdges,
   updateNodePositions,
@@ -30,11 +30,7 @@ import {
 } from '../SchemaUtils';
 import SchemaCanvasEventsHandler from '../SchemaCanvasEventsHandler';
 
-const META_CONCEPTS = new Set(['entity', 'relationship', 'attribute', 'role']);
-
-
 export default {
-
   async [OPEN_GRAKN_TX]({ state, commit }) {
     const graknTx = await state.graknSession.transaction(Grakn.txType.WRITE);
     commit('setSchemaHandler', new SchemaHandler(graknTx));
