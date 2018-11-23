@@ -1,17 +1,15 @@
 <template>
     <div class="top-bar-container">
         <div class="left">
-            <router-link to="/design/schema"><button class="btn"><vue-icon icon="diagram-tree" className="vue-icon"></vue-icon></button></router-link>
+            <router-link to="/develop/data"><button class="btn"><vue-icon icon="eye-open" className="vue-icon"></vue-icon></button></router-link>
             <img src="static/img/logo-text.png" class="grakn-icon">
         </div>
 
         <div class="center">
-            <graql-editor :tabId="tabId" v-on:keyspace-not-selected="showKeyspaceToolTip = true"></graql-editor>
         </div>
 
         <div class="right">
-            <keyspaces-handler :tabId="tabId" :showKeyspaceTooltip="showKeyspaceToolTip" v-on:keyspace-selected="showKeyspaceToolTip = false"></keyspaces-handler>
-            <button class="btn" @click="$emit('toggle-preferences')"><vue-icon icon="cog" className="vue-icon"></vue-icon></button>
+            <keyspaces-handler></keyspaces-handler>
         </div>
     </div>
 </template>
@@ -76,11 +74,9 @@
 
 <script>
     import KeyspacesHandler from '../shared/KeyspacesHandler.vue';
-    import GraqlEditor from './TopBar/GraqlEditor/GraqlEditor.vue';
 
     export default {
-      components: { KeyspacesHandler, GraqlEditor },
-      props: ['tabId'],
+      components: { KeyspacesHandler },
       data() {
         return {
           showKeyspaceToolTip: false,

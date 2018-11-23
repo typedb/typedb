@@ -112,7 +112,8 @@ export default {
     };
   },
   beforeCreate() {
-    const { mapGetters, mapActions } = createNamespacedHelpers(`tab-${this.$options.propsData.tabId}`);
+    const namespace = (this.$route.path === '/develop/data') ? `tab-${this.$options.propsData.tabId}` : 'schema-design';
+    const { mapGetters, mapActions } = createNamespacedHelpers(namespace);
 
     // computed
     this.$options.computed = {

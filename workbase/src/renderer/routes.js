@@ -1,6 +1,6 @@
 // Import pages components
 import MainTemplate from './components/MainTemplate/MainTemplate.vue';
-import SchemaDesignContent from './components/SchemaDesign/SchemaDesignContent/SchemaDesignContent.vue';
+import SchemaDesignContent from './components/SchemaDesign/SchemaDesignContent.vue';
 import VisualiserPage from './components/Visualiser/VisualiserContent.vue';
 import LoginPage from './components/Login/LoginPage.vue';
 
