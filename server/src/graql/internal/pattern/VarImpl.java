@@ -18,12 +18,10 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.graql.query.Var;
-import grakn.core.graql.admin.VarProperty;
-import com.google.auto.value.AutoValue;
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.query.Var;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Set;
@@ -31,19 +29,38 @@ import java.util.regex.Pattern;
 
 /**
  * Default implementation of {@link Var}.
- *
  */
-@AutoValue
-abstract class VarImpl extends AbstractVarPattern implements Var {
+class VarImpl extends AbstractVarPattern implements Var {
 
     private static final Pattern VALID_VAR = Pattern.compile("[a-zA-Z0-9_-]+");
 
-    static VarImpl of(String value, Kind kind) {
-        Preconditions.checkArgument(
-                VALID_VAR.matcher(value).matches(), "Var value [%s] is invalid. Must match regex %s", value, VALID_VAR
-        );
+    private final String getValue;
+    private final Var.Kind kind;
+    private volatile String name;
 
-        return new AutoValue_VarImpl(value, kind);
+    VarImpl(String value, Var.Kind kind) {
+        if (value == null) {
+            throw new NullPointerException("Null getValue");
+        }
+        Preconditions.checkArgument(
+                VALID_VAR.matcher(value).matches(),
+                "Var value [%s] is invalid. Must match regex %s", value, VALID_VAR
+        );
+        this.getValue = value;
+        if (kind == null) {
+            throw new NullPointerException("Null kind");
+        }
+        this.kind = kind;
+    }
+
+    @Override
+    public String getValue() {
+        return getValue;
+    }
+
+    @Override
+    public Var.Kind kind() {
+        return kind;
     }
 
     @Override
@@ -56,14 +73,20 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
         if (isUserDefinedName()) {
             return this;
         } else {
-            return VarImpl.of(getValue(), Kind.UserDefined);
+            return new VarImpl(getValue(), Kind.UserDefined);
         }
     }
 
-    @Memoized
     @Override
     public String name() {
-        return kind().prefix() + getValue();
+        if (name == null) {
+            synchronized (this) {
+                if (name == null) {
+                    name = kind().prefix() + getValue();
+                }
+            }
+        }
+        return name;
     }
 
     @Override
@@ -101,5 +124,5 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
     public final int hashCode() {
         // This hashCode implementation is special: it ignores whether a variable is user-defined
         return getValue().hashCode();
-     }
+    }
 }
