@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.reasoner.atom;
 
 import grakn.core.graql.concept.Rule;
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;

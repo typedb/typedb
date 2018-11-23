@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.executor;
 
 import grakn.core.common.util.CommonUtil;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.concept.Attribute;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
@@ -31,15 +31,16 @@ import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.internal.Schema;
-import grakn.core.graql.internal.pattern.property.DataType;
-import grakn.core.graql.internal.pattern.property.Isa;
-import grakn.core.graql.internal.pattern.property.Label;
-import grakn.core.graql.internal.pattern.property.Sub;
-import grakn.core.graql.internal.pattern.property.Then;
-import grakn.core.graql.internal.pattern.property.Value;
-import grakn.core.graql.internal.pattern.property.When;
-import grakn.core.graql.query.Pattern;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.property.DataType;
+import grakn.core.graql.query.pattern.property.Isa;
+import grakn.core.graql.query.pattern.property.Label;
+import grakn.core.graql.query.pattern.property.Sub;
+import grakn.core.graql.query.pattern.property.Then;
+import grakn.core.graql.query.pattern.property.Value;
+import grakn.core.graql.query.pattern.property.VarProperty;
+import grakn.core.graql.query.pattern.property.When;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.server.exception.InvalidKBException;
 
 import javax.annotation.Nullable;
@@ -56,7 +57,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Class for building a {@link Concept}, by providing properties.
  * <p>
  * <p>
- * A {@link grakn.core.graql.admin.VarProperty} is responsible for inserting itself into the graph. However,
+ * A {@link VarProperty} is responsible for inserting itself into the graph. However,
  * some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
  * an {@link Isa} and a {@link Value}.
  * </p>
@@ -290,7 +291,7 @@ public class ConceptBuilder {
     private static final BuilderParam<Type> TYPE = BuilderParam.of(Isa.NAME);
     private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = BuilderParam.of(Sub.NAME);
     private static final BuilderParam<grakn.core.graql.concept.Label> LABEL = BuilderParam.of(Label.NAME);
-    private static final BuilderParam<ConceptId> ID = BuilderParam.of(grakn.core.graql.internal.pattern.property.ID.NAME);
+    private static final BuilderParam<ConceptId> ID = BuilderParam.of(grakn.core.graql.query.pattern.property.ID.NAME);
     private static final BuilderParam<Object> VALUE = BuilderParam.of(Value.NAME);
     private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = BuilderParam.of(DataType.NAME);
     private static final BuilderParam<Pattern> WHEN = BuilderParam.of(When.NAME);

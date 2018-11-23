@@ -20,7 +20,7 @@ package grakn.core.graql.internal.executor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.answer.ConceptSet;
@@ -34,7 +34,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.InsertQuery;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.UndefineQuery;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.server.ComputeExecutor;
 import grakn.core.server.QueryExecutor;
 import grakn.core.graql.exception.GraqlQueryException;

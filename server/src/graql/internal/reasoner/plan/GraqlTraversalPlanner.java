@@ -20,13 +20,13 @@ package grakn.core.graql.internal.reasoner.plan;
 
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.admin.VarProperty;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.PatternAdmin;
+import grakn.core.graql.query.pattern.property.VarProperty;
 import grakn.core.graql.internal.gremlin.GraqlTraversal;
 import grakn.core.graql.internal.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.internal.gremlin.fragment.Fragment;
-import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;

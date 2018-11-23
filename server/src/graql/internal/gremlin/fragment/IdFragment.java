@@ -19,8 +19,8 @@
 package grakn.core.graql.internal.gremlin.fragment;
 
 import grakn.core.graql.concept.ConceptId;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.internal.pattern.property.ID;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.property.ID;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.graql.internal.Schema;
 import com.google.auto.value.AutoValue;

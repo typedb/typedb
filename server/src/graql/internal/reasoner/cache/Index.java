@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;

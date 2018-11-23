@@ -21,6 +21,8 @@ package grakn.core.graql.query;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.answer.ConceptSet;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.server.Transaction;
 
 import javax.annotation.CheckReturnValue;

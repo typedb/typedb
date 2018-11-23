@@ -19,7 +19,7 @@
 package grakn.core.graql.internal.reasoner.unifier;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.admin.MultiUnifier;
 import grakn.core.graql.admin.Unifier;
 import com.google.common.collect.ImmutableMultimap;

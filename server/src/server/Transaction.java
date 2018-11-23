@@ -31,7 +31,7 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.exception.PropertyNotUniqueException;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.internal.Schema;
 import grakn.core.server.keyspace.Keyspace;
 

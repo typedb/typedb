@@ -4,7 +4,7 @@
 //import Concept;
 //import grakn.core.graql.query.GetQuery;
 //import grakn.core.graql.query.QueryBuilder;
-//import grakn.core.graql.query.Var;
+//import grakn.core.graql.query.pattern.Var;
 //import grakn.core.graql.admin.Explanation;
 //import grakn.core.graql.admin.ReasonerQuery;
 //import grakn.core.graql.answer.ConceptMap;

@@ -31,7 +31,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.server.session.TransactionImpl;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.protocol.SessionProto;
 import grakn.core.protocol.SessionProto.Transaction;

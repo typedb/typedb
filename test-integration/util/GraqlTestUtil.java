@@ -26,7 +26,7 @@ import grakn.core.graql.query.GetQuery;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.server.Session;
 import grakn.core.server.Transaction;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 
 import java.io.BufferedReader;
 import java.io.InputStream;

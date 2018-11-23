@@ -19,11 +19,6 @@
 package grakn.core.graql.query.pattern;
 
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.Disjunction;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 

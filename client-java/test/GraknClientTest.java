@@ -25,7 +25,7 @@ import grakn.core.client.rpc.RequestBuilder;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.GetQuery;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.ConceptId;

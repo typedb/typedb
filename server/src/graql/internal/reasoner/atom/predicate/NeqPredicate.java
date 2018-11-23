@@ -19,12 +19,12 @@
 package grakn.core.graql.internal.reasoner.atom.predicate;
 
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.query.VarPattern;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.pattern.property.Neq;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
+import grakn.core.graql.query.pattern.property.Neq;
 
 import grakn.core.graql.internal.reasoner.atom.AtomicEquivalence;
 import com.google.auto.value.AutoValue;

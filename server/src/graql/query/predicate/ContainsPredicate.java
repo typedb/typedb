@@ -18,8 +18,7 @@
 
 package grakn.core.graql.query.predicate;
 
-import grakn.core.graql.query.ValuePredicate;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 class ContainsPredicate extends ComparatorPredicate {

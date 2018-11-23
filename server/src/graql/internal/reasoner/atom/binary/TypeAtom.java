@@ -18,11 +18,11 @@
 package grakn.core.graql.internal.reasoner.atom.binary;
 
 import grakn.core.graql.admin.Unifier;
-import grakn.core.graql.internal.pattern.property.HasAttributeType;
-import grakn.core.graql.internal.pattern.property.Isa;
-import grakn.core.graql.internal.pattern.property.Plays;
-import grakn.core.graql.internal.pattern.property.Relates;
-import grakn.core.graql.internal.pattern.property.Sub;
+import grakn.core.graql.query.pattern.property.HasAttributeType;
+import grakn.core.graql.query.pattern.property.Isa;
+import grakn.core.graql.query.pattern.property.Plays;
+import grakn.core.graql.query.pattern.property.Relates;
+import grakn.core.graql.query.pattern.property.Sub;
 import grakn.core.graql.internal.reasoner.atom.Atom;
 
 import java.util.Set;

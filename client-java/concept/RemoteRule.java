@@ -25,7 +25,7 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.common.util.CommonUtil;
 import com.google.auto.value.AutoValue;

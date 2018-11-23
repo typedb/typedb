@@ -21,7 +21,7 @@ package grakn.core.graql.internal.match;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.query.Match;
 import grakn.core.graql.query.Order;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import com.google.auto.value.AutoValue;
 
 import java.util.Comparator;

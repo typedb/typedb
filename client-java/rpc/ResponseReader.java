@@ -23,7 +23,7 @@ import grakn.core.client.Grakn;
 import grakn.core.client.concept.RemoteConcept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.ConceptList;

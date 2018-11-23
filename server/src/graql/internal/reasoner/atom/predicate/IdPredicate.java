@@ -24,11 +24,11 @@ import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.query.Var;
-import grakn.core.graql.query.VarPattern;
+import grakn.core.graql.query.pattern.Var;
+import grakn.core.graql.query.pattern.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.internal.pattern.property.ID;
+import grakn.core.graql.query.pattern.property.ID;
 import com.google.auto.value.AutoValue;
 
 /**

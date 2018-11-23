@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 
 import java.util.Objects;
 import java.util.Set;

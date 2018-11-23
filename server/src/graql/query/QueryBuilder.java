@@ -20,15 +20,17 @@ package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import grakn.core.graql.admin.Conjunction;
-import grakn.core.graql.admin.PatternAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.Pattern;
+import grakn.core.graql.query.pattern.PatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.internal.match.MatchBase;
 import grakn.core.graql.parser.QueryParser;
-import grakn.core.graql.internal.pattern.Patterns;
+import grakn.core.graql.query.pattern.Patterns;
 import grakn.core.graql.internal.util.AdminConverter;
+import grakn.core.graql.query.pattern.VarPattern;
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 

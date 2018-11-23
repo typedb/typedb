@@ -18,9 +18,9 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.graql.query.pattern.VarPatternAdmin;
 import grakn.core.server.Transaction;
 import grakn.core.graql.admin.MatchAdmin;
-import grakn.core.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;

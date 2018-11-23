@@ -28,7 +28,7 @@ import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.internal.reasoner.unifier.UnifierType;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 
 import java.util.HashSet;
 import java.util.Iterator;

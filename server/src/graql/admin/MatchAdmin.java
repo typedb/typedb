@@ -18,10 +18,12 @@
 
 package grakn.core.graql.admin;
 
+import grakn.core.graql.query.pattern.Conjunction;
+import grakn.core.graql.query.pattern.PatternAdmin;
 import grakn.core.server.Transaction;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.query.Match;
-import grakn.core.graql.query.Var;
+import grakn.core.graql.query.pattern.Var;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Set;

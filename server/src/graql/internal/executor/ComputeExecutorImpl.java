@@ -25,7 +25,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.query.ComputeQuery;
 import grakn.core.graql.query.Graql;
-import grakn.core.graql.query.Pattern;
+import grakn.core.graql.query.pattern.Pattern;
 import grakn.core.graql.query.Syntax;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptList;
