@@ -43,7 +43,7 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
 /**
  */
 
-abstract class AbstractIsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+abstract class AbstractIsa extends AbstractVar implements UniqueVarProperty, Named {
 
     public abstract VarPatternAdmin type();
 
@@ -63,13 +63,13 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
     }
 
     @Override
-    public final Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public final Collection<Executor> insert(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             Type type = executor.get(this.type().var()).asType();
             executor.builder(var).isa(type);
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(type().var()).produces(var).build());
+        return ImmutableSet.of(Executor.builder(method).requires(type().var()).produces(var).build());
     }
 
     @Override
@@ -86,7 +86,7 @@ abstract class AbstractIsaProperty extends AbstractVarProperty implements Unique
     @Override
     public final Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //IsaProperty is unique within a var, so skip if this is a relation
-        if (var.hasProperty(RelationshipProperty.class)) return null;
+        if (var.hasProperty(Relationship.class)) return null;
 
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typePattern = this.type();

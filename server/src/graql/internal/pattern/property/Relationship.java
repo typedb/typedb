@@ -22,7 +22,6 @@ import grakn.core.server.Transaction;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Thing;
@@ -59,7 +58,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link Relationship}.
+ * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link grakn.core.graql.concept.Relationship}.
  *
  * This property can be queried and inserted.
  *
@@ -68,10 +67,10 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-public abstract class RelationshipProperty extends AbstractVarProperty implements UniqueVarProperty {
+public abstract class Relationship extends AbstractVar implements UniqueVarProperty {
 
-    public static RelationshipProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
-        return new AutoValue_RelationshipProperty(relationPlayers);
+    public static Relationship of(ImmutableMultiset<RelationPlayer> relationPlayers) {
+        return new AutoValue_Relationship(relationPlayers);
     }
 
     public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
@@ -158,7 +157,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
                 .collect(toSet());
 
         Optional<Label> maybeLabel =
-                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
+                var.getProperty(Isa.class).map(Isa::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
             SchemaConcept schemaConcept = graph.getSchemaConcept(label);
@@ -178,21 +177,21 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            Relationship relationship = executor.get(var).asRelationship();
+    public Collection<Executor> insert(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
+            grakn.core.graql.concept.Relationship relationship = executor.get(var).asRelationship();
             relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(requiredVars(var)).build());
+        return ImmutableSet.of(Executor.builder(method).requires(requiredVars(var)).build());
     }
 
     /**
-     * Add a roleplayer to the given {@link Relationship}
-     * @param relationship the concept representing the {@link Relationship}
+     * Add a roleplayer to the given {@link grakn.core.graql.concept.Relationship}
+     * @param relationship the concept representing the {@link grakn.core.graql.concept.Relationship}
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(QueryOperationExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
+    private void addRoleplayer(QueryOperationExecutor executor, grakn.core.graql.concept.Relationship relationship, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.var()).asRole();
@@ -217,8 +216,8 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         //set varName as user defined if reified
         //reified if contains more properties than the RelationshipProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
-                .filter(prop -> !RelationshipProperty.class.isInstance(prop))
-                .anyMatch(prop -> !AbstractIsaProperty.class.isInstance(prop));
+                .filter(prop -> !Relationship.class.isInstance(prop))
+                .anyMatch(prop -> !AbstractIsa.class.isInstance(prop));
         VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
@@ -245,7 +244,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
         }
 
         //isa part
-        AbstractIsaProperty isaProp = var.getProperty(AbstractIsaProperty.class).orElse(null);
+        AbstractIsa isaProp = var.getProperty(AbstractIsa.class).orElse(null);
         IdPredicate predicate = null;
 
         //if no isa property present generate type variable
@@ -263,7 +262,7 @@ public abstract class RelationshipProperty extends AbstractVarProperty implement
             }
         }
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;
-        relVar = isaProp instanceof IsaExplicitProperty ?
+        relVar = isaProp instanceof IsaExplicit ?
                 relVar.isaExplicit(typeVariable.asUserDefined()) :
                 relVar.isa(typeVariable.asUserDefined());
         return RelationshipAtom.create(relVar.admin(), typeVariable, predicateId, parent);

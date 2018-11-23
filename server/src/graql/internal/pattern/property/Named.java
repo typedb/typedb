@@ -18,7 +18,7 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-interface NamedProperty extends VarPropertyInternal {
+interface Named extends VarInternal {
 
     String getName();
 

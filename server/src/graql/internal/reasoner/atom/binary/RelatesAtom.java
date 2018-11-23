@@ -24,14 +24,14 @@ import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarProperty;
-import grakn.core.graql.internal.pattern.property.RelatesProperty;
+import grakn.core.graql.internal.pattern.property.Relates;
 import com.google.auto.value.AutoValue;
 
 
 /**
  *
  * <p>
- * TypeAtom corresponding to a graql {@link grakn.core.graql.internal.pattern.property.RelatesProperty} property.
+ * TypeAtom corresponding to a graql {@link Relates} property.
  * </p>
  *
  *
@@ -62,5 +62,5 @@ public abstract class RelatesAtom extends OntologicalAtom {
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return RelatesProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return Relates.class;}
 }

@@ -24,7 +24,6 @@ import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
 import grakn.core.graql.concept.EntityType;
 import grakn.core.graql.concept.Label;
-import grakn.core.graql.concept.Relationship;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.Rule;
@@ -43,8 +42,8 @@ import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.UnifierComparison;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
-import grakn.core.graql.internal.pattern.property.IsaProperty;
-import grakn.core.graql.internal.pattern.property.RelationshipProperty;
+import grakn.core.graql.internal.pattern.property.Isa;
+import grakn.core.graql.internal.pattern.property.Relationship;
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.internal.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.internal.reasoner.unifier.UnifierImpl;
@@ -104,8 +103,8 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Atom implementation defining a relation atom corresponding to a combined {@link RelationshipProperty}
- * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relationship players.
+ * Atom implementation defining a relation atom corresponding to a combined {@link Relationship}
+ * and (optional) {@link Isa}. The relation atom is a {@link TypeAtom} with relationship players.
  * </p>
  *
  *
@@ -121,7 +120,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     public static RelationshipAtom create(VarPattern pattern, Var predicateVar, @Nullable ConceptId predicateId, ReasonerQuery parent) {
         List<RelationPlayer> rps = new ArrayList<>();
         pattern.admin()
-                .getProperty(RelationshipProperty.class)
+                .getProperty(Relationship.class)
                 .ifPresent(prop -> prop.relationPlayers().stream()
                         .sorted(Comparator.comparing(Object::hashCode))
                         .forEach(rps::add)
@@ -175,7 +174,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass(){ return RelationshipProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass(){ return Relationship.class;}
 
     @Override
     public void checkValid(){
@@ -1059,7 +1058,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
         ConceptMap substitution = getParentQuery().getSubstitution();
 
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
-        Relationship relationship = substitution.containsVar(getVarName())?
+        grakn.core.graql.concept.Relationship relationship = substitution.containsVar(getVarName())?
                 substitution.get(getVarName()).asRelationship() :
                 RelationshipTypeImpl.from(relationType).addRelationshipInferred();
 
@@ -1083,7 +1082,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     private RelationshipAtom rewriteWithVariableRoles(Atom parentAtom){
         if (!parentAtom.requiresRoleExpansion()) return this;
 
-        VarPattern relVar = getPattern().admin().getProperty(IsaProperty.class)
+        VarPattern relVar = getPattern().admin().getProperty(Isa.class)
                 .map(prop -> getVarName().isa(prop.type())).orElse(getVarName());
 
         for (RelationPlayer rp: getRelationPlayers()) {
@@ -1111,7 +1110,7 @@ public abstract class RelationshipAtom extends IsaAtomBase {
     @Override
     public RelationshipAtom rewriteWithRelationVariable(){
         VarPattern newVar = Graql.var().asUserDefined();
-        VarPattern relVar = getPattern().admin().getProperty(IsaProperty.class)
+        VarPattern relVar = getPattern().admin().getProperty(Isa.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);
 

@@ -18,7 +18,8 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.graql.concept.AttributeType;
+import grakn.core.graql.concept.ConceptId;
+import grakn.core.graql.concept.Concept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Atomic;
@@ -27,8 +28,8 @@ import grakn.core.graql.admin.UniqueVarProperty;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.internal.reasoner.atom.property.RegexAtom;
-import grakn.core.graql.internal.util.StringUtil;
+import grakn.core.graql.internal.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -36,61 +37,66 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code regex} property on a {@link AttributeType}.
+ * Represents the {@code id} property on a {@link Concept}.
  *
- * This property can be queried and inserted.
- *
- * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
- * values must conform to the given regular expression.
+ * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
+ * with the given ID will be retrieved.
  *
  */
 @AutoValue
-public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+public abstract class ID extends AbstractVar implements Named, UniqueVarProperty {
 
-    public static RegexProperty of(String regex) {
-        return new AutoValue_RegexProperty(regex);
+    public static final String NAME = "id";
+
+    public static ID of(ConceptId id) {
+        return new AutoValue_ID(id);
     }
 
-    public abstract String regex();
+    public abstract ConceptId id();
 
     @Override
     public String getName() {
-        return "regex";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return "/" + StringUtil.escapeString(regex()) + "/";
+        return StringConverter.idToString(id());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex()));
+        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id()));
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            executor.get(var).asAttributeType().regex(regex());
+    public Collection<Executor> insert(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
+            executor.builder(var).id(id());
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
+        return ImmutableSet.of(Executor.builder(method).produces(var).build());
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            AttributeType<Object> attributeType = executor.get(var).asAttributeType();
-            if (!attributeType.isDeleted() && regex().equals(attributeType.regex())) {
-                attributeType.regex(null);
-            }
-        };
+    public Collection<Executor> define(Var var) throws GraqlQueryException {
+        // This property works in both insert and define queries, because it is only for look-ups
+        return insert(var);
+    }
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var).build());
+    @Override
+    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
+        // This property works in undefine queries, because it is only for look-ups
+        return insert(var);
+    }
+
+    @Override
+    public boolean uniquelyIdentifiesConcept() {
+        return true;
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return RegexAtom.create(var.var(), this, parent);
+        return IdPredicate.create(var.var(), id(), parent);
     }
 }

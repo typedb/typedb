@@ -49,12 +49,12 @@ import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.getIdPredic
  *
  */
 @AutoValue
-public abstract class PlaysProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class Plays extends AbstractVar implements Named {
 
     public static final String NAME = "plays";
 
-    public static PlaysProperty of(VarPatternAdmin role, boolean required) {
-        return new AutoValue_PlaysProperty(role, required);
+    public static Plays of(VarPatternAdmin role, boolean required) {
+        return new AutoValue_Plays(role, required);
     }
 
     abstract VarPatternAdmin role();
@@ -87,18 +87,18 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public Collection<Executor> define(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             Role role = executor.get(this.role().var()).asRole();
             executor.get(var).asType().plays(role);
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
+        return ImmutableSet.of(Executor.builder(method).requires(var, role().var()).build());
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             Type type = executor.get(var).asType();
             Role role = executor.get(this.role().var()).asRole();
 
@@ -107,7 +107,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
             }
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).requires(var, role().var()).build());
+        return ImmutableSet.of(Executor.builder(method).requires(var, role().var()).build());
     }
 
     @Override

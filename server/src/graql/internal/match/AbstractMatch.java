@@ -24,7 +24,7 @@ import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.answer.Answer;
 import grakn.core.graql.answer.ConceptMap;
-import grakn.core.graql.internal.pattern.property.VarPropertyInternal;
+import grakn.core.graql.internal.pattern.property.VarInternal;
 import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.AggregateQuery;
@@ -74,7 +74,7 @@ abstract class AbstractMatch implements MatchAdmin {
      */
     void validatePattern(Transaction tx){
         for (VarPatternAdmin var : getPattern().varPatterns()) {
-            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(tx, var));}
+            var.getProperties().forEach(property -> ((VarInternal) property).checkValid(tx, var));}
     }
 
     @Override

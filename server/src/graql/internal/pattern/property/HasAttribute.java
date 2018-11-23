@@ -68,13 +68,13 @@ import static java.util.stream.Collectors.joining;
  *
  */
 @AutoValue
-public abstract class HasAttributeProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class HasAttribute extends AbstractVar implements Named {
 
     public static final String NAME = "has";
 
-    public static HasAttributeProperty of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
+    public static HasAttribute of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
         attribute = attribute.isa(label(attributeType)).admin();
-        return new AutoValue_HasAttributeProperty(attributeType, attribute, relationship);
+        return new AutoValue_HasAttribute(attributeType, attribute, relationship);
     }
 
     public abstract Label type();
@@ -95,7 +95,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         if (attribute().var().isUserDefinedName()) {
             repr.add(attribute().var().toString());
         } else {
-            attribute().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
+            attribute().getProperties(Value.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
 
         if (hasReifiedRelationship()) {
@@ -145,15 +145,15 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public Collection<Executor> insert(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
             ConceptId relationshipId = thing.relhas(attributeConcept).id();
             executor.builder(relationship().var()).id(relationshipId);
         };
 
-        PropertyExecutor executor = PropertyExecutor.builder(method)
+        Executor executor = Executor.builder(method)
                 .produces(relationship().var())
                 .requires(var, attribute().var())
                 .build();
@@ -175,7 +175,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        HasAttributeProperty that = (HasAttributeProperty) o;
+        HasAttribute that = (HasAttribute) o;
 
         if (!type().equals(that.type())) return false;
         if (!attribute().equals(that.attribute())) return false;
@@ -210,7 +210,7 @@ public abstract class HasAttributeProperty extends AbstractVarProperty implement
         Var predicateVariable = Graql.var();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
 
-        IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
+        Isa isaProp = attribute().getProperties(Isa.class).findFirst().orElse(null);
         VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
         IdPredicate predicate = typeVar != null? getIdPredicate(predicateVariable, typeVar, vars, parent) : null;
         ConceptId predicateId = predicate != null? predicate.getPredicate() : null;

@@ -18,7 +18,6 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.graql.concept.Rule;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Var;
@@ -27,36 +26,37 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
+
 /**
- * Represents the {@code when} property on a {@link Rule}.
+ * Represents the {@code then} (right-hand side) property on a {@link grakn.core.graql.concept.Rule}.
  *
  * This property can be inserted and not queried.
  *
- * The when side describes the left-hand of an implication, stating that when the when side of a rule is true
- * the then side must hold.
+ * The then side describes the right-hand of an implication, stating that when the when side of a rule is
+ * true the then side must hold.
  *
  */
 @AutoValue
-public abstract class WhenProperty extends RuleProperty {
+public abstract class Then extends Rule {
 
-    public static final String NAME = "when";
+    public static final String NAME = "then";
 
-    public static WhenProperty of(Pattern pattern) {
-        return new AutoValue_WhenProperty(pattern);
+    public static Then of(Pattern then) {
+        return new AutoValue_Then(then);
     }
 
     @Override
-    public String getName(){
+    public String getName() {
         return NAME;
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
-            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar when { ... }`
-            executor.builder(var).isRule().when(pattern());
+    public Collection<Executor> define(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
+            // This allows users to skip stating `$ruleVar sub rule` when they say `$ruleVar then { ... }`
+            executor.builder(var).isRule().then(pattern());
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+        return ImmutableSet.of(Executor.builder(method).produces(var).build());
     }
 }

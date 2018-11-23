@@ -44,12 +44,12 @@ import java.util.stream.Stream;
  *
  */
 @AutoValue
-public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class Value extends AbstractVar implements Named {
 
     public static final String NAME = "";
 
-    public static ValueProperty of(ValuePredicate predicate) {
-        return new AutoValue_ValueProperty(predicate);
+    public static Value of(ValuePredicate predicate) {
+        return new AutoValue_Value(predicate);
     }
 
     public abstract ValuePredicate predicate();
@@ -75,13 +75,13 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public Collection<Executor> insert(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             Object value = predicate().equalsValue().orElseThrow(GraqlQueryException::insertPredicate);
             executor.builder(var).value(value);
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+        return ImmutableSet.of(Executor.builder(method).produces(var).build());
     }
 
     @Override

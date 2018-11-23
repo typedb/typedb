@@ -42,7 +42,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+public abstract class DataType extends AbstractVar implements Named, UniqueVarProperty {
 
     public static final String NAME = "datatype";
     private static final ImmutableBiMap<String, AttributeType.DataType<?>> DATA_TYPES = ImmutableBiMap.of(
@@ -53,8 +53,8 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
             "date", AttributeType.DataType.DATE
     );
 
-    public static DataTypeProperty of(AttributeType.DataType<?> datatype) {
-        return new AutoValue_DataTypeProperty(datatype);
+    public static DataType of(AttributeType.DataType<?> datatype) {
+        return new AutoValue_DataType(datatype);
     }
 
     public abstract AttributeType.DataType<?> dataType();
@@ -75,16 +75,16 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public Collection<Executor> define(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             executor.builder(var).dataType(dataType());
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+        return ImmutableSet.of(Executor.builder(method).produces(var).build());
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
         // TODO: resolve the below issue correctly
         // undefine for datatype must be supported, because it is supported in define.
         // However, making it do the right thing is difficult. Ideally we want the same as define:
@@ -96,7 +96,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
         //
         // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
         // As a compromise, we make all the cases succeed (where some do nothing)
-        return ImmutableSet.of(PropertyExecutor.builder(executor -> {}).build());
+        return ImmutableSet.of(Executor.builder(executor -> {}).build());
     }
 
     @Override

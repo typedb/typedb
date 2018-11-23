@@ -25,7 +25,7 @@ import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.Unifier;
 import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.internal.pattern.property.ValueProperty;
+import grakn.core.graql.internal.pattern.property.Value;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
+ * Predicate implementation specialising it to be an value predicate. Corresponds to {@link Value}.
  * </p>
  *
  *
@@ -65,8 +65,8 @@ public abstract class ValuePredicate extends Predicate<grakn.core.graql.query.Va
     public static VarPattern createValueVar(Var name, grakn.core.graql.query.ValuePredicate pred) { return name.val(pred);}
 
     private static grakn.core.graql.query.ValuePredicate extractPredicate(VarPattern pattern) {
-        Iterator<ValueProperty> properties = pattern.admin().getProperties(ValueProperty.class).iterator();
-        ValueProperty property = properties.next();
+        Iterator<Value> properties = pattern.admin().getProperties(Value.class).iterator();
+        Value property = properties.next();
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
         }

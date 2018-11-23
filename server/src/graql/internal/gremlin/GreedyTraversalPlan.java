@@ -18,7 +18,6 @@
 
 package grakn.core.graql.internal.gremlin;
 
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.RelationshipType;
 import grakn.core.graql.concept.Role;
 import grakn.core.graql.concept.SchemaConcept;
@@ -41,9 +40,9 @@ import grakn.core.graql.internal.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.internal.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.internal.pattern.property.IsaProperty;
-import grakn.core.graql.internal.pattern.property.LabelProperty;
-import grakn.core.graql.internal.pattern.property.ValueProperty;
+import grakn.core.graql.internal.pattern.property.Isa;
+import grakn.core.graql.internal.pattern.property.Label;
+import grakn.core.graql.internal.pattern.property.Value;
 import grakn.core.server.session.TransactionImpl;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -212,7 +211,7 @@ public class GreedyTraversalPlan {
                 type -> addAllPossibleRelationships(relationshipMap, type));
 
         // inferred labels should be kept separately, even if they are already in allFragments set
-        Map<Label, Var> inferredLabels = new HashMap<>();
+        Map<grakn.core.graql.concept.Label, Var> inferredLabels = new HashMap<>();
         relationshipRolePlayerMap.asMap().forEach((relationshipVar, rolePlayerVars) -> {
 
             Set<Type> possibleRelationshipTypes = rolePlayerVars.stream()
@@ -225,19 +224,19 @@ public class GreedyTraversalPlan {
             if (possibleRelationshipTypes.size() == 1) {
 
                 Type relationshipType = possibleRelationshipTypes.iterator().next();
-                Label label = relationshipType.label();
+                grakn.core.graql.concept.Label label = relationshipType.label();
 
                 // add label fragment if this label has not been inferred
                 if (!inferredLabels.containsKey(label)) {
                     Var labelVar = var();
                     inferredLabels.put(label, labelVar);
-                    Fragment labelFragment = Fragments.label(LabelProperty.of(label), labelVar, ImmutableSet.of(label));
+                    Fragment labelFragment = Fragments.label(Label.of(label), labelVar, ImmutableSet.of(label));
                     allFragments.add(labelFragment);
                 }
 
                 // finally, add inferred isa fragments
                 Var labelVar = inferredLabels.get(label);
-                IsaProperty isaProperty = IsaProperty.of(labelVar.admin());
+                Isa isaProperty = Isa.of(labelVar.admin());
                 EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
                         relationshipVar, labelVar, relationshipType.isImplicit());
                 allFragments.addAll(isaEquivalentFragmentSet.fragments());
@@ -426,7 +425,7 @@ public class GreedyTraversalPlan {
         other.getDependants().add(fragment);
 
         // check whether it's value fragment
-        if (fragment.varProperty() instanceof ValueProperty) {
+        if (fragment.varProperty() instanceof Value) {
             // as value fragment is not symmetric, we need to add it again
             other.getFragmentsWithDependency().add(fragment);
             start.getDependants().add(fragment);

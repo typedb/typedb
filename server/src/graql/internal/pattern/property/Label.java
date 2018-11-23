@@ -18,7 +18,6 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.graql.concept.Label;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -45,15 +44,15 @@ import java.util.Set;
  *
  */
 @AutoValue
-public abstract class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+public abstract class Label extends AbstractVar implements Named, UniqueVarProperty {
 
     public static final String NAME = "label";
 
-    public static LabelProperty of(Label label) {
-        return new AutoValue_LabelProperty(label);
+    public static Label of(grakn.core.graql.concept.Label label) {
+        return new AutoValue_Label(label);
     }
 
-    public abstract Label label();
+    public abstract grakn.core.graql.concept.Label label();
 
     @Override
     public String getName() {
@@ -71,22 +70,22 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Collection<PropertyExecutor> insert(Var var) throws GraqlQueryException {
+    public Collection<Executor> insert(Var var) throws GraqlQueryException {
         // This is supported in insert queries in order to allow looking up schema concepts by label
         return define(var);
     }
 
     @Override
-    public Collection<PropertyExecutor> define(Var var) throws GraqlQueryException {
-        PropertyExecutor.Method method = executor -> {
+    public Collection<Executor> define(Var var) throws GraqlQueryException {
+        Executor.Method method = executor -> {
             executor.builder(var).label(label());
         };
 
-        return ImmutableSet.of(PropertyExecutor.builder(method).produces(var).build());
+        return ImmutableSet.of(Executor.builder(method).produces(var).build());
     }
 
     @Override
-    public Collection<PropertyExecutor> undefine(Var var) throws GraqlQueryException {
+    public Collection<Executor> undefine(Var var) throws GraqlQueryException {
         // This is supported in undefine queries in order to allow looking up schema concepts by label
         return define(var);
     }

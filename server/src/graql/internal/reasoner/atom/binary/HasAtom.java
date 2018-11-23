@@ -26,13 +26,13 @@ import grakn.core.graql.query.VarPattern;
 import grakn.core.graql.admin.Atomic;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarProperty;
-import grakn.core.graql.internal.pattern.property.HasAttributeTypeProperty;
+import grakn.core.graql.internal.pattern.property.HasAttributeType;
 import com.google.auto.value.AutoValue;
 
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.
+ * TypeAtom corresponding to graql a {@link HasAttributeType} property.
  * </p>
  *
  *
@@ -66,5 +66,5 @@ public abstract class HasAtom extends OntologicalAtom {
     public Atomic copy(ReasonerQuery parent){ return create(this, parent); }
 
     @Override
-    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeTypeProperty.class;}
+    public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeType.class;}
 }

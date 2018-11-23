@@ -18,10 +18,11 @@
 
 package grakn.core.graql.internal.pattern.property;
 
-import grakn.core.graql.query.Var;
-import grakn.core.graql.admin.UniqueVarProperty;
-import grakn.core.graql.admin.VarPatternAdmin;
+import grakn.core.graql.concept.Thing;
 import grakn.core.graql.concept.Type;
+import grakn.core.graql.query.Var;
+import grakn.core.graql.query.VarPattern;
+import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import com.google.auto.value.AutoValue;
@@ -30,22 +31,30 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 
 /**
- * Represents the {@code sub} property on a {@link Type}.
- *
- * This property can be queried or inserted.
- *
- * This property relates a {@link Type} and another {@link Type}. It indicates
- * that every instance of the left type is also an instance of the right type.
+ * Represents the {@code isa-explicit} property on a {@link Thing}.
+ * <p>
+ * This property can be queried and inserted.
+ * </p>
+ * <p>
+ * THe property is defined as a relationship between an {@link Thing} and a {@link Type}.
+ * </p>
+ * <p>
+ * When matching, any subtyping is ignored. For example, if we have {@code $bob isa man}, {@code man sub person},
+ * {@code person sub entity} then it only follows {@code $bob isa man}, not {@code bob isa entity}.
+ * </p>
  *
  */
 @AutoValue
-public abstract class SubProperty extends AbstractSubProperty implements NamedProperty, UniqueVarProperty {
+public abstract class IsaExplicit extends AbstractIsa {
 
-    public static final String NAME = "sub";
+    public static final String NAME = "isa!";
 
-    public static SubProperty of(VarPatternAdmin superType) {
-        return new AutoValue_SubProperty(superType);
+    public static IsaExplicit of(VarPatternAdmin directType) {
+        return new AutoValue_IsaExplicit(directType);
     }
+
+    @Override
+    public boolean isExplicit() { return true;}
 
     @Override
     public String getName() {
@@ -54,6 +63,13 @@ public abstract class SubProperty extends AbstractSubProperty implements NamedPr
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var()));
+        return ImmutableSet.of(
+                EquivalentFragmentSets.isa(this, start, type().var(), true)
+        );
+    }
+
+    @Override
+    protected final VarPattern varPatternForAtom(Var varName, Var typeVariable) {
+        return varName.isaExplicit(typeVariable);
     }
 }

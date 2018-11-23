@@ -33,7 +33,7 @@ import grakn.core.graql.concept.Rule;
 import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.internal.pattern.property.IsaExplicitProperty;
+import grakn.core.graql.internal.pattern.property.IsaExplicit;
 import grakn.core.graql.internal.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.internal.reasoner.atom.binary.RelationshipAtom;
@@ -52,12 +52,10 @@ import grakn.core.graql.internal.reasoner.unifier.UnifierType;
 import grakn.core.graql.query.Var;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import static grakn.core.graql.internal.reasoner.utils.ReasonerUtils.typesCompatible;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -222,7 +220,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     public Stream<Rule> getPotentialRules(){
-        boolean isDirect = getPattern().admin().getProperties(IsaExplicitProperty.class).findFirst().isPresent();
+        boolean isDirect = getPattern().admin().getProperties(IsaExplicit.class).findFirst().isPresent();
         return getPossibleTypes().stream()
                 .flatMap(type -> RuleUtils.getRulesWithType(type, isDirect, tx()))
                 .distinct();

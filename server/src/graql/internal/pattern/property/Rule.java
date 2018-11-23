@@ -35,7 +35,7 @@ import java.util.Set;
  * Abstract property for the patterns within rules.
  *
  */
-public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+public abstract class Rule extends AbstractVar implements UniqueVarProperty, Named {
 
     public abstract Pattern pattern();
 

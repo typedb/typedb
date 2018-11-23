@@ -42,10 +42,10 @@ import java.util.stream.Stream;
  *
  */
 @AutoValue
-public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {
+public abstract class Neq extends AbstractVar implements Named {
 
-    public static NeqProperty of(VarPatternAdmin var) {
-        return new AutoValue_NeqProperty(var);
+    public static Neq of(VarPatternAdmin var) {
+        return new AutoValue_Neq(var);
     }
 
     public abstract VarPatternAdmin var();
