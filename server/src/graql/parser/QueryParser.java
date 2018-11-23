@@ -29,19 +29,12 @@ import grakn.core.graql.grammar.GraqlParser.PatternsContext;
 import grakn.core.graql.grammar.GraqlParser.QueryContext;
 import grakn.core.graql.grammar.GraqlParser.QueryEOFContext;
 import grakn.core.graql.grammar.GraqlParser.QueryListContext;
-import grakn.core.graql.internal.template.TemplateParser;
 import grakn.core.graql.query.Aggregate;
 import grakn.core.graql.query.Graql;
 import grakn.core.graql.query.Pattern;
 import grakn.core.graql.query.Query;
 import grakn.core.graql.query.QueryBuilder;
 import grakn.core.graql.query.Var;
-import grakn.core.graql.query.aggregate.MaxAggregate;
-import grakn.core.graql.query.aggregate.MeanAggregate;
-import grakn.core.graql.query.aggregate.MedianAggregate;
-import grakn.core.graql.query.aggregate.MinAggregate;
-import grakn.core.graql.query.aggregate.StdAggregate;
-import grakn.core.graql.query.aggregate.SumAggregate;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
@@ -70,7 +63,6 @@ import java.util.stream.StreamSupport;
 public class QueryParser {
 
     private final QueryBuilder queryBuilder;
-    private final TemplateParser templateParser = TemplateParser.create();
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
     private boolean defineAllVars = false;
 
@@ -106,16 +98,6 @@ public class QueryParser {
             }
             return aggregateMethod.apply(args);
         });
-    }
-
-    /**
-     * Register an aggregate that can be used when parsing a Graql query
-     *
-     * @param name            the name of the aggregate
-     * @param aggregateMethod a function that will produce an aggregate when passed a list of arguments
-     */
-    public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
-        aggregateMethods.put(name, aggregateMethod);
     }
 
     /**
@@ -241,14 +223,6 @@ public class QueryParser {
         return PATTERN.parse(patternString);
     }
 
-    /**
-     * @param template a string representing a templated graql query
-     * @param data     data to use in template
-     * @return a resolved graql query
-     */
-    public <T extends Query<?>> Stream<T> parseTemplate(String template, Map<String, Object> data) {
-        return parseList(templateParser.parseTemplate(template, data));
-    }
 
     private static GraqlLexer createLexer(CharStream input, GraqlErrorListener errorListener) {
         GraqlLexer lexer = new GraqlLexer(input);
