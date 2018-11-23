@@ -32,8 +32,8 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //client-java/... --test_size_filters=small
-    - run: bazel test //client-java/... --test_size_filters=medium,large,enormous
+    - run: bazel test //client-java/... --test_size_filters=small --test_output=errors
+    - run: bazel test //client-java/... --test_size_filters=medium,large,enormous --test_output=errors
 
   client-nodejs:
     machine: true
@@ -64,7 +64,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //common/...
+    - run: bazel test //common/... --test_output=errors
 
   console:
     machine: true
@@ -72,7 +72,7 @@ jobs:
     steps:
       - checkout
       - *install_bazel
-      - run: bazel test //console/...
+      - run: bazel test //console/... --test_output=errors
 
   server:
     machine: true
@@ -88,7 +88,7 @@ jobs:
     steps:
     - checkout
     - *install_bazel
-    - run: bazel test //workbase:tests-unit
+    - run: bazel test //workbase:tests-unit --test_output=errors
     - run: sudo apt install xvfb libxtst6 libxss1 libgtk2.0-0 -y
     - run: sudo apt install libnss3 libasound2 libgconf-2-4 -y
     - run: bazel build //:distribution --sandbox_debug
@@ -97,7 +97,7 @@ jobs:
     - run: bazel-genfiles/dist/grakn-core-all/grakn console -f `pwd`/test-end-to-end/test-fixtures/basic-genealogy.gql -k gene
     - run: Xvfb :99 &
     - run: export DISPLAY=:99
-    - run: bazel test --test_output=streamed //workbase:tests-e2e
+    - run: bazel test //workbase:tests-e2e --test_output=streamed
 
   test-integration:
     machine: true
@@ -179,7 +179,7 @@ jobs:
         - run: cd grakn-core-${GRAKN_VERSION} && nohup ./grakn server start
         - run: cd grakn-core-${GRAKN_VERSION} && ./graql console -f ./examples/basic-genealogy.gql -k gene
         - run: bazel run @nodejs//:npm install
-        - run: bazel test //workbase:tests-e2e
+        - run: bazel test //workbase:tests-e2e --test_output=errors
         - run: bazel build //workbase:distribution
         - run: mv ./bazel-genfiles/workbase/grakn-workbase.zip ~/grakn/artifacts/grakn-workbase-${GRAKN_VERSION}-mac.zip
         - persist_to_workspace:
