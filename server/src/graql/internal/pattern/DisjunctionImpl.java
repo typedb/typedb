@@ -32,15 +32,23 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-@AutoValue
-abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
 
-    public static <T extends PatternAdmin> Disjunction<T> of(Set<T> patterns) {
-        return new AutoValue_DisjunctionImpl<>(patterns);
+class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
+
+    private final Set<T> patterns;
+
+    DisjunctionImpl(
+            Set<T> patterns) {
+        if (patterns == null) {
+            throw new NullPointerException("Null patterns");
+        }
+        this.patterns = patterns;
     }
 
     @Override
-    public abstract Set<T> getPatterns();
+    public Set<T> getPatterns() {
+        return patterns;
+    }
 
     @Override
     public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
@@ -75,5 +83,25 @@ abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     @Override
     public PatternAdmin admin() {
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DisjunctionImpl) {
+            DisjunctionImpl<?> that = (DisjunctionImpl<?>) o;
+            return (this.patterns.equals(that.getPatterns()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.patterns.hashCode();
+        return h;
     }
 }

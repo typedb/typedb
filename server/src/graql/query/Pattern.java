@@ -24,15 +24,13 @@ import javax.annotation.CheckReturnValue;
 
 /**
  * A pattern describing a subgraph.
- * <p>
  * A {@code Pattern} can describe an entire graph, or just a single concept.
- * <p>
+ *
  * For example, {@code var("x").isa("movie")} is a pattern representing things that are movies.
- * <p>
+ *
  * A pattern can also be a conjunction: {@code and(var("x").isa("movie"), var("x").value("Titanic"))}, or a disjunction:
  * {@code or(var("x").isa("movie"), var("x").isa("tv-show"))}. These can be used to combine other patterns together
  * into larger patterns.
- *
  */
 public interface Pattern {
 

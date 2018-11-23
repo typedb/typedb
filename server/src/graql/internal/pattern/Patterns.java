@@ -50,7 +50,7 @@ public class Patterns {
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return DisjunctionImpl.of(patterns);
+        return new DisjunctionImpl<>(patterns);
     }
 
     public static Var var() {
