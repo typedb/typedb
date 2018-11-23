@@ -49,6 +49,12 @@ function buildApplicationMenu() {
     submenu: [
       {
         role: 'reload',
+      },
+      {
+        role: 'zoomin',
+      },
+      {
+        role: 'zoomout',
       }],
   },
   ];

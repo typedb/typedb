@@ -41,14 +41,21 @@ export default {
     return graknTx;
   },
 
-  async [CURRENT_KEYSPACE_CHANGED]({ state, dispatch, commit, rootState }, keyspace) {
+  [CURRENT_KEYSPACE_CHANGED]({ state, dispatch, commit, rootState }, keyspace) {
     if (keyspace !== state.currentKeyspace) {
       dispatch(CANVAS_RESET);
       commit('currentKeyspace', keyspace);
       commit('graknSession', rootState.grakn.session(keyspace));
-      await dispatch(UPDATE_METATYPE_INSTANCES);
+      dispatch(UPDATE_METATYPE_INSTANCES);
       dispatch(LOAD_SCHEMA);
     }
+  },
+
+  async [UPDATE_METATYPE_INSTANCES]({ dispatch, commit }) {
+    const graknTx = await dispatch(OPEN_GRAKN_TX);
+    const metaTypeInstances = await loadMetaTypeInstances(graknTx);
+    graknTx.close();
+    commit('metaTypeInstances', metaTypeInstances);
   },
 
   [CANVAS_RESET]({ state, commit }) {
@@ -62,12 +69,6 @@ export default {
     SchemaCanvasEventsHandler.registerHandlers({ state, commit, dispatch });
   },
 
-  async [UPDATE_METATYPE_INSTANCES]({ dispatch, commit }) {
-    const graknTx = await dispatch(OPEN_GRAKN_TX);
-    const metaTypeInstances = await loadMetaTypeInstances(graknTx);
-    graknTx.close();
-    commit('metaTypeInstances', metaTypeInstances);
-  },
 
   async [LOAD_SCHEMA]({ state, commit, dispatch }) {
     if (!state.visFacade) return;
