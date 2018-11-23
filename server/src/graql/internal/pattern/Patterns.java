@@ -65,7 +65,7 @@ public class Patterns {
         if (properties.isEmpty()) {
             return name.admin();
         } else {
-            return VarPatternImpl.of(name, properties);
+            return new VarPatternImpl(name, properties);
         }
     }
 

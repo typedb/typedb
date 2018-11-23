@@ -24,7 +24,6 @@ import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.admin.VarProperty;
 import grakn.core.graql.internal.pattern.property.HasAttributeProperty;
 import grakn.core.graql.internal.pattern.property.LabelProperty;
-import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,22 +33,33 @@ import java.util.Set;
 /**
  * Implementation of {@link VarPattern} interface
  */
-@AutoValue
-abstract class VarPatternImpl extends AbstractVarPattern {
+class VarPatternImpl extends AbstractVarPattern {
 
-    public static VarPatternAdmin of(Var name, Set<VarProperty> properties) {
-        return new AutoValue_VarPatternImpl(name, properties);
-    }
-
+    private final Var var;
+    private final Set<VarProperty> properties;
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
-
     private int hashCode = 0;
 
-    @Override
-    public abstract Var var();
+    VarPatternImpl(Var var, Set<VarProperty> properties) {
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+        if (properties == null) {
+            throw new NullPointerException("Null properties");
+        }
+        this.properties = properties;
+    }
 
     @Override
-    protected abstract Set<VarProperty> properties();
+    public Var var() {
+        return var;
+    }
+
+    @Override
+    protected Set<VarProperty> properties() {
+        return properties;
+    }
 
     @Override
     public final boolean equals(Object o) {
