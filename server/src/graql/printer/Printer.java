@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.internal.printer;
+package grakn.core.graql.printer;
 
 import grakn.core.graql.answer.ConceptMap;
 import grakn.core.graql.concept.AttributeType;

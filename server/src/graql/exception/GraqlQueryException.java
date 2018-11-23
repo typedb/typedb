@@ -18,8 +18,13 @@
 
 package grakn.core.graql.exception;
 
+import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.graql.answer.ConceptMap;
+import grakn.core.graql.admin.Atomic;
+import grakn.core.graql.admin.ReasonerQuery;
+import grakn.core.graql.admin.UniqueVarProperty;
+import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.concept.AttributeType;
 import grakn.core.graql.concept.Concept;
 import grakn.core.graql.concept.ConceptId;
@@ -28,12 +33,6 @@ import grakn.core.graql.concept.SchemaConcept;
 import grakn.core.graql.concept.Type;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.query.VarPattern;
-import grakn.core.graql.admin.Atomic;
-import grakn.core.graql.admin.ReasonerQuery;
-import grakn.core.graql.admin.UniqueVarProperty;
-import grakn.core.graql.admin.VarPatternAdmin;
-import grakn.core.graql.macro.Macro;
-import grakn.core.common.exception.ErrorMessage;
 
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
@@ -242,14 +241,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(INVALID_VALUE.getMessage(value.getClass()));
     }
 
-    public static GraqlQueryException wrongNumberOfMacroArguments(Macro macro, List<Object> values) {
-        return new GraqlQueryException("Wrong number of arguments [" + values.size() + "] to macro " + macro.name());
-    }
-
-    public static GraqlQueryException wrongMacroArgumentType(Macro macro, String value) {
-        return new GraqlQueryException("Value [" + value + "] is not a " + macro.name() + " needed for this macro");
-    }
-
     public static GraqlQueryException unknownAggregate(String name) {
         return new GraqlQueryException(ErrorMessage.UNKNOWN_AGGREGATE.getMessage(name));
     }
@@ -317,10 +308,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidQueryCacheEntry(ReasonerQuery query, ConceptMap answer) {
         return new GraqlQueryException(ErrorMessage.INVALID_CACHE_ENTRY.getMessage(query.toString(), answer.toString()));
-    }
-
-    public static GraqlQueryException noAtomsSelected(ReasonerQuery query) {
-        return new GraqlQueryException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(query.toString()));
     }
 
     public static GraqlQueryException conceptNotAThing(Object value) {

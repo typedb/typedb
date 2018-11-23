@@ -27,7 +27,15 @@ import grakn.core.graql.answer.AnswerGroup;
 import grakn.core.graql.answer.Value;
 import grakn.core.graql.parser.QueryParser;
 import grakn.core.graql.internal.pattern.Patterns;
-import grakn.core.graql.query.aggregate.Aggregates;
+import grakn.core.graql.query.aggregate.CountAggregate;
+import grakn.core.graql.query.aggregate.GroupAggregate;
+import grakn.core.graql.query.aggregate.ListAggregate;
+import grakn.core.graql.query.aggregate.MaxAggregate;
+import grakn.core.graql.query.aggregate.MeanAggregate;
+import grakn.core.graql.query.aggregate.MedianAggregate;
+import grakn.core.graql.query.aggregate.MinAggregate;
+import grakn.core.graql.query.aggregate.StdAggregate;
+import grakn.core.graql.query.aggregate.SumAggregate;
 import grakn.core.graql.query.predicate.Predicates;
 import grakn.core.graql.internal.util.AdminConverter;
 import com.google.common.collect.Iterables;
@@ -36,7 +44,9 @@ import com.google.common.collect.Sets;
 import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import static grakn.core.graql.query.Syntax.Compute.Method;
 import static java.util.stream.Collectors.toSet;
@@ -49,17 +59,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class Graql {
 
-    private Graql() {}
-
     // QUERY BUILDING
-
-    /**
-     * @return a query builder without a specified graph
-     */
-    @CheckReturnValue
-    public static QueryBuilder withoutGraph() {
-        return new QueryBuilder();
-    }
 
     /**
      * @param patterns an array of patterns to match in the graph
@@ -67,7 +67,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Match match(Pattern... patterns) {
-        return withoutGraph().match(patterns);
+        return new QueryBuilder().match(patterns);
     }
 
     /**
@@ -76,7 +76,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Match match(Collection<? extends Pattern> patterns) {
-        return withoutGraph().match(patterns);
+        return new QueryBuilder().match(patterns);
     }
 
     /**
@@ -85,7 +85,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static InsertQuery insert(VarPattern... varPatterns) {
-        return withoutGraph().insert(varPatterns);
+        return new QueryBuilder().insert(varPatterns);
     }
 
     /**
@@ -94,7 +94,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static InsertQuery insert(Collection<? extends VarPattern> varPatterns) {
-        return withoutGraph().insert(varPatterns);
+        return new QueryBuilder().insert(varPatterns);
     }
 
     /**
@@ -103,7 +103,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static DefineQuery define(VarPattern... varPatterns) {
-        return withoutGraph().define(varPatterns);
+        return new QueryBuilder().define(varPatterns);
     }
 
     /**
@@ -112,7 +112,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static DefineQuery define(Collection<? extends VarPattern> varPatterns) {
-        return withoutGraph().define(varPatterns);
+        return new QueryBuilder().define(varPatterns);
     }
 
     /**
@@ -121,7 +121,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static UndefineQuery undefine(VarPattern... varPatterns) {
-        return withoutGraph().undefine(varPatterns);
+        return new QueryBuilder().undefine(varPatterns);
     }
 
     /**
@@ -130,19 +130,19 @@ public class Graql {
      */
     @CheckReturnValue
     public static UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
-        return withoutGraph().undefine(varPatterns);
+        return new QueryBuilder().undefine(varPatterns);
     }
 
     @CheckReturnValue
     public static <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
-        return withoutGraph().compute(method);
+        return new QueryBuilder().compute(method);
     }
 
     /**
      * Get a {@link QueryParser} for parsing queries from strings
      */
     public static QueryParser parser() {
-        return withoutGraph().parser();
+        return new QueryBuilder().parser();
     }
 
     /**
@@ -151,7 +151,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static <T extends Query<?>> T parse(String queryString) {
-        return withoutGraph().parse(queryString);
+        return new QueryBuilder().parse(queryString);
     }
 
     // PATTERNS AND VARS
@@ -242,7 +242,17 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> count(String... vars) {
-        return Aggregates.count(Arrays.stream(vars).map(Graql::var).collect(toSet()));
+        return new CountAggregate(Arrays.stream(vars).map(Graql::var).collect(toSet()));
+    }
+
+    /**
+     * Aggregate that counts results of a {@link Match}.
+     */
+    public static Aggregate<Value> count(Var var, Var... vars) {
+        Set<Var> varSet = new HashSet<>(vars.length + 1);
+        varSet.add(var);
+        varSet.addAll(Arrays.asList(vars));
+        return new CountAggregate(varSet);
     }
 
     /**
@@ -250,7 +260,15 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> sum(String var) {
-        return Aggregates.sum(Graql.var(var));
+        return new SumAggregate(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will sum the values of a variable.
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> sum(Var var) {
+        return new SumAggregate(var);
     }
 
     /**
@@ -259,7 +277,16 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> min(String var) {
-        return Aggregates.min(Graql.var(var));
+        return new MinAggregate(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the minimum of a variable's values.
+     * @param var the variable to find the maximum of
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> min(Var var) {
+        return new MinAggregate(var);
     }
 
     /**
@@ -268,7 +295,16 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> max(String var) {
-        return Aggregates.max(Graql.var(var));
+        return new MaxAggregate(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the maximum of a variable's values.
+     * @param var the variable to find the maximum of
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> max(Var var) {
+        return new MaxAggregate(var);
     }
 
     /**
@@ -277,7 +313,16 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> mean(String var) {
-        return Aggregates.mean(Graql.var(var));
+        return new MeanAggregate(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the mean of a variable's values.
+     * @param var the variable to find the mean of
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> mean(Var var) {
+        return new MeanAggregate(var);
     }
 
     /**
@@ -286,7 +331,16 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> median(String var) {
-        return Aggregates.median(Graql.var(var));
+        return new MedianAggregate(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the median of a variable's values.
+     * @param var the variable to find the median of
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> median(Var var) {
+        return new MedianAggregate(var);
     }
 
     /**
@@ -295,7 +349,16 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Value> std(String var) {
-        return Aggregates.std(Graql.var(var));
+        return new StdAggregate(Graql.var(var));
+    }
+
+    /**
+     * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
+     * @param var the variable to find the standard deviation of
+     */
+    @CheckReturnValue
+    public static Aggregate<Value> std(Var var) {
+        return new StdAggregate(var);
     }
 
     /**
@@ -304,7 +367,15 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<AnswerGroup<ConceptMap>> group(String var) {
-        return group(var, Aggregates.list());
+        return group(var, new ListAggregate());
+    }
+
+    /**
+     * Aggregate that groups results of a {@link Match} by variable name
+     * @param varName the variable name to group results by
+     */
+    public static Aggregate<AnswerGroup<ConceptMap>> group(Var varName) {
+        return group(varName, new ListAggregate());
     }
 
     /**
@@ -315,7 +386,15 @@ public class Graql {
      */
     @CheckReturnValue
     public static <T extends Answer> Aggregate<AnswerGroup<T>> group(String var, Aggregate<T> aggregate) {
-        return Aggregates.group(Graql.var(var), aggregate);
+        return group(Graql.var(var), aggregate);
+    }
+
+    /**
+     * Aggregate that groups results of a {@link Match} by variable name, applying an aggregate to each group.
+     * @param <T> the type of each group
+     */
+    public static <T extends Answer> Aggregate<AnswerGroup<T>> group(Var varName, Aggregate<T> innerAggregate) {
+        return new GroupAggregate<>(varName, innerAggregate);
     }
 
 

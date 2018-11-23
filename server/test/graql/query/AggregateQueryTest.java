@@ -20,7 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.graql.admin.MatchAdmin;
 import grakn.core.graql.answer.Value;
-import grakn.core.graql.query.aggregate.Aggregates;
+import grakn.core.graql.query.aggregate.SumAggregate;
 import org.junit.Test;
 
 import static grakn.core.graql.query.Graql.var;
@@ -32,8 +32,8 @@ public class AggregateQueryTest {
     private final MatchAdmin match1 = Graql.match(var("x").isa("movie")).admin();
     private final MatchAdmin match2 = Graql.match(var("y").isa("movie")).admin();
 
-    private final Aggregate<Value> aggregate1 = Aggregates.count();
-    private final Aggregate<Value> aggregate2 = Aggregates.sum(Graql.var("x"));
+    private final Aggregate<Value> aggregate1 = Graql.count();
+    private final Aggregate<Value> aggregate2 = Graql.sum(Graql.var("x"));
 
     @Test
     public void aggregateQueriesWithTheSameMatchAndAggregatesAreEqual() {

@@ -32,6 +32,7 @@ import grakn.core.graql.internal.util.AdminConverter;
 import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,7 +74,7 @@ public class QueryBuilder {
      * @param patterns an array of patterns to match in the graph
      * @return a {@link Match} that will find matches of the given patterns
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Match match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
@@ -82,7 +83,7 @@ public class QueryBuilder {
      * @param patterns a collection of patterns to match in the graph
      * @return a {@link Match} that will find matches of the given patterns
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
@@ -94,7 +95,7 @@ public class QueryBuilder {
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
@@ -103,7 +104,7 @@ public class QueryBuilder {
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(tx, varAdmins);
@@ -113,7 +114,7 @@ public class QueryBuilder {
      * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
      * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public DefineQuery define(VarPattern... varPatterns) {
         return define(Arrays.asList(varPatterns));
     }
@@ -122,7 +123,7 @@ public class QueryBuilder {
      * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
      * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return DefineQuery.of(admins, tx);
@@ -132,7 +133,7 @@ public class QueryBuilder {
      * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
      * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public UndefineQuery undefine(VarPattern... varPatterns) {
         return undefine(Arrays.asList(varPatterns));
     }
@@ -141,7 +142,7 @@ public class QueryBuilder {
      * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
      * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return UndefineQuery.of(admins, tx);
@@ -150,7 +151,7 @@ public class QueryBuilder {
     /**
      * @return a compute query builder for building analytics query
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public <T extends Answer> ComputeQuery<T> compute(Method<T> method) {
         return new ComputeQuery<>(tx, method);
     }
@@ -166,7 +167,7 @@ public class QueryBuilder {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
-    @javax.annotation.CheckReturnValue
+    @CheckReturnValue
     public <T extends Query<?>> T parse(String queryString) {
         return queryParser.parseQuery(queryString);
     }
