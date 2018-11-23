@@ -18,20 +18,18 @@
 
 package grakn.core.graql.internal.pattern;
 
-import grakn.core.graql.query.Pattern;
-import grakn.core.server.Transaction;
-import grakn.core.graql.query.Var;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import grakn.core.graql.admin.Conjunction;
 import grakn.core.graql.admin.Disjunction;
 import grakn.core.graql.admin.PatternAdmin;
 import grakn.core.graql.admin.ReasonerQuery;
 import grakn.core.graql.admin.VarPatternAdmin;
 import grakn.core.graql.internal.reasoner.query.ReasonerQueries;
+import grakn.core.graql.query.Var;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
-import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 
 import java.util.List;
 import java.util.Set;
@@ -40,15 +38,22 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-@AutoValue
-abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Conjunction<T> {
+class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Conjunction<T> {
 
-    public static <T extends PatternAdmin> Conjunction<T> of(Set<T> patterns) {
-        return new AutoValue_ConjunctionImpl<>(patterns);
+    private final Set<T> patterns;
+
+    ConjunctionImpl(
+            Set<T> patterns) {
+        if (patterns == null) {
+            throw new NullPointerException("Null patterns");
+        }
+        this.patterns = patterns;
     }
 
     @Override
-    public abstract Set<T> getPatterns();
+    public Set<T> getPatterns() {
+        return patterns;
+    }
 
     @Override
     public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
@@ -86,7 +91,7 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public ReasonerQuery toReasonerQuery(Transaction tx){
+    public ReasonerQuery toReasonerQuery(Transaction tx) {
         Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
         // TODO: This cast is unsafe - this method should accept an `TransactionImpl`
         return ReasonerQueries.create(pattern, (TransactionImpl<?>) tx);
@@ -105,5 +110,25 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     @Override
     public PatternAdmin admin() {
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof ConjunctionImpl) {
+            ConjunctionImpl<?> that = (ConjunctionImpl<?>) o;
+            return (this.patterns.equals(that.getPatterns()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.patterns.hashCode();
+        return h;
     }
 }
