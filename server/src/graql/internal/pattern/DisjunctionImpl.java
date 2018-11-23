@@ -35,6 +35,10 @@ import static java.util.stream.Collectors.toSet;
 @AutoValue
 abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
 
+    public static <T extends PatternAdmin> Disjunction<T> of(Set<T> patterns) {
+        return new AutoValue_DisjunctionImpl<>(patterns);
+    }
+
     @Override
     public abstract Set<T> getPatterns();
 

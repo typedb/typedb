@@ -18,6 +18,7 @@
 
 package grakn.core.graql.internal.pattern;
 
+import grakn.core.graql.query.Pattern;
 import grakn.core.server.Transaction;
 import grakn.core.graql.query.Var;
 import grakn.core.graql.admin.Conjunction;
@@ -41,6 +42,10 @@ import static java.util.stream.Collectors.toSet;
 
 @AutoValue
 abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Conjunction<T> {
+
+    public static <T extends PatternAdmin> Conjunction<T> of(Set<T> patterns) {
+        return new AutoValue_ConjunctionImpl<>(patterns);
+    }
 
     @Override
     public abstract Set<T> getPatterns();

@@ -46,11 +46,11 @@ public class Patterns {
     private Patterns() {}
 
     public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new AutoValue_ConjunctionImpl<>(patterns);
+        return ConjunctionImpl.of(patterns);
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new AutoValue_DisjunctionImpl<>(patterns);
+        return DisjunctionImpl.of(patterns);
     }
 
     public static Var var() {
@@ -65,7 +65,7 @@ public class Patterns {
         if (properties.isEmpty()) {
             return name.admin();
         } else {
-            return new AutoValue_VarPatternImpl(name, properties);
+            return VarPatternImpl.of(name, properties);
         }
     }
 

@@ -37,6 +37,10 @@ import java.util.Set;
 @AutoValue
 abstract class VarPatternImpl extends AbstractVarPattern {
 
+    public static VarPatternAdmin of(Var name, Set<VarProperty> properties) {
+        return new AutoValue_VarPatternImpl(name, properties);
+    }
+
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
 
     private int hashCode = 0;
