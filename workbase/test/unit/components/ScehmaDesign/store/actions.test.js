@@ -1,7 +1,13 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
-import { CURRENT_KEYSPACE_CHANGED, OPEN_GRAKN_TX, UPDATE_METATYPE_INSTANCES } from '@/components/shared/StoresActions';
+import {
+  CURRENT_KEYSPACE_CHANGED,
+  OPEN_GRAKN_TX,
+  UPDATE_METATYPE_INSTANCES,
+  CANVAS_RESET,
+  INITIALISE_VISUALISER,
+} from '@/components/shared/StoresActions';
 
 import getters from '@/components/SchemaDesign/store/getters';
 import mutations from '@/components/SchemaDesign/store/mutations';
@@ -16,7 +22,6 @@ jest.mock('@/components/shared/PersistentStorage', () => ({
   get: jest.fn(),
 }));
 
-
 jest.mock('@/components/ServerSettings', () => ({
   getServerHost: () => '127.0.0.1',
   getServerUri: () => '127.0.0.1:48555',
@@ -30,16 +35,23 @@ Array.prototype.flatMap = function
 
 flat(lambda) { return Array.prototype.concat.apply([], this.map(lambda)); };
 
+let visFacade;
+
 beforeAll(() => {
   store.registerModule('schema-design', { namespaced: true, getters, state, mutations, actions });
 
   store.dispatch('initGrakn');
 
-  const visFacade = {
+  visFacade = {
     fitGraphToWindow: jest.fn(),
     addToCanvas: jest.fn(),
     resetCanvas: jest.fn(),
-    getAllNodes: jest.fn().mockImplementation(() => [{ id: 1234, type: 'person' }]),
+    getNode: jest.fn().mockImplementation(() => ['1234']),
+    getAllNodes: jest.fn().mockImplementation(() => [
+      { id: 123, baseType: 'ENTITY' },
+      { id: 456, baseType: 'ATTRIBUTE' },
+      { id: 789, baseType: 'RELATIONSHIP' },
+    ]),
   };
 
   store.commit('schema-design/setVisFacade', visFacade);
@@ -67,6 +79,16 @@ describe('actions', () => {
     expect(store.state['schema-design'].metaTypeInstances.attributes).toHaveLength(9);
     expect(store.state['schema-design'].metaTypeInstances.relationships).toHaveLength(6);
     expect(store.state['schema-design'].metaTypeInstances.roles).toHaveLength(23);
+  });
+
+  test('CANVAS_RESET', () => {
+    store.commit('schema-design/selectedNodes', ['1234']);
+    expect(store.state['schema-design'].selectedNodes).toEqual(['1234']);
+
+    store.dispatch(`schema-design/${CANVAS_RESET}`);
+
+    expect(store.state['schema-design'].selectedNodes).toBe(null);
+    expect(visFacade.resetCanvas).toBeCalled();
   });
 });
 
