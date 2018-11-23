@@ -157,7 +157,15 @@ export default {
     }
   },
   async [EXPLAIN_CONCEPT]({ state, dispatch, getters, commit }) {
-    const queries = getters.selectedNode.explanation.answers().map(answer => mapAnswerToExplanationQuery(answer));
+    const explanation = getters.selectedNode.explanation;
+
+    let queries;
+    // If the explanation is formed from a conjuction inside a rule, go one step deeper to access the actual explanation
+    if (!explanation.queryPattern().length) {
+      queries = explanation.answers().map(answer => answer.explanation().answers().map(answer => mapAnswerToExplanationQuery(answer))).flatMap(x => x);
+    } else {
+      queries = getters.selectedNode.explanation.answers().map(answer => mapAnswerToExplanationQuery(answer));
+    }
     queries.forEach(async (query) => {
       commit('loadingQuery', true);
       const graknTx = await dispatch(OPEN_GRAKN_TX);
